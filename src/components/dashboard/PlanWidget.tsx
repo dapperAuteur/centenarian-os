@@ -1,45 +1,44 @@
+// centenarian-os/src/components/dashboard/plan-widget.tsx
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { usePlanStore } from "@/lib/store";
 
 export function PlanWidget() {
-  const { tasks, toggleTask } = usePlanStore();
+  const tasks = usePlanStore((state) => state.tasks);
+  const toggleTask = usePlanStore((state) => state.toggleTask);
 
   return (
-    <Card className="col-span-1 md:col-span-3 lg:col-span-4">
+    <Card>
       <CardHeader>
         <CardTitle>Today&apos;s Plan</CardTitle>
-        <CardDescription>Tuesday, October 7, 2025</CardDescription>
+        <CardDescription>
+          The day&apos;s mission-critical objectives. Add new tasks via Quick Capture.
+        </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {tasks.map((task) => (
-            <div className="flex items-center space-x-3" key={task.id}>
-              <Checkbox 
-                id={task.id} 
+      <CardContent className="space-y-4">
+        {tasks.length > 0 ? (
+          tasks.map((task) => (
+            <div key={task.id} className="flex items-center space-x-3">
+              <Checkbox
+                id={task.id}
                 checked={task.completed}
-                onCheckedChange={() => toggleTask(task.id)}
+                onCheckedChange={() => toggleTask(task.id, task.completed)}
               />
-              <Label
+              <label
                 htmlFor={task.id}
-                className={`flex-1 text-sm transition-colors ${
-                  task.completed ? "text-muted-foreground line-through" : "text-primary"
+                className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${
+                  task.completed ? "line-through text-muted-foreground" : ""
                 }`}
               >
                 {task.label}
-              </Label>
+              </label>
             </div>
-          ))}
-        </div>
+          ))
+        ) : (
+          <p className="text-sm text-muted-foreground">No tasks for today. Add one above.</p>
+        )}
       </CardContent>
     </Card>
   );

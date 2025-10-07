@@ -1,66 +1,35 @@
-import { Sidebar } from "@/components/layout/Sidebar";
+// centenarian-os/src/app/page.tsx
 import { Header } from "@/components/layout/Header";
+import { Sidebar } from "@/components/layout/Sidebar";
 import { QuickCapture } from "@/components/dashboard/QuickCapture";
 import { KpiCard } from "@/components/dashboard/KPICard";
 import { PlanWidget } from "@/components/dashboard/PlanWidget";
-import { Activity, HeartPulse, BedDouble, Dumbbell } from "lucide-react";
+import { Dumbbell, Moon, Brain, BookOpen } from "lucide-react";
 
-export default function DashboardPage() {
+
+
+import PlanInitializer from "@/components/dashboard/PlanInitializer";
+
+export default function Home() {
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+      <PlanInitializer />
       <Sidebar />
-      <div className="flex flex-col">
+      <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
         <Header />
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
+        <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+          <div className="space-y-4">
+            <QuickCapture />
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <KpiCard title="Training Volume" value="4,231 lbs" change="+12.5%" unit={""} changeType={"increase"} Icon={Dumbbell} />
+              <KpiCard title="Sleep Score" value="88" change="+2%" unit={""} changeType={"increase"} Icon={Moon} />
+              <KpiCard title="Deep Work" value="3.5 hrs" change="-5.4%" unit={""} changeType={"increase"} Icon={Brain} />
+              <KpiCard title="Read Time" value="45 mins" change="+20%" unit={""} changeType={"increase"} Icon={BookOpen} />
+            </div>
+            <PlanWidget />
           </div>
-
-          <QuickCapture />
-
-          <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-            <KpiCard 
-              title="Resting Heart Rate"
-              value="48"
-              unit="bpm"
-              change="-2 from yesterday"
-              changeType="increase"
-              Icon={HeartPulse}
-            />
-            <KpiCard 
-              title="Sleep Performance"
-              value="92"
-              unit="%"
-              change="+5% from last night"
-              changeType="increase"
-              Icon={BedDouble}
-            />
-            <KpiCard 
-              title="Grip Strength (L)"
-              value="125.4"
-              unit="lbs"
-              change="+1.2 lbs from last week"
-              changeType="increase"
-              Icon={Dumbbell}
-            />
-            <KpiCard 
-              title="Training Readiness"
-              value="Optimal"
-              unit=""
-              change="Ready for high intensity"
-              changeType="neutral"
-              Icon={Activity}
-            />
-          </div>
-
-          <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
-              <PlanWidget />
-              {/* Other widgets will go here */}
-          </div>
-
         </main>
       </div>
     </div>
   );
 }
-
