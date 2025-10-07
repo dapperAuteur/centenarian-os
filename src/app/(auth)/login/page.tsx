@@ -33,7 +33,7 @@ export default function LoginPage() {
 
     try {
       await logIn(email, password);
-      router.push('/'); // Redirect to dashboard on successful login
+      router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to log in. Please check your credentials.');
     } finally {
