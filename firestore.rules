@@ -1,0 +1,56 @@
+// firestore.rules
+// Place this file in the ROOT of your project (same level as package.json)
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function: Check if user is authenticated
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Helper function: Check if user owns the resource
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    // Helper function: Validate entry data structure
+    function isValidEntry() {
+      let data = request.resource.data;
+      
+      // Required fields
+      return data.type in ['task', 'note']
+        && data.content is string
+        && data.content.size() > 0
+        && data.userId is string
+        
+        // Optional fields validation
+        && (!('tag' in data) || data.tag in ['FITNESS', 'CREATIVE', 'SKILL', 'OUTREACH', 'LIFESTYLE', 'MINDSET', 'FUEL'])
+        && (!('priority' in data) || (data.priority is number && data.priority >= 1 && data.priority <= 3))
+        && (!('completed' in data) || data.completed is bool)
+        && (!('description' in data) || data.description is string)
+        && (!('time' in data) || data.time is string);
+    }
+    
+    // User documents - only the user can access their own data
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+      
+      // Entries subcollection - tasks and notes
+      match /entries/{entryId} {
+        // Allow read if user owns the parent document
+        allow read: if isOwner(userId);
+        
+        // Allow create if user owns parent AND data is valid
+        allow create: if isOwner(userId) && isValidEntry();
+        
+        // Allow update if user owns the resource
+        allow update: if isOwner(userId);
+        
+        // Allow delete if user owns the resource
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

@@ -72,8 +72,15 @@ const TaskCard = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
-  const tag = task.tag || 'MINDSET';
-  const hasDescription = task.description && task.description.length > 0;
+  // ===== DEFAULT VALUES FOR BACKWARD COMPATIBILITY =====
+  // These handle old tasks that don't have the new fields
+  const tag = task.tag || 'MINDSET';           // Defaults to MINDSET if no tag
+  const priority = task.priority || 2;         // Defaults to Medium (P2) if no priority
+  const time = task.time || undefined;         // Optional: no default needed
+  const description = task.description || '';  // Empty string if no description
+  // =====================================================
+
+  const hasDescription = description && description.length > 0;
   const badgeColor = getTagColor(tag);
   
   return (
@@ -126,8 +133,8 @@ const TaskCard = ({
             
             {/* Right Side Meta */}
             <div className="flex items-center space-x-2">
-              {task.priority && (
-                <span className="text-xs text-gray-400">P{task.priority}</span>
+              {priority && (
+                <span className="text-xs text-gray-400">P{priority}</span>
               )}
               
               {/* Expand/Collapse Button (only show if there's a description) */}
@@ -164,7 +171,7 @@ const TaskCard = ({
           </p>
           
           {/* Time (if available) */}
-          {task.time && (
+          {time && (
             <p className="text-sm text-gray-500 mt-0.5 flex items-center">
               <svg 
                 className="w-4 h-4 mr-1.5" 
@@ -180,7 +187,7 @@ const TaskCard = ({
                   d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              {task.time}
+              {time}
             </p>
           )}
         </div>
@@ -194,7 +201,7 @@ const TaskCard = ({
         >
           <div className="pt-2 mt-2 border-t border-gray-100">
             <p className="text-xs font-semibold uppercase text-gray-500 mb-1">Details:</p>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{task.description}</p>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">{description}</p>
           </div>
         </div>
       )}
