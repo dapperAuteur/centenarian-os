@@ -15,7 +15,7 @@ import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 
 export default function Header() {
-  const { currentUser, logOut } = useAuth();
+  const { user, logOut } = useAuth();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -30,7 +30,7 @@ export default function Header() {
   return (
     <header className="flex h-14 items-center justify-end gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
        <div className="flex-1 text-sm text-muted-foreground">
-        {currentUser ? `Logged in as ${currentUser.email}` : ''}
+        {user ? `Logged in as ${user.email}` : ''}
        </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
