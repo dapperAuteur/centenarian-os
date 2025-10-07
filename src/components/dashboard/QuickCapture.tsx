@@ -10,13 +10,13 @@ import { useAuth } from "@/context/auth-context";
 export default function QuickCapture() {
   const [taskTitle, setTaskTitle] = useState("");
   const { addTask } = usePlanStore();
-  const { currentUser } = useAuth();
+  const { user } = useAuth();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     console.log('taskTitle :>> ', taskTitle);
-    if (taskTitle.trim() === "" || !currentUser) return;
-    addTask({ title: taskTitle.trim() }, currentUser.uid);
+    if (taskTitle.trim() === "" || !user) return;
+    addTask({ title: taskTitle.trim() }, user.uid);
     setTaskTitle("");
   };
 

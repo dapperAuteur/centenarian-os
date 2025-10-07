@@ -9,17 +9,17 @@ import { useAuth } from '@/context/auth-context';
 
 function PlanInitializer() {
   const { setTasks } = usePlanStore();
-  const { currentUser } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (!currentUser) {
+    if (!user) {
       // Clear tasks if user logs out
       setTasks([]);
       return;
     }
 
     const q = query(
-      collection(db, 'users', currentUser.uid, 'tasks'),
+      collection(db, 'users', user.uid, 'tasks'),
       orderBy('createdAt', 'desc')
     );
 
@@ -37,10 +37,9 @@ function PlanInitializer() {
 
     // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [currentUser, setTasks]);
+  }, [user, setTasks]);
 
   return null; // This component does not render anything
 }
 
 export default PlanInitializer;
-

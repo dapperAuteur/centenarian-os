@@ -8,11 +8,11 @@ import { useAuth } from "@/context/auth-context";
 
 export default function PlanWidget() {
   const { tasks, toggleTask } = usePlanStore();
-  const { currentUser } = useAuth();
+  const { user } = useAuth();
 
   const handleCheckedChange = (taskId: string, checked: boolean) => {
-    if (!currentUser) return;
-    toggleTask(taskId, checked, currentUser.uid);
+    if (!user) return;
+    toggleTask(taskId, checked, user.uid);
   };
 
   return (
@@ -47,4 +47,3 @@ export default function PlanWidget() {
     </Card>
   );
 }
-

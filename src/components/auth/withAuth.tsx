@@ -11,13 +11,14 @@ const withAuth = <P extends object>(Component: ComponentType<P>) => {
     const router = useRouter();
 
     useEffect(() => {
-      // Wait until the initial loading is finished
+      // If authentication is complete and there is no user,
+      // redirect them to the login page.
       if (!loading && !user) {
-        router.push('/login');
+        router.replace('/login');
       }
     }, [user, loading, router]);
 
-    // While loading, show a loading indicator to prevent any content flash
+    // While loading, show a loading screen. This prevents any flash of protected content.
     if (loading) {
       return (
         <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -25,19 +26,14 @@ const withAuth = <P extends object>(Component: ComponentType<P>) => {
         </div>
       );
     }
-
-    // If there is a user, render the page.
-    // Otherwise, the useEffect will have already started the redirect.
-    if (user) {
-      return <Component {...props} />;
-    }
-
-    // Return null to prevent rendering the component before the redirect is complete
-    return null;
+    
+    // If there's a user, render the component. Otherwise, the useEffect will have already initiated a redirect.
+    return user ? <Component {...props} /> : null;
   };
+
+  AuthComponent.displayName = `WithAuth(${Component.displayName || Component.name || 'Component'})`;
 
   return AuthComponent;
 };
 
 export default withAuth;
-
