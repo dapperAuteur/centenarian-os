@@ -1,10 +1,25 @@
 // centenarian-os/src/app/(landing)/engineer/page.tsx
+"use client"
+
+import { useEffect } from 'react';
+import { analytics } from '@/lib/firebase';
+import { logEvent } from 'firebase/analytics';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Code } from 'lucide-react';
 import Link from 'next/link';
 
 export default function EngineerShowcasePage() {
+  useEffect(() => {
+    analytics.then(an => {
+      if (an) {
+        logEvent(an, 'page_view', {
+          page_title: 'Engineer Showcase',
+          page_path: '/engineer',
+        });
+      }
+    });
+  }, []);
   return (
     <div className="container mx-auto max-w-5xl px-4 py-12 text-center">
       <header className="mb-12">
