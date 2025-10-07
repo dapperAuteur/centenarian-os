@@ -1,50 +1,52 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // centenarian-os/src/lib/store.ts
 import { create } from 'zustand';
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  doc,
+  deleteDoc,
+} from 'firebase/firestore';
 import { db } from './firebase';
-import { collection, addDoc, doc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 
 export interface Task {
   id: string;
-  label: string;
+  title: string;
   completed: boolean;
-  createdAt: any; // Using 'any' for serverTimestamp flexibility
+  createdAt: Date;
 }
 
 interface PlanState {
   tasks: Task[];
   setTasks: (tasks: Task[]) => void;
-  addTask: (label: string) => Promise<void>;
-  toggleTask: (taskId: string, currentStatus: boolean) => Promise<void>;
+  addTask: (task: { title: string }, userId: string) => Promise<void>;
+  toggleTask: (taskId: string, completed: boolean, userId: string) => Promise<void>;
 }
 
-// TODO: Replace with dynamic user ID upon implementing authentication
-const userId = 'default-user';
-const tasksCollectionRef = collection(db, 'users', userId, 'tasks');
-
-export const usePlanStore = create<PlanState>((set) => ({
+export const usePlanStore = create<PlanState>((set, get) => ({
   tasks: [],
   setTasks: (tasks) => set({ tasks }),
-  addTask: async (label) => {
+  addTask: async (task, userId) => {
+    if (!userId) throw new Error("User not authenticated.");
     try {
-      await addDoc(tasksCollectionRef, {
-        label,
+      await addDoc(collection(db, 'users', userId, 'tasks'), {
+        ...task,
         completed: false,
-        createdAt: serverTimestamp(),
+        createdAt: new Date(),
       });
+      // The real-time listener will update the state, so no need to set() here.
     } catch (error) {
-      console.error("Error adding task: ", error);
-      // Here you might want to add user-facing error handling
+      console.error('Error adding task: ', error);
     }
   },
-  toggleTask: async (taskId, currentStatus) => {
-    const taskDocRef = doc(db, 'users', userId, 'tasks', taskId);
+  toggleTask: async (taskId, completed, userId) => {
+    if (!userId) throw new Error("User not authenticated.");
     try {
-      await updateDoc(taskDocRef, {
-        completed: !currentStatus,
-      });
+      const taskRef = doc(db, 'users', userId, 'tasks', taskId);
+      await updateDoc(taskRef, { completed });
+       // The real-time listener will update the state.
     } catch (error) {
-      console.error("Error toggling task: ", error);
+      console.error('Error toggling task: ', error);
     }
   },
 }));

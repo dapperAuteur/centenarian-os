@@ -1,38 +1,46 @@
 // centenarian-os/src/components/dashboard/plan-initializer.tsx
 "use client";
 
-import { useEffect, useRef } from 'react';
-import { usePlanStore, Task } from '@/lib/store';
-import { db } from '@/lib/firebase';
+import { useEffect } from 'react';
 import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { usePlanStore, Task } from '@/lib/store';
+import { useAuth } from '@/context/auth-context';
 
 function PlanInitializer() {
-  const setTasks = usePlanStore((state) => state.setTasks);
-  const initialized = useRef(false);
+  const { setTasks } = usePlanStore();
+  const { currentUser } = useAuth();
 
   useEffect(() => {
-    // Prevent multiple listeners from being set up, especially in React Strict Mode
-    if (initialized.current) return;
-    initialized.current = true;
+    if (!currentUser) {
+      // Clear tasks if user logs out
+      setTasks([]);
+      return;
+    }
 
-    // TODO: Replace with dynamic user ID upon implementing authentication
-    const userId = 'default-user';
-    const tasksCollectionRef = collection(db, 'users', userId, 'tasks');
-    const q = query(tasksCollectionRef, orderBy('createdAt', 'desc'));
+    const q = query(
+      collection(db, 'users', currentUser.uid, 'tasks'),
+      orderBy('createdAt', 'desc')
+    );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const tasks: Task[] = [];
       querySnapshot.forEach((doc) => {
-        tasks.push({ id: doc.id, ...doc.data() } as Task);
+        tasks.push({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt.toDate(),
+        } as Task);
       });
       setTasks(tasks);
     });
 
-    // Clean up the listener when the component unmounts
+    // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [setTasks]);
+  }, [currentUser, setTasks]);
 
   return null; // This component does not render anything
 }
 
 export default PlanInitializer;
+

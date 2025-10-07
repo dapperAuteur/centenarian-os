@@ -1,9 +1,9 @@
 // centenarian-os/src/app/page.tsx
-import { Header } from "@/components/layout/Header";
+import Header from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { QuickCapture } from "@/components/dashboard/QuickCapture";
+import QuickCapture from "@/components/dashboard/QuickCapture";
 import { KpiCard } from "@/components/dashboard/KPICard";
-import { PlanWidget } from "@/components/dashboard/PlanWidget";
+import PlanWidget from "@/components/dashboard/PlanWidget";
 import { Dumbbell, Moon, Brain, BookOpen } from "lucide-react";
 
 

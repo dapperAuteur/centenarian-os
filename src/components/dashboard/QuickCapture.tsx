@@ -2,35 +2,34 @@
 "use client";
 
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { usePlanStore } from "@/lib/store";
+import { useAuth } from "@/context/auth-context";
 
-export function QuickCapture() {
-  const [taskLabel, setTaskLabel] = useState("");
-  const addTask = usePlanStore((state) => state.addTask);
+export default function QuickCapture() {
+  const [taskTitle, setTaskTitle] = useState("");
+  const { addTask } = usePlanStore();
+  const { currentUser } = useAuth();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (taskLabel.trim()) {
-      addTask(taskLabel.trim());
-      setTaskLabel("");
-    }
+    console.log('taskTitle :>> ', taskTitle);
+    if (taskTitle.trim() === "" || !currentUser) return;
+    addTask({ title: taskTitle.trim() }, currentUser.uid);
+    setTaskTitle("");
   };
 
   return (
-    <form onSubmit={handleSubmit} className="relative">
-      <PlusCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+    <form onSubmit={handleSubmit} className="flex w-full items-center space-x-2">
       <Input
-        placeholder="Quick Capture: Add a task to your plan..."
-        className="pl-10"
-        value={taskLabel}
-        onChange={(e) => setTaskLabel(e.target.value)}
+        type="text"
+        placeholder="Add a new task..."
+        value={taskTitle}
+        onChange={(e) => setTaskTitle(e.target.value)}
+        className="flex-1"
       />
-      <Button type="submit" size="sm" className="absolute right-2 top-1/2 -translate-y-1/2">
-        Add Task
-      </Button>
+      <Button type="submit">Add Task</Button>
     </form>
   );
 }
