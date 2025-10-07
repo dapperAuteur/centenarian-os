@@ -11,6 +11,7 @@ export interface Task {
 interface PlanState {
   tasks: Task[];
   toggleTask: (taskId: string) => void;
+  addTask: (label: string) => void;
 }
 
 const initialTasks: Task[] = [
@@ -32,9 +33,16 @@ export const usePlanStore = create<PlanState>()(
             task.id === taskId ? { ...task, completed: !task.completed } : task
           ),
         })),
+      addTask: (label) =>
+        set((state) => ({
+          tasks: [
+            { id: crypto.randomUUID(), label, completed: false },
+            ...state.tasks,
+          ],
+        })),
     }),
     {
-      name: 'centenarian-os-plan-storage', // unique name for localStorage key
+      name: 'centenarian-os-plan-storage',
     }
   )
 );
