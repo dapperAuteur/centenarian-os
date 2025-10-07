@@ -21,6 +21,7 @@ interface PlanState {
   setTasks: (tasks: Task[]) => void;
   addTask: (task: { title: string }, userId: string) => Promise<void>;
   toggleTask: (taskId: string, completed: boolean, userId: string) => Promise<void>;
+  clearPlan: () => void;
 }
 
 export const usePlanStore = create<PlanState>((set, get) => ({
@@ -49,5 +50,6 @@ export const usePlanStore = create<PlanState>((set, get) => ({
       console.error('Error toggling task: ', error);
     }
   },
+  clearPlan: () => set({ tasks: [] }),
 }));
 
