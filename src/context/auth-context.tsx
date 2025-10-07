@@ -18,8 +18,9 @@ import {
   onAuthStateChanged,
   User,
 } from 'firebase/auth';
-import { app } from '@/lib/firebase';
-import { usePlanStore } from '@/lib/store';
+import { app, analytics } from '@/lib/firebase';
+import { logEvent } from 'firebase/analytics';
+import { useEntryStore } from '@/lib/store'; // Use the new Entry store
 
 interface AuthContextType {
   user: User | null;
@@ -44,6 +45,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const auth = getAuth(app);
+  const clearEntries = useEntryStore((state) => state.clearEntries);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -53,8 +55,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [auth]);
 
-  const signUp = (email: string, password: string) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+  const signUp = async (email: string, password: string) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    analytics.then(an => {
+      if (an) {
+        logEvent(an, 'sign_up', {
+          method: 'email-password',
+        });
+      }
+    });
+    return userCredential;
   };
 
   const logIn = (email: string, password: string) => {
@@ -63,10 +73,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logOut = async () => {
     try {
-      usePlanStore.getState().clearPlan(); // Clear Zustand state
-      await signOut(auth); // Sign out from Firebase
-      setUser(null); // **IMMEDIATELY set user to null**
-      router.push('/login'); // Redirect
+      clearEntries(); // Use the new clearEntries action
+      await signOut(auth);
+      setUser(null);
+      router.push('/login');
     } catch (error) {
       console.error('Error logging out:', error);
     }
