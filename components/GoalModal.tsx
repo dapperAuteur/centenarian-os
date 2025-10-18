@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // File: components/GoalModal.tsx
 // Modal for creating/editing goals
@@ -28,14 +29,7 @@ export function GoalModal({ isOpen, onClose, roadmapId, goalId }: GoalModalProps
   const supabase = createClient();
 
   useEffect(() => {
-    if (isOpen && goalId) {
-      loadGoal();
-    } else if (isOpen) {
-      resetForm();
-    }
-  }, [isOpen, goalId]);
-
-  const loadGoal = async () => {
+    const loadGoal = async () => {
     if (!goalId) return;
     
     const { data, error } = await supabase
@@ -51,6 +45,14 @@ export function GoalModal({ isOpen, onClose, roadmapId, goalId }: GoalModalProps
       setTargetYear(data.target_year);
     }
   };
+    if (isOpen && goalId) {
+      loadGoal();
+    } else if (isOpen) {
+      resetForm();
+    }
+  }, [isOpen, goalId, supabase]);
+
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,7 +139,7 @@ export function GoalModal({ isOpen, onClose, roadmapId, goalId }: GoalModalProps
               onChange={(e) => setTitle(e.target.value)}
               required
               placeholder="e.g., Achieve Sub-17s 100m Dash"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
             />
           </div>
 
@@ -187,7 +189,7 @@ export function GoalModal({ isOpen, onClose, roadmapId, goalId }: GoalModalProps
               required
               min={new Date().getFullYear()}
               max={new Date().getFullYear() + 50}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
             />
           </div>
 

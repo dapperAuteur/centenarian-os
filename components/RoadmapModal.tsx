@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // File: components/RoadmapModal.tsx
 // Modal for creating/editing roadmaps
@@ -35,12 +36,7 @@ export function RoadmapModal({ isOpen, onClose, roadmapId }: RoadmapModalProps) 
   }, [isOpen, roadmapId]);
 
   useEffect(() => {
-    if (isOpen && roadmapId) {
-      loadRoadmap();
-    }
-  }, [isOpen, roadmapId]);
-
-  const loadRoadmap = async () => {
+    const loadRoadmap = async () => {
     if (!roadmapId) return;
     
     const { data, error } = await supabase
@@ -56,6 +52,12 @@ export function RoadmapModal({ isOpen, onClose, roadmapId }: RoadmapModalProps) 
       setEndDate(data.end_date);
     }
   };
+    if (isOpen && roadmapId) {
+      loadRoadmap();
+    }
+  }, [isOpen, roadmapId, supabase]);
+
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,7 +143,7 @@ export function RoadmapModal({ isOpen, onClose, roadmapId }: RoadmapModalProps) 
               onChange={(e) => setTitle(e.target.value)}
               required
               placeholder="e.g., My Centenarian Journey"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
             />
           </div>
 
@@ -168,7 +170,7 @@ export function RoadmapModal({ isOpen, onClose, roadmapId }: RoadmapModalProps) 
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
               />
             </div>
             <div>
@@ -180,7 +182,7 @@ export function RoadmapModal({ isOpen, onClose, roadmapId }: RoadmapModalProps) 
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
               />
             </div>
           </div>
