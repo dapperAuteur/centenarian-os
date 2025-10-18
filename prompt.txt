@@ -1,0 +1,1 @@
+still looks like the plain white/black ui without any colors. Let's start over with just the original components. then refactor to make that one file a multicomponent app with each component doing one thing. then start adding the features of the centenarian-os. 
