@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // File: components/TaskModal.tsx
 // Modal for creating/editing tasks
@@ -29,15 +30,11 @@ export function TaskModal({ isOpen, onClose, milestoneId, taskId }: TaskModalPro
   const [error, setError] = useState('');
   const supabase = createClient();
 
-  useEffect(() => {
-    if (isOpen && taskId) {
-      loadTask();
-    } else if (isOpen) {
-      resetForm();
-    }
-  }, [isOpen, taskId]);
+  
 
-  const loadTask = async () => {
+  useEffect(() => {
+
+    const loadTask = async () => {
     if (!taskId) return;
     
     const { data, error } = await supabase
@@ -55,6 +52,15 @@ export function TaskModal({ isOpen, onClose, milestoneId, taskId }: TaskModalPro
       setPriority(data.priority);
     }
   };
+  
+    if (isOpen && taskId) {
+      loadTask();
+    } else if (isOpen) {
+      resetForm();
+    }
+  }, [isOpen, supabase, taskId]);
+
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

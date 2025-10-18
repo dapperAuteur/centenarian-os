@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // File: components/MilestoneModal.tsx
 // Modal for creating/editing milestones
@@ -33,14 +34,7 @@ export function MilestoneModal({ isOpen, onClose, goalId, milestoneId }: Milesto
   const supabase = createClient();
 
   useEffect(() => {
-    if (isOpen && milestoneId) {
-      loadMilestone();
-    } else if (isOpen) {
-      resetForm();
-    }
-  }, [isOpen, milestoneId]);
-
-  const loadMilestone = async () => {
+    const loadMilestone = async () => {
     if (!milestoneId) return;
     
     const { data, error } = await supabase
@@ -56,6 +50,14 @@ export function MilestoneModal({ isOpen, onClose, goalId, milestoneId }: Milesto
       setStatus(data.status);
     }
   };
+    if (isOpen && milestoneId) {
+      loadMilestone();
+    } else if (isOpen) {
+      resetForm();
+    }
+  }, [isOpen, milestoneId, supabase]);
+
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

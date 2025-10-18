@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // File: components/RoadmapModal.tsx
 // Modal for creating/editing roadmaps
@@ -35,12 +36,7 @@ export function RoadmapModal({ isOpen, onClose, roadmapId }: RoadmapModalProps) 
   }, [isOpen, roadmapId]);
 
   useEffect(() => {
-    if (isOpen && roadmapId) {
-      loadRoadmap();
-    }
-  }, [isOpen, roadmapId]);
-
-  const loadRoadmap = async () => {
+    const loadRoadmap = async () => {
     if (!roadmapId) return;
     
     const { data, error } = await supabase
@@ -56,6 +52,12 @@ export function RoadmapModal({ isOpen, onClose, roadmapId }: RoadmapModalProps) 
       setEndDate(data.end_date);
     }
   };
+    if (isOpen && roadmapId) {
+      loadRoadmap();
+    }
+  }, [isOpen, roadmapId, supabase]);
+
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

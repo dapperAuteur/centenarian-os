@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { MealLog, Protocol, MealType } from '@/lib/types';
 import { Plus } from 'lucide-react';
@@ -25,7 +25,7 @@ export default function MealLoggingPage() {
   const [restaurantWebsite, setRestaurantWebsite] = useState('');
   const supabase = createClient();
 
-  const loadData = useCallback(async () => {
+  const loadData = async () => {
     const [mealsRes, protocolsRes] = await Promise.all([
       supabase
         .from('meal_logs')
@@ -42,9 +42,10 @@ export default function MealLoggingPage() {
     if (mealsRes.data) setMealLogs(mealsRes.data);
     if (protocolsRes.data) setProtocols(protocolsRes.data);
     setLoading(false);
-  }, [supabase]);
-
+  };
+  
   useEffect(() => {
+    
     const today = new Date();
     setDate(today.toISOString().split('T')[0]);
     setTime(today.toTimeString().slice(0, 5));

@@ -17,10 +17,7 @@ export default function FuelPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    loadStats();
-  }, []);
-
-  const loadStats = async () => {
+    const loadStats = async () => {
     const today = new Date().toISOString().split('T')[0];
     
     const [ingredientsRes, protocolsRes, mealsRes] = await Promise.all([
@@ -36,6 +33,10 @@ export default function FuelPage() {
     });
     setLoading(false);
   };
+    loadStats();
+  }, [supabase]);
+
+  
 
   const modules = [
     {

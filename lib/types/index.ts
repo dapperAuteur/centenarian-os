@@ -79,6 +79,10 @@ export interface Ingredient {
   unit: string;
   notes: string | null;
   usda_fdc_id: string | null;
+  brand: string | null;
+  store_name: string | null;
+  store_website: string | null;
+  vendor_notes: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -92,6 +96,11 @@ export interface Protocol {
   total_cost: number;
   total_calories: number;
   total_protein: number;
+  prep_time_minutes: number | null;
+  cook_time_minutes: number | null;
+  servings: number | null;
+  date_made: string | null;
+  date_finished: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -125,7 +134,28 @@ export interface MealLog {
   protocol_id: string | null;
   meal_type: MealType | null;
   notes: string | null;
+  restaurant_name: string | null;
+  restaurant_address: string | null;
+  restaurant_city: string | null;
+  restaurant_state: string | null;
+  restaurant_country: string | null;
+  restaurant_website: string | null;
+  is_restaurant_meal: boolean;
   created_at: string;
+}
+
+export interface MealPrepBatch {
+  id: string;
+  user_id: string;
+  protocol_id: string;
+  date_made: string;
+  date_finished: string | null;
+  servings_made: number;
+  servings_remaining: number;
+  storage_location: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // Extended types with relations

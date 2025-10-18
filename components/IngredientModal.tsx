@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // File: components/IngredientModal.tsx
 
+// File: components/IngredientModal.tsx
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -27,6 +29,10 @@ export function IngredientModal({ isOpen, onClose, ingredient }: IngredientModal
   const [cost, setCost] = useState('');
   const [unit, setUnit] = useState('g');
   const [notes, setNotes] = useState('');
+  const [brand, setBrand] = useState('');
+  const [storeName, setStoreName] = useState('');
+  const [storeWebsite, setStoreWebsite] = useState('');
+  const [vendorNotes, setVendorNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const supabase = createClient();
@@ -43,6 +49,10 @@ export function IngredientModal({ isOpen, onClose, ingredient }: IngredientModal
       setCost(ingredient.cost_per_unit.toString());
       setUnit(ingredient.unit);
       setNotes(ingredient.notes || '');
+      setBrand(ingredient.brand || '');
+      setStoreName(ingredient.store_name || '');
+      setStoreWebsite(ingredient.store_website || '');
+      setVendorNotes(ingredient.vendor_notes || '');
     } else {
       resetForm();
     }
@@ -68,6 +78,10 @@ export function IngredientModal({ isOpen, onClose, ingredient }: IngredientModal
         cost_per_unit: parseFloat(cost),
         unit,
         notes: notes || null,
+        brand: brand || null,
+        store_name: storeName || null,
+        store_website: storeWebsite || null,
+        vendor_notes: vendorNotes || null,
         user_id: user.id,
       };
 
@@ -103,6 +117,10 @@ export function IngredientModal({ isOpen, onClose, ingredient }: IngredientModal
     setCost('');
     setUnit('g');
     setNotes('');
+    setBrand('');
+    setStoreName('');
+    setStoreWebsite('');
+    setVendorNotes('');
     setError('');
   };
 
@@ -131,7 +149,7 @@ export function IngredientModal({ isOpen, onClose, ingredient }: IngredientModal
               onChange={(e) => setName(e.target.value)}
               required
               placeholder="e.g., Wild-Caught Salmon"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
             />
           </div>
 
@@ -170,7 +188,7 @@ export function IngredientModal({ isOpen, onClose, ingredient }: IngredientModal
                 value={calories}
                 onChange={(e) => setCalories(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
               />
             </div>
             <div>
@@ -183,7 +201,7 @@ export function IngredientModal({ isOpen, onClose, ingredient }: IngredientModal
                 value={protein}
                 onChange={(e) => setProtein(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
               />
             </div>
             <div>
@@ -196,7 +214,7 @@ export function IngredientModal({ isOpen, onClose, ingredient }: IngredientModal
                 value={carbs}
                 onChange={(e) => setCarbs(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
               />
             </div>
             <div>
@@ -209,7 +227,7 @@ export function IngredientModal({ isOpen, onClose, ingredient }: IngredientModal
                 value={fat}
                 onChange={(e) => setFat(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -223,7 +241,7 @@ export function IngredientModal({ isOpen, onClose, ingredient }: IngredientModal
               step="0.1"
               value={fiber}
               onChange={(e) => setFiber(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
             />
           </div>
 
@@ -237,7 +255,7 @@ export function IngredientModal({ isOpen, onClose, ingredient }: IngredientModal
                 onChange={(e) => setCost(e.target.value)}
                 required
                 placeholder="3.99"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
               />
             </div>
             <div>
@@ -265,6 +283,55 @@ export function IngredientModal({ isOpen, onClose, ingredient }: IngredientModal
               placeholder="e.g., Buy from Trader Joe's, pairs well with avocado..."
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
             />
+          </div>
+
+          {/* Vendor Information */}
+          <div className="pt-4 border-t border-gray-200">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Vendor Information</h3>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+                  <input
+                    type="text"
+                    value={brand}
+                    onChange={(e) => setBrand(e.target.value)}
+                    placeholder="e.g., Kirkland, Trader Joe's"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
+                  <input
+                    type="text"
+                    value={storeName}
+                    onChange={(e) => setStoreName(e.target.value)}
+                    placeholder="e.g., Costco, Whole Foods"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Store Website</label>
+                <input
+                  type="url"
+                  value={storeWebsite}
+                  onChange={(e) => setStoreWebsite(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Vendor Notes</label>
+                <textarea
+                  value={vendorNotes}
+                  onChange={(e) => setVendorNotes(e.target.value)}
+                  rows={2}
+                  placeholder="e.g., Better price on Tuesdays, available in frozen section..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="flex gap-3 pt-4">

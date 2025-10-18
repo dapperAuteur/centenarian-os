@@ -3,7 +3,7 @@
 
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Ingredient, NCVScore } from '@/lib/types';
 import { Plus, Search } from 'lucide-react';
@@ -20,7 +20,7 @@ export default function IngredientsPage() {
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
   const supabase = createClient();
 
-  const loadIngredients = useCallback(async () => {
+  const loadIngredients = async () => {
     const { data, error } = await supabase
       .from('ingredients')
       .select('*')
@@ -28,9 +28,15 @@ export default function IngredientsPage() {
 
     if (data) setIngredients(data);
     setLoading(false);
-  }, [supabase]);
+  };
+  
+  useEffect(() => {
+    
+    loadIngredients();
+  }, [loadIngredients, supabase]);
 
-  const filterIngredients = useCallback(() => {
+  useEffect(() => {
+    const filterIngredients = () => {
     let filtered = ingredients;
 
     if (searchTerm) {
@@ -44,15 +50,13 @@ export default function IngredientsPage() {
     }
 
     setFilteredIngredients(filtered);
+  };
+    filterIngredients();
   }, [ingredients, searchTerm, filterNCV]);
 
-  useEffect(() => {
-    loadIngredients();
-  }, [loadIngredients]);
+  
 
-  useEffect(() => {
-    filterIngredients();
-  }, [filterIngredients]);
+  
 
   const handleEdit = (ingredient: Ingredient) => {
     setEditingIngredient(ingredient);
@@ -117,7 +121,7 @@ export default function IngredientsPage() {
               placeholder="Search ingredients..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
             />
           </div>
           <div className="flex gap-2">

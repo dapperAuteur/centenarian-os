@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // File: components/GoalModal.tsx
 // Modal for creating/editing goals
@@ -28,14 +29,7 @@ export function GoalModal({ isOpen, onClose, roadmapId, goalId }: GoalModalProps
   const supabase = createClient();
 
   useEffect(() => {
-    if (isOpen && goalId) {
-      loadGoal();
-    } else if (isOpen) {
-      resetForm();
-    }
-  }, [isOpen, goalId]);
-
-  const loadGoal = async () => {
+    const loadGoal = async () => {
     if (!goalId) return;
     
     const { data, error } = await supabase
@@ -51,6 +45,14 @@ export function GoalModal({ isOpen, onClose, roadmapId, goalId }: GoalModalProps
       setTargetYear(data.target_year);
     }
   };
+    if (isOpen && goalId) {
+      loadGoal();
+    } else if (isOpen) {
+      resetForm();
+    }
+  }, [isOpen, goalId, supabase]);
+
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

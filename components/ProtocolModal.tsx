@@ -23,6 +23,11 @@ interface IngredientEntry {
 export function ProtocolModal({ isOpen, onClose, protocol }: ProtocolModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [prepTime, setPrepTime] = useState('');
+  const [cookTime, setCookTime] = useState('');
+  const [servings, setServings] = useState('');
+  const [dateMade, setDateMade] = useState('');
+  const [dateFinished, setDateFinished] = useState('');
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [selectedIngredients, setSelectedIngredients] = useState<IngredientEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -30,15 +35,28 @@ export function ProtocolModal({ isOpen, onClose, protocol }: ProtocolModalProps)
   const supabase = createClient();
 
   useEffect(() => {
+    const loadIngredients = async () => {
+    const { data } = await supabase
+      .from('ingredients')
+      .select('*')
+      .order('name');
+    
+    if (data) setIngredients(data);
+  };
     if (isOpen) {
       loadIngredients();
     }
-  }, [isOpen]);
+  }, [isOpen, supabase]);
 
   useEffect(() => {
     if (protocol && isOpen) {
       setName(protocol.name);
       setDescription(protocol.description || '');
+      setPrepTime(protocol.prep_time_minutes?.toString() || '');
+      setCookTime(protocol.cook_time_minutes?.toString() || '');
+      setServings(protocol.servings?.toString() || '');
+      setDateMade(protocol.date_made || '');
+      setDateFinished(protocol.date_finished || '');
       
       const entries: IngredientEntry[] = protocol.protocol_ingredients?.map(pi => ({
         ingredient_id: pi.ingredient_id,
@@ -51,14 +69,7 @@ export function ProtocolModal({ isOpen, onClose, protocol }: ProtocolModalProps)
     }
   }, [protocol, isOpen]);
 
-  const loadIngredients = async () => {
-    const { data } = await supabase
-      .from('ingredients')
-      .select('*')
-      .order('name');
-    
-    if (data) setIngredients(data);
-  };
+  
 
   const addIngredient = () => {
     if (ingredients.length > 0) {
@@ -133,6 +144,11 @@ export function ProtocolModal({ isOpen, onClose, protocol }: ProtocolModalProps)
         total_cost: totalCost,
         total_calories: totalCalories,
         total_protein: totalProtein,
+        prep_time_minutes: prepTime ? parseInt(prepTime) : null,
+        cook_time_minutes: cookTime ? parseInt(cookTime) : null,
+        servings: servings ? parseFloat(servings) : null,
+        date_made: dateMade || null,
+        date_finished: dateFinished || null,
         user_id: user.id,
       };
 
@@ -185,6 +201,11 @@ export function ProtocolModal({ isOpen, onClose, protocol }: ProtocolModalProps)
   const resetForm = () => {
     setName('');
     setDescription('');
+    setPrepTime('');
+    setCookTime('');
+    setServings('');
+    setDateMade('');
+    setDateFinished('');
     setSelectedIngredients([]);
     setError('');
   };
@@ -216,7 +237,7 @@ export function ProtocolModal({ isOpen, onClose, protocol }: ProtocolModalProps)
               onChange={(e) => setName(e.target.value)}
               required
               placeholder="e.g., Tuna Ceviche"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
             />
           </div>
 
@@ -229,6 +250,63 @@ export function ProtocolModal({ isOpen, onClose, protocol }: ProtocolModalProps)
               placeholder="Brief description of this meal..."
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
             />
+          </div>
+
+          {/* Meal Prep Details */}
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Prep Time (min)</label>
+              <input
+                type="number"
+                value={prepTime}
+                onChange={(e) => setPrepTime(e.target.value)}
+                placeholder="15"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cook Time (min)</label>
+              <input
+                type="number"
+                value={cookTime}
+                onChange={(e) => setCookTime(e.target.value)}
+                placeholder="30"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Servings</label>
+              <input
+                type="number"
+                step="0.5"
+                value={servings}
+                onChange={(e) => setServings(e.target.value)}
+                placeholder="4"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          {/* Meal Prep Tracking */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date Made</label>
+              <input
+                type="date"
+                value={dateMade}
+                onChange={(e) => setDateMade(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date Finished</label>
+              <input
+                type="date"
+                value={dateFinished}
+                onChange={(e) => setDateFinished(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              />
+            </div>
           </div>
 
           {/* Ingredients */}
@@ -267,7 +345,7 @@ export function ProtocolModal({ isOpen, onClose, protocol }: ProtocolModalProps)
                       step="0.1"
                       value={entry.quantity}
                       onChange={(e) => updateIngredient(index, 'quantity', parseFloat(e.target.value))}
-                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 text-sm form-input"
+                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 text-sm"
                     />
                     <select
                       value={entry.unit}
