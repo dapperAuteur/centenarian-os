@@ -158,6 +158,34 @@ export interface MealPrepBatch {
   updated_at: string;
 }
 
+// Engine types
+export interface FocusSession {
+  id: string;
+  user_id: string;
+  task_id: string | null;
+  start_time: string;
+  end_time: string | null;
+  duration_seconds: number | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface DailyLog {
+  id: string;
+  user_id: string;
+  date: string;
+  energy_rating: number | null;
+  biggest_win: string | null;
+  biggest_challenge: string | null;
+  pain_intensity: number | null;
+  pain_locations: string[] | null;
+  pain_sensations: string[] | null;
+  pain_activities: string[] | null;
+  pain_notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Extended types with relations
 export interface TaskWithMilestone extends Task {
   milestone?: Milestone;
