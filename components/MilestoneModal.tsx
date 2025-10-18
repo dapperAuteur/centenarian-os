@@ -142,7 +142,7 @@ export function MilestoneModal({ isOpen, onClose, goalId, milestoneId }: Milesto
               onChange={(e) => setTitle(e.target.value)}
               required
               placeholder="e.g., Q4 2025: Hold a 30s Front Lever"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
             />
           </div>
 
@@ -168,7 +168,7 @@ export function MilestoneModal({ isOpen, onClose, goalId, milestoneId }: Milesto
               value={targetDate}
               onChange={(e) => setTargetDate(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
             />
           </div>
 

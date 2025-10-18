@@ -216,7 +216,7 @@ export function ProtocolModal({ isOpen, onClose, protocol }: ProtocolModalProps)
               onChange={(e) => setName(e.target.value)}
               required
               placeholder="e.g., Tuna Ceviche"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
             />
           </div>
 
@@ -267,7 +267,7 @@ export function ProtocolModal({ isOpen, onClose, protocol }: ProtocolModalProps)
                       step="0.1"
                       value={entry.quantity}
                       onChange={(e) => updateIngredient(index, 'quantity', parseFloat(e.target.value))}
-                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 text-sm"
+                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 text-sm form-input"
                     />
                     <select
                       value={entry.unit}

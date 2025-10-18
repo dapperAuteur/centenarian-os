@@ -146,7 +146,7 @@ export function TaskModal({ isOpen, onClose, milestoneId, taskId }: TaskModalPro
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
               />
             </div>
             <div>
@@ -158,7 +158,7 @@ export function TaskModal({ isOpen, onClose, milestoneId, taskId }: TaskModalPro
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
               />
             </div>
           </div>
@@ -173,7 +173,7 @@ export function TaskModal({ isOpen, onClose, milestoneId, taskId }: TaskModalPro
               onChange={(e) => setActivity(e.target.value)}
               required
               placeholder="e.g., Morning Strength: Push-ups, TRX Row, Plank"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
             />
           </div>
 

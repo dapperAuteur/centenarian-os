@@ -141,7 +141,7 @@ export function RoadmapModal({ isOpen, onClose, roadmapId }: RoadmapModalProps) 
               onChange={(e) => setTitle(e.target.value)}
               required
               placeholder="e.g., My Centenarian Journey"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
             />
           </div>
 
@@ -168,7 +168,7 @@ export function RoadmapModal({ isOpen, onClose, roadmapId }: RoadmapModalProps) 
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
               />
             </div>
             <div>
@@ -180,7 +180,7 @@ export function RoadmapModal({ isOpen, onClose, roadmapId }: RoadmapModalProps) 
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
               />
             </div>
           </div>

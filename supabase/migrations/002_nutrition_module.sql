@@ -3,7 +3,7 @@
 
 -- Ingredients table
 CREATE TABLE ingredients (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   ncv_score TEXT NOT NULL CHECK (ncv_score IN ('Green', 'Yellow', 'Red')),
@@ -22,7 +22,7 @@ CREATE TABLE ingredients (
 
 -- Protocols (saved recipes)
 CREATE TABLE protocols (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
@@ -36,7 +36,7 @@ CREATE TABLE protocols (
 
 -- Protocol ingredients (junction table)
 CREATE TABLE protocol_ingredients (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   protocol_id UUID NOT NULL REFERENCES protocols(id) ON DELETE CASCADE,
   ingredient_id UUID NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
   quantity DECIMAL NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE protocol_ingredients (
 
 -- Inventory tracking
 CREATE TABLE inventory (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   ingredient_id UUID NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
   quantity DECIMAL NOT NULL DEFAULT 0,
@@ -60,7 +60,7 @@ CREATE TABLE inventory (
 
 -- Meal logs
 CREATE TABLE meal_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   date DATE NOT NULL,
   time TIME NOT NULL,
@@ -72,7 +72,7 @@ CREATE TABLE meal_logs (
 
 -- Custom meal ingredients (for non-protocol meals)
 CREATE TABLE meal_log_ingredients (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   meal_log_id UUID NOT NULL REFERENCES meal_logs(id) ON DELETE CASCADE,
   ingredient_id UUID NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
   quantity DECIMAL NOT NULL,
