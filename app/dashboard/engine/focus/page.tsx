@@ -11,6 +11,7 @@ import { Play, Pause, StopCircle } from 'lucide-react';
 export default function FocusTimerPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sessions, setSessions] = useState<FocusSession[]>([]);
+  const [hourlyRate, setHourlyRate] = useState(0);
   const [selectedTaskId, setSelectedTaskId] = useState<string>('');
   const [isRunning, setIsRunning] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
@@ -74,6 +75,8 @@ export default function FocusTimerPage() {
         user_id: user.id,
         task_id: selectedTaskId || null,
         start_time: new Date().toISOString(),
+        hourly_rate: hourlyRate,
+        revenue: 0,
       }])
       .select()
       .single();
@@ -95,12 +98,14 @@ export default function FocusTimerPage() {
 
   const stopSession = async () => {
     if (!currentSessionId) return;
+    const revenueEarned = (elapsedSeconds / 3600) * hourlyRate;
 
     await supabase
       .from('focus_sessions')
       .update({
         end_time: new Date().toISOString(),
         duration_seconds: elapsedSeconds,
+        revenue: revenueEarned,
         notes: notes || null,
       })
       .eq('id', currentSessionId);
@@ -165,6 +170,20 @@ export default function FocusTimerPage() {
                       </option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Hourly Rate (optional)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={hourlyRate}
+                    onChange={(e) => setHourlyRate(parseFloat(e.target.value) || 0)}
+                    placeholder="$0.00"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Track billable time value</p>
                 </div>
                 <button
                   onClick={startSession}
