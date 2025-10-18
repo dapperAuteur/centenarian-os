@@ -23,6 +23,9 @@ export interface Roadmap {
   end_date: string;
   created_at: string;
   updated_at: string;
+  estimated_cost: number;
+  actual_cost: number;
+  revenue: number;
 }
 
 export interface Goal {
@@ -35,6 +38,9 @@ export interface Goal {
   status: GoalStatus;
   created_at: string;
   updated_at: string;
+  estimated_cost: number;
+  actual_cost: number;
+  revenue: number;
 }
 
 export interface Milestone {
@@ -47,6 +53,9 @@ export interface Milestone {
   completed_at: string | null;
   created_at: string;
   updated_at: string;
+  estimated_cost: number;
+  actual_cost: number;
+  revenue: number;
 }
 
 export interface Task {
@@ -62,6 +71,9 @@ export interface Task {
   completed_at: string | null;
   created_at: string;
   updated_at: string;
+  estimated_cost: number;
+  actual_cost: number;
+  revenue: number;
 }
 
 // Nutrition types
@@ -168,6 +180,8 @@ export interface FocusSession {
   duration_seconds: number | null;
   notes: string | null;
   created_at: string;
+  hourly_rate: number;
+  revenue: number;
 }
 
 export interface DailyLog {
@@ -184,6 +198,8 @@ export interface DailyLog {
   pain_notes: string | null;
   created_at: string;
   updated_at: string;
+  total_spent: number;
+  total_earned: number;
 }
 
 // Extended types with relations
