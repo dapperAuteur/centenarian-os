@@ -12,11 +12,11 @@ type ViewMode = 'day' | 'week';
 
 export default function PlannerPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('day');
-  const today = new Date();
   
   // Calculate date range
   const { startDate, endDate } = useMemo(() => {
-    const start = new Date(today);
+    const today = new Date();
+    const start = new Date(today); // Use the new 'today' instance
     start.setHours(0, 0, 0, 0);
     
     const end = new Date(today);
