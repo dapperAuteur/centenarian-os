@@ -20,6 +20,7 @@ export async function createClient() {
             cookieStore.set({ name, value, ...options });
           } catch (error) {
             // Server Component - can't set cookies during render
+            console.log('error :>> ', error);
           }
         },
         async remove(name: string, options: CookieOptions) {
@@ -27,6 +28,7 @@ export async function createClient() {
             cookieStore.set({ name, value: '', ...options });
           } catch (error) {
             // Server Component - can't remove cookies during render
+            console.log('error :>> ', error);
           }
         },
       },
