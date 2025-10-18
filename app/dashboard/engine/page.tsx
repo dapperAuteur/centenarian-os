@@ -1,16 +1,17 @@
-// File: app/dashboard/engine/page.tsx
-
 'use client';
 
 import Link from 'next/link';
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { DollarSign } from 'lucide-react';
 
 export default function EnginePage() {
   const [stats, setStats] = useState({
     todayFocusMinutes: 0,
     todayLogComplete: false,
     weekFocusSessions: 0,
+    todayRevenue: 0,
+    weekRevenue: 0,
   });
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
@@ -23,7 +24,7 @@ export default function EnginePage() {
     const [sessionsRes, logRes, weekSessionsRes] = await Promise.all([
       supabase
         .from('focus_sessions')
-        .select('duration_seconds')
+        .select('duration_seconds, revenue')
         .gte('start_time', today + 'T00:00:00')
         .not('end_time', 'is', null),
       supabase
@@ -33,16 +34,21 @@ export default function EnginePage() {
         .single(),
       supabase
         .from('focus_sessions')
-        .select('id', { count: 'exact', head: true })
+        .select('id, revenue', { count: 'exact' })
         .gte('start_time', weekAgo.toISOString())
+        .not('end_time', 'is', null)
     ]);
 
     const totalSeconds = sessionsRes.data?.reduce((sum, s) => sum + (s.duration_seconds || 0), 0) || 0;
+    const todayRev = sessionsRes.data?.reduce((sum, s) => sum + (s.revenue || 0), 0) || 0;
+    const weekRev = weekSessionsRes.data?.reduce((sum, s) => sum + (s.revenue || 0), 0) || 0;
 
     setStats({
       todayFocusMinutes: Math.round(totalSeconds / 60),
       todayLogComplete: !!logRes.data,
       weekFocusSessions: weekSessionsRes.count || 0,
+      todayRevenue: todayRev,
+      weekRevenue: weekRev,
     });
     setLoading(false);
   }, [supabase]);
@@ -54,11 +60,12 @@ export default function EnginePage() {
   const modules = [
     {
       title: 'Focus Timer',
-      description: 'Track deep work sessions linked to tasks',
+      description: 'Track deep work sessions with revenue tracking',
       href: '/dashboard/engine/focus',
       icon: '⏱️',
       stat: `${stats.todayFocusMinutes} min`,
       statLabel: 'today',
+      revenue: stats.todayRevenue,
     },
     {
       title: 'Daily Debrief',
@@ -85,14 +92,13 @@ export default function EnginePage() {
         <p className="text-gray-600">Focus tracking and daily debriefs</p>
       </header>
 
-      {/* Overview */}
       <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-8 mb-8 text-white">
         <h2 className="text-2xl font-bold mb-4">Connect Work + Fuel = Story</h2>
-        <p className="mb-4">The Engine synthesizes your daily execution into insights for content creation.</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <p className="mb-4">Track execution and generate insights for content creation.</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white/20 backdrop-blur-sm p-4 rounded-xl">
             <div className="text-3xl font-bold">{stats.todayFocusMinutes}</div>
-            <p className="text-sm">Minutes focused today</p>
+            <p className="text-sm">Minutes today</p>
           </div>
           <div className="bg-white/20 backdrop-blur-sm p-4 rounded-xl">
             <div className="text-3xl font-bold">{stats.weekFocusSessions}</div>
@@ -102,10 +108,13 @@ export default function EnginePage() {
             <div className="text-3xl font-bold">{stats.todayLogComplete ? 'Done' : 'Pending'}</div>
             <p className="text-sm">Daily debrief</p>
           </div>
+          <div className="bg-white/20 backdrop-blur-sm p-4 rounded-xl">
+            <div className="text-3xl font-bold">${stats.weekRevenue.toFixed(0)}</div>
+            <p className="text-sm">Week revenue</p>
+          </div>
         </div>
       </div>
 
-      {/* Module Cards */}
       {loading ? (
         <div className="flex justify-center py-20">
           <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
@@ -124,6 +133,12 @@ export default function EnginePage() {
               <div className="pt-4 border-t border-gray-200">
                 <div className="text-2xl font-bold text-gray-900">{module.stat}</div>
                 <div className="text-xs text-gray-500">{module.statLabel}</div>
+                {module.revenue !== undefined && module.revenue > 0 && (
+                  <div className="flex items-center gap-1 mt-2 text-lime-600">
+                    <DollarSign className="w-4 h-4" />
+                    <span className="text-sm font-semibold">${module.revenue.toFixed(2)}</span>
+                  </div>
+                )}
               </div>
             </Link>
           ))}
