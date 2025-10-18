@@ -17,6 +17,7 @@ export default function FuelPage() {
   const supabase = createClient();
 
   useEffect(() => {
+
     const loadStats = async () => {
     const today = new Date().toISOString().split('T')[0];
     
@@ -33,6 +34,7 @@ export default function FuelPage() {
     });
     setLoading(false);
   };
+  
     loadStats();
   }, [supabase]);
 
@@ -54,6 +56,14 @@ export default function FuelPage() {
       icon: '🍽️',
       count: stats.protocolCount,
       countLabel: 'protocols',
+    },
+    {
+      title: 'Meal Prep',
+      description: 'Track large cooking batches and servings',
+      href: '/dashboard/fuel/meal-prep',
+      icon: '🍱',
+      count: 0,
+      countLabel: 'active batches',
     },
     {
       title: 'Meal Logging',
@@ -98,7 +108,7 @@ export default function FuelPage() {
           <div className="animate-spin h-8 w-8 border-4 border-sky-600 border-t-transparent rounded-full" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {modules.map((module) => (
             <Link
               key={module.href}
