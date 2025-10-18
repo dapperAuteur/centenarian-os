@@ -39,7 +39,12 @@ export default function DashboardLayout({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center space-x-8">
-              <h1 className="text-xl font-bold text-gray-900">CentenarianOS</h1>
+              <Link
+                href="/"
+                className="flex items-center space-x-2"
+              >
+                <h1 className="text-xl font-bold text-gray-900">CentenarianOS</h1>
+              </Link>
               <div className="flex space-x-4">
                 <Link 
                   href="/dashboard/roadmap"

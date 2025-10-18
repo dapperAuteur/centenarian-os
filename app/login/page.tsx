@@ -43,7 +43,9 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
         <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">CentenarianOS</h1>
+          <Link href="/" className="flex items-center space-x-2">
+            <h1 className="text-3xl font-bold text-gray-900">CentenarianOS</h1>
+          </Link>
           <p className="text-gray-600 mt-2">Login to your journey</p>
         </header>
 

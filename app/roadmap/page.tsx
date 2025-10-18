@@ -14,7 +14,7 @@ export default function RoadmapPage() {
           </Link>
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-to-br from-fuchsia-500 to-sky-500 rounded-lg"></div>
-            <span className="text-xl font-bold text-gray-900">Centenarian OS</span>
+            <span className="text-xl font-bold text-gray-900">CentenarianOS</span>
           </div>
         </nav>
       </header>
@@ -237,7 +237,7 @@ export default function RoadmapPage() {
             Help Build the Future
           </h2>
           <p className="text-gray-400 mb-8 text-lg">
-            Centenarian OS is open source. Contribute code, suggest features, or report bugs.
+            CentenarianOS is open source. Contribute code, suggest features, or report bugs.
           </p>
           <div className="flex justify-center space-x-4">
             <a 
@@ -263,7 +263,7 @@ export default function RoadmapPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-between items-center">
             <p className="text-gray-600 text-sm">
-              © 2025 Centenarian OS. MIT License.
+              © 2025 CentenarianOS. MIT License.
             </p>
             <Link href="/" className="text-gray-600 hover:text-gray-900 text-sm">
               Back to Home

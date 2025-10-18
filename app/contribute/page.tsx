@@ -14,7 +14,7 @@ export default function ContributePage() {
           </Link>
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-to-br from-fuchsia-500 to-sky-500 rounded-lg"></div>
-            <span className="text-xl font-bold text-gray-900">Centenarian OS</span>
+            <span className="text-xl font-bold text-gray-900">CentenarianOS</span>
           </div>
         </nav>
       </header>
@@ -22,7 +22,7 @@ export default function ContributePage() {
       {/* Hero */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8">
         <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-4">
-          Contribute to Centenarian OS
+          Contribute to CentenarianOS
         </h1>
         <p className="text-xl text-gray-600 mb-8">
           Help build the personal operating system for executing multi-decade goals. All skill levels welcome.
@@ -335,7 +335,7 @@ export default function ContributePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-between items-center">
             <p className="text-gray-600 text-sm">
-              © 2025 Centenarian OS. MIT License.
+              © 2025 CentenarianOS. MIT License.
             </p>
             <div className="flex space-x-6">
               <Link href="/" className="text-gray-600 hover:text-gray-900 text-sm">

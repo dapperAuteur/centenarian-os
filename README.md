@@ -1,10 +1,10 @@
-# Centenarian OS
+# CentenarianOS
 
 A modular productivity platform for executing multi-decade, multi-disciplinary goals through data-driven daily action.
 
 ## 🎯 Vision
 
-The Centenarian OS connects long-term ambitions to daily execution through an integrated system that tracks planning, nutrition, focus sessions, and recovery—all while functioning offline-first.
+The CentenarianOS connects long-term ambitions to daily execution through an integrated system that tracks planning, nutrition, focus sessions, and recovery—all while functioning offline-first.
 
 ## 🏗️ Architecture
 
