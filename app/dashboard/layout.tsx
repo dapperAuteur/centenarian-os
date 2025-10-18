@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { LogOut, LayoutDashboard, Utensils, Clock } from 'lucide-react';
+import { LogOut, LayoutDashboard, Utensils, Clock, Map } from 'lucide-react';
 
 export default function DashboardLayout({
   children,
@@ -42,11 +42,18 @@ export default function DashboardLayout({
               <h1 className="text-xl font-bold text-gray-900">CentenarianOS</h1>
               <div className="flex space-x-4">
                 <Link 
+                  href="/dashboard/roadmap"
+                  className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                >
+                  <Map className="w-4 h-4 mr-2" />
+                  Roadmap
+                </Link>
+                <Link 
                   href="/dashboard/planner"
                   className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 >
-                  <LayoutDashboard className="w-4 h-4 mr-2" />
-                  Planner
+                  <Clock className="w-4 h-4 mr-2" />
+                  Daily Tasks
                 </Link>
                 <Link 
                   href="/dashboard/fuel"
