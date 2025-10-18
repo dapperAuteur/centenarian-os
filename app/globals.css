@@ -27,3 +27,34 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Custom global class for form inputs */
+.form-input {
+  @apply w-full px-4 py-2 rounded-lg border transition-colors;
+  @apply bg-gray-100 border-gray-300 text-gray-900;
+  @apply focus:ring-2 focus:ring-sky-500 focus:border-transparent focus:outline-none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .form-input {
+    @apply bg-gray-900 border-gray-700 text-gray-100;
+    @apply focus:ring-sky-500;
+  }
+}
+
+/* Remove browser-default autofill background color */
+.form-input:-webkit-autofill,
+.form-input:-webkit-autofill:hover,
+.form-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px theme('colors.gray.100') inset;
+  -webkit-text-fill-color: theme('colors.gray.900');
+}
+
+@media (prefers-color-scheme: dark) {
+  .form-input:-webkit-autofill,
+  .form-input:-webkit-autofill:hover,
+  .form-input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0px 1000px theme('colors.gray.900') inset;
+    -webkit-text-fill-color: theme('colors.gray.100');
+  }
+}
