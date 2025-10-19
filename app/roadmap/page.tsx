@@ -118,11 +118,11 @@ export default function RoadmapPage() {
                   <span className="text-gray-700">USDA API integration for ingredient data</span>
                 </li>
                 <li className="flex items-start">
-                  <Clock className="w-5 h-5 text-sky-600 mr-2 mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-sky-600 mr-2 mt-0.5 flex-shrink-0" />
                   <span className="text-gray-700">Open Food Facts API integration for ingredient data</span>
                 </li>
                 <li className="flex items-start">
-                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <Clock className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
                   <span className="text-gray-700">Auto inventory management</span>
                 </li>
               </ul>

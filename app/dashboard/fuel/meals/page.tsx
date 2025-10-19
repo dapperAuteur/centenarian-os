@@ -43,13 +43,62 @@ export default function MealLoggingPage() {
     if (protocolsRes.data) setProtocols(protocolsRes.data);
     setLoading(false);
   }, [supabase]);
-
+  
   useEffect(() => {
     const today = new Date();
     setDate(today.toISOString().split('T')[0]);
     setTime(today.toTimeString().slice(0, 5));
     loadData();
   }, [loadData]);
+
+  /**
+   * Auto-decrement inventory when a protocol-based meal is logged
+   */
+  const decrementInventory = async (protocolId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Get all ingredients in this protocol
+    const { data: protocolIngredients } = await supabase
+      .from('protocol_ingredients')
+      .select('ingredient_id, quantity, unit')
+      .eq('protocol_id', protocolId);
+
+    if (!protocolIngredients) return;
+
+    // For each ingredient, decrement inventory
+    for (const pi of protocolIngredients) {
+      // Check if inventory exists for this ingredient
+      const { data: existingInventory } = await supabase
+        .from('inventory')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('ingredient_id', pi.ingredient_id)
+        .single();
+
+      if (existingInventory) {
+        // Decrement existing inventory
+        const newQuantity = existingInventory.quantity - pi.quantity;
+        
+        await supabase
+          .from('inventory')
+          .update({ quantity: newQuantity })
+          .eq('id', existingInventory.id);
+      } else {
+        // Create inventory with negative quantity (indicates needed purchase)
+        await supabase
+          .from('inventory')
+          .insert([{
+            user_id: user.id,
+            ingredient_id: pi.ingredient_id,
+            quantity: -pi.quantity, // Negative = you need to buy this much
+            unit: pi.unit,
+            low_stock_threshold: 0,
+            last_restocked: new Date().toISOString()
+          }]);
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +127,11 @@ export default function MealLoggingPage() {
       .insert([mealData]);
 
     if (!error) {
+      // Auto-decrement inventory if protocol was used
+      if (!isRestaurant && protocolId) {
+        await decrementInventory(protocolId);
+      }
+
       setNotes('');
       setRestaurantName('');
       setRestaurantAddress('');
@@ -175,6 +229,9 @@ export default function MealLoggingPage() {
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
                   </select>
+                  <p className="text-xs text-lime-600 mt-1 font-medium">
+                    ✓ Inventory will auto-update
+                  </p>
                 </div>
               )}
 
@@ -305,9 +362,17 @@ export default function MealLoggingPage() {
                                 <span className="text-xs px-2 py-1 bg-sky-100 text-sky-700 rounded-full">
                                   {meal.meal_type}
                                 </span>
+                                {meal.is_restaurant_meal && (
+                                  <span className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full">
+                                    🍴 Restaurant
+                                  </span>
+                                )}
                               </div>
                               <p className="text-sm text-gray-700 mt-1">
-                                {protocol?.name || 'Unknown Protocol'}
+                                {meal.is_restaurant_meal 
+                                  ? meal.restaurant_name 
+                                  : (protocol?.name || 'Unknown Protocol')
+                                }
                               </p>
                               {meal.notes && (
                                 <p className="text-xs text-gray-500 mt-1">{meal.notes}</p>
