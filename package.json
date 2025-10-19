@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ericblade/quagga2": "^1.8.4",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.75.1",
     "@vercel/analytics": "^1.5.0",
@@ -19,6 +20,7 @@
     "next": "15.5.5",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-webcam": "^7.2.0",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
