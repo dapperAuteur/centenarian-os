@@ -77,10 +77,6 @@ export default function RoadmapPage() {
                   <CheckCircle2 className="w-5 h-5 text-lime-600 mr-2 mt-0.5 flex-shrink-0" />
                   <span className="text-gray-700">Financial tracking across all planning entities</span>
                 </li>
-                <li className="flex items-start">
-                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Offline-first architecture with IndexedDB</span>
-                </li>
               </ul>
             </div>
           </div>
@@ -88,13 +84,13 @@ export default function RoadmapPage() {
           {/* Phase 2 - In Progress */}
           <div className="relative pl-8 border-l-4 border-sky-500">
             <div className="absolute -left-3 top-0 w-6 h-6 bg-sky-500 rounded-full flex items-center justify-center">
-              <Clock className="w-4 h-4 text-white" />
+              <CheckCircle2 className="w-4 h-4 text-white" />
             </div>
             <div className="bg-white rounded-xl shadow-md p-6 mb-4">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-2xl font-bold text-gray-900">Phase 2: Nutrition Tracking (Fuel Module)</h2>
-                <span className="px-3 py-1 bg-sky-100 text-sky-800 rounded-full text-sm font-semibold">
-                  In Progress
+                <span className="px-3 py-1 bg-lime-100 text-lime-800 rounded-full text-sm font-semibold">
+                  Completed
                 </span>
               </div>
               <p className="text-gray-600 mb-4">
@@ -122,7 +118,7 @@ export default function RoadmapPage() {
                   <span className="text-gray-700">Open Food Facts API integration for ingredient data</span>
                 </li>
                 <li className="flex items-start">
-                  <Clock className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-sky-600 mr-2 mt-0.5 flex-shrink-0" />
                   <span className="text-gray-700">Auto inventory management</span>
                 </li>
               </ul>
@@ -164,6 +160,14 @@ export default function RoadmapPage() {
                 <li className="flex items-start">
                   <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
                   <span className="text-gray-700">Correlation analysis (nutrition ↔ performance)</span>
+                </li>
+                <li className="flex items-start">
+                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Offline-first architecture with IndexedDB</span>
+                </li>
+                <li className="flex items-start">
+                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Recipe Ideas from Current Ingredient Inventory</span>
                 </li>
               </ul>
             </div>
