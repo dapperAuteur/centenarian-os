@@ -142,7 +142,7 @@ export default function FuelPage() {
       statLabel: 'ingredients',
     },
     {
-      title: 'Protocols',
+      title: 'Recipes (Protocols)',
       description: 'Your saved recipes',
       href: '/dashboard/fuel/protocols',
       icon: '📋',
