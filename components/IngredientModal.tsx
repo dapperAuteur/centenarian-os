@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client';
 import { Ingredient, NCVScore } from '@/lib/types';
 import { X } from 'lucide-react';
 import { USDASearchModal } from './USDASearchModal';
+import { OpenFoodFactsSearchModal } from './OpenFoodFactsSearchModal';
+import { BarcodeScanner } from './BarcodeScanner';
 
 interface IngredientModalProps {
   ingredient: Ingredient | null;
@@ -33,6 +35,8 @@ export function IngredientModal({ ingredient, isOpen, onClose }: IngredientModal
   });
   const [saving, setSaving] = useState(false);
   const [usdaModalOpen, setUsdaModalOpen] = useState(false);
+  const [offModalOpen, setOffModalOpen] = useState(false);
+  const [barcodeScannerOpen, setBarcodeScannerOpen] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -119,13 +123,29 @@ export function IngredientModal({ ingredient, isOpen, onClose }: IngredientModal
 
           <div className="p-6 space-y-6">
             {!ingredient && (
-              <button
-                type="button"
-                onClick={() => setUsdaModalOpen(true)}
-                className="w-full px-4 py-3 bg-lime-600 text-white rounded-lg hover:bg-lime-700 font-semibold"
-              >
-                Import from USDA Database
-              </button>
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <button
+                  type="button"
+                  onClick={() => setUsdaModalOpen(true)}
+                  className="px-4 py-3 bg-lime-600 text-white rounded-lg hover:bg-lime-700 font-semibold text-sm"
+                >
+                  USDA
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOffModalOpen(true)}
+                  className="px-4 py-3 bg-sky-600 text-white rounded-lg hover:bg-sky-700 font-semibold text-sm"
+                >
+                  Open Food Facts
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBarcodeScannerOpen(true)}
+                  className="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold text-sm"
+                >
+                  Barcode
+                </button>
+              </div>
             )}
 
             <div>
@@ -317,6 +337,16 @@ export function IngredientModal({ ingredient, isOpen, onClose }: IngredientModal
       <USDASearchModal
         isOpen={usdaModalOpen}
         onClose={() => setUsdaModalOpen(false)}
+        onSelect={handleUSDASelect}
+      />
+      <OpenFoodFactsSearchModal
+        isOpen={offModalOpen}
+        onClose={() => setOffModalOpen(false)}
+        onSelect={handleUSDASelect}
+      />
+      <BarcodeScanner
+        isOpen={barcodeScannerOpen}
+        onClose={() => setBarcodeScannerOpen(false)}
         onSelect={handleUSDASelect}
       />
     </>
