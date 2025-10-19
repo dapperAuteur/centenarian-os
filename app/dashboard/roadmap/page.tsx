@@ -3,22 +3,28 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Roadmap, Goal, Milestone, Task } from '@/lib/types';
-import { Plus, ChevronRight, ChevronDown } from 'lucide-react';
+import { Plus, ChevronRight, ChevronDown, Edit, DollarSign } from 'lucide-react';
 import { RoadmapModal } from '@/components/RoadmapModal';
 import { GoalModal } from '@/components/GoalModal';
 import { MilestoneModal } from '@/components/MilestoneModal';
 import { TaskModal } from '@/components/TaskModal';
+import { EditRoadmapModal } from '@/components/EditRoadmapModal';
+import { EditGoalModal } from '@/components/EditGoalModal';
+import { EditMilestoneModal } from '@/components/EditMilestoneModal';
 
 export default function RoadmapPage() {
   const [roadmaps, setRoadmaps] = useState<Roadmap[]>([]);
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [goals, setGoals] = useState<Record<string, Goal[]>>({});
+  const [milestones, setMilestones] = useState<Record<string, Milestone[]>>({});
   const [loading, setLoading] = useState(true);
   const [expandedRoadmaps, setExpandedRoadmaps] = useState<Set<string>>(new Set());
   const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
+  const [editingRoadmap, setEditingRoadmap] = useState<Roadmap | null>(null);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
   
   // Modal state
   const [roadmapModalOpen, setRoadmapModalOpen] = useState(false);
@@ -31,27 +37,43 @@ export default function RoadmapPage() {
 
   const supabase = createClient();
 
+  const loadData = useCallback(async () => {
+    const { data: roadmapData } = await supabase
+      .from('roadmaps')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (roadmapData) {
+      setRoadmaps(roadmapData);
+      
+      for (const roadmap of roadmapData) {
+        const { data: goalData } = await supabase
+          .from('goals')
+          .select('*')
+          .eq('roadmap_id', roadmap.id)
+          .order('target_year');
+        if (goalData) {
+          setGoals(prev => ({ ...prev, [roadmap.id]: goalData }));
+          for (const goal of goalData) {
+            const { data: milestoneData } = await supabase
+              .from('milestones')
+              .select('*')
+              .eq('goal_id', goal.id)
+              .order('target_date');
+            if (milestoneData) {
+              setMilestones(prev => ({ ...prev, [goal.id]: milestoneData }));
+            }
+          }
+        }
+      }
+    }
+    setLoading(false);
+  }, [supabase]);
+
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
-  const loadData = async () => {
-    try {
-      const [roadmapsRes, goalsRes, milestonesRes] = await Promise.all([
-        supabase.from('roadmaps').select('*').order('created_at', { ascending: false }),
-        supabase.from('goals').select('*').order('created_at', { ascending: false }),
-        supabase.from('milestones').select('*').order('target_date', { ascending: true }),
-      ]);
-
-      if (roadmapsRes.data) setRoadmaps(roadmapsRes.data);
-      if (goalsRes.data) setGoals(goalsRes.data);
-      if (milestonesRes.data) setMilestones(milestonesRes.data);
-    } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  
 
   const toggleRoadmap = (id: string) => {
     const newExpanded = new Set(expandedRoadmaps);
@@ -103,6 +125,7 @@ export default function RoadmapPage() {
           <h1 className="text-4xl font-bold text-gray-900">Roadmap Builder</h1>
           <p className="text-gray-600">Manage your multi-decade journey hierarchy</p>
         </div>
+        
         <button
           onClick={() => setRoadmapModalOpen(true)}
           className="flex items-center px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition"
@@ -127,7 +150,7 @@ export default function RoadmapPage() {
       ) : (
         <div className="space-y-4">
           {roadmaps.map((roadmap) => {
-            const roadmapGoals = goals.filter(g => g.roadmap_id === roadmap.id);
+            const roadmapGoals = goals[roadmap.id] || [];
             const isExpanded = expandedRoadmaps.has(roadmap.id);
 
             return (
@@ -152,6 +175,22 @@ export default function RoadmapPage() {
                         </p>
                       </div>
                     </button>
+                    <div className="flex items-center gap-4">
+                    {(roadmap.actual_cost > 0 || roadmap.revenue > 0) && (
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-gray-900">
+                          ${((roadmap.revenue || 0) - (roadmap.actual_cost || 0)).toFixed(2)}
+                        </div>
+                        <div className="text-xs text-gray-500">Net</div>
+                      </div>
+                    )}
+                    <button
+                      onClick={() => setEditingRoadmap(roadmap)}
+                      className="p-2 hover:bg-gray-100 rounded transition"
+                    >
+                      <Edit className="w-5 h-5 text-gray-500" />
+                    </button>
+                  </div>
                     <button
                       onClick={() => openGoalModal(roadmap.id)}
                       className="flex items-center px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition"
@@ -165,13 +204,8 @@ export default function RoadmapPage() {
                 {/* Goals */}
                 {isExpanded && (
                   <div className="p-6 space-y-4">
-                    {roadmapGoals.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">
-                        No goals yet. Click &quot;+ Goal&quot; to create one.
-                      </div>
-                    ) : (
-                      roadmapGoals.map((goal) => {
-                        const goalMilestones = milestones.filter(m => m.goal_id === goal.id);
+                    {roadmapGoals.map(goal => {
+                    const goalMilestones = milestones[goal.id] || [];
                         const isGoalExpanded = expandedGoals.has(goal.id);
 
                         return (
@@ -255,7 +289,7 @@ export default function RoadmapPage() {
                           </div>
                         );
                       })
-                    )}
+                    }
                   </div>
                 )}
               </div>

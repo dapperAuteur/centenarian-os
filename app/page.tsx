@@ -10,7 +10,9 @@ export default function LandingPage() {
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-to-br from-fuchsia-500 to-sky-500 rounded-lg"></div>
-            <span className="text-xl font-bold text-gray-900">Centenarian OS</span>
+            <Link href="/" className="flex items-center space-x-2">
+              <span className="text-xl font-bold text-gray-900">CentenarianOS</span>
+            </Link>
           </div>
           <div className="flex items-center space-x-6">
             <Link href="/roadmap" className="text-gray-600 hover:text-gray-900 font-medium">
@@ -137,7 +139,7 @@ export default function LandingPage() {
       <section className="bg-gray-50 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
-            Why Centenarian OS?
+            Why CentenarianOS?
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="flex items-start space-x-4">
@@ -195,7 +197,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-between items-center">
             <p className="text-gray-600 text-sm">
-              © 2025 Centenarian OS. Open source under MIT License.
+              © 2025 CentenarianOS. Open source under MIT License.
             </p>
             <div className="flex space-x-6">
               <Link href="/roadmap" className="text-gray-600 hover:text-gray-900 text-sm">
