@@ -65,7 +65,7 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
               type="text"
               value={formData.activity || ''}
               onChange={(e) => setFormData({ ...formData, activity: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
             />
           </div>
 
@@ -76,7 +76,7 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
               value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
             />
           </div>
 
@@ -88,7 +88,7 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
                 type="time"
                 value={formData.time || ''}
                 onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
               />
             </div>
             <div>
@@ -96,7 +96,7 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
               <select
                 value={formData.priority || 1}
                 onChange={(e) => setFormData({ ...formData, priority: Number(e.target.value) as 1 | 2 | 3 })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
               >
                 <option value={1}>High (1)</option>
                 <option value={2}>Medium (2)</option>
@@ -119,7 +119,7 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
                   step="0.01"
                   value={formData.estimated_cost || 0}
                   onChange={(e) => setFormData({ ...formData, estimated_cost: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
                 />
               </div>
               <div>
@@ -129,7 +129,7 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
                   step="0.01"
                   value={formData.actual_cost || 0}
                   onChange={(e) => setFormData({ ...formData, actual_cost: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
                 />
               </div>
               <div>
@@ -139,7 +139,7 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
                   step="0.01"
                   value={formData.revenue || 0}
                   onChange={(e) => setFormData({ ...formData, revenue: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
                 />
               </div>
             </div>
