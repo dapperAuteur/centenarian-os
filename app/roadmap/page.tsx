@@ -235,6 +235,18 @@ export default function RoadmapPage() {
                   <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
                   <span className="text-gray-700">ROI visualization per goal</span>
                 </li>
+                <li className="flex items-start">
+                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Import Bulk Data via CSV</span>
+                </li>
+                <li className="flex items-start">
+                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Download CSV Import Template</span>
+                </li>
+                <li className="flex items-start">
+                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Export Data</span>
+                </li>
               </ul>
             </div>
           </div>
