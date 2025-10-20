@@ -1,12 +1,11 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// File: app/dashboard/engine/focus/page.tsx
-
+// app/dashboard/engine/focus/page.tsx
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { FocusSession, Task } from '@/lib/types';
-import { Play, Pause, StopCircle } from 'lucide-react';
+import { Play, Pause, StopCircle, AlertCircle } from 'lucide-react';
+import { timerStorage, TimerState } from '@/lib/utils/timerStorage';
 
 export default function FocusTimerPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -17,6 +16,11 @@ export default function FocusTimerPage() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [notes, setNotes] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Track pause time for accurate elapsed calculation
+  const pauseStartRef = useRef<number | null>(null);
   const supabase = createClient();
 
   const loadData = useCallback(async () => {
@@ -37,84 +41,170 @@ export default function FocusTimerPage() {
     ]);
 
     if (tasksRes.data) setTasks(tasksRes.data);
-    if (sessionsRes.data) {
-      setSessions(sessionsRes.data);
-      // Check for active session
-      const active = sessionsRes.data.find(s => !s.end_time);
-      if (active) {
-        setCurrentSessionId(active.id);
-        setSelectedTaskId(active.task_id || '');
-        setIsRunning(true);
-        const elapsed = Math.floor((Date.now() - new Date(active.start_time).getTime()) / 1000);
-        setElapsedSeconds(elapsed);
-      }
-    }
+    if (sessionsRes.data) setSessions(sessionsRes.data);
   }, [supabase]);
 
+  // Restore timer on mount
   useEffect(() => {
+    const restoreTimer = () => {
+      const savedState = timerStorage.load();
+      
+      if (savedState) {
+        // Resume from saved state
+        setCurrentSessionId(savedState.sessionId);
+        setSelectedTaskId(savedState.taskId || '');
+        setNotes(savedState.notes);
+        setHourlyRate(savedState.hourlyRate);
+        
+        // Calculate current elapsed time
+        const elapsed = timerStorage.getElapsedSeconds(savedState);
+        setElapsedSeconds(elapsed);
+        
+        // Set running state based on whether it was paused
+        setIsRunning(!savedState.pausedAt);
+      }
+    };
+
     loadData();
+    restoreTimer();
   }, [loadData]);
 
+  // Timer tick
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isRunning) {
+    
+    if (isRunning && currentSessionId) {
       interval = setInterval(() => {
-        setElapsedSeconds(prev => prev + 1);
+        setElapsedSeconds(prev => {
+          const newValue = prev + 1;
+          
+          // Periodically update localStorage (every 10 seconds)
+          if (newValue % 10 === 0) {
+            const state = timerStorage.load();
+            if (state) {
+              timerStorage.save(state);
+            }
+          }
+          
+          return newValue;
+        });
       }, 1000);
     }
-    return () => clearInterval(interval);
-  }, [isRunning]);
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isRunning, currentSessionId]);
+
+  // Save notes to storage as user types
+  useEffect(() => {
+    if (currentSessionId && notes) {
+      timerStorage.updateNotes(notes);
+    }
+  }, [notes, currentSessionId]);
 
   const startSession = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    try {
+      setError(null);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
 
-    const { data, error } = await supabase
-      .from('focus_sessions')
-      .insert([{
-        user_id: user.id,
-        task_id: selectedTaskId || null,
-        start_time: new Date().toISOString(),
-        hourly_rate: hourlyRate,
-        revenue: 0,
-      }])
-      .select()
-      .single();
+      const startTime = new Date().toISOString();
+      
+      const { data, error: insertError } = await supabase
+        .from('focus_sessions')
+        .insert([{
+          user_id: user.id,
+          task_id: selectedTaskId || null,
+          start_time: startTime,
+          hourly_rate: hourlyRate,
+          revenue: 0,
+        }])
+        .select()
+        .single();
 
-    if (data) {
+      if (insertError) throw insertError;
+      if (!data) throw new Error('Failed to create session');
+
+      // Save to localStorage
+      const timerState: TimerState = {
+        sessionId: data.id,
+        taskId: selectedTaskId || null,
+        startTime: startTime,
+        pausedAt: null,
+        totalPausedSeconds: 0,
+        notes: '',
+        hourlyRate: hourlyRate,
+      };
+      timerStorage.save(timerState);
+
       setCurrentSessionId(data.id);
       setIsRunning(true);
       setElapsedSeconds(0);
+    } catch (err) {
+      console.error('Start session error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to start session');
     }
   };
 
   const pauseSession = () => {
     setIsRunning(false);
+    pauseStartRef.current = Date.now();
+    timerStorage.updatePauseState(new Date().toISOString());
   };
 
   const resumeSession = () => {
+    if (pauseStartRef.current) {
+      const pauseDuration = Math.floor((Date.now() - pauseStartRef.current) / 1000);
+      timerStorage.updatePauseState(null, pauseDuration);
+      pauseStartRef.current = null;
+    }
     setIsRunning(true);
   };
 
   const stopSession = async () => {
-    if (!currentSessionId) return;
-    const revenueEarned = (elapsedSeconds / 3600) * hourlyRate;
+    if (!currentSessionId) {
+      setError('No active session to stop');
+      return;
+    }
 
-    await supabase
-      .from('focus_sessions')
-      .update({
-        end_time: new Date().toISOString(),
-        duration_seconds: elapsedSeconds,
-        revenue: revenueEarned,
-        notes: notes || null,
-      })
-      .eq('id', currentSessionId);
+    try {
+      setIsSaving(true);
+      setError(null);
 
-    setIsRunning(false);
-    setCurrentSessionId(null);
-    setElapsedSeconds(0);
-    setNotes('');
-    loadData();
+      const endTime = new Date().toISOString();
+      const revenueEarned = (elapsedSeconds / 3600) * hourlyRate;
+
+      const { error: updateError } = await supabase
+        .from('focus_sessions')
+        .update({
+          end_time: endTime,
+          duration_seconds: elapsedSeconds,
+          revenue: revenueEarned,
+          notes: notes || null,
+        })
+        .eq('id', currentSessionId);
+
+      if (updateError) throw updateError;
+
+      // Clear localStorage
+      timerStorage.clear();
+
+      // Reset state
+      setIsRunning(false);
+      setCurrentSessionId(null);
+      setElapsedSeconds(0);
+      setNotes('');
+      pauseStartRef.current = null;
+
+      // Reload sessions list
+      await loadData();
+    } catch (err) {
+      console.error('Stop session error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save session');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -128,12 +218,26 @@ export default function FocusTimerPage() {
     .filter(s => s.duration_seconds)
     .reduce((sum, s) => sum + (s.duration_seconds || 0), 0);
 
+  const todayRevenue = sessions
+    .filter(s => s.revenue)
+    .reduce((sum, s) => sum + (s.revenue || 0), 0);
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       <header className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900">Focus Timer</h1>
-        <p className="text-gray-600">Track deep work linked to tasks</p>
+        <p className="text-gray-600">Track deep work sessions linked to tasks</p>
       </header>
+
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
+          <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-red-900">Error</p>
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Timer */}
@@ -165,10 +269,7 @@ export default function FocusTimerPage() {
                   >
                     <option value="">No task selected</option>
                     {tasks.map(task => (
-                      <option 
-                        key={task.id}
-                        value={task.id}
-                      >
+                      <option key={task.id} value={task.id}>
                         {task.time} - {task.activity}
                       </option>
                     ))}
@@ -225,10 +326,11 @@ export default function FocusTimerPage() {
                   )}
                   <button
                     onClick={stopSession}
-                    className="flex items-center justify-center px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition"
+                    disabled={isSaving}
+                    className="flex items-center justify-center px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <StopCircle className="w-5 h-5 mr-2" />
-                    Stop
+                    {isSaving ? 'Saving...' : 'Stop & Save'}
                   </button>
                 </div>
               </div>
@@ -243,27 +345,44 @@ export default function FocusTimerPage() {
             <div className="text-4xl font-bold text-indigo-600 mb-1">
               {Math.floor(todayTotal / 60)} min
             </div>
-            <div className="text-sm text-gray-500">{sessions.length} sessions</div>
+            <div className="text-sm text-gray-500 mb-3">{sessions.length} sessions</div>
+            {todayRevenue > 0 && (
+              <div className="pt-3 border-t border-gray-200">
+                <div className="text-2xl font-bold text-lime-600">
+                  ${todayRevenue.toFixed(2)}
+                </div>
+                <div className="text-xs text-gray-500">Earned today</div>
+              </div>
+            )}
           </div>
 
           <div className="bg-white rounded-xl shadow-lg p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Sessions</h3>
             <div className="space-y-3">
-              {sessions.slice(0, 5).map(session => (
-                <div key={session.id} className="p-3 bg-gray-50 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-900">
-                      {Math.floor((session.duration_seconds || 0) / 60)} min
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {new Date(session.start_time).toLocaleTimeString()}
-                    </span>
+              {sessions.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">No sessions yet</p>
+              ) : (
+                sessions.slice(0, 5).map(session => (
+                  <div key={session.id} className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-900">
+                        {Math.floor((session.duration_seconds || 0) / 60)} min
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {new Date(session.start_time).toLocaleTimeString()}
+                      </span>
+                    </div>
+                    {session.notes && (
+                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">{session.notes}</p>
+                    )}
+                    {session.revenue && session.revenue > 0 && (
+                      <div className="text-xs text-lime-600 font-semibold mt-1">
+                        ${session.revenue.toFixed(2)}
+                      </div>
+                    )}
                   </div>
-                  {session.notes && (
-                    <p className="text-xs text-gray-600 mt-1">{session.notes}</p>
-                  )}
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
