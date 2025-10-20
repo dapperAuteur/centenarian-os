@@ -235,7 +235,7 @@ export default function PainTrackingPage() {
                 onChange={(e) => setPainData({ ...painData, activities: e.target.value })}
                 rows={4}
                 placeholder="Morning workout (TRX Pulls)&#10;Sitting with tablet (90 min)&#10;Long drive"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-500 form-input"
               />
             </div>
           </div>
@@ -256,7 +256,7 @@ export default function PainTrackingPage() {
                 ? "Pain started after 90 mins sitting. Confirms need to eliminate 'tablet in bed' habit."
                 : 'Optional notes on physical state or recovery quality.'
             }
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-500"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-500 form-input"
           />
         </div>
 

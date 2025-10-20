@@ -109,7 +109,7 @@ export default function DailyDebriefPage() {
             onChange={(e) => setLog({ ...log, biggest_win: e.target.value })}
             rows={3}
             placeholder="Completed a key milestone, solved a tough problem, had a breakthrough..."
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent form-input"
           />
         </div>
 
@@ -123,7 +123,7 @@ export default function DailyDebriefPage() {
             onChange={(e) => setLog({ ...log, biggest_challenge: e.target.value })}
             rows={3}
             placeholder="What blocked progress? What needs to be addressed?"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparen form-input"
           />
         </div>
 

@@ -64,7 +64,7 @@ export function EditRoadmapModal({ roadmap, isOpen, onClose, onSave }: EditRoadm
               type="text"
               value={formData.title || ''}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
             />
           </div>
 
@@ -74,7 +74,7 @@ export function EditRoadmapModal({ roadmap, isOpen, onClose, onSave }: EditRoadm
               value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
             />
           </div>
 
@@ -85,7 +85,7 @@ export function EditRoadmapModal({ roadmap, isOpen, onClose, onSave }: EditRoadm
                 type="date"
                 value={formData.start_date || ''}
                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
               />
             </div>
             <div>
@@ -94,7 +94,7 @@ export function EditRoadmapModal({ roadmap, isOpen, onClose, onSave }: EditRoadm
                 type="date"
                 value={formData.end_date || ''}
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
               />
             </div>
           </div>
@@ -112,7 +112,7 @@ export function EditRoadmapModal({ roadmap, isOpen, onClose, onSave }: EditRoadm
                   step="0.01"
                   value={formData.estimated_cost || 0}
                   onChange={(e) => setFormData({ ...formData, estimated_cost: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
                 />
               </div>
               <div>
@@ -122,7 +122,7 @@ export function EditRoadmapModal({ roadmap, isOpen, onClose, onSave }: EditRoadm
                   step="0.01"
                   value={formData.actual_cost || 0}
                   onChange={(e) => setFormData({ ...formData, actual_cost: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
                 />
               </div>
               <div>
@@ -132,7 +132,7 @@ export function EditRoadmapModal({ roadmap, isOpen, onClose, onSave }: EditRoadm
                   step="0.01"
                   value={formData.revenue || 0}
                   onChange={(e) => setFormData({ ...formData, revenue: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
                 />
               </div>
             </div>

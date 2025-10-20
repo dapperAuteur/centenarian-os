@@ -64,7 +64,7 @@ export function EditMilestoneModal({ milestone, isOpen, onClose, onSave }: EditM
               type="text"
               value={formData.title || ''}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
             />
           </div>
 
@@ -74,7 +74,7 @@ export function EditMilestoneModal({ milestone, isOpen, onClose, onSave }: EditM
               value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
             />
           </div>
 
@@ -85,7 +85,7 @@ export function EditMilestoneModal({ milestone, isOpen, onClose, onSave }: EditM
                 type="date"
                 value={formData.target_date || ''}
                 onChange={(e) => setFormData({ ...formData, target_date: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
               />
             </div>
             <div>
@@ -93,7 +93,7 @@ export function EditMilestoneModal({ milestone, isOpen, onClose, onSave }: EditM
               <select
                 value={formData.status || 'not_started'}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as MilestoneStatus })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
               >
                 <option value="not_started">Not Started</option>
                 <option value="in_progress">In Progress</option>
@@ -116,7 +116,7 @@ export function EditMilestoneModal({ milestone, isOpen, onClose, onSave }: EditM
                   step="0.01"
                   value={formData.estimated_cost || 0}
                   onChange={(e) => setFormData({ ...formData, estimated_cost: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
                 />
               </div>
               <div>
@@ -136,7 +136,7 @@ export function EditMilestoneModal({ milestone, isOpen, onClose, onSave }: EditM
                   step="0.01"
                   value={formData.revenue || 0}
                   onChange={(e) => setFormData({ ...formData, revenue: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
                 />
               </div>
             </div>

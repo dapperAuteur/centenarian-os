@@ -65,7 +65,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSave }: EditGoalModalPr
               type="text"
               value={formData.title || ''}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
             />
           </div>
 
@@ -75,7 +75,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSave }: EditGoalModalPr
               value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
             />
           </div>
 
@@ -85,7 +85,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSave }: EditGoalModalPr
               <select
                 value={formData.category || 'FITNESS'}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value as TaskTag })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
               >
                 <option value="FITNESS">Fitness</option>
                 <option value="CREATIVE">Creative</option>
@@ -102,7 +102,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSave }: EditGoalModalPr
                 type="number"
                 value={formData.target_year || new Date().getFullYear()}
                 onChange={(e) => setFormData({ ...formData, target_year: parseInt(e.target.value) })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
               />
             </div>
             <div>
@@ -110,7 +110,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSave }: EditGoalModalPr
               <select
                 value={formData.status || 'active'}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as GoalStatus })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
               >
                 <option value="active">Active</option>
                 <option value="completed">Completed</option>
@@ -132,7 +132,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSave }: EditGoalModalPr
                   step="0.01"
                   value={formData.estimated_cost || 0}
                   onChange={(e) => setFormData({ ...formData, estimated_cost: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
                 />
               </div>
               <div>
@@ -142,7 +142,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSave }: EditGoalModalPr
                   step="0.01"
                   value={formData.actual_cost || 0}
                   onChange={(e) => setFormData({ ...formData, actual_cost: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
                 />
               </div>
               <div>
@@ -152,7 +152,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSave }: EditGoalModalPr
                   step="0.01"
                   value={formData.revenue || 0}
                   onChange={(e) => setFormData({ ...formData, revenue: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
                 />
               </div>
             </div>
