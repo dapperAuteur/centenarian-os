@@ -341,8 +341,8 @@ export default function ContributePage() {
               <Link href="/" className="text-gray-600 hover:text-gray-900 text-sm">
                 Home
               </Link>
-              <Link href="/roadmap" className="text-gray-600 hover:text-gray-900 text-sm">
-                Roadmap
+              <Link href="/tech-roadmap" className="text-gray-600 hover:text-gray-900 text-sm">
+                Tech Roadmap
               </Link>
             </div>
           </div>
