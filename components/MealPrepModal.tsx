@@ -124,7 +124,7 @@ export function MealPrepModal({ isOpen, onClose, batch, protocols }: MealPrepMod
               value={protocolId}
               onChange={(e) => setProtocolId(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
             >
               <option value="">Select a protocol...</option>
               {protocols.map(p => (
@@ -141,7 +141,7 @@ export function MealPrepModal({ isOpen, onClose, batch, protocols }: MealPrepMod
                 value={dateMade}
                 onChange={(e) => setDateMade(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
               />
             </div>
             <div>
@@ -150,7 +150,7 @@ export function MealPrepModal({ isOpen, onClose, batch, protocols }: MealPrepMod
                 type="date"
                 value={dateFinished}
                 onChange={(e) => setDateFinished(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
               />
             </div>
           </div>
@@ -165,7 +165,7 @@ export function MealPrepModal({ isOpen, onClose, batch, protocols }: MealPrepMod
                 onChange={(e) => handleServingsMadeChange(e.target.value)}
                 required
                 placeholder="8"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
               />
             </div>
             <div>
@@ -177,7 +177,7 @@ export function MealPrepModal({ isOpen, onClose, batch, protocols }: MealPrepMod
                 onChange={(e) => setServingsRemaining(e.target.value)}
                 required
                 placeholder="8"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
               />
             </div>
           </div>
@@ -189,7 +189,7 @@ export function MealPrepModal({ isOpen, onClose, batch, protocols }: MealPrepMod
               value={storageLocation}
               onChange={(e) => setStorageLocation(e.target.value)}
               placeholder="e.g., Fridge - Top Shelf, Freezer"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
             />
           </div>
 
@@ -200,7 +200,7 @@ export function MealPrepModal({ isOpen, onClose, batch, protocols }: MealPrepMod
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               placeholder="Extra notes about this batch..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
             />
           </div>
 

@@ -109,7 +109,7 @@ export function MealPrepCard({ batch, onEdit, onDelete, onServeEaten }: MealPrep
               max={batch.servings_remaining}
               value={servingsToEat}
               onChange={(e) => setServingsToEat(parseFloat(e.target.value))}
-              className="flex-grow px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              className="flex-grow px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
             />
             <button
               onClick={() => onServeEaten(batch, servingsToEat)}

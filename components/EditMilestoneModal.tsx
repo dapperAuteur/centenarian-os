@@ -126,7 +126,7 @@ export function EditMilestoneModal({ milestone, isOpen, onClose, onSave }: EditM
                   step="0.01"
                   value={formData.actual_cost || 0}
                   onChange={(e) => setFormData({ ...formData, actual_cost: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
                 />
               </div>
               <div>
