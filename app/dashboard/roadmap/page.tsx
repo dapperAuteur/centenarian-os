@@ -1,12 +1,9 @@
-// File: app/dashboard/roadmap/page.tsx
-// Manage entire planning hierarchy
-
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Roadmap, Goal, Milestone, Task } from '@/lib/types';
-import { Plus, ChevronRight, ChevronDown, Edit, DollarSign, Trash2 } from 'lucide-react';
+import { Plus, ChevronRight, ChevronDown, Edit, Trash2, Archive, RotateCcw } from 'lucide-react';
 import { RoadmapModal } from '@/components/RoadmapModal';
 import { GoalModal } from '@/components/GoalModal';
 import { MilestoneModal } from '@/components/MilestoneModal';
@@ -15,6 +12,7 @@ import { EditRoadmapModal } from '@/components/EditRoadmapModal';
 import { EditGoalModal } from '@/components/EditGoalModal';
 import { EditMilestoneModal } from '@/components/EditMilestoneModal';
 import { EditTaskModal } from '@/components/EditTaskModal';
+import { ArchiveModal } from '@/components/ArchiveModal';
 
 export default function RoadmapPage() {
   const [roadmaps, setRoadmaps] = useState<Roadmap[]>([]);
@@ -24,13 +22,25 @@ export default function RoadmapPage() {
   const [loading, setLoading] = useState(true);
   const [expandedRoadmaps, setExpandedRoadmaps] = useState<Set<string>>(new Set());
   const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
-  const [editingRoadmap, setEditingRoadmap] = useState<Roadmap | null>(null);
   const [expandedMilestones, setExpandedMilestones] = useState<Set<string>>(new Set());
+  const [showArchived, setShowArchived] = useState(false);
+  const [archiveCounts, setArchiveCounts] = useState({ roadmaps: 0, goals: 0, milestones: 0, tasks: 0 });
+  
+  // Edit modals
+  const [editingRoadmap, setEditingRoadmap] = useState<Roadmap | null>(null);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   
-  // Modal state
+  // Archive modal
+  const [archiveTarget, setArchiveTarget] = useState<{
+    type: 'roadmap' | 'goal' | 'milestone';
+    item: { id: string; title: string };
+    childrenCount: number;
+    moveOptions: Array<{ id: string; title: string }>;
+  } | null>(null);
+  
+  // Create modals
   const [roadmapModalOpen, setRoadmapModalOpen] = useState(false);
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [milestoneModalOpen, setMilestoneModalOpen] = useState(false);
@@ -42,10 +52,14 @@ export default function RoadmapPage() {
   const supabase = createClient();
 
   const loadData = useCallback(async () => {
+    const status = showArchived ? 'archived' : 'active';
+    
     const { data: roadmapData } = await supabase
       .from('roadmaps')
       .select('*')
+      .eq('status', status)
       .order('created_at', { ascending: false });
+      
     if (roadmapData) {
       setRoadmaps(roadmapData);
       
@@ -54,23 +68,31 @@ export default function RoadmapPage() {
           .from('goals')
           .select('*')
           .eq('roadmap_id', roadmap.id)
+          .eq('status', status)
           .order('target_year');
+          
         if (goalData) {
           setGoals(prev => ({ ...prev, [roadmap.id]: goalData }));
+          
           for (const goal of goalData) {
             const { data: milestoneData } = await supabase
               .from('milestones')
               .select('*')
               .eq('goal_id', goal.id)
+              .eq('status', status)
               .order('target_date');
+              
             if (milestoneData) {
               setMilestones(prev => ({ ...prev, [goal.id]: milestoneData }));
+              
               for (const milestone of milestoneData) {
                 const { data: taskData } = await supabase
                   .from('tasks')
                   .select('*')
                   .eq('milestone_id', milestone.id)
+                  .eq('status', status)
                   .order('time');
+                  
                 if (taskData) {
                   setTasks(prev => ({ ...prev, [milestone.id]: taskData }));
                 }
@@ -80,100 +102,38 @@ export default function RoadmapPage() {
         }
       }
     }
+    
+    // Load archive counts
+    const [rCount, gCount, mCount, tCount] = await Promise.all([
+      supabase.from('roadmaps').select('id', { count: 'exact', head: true }).eq('status', 'archived'),
+      supabase.from('goals').select('id', { count: 'exact', head: true }).eq('status', 'archived'),
+      supabase.from('milestones').select('id', { count: 'exact', head: true }).eq('status', 'archived'),
+      supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('status', 'archived'),
+    ]);
+    
+    setArchiveCounts({
+      roadmaps: rCount.count || 0,
+      goals: gCount.count || 0,
+      milestones: mCount.count || 0,
+      tasks: tCount.count || 0
+    });
+    
     setLoading(false);
-  }, [supabase]);
+  }, [supabase, showArchived]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  const handleDeleteRoadmap = async (roadmapId: string) => {
-    if (!confirm('⚠️ Delete this roadmap? This will permanently delete all goals, milestones, and tasks inside it.')) {
-      return;
-    }
-    
-    const { error } = await supabase
-      .from('roadmaps')
-      .delete()
-      .eq('id', roadmapId);
-      
-    if (error) {
-      alert(`Delete failed: ${error.message}`);
-    } else {
-      loadData();
-    }
-  };
-
-  const handleDeleteGoal = async (goalId: string) => {
-    if (!confirm('⚠️ Delete this goal and all its milestones/tasks?')) {
-      return;
-    }
-
-    const { error } = await supabase
-      .from('goals')
-      .delete()
-      .eq('id', goalId);
-
-      if (error) {
-        alert(`Delete failed: ${error.message}`);
-      } else {
-        loadData();
-      }
-   };
-
-  const handleDeleteMilestone = async (milestoneId: string) => {
-    if (!confirm('⚠️ Delete this milestone and all its tasks?')) {
-      return;
-    }
-    
-    const { error } = await supabase
-      .from('milestones')
-      .delete()
-      .eq('id', milestoneId);
-    
-    if (error) {
-      alert(`Delete failed: ${error.message}`);
-    } else {
-      loadData();
-    }
-  };
-
-  const handleDeleteTask = async (taskId: string) => {
-    if (!confirm('⚠️ Delete this task?')) {
-      return;
-    }
-    
-    const { error } = await supabase
-      .from('tasks')
-      .delete()
-      .eq('id', taskId);
-    
-    if (error) {
-      alert(`Delete failed: ${error.message}`);
-    } else {
-      loadData();
-    }
-  };
-
-  
-
   const toggleRoadmap = (id: string) => {
     const newExpanded = new Set(expandedRoadmaps);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
-    }
+    newExpanded.has(id) ? newExpanded.delete(id) : newExpanded.add(id);
     setExpandedRoadmaps(newExpanded);
   };
 
   const toggleGoal = (id: string) => {
     const newExpanded = new Set(expandedGoals);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
-    }
+    newExpanded.has(id) ? newExpanded.delete(id) : newExpanded.add(id);
     setExpandedGoals(newExpanded);
   };
 
@@ -198,6 +158,208 @@ export default function RoadmapPage() {
     setTaskModalOpen(true);
   };
 
+  // Archive handlers
+  const handleArchiveRoadmap = async (roadmapId: string, title: string) => {
+    const { data: childGoals } = await supabase
+      .from('goals')
+      .select('id, title')
+      .eq('roadmap_id', roadmapId)
+      .eq('status', 'active');
+      
+    const { data: otherRoadmaps } = await supabase
+      .from('roadmaps')
+      .select('id, title')
+      .neq('id', roadmapId)
+      .eq('status', 'active');
+      
+    setArchiveTarget({
+      type: 'roadmap',
+      item: { id: roadmapId, title },
+      childrenCount: childGoals?.length || 0,
+      moveOptions: otherRoadmaps || []
+    });
+  };
+
+  const handleArchiveGoal = async (goalId: string, title: string) => {
+    const { data: childMilestones } = await supabase
+      .from('milestones')
+      .select('id, title')
+      .eq('goal_id', goalId)
+      .eq('status', 'active');
+      
+    const goal = Object.values(goals).flat().find(g => g.id === goalId);
+    const { data: otherGoals } = await supabase
+      .from('goals')
+      .select('id, title')
+      .eq('roadmap_id', goal?.roadmap_id)
+      .neq('id', goalId)
+      .eq('status', 'active');
+      
+    setArchiveTarget({
+      type: 'goal',
+      item: { id: goalId, title },
+      childrenCount: childMilestones?.length || 0,
+      moveOptions: otherGoals || []
+    });
+  };
+
+  const handleArchiveMilestone = async (milestoneId: string, title: string) => {
+    const { data: childTasks } = await supabase
+      .from('tasks')
+      .select('id')
+      .eq('milestone_id', milestoneId)
+      .eq('status', 'active');
+      
+    const milestone = Object.values(milestones).flat().find(m => m.id === milestoneId);
+    const { data: otherMilestones } = await supabase
+      .from('milestones')
+      .select('id, title')
+      .eq('goal_id', milestone?.goal_id)
+      .neq('id', milestoneId)
+      .eq('status', 'active');
+      
+    setArchiveTarget({
+      type: 'milestone',
+      item: { id: milestoneId, title },
+      childrenCount: childTasks?.length || 0,
+      moveOptions: otherMilestones || []
+    });
+  };
+
+  const executeArchive = async (cascade: boolean, newParentId?: string) => {
+    if (!archiveTarget) return;
+    
+    const { type, item } = archiveTarget;
+    const now = new Date().toISOString();
+    
+    if (type === 'roadmap') {
+      if (newParentId) {
+        await supabase
+          .from('goals')
+          .update({ roadmap_id: newParentId })
+          .eq('roadmap_id', item.id)
+          .eq('status', 'active');
+      } else if (cascade) {
+        const { data: goals } = await supabase
+          .from('goals')
+          .select('id')
+          .eq('roadmap_id', item.id)
+          .eq('status', 'active');
+        const goalIds = goals?.map(g => g.id) || [];
+        
+        if (goalIds.length > 0) {
+          const { data: milestones } = await supabase
+            .from('milestones')
+            .select('id')
+            .in('goal_id', goalIds)
+            .eq('status', 'active');
+          const milestoneIds = milestones?.map(m => m.id) || [];
+          
+          if (milestoneIds.length > 0) {
+            await supabase
+              .from('tasks')
+              .update({ status: 'archived', archived_at: now })
+              .in('milestone_id', milestoneIds);
+          }
+          
+          await supabase
+            .from('milestones')
+            .update({ status: 'archived', archived_at: now })
+            .in('goal_id', goalIds);
+        }
+        
+        await supabase
+          .from('goals')
+          .update({ status: 'archived', archived_at: now })
+          .eq('roadmap_id', item.id);
+      }
+      
+      await supabase
+        .from('roadmaps')
+        .update({ status: 'archived', archived_at: now })
+        .eq('id', item.id);
+        
+    } else if (type === 'goal') {
+      if (newParentId) {
+        await supabase
+          .from('milestones')
+          .update({ goal_id: newParentId })
+          .eq('goal_id', item.id)
+          .eq('status', 'active');
+      } else if (cascade) {
+        const { data: milestones } = await supabase
+          .from('milestones')
+          .select('id')
+          .eq('goal_id', item.id)
+          .eq('status', 'active');
+        const milestoneIds = milestones?.map(m => m.id) || [];
+        
+        if (milestoneIds.length > 0) {
+          await supabase
+            .from('tasks')
+            .update({ status: 'archived', archived_at: now })
+            .in('milestone_id', milestoneIds);
+        }
+        
+        await supabase
+          .from('milestones')
+          .update({ status: 'archived', archived_at: now })
+          .eq('goal_id', item.id);
+      }
+      
+      await supabase
+        .from('goals')
+        .update({ status: 'archived', archived_at: now })
+        .eq('id', item.id);
+        
+    } else if (type === 'milestone') {
+      if (newParentId) {
+        await supabase
+          .from('tasks')
+          .update({ milestone_id: newParentId })
+          .eq('milestone_id', item.id)
+          .eq('status', 'active');
+      } else if (cascade) {
+        await supabase
+          .from('tasks')
+          .update({ status: 'archived', archived_at: now })
+          .eq('milestone_id', item.id);
+      }
+      
+      await supabase
+        .from('milestones')
+        .update({ status: 'archived', archived_at: now })
+        .eq('id', item.id);
+    }
+    
+    setArchiveTarget(null);
+    loadData();
+  };
+
+  // Restore handler
+  const handleRestore = async (table: string, id: string) => {
+    await supabase
+      .from(table)
+      .update({ status: 'active', archived_at: null })
+      .eq('id', id);
+    loadData();
+  };
+
+  // Delete handler
+  const handlePermanentDelete = async (table: string, id: string, archivedAt: string) => {
+    const daysArchived = Math.floor((Date.now() - new Date(archivedAt).getTime()) / (1000 * 60 * 60 * 24));
+    const daysRemaining = 30 - daysArchived;
+    
+    const warning = daysRemaining > 0
+      ? `⚠️ Auto-delete in ${daysRemaining} days. Delete permanently now?`
+      : '⚠️ Permanent deletion. Cannot be undone.';
+      
+    if (!confirm(warning)) return;
+    
+    await supabase.from(table).delete().eq('id', id);
+    loadData();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -214,26 +376,50 @@ export default function RoadmapPage() {
           <p className="text-gray-600">Manage your multi-decade journey hierarchy</p>
         </div>
         
-        <button
-          onClick={() => setRoadmapModalOpen(true)}
-          className="flex items-center px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          New Roadmap
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowArchived(!showArchived)}
+            className={`relative px-4 py-2 rounded-lg transition ${
+              showArchived ? 'bg-gray-600' : 'bg-sky-600'
+            } text-white font-semibold`}
+          >
+            {showArchived ? 'Show Active' : 'Show Archived'}
+            {!showArchived && archiveCounts.roadmaps > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">
+                {archiveCounts.roadmaps}
+              </span>
+            )}
+          </button>
+          
+          {!showArchived && (
+            <button
+              onClick={() => setRoadmapModalOpen(true)}
+              className="flex items-center px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition font-semibold"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              New Roadmap
+            </button>
+          )}
+        </div>
       </header>
 
       {roadmaps.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
           <div className="text-6xl mb-4">🗺️</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">No Roadmaps Yet</h2>
-          <p className="text-gray-600 mb-6">Create your first roadmap to start planning your journey</p>
-          <button
-            onClick={() => setRoadmapModalOpen(true)}
-            className="px-6 py-3 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition"
-          >
-            Create Roadmap
-          </button>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            {showArchived ? 'No Archived Roadmaps' : 'No Roadmaps Yet'}
+          </h2>
+          <p className="text-gray-600 mb-6">
+            {showArchived ? 'Your archived items will appear here' : 'Create your first roadmap to start planning your journey'}
+          </p>
+          {!showArchived && (
+            <button
+              onClick={() => setRoadmapModalOpen(true)}
+              className="px-6 py-3 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition"
+            >
+              Create Roadmap
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
@@ -243,7 +429,6 @@ export default function RoadmapPage() {
 
             return (
               <div key={roadmap.id} className="bg-white rounded-xl shadow-lg overflow-hidden">
-                {/* Roadmap Header */}
                 <div className="p-6 bg-gradient-to-r from-sky-500 to-indigo-600 text-white">
                   <div className="flex justify-between items-start">
                     <button
@@ -263,195 +448,269 @@ export default function RoadmapPage() {
                         </p>
                       </div>
                     </button>
-                    <div className="flex items-center gap-4">
-                    {(roadmap.actual_cost > 0 || roadmap.revenue > 0) && (
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-gray-900">
-                          ${((roadmap.revenue || 0) - (roadmap.actual_cost || 0)).toFixed(2)}
-                        </div>
-                        <div className="text-xs text-gray-500">Net</div>
-                      </div>
-                    )}
-                    <button
-                      onClick={() => setEditingRoadmap(roadmap)}
-                      className="p-2 hover:bg-gray-100 rounded transition"
-                    >
-                      <Edit className="w-5 h-5 text-gray-500" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteRoadmap(roadmap.id)}
-                      className="p-2 hover:bg-white/30 rounded transition"
-                      aria-label="Delete roadmap"
-                    >
-                      <Trash2 className="w-5 h-5 text-red-300 hover:text-red-100" />
-                    </button>
-                  </div>
-                    <button
-                      onClick={() => openGoalModal(roadmap.id)}
-                      className="flex items-center px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition"
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Goal
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {showArchived ? (
+                        <>
+                          <button
+                            onClick={() => handleRestore('roadmaps', roadmap.id)}
+                            className="p-2 hover:bg-white/30 rounded transition"
+                            title="Restore"
+                          >
+                            <RotateCcw className="w-5 h-5 text-white" />
+                          </button>
+                          <button
+                            onClick={() => handlePermanentDelete('roadmaps', roadmap.id, roadmap.archived_at!)}
+                            className="p-2 hover:bg-white/30 rounded transition"
+                            title="Delete permanently"
+                          >
+                            <Trash2 className="w-5 h-5 text-red-300" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => setEditingRoadmap(roadmap)}
+                            className="p-2 hover:bg-white/30 rounded transition"
+                          >
+                            <Edit className="w-5 h-5 text-white" />
+                          </button>
+                          <button
+                            onClick={() => handleArchiveRoadmap(roadmap.id, roadmap.title)}
+                            className="p-2 hover:bg-white/30 rounded transition"
+                          >
+                            <Archive className="w-5 h-5 text-white" />
+                          </button>
+                          <button
+                            onClick={() => openGoalModal(roadmap.id)}
+                            className="flex items-center px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition"
+                          >
+                            <Plus className="w-4 h-4 mr-1" />
+                            Goal
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Goals */}
                 {isExpanded && (
                   <div className="p-6 space-y-4">
                     {roadmapGoals.map(goal => {
-                    const goalMilestones = milestones[goal.id] || [];
-                        const isGoalExpanded = expandedGoals.has(goal.id);
+                      const goalMilestones = milestones[goal.id] || [];
+                      const isGoalExpanded = expandedGoals.has(goal.id);
 
-                        return (
-                          <div key={goal.id} className="border-l-4 border-sky-500 bg-gray-50 rounded-lg">
-                            <div className="p-4">
-                              <div className="flex justify-between items-start">
-                                <button
-                                  onClick={() => toggleGoal(goal.id)}
-                                  className="flex items-center flex-grow text-left"
-                                >
-                                  {isGoalExpanded ? (
-                                    <ChevronDown className="w-5 h-5 mr-2 flex-shrink-0 text-gray-600" />
-                                  ) : (
-                                    <ChevronRight className="w-5 h-5 mr-2 flex-shrink-0 text-gray-600" />
-                                  )}
-                                  <div>
-                                    <h3 className="text-xl font-bold text-gray-900">{goal.title}</h3>
-                                    <p className="text-gray-600 text-sm mt-1">{goal.description}</p>
-                                    <div className="flex items-center gap-2 mt-2">
-                                      <span className="text-xs px-2 py-1 bg-sky-100 text-sky-700 rounded-full">
-                                        {goal.category}
-                                      </span>
-                                      <span className="text-xs text-gray-500">Target: {goal.target_year}</span>
-                                    </div>
+                      return (
+                        <div key={goal.id} className="border-l-4 border-sky-500 bg-gray-50 rounded-lg">
+                          <div className="p-4">
+                            <div className="flex justify-between items-start">
+                              <button
+                                onClick={() => toggleGoal(goal.id)}
+                                className="flex items-center flex-grow text-left"
+                              >
+                                {isGoalExpanded ? (
+                                  <ChevronDown className="w-5 h-5 mr-2 flex-shrink-0 text-gray-600" />
+                                ) : (
+                                  <ChevronRight className="w-5 h-5 mr-2 flex-shrink-0 text-gray-600" />
+                                )}
+                                <div>
+                                  <h3 className="text-xl font-bold text-gray-900">{goal.title}</h3>
+                                  <p className="text-gray-600 text-sm mt-1">{goal.description}</p>
+                                  <div className="flex items-center gap-2 mt-2">
+                                    <span className="text-xs px-2 py-1 bg-sky-100 text-sky-700 rounded-full">
+                                      {goal.category}
+                                    </span>
+                                    <span className="text-xs text-gray-500">Target: {goal.target_year}</span>
                                   </div>
-                                </button>
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => setEditingGoal(goal)}
-                                    className="p-2 hover:bg-gray-100 rounded transition"
-                                  >
-                                    <Edit className="w-4 h-4 text-gray-500" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteGoal(goal.id)}
-                                    className="p-2 hover:bg-white/30 rounded transition"
-                                    aria-label="Delete goal"
-                                  >
-                                    <Trash2 className="w-5 h-5 text-red-300 hover:text-red-100" />
-                                  </button>
-                                  <button
-                                    onClick={() => openMilestoneModal(goal.id)}
-                                    className="flex items-center px-3 py-2 bg-sky-100 hover:bg-sky-200 text-sky-700 rounded-lg transition"
-                                  >
-                                    <Plus className="w-4 h-4 mr-1" />
-                                    Milestone
-                                  </button>
                                 </div>
+                              </button>
+                              <div className="flex items-center gap-2">
+                                {showArchived ? (
+                                  <>
+                                    <button
+                                      onClick={() => handleRestore('goals', goal.id)}
+                                      className="p-2 hover:bg-gray-200 rounded"
+                                    >
+                                      <RotateCcw className="w-4 h-4 text-gray-600" />
+                                    </button>
+                                    <button
+                                      onClick={() => handlePermanentDelete('goals', goal.id, goal.archived_at!)}
+                                      className="p-2 hover:bg-gray-200 rounded"
+                                    >
+                                      <Trash2 className="w-4 h-4 text-red-500" />
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button
+                                      onClick={() => setEditingGoal(goal)}
+                                      className="p-2 hover:bg-gray-200 rounded"
+                                    >
+                                      <Edit className="w-4 h-4 text-gray-500" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleArchiveGoal(goal.id, goal.title)}
+                                      className="p-2 hover:bg-gray-200 rounded"
+                                    >
+                                      <Archive className="w-4 h-4 text-gray-500" />
+                                    </button>
+                                    <button
+                                      onClick={() => openMilestoneModal(goal.id)}
+                                      className="flex items-center px-3 py-2 bg-sky-100 hover:bg-sky-200 text-sky-700 rounded-lg transition"
+                                    >
+                                      <Plus className="w-4 h-4 mr-1" />
+                                      Milestone
+                                    </button>
+                                  </>
+                                )}
                               </div>
+                            </div>
 
-                              {/* Milestones */}
-                              {isGoalExpanded && (
-                                <div className="mt-4 ml-7 space-y-2">
-                                  {goalMilestones.length === 0 ? (
-                                    <div className="text-center py-4 text-gray-500 text-sm">
-                                      No milestones. Click &quot;+ Milestone&quot; to create one.
-                                    </div>
-                                  ) : (
-                                    goalMilestones.map((milestone) => (
-                                      <div
-                                        key={milestone.id}
-                                        className="bg-white p-3 rounded-lg border border-gray-200"
-                                      >
+                            {isGoalExpanded && (
+                              <div className="mt-4 ml-7 space-y-2">
+                                {goalMilestones.length === 0 ? (
+                                  <div className="text-center py-4 text-gray-500 text-sm">
+                                    No milestones. Click &quot;+ Milestone&quot; to create one.
+                                  </div>
+                                ) : (
+                                  goalMilestones.map((milestone) => {
+                                    const milestoneTasks = tasks[milestone.id] || [];
+                                    const isMilestoneExpanded = expandedMilestones.has(milestone.id);
+
+                                    return (
+                                      <div key={milestone.id} className="bg-white p-3 rounded-lg border border-gray-200">
                                         <div className="flex justify-between items-start">
                                           <button
                                             onClick={() => toggleMilestone(milestone.id)}
                                             className="flex items-center flex-grow text-left"
                                           >
-                                            {expandedMilestones.has(milestone.id) ? (
+                                            {isMilestoneExpanded ? (
                                               <ChevronDown className="w-4 h-4 mr-2 text-gray-600" />
                                             ) : (
                                               <ChevronRight className="w-4 h-4 mr-2 text-gray-600" />
                                             )}
-                                          <div className="flex-grow">
-                                            <h4 className="font-semibold text-gray-900">{milestone.title}</h4>
-                                            <p className="text-sm text-gray-600 mt-1">{milestone.description}</p>
-                                            <div className="flex items-center gap-2 mt-2">
-                                              <span className={`text-xs px-2 py-1 rounded-full ${
-                                                milestone.status === 'completed' ? 'bg-lime-100 text-lime-700' :
-                                                milestone.status === 'in_progress' ? 'bg-amber-100 text-amber-700' :
-                                                milestone.status === 'blocked' ? 'bg-red-100 text-red-700' :
-                                                'bg-gray-100 text-gray-700'
-                                              }`}>
-                                                {milestone.status.replace('_', ' ')}
-                                              </span>
-                                              <span className="text-xs text-gray-500">
-                                                Due: {new Date(milestone.target_date).toLocaleDateString()}
-                                              </span>
+                                            <div>
+                                              <h4 className="font-semibold text-gray-900">{milestone.title}</h4>
+                                              <p className="text-sm text-gray-600 mt-1">{milestone.description}</p>
+                                              <div className="flex items-center gap-2 mt-2">
+                                                <span className={`text-xs px-2 py-1 rounded-full ${
+                                                  milestone.status === 'completed' ? 'bg-lime-100 text-lime-700' :
+                                                  milestone.status === 'in_progress' ? 'bg-amber-100 text-amber-700' :
+                                                  milestone.status === 'blocked' ? 'bg-red-100 text-red-700' :
+                                                  'bg-gray-100 text-gray-700'
+                                                }`}>
+                                                  {milestone.status.replace('_', ' ')}
+                                                </span>
+                                                <span className="text-xs text-gray-500">
+                                                  Due: {new Date(milestone.target_date).toLocaleDateString()}
+                                                </span>
+                                              </div>
                                             </div>
-                                          </div>
                                           </button>
                                           <div className="flex items-center gap-2">
-                                            <button
-                                              onClick={() => setEditingMilestone(milestone)}
-                                              className="p-2 hover:bg-gray-100 rounded transition"
-                                            >
-                                              <Edit className="w-4 h-4 text-gray-500" />
-                                            </button>
-                                            <button
-                                              onClick={() => handleDeleteMilestone(milestone.id)}
-                                              className="p-2 hover:bg-gray-100 rounded transition"
-                                              aria-label="Delete milestone"
-                                            >
-                                              <Trash2 className="w-5 h-5 text-red-300 hover:text-red-100" />
-                                            </button>
-                                            <button
-                                              onClick={() => openTaskModal(milestone.id)}
-                                              className="flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition text-sm"
-                                            >
-                                              <Plus className="w-4 h-4 mr-1" />
-                                              Task
-                                            </button>
+                                            {showArchived ? (
+                                              <>
+                                                <button
+                                                  onClick={() => handleRestore('milestones', milestone.id)}
+                                                  className="p-2 hover:bg-gray-100 rounded"
+                                                >
+                                                  <RotateCcw className="w-3 h-3 text-gray-600" />
+                                                </button>
+                                                <button
+                                                  onClick={() => handlePermanentDelete('milestones', milestone.id, milestone.archived_at!)}
+                                                  className="p-2 hover:bg-gray-100 rounded"
+                                                >
+                                                  <Trash2 className="w-3 h-3 text-red-500" />
+                                                </button>
+                                              </>
+                                            ) : (
+                                              <>
+                                                <button
+                                                  onClick={() => setEditingMilestone(milestone)}
+                                                  className="p-2 hover:bg-gray-100 rounded"
+                                                >
+                                                  <Edit className="w-4 h-4 text-gray-500" />
+                                                </button>
+                                                <button
+                                                  onClick={() => handleArchiveMilestone(milestone.id, milestone.title)}
+                                                  className="p-2 hover:bg-gray-100 rounded"
+                                                >
+                                                  <Archive className="w-4 h-4 text-gray-500" />
+                                                </button>
+                                                <button
+                                                  onClick={() => openTaskModal(milestone.id)}
+                                                  className="flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition text-sm"
+                                                >
+                                                  <Plus className="w-4 h-4 mr-1" />
+                                                  Task
+                                                </button>
+                                              </>
+                                            )}
                                           </div>
                                         </div>
-                                        {/* Tasks List */}
-                                        {expandedMilestones.has(milestone.id) && (
+
+                                        {isMilestoneExpanded && (
                                           <div className="mt-3 ml-6 space-y-2">
-                                            {(tasks[milestone.id] || []).map(task => (
+                                            {milestoneTasks.map(task => (
                                               <div key={task.id} className="bg-gray-50 p-2 rounded border border-gray-200 flex justify-between items-start">
                                                 <div className="flex-grow">
                                                   <p className="text-sm font-medium text-gray-900">{task.activity}</p>
                                                   <p className="text-xs text-gray-500">{task.time}</p>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                  <button
-                                                    onClick={() => setEditingTask(task)}
-                                                    className="p-1 hover:bg-gray-200 rounded"
-                                                  >
-                                                    <Edit className="w-3 h-3 text-gray-500" />
-                                                  </button>
-                                                  <button
-                                                    onClick={() => handleDeleteTask(task.id)}
-                                                    className="p-1 hover:bg-gray-200 rounded"
-                                                  >
-                                                    <Trash2 className="w-3 h-3 text-red-500" />
-                                                  </button>
+                                                  {showArchived ? (
+                                                    <>
+                                                      <button
+                                                        onClick={() => handleRestore('tasks', task.id)}
+                                                        className="p-1 hover:bg-gray-200 rounded"
+                                                      >
+                                                        <RotateCcw className="w-3 h-3 text-gray-600" />
+                                                      </button>
+                                                      <button
+                                                        onClick={() => handlePermanentDelete('tasks', task.id, task.archived_at!)}
+                                                        className="p-1 hover:bg-gray-200 rounded"
+                                                      >
+                                                        <Trash2 className="w-3 h-3 text-red-500" />
+                                                      </button>
+                                                    </>
+                                                  ) : (
+                                                    <>
+                                                      <button
+                                                        onClick={() => setEditingTask(task)}
+                                                        className="p-1 hover:bg-gray-200 rounded"
+                                                      >
+                                                        <Edit className="w-3 h-3 text-gray-500" />
+                                                      </button>
+                                                      <button
+                                                        onClick={async () => {
+                                                          if (confirm('Archive this task?')) {
+                                                            await supabase
+                                                              .from('tasks')
+                                                              .update({ status: 'archived', archived_at: new Date().toISOString() })
+                                                              .eq('id', task.id);
+                                                            loadData();
+                                                          }
+                                                        }}
+                                                        className="p-1 hover:bg-gray-200 rounded"
+                                                      >
+                                                        <Archive className="w-3 h-3 text-gray-500" />
+                                                      </button>
+                                                    </>
+                                                  )}
                                                 </div>
                                               </div>
                                             ))}
                                           </div>
                                         )}
                                       </div>
-                                    ))
-                                  )}
-                                </div>
-                              )}
-                            </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            )}
                           </div>
-                        );
-                      })
-                    }
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -460,7 +719,7 @@ export default function RoadmapPage() {
         </div>
       )}
 
-      {/* Modals */}
+      {/* Create Modals */}
       <RoadmapModal
         isOpen={roadmapModalOpen}
         onClose={() => {
@@ -495,7 +754,8 @@ export default function RoadmapPage() {
         }}
         milestoneId={selectedMilestone}
       />
-      {/* Edit Modals - ADD THESE */}
+
+      {/* Edit Modals */}
       {editingRoadmap && (
         <EditRoadmapModal
           roadmap={editingRoadmap}
@@ -531,6 +791,7 @@ export default function RoadmapPage() {
           }}
         />
       )}
+
       {editingTask && (
         <EditTaskModal
           task={editingTask}
@@ -540,6 +801,18 @@ export default function RoadmapPage() {
             setEditingTask(null);
             loadData();
           }}
+        />
+      )}
+
+      {/* Archive Modal */}
+      {archiveTarget && (
+        <ArchiveModal
+          type={archiveTarget.type}
+          item={archiveTarget.item}
+          childrenCount={archiveTarget.childrenCount}
+          moveOptions={archiveTarget.moveOptions}
+          onArchive={executeArchive}
+          onClose={() => setArchiveTarget(null)}
         />
       )}
     </div>
