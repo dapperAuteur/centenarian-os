@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   webpack: (config, { isServer }) => {
+    config.externals = [...(config.externals || []), 'supabase'];
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
