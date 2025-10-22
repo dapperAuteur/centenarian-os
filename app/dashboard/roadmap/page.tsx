@@ -109,8 +109,14 @@ export default function RoadmapPage() {
     const [roadmapRes, goalRes, milestoneRes, taskRes] = await Promise.all([
       supabase.from('roadmaps').select('*').eq('status', status).order('created_at', { ascending: false }),
       supabase.from('goals').select('*').eq('status', status).order('target_year'),
-      supabase.from('milestones').select('*').eq('status', status).order('target_date'),
-      supabase.from('tasks').select('*').eq('status', status).order('time'),
+      // Milestones and Tasks use different "active" statuses.
+      // When not showing archived, we get everything that ISN'T archived.
+      status === 'active'
+        ? supabase.from('milestones').select('*').neq('status', 'archived').order('target_date')
+        : supabase.from('milestones').select('*').eq('status', 'archived').order('target_date'),
+      status === 'active'
+        ? supabase.from('tasks').select('*').neq('status', 'archived').order('time')
+        : supabase.from('tasks').select('*').eq('status', 'archived').order('time'),
     ]);
 
     const roadmapData = roadmapRes.data || [];
