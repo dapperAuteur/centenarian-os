@@ -19,7 +19,6 @@ export default function FocusTimerPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Track pause time for accurate elapsed calculation
   const pauseStartRef = useRef<number | null>(null);
   const supabase = createClient();
 
@@ -46,24 +45,46 @@ export default function FocusTimerPage() {
 
   // Restore timer on mount
   useEffect(() => {
-    const restoreTimer = () => {
-      const savedState = timerStorage.load();
-      
-      if (savedState) {
-        // Resume from saved state
+    // Add this to app/dashboard/engine/focus/page.tsx inside the restoreTimer function:
+
+const restoreTimer = () => {
+  const savedState = timerStorage.load();
+  
+  if (savedState) {
+    // Calculate elapsed time
+    const elapsed = timerStorage.getElapsedSeconds(savedState);
+    
+    // CRITICAL: Check if session is stale (>24 hours)
+    if (elapsed > 86400) {
+      // Session older than 24 hours - likely abandoned
+      if (confirm(
+        `Found a session that has been running for ${Math.floor(elapsed / 3600)} hours. ` +
+        `This seems unusual. Would you like to stop it now?`
+      )) {
+        // User wants to stop - redirect to sessions page
+        timerStorage.clear();
+        window.location.href = '/dashboard/engine/sessions';
+        return;
+      } else {
+        // User wants to keep it running
         setCurrentSessionId(savedState.sessionId);
         setSelectedTaskId(savedState.taskId || '');
         setNotes(savedState.notes);
         setHourlyRate(savedState.hourlyRate);
-        
-        // Calculate current elapsed time
-        const elapsed = timerStorage.getElapsedSeconds(savedState);
         setElapsedSeconds(elapsed);
-        
-        // Set running state based on whether it was paused
         setIsRunning(!savedState.pausedAt);
       }
-    };
+    } else {
+      // Normal session - restore as usual
+      setCurrentSessionId(savedState.sessionId);
+      setSelectedTaskId(savedState.taskId || '');
+      setNotes(savedState.notes);
+      setHourlyRate(savedState.hourlyRate);
+      setElapsedSeconds(elapsed);
+      setIsRunning(!savedState.pausedAt);
+    }
+  }
+};
 
     loadData();
     restoreTimer();
@@ -78,7 +99,6 @@ export default function FocusTimerPage() {
         setElapsedSeconds(prev => {
           const newValue = prev + 1;
           
-          // Periodically update localStorage (every 10 seconds)
           if (newValue % 10 === 0) {
             const state = timerStorage.load();
             if (state) {
@@ -96,7 +116,7 @@ export default function FocusTimerPage() {
     };
   }, [isRunning, currentSessionId]);
 
-  // Save notes to storage as user types
+  // Save notes to storage
   useEffect(() => {
     if (currentSessionId && notes) {
       timerStorage.updateNotes(notes);
@@ -123,10 +143,12 @@ export default function FocusTimerPage() {
         .select()
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Insert error details:', insertError);
+        throw insertError;
+      }
       if (!data) throw new Error('Failed to create session');
 
-      // Save to localStorage
       const timerState: TimerState = {
         sessionId: data.id,
         taskId: selectedTaskId || null,
@@ -175,29 +197,34 @@ export default function FocusTimerPage() {
       const endTime = new Date().toISOString();
       const revenueEarned = (elapsedSeconds / 3600) * hourlyRate;
 
+      // FIXED: Column is "duration" not "duration_seconds"
+      const updatePayload = {
+        end_time: endTime,
+        duration: elapsedSeconds,  // ✅ Correct column name
+        revenue: revenueEarned,
+        notes: notes || null,
+      };
+
+      console.log('Updating session:', currentSessionId, updatePayload);
+
       const { error: updateError } = await supabase
         .from('focus_sessions')
-        .update({
-          end_time: endTime,
-          duration_seconds: elapsedSeconds,
-          revenue: revenueEarned,
-          notes: notes || null,
-        })
+        .update(updatePayload)
         .eq('id', currentSessionId);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Update error details:', updateError);
+        throw updateError;
+      }
 
-      // Clear localStorage
       timerStorage.clear();
 
-      // Reset state
       setIsRunning(false);
       setCurrentSessionId(null);
       setElapsedSeconds(0);
       setNotes('');
       pauseStartRef.current = null;
 
-      // Reload sessions list
       await loadData();
     } catch (err) {
       console.error('Stop session error:', err);
@@ -215,8 +242,8 @@ export default function FocusTimerPage() {
   };
 
   const todayTotal = sessions
-    .filter(s => s.duration_seconds)
-    .reduce((sum, s) => sum + (s.duration_seconds || 0), 0);
+    .filter(s => s.duration)
+    .reduce((sum, s) => sum + (s.duration || 0), 0);
 
   const todayRevenue = sessions
     .filter(s => s.revenue)
@@ -265,7 +292,7 @@ export default function FocusTimerPage() {
                   <select
                     value={selectedTaskId}
                     onChange={(e) => setSelectedTaskId(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                   >
                     <option value="">No task selected</option>
                     {tasks.map(task => (
@@ -285,7 +312,7 @@ export default function FocusTimerPage() {
                     value={hourlyRate}
                     onChange={(e) => setHourlyRate(parseFloat(e.target.value) || 0)}
                     placeholder="$0.00"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                   />
                   <p className="text-xs text-gray-500 mt-1">Track billable time value</p>
                 </div>
@@ -304,7 +331,7 @@ export default function FocusTimerPage() {
                   onChange={(e) => setNotes(e.target.value)}
                   rows={3}
                   placeholder="Session notes..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                 />
                 <div className="grid grid-cols-2 gap-4">
                   {isRunning ? (
@@ -366,7 +393,7 @@ export default function FocusTimerPage() {
                   <div key={session.id} className="p-3 bg-gray-50 rounded-lg">
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium text-gray-900">
-                        {Math.floor((session.duration_seconds || 0) / 60)} min
+                        {Math.floor((session.duration || 0) / 60)} min
                       </span>
                       <span className="text-xs text-gray-500">
                         {new Date(session.start_time).toLocaleTimeString()}

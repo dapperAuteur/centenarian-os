@@ -185,7 +185,7 @@ export interface FocusSession {
   task_id: string | null;
   start_time: string;
   end_time: string | null;
-  duration_seconds: number | null;
+  duration: number | null;
   notes: string | null;
   created_at: string;
   hourly_rate: number;
