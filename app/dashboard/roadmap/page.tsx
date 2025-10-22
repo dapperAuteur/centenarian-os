@@ -52,56 +52,109 @@ export default function RoadmapPage() {
   const supabase = createClient();
 
   const loadData = useCallback(async () => {
+    setLoading(true);
     const status = showArchived ? 'archived' : 'active';
     
-    const { data: roadmapData } = await supabase
-      .from('roadmaps')
-      .select('*')
-      .eq('status', status)
-      .order('created_at', { ascending: false });
+    // const { data: roadmapData } = await supabase
+    //   .from('roadmaps')
+    //   .select('*')
+    //   .eq('status', status)
+    //   .order('created_at', { ascending: false });
       
-    if (roadmapData) {
-      setRoadmaps(roadmapData);
+    // if (roadmapData) {
+    //   setRoadmaps(roadmapData);
       
-      for (const roadmap of roadmapData) {
-        const { data: goalData } = await supabase
-          .from('goals')
-          .select('*')
-          .eq('roadmap_id', roadmap.id)
-          .eq('status', status)
-          .order('target_year');
+    //   for (const roadmap of roadmapData) {
+    //     const { data: goalData } = await supabase
+    //       .from('goals')
+    //       .select('*')
+    //       .eq('roadmap_id', roadmap.id)
+    //       .eq('status', status)
+    //       .order('target_year');
           
-        if (goalData) {
-          setGoals(prev => ({ ...prev, [roadmap.id]: goalData }));
+    //     if (goalData) {
+    //       setGoals(prev => ({ ...prev, [roadmap.id]: goalData }));
           
-          for (const goal of goalData) {
-            const { data: milestoneData } = await supabase
-              .from('milestones')
-              .select('*')
-              .eq('goal_id', goal.id)
-              .eq('status', status)
-              .order('target_date');
+    //       for (const goal of goalData) {
+    //         console.log('goal.id :>> ', goal.id);
+    //         const { data: milestoneData } = await supabase
+    //           .from('milestones')
+    //           .select('*')
+    //           .eq('goal_id', goal.id)
+    //           .eq('status', status)
+    //           .order('target_date');
+    //         if (milestoneData) {
               
-            if (milestoneData) {
-              setMilestones(prev => ({ ...prev, [goal.id]: milestoneData }));
+    //           setMilestones(prev => ({ ...prev, [goal.id]: milestoneData }));
               
-              for (const milestone of milestoneData) {
-                const { data: taskData } = await supabase
-                  .from('tasks')
-                  .select('*')
-                  .eq('milestone_id', milestone.id)
-                  .eq('status', status)
-                  .order('time');
+    //           for (const milestone of milestoneData) {
+    //             const { data: taskData } = await supabase
+    //               .from('tasks')
+    //               .select('*')
+    //               .eq('milestone_id', milestone.id)
+    //               .eq('status', status)
+    //               .order('time');
                   
-                if (taskData) {
-                  setTasks(prev => ({ ...prev, [milestone.id]: taskData }));
-                }
-              }
-            }
-          }
-        }
+    //             if (taskData) {
+    //               setTasks(prev => ({ ...prev, [milestone.id]: taskData }));
+    //             }
+    //           }
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
+
+    // Fetch all data in parallel
+    const [roadmapRes, goalRes, milestoneRes, taskRes] = await Promise.all([
+      supabase.from('roadmaps').select('*').eq('status', status).order('created_at', { ascending: false }),
+      supabase.from('goals').select('*').eq('status', status).order('target_year'),
+      supabase.from('milestones').select('*').eq('status', status).order('target_date'),
+      supabase.from('tasks').select('*').eq('status', status).order('time'),
+    ]);
+
+    const roadmapData = roadmapRes.data || [];
+    const goalData = goalRes.data || [];
+    const milestoneData = milestoneRes.data || [];
+    const taskData = taskRes.data || [];
+
+    console.log('roadmapData :>> ', roadmapData);
+    console.log('goalData :>> ', goalData);
+    console.log('milestoneData :>> ', milestoneData);
+    console.log('taskData :>> ', taskData);
+
+    // Organize data into the required state shape
+    const goalsByRoadmap: Record<string, Goal[]> = goalData.reduce((acc, goal) => {
+      if (!goal.roadmap_id) return acc;
+      if (!acc[goal.roadmap_id]) {
+        acc[goal.roadmap_id] = [];
       }
-    }
+      acc[goal.roadmap_id].push(goal);
+      return acc;
+    }, {} as Record<string, Goal[]>);
+
+    const milestonesByGoal: Record<string, Milestone[]> = milestoneData.reduce((acc, milestone) => {
+      if (!milestone.goal_id) return acc;
+      if (!acc[milestone.goal_id]) {
+        acc[milestone.goal_id] = [];
+      }
+      acc[milestone.goal_id].push(milestone);
+      return acc;
+    }, {} as Record<string, Milestone[]>);
+
+    const tasksByMilestone: Record<string, Task[]> = taskData.reduce((acc, task) => {
+      if (!task.milestone_id) return acc;
+      if (!acc[task.milestone_id]) {
+        acc[task.milestone_id] = [];
+      }
+      acc[task.milestone_id].push(task);
+     return acc;
+    }, {} as Record<string, Task[]>);
+
+    setRoadmaps(roadmapData);
+    setGoals(goalsByRoadmap);
+    setMilestones(milestonesByGoal);
+    setTasks(tasksByMilestone);
     
     // Load archive counts
     const [rCount, gCount, mCount, tCount] = await Promise.all([
@@ -119,11 +172,25 @@ export default function RoadmapPage() {
     });
     
     setLoading(false);
-  }, [supabase, showArchived]);
+  }, [supabase, showArchived]); 
+  // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     loadData();
+    // console.log('tasks :>> ', tasks);
+    // console.log('milestones :>> ', milestones);
+    // console.log('goals :>> ', goals);
+    // console.log('roadmaps :>> ', roadmaps);
   }, [loadData]);
+
+  // This is a one-time operation on mount to clear any stale data.
+  // It's not strictly necessary with the new loadData, but can be good practice.
+  useEffect(() => {
+    setRoadmaps([]);
+    setGoals({});
+    setMilestones({});
+    setTasks({});
+  }, [showArchived]);
 
   const toggleRoadmap = (id: string) => {
     const newExpanded = new Set(expandedRoadmaps);
@@ -603,7 +670,7 @@ export default function RoadmapPage() {
                                                 <span className="text-xs text-gray-500">
                                                   Due: {new Date(milestone.target_date).toLocaleDateString()}
                                                 </span>
-                                              </div>
+                                              </div>                                            
                                             </div>
                                           </button>
                                           <div className="flex items-center gap-2">
