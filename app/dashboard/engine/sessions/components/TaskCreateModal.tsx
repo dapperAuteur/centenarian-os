@@ -145,7 +145,7 @@ export default function TaskCreateModal({
               value={formData.activity}
               onChange={(e) => setFormData({ ...formData, activity: e.target.value })}
               placeholder="e.g., Client meeting, Code review"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
               required
             />
           </div>
@@ -158,7 +158,7 @@ export default function TaskCreateModal({
               type="time"
               value={formData.time}
               onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
             />
           </div>
 
@@ -171,7 +171,7 @@ export default function TaskCreateModal({
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={2}
               placeholder="Additional details..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
             />
           </div>
         </div>

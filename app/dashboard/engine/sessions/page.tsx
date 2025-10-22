@@ -9,6 +9,7 @@ import SessionsTable from './components/SessionsTable';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
 import ForceStopModal from './components/ForceStopModal';
 import SessionEditModal from './components/SessionEditModal';
+import SessionCreateModal from './components/SessionCreateModal';
 
 
 
@@ -37,6 +38,7 @@ export default function SessionsPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
+  const [createModal, setCreateModal] = useState(false);
 
   // Modal states
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; session: FocusSession | null }>({
@@ -110,6 +112,10 @@ export default function SessionsPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const defaultHourlyRate = allSessions.length > 0 
+    ? (allSessions[0].hourly_rate || 0) 
+    : 0;
 
   // Apply filters
   useEffect(() => {
@@ -188,6 +194,13 @@ export default function SessionsPage() {
     currentPage * SESSIONS_PER_PAGE
   );
 
+  const handleCreateSave = async () => {
+    setSuccess('Session created successfully');
+    setTimeout(() => setSuccess(null), 3000);
+    setCreateModal(false);
+    await loadData();
+  };
+
   const handleEdit = (session: FocusSession) => {
     setEditModal({ isOpen: true, session });
   };
@@ -263,8 +276,7 @@ export default function SessionsPage() {
   };
 
   const handleCreateNew = () => {
-    // TODO: Phase 4 - Open create modal
-    console.log('Create new session');
+    setCreateModal(true);
   };
 
   const resetFilters = () => {
@@ -542,6 +554,14 @@ export default function SessionsPage() {
         session={editModal.session}
         tasks={tasks}
         allSessions={allSessions}
+        />
+        <SessionCreateModal
+          isOpen={createModal}
+          onClose={() => setCreateModal(false)}
+          onCreate={handleCreateSave}
+          tasks={tasks}
+          allSessions={allSessions}
+          defaultHourlyRate={defaultHourlyRate}
         />
     </div>
   );

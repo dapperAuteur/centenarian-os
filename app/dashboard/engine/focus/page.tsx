@@ -292,7 +292,7 @@ const restoreTimer = () => {
                   <select
                     value={selectedTaskId}
                     onChange={(e) => setSelectedTaskId(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
                   >
                     <option value="">No task selected</option>
                     {tasks.map(task => (
@@ -312,7 +312,7 @@ const restoreTimer = () => {
                     value={hourlyRate}
                     onChange={(e) => setHourlyRate(parseFloat(e.target.value) || 0)}
                     placeholder="$0.00"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
                   />
                   <p className="text-xs text-gray-500 mt-1">Track billable time value</p>
                 </div>
@@ -331,7 +331,7 @@ const restoreTimer = () => {
                   onChange={(e) => setNotes(e.target.value)}
                   rows={3}
                   placeholder="Session notes..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
                 />
                 <div className="grid grid-cols-2 gap-4">
                   {isRunning ? (

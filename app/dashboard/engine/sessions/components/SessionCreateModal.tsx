@@ -1,10 +1,10 @@
-// app/dashboard/engine/sessions/components/SessionEditModal.tsx
+// app/dashboard/engine/sessions/components/SessionCreateModal.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import Modal from '@/components/ui/Modal';
 import { FocusSession, Task } from '@/lib/types';
-import { AlertTriangle, Plus } from 'lucide-react';
+import { AlertTriangle, Plus, Info } from 'lucide-react';
 import {
   validateSession,
   calculateDuration,
@@ -15,37 +15,41 @@ import {
 } from '@/lib/utils/sessionValidation';
 import TaskCreateModal from './TaskCreateModal';
 
-interface SessionEditModalProps {
+interface SessionCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: () => void;
-  session: FocusSession | null;
+  onCreate: () => void;
   tasks: Task[];
   allSessions: FocusSession[];
+  defaultHourlyRate?: number;
 }
 
 /**
- * Edit modal for focus sessions
- * Auto-calculates duration and revenue
- * Validates against overlaps and excessive duration
+ * Manual session creation modal
+ * Allows users to create historical focus sessions
+ * Auto-calculates duration and revenue, with optional manual override
  */
-export default function SessionEditModal({
+export default function SessionCreateModal({
   isOpen,
   onClose,
-  onSave,
-  session,
+  onCreate,
   tasks,
   allSessions,
-}: SessionEditModalProps) {
-  const [isSaving, setIsSaving] = useState(false);
+  defaultHourlyRate = 0,
+}: SessionCreateModalProps) {
+  const [isCreating, setIsCreating] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [useManualDuration, setUseManualDuration] = useState(false);
+  
   const [formData, setFormData] = useState({
     start_time: '',
     end_time: '',
+    manual_duration_minutes: 0,
     task_id: '',
-    hourly_rate: 0,
+    hourly_rate: defaultHourlyRate,
     notes: '',
   });
+  
   const [calculatedDuration, setCalculatedDuration] = useState(0);
   const [calculatedRevenue, setCalculatedRevenue] = useState(0);
   const [validation, setValidation] = useState<{
@@ -53,22 +57,27 @@ export default function SessionEditModal({
     warnings: string[];
   }>({ errors: [], warnings: [] });
 
-  // Initialize form when session changes
+  // Set smart defaults when modal opens
   useEffect(() => {
-    if (session && isOpen) {
+    if (isOpen) {
+      const now = new Date();
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+      
       setFormData({
-        start_time: toLocalDatetime(session.start_time),
-        end_time: session.end_time ? toLocalDatetime(session.end_time) : '',
-        task_id: session.task_id || '',
-        hourly_rate: session.hourly_rate || 0,
-        notes: session.notes || '',
+        start_time: toLocalDatetime(oneHourAgo.toISOString()),
+        end_time: toLocalDatetime(now.toISOString()),
+        manual_duration_minutes: 60,
+        task_id: '',
+        hourly_rate: defaultHourlyRate,
+        notes: '',
       });
+      setUseManualDuration(false);
     }
-  }, [session, isOpen]);
+  }, [isOpen, defaultHourlyRate]);
 
-  // Recalculate duration and revenue when times or rate change
+  // Recalculate duration and revenue
   useEffect(() => {
-    if (formData.start_time && formData.end_time) {
+    if (formData.start_time && formData.end_time && !useManualDuration) {
       try {
         const duration = calculateDuration(
           toUTC(formData.start_time),
@@ -88,12 +97,13 @@ export default function SessionEditModal({
             hourly_rate: formData.hourly_rate,
             notes: formData.notes,
           },
-          allSessions.map(s => ({
-            id: s.id,
-            start_time: s.start_time,
-            end_time: s.end_time || new Date().toISOString(),
-          })),
-          session?.id
+          allSessions
+            .filter(s => s.end_time) // Only check completed sessions
+            .map(s => ({
+              id: s.id,
+              start_time: s.start_time,
+              end_time: s.end_time || new Date().toISOString(),
+            }))
         );
 
         setValidation({
@@ -105,17 +115,53 @@ export default function SessionEditModal({
         setCalculatedDuration(0);
         setCalculatedRevenue(0);
       }
+    } else if (useManualDuration) {
+      // Use manual duration
+      const duration = formData.manual_duration_minutes * 60;
+      setCalculatedDuration(duration);
+
+      const revenue = calculateRevenue(duration, formData.hourly_rate);
+      setCalculatedRevenue(revenue);
+
+      // Validate with manual override warning
+      const validationResult = validateSession(
+        {
+          start_time: toUTC(formData.start_time),
+          end_time: toUTC(formData.end_time),
+          task_id: formData.task_id || null,
+          hourly_rate: formData.hourly_rate,
+          notes: formData.notes,
+          duration: duration,
+        },
+        allSessions
+          .filter(s => s.end_time)
+          .map(s => ({
+            id: s.id,
+            start_time: s.start_time,
+            end_time: s.end_time || new Date().toISOString(),
+          }))
+      );
+
+      setValidation({
+        errors: validationResult.errors,
+        warnings: validationResult.warnings,
+      });
     } else {
       setCalculatedDuration(0);
       setCalculatedRevenue(0);
       setValidation({ errors: [], warnings: [] });
     }
-  }, [formData.start_time, formData.end_time, formData.hourly_rate, allSessions, session, formData.task_id, formData.notes]);
+  }, [
+    formData.start_time,
+    formData.end_time,
+    formData.manual_duration_minutes,
+    formData.hourly_rate,
+    useManualDuration,
+    allSessions,
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!session) return;
 
     // Check for validation errors
     if (validation.errors.length > 0) {
@@ -135,14 +181,18 @@ export default function SessionEditModal({
     }
 
     try {
-      setIsSaving(true);
+      setIsCreating(true);
 
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
 
-      const { error: updateError } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { error: insertError } = await supabase
         .from('focus_sessions')
-        .update({
+        .insert([{
+          user_id: user.id,
           start_time: toUTC(formData.start_time),
           end_time: toUTC(formData.end_time),
           duration: calculatedDuration,
@@ -150,18 +200,17 @@ export default function SessionEditModal({
           hourly_rate: formData.hourly_rate,
           revenue: calculatedRevenue,
           notes: formData.notes || null,
-        })
-        .eq('id', session.id);
+        }]);
 
-      if (updateError) throw updateError;
+      if (insertError) throw insertError;
 
-      onSave();
+      onCreate();
       handleClose();
     } catch (err) {
-      console.error('Save error:', err);
-      alert(err instanceof Error ? err.message : 'Failed to save session');
+      console.error('Create error:', err);
+      alert(err instanceof Error ? err.message : 'Failed to create session');
     } finally {
-      setIsSaving(false);
+      setIsCreating(false);
     }
   };
 
@@ -169,13 +218,15 @@ export default function SessionEditModal({
     setFormData({
       start_time: '',
       end_time: '',
+      manual_duration_minutes: 0,
       task_id: '',
-      hourly_rate: 0,
+      hourly_rate: defaultHourlyRate,
       notes: '',
     });
     setValidation({ errors: [], warnings: [] });
     setCalculatedDuration(0);
     setCalculatedRevenue(0);
+    setUseManualDuration(false);
     onClose();
   };
 
@@ -184,12 +235,26 @@ export default function SessionEditModal({
     setShowTaskModal(false);
   };
 
-  if (!session) return null;
-
   return (
     <>
-      <Modal isOpen={isOpen} onClose={handleClose} title="Edit Session" size="lg">
+      <Modal isOpen={isOpen} onClose={handleClose} title="Create Manual Session" size="lg">
         <form onSubmit={handleSubmit} className="p-6">
+          {/* Info Banner */}
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start space-x-2">
+              <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-blue-900 mb-1">
+                  Manual Entry
+                </p>
+                <p className="text-sm text-blue-700">
+                  Use this to log focus sessions you forgot to track or completed offline.
+                  Duration is calculated automatically from start/end times.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Validation Messages */}
           {validation.errors.length > 0 && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -235,7 +300,7 @@ export default function SessionEditModal({
                 type="datetime-local"
                 value={formData.start_time}
                 onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                 required
               />
             </div>
@@ -249,19 +314,58 @@ export default function SessionEditModal({
                 type="datetime-local"
                 value={formData.end_time}
                 onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                 required
               />
             </div>
 
-            {/* Duration (Read-only) */}
+            {/* Duration */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Duration (calculated)
+                Duration
               </label>
-              <div className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
-                {calculatedDuration > 0 ? formatDuration(calculatedDuration) : '00:00:00'}
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setUseManualDuration(false)}
+                  className={`flex-1 px-3 py-2 rounded-lg border transition ${
+                    !useManualDuration
+                      ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold'
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Auto
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUseManualDuration(true)}
+                  className={`flex-1 px-3 py-2 rounded-lg border transition ${
+                    useManualDuration
+                      ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold'
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Manual
+                </button>
               </div>
+              {useManualDuration ? (
+                <input
+                  type="number"
+                  value={formData.manual_duration_minutes}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      manual_duration_minutes: parseInt(e.target.value) || 0,
+                    })
+                  }
+                  placeholder="Minutes"
+                  className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                />
+              ) : (
+                <div className="w-full mt-2 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
+                  {calculatedDuration > 0 ? formatDuration(calculatedDuration) : '00:00:00'}
+                </div>
+              )}
             </div>
 
             {/* Hourly Rate */}
@@ -277,7 +381,7 @@ export default function SessionEditModal({
                   setFormData({ ...formData, hourly_rate: parseFloat(e.target.value) || 0 })
                 }
                 placeholder="0.00"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 
@@ -300,7 +404,7 @@ export default function SessionEditModal({
                 <select
                   value={formData.task_id}
                   onChange={(e) => setFormData({ ...formData, task_id: e.target.value })}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="">No task</option>
                   {tasks.map((task) => (
@@ -328,8 +432,8 @@ export default function SessionEditModal({
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
-              placeholder="Session notes..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
+              placeholder="What did you work on? Any important details..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
             />
           </div>
 
@@ -338,17 +442,17 @@ export default function SessionEditModal({
             <button
               type="button"
               onClick={handleClose}
-              disabled={isSaving}
+              disabled={isCreating}
               className="px-4 py-2 text-gray-700 hover:text-gray-900 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={isSaving || validation.errors.length > 0}
+              disabled={isCreating || validation.errors.length > 0}
               className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
-              {isSaving ? 'Saving...' : 'Save Changes'}
+              {isCreating ? 'Creating...' : 'Create Session'}
             </button>
           </div>
         </form>
