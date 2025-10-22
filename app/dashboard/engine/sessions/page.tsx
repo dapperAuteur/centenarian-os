@@ -8,6 +8,8 @@ import { Plus, Search, Filter, RefreshCw } from 'lucide-react';
 import SessionsTable from './components/SessionsTable';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
 import ForceStopModal from './components/ForceStopModal';
+import SessionEditModal from './components/SessionEditModal';
+
 
 
 const SESSIONS_PER_PAGE = 50;
@@ -41,6 +43,12 @@ export default function SessionsPage() {
     isOpen: false,
     session: null,
   });
+
+  const [editModal, setEditModal] = useState<{ isOpen: boolean; session: FocusSession | null }>({
+    isOpen: false,
+    session: null,
+  });
+
   const [forceStopModal, setForceStopModal] = useState<{ isOpen: boolean; session: FocusSession | null }>({
     isOpen: false,
     session: null,
@@ -181,8 +189,7 @@ export default function SessionsPage() {
   );
 
   const handleEdit = (session: FocusSession) => {
-    // TODO: Phase 3 - Open edit modal
-    console.log('Edit session:', session.id);
+    setEditModal({ isOpen: true, session });
   };
 
   const handleDeleteClick = (sessionId: string) => {
@@ -246,6 +253,13 @@ export default function SessionsPage() {
     } finally {
       setIsStopping(false);
     }
+  };
+
+  const handleEditSave = async () => {
+    setSuccess('Session updated successfully');
+    setTimeout(() => setSuccess(null), 3000);
+    setEditModal({ isOpen: false, session: null });
+    await loadData();
   };
 
   const handleCreateNew = () => {
@@ -521,6 +535,14 @@ export default function SessionsPage() {
         session={forceStopModal.session}
         isStopping={isStopping}
       />
+      <SessionEditModal
+        isOpen={editModal.isOpen}
+        onClose={() => setEditModal({ isOpen: false, session: null })}
+        onSave={handleEditSave}
+        session={editModal.session}
+        tasks={tasks}
+        allSessions={allSessions}
+        />
     </div>
   );
 }
