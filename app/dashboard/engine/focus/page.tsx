@@ -4,8 +4,12 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { FocusSession, Task } from '@/lib/types';
-import { Play, Pause, StopCircle, AlertCircle } from 'lucide-react';
+import { Play, Pause, StopCircle, AlertCircle, Settings } from 'lucide-react';
 import { timerStorage, TimerState } from '@/lib/utils/timerStorage';
+import GoalProgressWidget from '@/components/focus/GoalProgressWidget';
+import GoalSettingsModal from '@/components/focus/GoalSettingsModal';
+import { calculateDailyProgress, calculateWeeklyProgress } from '@/lib/utils/goalUtils';
+import GoalStreakTracker from '@/components/focus/GoalStreakTracker';
 
 export default function FocusTimerPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -18,6 +22,9 @@ export default function FocusTimerPage() {
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showGoalSettings, setShowGoalSettings] = useState(false);
+  const [dailyGoalMinutes, setDailyGoalMinutes] = useState(120);
+  const [weeklyGoalMinutes, setWeeklyGoalMinutes] = useState(840);
   
   const pauseStartRef = useRef<number | null>(null);
   const supabase = createClient();
@@ -42,6 +49,49 @@ export default function FocusTimerPage() {
     if (tasksRes.data) setTasks(tasksRes.data);
     if (sessionsRes.data) setSessions(sessionsRes.data);
   }, [supabase]);
+
+  const dailyProgress = calculateDailyProgress(sessions, dailyGoalMinutes);
+  const weeklyProgress = calculateWeeklyProgress(sessions, weeklyGoalMinutes, dailyGoalMinutes);
+
+  // 5. Save goals function
+const handleSaveGoals = async (daily: number, weekly: number) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('user_profiles')
+    .upsert({
+      user_id: user.id,
+      daily_focus_goal_minutes: daily,
+      weekly_focus_goal_minutes: weekly,
+    });
+
+  if (error) throw error;
+
+  setDailyGoalMinutes(daily);
+  setWeeklyGoalMinutes(weekly);
+};
+
+  useEffect(() => {
+  const loadGoals = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('daily_focus_goal_minutes, weekly_focus_goal_minutes')
+      .eq('user_id', user.id)
+      .single();
+
+    if (profile) {
+      setDailyGoalMinutes(profile.daily_focus_goal_minutes || 120);
+      setWeeklyGoalMinutes(profile.weekly_focus_goal_minutes || 840);
+    }
+  };
+
+  loadData();
+  loadGoals();
+}, [loadData, supabase]);
 
   // Restore timer on mount
   useEffect(() => {
@@ -367,21 +417,39 @@ const restoreTimer = () => {
 
         {/* Stats & History */}
         <div className="space-y-6">
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Today</h3>
-            <div className="text-4xl font-bold text-indigo-600 mb-1">
-              {Math.floor(todayTotal / 60)} min
-            </div>
-            <div className="text-sm text-gray-500 mb-3">{sessions.length} sessions</div>
-            {todayRevenue > 0 && (
-              <div className="pt-3 border-t border-gray-200">
-                <div className="text-2xl font-bold text-lime-600">
-                  ${todayRevenue.toFixed(2)}
-                </div>
-                <div className="text-xs text-gray-500">Earned today</div>
-              </div>
-            )}
+          {/* Settings Button */}
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold text-gray-900">Progress & Stats</h3>
+            <button
+              onClick={() => setShowGoalSettings(true)}
+              className="p-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+              title="Goal Settings"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
           </div>
+
+          {/* Goal Progress Widgets */}
+          <GoalProgressWidget
+            title="Today's Goal"
+            completedMinutes={dailyProgress.completedMinutes}
+            goalMinutes={dailyProgress.goalMinutes}
+            percentage={dailyProgress.percentage}
+            icon="target"
+          />
+
+          <GoalProgressWidget
+            title="This Week"
+            completedMinutes={weeklyProgress.completedMinutes}
+            goalMinutes={weeklyProgress.goalMinutes}
+            percentage={weeklyProgress.percentage}
+            icon="calendar"
+          />
+
+          <GoalStreakTracker
+            sessions={sessions}
+            dailyGoalMinutes={dailyGoalMinutes}
+          />
 
           <div className="bg-white rounded-xl shadow-lg p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Sessions</h3>
@@ -414,6 +482,13 @@ const restoreTimer = () => {
           </div>
         </div>
       </div>
+      <GoalSettingsModal
+        isOpen={showGoalSettings}
+        onClose={() => setShowGoalSettings(false)}
+        currentDailyGoal={dailyGoalMinutes}
+        currentWeeklyGoal={weeklyGoalMinutes}
+        onSave={handleSaveGoals}
+      />
     </div>
   );
 }
