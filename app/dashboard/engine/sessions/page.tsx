@@ -1,7 +1,7 @@
 // app/dashboard/engine/sessions/page.tsx
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { FocusSession, Task } from '@/lib/types';
 import { Plus, Search, Filter, RefreshCw } from 'lucide-react';
@@ -9,7 +9,7 @@ import SessionsTable from './components/SessionsTable';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
 import ForceStopModal from './components/ForceStopModal';
 import SessionEditModal from './components/SessionEditModal';
-import SessionCreateModal from './components/SessionCreateModal';
+import SessionCreateModal from './components/SessionCreateModal';import TaskCreateModal from './components/TaskCreateModal';
 
 
 
@@ -39,6 +39,10 @@ export default function SessionsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
   const [createModal, setCreateModal] = useState(false);
+  const [isTaskCreateModalOpen, setTaskCreateModalOpen] = useState(false);
+  const memoizedTasks = useMemo(() => tasks, [tasks]);
+  const memoizedSessions = useMemo(() => allSessions, [allSessions]);
+
 
   // Modal states
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; session: FocusSession | null }>({
@@ -194,6 +198,19 @@ export default function SessionsPage() {
     currentPage * SESSIONS_PER_PAGE
   );
 
+  const handleEditModalClose = useCallback(() => {
+    setEditModal({ isOpen: false, session: null });
+  }, []);
+  const handleEditSave = useCallback(async () => {
+    setSuccess('Session updated successfully');
+    setTimeout(() => setSuccess(null), 3000);
+    setEditModal({ isOpen: false, session: null });
+    await loadData();
+  }, [loadData]);
+  const handleTaskModalOpen = useCallback(() => {
+    setTaskCreateModalOpen(true);
+  }, []);
+
   const handleCreateSave = async () => {
     setSuccess('Session created successfully');
     setTimeout(() => setSuccess(null), 3000);
@@ -268,11 +285,17 @@ export default function SessionsPage() {
     }
   };
 
-  const handleEditSave = async () => {
-    setSuccess('Session updated successfully');
-    setTimeout(() => setSuccess(null), 3000);
-    setEditModal({ isOpen: false, session: null });
-    await loadData();
+  // const handleEditSave = async () => {
+  //   setSuccess('Session updated successfully');
+  //   setTimeout(() => setSuccess(null), 3000);
+  //   setEditModal({ isOpen: false, session: null });
+  //   await loadData();
+  // };
+
+  const handleTaskCreated = () => {
+    setTaskCreateModalOpen(false);
+    // Reload all data to ensure the new task is available in the dropdowns
+    loadData();
   };
 
   const handleCreateNew = () => {
@@ -549,20 +572,27 @@ export default function SessionsPage() {
       />
       <SessionEditModal
         isOpen={editModal.isOpen}
-        onClose={() => setEditModal({ isOpen: false, session: null })}
+        onClose={handleEditModalClose}
         onSave={handleEditSave}
         session={editModal.session}
+        onOpenTaskModal={handleTaskModalOpen}
         tasks={tasks}
         allSessions={allSessions}
-        />
-        <SessionCreateModal
-          isOpen={createModal}
-          onClose={() => setCreateModal(false)}
-          onCreate={handleCreateSave}
-          tasks={tasks}
-          allSessions={allSessions}
-          defaultHourlyRate={defaultHourlyRate}
-        />
+      />
+      <SessionCreateModal
+        isOpen={createModal}
+        onClose={() => setCreateModal(false)}
+        onCreate={handleCreateSave}
+        tasks={tasks}
+        allSessions={allSessions}
+        defaultHourlyRate={defaultHourlyRate}
+        onOpenTaskModal={() => setTaskCreateModalOpen(true)}
+      />
+      <TaskCreateModal
+        isOpen={isTaskCreateModalOpen}
+        onClose={() => setTaskCreateModalOpen(false)}
+        onTaskCreated={handleTaskCreated}
+      />
     </div>
   );
 }
