@@ -13,6 +13,7 @@ import {
   toUTC,
   formatDuration,
 } from '@/lib/utils/sessionValidation';
+import TagSelector from '@/components/ui/TagSelector';
 
 interface SessionEditModalProps {
   isOpen: boolean;
@@ -25,7 +26,8 @@ interface SessionEditModalProps {
 }
 
 /**
- * MEMOIZED to prevent parent re-renders from causing focus loss
+ * Edit modal for focus sessions with tags support
+ * Uses individual state variables to prevent focus loss
  */
 export default function SessionEditModal({
   isOpen,
@@ -36,12 +38,13 @@ export default function SessionEditModal({
   tasks,
   allSessions,
 }: SessionEditModalProps) {
-  // Individual state variables (like TaskModal pattern) to prevent re-renders
+  // Individual state variables (prevents focus loss)
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [taskId, setTaskId] = useState('');
   const [hourlyRate, setHourlyRate] = useState(0);
   const [notes, setNotes] = useState('');
+  const [tags, setTags] = useState<string[]>([]); // ✅ Added tags
   
   const [isSaving, setIsSaving] = useState(false);
   const [calculatedDuration, setCalculatedDuration] = useState(0);
@@ -59,24 +62,20 @@ export default function SessionEditModal({
       setTaskId(session.task_id || '');
       setHourlyRate(session.hourly_rate || 0);
       setNotes(session.notes || '');
+      setTags(session.tags || []); // ✅ Initialize tags
     }
   }, [session, isOpen]);
 
-  // Recalculate duration and revenue when times or rate change
-  // NOTE: notes is NOT in dependencies - doesn't affect calculations
+  // Recalculate duration and revenue
   useEffect(() => {
     if (startTime && endTime) {
       try {
-        const duration = calculateDuration(
-          toUTC(startTime),
-          toUTC(endTime)
-        );
+        const duration = calculateDuration(toUTC(startTime), toUTC(endTime));
         setCalculatedDuration(duration);
 
         const revenue = calculateRevenue(duration, hourlyRate);
         setCalculatedRevenue(revenue);
 
-        // Validate
         const validationResult = validateSession(
           {
             start_time: toUTC(startTime),
@@ -102,12 +101,8 @@ export default function SessionEditModal({
         setCalculatedDuration(0);
         setCalculatedRevenue(0);
       }
-    } else {
-      setCalculatedDuration(0);
-      setCalculatedRevenue(0);
-      setValidation({ errors: [], warnings: [] });
     }
-  }, [startTime, endTime, hourlyRate, taskId, allSessions, session]);
+  }, [startTime, endTime, hourlyRate, allSessions, session, taskId, notes]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,6 +140,7 @@ export default function SessionEditModal({
           hourly_rate: hourlyRate,
           revenue: calculatedRevenue,
           notes: notes || null,
+          tags: tags.length > 0 ? tags : null, // ✅ Include tags
         })
         .eq('id', session.id);
 
@@ -166,6 +162,7 @@ export default function SessionEditModal({
     setTaskId('');
     setHourlyRate(0);
     setNotes('');
+    setTags([]); // ✅ Reset tags
     setValidation({ errors: [], warnings: [] });
     setCalculatedDuration(0);
     setCalculatedRevenue(0);
@@ -213,6 +210,7 @@ export default function SessionEditModal({
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Start Time */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Start Time <span className="text-red-500">*</span>
@@ -226,6 +224,7 @@ export default function SessionEditModal({
             />
           </div>
 
+          {/* End Time */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               End Time <span className="text-red-500">*</span>
@@ -239,6 +238,7 @@ export default function SessionEditModal({
             />
           </div>
 
+          {/* Duration (Read-only) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Duration (calculated)
@@ -248,6 +248,7 @@ export default function SessionEditModal({
             </div>
           </div>
 
+          {/* Hourly Rate */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Hourly Rate ($)
@@ -262,6 +263,7 @@ export default function SessionEditModal({
             />
           </div>
 
+          {/* Revenue (Read-only) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Revenue (calculated)
@@ -271,6 +273,7 @@ export default function SessionEditModal({
             </div>
           </div>
 
+          {/* Task */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Link to Task
@@ -300,7 +303,7 @@ export default function SessionEditModal({
           </div>
         </div>
 
-        {/* Notes - This should NOT lose focus now */}
+        {/* Notes */}
         <div className="mt-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
           <textarea
@@ -312,6 +315,18 @@ export default function SessionEditModal({
           />
         </div>
 
+        {/* Tags - ✅ Added */}
+        <div className="mt-6">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Tags
+          </label>
+          <TagSelector
+            selectedTags={tags}
+            onChange={setTags}
+          />
+        </div>
+
+        {/* Actions */}
         <div className="mt-6 flex items-center justify-end space-x-3">
           <button
             type="button"
@@ -332,4 +347,4 @@ export default function SessionEditModal({
       </form>
     </Modal>
   );
-};
+}

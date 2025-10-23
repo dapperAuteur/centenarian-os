@@ -13,6 +13,7 @@ import {
   toUTC,
   formatDuration,
 } from '@/lib/utils/sessionValidation';
+import TagSelector from '@/components/ui/TagSelector';
 
 interface SessionCreateModalProps {
   isOpen: boolean;
@@ -25,12 +26,8 @@ interface SessionCreateModalProps {
 }
 
 /**
- * Manual session creation modal
- * Allows users to create historical focus sessions
- * Auto-calculates duration and revenue, with optional manual override
- * 
- * FIXED: Uses individual state variables instead of formData object
- * to prevent focus loss when typing
+ * Manual session creation modal with tags support
+ * Uses individual state variables to prevent focus loss
  */
 export default function SessionCreateModal({
   isOpen,
@@ -41,13 +38,14 @@ export default function SessionCreateModal({
   allSessions,
   defaultHourlyRate = 0,
 }: SessionCreateModalProps) {
-  // Individual state variables (like TaskModal pattern) to prevent re-renders
+  // Individual state variables (prevents focus loss)
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [manualDurationMinutes, setManualDurationMinutes] = useState(0);
   const [taskId, setTaskId] = useState('');
   const [hourlyRate, setHourlyRate] = useState(defaultHourlyRate);
   const [notes, setNotes] = useState('');
+  const [tags, setTags] = useState<string[]>([]); // ✅ Added tags
   const [useManualDuration, setUseManualDuration] = useState(false);
   
   const [isCreating, setIsCreating] = useState(false);
@@ -70,25 +68,21 @@ export default function SessionCreateModal({
       setTaskId('');
       setHourlyRate(defaultHourlyRate);
       setNotes('');
+      setTags([]); // ✅ Reset tags
       setUseManualDuration(false);
     }
   }, [isOpen, defaultHourlyRate]);
 
   // Recalculate duration and revenue
-  // NOTE: notes is NOT in dependencies - doesn't affect calculations
   useEffect(() => {
     if (startTime && endTime && !useManualDuration) {
       try {
-        const duration = calculateDuration(
-          toUTC(startTime),
-          toUTC(endTime)
-        );
+        const duration = calculateDuration(toUTC(startTime), toUTC(endTime));
         setCalculatedDuration(duration);
 
         const revenue = calculateRevenue(duration, hourlyRate);
         setCalculatedRevenue(revenue);
 
-        // Validate
         const validationResult = validateSession(
           {
             start_time: toUTC(startTime),
@@ -98,7 +92,7 @@ export default function SessionCreateModal({
             notes: notes,
           },
           allSessions
-            .filter(s => s.end_time) // Only check completed sessions
+            .filter(s => s.end_time)
             .map(s => ({
               id: s.id,
               start_time: s.start_time,
@@ -116,14 +110,12 @@ export default function SessionCreateModal({
         setCalculatedRevenue(0);
       }
     } else if (useManualDuration) {
-      // Use manual duration
       const duration = manualDurationMinutes * 60;
       setCalculatedDuration(duration);
 
       const revenue = calculateRevenue(duration, hourlyRate);
       setCalculatedRevenue(revenue);
 
-      // Validate with manual override warning
       const validationResult = validateSession(
         {
           start_time: toUTC(startTime),
@@ -146,22 +138,25 @@ export default function SessionCreateModal({
         errors: validationResult.errors,
         warnings: validationResult.warnings,
       });
-    } else {
-      setCalculatedDuration(0);
-      setCalculatedRevenue(0);
-      setValidation({ errors: [], warnings: [] });
     }
-  }, [startTime, endTime, manualDurationMinutes, hourlyRate, useManualDuration, taskId, allSessions]);
+  }, [
+    startTime,
+    endTime,
+    manualDurationMinutes,
+    hourlyRate,
+    useManualDuration,
+    allSessions,
+    taskId,
+    notes,
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check for validation errors
     if (validation.errors.length > 0) {
       return;
     }
 
-    // If there are warnings, require user confirmation
     if (validation.warnings.length > 0) {
       const confirmMessage =
         'Warning:\n\n' +
@@ -193,6 +188,7 @@ export default function SessionCreateModal({
           hourly_rate: hourlyRate,
           revenue: calculatedRevenue,
           notes: notes || null,
+          tags: tags.length > 0 ? tags : null, // ✅ Include tags
         }]);
 
       if (insertError) throw insertError;
@@ -214,6 +210,7 @@ export default function SessionCreateModal({
     setTaskId('');
     setHourlyRate(defaultHourlyRate);
     setNotes('');
+    setTags([]); // ✅ Reset tags
     setValidation({ errors: [], warnings: [] });
     setCalculatedDuration(0);
     setCalculatedRevenue(0);
@@ -415,6 +412,20 @@ export default function SessionCreateModal({
           />
         </div>
 
+        {/* Tags - ✅ Added */}
+        <div className="mt-6">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Tags (optional)
+          </label>
+          <TagSelector
+            selectedTags={tags}
+            onChange={setTags}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Categorize this session for better insights
+          </p>
+        </div>
+
         {/* Actions */}
         <div className="mt-6 flex items-center justify-end space-x-3">
           <button
@@ -436,4 +447,4 @@ export default function SessionCreateModal({
       </form>
     </Modal>
   );
-};
+}
