@@ -15,6 +15,16 @@ export type ItemStatus = 'active' | 'archived';
 export type NCVScore = 'Green' | 'Yellow' | 'Red';
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
+export interface UserProfile {
+  id: string;
+  user_id: string;
+  low_servings_threshold: number | null;
+  daily_focus_goal_minutes: number; // ✅ Add this
+  weekly_focus_goal_minutes: number; // ✅ Add this
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Roadmap {
   id: string;
   user_id: string;
