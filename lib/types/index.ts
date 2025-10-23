@@ -190,6 +190,7 @@ export interface FocusSession {
   created_at: string;
   hourly_rate: number;
   revenue: number;
+  tags: string[] | null;
 }
 
 export interface DailyLog {

@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { LogOut, Utensils, Clock, Map, ChartNetwork, Timer, History } from 'lucide-react';
+import { LogOut, Utensils, Clock, Map, ChartNetwork, Timer, History, BarChart2 } from 'lucide-react';
 
 export default function DashboardLayout({
   children,
@@ -94,6 +94,14 @@ export default function DashboardLayout({
                 >
                   <ChartNetwork className="w-4 h-4 mr-2" />
                   Analytics
+                </Link>
+
+                <Link 
+                  href="/dashboard/engine/analytics"
+                  className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                >
+                  <BarChart2 className="w-4 h-4 mr-2" />
+                  Trends
                 </Link>
               </div>
             </div>

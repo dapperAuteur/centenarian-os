@@ -27,6 +27,7 @@ export default function Modal({
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const hasInitializedRef = useRef(false);
 
   // Size classes
   const sizeClasses = {
@@ -37,37 +38,92 @@ export default function Modal({
   };
 
   // Handle Esc key
+  // useEffect(() => {
+  //   const handleEscape = (e: KeyboardEvent) => {
+  //     if (e.key === 'Escape' && isOpen) {
+  //       onClose();
+  //     }
+  //   };
+
+  //   if (isOpen) {
+  //     // Store current focus
+  //     previousFocusRef.current = document.activeElement as HTMLElement;
+      
+  //     // Prevent body scroll
+  //     document.body.style.overflow = 'hidden';
+      
+  //     // Add escape listener
+  //     document.addEventListener('keydown', handleEscape);
+      
+  //     // Focus modal
+  //     setTimeout(() => modalRef.current?.focus(), 100);
+  //   }
+
+  //   return () => {
+  //     document.removeEventListener('keydown', handleEscape);
+  //     document.body.style.overflow = 'unset';
+      
+  //     // Restore focus
+  //     if (previousFocusRef.current) {
+  //       previousFocusRef.current.focus();
+  //     }
+  //   };
+  // }, [isOpen, onClose]);
+
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape') {
         onClose();
       }
     };
 
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  // Handle body scroll and focus - only on mount/unmount
+  useEffect(() => {
     if (isOpen) {
-      // Store current focus
-      previousFocusRef.current = document.activeElement as HTMLElement;
+      // Store current focus only on initial open
+      if (!hasInitializedRef.current) {
+        previousFocusRef.current = document.activeElement as HTMLElement;
+        hasInitializedRef.current = true;
+      }
       
       // Prevent body scroll
       document.body.style.overflow = 'hidden';
       
-      // Add escape listener
-      document.addEventListener('keydown', handleEscape);
-      
-      // Focus modal
-      setTimeout(() => modalRef.current?.focus(), 100);
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
+      // Focus modal container ONLY if no input is currently focused
+      setTimeout(() => {
+        const activeElement = document.activeElement;
+        const isInputFocused = 
+          activeElement?.tagName === 'INPUT' ||
+          activeElement?.tagName === 'TEXTAREA' ||
+          activeElement?.tagName === 'SELECT';
+        
+        if (!isInputFocused && modalRef.current) {
+          modalRef.current.focus();
+        }
+      }, 100);
+    } else {
+      // Reset when modal closes
+      hasInitializedRef.current = false;
       document.body.style.overflow = 'unset';
       
       // Restore focus
       if (previousFocusRef.current) {
         previousFocusRef.current.focus();
+        previousFocusRef.current = null;
       }
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]); // ✅ Only depends on isOpen
 
   if (!isOpen) return null;
 
