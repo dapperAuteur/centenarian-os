@@ -237,7 +237,7 @@ export function ProtocolModal({ isOpen, onClose, protocol }: ProtocolModalProps)
               onChange={(e) => setName(e.target.value)}
               required
               placeholder="e.g., Tuna Ceviche"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
             />
           </div>
 
@@ -248,7 +248,7 @@ export function ProtocolModal({ isOpen, onClose, protocol }: ProtocolModalProps)
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
               placeholder="Brief description of this meal..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
             />
           </div>
 
@@ -261,7 +261,7 @@ export function ProtocolModal({ isOpen, onClose, protocol }: ProtocolModalProps)
                 value={prepTime}
                 onChange={(e) => setPrepTime(e.target.value)}
                 placeholder="15"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
               />
             </div>
             <div>
@@ -271,7 +271,7 @@ export function ProtocolModal({ isOpen, onClose, protocol }: ProtocolModalProps)
                 value={cookTime}
                 onChange={(e) => setCookTime(e.target.value)}
                 placeholder="30"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
               />
             </div>
             <div>
@@ -282,7 +282,7 @@ export function ProtocolModal({ isOpen, onClose, protocol }: ProtocolModalProps)
                 value={servings}
                 onChange={(e) => setServings(e.target.value)}
                 placeholder="4"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
               />
             </div>
           </div>
@@ -295,7 +295,7 @@ export function ProtocolModal({ isOpen, onClose, protocol }: ProtocolModalProps)
                 type="date"
                 value={dateMade}
                 onChange={(e) => setDateMade(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
               />
             </div>
             <div>
@@ -304,7 +304,7 @@ export function ProtocolModal({ isOpen, onClose, protocol }: ProtocolModalProps)
                 type="date"
                 value={dateFinished}
                 onChange={(e) => setDateFinished(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
               />
             </div>
           </div>
@@ -345,12 +345,12 @@ export function ProtocolModal({ isOpen, onClose, protocol }: ProtocolModalProps)
                       step="0.1"
                       value={entry.quantity}
                       onChange={(e) => updateIngredient(index, 'quantity', parseFloat(e.target.value))}
-                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 text-sm"
+                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 text-sm form-input"
                     />
                     <select
                       value={entry.unit}
                       onChange={(e) => updateIngredient(index, 'unit', e.target.value)}
-                      className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 text-sm"
+                      className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 text-sm form-input"
                     >
                       <option value="g">g</option>
                       <option value="ml">ml</option>

@@ -9,9 +9,8 @@ export type TaskTag =
   | 'MINDSET' 
   | 'FUEL';
 
-export type GoalStatus = 'active' | 'completed' | 'deferred' | 'archived';
-export type MilestoneStatus = 'not_started' | 'in_progress' | 'completed' | 'blocked' | 'archived';
-export type ItemStatus = 'active' | 'archived';
+export type GoalStatus = 'active' | 'completed' | 'deferred';
+export type MilestoneStatus = 'not_started' | 'in_progress' | 'completed' | 'blocked';
 export type NCVScore = 'Green' | 'Yellow' | 'Red';
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
@@ -22,14 +21,11 @@ export interface Roadmap {
   description: string | null;
   start_date: string;
   end_date: string;
-  status: ItemStatus;  // ADD
-  archived_at: string | null;
   created_at: string;
   updated_at: string;
   estimated_cost: number;
   actual_cost: number;
   revenue: number;
-  
 }
 
 export interface Goal {
@@ -39,7 +35,6 @@ export interface Goal {
   description: string | null;
   category: TaskTag;
   target_year: number;
-  archived_at: string | null;
   status: GoalStatus;
   created_at: string;
   updated_at: string;
@@ -61,7 +56,6 @@ export interface Milestone {
   estimated_cost: number;
   actual_cost: number;
   revenue: number;
-  archived_at: string | null;
 }
 
 export interface Task {
@@ -80,8 +74,6 @@ export interface Task {
   estimated_cost: number;
   actual_cost: number;
   revenue: number;
-  status: ItemStatus;  // ADD THIS
-  archived_at: string | null;
 }
 
 // Nutrition types
@@ -185,7 +177,7 @@ export interface FocusSession {
   task_id: string | null;
   start_time: string;
   end_time: string | null;
-  duration: number | null;
+  duration_seconds: number | null;
   notes: string | null;
   created_at: string;
   hourly_rate: number;

@@ -12,7 +12,10 @@ export default function RoadmapPage() {
           </Link>
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-to-br from-fuchsia-500 to-sky-500 rounded-lg"></div>
-            <span className="text-xl font-bold text-gray-900">CentenarianOS</span>
+            <Link
+              href="/dashboard/roadmap">
+              <span className="text-xl font-bold text-gray-900">CentenarianOS</span>
+            </Link>
           </div>
         </nav>
       </header>

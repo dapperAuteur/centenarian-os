@@ -15,8 +15,8 @@ export default function LandingPage() {
             </Link>
           </div>
           <div className="flex items-center space-x-6">
-            <Link href="/roadmap" className="text-gray-600 hover:text-gray-900 font-medium">
-              Roadmap
+            <Link href="/tech-roadmap" className="text-gray-600 hover:text-gray-900 font-medium">
+              Tech Roadmap
             </Link>
             <Link href="/contribute" className="text-gray-600 hover:text-gray-900 font-medium">
               Contribute
@@ -49,10 +49,10 @@ export default function LandingPage() {
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
             <Link 
-              href="/roadmap" 
+              href="/tech-roadmap" 
               className="px-8 py-4 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:border-gray-400 transition-colors font-semibold text-lg"
             >
-              View Roadmap
+              View Tech Roadmap
             </Link>
           </div>
         </div>
@@ -200,8 +200,8 @@ export default function LandingPage() {
               © 2025 CentenarianOS. Open source under MIT License.
             </p>
             <div className="flex space-x-6">
-              <Link href="/roadmap" className="text-gray-600 hover:text-gray-900 text-sm">
-                Roadmap
+              <Link href="/tech-roadmap" className="text-gray-600 hover:text-gray-900 text-sm">
+                Tech Roadmap
               </Link>
               <Link href="/contribute" className="text-gray-600 hover:text-gray-900 text-sm">
                 Contribute

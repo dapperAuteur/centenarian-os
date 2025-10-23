@@ -177,7 +177,7 @@ export default function FuelPage() {
     {
       title: 'Recipe Ideas',
       description: 'AI suggestions from inventory',
-      href: '/roadmap',
+      href: '/tech-roadmap',
       icon: '💡',
       stat: 0,
       statLabel: 'coming soon',

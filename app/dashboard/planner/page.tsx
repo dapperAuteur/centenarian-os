@@ -287,7 +287,6 @@ export default function PlannerPage() {
           ))}
         </div>
       )}
-
       <EditTaskModal
         task={editingTask!}
         isOpen={!!editingTask}

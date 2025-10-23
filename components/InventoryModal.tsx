@@ -108,7 +108,7 @@ export function InventoryModal({
               onChange={(e) => setIngredientId(e.target.value)}
               required
               disabled={!!inventoryItem}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 disabled:bg-gray-100"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 disabled:bg-gray-100 form-input"
             >
               <option value="">Select ingredient...</option>
               {ingredients.map(ing => (
@@ -133,7 +133,7 @@ export function InventoryModal({
               required
               step="0.01"
               min="0"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
             />
           </div>
 
@@ -145,7 +145,7 @@ export function InventoryModal({
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
             >
               <option value="g">Grams (g)</option>
               <option value="ml">Milliliters (ml)</option>
@@ -171,7 +171,7 @@ export function InventoryModal({
               step="0.01"
               min="0"
               placeholder="Alert when stock falls below this"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
             />
             <p className="text-xs text-gray-500 mt-1">
               You&apos;ll be alerted when quantity drops below this threshold
