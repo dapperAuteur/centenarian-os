@@ -4,13 +4,18 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { FocusSession, Task, PomodoroSettings, DEFAULT_POMODORO_SETTINGS, WorkInterval, BreakInterval } from '@/lib/types';
+import { FocusSession, Task, PomodoroSettings, DEFAULT_POMODORO_SETTINGS, WorkInterval, BreakInterval, SessionTemplate, CreateTemplateInput } from '@/lib/types';
+import SaveSessionAsTemplateButton from '@/components/focus/SaveSessionAsTemplateButton';
 import { Play, Pause, StopCircle, Settings as SettingsIcon } from 'lucide-react';
 import PomodoroPresets from '@/components/focus/PomodoroPresets';
 import CustomPresetModal from '@/components/focus/CustomPresetModal';
 import PomodoroSettingsModal from '@/components/focus/PomodoroSettingsModal';
 import PomodoroTimer from '@/components/focus/PomodoroTimer';
 import { getBreakDuration, calculatePomodoroStats, calculateNetWorkDuration } from '@/lib/utils/pomodoroUtils';
+import TemplateQuickAccess from '@/components/focus/TemplateQuickAccess';
+import TemplateManagerModal from '@/components/focus/TemplateManagerModal';
+import CreateTemplateModal from '@/components/focus/CreateTemplateModal';
+import DeleteTemplateModal from '@/components/focus/DeleteTemplateModal';
 
 type TimerMode = 'simple' | 'pomodoro';
 type PomodoroPhase = 'work' | 'short-break' | 'long-break';
@@ -24,6 +29,12 @@ export default function FocusTimerPage() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [notes, setNotes] = useState('');
+  const [templateInitialData, setTemplateInitialData] = useState<{
+    durationMinutes?: number;
+    hourlyRate?: number;
+    notesTemplate?: string;
+    usePomodoro?: boolean;
+  } | undefined>(undefined);
   
   // Pomodoro Presets
   const [customPresets, setCustomPresets] = useState<Array<{
@@ -46,6 +57,15 @@ export default function FocusTimerPage() {
   const [workIntervals, setWorkIntervals] = useState<WorkInterval[]>([]);
   const [breakIntervals, setBreakIntervals] = useState<BreakInterval[]>([]);
   const [currentIntervalStart, setCurrentIntervalStart] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<SessionTemplate[]>([]);
+  const [showTemplateManager, setShowTemplateManager] = useState(false);
+  const [showCreateTemplate, setShowCreateTemplate] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<SessionTemplate | null>(null);
+  const [deleteTemplateModal, setDeleteTemplateModal] = useState<{
+    isOpen: boolean;
+    template: SessionTemplate | null;
+  }>({ isOpen: false, template: null });
+  const [isDeletingTemplate, setIsDeletingTemplate] = useState(false);
   
   const supabase = createClient();
 
@@ -92,6 +112,24 @@ export default function FocusTimerPage() {
     }
   }, [supabase]);
 
+  const loadTemplates = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('session_templates')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Failed to load templates:', error);
+      return;
+    }
+
+    setTemplates(data || []);
+  }, [supabase]);
+
   // Load custom presets and settings
   useEffect(() => {
     const savedPresets = localStorage.getItem('focus_custom_presets');
@@ -113,7 +151,8 @@ export default function FocusTimerPage() {
     }
 
     loadData();
-  }, [loadData]);
+    loadTemplates();
+  }, [loadData, loadTemplates]);
 
   // Timer tick
   useEffect(() => {
@@ -228,6 +267,102 @@ export default function FocusTimerPage() {
     setIsRunning,
     setBreakIntervals,
   ]);
+
+  const handleUseTemplate = (template: SessionTemplate) => {
+    // Pre-fill form with template data
+    setHourlyRate(template.hourly_rate);
+    setNotes(template.notes_template || '');
+    
+    if (template.use_pomodoro) {
+      setTimerMode('pomodoro');
+    } else {
+      setTimerMode('simple');
+      setPresetDuration(template.duration_minutes);
+    }
+
+    // Note: selectedTags would go here if you add tag support to timer
+    // For now, tags are only available in manual session creation
+  };
+
+  const handleCreateTemplate = async (input: CreateTemplateInput) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { error } = await supabase
+      .from('session_templates')
+      .insert([{
+        user_id: user.id,
+        ...input,
+      }]);
+
+    if (error) throw error;
+
+    await loadTemplates();
+  };
+
+  const handleUpdateTemplate = async (input: CreateTemplateInput) => {
+    if (!editingTemplate) return;
+
+    const { error } = await supabase
+      .from('session_templates')
+      .update(input)
+      .eq('id', editingTemplate.id);
+
+    if (error) throw error;
+
+    await loadTemplates();
+    setEditingTemplate(null);
+  };
+
+  const handleSaveTemplate = async (input: CreateTemplateInput) => {
+    if (editingTemplate) {
+      await handleUpdateTemplate(input);
+    } else {
+      await handleCreateTemplate(input);
+    }
+  };
+
+  const handleEditTemplate = (template: SessionTemplate) => {
+    setEditingTemplate(template);
+    setShowCreateTemplate(true);
+  };
+
+  const handleDeleteTemplateClick = (template: SessionTemplate) => {
+    setDeleteTemplateModal({ isOpen: true, template });
+  };
+
+  const handleDeleteTemplateConfirm = async () => {
+    if (!deleteTemplateModal.template) return;
+
+    try {
+      setIsDeletingTemplate(true);
+
+      const { error } = await supabase
+        .from('session_templates')
+        .delete()
+        .eq('id', deleteTemplateModal.template.id);
+
+      if (error) throw error;
+
+      await loadTemplates();
+      setDeleteTemplateModal({ isOpen: false, template: null });
+    } catch (error) {
+      console.error('Failed to delete template:', error);
+      alert('Failed to delete template. Please try again.');
+    } finally {
+      setIsDeletingTemplate(false);
+    }
+  };
+
+  const handleOpenTemplateManager = () => {
+    setShowTemplateManager(true);
+  };
+
+  const handleCreateNewTemplate = () => {
+    setEditingTemplate(null);
+    setShowCreateTemplate(true);
+    setShowTemplateManager(false);
+  };
 
   // Pomodoro phase completion check
   useEffect(() => {
@@ -438,6 +573,26 @@ export default function FocusTimerPage() {
                 </button>
               </div>
             )}
+            <TemplateQuickAccess
+              templates={templates}
+              onUse={handleUseTemplate}
+              onManage={handleOpenTemplateManager}
+              onEdit={handleEditTemplate}
+              onDelete={handleDeleteTemplateClick}
+              maxVisible={4}
+            />
+
+            {/* Divider */}
+            {templates.length > 0 && (
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="px-3 bg-white text-sm text-gray-500">or start manually</span>
+                </div>
+              </div>
+            )}
 
             {/* Timer Display */}
             {currentSessionId && timerMode === 'pomodoro' ? (
@@ -613,6 +768,36 @@ export default function FocusTimerPage() {
                   placeholder="Session notes..."
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
                 />
+                {currentSessionId && (
+                  <>
+                    <textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      rows={3}
+                      placeholder="Session notes..."
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
+                    />
+
+                    {/* ✅ Add Save as Template button */}
+                    <SaveSessionAsTemplateButton
+                      sessionData={{
+                        duration: elapsedSeconds,
+                        hourlyRate,
+                        notes,
+                        usePomodoro: timerMode === 'pomodoro',
+                      }}
+                      onSave={() => {
+                        setTemplateInitialData({
+                          durationMinutes: Math.floor(elapsedSeconds / 60),
+                          hourlyRate,
+                          notesTemplate: notes,
+                          usePomodoro: timerMode === 'pomodoro',
+                        });
+                        setEditingTemplate(null);
+                        setShowCreateTemplate(true);
+                      }}
+                    />
+
                 <div className="grid grid-cols-2 gap-4">
                   {isRunning ? (
                     <button
@@ -639,6 +824,9 @@ export default function FocusTimerPage() {
                     Stop & Save
                   </button>
                 </div>
+
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -702,6 +890,38 @@ export default function FocusTimerPage() {
         onClose={() => setShowPomodoroSettings(false)}
         settings={pomodoroSettings}
         onSave={handleSavePomodoroSettings}
+      />
+      {/* Template Manager Modal */}
+      <TemplateManagerModal
+        isOpen={showTemplateManager}
+        onClose={() => setShowTemplateManager(false)}
+        templates={templates}
+        onUse={handleUseTemplate}
+        onCreate={handleCreateNewTemplate}
+        onEdit={handleEditTemplate}
+        onDelete={handleDeleteTemplateClick}
+      />
+
+      {/* Create/Edit Template Modal */}
+      <CreateTemplateModal
+        isOpen={showCreateTemplate}
+        onClose={() => {
+          setShowCreateTemplate(false);
+          setEditingTemplate(null);
+          setTemplateInitialData(undefined);
+        }}
+        onSave={handleSaveTemplate}
+        editTemplate={editingTemplate}
+        initialData={templateInitialData}
+      />
+
+      {/* Delete Template Confirmation */}
+      <DeleteTemplateModal
+        isOpen={deleteTemplateModal.isOpen}
+        onClose={() => setDeleteTemplateModal({ isOpen: false, template: null })}
+        onConfirm={handleDeleteTemplateConfirm}
+        template={deleteTemplateModal.template}
+        isDeleting={isDeletingTemplate}
       />
     </div>
   );

@@ -252,6 +252,32 @@ export interface GoalWithMilestones extends Goal {
   milestones?: Milestone[];
 }
 
+export interface SessionTemplate {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  duration_minutes: number;
+  tags: string[];
+  hourly_rate: number;
+  notes_template: string | null;
+  icon: string;
+  use_pomodoro: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateTemplateInput {
+  name: string;
+  description?: string;
+  duration_minutes: number;
+  tags?: string[];
+  hourly_rate?: number;
+  notes_template?: string;
+  icon?: string;
+  use_pomodoro?: boolean;
+}
+
 export interface ProtocolWithIngredients extends Protocol {
   protocol_ingredients?: (ProtocolIngredient & { ingredient?: Ingredient })[];
 }
