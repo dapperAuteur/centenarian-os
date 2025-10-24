@@ -16,6 +16,7 @@ import TemplateQuickAccess from '@/components/focus/TemplateQuickAccess';
 import TemplateManagerModal from '@/components/focus/TemplateManagerModal';
 import CreateTemplateModal from '@/components/focus/CreateTemplateModal';
 import DeleteTemplateModal from '@/components/focus/DeleteTemplateModal';
+import QualityRatingModal from '@/components/focus/QualityRatingModal';
 
 type TimerMode = 'simple' | 'pomodoro';
 type PomodoroPhase = 'work' | 'short-break' | 'long-break';
@@ -67,6 +68,13 @@ export default function FocusTimerPage() {
     template: SessionTemplate | null;
   }>({ isOpen: false, template: null });
   const [isDeletingTemplate, setIsDeletingTemplate] = useState(false);
+  const [showQualityModal, setShowQualityModal] = useState(false);
+  const [pendingSessionEnd, setPendingSessionEnd] = useState<{
+    sessionId: string;
+    elapsedSeconds: number;
+    revenue: number;
+    notes: string;
+  } | null>(null);
   
   const supabase = createClient();
 
@@ -450,8 +458,24 @@ export default function FocusTimerPage() {
   };
 
   const stopSession = async () => {
-    if (!currentSessionId) return;
+  if (!currentSessionId) return;
+  
+  const revenueEarned = (elapsedSeconds / 3600) * hourlyRate;
 
+  // Store session data and show quality modal
+  setPendingSessionEnd({
+    sessionId: currentSessionId,
+    elapsedSeconds: elapsedSeconds,
+    revenue: revenueEarned,
+    notes: notes,
+  });
+  setShowQualityModal(true);
+};
+
+const handleQualityRating = async (rating: number) => {
+  if (!pendingSessionEnd) return;
+
+  try {
     // If in Pomodoro mode and currently working, save the current work interval
     if (timerMode === 'pomodoro' && pomodoroPhase === 'work' && currentIntervalStart) {
       const newWorkInterval: WorkInterval = {
@@ -460,7 +484,6 @@ export default function FocusTimerPage() {
         duration: currentPhaseSeconds,
       };
       const finalWorkIntervals = [...workIntervals, newWorkInterval];
-      setWorkIntervals(finalWorkIntervals);
 
       const netWorkDuration = calculateNetWorkDuration(finalWorkIntervals, breakIntervals);
       const revenueEarned = (netWorkDuration / 3600) * hourlyRate;
@@ -469,29 +492,32 @@ export default function FocusTimerPage() {
         .from('focus_sessions')
         .update({
           end_time: new Date().toISOString(),
-          duration: elapsedSeconds,
+          duration: pendingSessionEnd.elapsedSeconds,
           net_work_duration: netWorkDuration,
           revenue: revenueEarned,
-          notes: notes || null,
+          notes: pendingSessionEnd.notes || null,
           work_intervals: finalWorkIntervals,
           break_intervals: breakIntervals,
+          quality_rating: rating,
         })
-        .eq('id', currentSessionId);
+        .eq('id', pendingSessionEnd.sessionId);
     } else {
       // Simple mode
-      const revenueEarned = (elapsedSeconds / 3600) * hourlyRate;
       await supabase
         .from('focus_sessions')
         .update({
           end_time: new Date().toISOString(),
-          duration: elapsedSeconds,
-          revenue: revenueEarned,
-          notes: notes || null,
+          duration: pendingSessionEnd.elapsedSeconds,
+          revenue: pendingSessionEnd.revenue,
+          notes: pendingSessionEnd.notes || null,
+          quality_rating: rating,
         })
-        .eq('id', currentSessionId);
+        .eq('id', pendingSessionEnd.sessionId);
     }
 
     // Reset state
+    setShowQualityModal(false);
+    setPendingSessionEnd(null);
     setIsRunning(false);
     setCurrentSessionId(null);
     setElapsedSeconds(0);
@@ -503,8 +529,12 @@ export default function FocusTimerPage() {
     setWorkIntervals([]);
     setBreakIntervals([]);
     setCurrentIntervalStart(null);
-    loadData();
-  };
+    
+    await loadData();
+  } catch (error) {
+    console.error('Failed to save quality rating:', error);
+  }
+};
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -934,6 +964,15 @@ export default function FocusTimerPage() {
         onConfirm={handleDeleteTemplateConfirm}
         template={deleteTemplateModal.template}
         isDeleting={isDeletingTemplate}
+      />
+      {/* Quality Rating Modal */}
+      <QualityRatingModal
+        isOpen={showQualityModal}
+        onClose={() => {
+          setShowQualityModal(false);
+          setPendingSessionEnd(null);
+        }}
+        onSubmit={handleQualityRating}
       />
     </div>
   );
