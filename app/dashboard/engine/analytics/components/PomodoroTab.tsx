@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // app/dashboard/engine/analytics/components/PomodoroTab.tsx
 'use client';
 
@@ -158,7 +159,7 @@ export default function PomodoroTab({ sessions, timeRange }: PomodoroTabProps) {
               <p>
                 <strong>Your average work interval:</strong> {pomodoroStats.avgPomodoroLength.toFixed(0)} minutes.{' '}
                 {pomodoroStats.avgPomodoroLength < 20 && (
-                  <span className="text-amber-700">Consider extending to 25 minutes—research shows that's the sweet spot for most people.</span>
+                  <span className="text-amber-700">Consider extending to 25 minutes—research shows that&apos;s the sweet spot for most people.</span>
                 )}
                 {pomodoroStats.avgPomodoroLength >= 20 && pomodoroStats.avgPomodoroLength <= 30 && (
                   <span className="text-lime-700">Perfect! This is right in the recommended 25-minute range.</span>
@@ -249,7 +250,7 @@ export default function PomodoroTab({ sessions, timeRange }: PomodoroTabProps) {
               ) : avgPomodoroQuality && avgSimpleQuality && avgSimpleQuality > avgPomodoroQuality ? (
                 <>
                   <strong>Regular sessions win on quality:</strong> Non-Pomodoro sessions have {((avgSimpleQuality - avgPomodoroQuality) / avgPomodoroQuality * 100).toFixed(0)}% higher quality ratings. 
-                  Continuous work may suit this user's workflow better.
+                  Continuous work may suit this user&apos;s workflow better.
                 </>
               ) : (
                 <>
@@ -320,7 +321,7 @@ export default function PomodoroTab({ sessions, timeRange }: PomodoroTabProps) {
           <li className="flex items-start gap-2">
             <span className="text-lg">👍</span>
             <p className="text-sm text-gray-700">
-              <strong>What's working:</strong> You've completed {pomodoroStats.totalPomodoros} pomodoros! 
+              <strong>What&apos;s working:</strong> You&apos;ve completed {pomodoroStats.totalPomodoros} pomodoros! 
               Keep the momentum going.
             </p>
           </li>

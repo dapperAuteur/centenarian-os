@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // app/dashboard/engine/analytics/components/PerformanceTab.tsx
 'use client';
 
@@ -95,6 +97,9 @@ export default function PerformanceTab({ sessions, timeRange }: PerformanceTabPr
   if (loading) {
     return <div className="text-center py-8 text-gray-500">Loading performance data...</div>;
   }
+  // const renderLabel = (props: { name: string; percent: number }) => {
+  //   return `${props.name} ${(props.percent * 100).toFixed(0)}%`;
+  // };
 
   return (
     <div className="space-y-8">
@@ -196,19 +201,19 @@ export default function PerformanceTab({ sessions, timeRange }: PerformanceTabPr
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
-                      data={tagChartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {tagChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
+  data={tagChartData}
+  cx="50%"
+  cy="50%"
+  labelLine={false}
+  label={(props: any) => `${props.name} ${(props.percent * 100).toFixed(0)}%`}
+  outerRadius={80}
+  fill="#8884d8"
+  dataKey="value"
+>
+  {tagChartData.map((entry, index) => (
+    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+  ))}
+</Pie>
                     <Tooltip />
                   </PieChart>
                 </ResponsiveContainer>
@@ -219,8 +224,8 @@ export default function PerformanceTab({ sessions, timeRange }: PerformanceTabPr
           <div className="mt-4 p-4 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-900">
               <strong>📊 For Hiring Managers:</strong> This breakdown shows resource allocation. 
-              If "meetings" dominate, reduce collaborative overhead. 
-              If "deep work" is low, protect focused time blocks.
+              If &quot;meetings&quot; dominate, reduce collaborative overhead. 
+              If &quot;deep work&quot; is low, protect focused time blocks.
             </p>
           </div>
         </div>
@@ -293,7 +298,7 @@ export default function PerformanceTab({ sessions, timeRange }: PerformanceTabPr
           <div className="mt-4 p-4 bg-purple-50 rounded-lg">
             <p className="text-sm text-purple-900">
               <strong>💡 What This Means:</strong> Templates with high usage + high quality are your 
-              "winning formulas." Create more templates like these. Templates with low quality should be 
+              &quot;winning formulas.&quot; Create more templates like these. Templates with low quality should be 
               reviewed and improved.
             </p>
           </div>

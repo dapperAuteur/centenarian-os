@@ -200,11 +200,14 @@ export interface FocusSession {
   created_at: string;
   hourly_rate: number;
   revenue: number;
-  tags: string[] | null;
+  quality_rating?: number | null;
+  tags?: string[] | null;
+  template_id?: string | null;
   pomodoro_mode: boolean;
   work_intervals: WorkInterval[] | null;
   break_intervals: BreakInterval[] | null;
   net_work_duration: number | null;
+  updated_at?: string;
 }
 
 export interface DailyLog {
