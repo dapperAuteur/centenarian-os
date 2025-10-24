@@ -36,7 +36,12 @@ export function calculateDailyProgress(
     return sessionDate === date;
   });
 
-  const completedSeconds = todaySessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+  const completedSeconds = todaySessions.reduce((sum, s) => {
+    const workTime = s.pomodoro_mode && s.net_work_duration !== null
+      ? s.net_work_duration
+      : (s.duration || 0);
+    return sum + workTime;
+  }, 0);
   const completedMinutes = Math.floor(completedSeconds / 60);
   const percentage = goalMinutes > 0 ? (completedMinutes / goalMinutes) * 100 : 0;
 
