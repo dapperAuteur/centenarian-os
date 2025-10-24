@@ -46,6 +46,7 @@ export default function FocusTimerPage() {
   const [showPresetModal, setShowPresetModal] = useState(false);
   const [presetDuration, setPresetDuration] = useState<number | null>(null);
   const [targetDuration, setTargetDuration] = useState<number | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
 
   // Pomodoro Mode State
   const [timerMode, setTimerMode] = useState<TimerMode>('simple');
@@ -705,6 +706,17 @@ export default function FocusTimerPage() {
                       </option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tags (optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Tags (comma-separated: coding, design, planning)"
+                    onChange={(e) => setTags(e.target.value.split(',').map(t => t.trim()))}
+                    className="w-full px-4 py-2 border rounded-lg form-input"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
