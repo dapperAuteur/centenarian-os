@@ -1,10 +1,12 @@
 // app/dashboard/engine/sessions/page.tsx
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { FocusSession, Task } from '@/lib/types';
-import { Plus, Search, Filter, RefreshCw } from 'lucide-react';
+import { calculateDailyProgress, formatGoalTime } from '@/lib/utils/goalUtils';
+import { UserProfile } from '@/lib/types';
+import { Plus, Search, Filter, RefreshCw, Target } from 'lucide-react';
 import SessionsTable from './components/SessionsTable';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
 import ForceStopModal from './components/ForceStopModal';
@@ -40,8 +42,9 @@ export default function SessionsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [createModal, setCreateModal] = useState(false);
   const [isTaskCreateModalOpen, setTaskCreateModalOpen] = useState(false);
-  const memoizedTasks = useMemo(() => tasks, [tasks]);
-  const memoizedSessions = useMemo(() => allSessions, [allSessions]);
+  // const memoizedTasks = useMemo(() => tasks, [tasks]);
+  // const memoizedSessions = useMemo(() => allSessions, [allSessions]);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
 
   // Modal states
@@ -90,6 +93,18 @@ export default function SessionsPage() {
       if (sessionsError) {
         console.error('Sessions error:', sessionsError);
         throw sessionsError;
+      }
+      
+      if (user) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile) {
+          setUserProfile(profile);
+        }
       }
       // Load tasks (RLS handles user filtering through milestone->goal->roadmap hierarchy)
       const { data: tasksData, error: tasksError } = await supabase
@@ -191,6 +206,10 @@ export default function SessionsPage() {
     setCurrentPage(1); // Reset to first page when filters change
   }, [filters, allSessions, tasks]);
 
+  const dailyProgress = userProfile
+  ? calculateDailyProgress(sessions, userProfile.daily_focus_goal_minutes)
+  : null;
+
   // Pagination
   const totalPages = Math.ceil(sessions.length / SESSIONS_PER_PAGE);
   const paginatedSessions = sessions.slice(
@@ -284,13 +303,6 @@ export default function SessionsPage() {
       setIsStopping(false);
     }
   };
-
-  // const handleEditSave = async () => {
-  //   setSuccess('Session updated successfully');
-  //   setTimeout(() => setSuccess(null), 3000);
-  //   setEditModal({ isOpen: false, session: null });
-  //   await loadData();
-  // };
 
   const handleTaskCreated = () => {
     setTaskCreateModalOpen(false);
@@ -387,6 +399,55 @@ export default function SessionsPage() {
           </div>
         </div>
       </div>
+
+      {/* Daily Goal Progress */}
+      {userProfile && dailyProgress && (
+        <div className="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center space-x-2 mb-2">
+                <Target className="w-5 h-5 text-indigo-600" />
+                <h3 className="text-lg font-bold text-indigo-900">Today&apos;s Focus Goal</h3>
+              </div>
+              <p className="text-sm text-indigo-700 mb-4">
+                {formatGoalTime(dailyProgress.completedMinutes)} of{' '}
+                {formatGoalTime(dailyProgress.goalMinutes)} completed
+              </p>
+
+              {/* Progress Bar */}
+              <div className="relative w-full h-4 bg-indigo-100 rounded-full overflow-hidden">
+                <div
+                  className={`absolute left-0 top-0 h-full transition-all ${
+                    dailyProgress.percentage >= 100
+                      ? 'bg-lime-600'
+                      : dailyProgress.percentage >= 75
+                      ? 'bg-blue-600'
+                      : dailyProgress.percentage >= 50
+                      ? 'bg-indigo-600'
+                      : dailyProgress.percentage >= 25
+                      ? 'bg-amber-600'
+                      : 'bg-red-600'
+                  }`}
+                  style={{ width: `${Math.min(dailyProgress.percentage, 100)}%` }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-sm font-semibold text-indigo-900">
+                  {Math.round(dailyProgress.percentage)}%
+                </span>
+                {dailyProgress.percentage >= 100 ? (
+                  <span className="text-sm font-semibold text-lime-700">🎉 Goal Completed!</span>
+                ) : (
+                  <span className="text-sm text-indigo-700">
+                    {formatGoalTime(dailyProgress.goalMinutes - dailyProgress.completedMinutes)} remaining
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search & Filters */}
       <div className="mb-6 space-y-4">

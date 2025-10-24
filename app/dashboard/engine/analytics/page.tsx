@@ -3,6 +3,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import GoalProgressWidget from '@/components/focus/GoalProgressWidget';
+import { calculateDailyProgress, calculateWeeklyProgress, formatGoalTime } from '@/lib/utils/goalUtils';
+import { UserProfile } from '@/lib/types';
 import { PREDEFINED_TAGS, getTagById, getTagColorClasses } from '@/lib/utils/tagUtils';
 
 import { FocusSession } from '@/lib/types';
@@ -49,6 +52,7 @@ export default function AnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   const supabase = createClient();
 
@@ -70,6 +74,18 @@ export default function AnalyticsPage() {
       setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
       setIsLoading(false);
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (profile) {
+        setUserProfile(profile);
+      }
     }
   }, [supabase]);
 
@@ -105,6 +121,21 @@ export default function AnalyticsPage() {
   const timeOfDayStats = calculateTimeOfDayStats(filteredSessions);
   const metrics = calculateOverviewMetrics(filteredSessions);
 
+  const dailyProgress = userProfile
+    ? calculateDailyProgress(
+        filteredSessions,
+        userProfile.daily_focus_goal_minutes
+      )
+    : null;
+
+  const weeklyProgress = userProfile
+    ? calculateWeeklyProgress(
+        filteredSessions,
+        userProfile.weekly_focus_goal_minutes,
+        userProfile.daily_focus_goal_minutes
+      )
+    : null;
+
   // Prepare chart data
   const dailyChartData = dailyStats.map(day => ({
     date: new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
@@ -139,6 +170,8 @@ export default function AnalyticsPage() {
     s => s.tags && s.tags.includes(tag.id)
   );
   const totalSeconds = tagSessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+
+  
 
   return {
     tag,
@@ -235,6 +268,26 @@ const tagChartData = tagStats.map(stat => ({
           color="lime"
         />
       </div>
+
+      {/* Goal Progress */}
+      {userProfile && dailyProgress && weeklyProgress && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <GoalProgressWidget
+            title="Today's Goal"
+            completedMinutes={dailyProgress.completedMinutes}
+            goalMinutes={dailyProgress.goalMinutes}
+            percentage={dailyProgress.percentage}
+            icon="target"
+          />
+          <GoalProgressWidget
+            title="This Week's Goal"
+            completedMinutes={weeklyProgress.completedMinutes}
+            goalMinutes={weeklyProgress.goalMinutes}
+            percentage={weeklyProgress.percentage}
+            icon="calendar"
+          />
+        </div>
+      )}
 
       {/* Most Productive Day */}
       {metrics.mostProductiveDay && (
@@ -378,6 +431,80 @@ const tagChartData = tagStats.map(stat => ({
         </ChartCard>
       </div>
 
+      {/* Weekly Goal Breakdown */}
+      {userProfile && weeklyProgress && (
+        <ChartCard title="Weekly Goal Progress" subtitle="Daily breakdown of this week">
+          <div className="space-y-3">
+            {weeklyProgress.dailyBreakdown.map((day, idx) => {
+              const dayName = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][idx];
+              const dayDate = new Date(day.date).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              });
+
+              return (
+                <div key={day.date} className="space-y-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium text-gray-900">
+                      {dayName} - {dayDate}
+                    </span>
+                    <span className="text-gray-600">
+                      {formatGoalTime(day.completedMinutes)} / {formatGoalTime(day.goalMinutes)}
+                    </span>
+                  </div>
+                  <div className="relative w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className={`absolute left-0 top-0 h-full transition-all ${
+                        day.percentage >= 100
+                          ? 'bg-lime-600'
+                          : day.percentage >= 75
+                          ? 'bg-blue-600'
+                          : day.percentage >= 50
+                          ? 'bg-indigo-600'
+                          : day.percentage >= 25
+                          ? 'bg-amber-600'
+                          : 'bg-red-600'
+                      }`}
+                      style={{ width: `${Math.min(day.percentage, 100)}%` }}
+                    />
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {Math.round(day.percentage)}%
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Week Summary */}
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="text-xs text-gray-600 mb-1">Days Completed</p>
+                <p className="text-lg font-bold text-lime-600">
+                  {weeklyProgress.dailyBreakdown.filter(d => d.percentage >= 100).length}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 mb-1">Days On Track</p>
+                <p className="text-lg font-bold text-blue-600">
+                  {weeklyProgress.dailyBreakdown.filter(
+                    d => d.percentage >= 50 && d.percentage < 100
+                  ).length}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 mb-1">Days Behind</p>
+                <p className="text-lg font-bold text-amber-600">
+                  {weeklyProgress.dailyBreakdown.filter(d => d.percentage < 50 && d.percentage > 0)
+                    .length}
+                </p>
+              </div>
+            </div>
+          </div>
+        </ChartCard>
+      )}
+
       {/* Tag Distribution */}
       {tagStats.length > 0 && (
         <ChartCard title="Tag Distribution" subtitle="Time spent by category">
@@ -518,6 +645,32 @@ const tagChartData = tagStats.map(stat => ({
             />
           )}
         </div>
+        {userProfile && dailyProgress && (
+          <>
+            <InsightItem
+              text={`Your daily goal is ${formatGoalTime(userProfile.daily_focus_goal_minutes)}. ${
+                dailyProgress.percentage >= 100
+                  ? "You've hit your goal today! 🎉"
+                  : dailyProgress.percentage >= 50
+                  ? `You're ${Math.round(dailyProgress.percentage)}% of the way there.`
+                  : `You need ${formatGoalTime(
+                      dailyProgress.goalMinutes - dailyProgress.completedMinutes
+                    )} more to reach your goal.`
+              }`}
+            />
+            {weeklyProgress && (
+              <InsightItem
+                text={`This week you've completed ${weeklyProgress.dailyBreakdown.filter(d => d.percentage >= 100).length} out of 7 days. ${
+                  weeklyProgress.percentage >= 100
+                    ? 'Weekly goal achieved! 🎯'
+                    : weeklyProgress.percentage >= 70
+                    ? 'Great progress toward your weekly goal.'
+                    : 'Focus on consistency to hit your weekly target.'
+                }`}
+              />
+            )}
+          </>
+        )}
       </div>
     </div>
   );
