@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // app/dashboard/engine/analytics/components/TrendsTab.tsx
 'use client';
 
@@ -186,7 +187,7 @@ export default function TrendsTab({ sessions, timeRange }: TrendsTabProps) {
         <div className="mt-4 p-4 bg-blue-50 rounded-lg">
           <p className="text-sm text-blue-900">
             <strong>💡 For 6th Graders:</strong> This chart shows what time of day you work best. 
-            The tallest bars are your "power hours" - try to schedule important work during these times!
+            The tallest bars are your &quot;power hours&quot; - try to schedule important work during these times!
           </p>
         </div>
       </ChartCard>
