@@ -1,15 +1,13 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // app/dashboard/engine/focus/page.tsx
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { FocusSession, Task } from '@/lib/types';
-import { Play, Pause, StopCircle, AlertCircle, Settings } from 'lucide-react';
-import { timerStorage, TimerState } from '@/lib/utils/timerStorage';
-import GoalProgressWidget from '@/components/focus/GoalProgressWidget';
-import GoalSettingsModal from '@/components/focus/GoalSettingsModal';
-import { calculateDailyProgress, calculateWeeklyProgress } from '@/lib/utils/goalUtils';
-import GoalStreakTracker from '@/components/focus/GoalStreakTracker';
+import { Play, Pause, StopCircle } from 'lucide-react';
+import PomodoroPresets from '@/components/focus/PomodoroPresets';
+import CustomPresetModal from '@/components/focus/CustomPresetModal';
 
 export default function FocusTimerPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -20,13 +18,18 @@ export default function FocusTimerPage() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [notes, setNotes] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [showGoalSettings, setShowGoalSettings] = useState(false);
-  const [dailyGoalMinutes, setDailyGoalMinutes] = useState(120);
-  const [weeklyGoalMinutes, setWeeklyGoalMinutes] = useState(840);
   
-  const pauseStartRef = useRef<number | null>(null);
+  // ✅ Add Pomodoro state
+  const [customPresets, setCustomPresets] = useState<Array<{
+    id: string;
+    name: string;
+    duration: number;
+    description: string;
+  }>>([]);
+  const [showPresetModal, setShowPresetModal] = useState(false);
+  const [presetDuration, setPresetDuration] = useState<number | null>(null);
+  const [targetDuration, setTargetDuration] = useState<number | null>(null);
+  
   const supabase = createClient();
 
   const loadData = useCallback(async () => {
@@ -47,241 +50,111 @@ export default function FocusTimerPage() {
     ]);
 
     if (tasksRes.data) setTasks(tasksRes.data);
-    if (sessionsRes.data) setSessions(sessionsRes.data);
+    if (sessionsRes.data) {
+      setSessions(sessionsRes.data);
+      // Check for active session
+      const active = sessionsRes.data.find(s => !s.end_time);
+      if (active) {
+        setCurrentSessionId(active.id);
+        setSelectedTaskId(active.task_id || '');
+        setIsRunning(true);
+        const elapsed = Math.floor((Date.now() - new Date(active.start_time).getTime()) / 1000);
+        setElapsedSeconds(elapsed);
+      }
+    }
   }, [supabase]);
 
-  const dailyProgress = calculateDailyProgress(sessions, dailyGoalMinutes);
-  const weeklyProgress = calculateWeeklyProgress(sessions, weeklyGoalMinutes, dailyGoalMinutes);
-
-  // 5. Save goals function
-const handleSaveGoals = async (daily: number, weekly: number) => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { error } = await supabase
-    .from('user_profiles')
-    .upsert({
-      user_id: user.id,
-      daily_focus_goal_minutes: daily,
-      weekly_focus_goal_minutes: weekly,
-    });
-
-  if (error) throw error;
-
-  setDailyGoalMinutes(daily);
-  setWeeklyGoalMinutes(weekly);
-};
+  // ✅ Load custom presets on mount
+  useEffect(() => {
+    const savedPresets = localStorage.getItem('focus_custom_presets');
+    if (savedPresets) {
+      try {
+        setCustomPresets(JSON.parse(savedPresets));
+      } catch (err) {
+        console.error('Failed to load custom presets:', err);
+      }
+    }
+    loadData();
+  }, [loadData]);
 
   useEffect(() => {
-  const loadGoals = async () => {
+    let interval: NodeJS.Timeout;
+    if (isRunning) {
+      interval = setInterval(() => {
+        setElapsedSeconds(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isRunning]);
+
+  // ✅ Save custom presets
+  const handleSavePresets = (presets: typeof customPresets) => {
+    setCustomPresets(presets);
+    localStorage.setItem('focus_custom_presets', JSON.stringify(presets));
+  };
+
+  // ✅ Handle preset selection
+  const handlePresetSelect = (duration: number) => {
+    setPresetDuration(duration);
+  };
+
+  const startSession = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('daily_focus_goal_minutes, weekly_focus_goal_minutes')
-      .eq('user_id', user.id)
+    const { data, error } = await supabase
+      .from('focus_sessions')
+      .insert([{
+        user_id: user.id,
+        task_id: selectedTaskId || null,
+        start_time: new Date().toISOString(),
+        hourly_rate: hourlyRate,
+        revenue: 0,
+      }])
+      .select()
       .single();
 
-    if (profile) {
-      setDailyGoalMinutes(profile.daily_focus_goal_minutes || 120);
-      setWeeklyGoalMinutes(profile.weekly_focus_goal_minutes || 840);
-    }
-  };
-
-  loadData();
-  loadGoals();
-}, [loadData, supabase]);
-
-  // Restore timer on mount
-  useEffect(() => {
-    // Add this to app/dashboard/engine/focus/page.tsx inside the restoreTimer function:
-
-const restoreTimer = () => {
-  const savedState = timerStorage.load();
-  
-  if (savedState) {
-    // Calculate elapsed time
-    const elapsed = timerStorage.getElapsedSeconds(savedState);
-    
-    // CRITICAL: Check if session is stale (>24 hours)
-    if (elapsed > 86400) {
-      // Session older than 24 hours - likely abandoned
-      if (confirm(
-        `Found a session that has been running for ${Math.floor(elapsed / 3600)} hours. ` +
-        `This seems unusual. Would you like to stop it now?`
-      )) {
-        // User wants to stop - redirect to sessions page
-        timerStorage.clear();
-        window.location.href = '/dashboard/engine/sessions';
-        return;
-      } else {
-        // User wants to keep it running
-        setCurrentSessionId(savedState.sessionId);
-        setSelectedTaskId(savedState.taskId || '');
-        setNotes(savedState.notes);
-        setHourlyRate(savedState.hourlyRate);
-        setElapsedSeconds(elapsed);
-        setIsRunning(!savedState.pausedAt);
-      }
-    } else {
-      // Normal session - restore as usual
-      setCurrentSessionId(savedState.sessionId);
-      setSelectedTaskId(savedState.taskId || '');
-      setNotes(savedState.notes);
-      setHourlyRate(savedState.hourlyRate);
-      setElapsedSeconds(elapsed);
-      setIsRunning(!savedState.pausedAt);
-    }
-  }
-};
-
-    loadData();
-    restoreTimer();
-  }, [loadData]);
-
-  // Timer tick
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    
-    if (isRunning && currentSessionId) {
-      interval = setInterval(() => {
-        setElapsedSeconds(prev => {
-          const newValue = prev + 1;
-          
-          if (newValue % 10 === 0) {
-            const state = timerStorage.load();
-            if (state) {
-              timerStorage.save(state);
-            }
-          }
-          
-          return newValue;
-        });
-      }, 1000);
-    }
-    
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isRunning, currentSessionId]);
-
-  // Save notes to storage
-  useEffect(() => {
-    if (currentSessionId && notes) {
-      timerStorage.updateNotes(notes);
-    }
-  }, [notes, currentSessionId]);
-
-  const startSession = async () => {
-    try {
-      setError(null);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const startTime = new Date().toISOString();
-      
-      const { data, error: insertError } = await supabase
-        .from('focus_sessions')
-        .insert([{
-          user_id: user.id,
-          task_id: selectedTaskId || null,
-          start_time: startTime,
-          hourly_rate: hourlyRate,
-          revenue: 0,
-        }])
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error('Insert error details:', insertError);
-        throw insertError;
-      }
-      if (!data) throw new Error('Failed to create session');
-
-      const timerState: TimerState = {
-        sessionId: data.id,
-        taskId: selectedTaskId || null,
-        startTime: startTime,
-        pausedAt: null,
-        totalPausedSeconds: 0,
-        notes: '',
-        hourlyRate: hourlyRate,
-      };
-      timerStorage.save(timerState);
-
+    if (data) {
       setCurrentSessionId(data.id);
       setIsRunning(true);
       setElapsedSeconds(0);
-    } catch (err) {
-      console.error('Start session error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to start session');
+      
+      // ✅ Store target duration if preset was used
+      if (presetDuration) {
+        setTargetDuration(presetDuration * 60); // Convert to seconds
+        setPresetDuration(null); // Clear preset
+      }
     }
   };
 
   const pauseSession = () => {
     setIsRunning(false);
-    pauseStartRef.current = Date.now();
-    timerStorage.updatePauseState(new Date().toISOString());
   };
 
   const resumeSession = () => {
-    if (pauseStartRef.current) {
-      const pauseDuration = Math.floor((Date.now() - pauseStartRef.current) / 1000);
-      timerStorage.updatePauseState(null, pauseDuration);
-      pauseStartRef.current = null;
-    }
     setIsRunning(true);
   };
 
   const stopSession = async () => {
-    if (!currentSessionId) {
-      setError('No active session to stop');
-      return;
-    }
+    if (!currentSessionId) return;
+    const revenueEarned = (elapsedSeconds / 3600) * hourlyRate;
 
-    try {
-      setIsSaving(true);
-      setError(null);
-
-      const endTime = new Date().toISOString();
-      const revenueEarned = (elapsedSeconds / 3600) * hourlyRate;
-
-      // FIXED: Column is "duration" not "duration_seconds"
-      const updatePayload = {
-        end_time: endTime,
-        duration: elapsedSeconds,  // ✅ Correct column name
+    await supabase
+      .from('focus_sessions')
+      .update({
+        end_time: new Date().toISOString(),
+        duration: elapsedSeconds, // ✅ Use 'duration' not 'duration_seconds'
         revenue: revenueEarned,
         notes: notes || null,
-      };
+      })
+      .eq('id', currentSessionId);
 
-      console.log('Updating session:', currentSessionId, updatePayload);
-
-      const { error: updateError } = await supabase
-        .from('focus_sessions')
-        .update(updatePayload)
-        .eq('id', currentSessionId);
-
-      if (updateError) {
-        console.error('Update error details:', updateError);
-        throw updateError;
-      }
-
-      timerStorage.clear();
-
-      setIsRunning(false);
-      setCurrentSessionId(null);
-      setElapsedSeconds(0);
-      setNotes('');
-      pauseStartRef.current = null;
-
-      await loadData();
-    } catch (err) {
-      console.error('Stop session error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to save session');
-    } finally {
-      setIsSaving(false);
-    }
+    setIsRunning(false);
+    setCurrentSessionId(null);
+    setElapsedSeconds(0);
+    setNotes('');
+    setTargetDuration(null); // ✅ Clear target
+    loadData();
   };
 
   const formatTime = (seconds: number) => {
@@ -291,30 +164,19 @@ const restoreTimer = () => {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
+  // ✅ Calculate target progress
+  const targetReached = targetDuration && elapsedSeconds >= targetDuration;
+
   const todayTotal = sessions
     .filter(s => s.duration)
     .reduce((sum, s) => sum + (s.duration || 0), 0);
-
-  const todayRevenue = sessions
-    .filter(s => s.revenue)
-    .reduce((sum, s) => sum + (s.revenue || 0), 0);
 
   return (
     <div className="max-w-7xl mx-auto p-6">
       <header className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900">Focus Timer</h1>
-        <p className="text-gray-600">Track deep work sessions linked to tasks</p>
+        <p className="text-gray-600">Track deep work linked to tasks</p>
       </header>
-
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
-          <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
-          <div>
-            <p className="text-sm font-semibold text-red-900">Error</p>
-            <p className="text-sm text-red-700">{error}</p>
-          </div>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Timer */}
@@ -335,6 +197,25 @@ const restoreTimer = () => {
 
             {!currentSessionId ? (
               <div className="space-y-4">
+                {/* ✅ Pomodoro Presets */}
+                <PomodoroPresets
+                  onSelectPreset={handlePresetSelect}
+                  onOpenCustom={() => setShowPresetModal(true)}
+                  disabled={false}
+                />
+
+                {/* ✅ Show selected preset */}
+                {presetDuration && (
+                  <div className="p-4 bg-indigo-50 border-2 border-indigo-300 rounded-lg">
+                    <p className="text-sm font-semibold text-indigo-900">
+                      🎯 Target Duration: <span className="text-lg">{presetDuration} minutes</span>
+                    </p>
+                    <p className="text-xs text-indigo-700 mt-1">
+                      Click &quot;Start Focus Session&quot; below to begin
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Link to Task (optional)
@@ -376,6 +257,34 @@ const restoreTimer = () => {
               </div>
             ) : (
               <div className="space-y-4">
+                {/* ✅ Target Progress Indicator */}
+                {targetDuration && (
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-blue-900">
+                        🎯 Target: {Math.floor(targetDuration / 60)} minutes
+                      </span>
+                      <span className="text-sm text-blue-700">
+                        {Math.floor(elapsedSeconds / 60)} / {Math.floor(targetDuration / 60)} min
+                      </span>
+                    </div>
+                    <div className="relative w-full h-3 bg-blue-100 rounded-full overflow-hidden">
+                      <div
+                        className={`absolute left-0 top-0 h-full transition-all ${
+                          targetReached ? 'bg-lime-600' : 'bg-blue-600'
+                        }`}
+                        style={{ width: `${Math.min((elapsedSeconds / targetDuration) * 100, 100)}%` }}
+                      />
+                    </div>
+                    {targetReached && (
+                      <div className="mt-2 flex items-center justify-center space-x-2">
+                        <span className="text-xs font-bold text-lime-700">✓ Target Reached!</span>
+                        <span className="text-xs text-gray-600">Take a break or continue working</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
@@ -403,11 +312,10 @@ const restoreTimer = () => {
                   )}
                   <button
                     onClick={stopSession}
-                    disabled={isSaving}
-                    className="flex items-center justify-center px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center justify-center px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition"
                   >
                     <StopCircle className="w-5 h-5 mr-2" />
-                    {isSaving ? 'Saving...' : 'Stop & Save'}
+                    Stop & Save
                   </button>
                 </div>
               </div>
@@ -415,41 +323,15 @@ const restoreTimer = () => {
           </div>
         </div>
 
-        {/* Stats & History */}
+        {/* Stats */}
         <div className="space-y-6">
-          {/* Settings Button */}
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-gray-900">Progress & Stats</h3>
-            <button
-              onClick={() => setShowGoalSettings(true)}
-              className="p-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
-              title="Goal Settings"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Today</h3>
+            <div className="text-4xl font-bold text-indigo-600 mb-1">
+              {Math.floor(todayTotal / 60)} min
+            </div>
+            <div className="text-sm text-gray-500">{sessions.length} sessions</div>
           </div>
-
-          {/* Goal Progress Widgets */}
-          <GoalProgressWidget
-            title="Today's Goal"
-            completedMinutes={dailyProgress.completedMinutes}
-            goalMinutes={dailyProgress.goalMinutes}
-            percentage={dailyProgress.percentage}
-            icon="target"
-          />
-
-          <GoalProgressWidget
-            title="This Week"
-            completedMinutes={weeklyProgress.completedMinutes}
-            goalMinutes={weeklyProgress.goalMinutes}
-            percentage={weeklyProgress.percentage}
-            icon="calendar"
-          />
-
-          <GoalStreakTracker
-            sessions={sessions}
-            dailyGoalMinutes={dailyGoalMinutes}
-          />
 
           <div className="bg-white rounded-xl shadow-lg p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Sessions</h3>
@@ -470,11 +352,6 @@ const restoreTimer = () => {
                     {session.notes && (
                       <p className="text-xs text-gray-600 mt-1 line-clamp-2">{session.notes}</p>
                     )}
-                    {session.revenue && session.revenue > 0 && (
-                      <div className="text-xs text-lime-600 font-semibold mt-1">
-                        ${session.revenue.toFixed(2)}
-                      </div>
-                    )}
                   </div>
                 ))
               )}
@@ -482,12 +359,13 @@ const restoreTimer = () => {
           </div>
         </div>
       </div>
-      <GoalSettingsModal
-        isOpen={showGoalSettings}
-        onClose={() => setShowGoalSettings(false)}
-        currentDailyGoal={dailyGoalMinutes}
-        currentWeeklyGoal={weeklyGoalMinutes}
-        onSave={handleSaveGoals}
+
+      {/* ✅ Custom Preset Modal */}
+      <CustomPresetModal
+        isOpen={showPresetModal}
+        onClose={() => setShowPresetModal(false)}
+        presets={customPresets}
+        onSave={handleSavePresets}
       />
     </div>
   );

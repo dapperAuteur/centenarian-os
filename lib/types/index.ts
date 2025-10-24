@@ -19,8 +19,8 @@ export interface UserProfile {
   id: string;
   user_id: string;
   low_servings_threshold: number | null;
-  daily_focus_goal_minutes: number; // ✅ Add this
-  weekly_focus_goal_minutes: number; // ✅ Add this
+  daily_focus_goal_minutes: number;
+  weekly_focus_goal_minutes: number;
   created_at: string;
   updated_at: string;
 }
@@ -201,6 +201,10 @@ export interface FocusSession {
   hourly_rate: number;
   revenue: number;
   tags: string[] | null;
+  pomodoro_mode: boolean;
+  work_intervals: WorkInterval[] | null;
+  break_intervals: BreakInterval[] | null;
+  net_work_duration: number | null;
 }
 
 export interface DailyLog {
@@ -221,6 +225,19 @@ export interface DailyLog {
   total_earned: number;
 }
 
+export interface WorkInterval {
+  start: string; // ISO timestamp
+  end: string;
+  duration: number; // seconds
+}
+
+export interface BreakInterval {
+  start: string;
+  end: string;
+  duration: number; // seconds
+  type: 'short' | 'long'; // short = 5min, long = 15min
+}
+
 // Extended types with relations
 export interface TaskWithMilestone extends Task {
   milestone?: Milestone;
@@ -238,3 +255,21 @@ export interface GoalWithMilestones extends Goal {
 export interface ProtocolWithIngredients extends Protocol {
   protocol_ingredients?: (ProtocolIngredient & { ingredient?: Ingredient })[];
 }
+
+export interface PomodoroSettings {
+  workDuration: number; // minutes
+  shortBreakDuration: number; // minutes
+  longBreakDuration: number; // minutes
+  intervalsBeforeLongBreak: number; // typically 4
+  autoStartBreaks: boolean;
+  autoStartWork: boolean;
+}
+
+export const DEFAULT_POMODORO_SETTINGS: PomodoroSettings = {
+  workDuration: 25,
+  shortBreakDuration: 5,
+  longBreakDuration: 15,
+  intervalsBeforeLongBreak: 4,
+  autoStartBreaks: true,
+  autoStartWork: false,
+};
