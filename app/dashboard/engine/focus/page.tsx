@@ -277,10 +277,12 @@ export default function FocusTimerPage() {
     setBreakIntervals,
   ]);
 
-  const handleUseTemplate = (template: SessionTemplate) => {
+  const handleUseTemplate = async (template: SessionTemplate) => {
+    
     // Pre-fill form with template data
     setHourlyRate(template.hourly_rate);
     setNotes(template.notes_template || '');
+    setSelectedTaskId('');
     
     if (template.use_pomodoro) {
       setTimerMode('pomodoro');
@@ -289,8 +291,43 @@ export default function FocusTimerPage() {
       setPresetDuration(template.duration_minutes);
     }
 
-    // Note: selectedTags would go here if you add tag support to timer
-    // For now, tags are only available in manual session creation
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const startTime = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('focus_sessions')
+      .insert([{
+        user_id: user.id,
+        task_id: null, // Templates don't pre-select tasks
+        start_time: startTime,
+        hourly_rate: template.hourly_rate,
+        revenue: 0,
+        pomodoro_mode: template.use_pomodoro,
+        work_intervals: template.use_pomodoro ? [] : null,
+        break_intervals: template.use_pomodoro ? [] : null,
+        tags: template.tags?.length > 0 ? template.tags : null,
+      }])
+      .select()
+      .single();
+
+    if (data) {
+      setCurrentSessionId(data.id);
+      setIsRunning(true);
+      setElapsedSeconds(0);
+      
+      if (template.use_pomodoro) {
+        setPomodoroPhase('work');
+        setCurrentPhaseSeconds(0);
+        setCompletedIntervals(0);
+        setWorkIntervals([]);
+        setBreakIntervals([]);
+        setCurrentIntervalStart(startTime);
+      } else {
+        setTargetDuration(template.duration_minutes * 60);
+      }
+    }
   };
 
   const handleCreateTemplate = async (input: CreateTemplateInput) => {
