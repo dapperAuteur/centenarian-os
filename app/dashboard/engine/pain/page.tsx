@@ -69,17 +69,30 @@ export default function PainTrackingPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error('[Pain Log] Auth error:', authError);
+        alert('Authentication error. Please refresh and try again.');
+        setSaving(false);
+        return;
+      }
+      
+      if (!user) {
+        console.error('[Pain Log] No user found');
+        alert('Not authenticated. Please log in.');
+        setSaving(false);
+        return;
+      }
 
-    const activitiesArray = painData.activities
-      .split('\n')
-      .map(a => a.trim())
-      .filter(a => a);
+      const activitiesArray = painData.activities
+        .split('\n')
+        .map(a => a.trim())
+        .filter(a => a);
 
-    const { error } = await supabase
-      .from('daily_logs')
-      .upsert({
+      const payload = {
         user_id: user.id,
         date: today,
         pain_intensity: painData.intensity,
@@ -87,13 +100,35 @@ export default function PainTrackingPage() {
         pain_sensations: painData.sensations.length > 0 ? painData.sensations : null,
         pain_activities: activitiesArray.length > 0 ? activitiesArray : null,
         pain_notes: painData.notes || null,
-      }, { onConflict: 'user_id,date' });
+      };
 
-    if (!error) {
+      console.log('[Pain Log] Submitting payload:', payload);
+
+      const { data, error } = await supabase
+        .from('daily_logs')
+        .upsert(payload, { onConflict: 'user_id,date' });
+
+      if (error) {
+        console.error('[Pain Log] Database error:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        alert(`Failed to save: ${error.message}`);
+        setSaving(false);
+        return;
+      }
+
+      console.log('[Pain Log] Success:', data);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      console.error('[Pain Log] Unexpected error:', err);
+      alert('An unexpected error occurred. Check console for details.');
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const toggleLocation = (location: string) => {
