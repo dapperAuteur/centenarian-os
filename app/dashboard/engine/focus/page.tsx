@@ -307,7 +307,7 @@ export default function FocusTimerPage() {
         pomodoro_mode: template.use_pomodoro,
         work_intervals: template.use_pomodoro ? [] : null,
         break_intervals: template.use_pomodoro ? [] : null,
-        tags: template.tags.length > 0 ? template.tags : null,
+        tags: template.tags?.length > 0 ? template.tags : null,
       }])
       .select()
       .single();
