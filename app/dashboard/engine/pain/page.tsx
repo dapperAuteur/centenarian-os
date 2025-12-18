@@ -7,6 +7,7 @@ import { Save, CheckCircle } from 'lucide-react';
 
 type PainIntensity = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
+// Constants can be defined outside the component to prevent re-declaration on each render.
 const BODY_LOCATIONS = [
   'Right Hip Flexor',
   'Left Hip Flexor',
@@ -22,7 +23,20 @@ const BODY_LOCATIONS = [
   'Right Knee',
 ];
 
+// Same for this constant.
 const SENSATIONS = ['Tightness', 'Pinching', 'Dull Ache', 'Sharp Stab', 'Burning'];
+
+/**
+ * A type for the data structure used to store pain log information.
+ * This can be shared between the form and any data-saving functions.
+ */
+type PainLogPayload = {
+  intensity: PainIntensity;
+  locations: string[];
+  sensations: string[];
+  activities: string;
+  notes: string;
+};
 
 export default function PainTrackingPage() {
   const [painData, setPainData] = useState<{
@@ -69,65 +83,47 @@ export default function PainTrackingPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError) {
-        console.error('[Pain Log] Auth error:', authError);
-        alert('Authentication error. Please refresh and try again.');
-        setSaving(false);
-        return;
-      }
-      
-      if (!user) {
-        console.error('[Pain Log] No user found');
-        alert('Not authenticated. Please log in.');
-        setSaving(false);
-        return;
-      }
-
-      const activitiesArray = painData.activities
-        .split('\n')
-        .map(a => a.trim())
-        .filter(a => a);
-
-      const payload = {
-        user_id: user.id,
-        date: today,
-        pain_intensity: painData.intensity,
-        pain_locations: painData.locations.length > 0 ? painData.locations : null,
-        pain_sensations: painData.sensations.length > 0 ? painData.sensations : null,
-        pain_activities: activitiesArray.length > 0 ? activitiesArray : null,
-        pain_notes: painData.notes || null,
-      };
-
-      console.log('[Pain Log] Submitting payload:', payload);
-
-      const { data, error } = await supabase
-        .from('daily_logs')
-        .upsert(payload, { onConflict: 'user_id,date' });
-
-      if (error) {
-        console.error('[Pain Log] Database error:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-        });
-        alert(`Failed to save: ${error.message}`);
-        setSaving(false);
-        return;
-      }
-
-      console.log('[Pain Log] Success:', data);
+      await upsertPainLog(supabase, painData, today);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
-      console.error('[Pain Log] Unexpected error:', err);
-      alert('An unexpected error occurred. Check console for details.');
+      // The service function can throw a formatted error.
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred.';
+      console.error('[Pain Log] Save failed:', errorMessage);
+      alert(`Failed to save: ${errorMessage}`);
     } finally {
       setSaving(false);
+    }
+  };
+
+  // This logic is now extracted into a dedicated service function below.
+  // This makes the `handleSave` function above much cleaner and focused on UI state.
+  const upsertPainLog = async (
+    supabaseClient: ReturnType<typeof createClient>,
+    logData: PainLogPayload,
+    date: string
+  ) => {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) throw new Error('Not authenticated. Please log in.');
+
+    const activitiesArray = logData.activities.split('\n').map(a => a.trim()).filter(a => a);
+
+    const payload = {
+      user_id: user.id,
+      date: date,
+      pain_intensity: logData.intensity,
+      pain_locations: logData.locations.length > 0 ? logData.locations : null,
+      pain_sensations: logData.sensations.length > 0 ? logData.sensations : null,
+      pain_activities: activitiesArray.length > 0 ? activitiesArray : null,
+      pain_notes: logData.notes || null,
+    };
+
+    const { error } = await supabaseClient.from('daily_logs').upsert(payload, { onConflict: 'user_id,date' });
+
+    if (error) {
+      console.error('[Pain Log] Database error:', error);
+      throw new Error(error.message);
     }
   };
 

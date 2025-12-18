@@ -302,3 +302,82 @@ export const DEFAULT_POMODORO_SETTINGS: PomodoroSettings = {
   autoStartBreaks: true,
   autoStartWork: false,
 };
+
+/**
+ * Structure of a chat message for the Gemini API
+ */
+export interface GeminiMessage {
+  role: 'user' | 'model';
+  parts: [{ text: string }];
+}
+
+/**
+ * Represents an AI "Gem" persona stored in the database
+ */
+export interface GemPersona {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  system_prompt: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Represents a chat session with an AI Gem
+ */
+export interface LanguageCoachSession {
+  id: string;
+  user_id: string;
+  gem_persona_id: string | null;
+  messages: GeminiMessage[]; // Stored as JSONB
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Represents a set of flashcards, e.g., "Spanish Verbs"
+ */
+export interface FlashcardSet {
+  id: string;
+  user_id: string;
+  goal_id: string | null; // Optional link to Planner
+  language: string | null;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Represents a single flashcard
+ */
+export interface Flashcard {
+  id: string;
+  set_id: string;
+  user_id: string;
+  front_text: string;
+  back_text: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Represents the spaced repetition analytics for a single card
+ */
+export type CardStatus = 'new' | 'strong' | 'shaky' | 'weak';
+
+export interface FlashcardAnalytics {
+  id: string;
+  card_id: string;
+  user_id: string;
+  status: CardStatus;
+  next_review_at: string; // ISO timestamp
+  last_reviewed_at: string | null; // ISO timestamp
+  review_count: number;
+  correct_count: number;
+  incorrect_count: number;
+  created_at: string;
+  updated_at: string;
+}
