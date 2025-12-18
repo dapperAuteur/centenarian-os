@@ -1,5 +1,5 @@
 // File: app/layout.tsx
-// Root layout with font and metadata
+// Root layout with font, metadata, and CRITICAL mobile viewport
 
 import type { Metadata } from 'next';
 import { Analytics } from "@vercel/analytics/next"
@@ -10,7 +10,12 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'CentenarianOS',
-  description: 'Multi-decade personal operating system',
+  description: 'Multi-decade personal operating system for executing audacious goals through data-driven daily habits',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5, // Allow zoom for accessibility
+  },
 };
 
 export default function RootLayout({
