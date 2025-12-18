@@ -12,10 +12,11 @@ export default function AnalyticsPage() {
   const [moduleStats, setModuleStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<30 | 60 | 90>(30);
+  
 
-  const engine = new CorrelationEngine();
-
-  const loadAnalytics = async () => {
+  useEffect(() => {
+    const engine = new CorrelationEngine();
+    const loadAnalytics = async () => {
     setLoading(true);
     
     const [corrs, stats] = await Promise.all([
@@ -28,7 +29,6 @@ export default function AnalyticsPage() {
     setLoading(false);
   };
 
-  useEffect(() => {
     loadAnalytics();
   }, [timeRange]);
 
