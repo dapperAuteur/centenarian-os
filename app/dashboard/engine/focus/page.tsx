@@ -681,7 +681,7 @@ const handleQualityRating = async (rating: number) => {
               />
             ) : (
               <div className="text-center mb-8">
-                <div className="text-7xl font-bold text-gray-900 mb-4 font-mono">
+                <div className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 mb-4 font-mono">
                   {formatTime(elapsedSeconds)}
                 </div>
                 {currentSessionId && (

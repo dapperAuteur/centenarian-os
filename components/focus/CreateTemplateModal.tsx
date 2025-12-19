@@ -146,7 +146,7 @@ export default function CreateTemplateModal({
             <div className="text-5xl p-3 bg-gray-50 rounded-lg border-2 border-gray-200">
               {icon}
             </div>
-            <div className="flex-1 grid grid-cols-8 gap-2">
+            <div className="flex-1 grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
               {EMOJI_PRESETS.map((emoji) => (
                 <button
                   key={emoji}
