@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // app/dashboard/engine/analytics/components/PerformanceTab.tsx
 'use client';
@@ -33,10 +32,7 @@ export default function PerformanceTab({ sessions, timeRange }: PerformanceTabPr
   const supabase = createClient();
 
   useEffect(() => {
-    loadPerformanceData();
-  }, [sessions]);
-
-  const loadPerformanceData = async () => {
+    const loadPerformanceData = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -63,6 +59,11 @@ export default function PerformanceTab({ sessions, timeRange }: PerformanceTabPr
     setLoading(false);
   };
 
+    loadPerformanceData();
+  }, [sessions, supabase.auth]);
+
+  
+
   // Calculate quality stats
   const qualityRatings = sessions.filter(s => s.quality_rating).map(s => s.quality_rating!);
   const avgQuality = qualityRatings.length > 0
@@ -86,8 +87,10 @@ export default function PerformanceTab({ sessions, timeRange }: PerformanceTabPr
     };
   }).filter(stat => stat.sessionCount > 0);
 
+  const totalDuration = predefinedTagStats.reduce((sum, stat) => sum + stat.totalSeconds, 0);
+
   const tagChartData = predefinedTagStats.map(stat => ({
-    name: stat.tag.label,
+    name: `${stat.tag.label} (${totalDuration > 0 ? ((stat.totalSeconds / totalDuration) * 100).toFixed(0) : 0}%)`,
     value: parseFloat((stat.totalSeconds / 3600).toFixed(2)),
     sessions: stat.sessionCount,
   }));
@@ -205,7 +208,6 @@ export default function PerformanceTab({ sessions, timeRange }: PerformanceTabPr
   cx="50%"
   cy="50%"
   labelLine={false}
-  label={(props: any) => `${props.name} ${(props.percent * 100).toFixed(0)}%`}
   outerRadius={80}
   fill="#8884d8"
   dataKey="value"
@@ -215,6 +217,7 @@ export default function PerformanceTab({ sessions, timeRange }: PerformanceTabPr
   ))}
 </Pie>
                     <Tooltip />
+                    <Legend layout="horizontal" verticalAlign="bottom" align="center" />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
