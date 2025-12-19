@@ -67,3 +67,5 @@ app/dashboard/fuel/app-dashboard-fuel-page.tsx
 app/dashboard/fuel/meal-prep/app-dashboard-fuel-meal--prep-page.tsx
 
 app/dashboard/fuel/meal-prep/ORIGINAL-app-dashboard-fuel-page.tsx
+
+docs/mobile-ui-refactor/
