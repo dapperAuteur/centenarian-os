@@ -123,11 +123,11 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Header */}
-      <header className="flex justify-between items-start">
+      <header className="mb-6 sm:mb-8">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900">Focus Analytics</h1>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800">Focus Analytics</h1>
           <p className="text-gray-600">Track productivity patterns and optimize performance</p>
         </div>
 
@@ -161,9 +161,9 @@ export default function AnalyticsPage() {
       )}
 
       {/* Tab Navigation */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
         <div className="border-b border-gray-200">
-          <nav className="flex -mb-px">
+          <nav className="grid grid-cols-2 sm:grid-cols-4" aria-label="Tabs">
             {tabs.map(tab => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -173,20 +173,17 @@ export default function AnalyticsPage() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`
-                    group relative flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm transition
+                    group relative py-4 px-4 text-center text-sm font-medium hover:bg-gray-50 transition-all
                     ${isActive
-                      ? 'border-indigo-600 text-indigo-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'text-indigo-600 border-b-2 border-indigo-600'
+                      : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent'
                     }
                   `}
                 >
                   <div className="flex items-center justify-center gap-2">
-                    <Icon className={`w-5 h-5 ${isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-600'}`} />
+                    <Icon className={`w-5 h-5 transition-colors ${isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-500'}`} />
                     <span>{tab.label}</span>
                   </div>
-                  {!isActive && (
-                    <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-transparent via-gray-200 to-transparent opacity-0 group-hover:opacity-100 transition" />
-                  )}
                 </button>
               );
             })}
@@ -194,7 +191,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6 lg:p-8">
           {activeTab === 'overview' && (
             <OverviewTab
               sessions={filteredSessions}
@@ -227,7 +224,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Quick Stats Footer (visible across all tabs) */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
         <div className="bg-white rounded-lg shadow p-4 text-center">
           <div className="text-sm text-gray-600">Total Sessions</div>
           <div className="text-2xl font-bold text-indigo-600">{filteredSessions.length}</div>

@@ -88,45 +88,15 @@ export default function TrendsTab({ sessions, timeRange }: TrendsTabProps) {
         title="Daily Focus Time" 
         subtitle="Track your consistency day by day"
       >
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={dailyChartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis
-              dataKey="date"
-              tick={{ fontSize: 12 }}
-              stroke="#6b7280"
-            />
-            <YAxis
-              tick={{ fontSize: 12 }}
-              stroke="#6b7280"
-              label={{ value: 'Hours', angle: -90, position: 'insideLeft' }}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: 'white',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-              }}
-            />
-            <Legend />
-            <Bar dataKey="hours" fill="#6366f1" name="Focus Hours" radius={[8, 8, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </ChartCard>
-
-      {/* Weekly Trend */}
-      {weeklyStats.length > 1 && (
-        <ChartCard 
-          title="Weekly Focus Time" 
-          subtitle="See your long-term trends"
-        >
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={weeklyChartData}>
+        <div className="h-[250px] sm:h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={dailyChartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis
-                dataKey="week"
+                dataKey="date"
                 tick={{ fontSize: 12 }}
                 stroke="#6b7280"
+                minTickGap={30}
               />
               <YAxis
                 tick={{ fontSize: 12 }}
@@ -141,16 +111,52 @@ export default function TrendsTab({ sessions, timeRange }: TrendsTabProps) {
                 }}
               />
               <Legend />
-              <Line
-                type="monotone"
-                dataKey="hours"
-                stroke="#8b5cf6"
-                strokeWidth={3}
-                dot={{ fill: '#8b5cf6', r: 4 }}
-                name="Focus Hours"
-              />
-            </LineChart>
+              <Bar dataKey="hours" fill="#6366f1" name="Focus Hours" radius={[8, 8, 0, 0]} />
+            </BarChart>
           </ResponsiveContainer>
+        </div>
+      </ChartCard>
+
+      {/* Weekly Trend */}
+      {weeklyStats.length > 1 && (
+        <ChartCard 
+          title="Weekly Focus Time" 
+          subtitle="See your long-term trends"
+        >
+          <div className="h-[250px] sm:h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={weeklyChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis
+                  dataKey="week"
+                  tick={{ fontSize: 12 }}
+                  stroke="#6b7280"
+                  minTickGap={30}
+                />
+                <YAxis
+                  tick={{ fontSize: 12 }}
+                  stroke="#6b7280"
+                  label={{ value: 'Hours', angle: -90, position: 'insideLeft' }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                  }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="hours"
+                  stroke="#8b5cf6"
+                  strokeWidth={3}
+                  dot={{ fill: '#8b5cf6', r: 4 }}
+                  name="Focus Hours"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </ChartCard>
       )}
 
@@ -159,30 +165,33 @@ export default function TrendsTab({ sessions, timeRange }: TrendsTabProps) {
         title="Time of Day Distribution" 
         subtitle="When do you focus best?"
       >
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={timeOfDayChartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis
-              dataKey="hour"
-              tick={{ fontSize: 12 }}
-              stroke="#6b7280"
-            />
-            <YAxis
-              tick={{ fontSize: 12 }}
-              stroke="#6b7280"
-              label={{ value: 'Sessions', angle: -90, position: 'insideLeft' }}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: 'white',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-              }}
-            />
-            <Legend />
-            <Bar dataKey="sessions" fill="#10b981" name="Sessions" radius={[8, 8, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="h-[250px] sm:h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={timeOfDayChartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis
+                dataKey="hour"
+                tick={{ fontSize: 12 }}
+                stroke="#6b7280"
+                minTickGap={30}
+              />
+              <YAxis
+                tick={{ fontSize: 12 }}
+                stroke="#6b7280"
+                label={{ value: 'Sessions', angle: -90, position: 'insideLeft' }}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                }}
+              />
+              <Legend />
+              <Bar dataKey="sessions" fill="#10b981" name="Sessions" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
 
         <div className="mt-4 p-4 bg-blue-50 rounded-lg">
           <p className="text-sm text-blue-900">
@@ -197,29 +206,31 @@ export default function TrendsTab({ sessions, timeRange }: TrendsTabProps) {
         title="Day of Week Distribution" 
         subtitle="Which days are you most productive?"
       >
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={dayOfWeekChartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis
-              dataKey="day"
-              tick={{ fontSize: 12 }}
-              stroke="#6b7280"
-            />
-            <YAxis
-              tick={{ fontSize: 12 }}
-              stroke="#6b7280"
-              label={{ value: 'Sessions', angle: -90, position: 'insideLeft' }}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: 'white',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-              }}
-            />
-            <Bar dataKey="sessions" fill="#f59e0b" name="Sessions" radius={[8, 8, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="h-[250px] sm:h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={dayOfWeekChartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis
+                dataKey="day"
+                tick={{ fontSize: 12 }}
+                stroke="#6b7280"
+              />
+              <YAxis
+                tick={{ fontSize: 12 }}
+                stroke="#6b7280"
+                label={{ value: 'Sessions', angle: -90, position: 'insideLeft' }}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                }}
+              />
+              <Bar dataKey="sessions" fill="#f59e0b" name="Sessions" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
 
         <div className="mt-4 p-4 bg-purple-50 rounded-lg">
           <p className="text-sm text-purple-900">
@@ -239,37 +250,40 @@ export default function TrendsTab({ sessions, timeRange }: TrendsTabProps) {
           title="Revenue Over Time" 
           subtitle="Track your earnings from focus time"
         >
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={dailyChartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 12 }}
-                stroke="#6b7280"
-              />
-              <YAxis
-                tick={{ fontSize: 12 }}
-                stroke="#6b7280"
-                label={{ value: 'Revenue ($)', angle: -90, position: 'insideLeft' }}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'white',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                }}
-              />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="revenue"
-                stroke="#84cc16"
-                strokeWidth={3}
-                dot={{ fill: '#84cc16', r: 4 }}
-                name="Revenue"
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="h-[250px] sm:h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={dailyChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 12 }}
+                  stroke="#6b7280"
+                  minTickGap={30}
+                />
+                <YAxis
+                  tick={{ fontSize: 12 }}
+                  stroke="#6b7280"
+                  label={{ value: 'Revenue ($)', angle: -90, position: 'insideLeft' }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                  }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#84cc16"
+                  strokeWidth={3}
+                  dot={{ fill: '#84cc16', r: 4 }}
+                  name="Revenue"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
 
           <div className="mt-4 p-4 bg-lime-50 rounded-lg">
             <p className="text-sm text-lime-900">
@@ -291,10 +305,10 @@ interface ChartCardProps {
 
 function ChartCard({ title, subtitle, children }: ChartCardProps) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition">
-      <div className="mb-6">
-        <h3 className="text-xl font-bold text-gray-900">{title}</h3>
-        <p className="text-sm text-gray-600">{subtitle}</p>
+    <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition">
+      <div className="mb-4 sm:mb-6">
+        <h3 className="text-lg sm:text-xl font-bold text-gray-900">{title}</h3>
+        <p className="text-xs sm:text-sm text-gray-600">{subtitle}</p>
       </div>
       {children}
     </div>
