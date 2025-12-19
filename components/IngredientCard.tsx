@@ -45,19 +45,19 @@ export function IngredientCard({ ingredient, onEdit, onDelete }: IngredientCardP
         <div className="grid grid-cols-2 gap-2">
           <div>
             <span className="text-gray-500">Calories:</span>
-            <span className="font-semibold text-gray-900 ml-1">{ingredient.calories_per_100g}</span>
+            <span className="font-semibold text-gray-900 ml-1">{Number(ingredient.calories_per_100g).toFixed(2)}</span>
           </div>
           <div>
             <span className="text-gray-500">Protein:</span>
-            <span className="font-semibold text-gray-900 ml-1">{ingredient.protein_per_100g}g</span>
+            <span className="font-semibold text-gray-900 ml-1">{Number(ingredient.protein_per_100g).toFixed(2)}g</span>
           </div>
           <div>
             <span className="text-gray-500">Carbs:</span>
-            <span className="font-semibold text-gray-900 ml-1">{ingredient.carbs_per_100g}g</span>
+            <span className="font-semibold text-gray-900 ml-1">{Number(ingredient.carbs_per_100g).toFixed(2)}g</span>
           </div>
           <div>
             <span className="text-gray-500">Fat:</span>
-            <span className="font-semibold text-gray-900 ml-1">{ingredient.fat_per_100g}g</span>
+            <span className="font-semibold text-gray-900 ml-1">{Number(ingredient.fat_per_100g).toFixed(2)}g</span>
           </div>
         </div>
 
