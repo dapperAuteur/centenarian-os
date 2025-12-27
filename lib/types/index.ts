@@ -381,3 +381,11 @@ export interface FlashcardAnalytics {
   created_at: string;
   updated_at: string;
 }
+
+export interface RecurringPattern {
+  type: 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'custom';
+  interval?: number; // for custom (e.g., every 3 days)
+  daysOfWeek?: number[]; // [1,3,5] = Mon/Wed/Fri
+  dayOfMonth?: number; // 1-31
+  endDate?: Date;
+}
