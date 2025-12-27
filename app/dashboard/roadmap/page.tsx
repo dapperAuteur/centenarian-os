@@ -179,8 +179,7 @@ export default function RoadmapPage() {
     
     setLoading(false);
   }, [supabase, showArchived]); 
-  // eslint-disable-line react-hooks/exhaustive-deps
-
+  
   useEffect(() => {
     loadData();
     // console.log('tasks :>> ', tasks);
@@ -200,19 +199,31 @@ export default function RoadmapPage() {
 
   const toggleRoadmap = (id: string) => {
     const newExpanded = new Set(expandedRoadmaps);
-    newExpanded.has(id) ? newExpanded.delete(id) : newExpanded.add(id);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
     setExpandedRoadmaps(newExpanded);
   };
 
   const toggleGoal = (id: string) => {
     const newExpanded = new Set(expandedGoals);
-    newExpanded.has(id) ? newExpanded.delete(id) : newExpanded.add(id);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
     setExpandedGoals(newExpanded);
   };
 
   const toggleMilestone = (id: string) => {
     const newExpanded = new Set(expandedMilestones);
-    newExpanded.has(id) ? newExpanded.delete(id) : newExpanded.add(id);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
     setExpandedMilestones(newExpanded);
   };
 
