@@ -1,5 +1,5 @@
 // components/SessionTypeToggle.tsx
-"use className"
+"use client"
 
 import { useState } from 'react';
 

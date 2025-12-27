@@ -1,5 +1,7 @@
 // File: lib/types/index.ts
 
+export type SessionType = 'focus' | 'work';
+
 export type TaskTag = 
   | 'FITNESS' 
   | 'CREATIVE' 
@@ -192,21 +194,22 @@ export interface MealPrepBatch {
 export interface FocusSession {
   id: string;
   user_id: string;
-  task_id: string | null;
+  task_id?: string | null;
   start_time: string;
-  end_time: string | null;
-  duration: number | null;
-  notes: string | null;
-  created_at: string;
-  hourly_rate: number;
-  revenue: number;
-  quality_rating?: number | null;
+  end_time?: string | null;
+  duration?: number | null;
+  notes?: string | null;
+  hourly_rate?: number | null;
+  revenue?: number | null;
   tags?: string[] | null;
   template_id?: string | null;
-  pomodoro_mode: boolean;
-  work_intervals: WorkInterval[] | null;
-  break_intervals: BreakInterval[] | null;
+  quality_rating?: number | null;
+  session_type: SessionType; // NEW
+  pomodoro_mode?: boolean;
+  work_intervals?: WorkInterval[] | null;
+  break_intervals?: BreakInterval[] | null;
   net_work_duration: number | null;
+  created_at: string;
   updated_at?: string;
 }
 
@@ -388,4 +391,31 @@ export interface RecurringPattern {
   daysOfWeek?: number[]; // [1,3,5] = Mon/Wed/Fri
   dayOfMonth?: number; // 1-31
   endDate?: Date;
+}
+
+// Recurring Task Patterns
+export type RecurrenceType = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'custom';
+
+export interface RecurrencePattern {
+  type: RecurrenceType;
+  interval?: number; // For custom: repeat every X days
+  daysOfWeek?: number[]; // For weekly: [0,2,4] = Sun, Tue, Thu
+  dayOfMonth?: number; // For monthly: 1-31
+  endDate?: string; // ISO date string
+}
+
+export interface RecurringTask {
+  id: string;
+  user_id: string;
+  milestone_id: string;
+  activity: string;
+  description?: string;
+  tag: string;
+  priority: 1 | 2 | 3;
+  time: string; // HH:MM format
+  pattern: RecurrencePattern;
+  is_active: boolean;
+  last_generated_date?: string;
+  created_at: string;
+  updated_at: string;
 }
