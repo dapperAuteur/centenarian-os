@@ -686,13 +686,13 @@ export default function RoadmapPage() {
                                                   onClick={() => handleRestore('milestones', milestone.id)}
                                                   className="p-2 hover:bg-gray-100 rounded"
                                                 >
-                                                  <RotateCcw className="w-3 h-3 text-gray-600" />
+                                                  <RotateCcw className="w-4 h-4 text-gray-600" />
                                                 </button>
                                                 <button
                                                   onClick={() => handlePermanentDelete('milestones', milestone.id, milestone.archived_at!)}
                                                   className="p-2 hover:bg-gray-100 rounded"
                                                 >
-                                                  <Trash2 className="w-3 h-3 text-red-500" />
+                                                  <Trash2 className="w-4 h-4 text-red-500" />
                                                 </button>
                                               </>
                                             ) : (
@@ -729,29 +729,29 @@ export default function RoadmapPage() {
                                                   <p className="text-sm font-medium text-gray-900">{task.activity}</p>
                                                   <p className="text-xs text-gray-500">{task.time}</p>
                                                 </div>
-                                                <div className="flex items-center gap-2">
+                                                <div className="items-center gap-2">
                                                   {showArchived ? (
                                                     <>
                                                       <button
                                                         onClick={() => handleRestore('tasks', task.id)}
-                                                        className="p-1 hover:bg-gray-200 rounded"
+                                                        className="p-2 md:p-1 hover:bg-gray-200 rounded"
                                                       >
-                                                        <RotateCcw className="w-3 h-3 text-gray-600" />
+                                                        <RotateCcw className="w-4 h-4 md:w-3 md:h-3 text-gray-600" />
                                                       </button>
                                                       <button
                                                         onClick={() => handlePermanentDelete('tasks', task.id, task.archived_at!)}
-                                                        className="p-1 hover:bg-gray-200 rounded"
+                                                        className="p-2 md:p-1 hover:bg-gray-200 rounded"
                                                       >
-                                                        <Trash2 className="w-3 h-3 text-red-500" />
+                                                        <Trash2 className="w-4 h-4 md:w-3 md:h-3 text-red-500" />
                                                       </button>
                                                     </>
                                                   ) : (
                                                     <>
                                                       <button
                                                         onClick={() => setEditingTask(task)}
-                                                        className="p-1 hover:bg-gray-200 rounded"
+                                                        className="p-2 md:p-1 hover:bg-gray-200 rounded"
                                                       >
-                                                        <Edit className="w-3 h-3 text-gray-500" />
+                                                        <Edit className="w-4 h-4 md:w-3 md:h-3 text-gray-500" />
                                                       </button>
                                                       <button
                                                         onClick={async () => {
@@ -763,9 +763,9 @@ export default function RoadmapPage() {
                                                             loadData();
                                                           }
                                                         }}
-                                                        className="p-1 hover:bg-gray-200 rounded"
+                                                        className="p-2 md:p-1 hover:bg-gray-200 rounded"
                                                       >
-                                                        <Archive className="w-3 h-3 text-gray-500" />
+                                                        <Archive className="w-4 h-4 md:w-3 md:h-3 text-gray-500" />
                                                       </button>
                                                     </>
                                                   )}
