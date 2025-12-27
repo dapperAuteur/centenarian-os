@@ -449,7 +449,7 @@ export default function RoadmapPage() {
           <p className="text-gray-600">Manage your multi-decade journey hierarchy</p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="items-center gap-3">
           <button
             onClick={() => setShowArchived(!showArchived)}
             className={`relative px-4 py-2 rounded-lg transition ${
@@ -521,7 +521,7 @@ export default function RoadmapPage() {
                         </p>
                       </div>
                     </button>
-                    <div className="flex items-center gap-2">
+                    <div className="items-center gap-2">
                       {showArchived ? (
                         <>
                           <button
@@ -575,7 +575,7 @@ export default function RoadmapPage() {
                       return (
                         <div key={goal.id} className="border-l-4 border-sky-500 bg-gray-50 rounded-lg">
                           <div className="p-4">
-                            <div className="flex justify-between items-start">
+                            <div className="justify-between items-start">
                               <button
                                 onClick={() => toggleGoal(goal.id)}
                                 className="flex items-center flex-grow text-left"
@@ -651,7 +651,7 @@ export default function RoadmapPage() {
 
                                     return (
                                       <div key={milestone.id} className="bg-white p-3 rounded-lg border border-gray-200">
-                                        <div className="flex justify-between items-start">
+                                        <div className="justify-between items-start">
                                           <button
                                             onClick={() => toggleMilestone(milestone.id)}
                                             className="flex items-center flex-grow text-left"
@@ -679,7 +679,7 @@ export default function RoadmapPage() {
                                               </div>                                            
                                             </div>
                                           </button>
-                                          <div className="flex items-center gap-2">
+                                          <div className="items-center gap-2">
                                             {showArchived ? (
                                               <>
                                                 <button
