@@ -13,10 +13,6 @@ import PerformanceTab from './components/PerformanceTab';
 type Tab = 'overview' | 'trends' | 'pomodoro' | 'performance';
 type TimeRange = '7d' | '30d' | '90d' | 'all';
 
-/**
- * Tabbed Analytics Dashboard for Focus Sessions
- * Comprehensive insights with organized sections
- */
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [sessions, setSessions] = useState<FocusSession[]>([]);
@@ -24,6 +20,19 @@ export default function AnalyticsPage() {
   const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  // Separate metrics for focus vs work sessions
+  const [focusMetrics, setFocusMetrics] = useState({
+    totalMinutes: 0,
+    avgQuality: 0,
+    sessionCount: 0,
+  });
+
+  const [workMetrics, setWorkMetrics] = useState({
+    totalMinutes: 0,
+    totalRevenue: 0,
+    sessionCount: 0,
+  });
 
   const supabase = createClient();
 
@@ -49,8 +58,12 @@ export default function AnalyticsPage() {
 
       if (sessionsData.error) throw sessionsData.error;
 
-      setSessions(sessionsData.data || []);
+      const allSessions = sessionsData.data || [];
+      setSessions(allSessions);
       setUserProfile(profileData.data);
+
+      // Calculate separate metrics
+      calculateMetrics(allSessions);
     } catch (err) {
       console.error('Load data error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load data');
@@ -58,6 +71,38 @@ export default function AnalyticsPage() {
       setIsLoading(false);
     }
   }, [supabase]);
+
+  const calculateMetrics = (allSessions: FocusSession[]) => {
+    // Filter completed sessions
+    const completedSessions = allSessions.filter(s => s.end_time && s.duration);
+
+    // Separate by session type (default to 'focus' for backward compatibility)
+    const focusSessions = completedSessions.filter(s => s.session_type === 'focus' || !s.session_type);
+    const workSessions = completedSessions.filter(s => s.session_type === 'work');
+
+    // Calculate focus metrics
+    const focusMinutes = focusSessions.reduce((sum, s) => sum + (s.duration || 0), 0) / 60;
+    const focusWithQuality = focusSessions.filter(s => s.quality_rating);
+    const avgQuality = focusWithQuality.length > 0
+      ? focusWithQuality.reduce((sum, s) => sum + (s.quality_rating || 0), 0) / focusWithQuality.length
+      : 0;
+
+    setFocusMetrics({
+      totalMinutes: focusMinutes,
+      avgQuality,
+      sessionCount: focusSessions.length,
+    });
+
+    // Calculate work metrics
+    const workMinutes = workSessions.reduce((sum, s) => sum + (s.duration || 0), 0) / 60;
+    const workRevenue = workSessions.reduce((sum, s) => sum + (s.revenue || 0), 0);
+
+    setWorkMetrics({
+      totalMinutes: workMinutes,
+      totalRevenue: workRevenue,
+      sessionCount: workSessions.length,
+    });
+  };
 
   useEffect(() => {
     loadData();
@@ -132,7 +177,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Time Range Selector */}
-        <div className="flex items-center space-x-2 bg-white rounded-lg border border-gray-300 p-1 shadow-sm">
+        <div className="flex items-center space-x-2 bg-white rounded-lg border border-gray-300 p-1 shadow-sm mt-4">
           {[
             { value: '7d' as TimeRange, label: '7 Days' },
             { value: '30d' as TimeRange, label: '30 Days' },
@@ -155,10 +200,75 @@ export default function AnalyticsPage() {
       </header>
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-6">
           <p className="text-sm text-red-700">{error}</p>
         </div>
       )}
+
+      {/* Focus vs Work Session Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {/* Focus Time Card */}
+        <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-xl shadow-lg border border-indigo-200">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="p-3 bg-indigo-600 rounded-lg">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-indigo-900">Focus Time</h3>
+          </div>
+          
+          <div className="space-y-2">
+            <div>
+              <p className="text-4xl font-bold text-indigo-600">
+                {Math.floor(focusMetrics.totalMinutes / 60)}h {Math.round(focusMetrics.totalMinutes % 60)}m
+              </p>
+              <p className="text-sm text-gray-600">{focusMetrics.sessionCount} sessions</p>
+            </div>
+            
+            {focusMetrics.avgQuality > 0 && (
+              <div className="pt-2 border-t border-indigo-200">
+                <p className="text-sm text-gray-700">
+                  Avg Quality: <span className="font-bold text-indigo-600">
+                    {focusMetrics.avgQuality.toFixed(1)} ⭐
+                  </span>
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Work Time Card */}
+        <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl shadow-lg border border-green-200">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="p-3 bg-green-600 rounded-lg">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-green-900">Work Time</h3>
+          </div>
+          
+          <div className="space-y-2">
+            <div>
+              <p className="text-4xl font-bold text-green-600">
+                {Math.floor(workMetrics.totalMinutes / 60)}h {Math.round(workMetrics.totalMinutes % 60)}m
+              </p>
+              <p className="text-sm text-gray-600">{workMetrics.sessionCount} sessions</p>
+            </div>
+            
+            {workMetrics.totalRevenue > 0 && (
+              <div className="pt-2 border-t border-green-200">
+                <p className="text-sm text-gray-700">
+                  Revenue: <span className="font-bold text-green-600">
+                    ${workMetrics.totalRevenue.toFixed(2)}
+                  </span>
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Tab Navigation */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
@@ -223,7 +333,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Quick Stats Footer (visible across all tabs) */}
+      {/* Quick Stats Footer */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
         <div className="bg-white rounded-lg shadow p-4 text-center">
           <div className="text-sm text-gray-600">Total Sessions</div>
