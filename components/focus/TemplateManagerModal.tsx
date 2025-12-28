@@ -34,7 +34,7 @@ export default function TemplateManagerModal({
   const filteredTemplates = templates.filter(template =>
     template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     template.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    template.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+    template.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -43,14 +43,14 @@ export default function TemplateManagerModal({
         {/* Header */}
         <div className="flex items-center space-x-3 mb-6">
           <div className="flex-1 relative">
-            {/* <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search templates..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-            /> */}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-800"
+            />
           </div>
           <button
             onClick={onCreate}
