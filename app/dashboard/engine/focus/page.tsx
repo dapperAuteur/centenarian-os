@@ -95,6 +95,51 @@ export default function FocusTimerPage() {
     }
   }, [supabase]);
 
+  const handleCompleteCurrentInterval = useCallback(async () => {
+    if (!currentSessionId) return;
+
+    const endTime = new Date().toISOString();
+    const duration = currentPhaseSeconds;
+
+    if (pomodoroPhase === 'work') {
+      const newWorkInterval: WorkInterval = { start: currentIntervalStart!, end: endTime, duration };
+      const updatedWorkIntervals = [...workIntervals, newWorkInterval];
+      setWorkIntervals(updatedWorkIntervals);
+
+      const newCompletedIntervals = completedIntervals + 1;
+      setCompletedIntervals(newCompletedIntervals);
+
+      await supabase.from('focus_sessions').update({ work_intervals: updatedWorkIntervals }).eq('id', currentSessionId);
+
+      const breakInfo = getBreakDuration(newCompletedIntervals, pomodoroSettings);
+      setCurrentPhaseSeconds(0);
+      setPomodoroPhase(breakInfo.type === 'long' ? 'long-break' : 'short-break');
+      setCurrentIntervalStart(endTime);
+
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Work Complete! 🎉', { body: `Time for a ${breakInfo.type} break` });
+      }
+
+      if (!pomodoroSettings.autoStartBreaks) setIsRunning(false);
+    } else {
+      const newBreakInterval: BreakInterval = { start: currentIntervalStart!, end: endTime, duration, type: pomodoroPhase === 'long-break' ? 'long' : 'short' };
+      const updatedBreakIntervals = [...breakIntervals, newBreakInterval];
+      setBreakIntervals(updatedBreakIntervals);
+
+      await supabase.from('focus_sessions').update({ break_intervals: updatedBreakIntervals }).eq('id', currentSessionId);
+
+      setCurrentPhaseSeconds(0);
+      setPomodoroPhase('work');
+      setCurrentIntervalStart(endTime);
+
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Break Over! 💪', { body: 'Time to focus again' });
+      }
+
+      if (!pomodoroSettings.autoStartWork) setIsRunning(false);
+    }
+  }, [currentSessionId, currentIntervalStart, pomodoroPhase, currentPhaseSeconds, workIntervals, breakIntervals, completedIntervals, pomodoroSettings, supabase]);
+
   const loadTemplates = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -147,52 +192,7 @@ export default function FocusTimerPage() {
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isRunning, timerMode, pomodoroPhase, currentPhaseSeconds, pomodoroSettings]);
-
-  const handleCompleteCurrentInterval = useCallback(async () => {
-    if (!currentSessionId) return;
-
-    const endTime = new Date().toISOString();
-    const duration = currentPhaseSeconds;
-
-    if (pomodoroPhase === 'work') {
-      const newWorkInterval: WorkInterval = { start: currentIntervalStart!, end: endTime, duration };
-      const updatedWorkIntervals = [...workIntervals, newWorkInterval];
-      setWorkIntervals(updatedWorkIntervals);
-
-      const newCompletedIntervals = completedIntervals + 1;
-      setCompletedIntervals(newCompletedIntervals);
-
-      await supabase.from('focus_sessions').update({ work_intervals: updatedWorkIntervals }).eq('id', currentSessionId);
-
-      const breakInfo = getBreakDuration(newCompletedIntervals, pomodoroSettings);
-      setCurrentPhaseSeconds(0);
-      setPomodoroPhase(breakInfo.type === 'long' ? 'long-break' : 'short-break');
-      setCurrentIntervalStart(endTime);
-
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('Work Complete! 🎉', { body: `Time for a ${breakInfo.type} break` });
-      }
-
-      if (!pomodoroSettings.autoStartBreaks) setIsRunning(false);
-    } else {
-      const newBreakInterval: BreakInterval = { start: currentIntervalStart!, end: endTime, duration, type: pomodoroPhase === 'long-break' ? 'long' : 'short' };
-      const updatedBreakIntervals = [...breakIntervals, newBreakInterval];
-      setBreakIntervals(updatedBreakIntervals);
-
-      await supabase.from('focus_sessions').update({ break_intervals: updatedBreakIntervals }).eq('id', currentSessionId);
-
-      setCurrentPhaseSeconds(0);
-      setPomodoroPhase('work');
-      setCurrentIntervalStart(endTime);
-
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('Break Over! 💪', { body: 'Time to focus again' });
-      }
-
-      if (!pomodoroSettings.autoStartWork) setIsRunning(false);
-    }
-  }, [currentSessionId, currentIntervalStart, pomodoroPhase, currentPhaseSeconds, workIntervals, breakIntervals, completedIntervals, pomodoroSettings, supabase]);
+  }, [isRunning, timerMode, pomodoroPhase, currentPhaseSeconds, pomodoroSettings, handleCompleteCurrentInterval]);
 
   const startSession = async () => {
     const { data: { user } } = await supabase.auth.getUser();
