@@ -4,76 +4,39 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { FocusSession, Task } from '@/lib/types';
-import { calculateDailyProgress, formatGoalTime } from '@/lib/utils/goalUtils';
-import { UserProfile } from '@/lib/types';
-import { Plus, Search, Filter, RefreshCw, Target } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import SessionsTable from './components/SessionsTable';
+import SessionDetailPanel from './components/SessionDetailPanel';
+import SessionCreateModal from './components/SessionCreateModal';
+import SessionEditModal from './components/SessionEditModal';
+import DuplicateSessionModal from './components/DuplicateSessionModal';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
 import ForceStopModal from './components/ForceStopModal';
-import SessionEditModal from './components/SessionEditModal';
-import SessionCreateModal from './components/SessionCreateModal';import TaskCreateModal from './components/TaskCreateModal';
+import TaskCreateModal from './components/TaskCreateModal';
 
-
-
-const SESSIONS_PER_PAGE = 50;
-
-interface Filters {
-  searchQuery: string;
-  dateFrom: string;
-  dateTo: string;
-  taskId: string;
-  minRevenue: string;
-  maxDuration: string;
-  minDuration: string;
-}
-
-/**
- * Focus Sessions Management Page
- * View, filter, search, and manage all focus sessions
- */
 export default function SessionsPage() {
   const [sessions, setSessions] = useState<FocusSession[]>([]);
-  const [allSessions, setAllSessions] = useState<FocusSession[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [showFilters, setShowFilters] = useState(false);
-  const [createModal, setCreateModal] = useState(false);
-  const [isTaskCreateModalOpen, setTaskCreateModalOpen] = useState(false);
-  // const memoizedTasks = useMemo(() => tasks, [tasks]);
-  // const memoizedSessions = useMemo(() => allSessions, [allSessions]);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-
 
   // Modal states
-  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; session: FocusSession | null }>({
-    isOpen: false,
-    session: null,
-  });
+  const [selectedSession, setSelectedSession] = useState<FocusSession | null>(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isForceStopModalOpen, setIsForceStopModalOpen] = useState(false);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
-  const [editModal, setEditModal] = useState<{ isOpen: boolean; session: FocusSession | null }>({
-    isOpen: false,
-    session: null,
-  });
-
-  const [forceStopModal, setForceStopModal] = useState<{ isOpen: boolean; session: FocusSession | null }>({
-    isOpen: false,
-    session: null,
-  });
+  const [editingSession, setEditingSession] = useState<FocusSession | null>(null);
+  const [duplicatingSession, setDuplicatingSession] = useState<FocusSession | null>(null);
+  const [deletingSession, setDeletingSession] = useState<FocusSession | null>(null);
+  const [stoppingSession, setStoppingSession] = useState<FocusSession | null>(null);
+  
   const [isDeleting, setIsDeleting] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
-  
-  const [filters, setFilters] = useState<Filters>({
-    searchQuery: '',
-    dateFrom: '',
-    dateTo: '',
-    taskId: '',
-    minRevenue: '',
-    maxDuration: '',
-    minDuration: '',
-  });
 
   const supabase = createClient();
 
@@ -85,44 +48,25 @@ export default function SessionsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Load all sessions (RLS handles user filtering automatically)
-      const { data: sessionsData, error: sessionsError } = await supabase
-        .from('focus_sessions')
-        .select('*')
-        .order('start_time', { ascending: false });
-      if (sessionsError) {
-        console.error('Sessions error:', sessionsError);
-        throw sessionsError;
-      }
-      
-      if (user) {
-        const { data: profile } = await supabase
-          .from('user_profiles')
+      const [sessionsData, tasksData] = await Promise.all([
+        supabase
+          .from('focus_sessions')
           .select('*')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (profile) {
-          setUserProfile(profile);
-        }
-      }
-      // Load tasks (RLS handles user filtering through milestone->goal->roadmap hierarchy)
-      const { data: tasksData, error: tasksError } = await supabase
-        .from('tasks')
-        .select('*')
-        .order('date', { ascending: false })
-        .limit(500); // Reasonable limit to prevent loading thousands
-      if (tasksError) {
-        console.error('Tasks error:', tasksError);
-        throw tasksError;
-      }
+          .order('start_time', { ascending: false }),
+        supabase
+          .from('tasks')
+          .select('*')
+          .order('date', { ascending: false }),
+      ]);
 
-      setAllSessions(sessionsData || []);
-      setSessions(sessionsData || []);
-      setTasks(tasksData || []);
+      if (sessionsData.error) throw sessionsData.error;
+      if (tasksData.error) throw tasksData.error;
+
+      setSessions(sessionsData.data || []);
+      setTasks(tasksData.data || []);
     } catch (err) {
       console.error('Load data error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load sessions');
+      setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
       setIsLoading(false);
     }
@@ -132,528 +76,290 @@ export default function SessionsPage() {
     loadData();
   }, [loadData]);
 
-  const defaultHourlyRate = allSessions.length > 0 
-    ? (allSessions[0].hourly_rate || 0) 
-    : 0;
-
-  // Apply filters
-  useEffect(() => {
-    let filtered = [...allSessions];
-
-    // Search filter (task name, notes)
-    if (filters.searchQuery) {
-      const query = filters.searchQuery.toLowerCase();
-      filtered = filtered.filter(session => {
-        const task = tasks.find(t => t.id === session.task_id);
-        const taskName = task?.activity?.toLowerCase() || '';
-        const notes = session.notes?.toLowerCase() || '';
-        const revenue = session.revenue?.toString() || '';
-        const rate = session.hourly_rate?.toString() || '';
-        
-        return (
-          taskName.includes(query) ||
-          notes.includes(query) ||
-          revenue.includes(query) ||
-          rate.includes(query)
-        );
-      });
-    }
-
-    // Date range filter
-    if (filters.dateFrom) {
-      const fromDate = new Date(filters.dateFrom).getTime();
-      filtered = filtered.filter(
-        session => new Date(session.start_time).getTime() >= fromDate
-      );
-    }
-
-    if (filters.dateTo) {
-      const toDate = new Date(filters.dateTo + 'T23:59:59').getTime();
-      filtered = filtered.filter(
-        session => new Date(session.start_time).getTime() <= toDate
-      );
-    }
-
-    // Task filter
-    if (filters.taskId) {
-      filtered = filtered.filter(session => session.task_id === filters.taskId);
-    }
-
-    // Revenue filter
-    if (filters.minRevenue) {
-      const minRev = parseFloat(filters.minRevenue);
-      filtered = filtered.filter(
-        session => (session.revenue || 0) >= minRev
-      );
-    }
-
-    // Duration filters
-    if (filters.minDuration) {
-      const minDur = parseInt(filters.minDuration) * 60; // Convert minutes to seconds
-      filtered = filtered.filter(
-        session => (session.duration || 0) >= minDur
-      );
-    }
-
-    if (filters.maxDuration) {
-      const maxDur = parseInt(filters.maxDuration) * 60; // Convert minutes to seconds
-      filtered = filtered.filter(
-        session => (session.duration || 0) <= maxDur
-      );
-    }
-
-    setSessions(filtered);
-    setCurrentPage(1); // Reset to first page when filters change
-  }, [filters, allSessions, tasks]);
-
-  const dailyProgress = userProfile
-  ? calculateDailyProgress(sessions, userProfile.daily_focus_goal_minutes)
-  : null;
-
-  // Pagination
-  const totalPages = Math.ceil(sessions.length / SESSIONS_PER_PAGE);
-  const paginatedSessions = sessions.slice(
-    (currentPage - 1) * SESSIONS_PER_PAGE,
-    currentPage * SESSIONS_PER_PAGE
-  );
-
-  const handleEditModalClose = useCallback(() => {
-    setEditModal({ isOpen: false, session: null });
-  }, []);
-  const handleEditSave = useCallback(async () => {
-    setSuccess('Session updated successfully');
-    setTimeout(() => setSuccess(null), 3000);
-    setEditModal({ isOpen: false, session: null });
-    await loadData();
-  }, [loadData]);
-  const handleTaskModalOpen = useCallback(() => {
-    setTaskCreateModalOpen(true);
-  }, []);
-
-  const handleCreateSave = async () => {
-    setSuccess('Session created successfully');
-    setTimeout(() => setSuccess(null), 3000);
-    setCreateModal(false);
-    await loadData();
+  // View session in detail panel
+  const handleView = (session: FocusSession) => {
+    setSelectedSession(session);
+    setIsPanelOpen(true);
   };
 
+  // Edit session
   const handleEdit = (session: FocusSession) => {
-    setEditModal({ isOpen: true, session });
+    setEditingSession(session);
+    setIsEditModalOpen(true);
   };
 
-  const handleDeleteClick = (sessionId: string) => {
+  // Duplicate session
+  const handleDuplicate = (session: FocusSession) => {
+    setDuplicatingSession(session);
+    setIsDuplicateModalOpen(true);
+  };
+
+  // Delete session (show confirmation)
+  const handleDelete = (sessionId: string) => {
     const session = sessions.find(s => s.id === sessionId);
     if (session) {
-      setDeleteModal({ isOpen: true, session });
+      setDeletingSession(session);
+      setIsDeleteModalOpen(true);
     }
   };
-  const handleDeleteConfirm = async () => {
-    if (!deleteModal.session) return;
+
+  // Confirm delete
+  const handleConfirmDelete = async () => {
+    if (!deletingSession) return;
+
     try {
       setIsDeleting(true);
-      setError(null);
-      const { error: deleteError } = await supabase
+      const { error } = await supabase
         .from('focus_sessions')
         .delete()
-        .eq('id', deleteModal.session.id);
-      if (deleteError) throw deleteError;
-      setSuccess('Session deleted successfully');
-      setTimeout(() => setSuccess(null), 3000);
+        .eq('id', deletingSession.id);
+
+      if (error) throw error;
+
+      setSessions(sessions.filter(s => s.id !== deletingSession.id));
       
-      setDeleteModal({ isOpen: false, session: null });
-      await loadData();
+      // Close panel if deleted session was open
+      if (selectedSession?.id === deletingSession.id) {
+        setIsPanelOpen(false);
+        setSelectedSession(null);
+      }
+
+      setIsDeleteModalOpen(false);
+      setDeletingSession(null);
     } catch (err) {
       console.error('Delete error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to delete session');
+      alert('Failed to delete session. Please try again.');
     } finally {
       setIsDeleting(false);
     }
   };
-  const handleForceStopClick = (session: FocusSession) => {
-    setForceStopModal({ isOpen: true, session });
+
+  // Force stop session (show confirmation)
+  const handleForceStop = (session: FocusSession) => {
+    setStoppingSession(session);
+    setIsForceStopModalOpen(true);
   };
-  const handleForceStopConfirm = async () => {
-    if (!forceStopModal.session) return;
+
+  // Confirm force stop
+  const handleConfirmForceStop = async () => {
+    if (!stoppingSession) return;
+
     try {
       setIsStopping(true);
-      setError(null);
-      const endTime = new Date().toISOString();
-      const duration = Math.floor(
-        (new Date(endTime).getTime() - new Date(forceStopModal.session.start_time).getTime()) / 1000
-      );
-      const revenue = (duration / 3600) * (forceStopModal.session.hourly_rate || 0);
-      const { error: updateError } = await supabase
+      const now = new Date().toISOString();
+      const startTime = new Date(stoppingSession.start_time);
+      const duration = Math.floor((new Date().getTime() - startTime.getTime()) / 1000);
+
+      const { error } = await supabase
         .from('focus_sessions')
         .update({
-          end_time: endTime,
+          end_time: now,
           duration: duration,
-          revenue: revenue,
         })
-        .eq('id', forceStopModal.session.id);
-      if (updateError) throw updateError;
-      setSuccess('Session force-stopped successfully');
-      setTimeout(() => setSuccess(null), 3000);
-      
-      setForceStopModal({ isOpen: false, session: null });
+        .eq('id', stoppingSession.id);
+
+      if (error) throw error;
+
       await loadData();
+      setIsForceStopModalOpen(false);
+      setStoppingSession(null);
     } catch (err) {
       console.error('Force stop error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to stop session');
+      alert('Failed to stop session. Please try again.');
     } finally {
       setIsStopping(false);
     }
   };
 
-  const handleTaskCreated = () => {
-    setTaskCreateModalOpen(false);
-    // Reload all data to ensure the new task is available in the dropdowns
-    loadData();
-  };
+  // Save duplicated session
+  const handleSaveDuplicate = async (sessionData: Partial<FocusSession>) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
 
-  const handleCreateNew = () => {
-    setCreateModal(true);
-  };
+      const { error } = await supabase.from('focus_sessions').insert({
+        user_id: user.id,
+        ...sessionData,
+      });
 
-  const resetFilters = () => {
-    setFilters({
-      searchQuery: '',
-      dateFrom: '',
-      dateTo: '',
-      taskId: '',
-      minRevenue: '',
-      maxDuration: '',
-      minDuration: '',
-    });
-  };
+      if (error) throw error;
 
-  const totalDuration = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
-  const totalRevenue = sessions.reduce((sum, s) => sum + (s.revenue || 0), 0);
+      await loadData();
+    } catch (err) {
+      console.error('Duplicate session error:', err);
+      throw err;
+    }
+  };
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Loading sessions...</div>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto" />
+            <p className="mt-4 text-gray-600">Loading sessions...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <p className="text-red-800">{error}</p>
+            <button
+              onClick={loadData}
+              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      {/* Header */}
-      <header className="mb-8">
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900">Focus Sessions</h1>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">Focus Sessions</h1>
             <p className="text-gray-600">
-              Showing {paginatedSessions.length} of {sessions.length} sessions
+              View and manage all your focus sessions. Click any row to see details.
             </p>
           </div>
-          <div className="items-center space-x-3">
-            <button
-              onClick={loadData}
-              className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh
-            </button>
-            <button
-              onClick={handleCreateNew}
-              className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              New Session
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-700">{error}</p>
-        </div>
-      )}
-
-      {/* Summary Stats */}
-      {success && (
-        <div className="mb-6 p-4 bg-lime-50 border border-lime-200 rounded-lg">
-          <p className="text-sm text-lime-700">{success}</p>
-        </div>
-      )}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="text-sm text-gray-500 mb-1">Total Sessions</div>
-          <div className="text-3xl font-bold text-gray-900">{sessions.length}</div>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="text-sm text-gray-500 mb-1">Total Time</div>
-          <div className="text-3xl font-bold text-indigo-600">
-            {Math.floor(totalDuration / 3600)}h {Math.floor((totalDuration % 3600) / 60)}m
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="text-sm text-gray-500 mb-1">Total Revenue</div>
-          <div className="text-3xl font-bold text-lime-600">
-            ${totalRevenue.toFixed(2)}
-          </div>
-        </div>
-      </div>
-
-      {/* Daily Goal Progress */}
-      {userProfile && dailyProgress && (
-        <div className="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-6">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-2">
-                <Target className="w-5 h-5 text-indigo-600" />
-                <h3 className="text-lg font-bold text-indigo-900">Today&apos;s Focus Goal</h3>
-              </div>
-              <p className="text-sm text-indigo-700 mb-4">
-                {formatGoalTime(dailyProgress.completedMinutes)} of{' '}
-                {formatGoalTime(dailyProgress.goalMinutes)} completed
-              </p>
-
-              {/* Progress Bar */}
-              <div className="relative w-full h-4 bg-indigo-100 rounded-full overflow-hidden">
-                <div
-                  className={`absolute left-0 top-0 h-full transition-all ${
-                    dailyProgress.percentage >= 100
-                      ? 'bg-lime-600'
-                      : dailyProgress.percentage >= 75
-                      ? 'bg-blue-600'
-                      : dailyProgress.percentage >= 50
-                      ? 'bg-indigo-600'
-                      : dailyProgress.percentage >= 25
-                      ? 'bg-amber-600'
-                      : 'bg-red-600'
-                  }`}
-                  style={{ width: `${Math.min(dailyProgress.percentage, 100)}%` }}
-                />
-              </div>
-
-              <div className="flex items-center justify-between mt-2">
-                <span className="text-sm font-semibold text-indigo-900">
-                  {Math.round(dailyProgress.percentage)}%
-                </span>
-                {dailyProgress.percentage >= 100 ? (
-                  <span className="text-sm font-semibold text-lime-700">🎉 Goal Completed!</span>
-                ) : (
-                  <span className="text-sm text-indigo-700">
-                    {formatGoalTime(dailyProgress.goalMinutes - dailyProgress.completedMinutes)} remaining
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Search & Filters */}
-      <div className="mb-6 space-y-4">
-        <div className="flex items-center space-x-4">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              value={filters.searchQuery}
-              onChange={(e) => setFilters({ ...filters, searchQuery: e.target.value })}
-              placeholder="Search by task, notes, rate, or revenue..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input text-right"
-            />
-          </div>
-
-          {/* Toggle Filters */}
           <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center px-4 py-2 border rounded-lg transition ${
-              showFilters
-                ? 'bg-indigo-50 border-indigo-300 text-indigo-700'
-                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
           >
-            <Filter className="w-4 h-4 mr-2" />
-            Filters
+            <Plus className="w-5 h-5" />
+            <span>New Session</span>
           </button>
         </div>
 
-        {/* Filter Panel */}
-        {showFilters && (
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Date From */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Date From
-                </label>
-                <input
-                  type="date"
-                  value={filters.dateFrom}
-                  onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
-                />
-              </div>
-
-              {/* Date To */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Date To
-                </label>
-                <input
-                  type="date"
-                  value={filters.dateTo}
-                  onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
-                />
-              </div>
-
-              {/* Task Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Task
-                </label>
-                <select
-                  value={filters.taskId}
-                  onChange={(e) => setFilters({ ...filters, taskId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
-                >
-                  <option value="">All tasks</option>
-                  {tasks.map(task => (
-                    <option key={task.id} value={task.id}>
-                      {task.activity}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Min Revenue */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Min Revenue ($)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={filters.minRevenue}
-                  onChange={(e) => setFilters({ ...filters, minRevenue: e.target.value })}
-                  placeholder="0.00"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
-                />
-              </div>
-
-              {/* Min Duration */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Min Duration (min)
-                </label>
-                <input
-                  type="number"
-                  value={filters.minDuration}
-                  onChange={(e) => setFilters({ ...filters, minDuration: e.target.value })}
-                  placeholder="0"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
-                />
-              </div>
-
-              {/* Max Duration */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Max Duration (min)
-                </label>
-                <input
-                  type="number"
-                  value={filters.maxDuration}
-                  onChange={(e) => setFilters({ ...filters, maxDuration: e.target.value })}
-                  placeholder="720"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
-                />
-              </div>
-            </div>
-
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={resetFilters}
-                className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900"
-              >
-                Reset Filters
-              </button>
+            <div className="text-sm text-gray-600 mb-1">Total Sessions</div>
+            <div className="text-3xl font-bold text-indigo-600">{sessions.length}</div>
+          </div>
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="text-sm text-gray-600 mb-1">Total Time</div>
+            <div className="text-3xl font-bold text-purple-600">
+              {Math.floor(sessions.reduce((sum, s) => sum + (s.duration || 0), 0) / 3600)}h
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Table */}
-      <SessionsTable
-        sessions={paginatedSessions}
-        tasks={tasks}
-        onEdit={handleEdit}
-        onDelete={handleDeleteClick}
-        onForceStop={handleForceStopClick}
-      />
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="mt-6 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
-            Page {currentPage} of {totalPages}
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              Next
-            </button>
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="text-sm text-gray-600 mb-1">Total Revenue</div>
+            <div className="text-3xl font-bold text-lime-600">
+              ${sessions.reduce((sum, s) => sum + (s.revenue || 0), 0).toFixed(0)}
+            </div>
           </div>
         </div>
-      )}
-      {/* Modals */}
-      <DeleteConfirmModal
-        isOpen={deleteModal.isOpen}
-        onClose={() => setDeleteModal({ isOpen: false, session: null })}
-        onConfirm={handleDeleteConfirm}
-        session={deleteModal.session}
-        isDeleting={isDeleting}
-      />
-      <ForceStopModal
-        isOpen={forceStopModal.isOpen}
-        onClose={() => setForceStopModal({ isOpen: false, session: null })}
-        onConfirm={handleForceStopConfirm}
-        session={forceStopModal.session}
-        isStopping={isStopping}
-      />
-      <SessionEditModal
-        isOpen={editModal.isOpen}
-        onClose={handleEditModalClose}
-        onSave={handleEditSave}
-        session={editModal.session}
-        onOpenTaskModal={handleTaskModalOpen}
-        tasks={tasks}
-        allSessions={allSessions}
-      />
-      <SessionCreateModal
-        isOpen={createModal}
-        onClose={() => setCreateModal(false)}
-        onCreate={handleCreateSave}
-        tasks={tasks}
-        allSessions={allSessions}
-        defaultHourlyRate={defaultHourlyRate}
-        onOpenTaskModal={() => setTaskCreateModalOpen(true)}
-      />
-      <TaskCreateModal
-        isOpen={isTaskCreateModalOpen}
-        onClose={() => setTaskCreateModalOpen(false)}
-        onTaskCreated={handleTaskCreated}
-      />
+
+        {/* Table */}
+        <SessionsTable
+          sessions={sessions}
+          tasks={tasks}
+          onView={handleView}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onForceStop={handleForceStop}
+        />
+
+        {/* Detail Panel */}
+        <SessionDetailPanel
+          session={selectedSession}
+          tasks={tasks}
+          isOpen={isPanelOpen}
+          onClose={() => {
+            setIsPanelOpen(false);
+            setSelectedSession(null);
+          }}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onDuplicate={handleDuplicate}
+        />
+
+        {/* Create Modal */}
+        <SessionCreateModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onCreate={loadData}
+          tasks={tasks}
+          onOpenTaskModal={() => setIsTaskModalOpen(true)}
+          allSessions={sessions}
+        />
+
+        {/* Edit Modal */}
+        <SessionEditModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setEditingSession(null);
+          }}
+          onSave={loadData}
+          session={editingSession}
+          onOpenTaskModal={() => setIsTaskModalOpen(true)}
+          tasks={tasks}
+          allSessions={sessions}
+        />
+
+        {/* Duplicate Modal */}
+        <DuplicateSessionModal
+          isOpen={isDuplicateModalOpen}
+          onClose={() => {
+            setIsDuplicateModalOpen(false);
+            setDuplicatingSession(null);
+          }}
+          session={duplicatingSession}
+          tasks={tasks}
+          onSave={handleSaveDuplicate}
+        />
+
+        {/* Delete Confirmation Modal */}
+        <DeleteConfirmModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => {
+            setIsDeleteModalOpen(false);
+            setDeletingSession(null);
+          }}
+          onConfirm={handleConfirmDelete}
+          session={deletingSession}
+          isDeleting={isDeleting}
+        />
+
+        {/* Force Stop Confirmation Modal */}
+        <ForceStopModal
+          isOpen={isForceStopModalOpen}
+          onClose={() => {
+            setIsForceStopModalOpen(false);
+            setStoppingSession(null);
+          }}
+          onConfirm={handleConfirmForceStop}
+          session={stoppingSession}
+          isStopping={isStopping}
+        />
+
+        {/* Task Creation Modal */}
+        <TaskCreateModal
+          isOpen={isTaskModalOpen}
+          onClose={() => setIsTaskModalOpen(false)}
+          onTaskCreated={async (taskId) => {
+            await loadData();
+            setIsTaskModalOpen(false);
+            // Auto-select new task in edit/create modals
+            if (isEditModalOpen && editingSession) {
+              setEditingSession({ ...editingSession, task_id: taskId });
+            }
+          }}
+        />
+      </div>
     </div>
   );
 }

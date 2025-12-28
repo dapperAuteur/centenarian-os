@@ -4,12 +4,13 @@
 
 import { useState } from 'react';
 import { FocusSession, Task } from '@/lib/types';
-import { Edit2, Trash2, ChevronUp, ChevronDown, AlertTriangle, StopCircle } from 'lucide-react';
+import { Edit2, Trash2, ChevronUp, ChevronDown, StopCircle, Eye } from 'lucide-react';
 import { formatDuration, formatDate, formatTime24 } from '@/lib/utils/sessionValidation';
 
 interface SessionsTableProps {
   sessions: FocusSession[];
   tasks: Task[];
+  onView: (session: FocusSession) => void;
   onEdit: (session: FocusSession) => void;
   onDelete: (sessionId: string) => void;
   onForceStop: (session: FocusSession) => void;
@@ -20,11 +21,12 @@ type SortDirection = 'asc' | 'desc';
 
 /**
  * Sortable, filterable table for focus sessions
- * Shows session data with actions (edit/delete/force-stop)
+ * Click row to view details, use action buttons for edit/delete/force-stop
  */
 export default function SessionsTable({
   sessions,
   tasks,
+  onView,
   onEdit,
   onDelete,
   onForceStop,
@@ -151,7 +153,11 @@ export default function SessionsTable({
                 const isRunning = !session.end_time;
                 
                 return (
-                  <tr key={session.id} className="hover:bg-gray-50 transition">
+                  <tr 
+                    key={session.id} 
+                    className="hover:bg-indigo-50 transition cursor-pointer group"
+                    onClick={() => onView(session)}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
                         {formatDate(session.start_time)}
@@ -197,7 +203,10 @@ export default function SessionsTable({
                         <span className="text-sm text-gray-400 italic">No notes</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td 
+                      className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+                      onClick={(e) => e.stopPropagation()} // Prevent row click when clicking actions
+                    >
                       {isRunning ? (
                         <button
                           onClick={() => onForceStop(session)}
@@ -210,14 +219,31 @@ export default function SessionsTable({
                       ) : (
                         <div className="flex items-center justify-end space-x-3">
                           <button
-                            onClick={() => onEdit(session)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onView(session);
+                            }}
+                            className="text-blue-600 hover:text-blue-900 transition opacity-0 group-hover:opacity-100"
+                            aria-label="View session"
+                            title="View details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEdit(session);
+                            }}
                             className="text-indigo-600 hover:text-indigo-900 transition"
                             aria-label="Edit session"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => onDelete(session.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDelete(session.id);
+                            }}
                             className="text-red-600 hover:text-red-900 transition"
                             aria-label="Delete session"
                           >
@@ -233,6 +259,15 @@ export default function SessionsTable({
           </tbody>
         </table>
       </div>
+      
+      {/* Click hint */}
+      {sortedSessions.length > 0 && (
+        <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
+          <p className="text-xs text-gray-500 text-center">
+            💡 Click any row to view full session details
+          </p>
+        </div>
+      )}
     </div>
   );
 }
