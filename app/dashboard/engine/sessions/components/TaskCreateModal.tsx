@@ -145,7 +145,7 @@ const TaskCreateModal = memo(function TaskCreateModal({
               value={formData.activity}
               onChange={(e) => setFormData(prev => ({ ...prev, activity: e.target.value }))}
               placeholder="e.g., Client meeting, Code review"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input text-gray-800"
               required
             />
           </div>
@@ -158,7 +158,7 @@ const TaskCreateModal = memo(function TaskCreateModal({
               type="time"
               value={formData.time}
               onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input text-gray-800"
             />
           </div>
 

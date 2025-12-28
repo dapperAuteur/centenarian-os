@@ -171,7 +171,7 @@ export default function MealLoggingPage() {
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input text-gray-800"
                 />
               </div>
 
@@ -182,7 +182,7 @@ export default function MealLoggingPage() {
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input text-gray-800"
                 />
               </div>
 
@@ -207,7 +207,7 @@ export default function MealLoggingPage() {
                   id="isRestaurant"
                   checked={isRestaurant}
                   onChange={(e) => setIsRestaurant(e.target.checked)}
-                  className="w-4 h-4 text-sky-600 border-gray-300 rounded focus:ring-sky-500 form-input"
+                  className="w-4 h-4 text-sky-600 border-gray-300 rounded focus:ring-sky-500 form-input text-gray-800"
                 />
                 <label htmlFor="isRestaurant" className="ml-2 text-sm font-medium text-gray-700">
                   Restaurant/Eating Out
@@ -246,7 +246,7 @@ export default function MealLoggingPage() {
                       onChange={(e) => setRestaurantName(e.target.value)}
                       required={isRestaurant}
                       placeholder="e.g., Chipotle"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input text-gray-800"
                     />
                   </div>
                   <div>
@@ -256,7 +256,7 @@ export default function MealLoggingPage() {
                       value={restaurantAddress}
                       onChange={(e) => setRestaurantAddress(e.target.value)}
                       placeholder="123 Main St"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input text-gray-800"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -267,7 +267,7 @@ export default function MealLoggingPage() {
                         value={restaurantCity}
                         onChange={(e) => setRestaurantCity(e.target.value)}
                         placeholder="San Francisco"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input text-gray-800"
                       />
                     </div>
                     <div>
@@ -277,7 +277,7 @@ export default function MealLoggingPage() {
                         value={restaurantState}
                         onChange={(e) => setRestaurantState(e.target.value)}
                         placeholder="CA"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input text-gray-800"
                       />
                     </div>
                   </div>
@@ -288,7 +288,7 @@ export default function MealLoggingPage() {
                       value={restaurantCountry}
                       onChange={(e) => setRestaurantCountry(e.target.value)}
                       placeholder="USA"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input text-gray-800"
                     />
                   </div>
                   <div>
@@ -298,7 +298,7 @@ export default function MealLoggingPage() {
                       value={restaurantWebsite}
                       onChange={(e) => setRestaurantWebsite(e.target.value)}
                       placeholder="https://..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input text-gray-800"
                     />
                   </div>
                 </div>

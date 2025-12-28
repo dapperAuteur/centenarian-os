@@ -263,7 +263,7 @@ function InventoryCard({ item, onEdit, onRestock, isLowStock }: InventoryCardPro
           value={restockQuantity}
           onChange={(e) => setRestockQuantity(e.target.value)}
           placeholder="Add qty"
-          className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-sky-500"
+          className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-sky-500 text-gray-800"
         />
         <button
           onClick={handleQuickRestock}
