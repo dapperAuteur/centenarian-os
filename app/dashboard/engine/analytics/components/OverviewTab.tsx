@@ -1,26 +1,65 @@
 // app/dashboard/engine/analytics/components/OverviewTab.tsx
 'use client';
 
+import { useState, useMemo } from 'react';
 import { FocusSession, UserProfile } from '@/lib/types';
 import { Clock, Target, TrendingUp, DollarSign } from 'lucide-react';
 import GoalProgressWidget from '@/components/focus/GoalProgressWidget';
+import GoalSettingsModal from '@/components/focus/GoalSettingsModal';
 import { calculateDailyProgress, calculateWeeklyProgress, formatGoalTime } from '@/lib/utils/goalUtils';
 import { calculateOverviewMetrics, formatHours, formatHoursMinutes } from '@/lib/utils/analyticsUtils';
+import { createClient } from '@/lib/supabase/client';
+
+type TimeRange = '7d' | '30d' | '90d' | 'all';
 
 interface OverviewTabProps {
   sessions: FocusSession[];
   userProfile: UserProfile | null;
-  timeRange: string;
+  timeRange: TimeRange;
+  onProfileUpdate?: (profile: UserProfile) => void;
 }
 
 /**
  * Overview Tab: High-level metrics, goal progress, and actionable insights
  * For 6th graders: "The quick summary of how you're doing"
  */
-export default function OverviewTab({ sessions, userProfile, timeRange }: OverviewTabProps) {
-  const metrics = calculateOverviewMetrics(sessions);
+export default function OverviewTab({ 
+  sessions, 
+  userProfile, 
+  timeRange,
+  onProfileUpdate 
+}: OverviewTabProps) {
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  const supabase = createClient();
   
-  // Calculate goal progress (only for today and this week)
+  // Filter sessions based on time range
+  const filteredSessions = useMemo(() => {
+    if (timeRange === 'all') return sessions;
+
+    const now = new Date();
+    const cutoffDate = new Date();
+    
+    switch (timeRange) {
+      case '7d':
+        cutoffDate.setDate(now.getDate() - 7);
+        break;
+      case '30d':
+        cutoffDate.setDate(now.getDate() - 30);
+        break;
+      case '90d':
+        cutoffDate.setDate(now.getDate() - 90);
+        break;
+    }
+
+    return sessions.filter(session => {
+      const sessionDate = new Date(session.start_time);
+      return sessionDate >= cutoffDate;
+    });
+  }, [sessions, timeRange]);
+
+  const metrics = calculateOverviewMetrics(filteredSessions);
+  
+  // Calculate goal progress (always use all sessions for today/this week, not filtered)
   const dailyProgress = userProfile
     ? calculateDailyProgress(sessions, userProfile.daily_focus_goal_minutes)
     : null;
@@ -33,8 +72,56 @@ export default function OverviewTab({ sessions, userProfile, timeRange }: Overvi
       )
     : null;
 
+  /**
+   * Save updated goal settings to Supabase
+   * Updates user_profiles table with new daily/weekly focus goals
+   */
+  const handleSaveGoals = async (dailyMinutes: number, weeklyMinutes: number): Promise<void> => {
+    if (!userProfile) {
+      throw new Error('No user profile found');
+    }
+
+    // Update in Supabase
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .update({
+        daily_focus_goal_minutes: dailyMinutes,
+        weekly_focus_goal_minutes: weeklyMinutes,
+      })
+      .eq('user_id', userProfile.user_id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Failed to update goals:', error);
+      throw new Error(`Failed to update goals: ${error.message}`);
+    }
+
+    // Update local state via callback
+    if (data && onProfileUpdate) {
+      onProfileUpdate(data as UserProfile);
+    }
+  };
+
+  // Get time range label for display
+  const timeRangeLabel = {
+    '7d': 'Last 7 Days',
+    '30d': 'Last 30 Days',
+    '90d': 'Last 90 Days',
+    'all': 'All Time'
+  }[timeRange];
+
   return (
     <div className="space-y-8">
+      {/* Time Range Indicator */}
+      {timeRange !== 'all' && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-sm text-blue-800">
+            Showing metrics for <strong>{timeRangeLabel}</strong> ({filteredSessions.length} sessions)
+          </p>
+        </div>
+      )}
+
       {/* Key Metrics */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Key Metrics</h2>
@@ -101,9 +188,12 @@ export default function OverviewTab({ sessions, userProfile, timeRange }: Overvi
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Insights</h2>
         <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 space-y-4">
-          {sessions.length === 0 ? (
+          {filteredSessions.length === 0 ? (
             <InsightItem
-              text="No sessions yet. Start tracking focus time to see insights here!"
+              text={timeRange === 'all' 
+                ? "No sessions yet. Start tracking focus time to see insights here!"
+                : `No sessions in ${timeRangeLabel.toLowerCase()}. Try a different time range or start tracking!`
+              }
               emoji="🚀"
             />
           ) : (
@@ -160,9 +250,9 @@ export default function OverviewTab({ sessions, userProfile, timeRange }: Overvi
                 />
               )}
 
-              {sessions.filter(s => s.pomodoro_mode).length > 0 && (
+              {filteredSessions.filter(s => s.pomodoro_mode).length > 0 && (
                 <InsightItem
-                  text={`${sessions.filter(s => s.pomodoro_mode).length} of your sessions used Pomodoro technique. Check the Pomodoro tab for detailed effectiveness metrics!`}
+                  text={`${filteredSessions.filter(s => s.pomodoro_mode).length} of your sessions used Pomodoro technique. Check the Pomodoro tab for detailed effectiveness metrics!`}
                   emoji="🍅"
                 />
               )}
@@ -194,7 +284,7 @@ export default function OverviewTab({ sessions, userProfile, timeRange }: Overvi
           </button>
 
           <button
-            onClick={() => window.location.href = '/dashboard/settings'}
+            onClick={() => setIsGoalModalOpen(true)}
             className="p-4 bg-white rounded-lg border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50 transition text-left group"
           >
             <div className="text-2xl mb-2">⚙️</div>
@@ -203,6 +293,17 @@ export default function OverviewTab({ sessions, userProfile, timeRange }: Overvi
           </button>
         </div>
       </div>
+
+      {/* Goal Settings Modal */}
+      {userProfile && (
+        <GoalSettingsModal
+          isOpen={isGoalModalOpen}
+          onClose={() => setIsGoalModalOpen(false)}
+          currentDailyGoal={userProfile.daily_focus_goal_minutes}
+          currentWeeklyGoal={userProfile.weekly_focus_goal_minutes}
+          onSave={handleSaveGoals}
+        />
+      )}
     </div>
   );
 }
