@@ -1,7 +1,6 @@
 // app/dashboard/engine/sessions/components/SessionDetailPanel.tsx
 'use client';
 
-import { useState } from 'react';
 import { FocusSession, Task } from '@/lib/types';
 import { X, Edit2, Trash2, Copy, Clock, DollarSign, Calendar, Tag, FileText } from 'lucide-react';
 import { formatDuration, formatDate, formatTime24 } from '@/lib/utils/sessionValidation';
