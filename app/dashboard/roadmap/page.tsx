@@ -179,8 +179,7 @@ export default function RoadmapPage() {
     
     setLoading(false);
   }, [supabase, showArchived]); 
-  // eslint-disable-line react-hooks/exhaustive-deps
-
+  
   useEffect(() => {
     loadData();
     // console.log('tasks :>> ', tasks);
@@ -200,19 +199,31 @@ export default function RoadmapPage() {
 
   const toggleRoadmap = (id: string) => {
     const newExpanded = new Set(expandedRoadmaps);
-    newExpanded.has(id) ? newExpanded.delete(id) : newExpanded.add(id);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
     setExpandedRoadmaps(newExpanded);
   };
 
   const toggleGoal = (id: string) => {
     const newExpanded = new Set(expandedGoals);
-    newExpanded.has(id) ? newExpanded.delete(id) : newExpanded.add(id);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
     setExpandedGoals(newExpanded);
   };
 
   const toggleMilestone = (id: string) => {
     const newExpanded = new Set(expandedMilestones);
-    newExpanded.has(id) ? newExpanded.delete(id) : newExpanded.add(id);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
     setExpandedMilestones(newExpanded);
   };
 
@@ -449,7 +460,7 @@ export default function RoadmapPage() {
           <p className="text-gray-600">Manage your multi-decade journey hierarchy</p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="items-center gap-3">
           <button
             onClick={() => setShowArchived(!showArchived)}
             className={`relative px-4 py-2 rounded-lg transition ${
@@ -521,7 +532,7 @@ export default function RoadmapPage() {
                         </p>
                       </div>
                     </button>
-                    <div className="flex items-center gap-2">
+                    <div className="items-center gap-2">
                       {showArchived ? (
                         <>
                           <button
@@ -575,7 +586,7 @@ export default function RoadmapPage() {
                       return (
                         <div key={goal.id} className="border-l-4 border-sky-500 bg-gray-50 rounded-lg">
                           <div className="p-4">
-                            <div className="flex justify-between items-start">
+                            <div className="justify-between items-start">
                               <button
                                 onClick={() => toggleGoal(goal.id)}
                                 className="flex items-center flex-grow text-left"
@@ -651,7 +662,7 @@ export default function RoadmapPage() {
 
                                     return (
                                       <div key={milestone.id} className="bg-white p-3 rounded-lg border border-gray-200">
-                                        <div className="flex justify-between items-start">
+                                        <div className="justify-between items-start">
                                           <button
                                             onClick={() => toggleMilestone(milestone.id)}
                                             className="flex items-center flex-grow text-left"
@@ -679,20 +690,20 @@ export default function RoadmapPage() {
                                               </div>                                            
                                             </div>
                                           </button>
-                                          <div className="flex items-center gap-2">
+                                          <div className="items-center gap-2">
                                             {showArchived ? (
                                               <>
                                                 <button
                                                   onClick={() => handleRestore('milestones', milestone.id)}
                                                   className="p-2 hover:bg-gray-100 rounded"
                                                 >
-                                                  <RotateCcw className="w-3 h-3 text-gray-600" />
+                                                  <RotateCcw className="w-4 h-4 text-gray-600" />
                                                 </button>
                                                 <button
                                                   onClick={() => handlePermanentDelete('milestones', milestone.id, milestone.archived_at!)}
                                                   className="p-2 hover:bg-gray-100 rounded"
                                                 >
-                                                  <Trash2 className="w-3 h-3 text-red-500" />
+                                                  <Trash2 className="w-4 h-4 text-red-500" />
                                                 </button>
                                               </>
                                             ) : (
@@ -729,29 +740,29 @@ export default function RoadmapPage() {
                                                   <p className="text-sm font-medium text-gray-900">{task.activity}</p>
                                                   <p className="text-xs text-gray-500">{task.time}</p>
                                                 </div>
-                                                <div className="flex items-center gap-2">
+                                                <div className="items-center gap-2">
                                                   {showArchived ? (
                                                     <>
                                                       <button
                                                         onClick={() => handleRestore('tasks', task.id)}
-                                                        className="p-1 hover:bg-gray-200 rounded"
+                                                        className="p-2 md:p-1 hover:bg-gray-200 rounded"
                                                       >
-                                                        <RotateCcw className="w-3 h-3 text-gray-600" />
+                                                        <RotateCcw className="w-4 h-4 md:w-3 md:h-3 text-gray-600" />
                                                       </button>
                                                       <button
                                                         onClick={() => handlePermanentDelete('tasks', task.id, task.archived_at!)}
-                                                        className="p-1 hover:bg-gray-200 rounded"
+                                                        className="p-2 md:p-1 hover:bg-gray-200 rounded"
                                                       >
-                                                        <Trash2 className="w-3 h-3 text-red-500" />
+                                                        <Trash2 className="w-4 h-4 md:w-3 md:h-3 text-red-500" />
                                                       </button>
                                                     </>
                                                   ) : (
                                                     <>
                                                       <button
                                                         onClick={() => setEditingTask(task)}
-                                                        className="p-1 hover:bg-gray-200 rounded"
+                                                        className="p-2 md:p-1 hover:bg-gray-200 rounded"
                                                       >
-                                                        <Edit className="w-3 h-3 text-gray-500" />
+                                                        <Edit className="w-4 h-4 md:w-3 md:h-3 text-gray-500" />
                                                       </button>
                                                       <button
                                                         onClick={async () => {
@@ -763,9 +774,9 @@ export default function RoadmapPage() {
                                                             loadData();
                                                           }
                                                         }}
-                                                        className="p-1 hover:bg-gray-200 rounded"
+                                                        className="p-2 md:p-1 hover:bg-gray-200 rounded"
                                                       >
-                                                        <Archive className="w-3 h-3 text-gray-500" />
+                                                        <Archive className="w-4 h-4 md:w-3 md:h-3 text-gray-500" />
                                                       </button>
                                                     </>
                                                   )}

@@ -1,10 +1,12 @@
+// app/dashboard/planner/page.tsx
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Task } from '@/lib/types';
-import { Calendar, Filter, DollarSign } from 'lucide-react';
+import { Task, RecurringTask } from '@/lib/types';
+import { Calendar, Filter, DollarSign, Repeat } from 'lucide-react';
 import { EditTaskModal } from '@/components/EditTaskModal';
+import CreateRecurringTaskModal, { RecurringTaskData } from '@/components/planner/CreateRecurringTaskModal';
 
 type ViewMode = 'day' | 'week' | 'month';
 
@@ -102,6 +104,12 @@ export default function PlannerPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('day');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  
+  // Recurring task state
+  const [showRecurringModal, setShowRecurringModal] = useState(false);
+  const [selectedMilestoneForRecurring, setSelectedMilestoneForRecurring] = useState<string | null>(null);
+  const [recurringTasks, setRecurringTasks] = useState<RecurringTask[]>([]);
+  
   const supabase = createClient();
 
   const loadTasks = useCallback(async () => {
@@ -132,8 +140,21 @@ export default function PlannerPage() {
     setLoading(false);
   }, [supabase, selectedDate, viewMode]);
 
+  const loadRecurringTasks = async () => {
+    try {
+      const response = await fetch('/api/recurring-tasks');
+      if (response.ok) {
+        const data = await response.json();
+        setRecurringTasks(data);
+      }
+    } catch (error) {
+      console.error('[Planner] Failed to load recurring tasks:', error);
+    }
+  };
+
   useEffect(() => {
     loadTasks();
+    loadRecurringTasks();
   }, [loadTasks]);
 
   const handleToggle = async (taskId: string, completed: boolean) => {
@@ -146,6 +167,39 @@ export default function PlannerPage() {
       .eq('id', taskId);
 
     if (!error) loadTasks();
+  };
+
+  const handleSaveRecurringTask = async (data: RecurringTaskData) => {
+    try {
+      const response = await fetch('/api/recurring-tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        await loadRecurringTasks();
+        
+        // Generate tasks for today
+        await fetch('/api/recurring-tasks/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            targetDate: new Date().toISOString().split('T')[0] 
+          }),
+        });
+        
+        // Reload tasks to show newly generated
+        await loadTasks();
+        
+        alert('Recurring task created! Today\'s task has been generated.');
+      } else {
+        throw new Error('Failed to create recurring task');
+      }
+    } catch (error) {
+      console.error('[Planner] Failed to save recurring task:', error);
+      alert('Failed to create recurring task. Please try again.');
+    }
   };
 
   const financialSummary = useMemo(() => {
@@ -172,6 +226,16 @@ export default function PlannerPage() {
     return { total, completed, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 };
   }, [tasks]);
 
+  // Get first milestone ID for recurring task button (simplified)
+  const getDefaultMilestoneId = (): string => {
+    // In a real app, you'd get this from context or props
+    // For now, we'll need to get it from tasks
+    if (tasks.length > 0 && tasks[0].milestone_id) {
+      return tasks[0].milestone_id;
+    }
+    return '';
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       <header className="mb-8">
@@ -197,6 +261,21 @@ export default function PlannerPage() {
           ))}
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              const milestoneId = getDefaultMilestoneId();
+              if (milestoneId) {
+                setSelectedMilestoneForRecurring(milestoneId);
+                setShowRecurringModal(true);
+              } else {
+                alert('Please create a milestone first in your roadmap');
+              }
+            }}
+            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+          >
+            <Repeat className="w-4 h-4" />
+            <span>Recurring Task</span>
+          </button>
           <Calendar className="w-5 h-5 text-gray-500" />
           <input
             type="date"
@@ -287,11 +366,22 @@ export default function PlannerPage() {
           ))}
         </div>
       )}
+
       <EditTaskModal
         task={editingTask!}
         isOpen={!!editingTask}
         onClose={() => setEditingTask(null)}
         onSave={loadTasks}
+      />
+
+      <CreateRecurringTaskModal
+        isOpen={showRecurringModal}
+        onClose={() => {
+          setShowRecurringModal(false);
+          setSelectedMilestoneForRecurring(null);
+        }}
+        milestoneId={selectedMilestoneForRecurring || ''}
+        onSave={handleSaveRecurringTask}
       />
     </div>
   );

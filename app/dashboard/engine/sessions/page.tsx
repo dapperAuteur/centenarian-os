@@ -350,7 +350,7 @@ export default function SessionsPage() {
               Showing {paginatedSessions.length} of {sessions.length} sessions
             </p>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="items-center space-x-3">
             <button
               onClick={loadData}
               className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition"
@@ -460,7 +460,7 @@ export default function SessionsPage() {
               value={filters.searchQuery}
               onChange={(e) => setFilters({ ...filters, searchQuery: e.target.value })}
               placeholder="Search by task, notes, rate, or revenue..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 form-input text-right"
             />
           </div>
 
