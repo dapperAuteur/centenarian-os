@@ -467,7 +467,7 @@ export default function FocusTimerPage() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Link to Task (Optional)</label>
-              <select value={selectedTaskId} onChange={(e) => setSelectedTaskId(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <select value={selectedTaskId} onChange={(e) => setSelectedTaskId(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-800">
                 <option value="">No task selected</option>
                 {tasks.map(task => (
                   <option key={task.id} value={task.id}>{task.activity} - {task.date}</option>
@@ -477,7 +477,7 @@ export default function FocusTimerPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate ($)</label>
-              <input type="number" value={hourlyRate} onChange={(e) => setHourlyRate(parseFloat(e.target.value) || 0)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+              <input type="number" value={hourlyRate} onChange={(e) => setHourlyRate(parseFloat(e.target.value) || 0)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-800" />
             </div>
 
             <div>
