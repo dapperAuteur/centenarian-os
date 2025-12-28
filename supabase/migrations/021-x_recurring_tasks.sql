@@ -1,4 +1,4 @@
--- supabase/migrations/016_recurring_tasks.sql
+-- supabase/migrations/020_recurring_tasks.sql
 
 -- Create recurring tasks table
 CREATE TABLE recurring_tasks (

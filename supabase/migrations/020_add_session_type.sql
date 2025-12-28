@@ -1,4 +1,4 @@
--- supabase/migrations/015_add_session_type.sql
+-- supabase/migrations/020_add_session_type.sql
 
 -- Add session_type column to focus_sessions
 ALTER TABLE focus_sessions

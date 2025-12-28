@@ -17,6 +17,8 @@ import TemplateManagerModal from '@/components/focus/TemplateManagerModal';
 import CreateTemplateModal from '@/components/focus/CreateTemplateModal';
 import DeleteTemplateModal from '@/components/focus/DeleteTemplateModal';
 import QualityRatingModal from '@/components/focus/QualityRatingModal';
+import SessionTypeToggle from '@/components/focus/SessionTypeToggle';
+import { SessionType } from '@/lib/types';
 
 type TimerMode = 'simple' | 'pomodoro';
 type PomodoroPhase = 'work' | 'short-break' | 'long-break';
@@ -36,6 +38,9 @@ export default function FocusTimerPage() {
     notesTemplate?: string;
     usePomodoro?: boolean;
   } | undefined>(undefined);
+
+  // SessionType
+  const [sessionType, setSessionType] = useState<SessionType>('focus');
   
   // Pomodoro Presets
   const [customPresets, setCustomPresets] = useState<Array<{
@@ -659,6 +664,15 @@ const handleQualityRating = async (rating: number) => {
                 <div className="relative flex justify-center">
                   <span className="px-3 bg-white text-sm text-gray-500">or start manually</span>
                 </div>
+              </div>
+            )}
+
+            {!isRunning && !currentSessionId && (
+              <div className="mb-6">
+                <SessionTypeToggle
+                  value={sessionType}
+                  onChange={setSessionType}
+                />
               </div>
             )}
 
