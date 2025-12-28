@@ -206,6 +206,8 @@ export interface FocusSession {
   quality_rating?: number | null;
   session_type: SessionType; // NEW
   pomodoro_mode?: boolean;
+  completed_pomodoros?: number | null;
+  completed_breaks?: number | null;
   work_intervals?: WorkInterval[] | null;
   break_intervals?: BreakInterval[] | null;
   net_work_duration: number | null;
