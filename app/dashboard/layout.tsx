@@ -8,19 +8,20 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  LogOut, 
-  Utensils, 
-  Clock, 
-  Map, 
-  ChartNetwork, 
-  Timer, 
-  History, 
+import {
+  LogOut,
+  Utensils,
+  Clock,
+  Map,
+  ChartNetwork,
+  Timer,
+  History,
   BarChart2,
   Menu,
   Briefcase,
   CalendarClock,
-  X
+  X,
+  BookOpen,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -113,14 +114,21 @@ export default function DashboardLayout({
                 Analytics
               </Link>
 
-              <Link 
+              <Link
                 href="/dashboard/engine/analytics"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
                 <BarChart2 className="w-4 h-4 mr-2" />
                 Focus Analytics
               </Link>
-              
+              <Link
+                href="/dashboard/blog"
+                className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                Blog
+              </Link>
+
               <div className="flex items-center space-x-2 pl-4 border-l border-gray-200">
                 <span className="text-xs sm:text-sm text-gray-600 hidden xl:inline">{user?.email}</span>
                 <button
@@ -219,7 +227,7 @@ export default function DashboardLayout({
                   Analytics
                 </div>
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/engine/analytics"
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 onClick={() => setMobileMenuOpen(false)}
@@ -227,6 +235,16 @@ export default function DashboardLayout({
                 <div className="flex items-center">
                   <BarChart2 className="w-4 h-4 mr-3" />
                   Focus Analytics
+                </div>
+              </Link>
+              <Link
+                href="/dashboard/blog"
+                className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <div className="flex items-center">
+                  <BookOpen className="w-4 h-4 mr-3" />
+                  Blog
                 </div>
               </Link>
 

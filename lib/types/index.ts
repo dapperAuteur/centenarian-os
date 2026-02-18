@@ -421,3 +421,52 @@ export interface RecurringTask {
   created_at: string;
   updated_at: string;
 }
+
+// ─── Blog types ──────────────────────────────────────────────────────────────
+
+export type PostVisibility =
+  | 'draft'
+  | 'private'
+  | 'public'
+  | 'authenticated_only'
+  | 'scheduled';
+
+export interface Profile {
+  id: string;
+  username: string;
+  display_name: string | null;
+  bio: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BlogPost {
+  id: string;
+  user_id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  content: object; // Tiptap JSON document
+  cover_image_url: string | null;
+  cover_image_public_id: string | null;
+  visibility: PostVisibility;
+  scheduled_at: string | null;
+  tags: string[];
+  reading_time_minutes: number | null;
+  view_count: number;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BlogEvent {
+  id: string;
+  post_id: string;
+  event_type: string;
+  session_id: string | null;
+  referrer: string | null;
+  country: string | null;
+  user_id: string | null;
+  created_at: string;
+}

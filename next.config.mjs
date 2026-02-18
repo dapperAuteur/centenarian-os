@@ -7,6 +7,32 @@ const __dirname = path.dirname(__filename);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'res.cloudinary.com' },
+      { protocol: 'https', hostname: '**.ytimg.com' },
+    ],
+  },
+
+  async headers() {
+    return [
+      {
+        source: '/blog/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.instagram.com https://platform.twitter.com https://www.tiktok.com",
+              "img-src 'self' data: https://res.cloudinary.com https://*.ytimg.com https://*.twimg.com",
+              "script-src 'self' 'unsafe-inline' https://platform.twitter.com https://www.instagram.com",
+            ].join('; '),
+          },
+        ],
+      },
+    ];
+  },
+
   webpack: (config, { isServer }) => {
     // Add path alias
     config.resolve.alias = {
