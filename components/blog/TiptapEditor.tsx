@@ -129,7 +129,7 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
   };
 
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden">
+    <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
       <EditorToolbar editor={editor} onInsertMedia={() => setMediaModalOpen(true)} />
       <EditorContent editor={editor} />
       <MediaEmbedModal

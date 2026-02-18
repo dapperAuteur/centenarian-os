@@ -31,6 +31,7 @@ export default function CloudinaryUploader({
         signatureEndpoint="/api/blog/upload"
         options={{
           resourceType: mediaType,
+          folder: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_FOLDER || 'blog',
           maxFileSize: mediaType === 'image' ? 10 * 1024 * 1024 : 100 * 1024 * 1024,
           sources: ['local', 'url', 'camera'],
           multiple: false,

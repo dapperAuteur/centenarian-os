@@ -7,7 +7,8 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import BlogPostList from '@/components/blog/BlogPostList';
 import BlogAnalytics from '@/components/blog/BlogAnalytics';
 import UsernameSetupModal from '@/components/blog/UsernameSetupModal';
-import { PenLine, BarChart2, List } from 'lucide-react';
+import { PenLine, BarChart2, List, FileDown } from 'lucide-react';
+import { isAdmin } from '@/lib/blog/admin';
 import type { Profile } from '@/lib/types';
 
 type Tab = 'posts' | 'analytics';
@@ -75,13 +76,24 @@ export default function BlogDashboardPage() {
                 </a>
               </p>
             </div>
-            <Link
-              href="/dashboard/blog/new"
-              className="flex items-center gap-2 px-4 py-2 bg-sky-600 text-white rounded-lg text-sm font-medium hover:bg-sky-700 transition"
-            >
-              <PenLine className="w-4 h-4" />
-              New post
-            </Link>
+            <div className="flex items-center gap-2">
+              {isAdmin(user.email) && (
+                <Link
+                  href="/dashboard/blog/import"
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+                >
+                  <FileDown className="w-4 h-4" />
+                  Import
+                </Link>
+              )}
+              <Link
+                href="/dashboard/blog/new"
+                className="flex items-center gap-2 px-4 py-2 bg-sky-600 text-white rounded-lg text-sm font-medium hover:bg-sky-700 transition"
+              >
+                <PenLine className="w-4 h-4" />
+                New post
+              </Link>
+            </div>
           </div>
 
           {/* Tabs */}

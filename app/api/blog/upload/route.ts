@@ -23,32 +23,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = await request.json();
-  const mediaType = body.mediaType === 'video' ? 'video' : 'image';
-
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const apiKey = process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
-  const folder = process.env.CLOUDINARY_UPLOAD_FOLDER || 'blog';
 
-  if (!cloudName || !apiKey || !apiSecret) {
+  if (!apiSecret) {
     return NextResponse.json({ error: 'Cloudinary not configured' }, { status: 500 });
   }
 
-  const timestamp = Math.round(Date.now() / 1000);
-  const userFolder = `${folder}/${user.id}`;
+  // CldUploadWidget sends { paramsToSign: { folder, timestamp, source, ... } }
+  // We must sign exactly what the widget sends — nothing more, nothing less.
+  const body = await request.json();
+  const paramsToSign: Record<string, string | number> = body.paramsToSign ?? body;
 
-  // Parameters to sign — must be sorted alphabetically
-  const paramsToSign: Record<string, string | number> = {
-    folder: userFolder,
-    timestamp,
-  };
+  // Params excluded from Cloudinary signatures: file, resource_type, api_key, cloud_name
+  const excluded = new Set(['file', 'resource_type', 'api_key', 'cloud_name']);
+  const signableParams = Object.fromEntries(
+    Object.entries(paramsToSign).filter(([k]) => !excluded.has(k))
+  );
 
-  // Build the string to sign: key=value pairs sorted alphabetically, joined with &
+  // Build the string to sign: sorted key=value pairs joined with &, then append secret
   const signatureString =
-    Object.keys(paramsToSign)
+    Object.keys(signableParams)
       .sort()
-      .map((key) => `${key}=${paramsToSign[key]}`)
+      .map((key) => `${key}=${signableParams[key]}`)
       .join('&') + apiSecret;
 
   const signature = crypto
@@ -56,12 +52,5 @@ export async function POST(request: NextRequest) {
     .update(signatureString)
     .digest('hex');
 
-  return NextResponse.json({
-    signature,
-    timestamp,
-    cloudName,
-    apiKey,
-    folder: userFolder,
-    mediaType,
-  });
+  return NextResponse.json({ signature });
 }

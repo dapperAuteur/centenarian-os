@@ -132,7 +132,8 @@ body {
 /* Applied by TiptapRenderer and the editor's editorProps.attributes.class    */
 
 .blog-content {
-  color: #1f2937; /* gray-800 */
+  color: #1f2937; /* gray-800 — force light regardless of dark mode */
+  background-color: #ffffff;
   line-height: 1.75;
   font-size: 1rem;
 }
