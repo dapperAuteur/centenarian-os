@@ -57,6 +57,7 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         // Disable built-in codeBlock so our extension takes precedence
