@@ -67,7 +67,7 @@ export default function LikedSavedRecipes({ userId, mode }: Props) {
       // Step 4: merge into a flat list
       const merged: RecipeItem[] = rows
         .map((r) => {
-          const recipe = r.recipes as {
+          const recipe = r.recipes as unknown as {
             id: string; title: string; slug: string;
             description: string | null; published_at: string | null; user_id: string;
           } | null;

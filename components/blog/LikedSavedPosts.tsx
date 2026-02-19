@@ -67,7 +67,7 @@ export default function LikedSavedPosts({ userId, mode }: Props) {
       // Step 4: merge into a flat list
       const merged: PostItem[] = rows
         .map((r) => {
-          const post = r.blog_posts as {
+          const post = r.blog_posts as unknown as {
             id: string; title: string; slug: string;
             excerpt: string | null; published_at: string | null; user_id: string;
           } | null;
