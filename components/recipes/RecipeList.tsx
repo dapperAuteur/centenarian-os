@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import DeleteRecipeModal from './DeleteRecipeModal';
-import { PenLine, Trash2, Clock, Globe, FileText, Heart, Bookmark } from 'lucide-react';
+import { PenLine, Trash2, Eye, Clock, Globe, FileText, Heart, Bookmark } from 'lucide-react';
 import type { Recipe, RecipeVisibility } from '@/lib/types';
 
 interface RecipeListProps {
