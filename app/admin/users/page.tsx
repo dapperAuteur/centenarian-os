@@ -3,7 +3,7 @@
 // app/admin/users/page.tsx
 // Admin user list with search and subscription filter
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Search, AlertTriangle, ChevronRight } from 'lucide-react';
@@ -24,7 +24,8 @@ const STATUS_BADGE: Record<string, string> = {
   lifetime: 'bg-lime-900/50 text-lime-300',
 };
 
-export default function AdminUsersPage() {
+// Inner component — uses useSearchParams, must be inside <Suspense>
+function AdminUsersContent() {
   const searchParams = useSearchParams();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -141,5 +142,21 @@ export default function AdminUsersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// Outer component wraps in Suspense — required by Next.js when useSearchParams
+// is used in a client component that may be statically rendered at build time.
+export default function AdminUsersPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center py-20">
+          <div className="animate-spin h-8 w-8 border-4 border-fuchsia-500 border-t-transparent rounded-full" />
+        </div>
+      }
+    >
+      <AdminUsersContent />
+    </Suspense>
   );
 }
