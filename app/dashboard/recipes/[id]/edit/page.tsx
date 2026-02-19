@@ -18,11 +18,13 @@ export default async function EditRecipePage({ params }: Props) {
       .from('recipes')
       .select(`
         *,
-        recipe_ingredients(* order by sort_order asc),
-        recipe_media(* order by sort_order asc)
+        recipe_ingredients(*),
+        recipe_media(*)
       `)
       .eq('id', id)
       .eq('user_id', user.id)
+      .order('sort_order', { referencedTable: 'recipe_ingredients', ascending: true })
+      .order('sort_order', { referencedTable: 'recipe_media', ascending: true })
       .single(),
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
   ]);
