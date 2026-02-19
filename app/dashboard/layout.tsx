@@ -1,17 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // File: app/dashboard/layout.tsx
-// Protected layout with mobile-first navigation
+// Protected layout with mobile-first navigation and subscription gating
 
 'use client';
 
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useSubscription } from '@/lib/hooks/useSubscription';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   LogOut,
   Utensils,
-  Clock,
   Map,
   ChartNetwork,
   Timer,
@@ -23,8 +23,22 @@ import {
   X,
   BookOpen,
   ChefHat,
+  Lock,
+  CreditCard,
+  Zap,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+// Routes freely accessible without a paid subscription
+const FREE_ROUTE_PREFIXES = [
+  '/dashboard/blog',
+  '/dashboard/recipes',
+  '/dashboard/billing',
+];
+
+function isFreeRoute(pathname: string) {
+  return FREE_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
 
 export default function DashboardLayout({
   children,
@@ -32,15 +46,33 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { user, loading } = useAuth();
+  const { status: subStatus, loading: subLoading } = useSubscription();
   const router = useRouter();
+  const pathname = usePathname();
   const supabase = createClient();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const isPaid = subStatus === 'monthly' || subStatus === 'lifetime';
+
+  // Redirect free users who land directly on a paid route
+  useEffect(() => {
+    if (subLoading || loading) return;
+    if (!isPaid && !isFreeRoute(pathname)) {
+      router.push('/pricing');
+    }
+  }, [isPaid, pathname, subLoading, loading, router]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/login');
     router.refresh();
   };
+
+  // Helper: renders a lock badge for free users on paid links
+  function LockBadge() {
+    if (isPaid) return null;
+    return <Lock className="w-3 h-3 ml-1 text-amber-500 flex-shrink-0" />;
+  }
 
   if (loading) {
     return (
@@ -64,63 +96,70 @@ export default function DashboardLayout({
             </div>
 
             {/* Desktop Navigation - Hidden on mobile */}
-            <div className="hidden lg:flex items-center space-x-4">
-              <Link 
+            <div className="hidden lg:flex items-center space-x-1">
+              <Link
                 href="/dashboard/roadmap"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
                 <Map className="w-4 h-4 mr-2" />
                 Roadmap
+                <LockBadge />
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/planner"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
                 <CalendarClock className="w-4 h-4 mr-2" />
                 Daily Tasks
+                <LockBadge />
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/fuel"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
                 <Utensils className="w-4 h-4 mr-2" />
                 Fuel
+                <LockBadge />
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/engine"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
                 <Briefcase className="w-4 h-4 mr-2" />
                 Engine
+                <LockBadge />
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/engine/focus"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
                 <Timer className="w-4 h-4 mr-2" />
                 Focus Timer
+                <LockBadge />
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/engine/sessions"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
                 <History className="w-4 h-4 mr-2" />
                 History
+                <LockBadge />
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/analytics"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
                 <ChartNetwork className="w-4 h-4 mr-2" />
                 Analytics
+                <LockBadge />
               </Link>
-
               <Link
                 href="/dashboard/engine/analytics"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
                 <BarChart2 className="w-4 h-4 mr-2" />
                 Focus Analytics
+                <LockBadge />
               </Link>
               <Link
                 href="/dashboard/blog"
@@ -138,6 +177,23 @@ export default function DashboardLayout({
               </Link>
 
               <div className="flex items-center space-x-2 pl-4 border-l border-gray-200">
+                {/* Upgrade CTA for free users */}
+                {!subLoading && !isPaid && (
+                  <Link
+                    href="/pricing"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-fuchsia-600 text-white rounded-lg text-xs font-bold hover:bg-fuchsia-700 transition"
+                  >
+                    <Zap className="w-3 h-3" />
+                    Upgrade
+                  </Link>
+                )}
+                <Link
+                  href="/dashboard/billing"
+                  className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Billing
+                </Link>
                 <span className="text-xs sm:text-sm text-gray-600 hidden xl:inline">{user?.email}</span>
                 <button
                   onClick={handleLogout}
@@ -150,7 +206,16 @@ export default function DashboardLayout({
             </div>
 
             {/* Mobile Menu Button */}
-            <div className="flex lg:hidden items-center">
+            <div className="flex lg:hidden items-center gap-2">
+              {!subLoading && !isPaid && (
+                <Link
+                  href="/pricing"
+                  className="flex items-center gap-1 px-2 py-1 bg-fuchsia-600 text-white rounded-lg text-xs font-bold hover:bg-fuchsia-700 transition"
+                >
+                  <Zap className="w-3 h-3" />
+                  Upgrade
+                </Link>
+              )}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="p-2 text-gray-600 hover:text-gray-900"
@@ -164,75 +229,95 @@ export default function DashboardLayout({
           {/* Mobile Menu Dropdown */}
           {mobileMenuOpen && (
             <div className="lg:hidden py-4 space-y-2">
-              <Link 
+              <Link
                 href="/dashboard/roadmap"
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <div className="flex items-center">
-                  <Map className="w-4 h-4 mr-3" />
-                  Roadmap
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Map className="w-4 h-4 mr-3" />
+                    Roadmap
+                  </div>
+                  {!isPaid && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/planner"
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <div className="flex items-center">
-                  <CalendarClock className="w-4 h-4 mr-3" />
-                  Daily Tasks
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <CalendarClock className="w-4 h-4 mr-3" />
+                    Daily Tasks
+                  </div>
+                  {!isPaid && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/fuel"
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <div className="flex items-center">
-                  <Utensils className="w-4 h-4 mr-3" />
-                  Fuel
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Utensils className="w-4 h-4 mr-3" />
+                    Fuel
+                  </div>
+                  {!isPaid && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/engine"
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <div className="flex items-center">
-                  <Briefcase className="w-4 h-4 mr-3" />
-                  Engine
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Briefcase className="w-4 h-4 mr-3" />
+                    Engine
+                  </div>
+                  {!isPaid && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/engine/focus"
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <div className="flex items-center">
-                  <Timer className="w-4 h-4 mr-3" />
-                  Focus Timer
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Timer className="w-4 h-4 mr-3" />
+                    Focus Timer
+                  </div>
+                  {!isPaid && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
-
-              <Link 
+              <Link
                 href="/dashboard/engine/sessions"
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <div className="flex items-center">
-                  <History className="w-4 h-4 mr-3" />
-                  History
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <History className="w-4 h-4 mr-3" />
+                    History
+                  </div>
+                  {!isPaid && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/analytics"
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <div className="flex items-center">
-                  <ChartNetwork className="w-4 h-4 mr-3" />
-                  Analytics
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <ChartNetwork className="w-4 h-4 mr-3" />
+                    Analytics
+                  </div>
+                  {!isPaid && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
               <Link
@@ -240,9 +325,12 @@ export default function DashboardLayout({
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <div className="flex items-center">
-                  <BarChart2 className="w-4 h-4 mr-3" />
-                  Focus Analytics
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <BarChart2 className="w-4 h-4 mr-3" />
+                    Focus Analytics
+                  </div>
+                  {!isPaid && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
               <Link
@@ -266,7 +354,17 @@ export default function DashboardLayout({
                 </div>
               </Link>
 
-              <div className="pt-4 border-t border-gray-200 mt-4">
+              <div className="pt-4 border-t border-gray-200 mt-4 space-y-2">
+                <Link
+                  href="/dashboard/billing"
+                  className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div className="flex items-center">
+                    <CreditCard className="w-4 h-4 mr-3" />
+                    Billing
+                  </div>
+                </Link>
                 <div className="px-3 py-2 text-xs text-gray-600 truncate">
                   {user?.email}
                 </div>
