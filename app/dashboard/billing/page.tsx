@@ -3,11 +3,11 @@
 // app/dashboard/billing/page.tsx
 // Billing & subscription management page
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useSubscription } from '@/lib/hooks/useSubscription';
-import { CheckCircle, Shirt, CreditCard, Zap, ArrowRight, Copy, Check } from 'lucide-react';
+import { CheckCircle, Shirt, CreditCard, Zap, ArrowRight, Copy, Check, Shield } from 'lucide-react';
 
 const POLICIES = 'No Refunds. Cancel Anytime. Monthly fees are not transferable to lifetime membership.';
 
@@ -18,6 +18,14 @@ export default function BillingPage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalError, setPortalError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => setIsAdmin(d.isAdmin ?? false))
+      .catch(() => {});
+  }, []);
 
   async function openPortal() {
     setPortalLoading(true);
@@ -66,7 +74,17 @@ export default function BillingPage() {
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6">
         <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Current Plan</h2>
 
-        {status === 'free' && (
+        {isAdmin && (
+          <div className="flex items-center gap-3">
+            <Shield className="w-5 h-5 text-fuchsia-600 shrink-0" />
+            <div>
+              <span className="text-lg font-bold text-fuchsia-700">Admin — Full Access</span>
+              <p className="text-sm text-gray-500 mt-1">You have unrestricted access to all features.</p>
+            </div>
+          </div>
+        )}
+
+        {!isAdmin && status === 'free' && (
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <span className="inline-flex items-center gap-2 text-lg font-bold text-gray-700">

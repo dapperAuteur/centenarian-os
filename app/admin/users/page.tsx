@@ -1,0 +1,145 @@
+'use client';
+
+// app/admin/users/page.tsx
+// Admin user list with search and subscription filter
+
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { Search, AlertTriangle, ChevronRight } from 'lucide-react';
+
+interface UserRow {
+  id: string;
+  email: string | null;
+  username: string;
+  display_name: string | null;
+  subscription_status: 'free' | 'monthly' | 'lifetime';
+  shirt_promo_code: string | null;
+  created_at: string;
+}
+
+const STATUS_BADGE: Record<string, string> = {
+  free: 'bg-gray-800 text-gray-300',
+  monthly: 'bg-fuchsia-900/50 text-fuchsia-300',
+  lifetime: 'bg-lime-900/50 text-lime-300',
+};
+
+export default function AdminUsersPage() {
+  const searchParams = useSearchParams();
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState(searchParams.get('filter') === 'promo_pending' ? 'promo_pending' : 'all');
+
+  useEffect(() => {
+    fetch('/api/admin/users')
+      .then((r) => r.json())
+      .then((d) => { setUsers(d.users ?? []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const filtered = users.filter((u) => {
+    const matchSearch =
+      !search ||
+      u.email?.toLowerCase().includes(search.toLowerCase()) ||
+      u.username?.toLowerCase().includes(search.toLowerCase());
+    const matchFilter =
+      filter === 'all' ||
+      (filter === 'promo_pending' ? u.subscription_status === 'lifetime' && !u.shirt_promo_code : u.subscription_status === filter);
+    return matchSearch && matchFilter;
+  });
+
+  return (
+    <div className="p-8">
+      <h1 className="text-2xl font-bold text-white mb-1">Users</h1>
+      <p className="text-gray-400 text-sm mb-6">{users.length} total accounts</p>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        <div className="relative flex-1 min-w-48">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+          <input
+            type="text"
+            placeholder="Search email or username…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-gray-900 border border-gray-700 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500"
+          />
+        </div>
+        {(['all', 'free', 'monthly', 'lifetime', 'promo_pending'] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-3 py-2 rounded-lg text-xs font-semibold transition ${filter === f ? 'bg-fuchsia-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+          >
+            {f === 'promo_pending' ? '⚠ No promo code' : f.charAt(0).toUpperCase() + f.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <div className="animate-spin h-8 w-8 border-4 border-fuchsia-500 border-t-transparent rounded-full" />
+        </div>
+      ) : (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-800 text-gray-500 text-xs uppercase tracking-wide">
+                <th className="text-left px-5 py-3">Email / Username</th>
+                <th className="text-left px-5 py-3">Plan</th>
+                <th className="text-left px-5 py-3">Promo Code</th>
+                <th className="text-left px-5 py-3">Joined</th>
+                <th className="px-5 py-3" />
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="text-center py-12 text-gray-600">No users found</td>
+                </tr>
+              )}
+              {filtered.map((u) => (
+                <tr key={u.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition">
+                  <td className="px-5 py-3">
+                    <p className="text-white font-medium">{u.email ?? '—'}</p>
+                    <p className="text-gray-500 text-xs">@{u.username}</p>
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${STATUS_BADGE[u.subscription_status]}`}>
+                      {u.subscription_status}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3">
+                    {u.subscription_status === 'lifetime' ? (
+                      u.shirt_promo_code ? (
+                        <code className="text-lime-400 text-xs">{u.shirt_promo_code}</code>
+                      ) : (
+                        <span className="flex items-center gap-1 text-amber-400 text-xs">
+                          <AlertTriangle className="w-3 h-3" /> Pending
+                        </span>
+                      )
+                    ) : (
+                      <span className="text-gray-600 text-xs">N/A</span>
+                    )}
+                  </td>
+                  <td className="px-5 py-3 text-gray-400 text-xs">
+                    {new Date(u.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    <Link
+                      href={`/admin/users/${u.id}`}
+                      className="text-gray-500 hover:text-white transition"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}

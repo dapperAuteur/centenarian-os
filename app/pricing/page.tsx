@@ -6,12 +6,14 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/hooks/useAuth';
 import { Check, Shirt, Zap, ArrowLeft } from 'lucide-react';
 
 const POLICIES = 'No Refunds. Cancel Anytime. Monthly fees are not transferable to lifetime membership.';
 
 export default function PricingPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState<'monthly' | 'lifetime' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,15 +54,26 @@ export default function PricingPage() {
             <span className="font-medium">CentenarianOS</span>
           </Link>
           <div className="flex items-center space-x-4">
-            <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
-              Log in
-            </Link>
-            <Link
-              href="/signup"
-              className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors text-sm font-medium"
-            >
-              Sign up free
-            </Link>
+            {user ? (
+              <Link
+                href="/dashboard/billing"
+                className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors text-sm font-medium"
+              >
+                Go to Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
+                  Log in
+                </Link>
+                <Link
+                  href="/signup"
+                  className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors text-sm font-medium"
+                >
+                  Sign up free
+                </Link>
+              </>
+            )}
           </div>
         </nav>
       </header>

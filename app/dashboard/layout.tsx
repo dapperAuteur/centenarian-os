@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // File: app/dashboard/layout.tsx
 // Protected layout with mobile-first navigation and subscription gating
 
@@ -26,8 +25,26 @@ import {
   Lock,
   CreditCard,
   Zap,
+  Bell,
+  Shield,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+
+function useUnreadCount() {
+  const [unread, setUnread] = useState(0);
+  const fetch_ = useCallback(() => {
+    fetch('/api/messages?count=true')
+      .then((r) => r.json())
+      .then((d) => setUnread(d.unread ?? 0))
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    fetch_();
+    const interval = setInterval(fetch_, 60_000);
+    return () => clearInterval(interval);
+  }, [fetch_]);
+  return unread;
+}
 
 // Routes freely accessible without a paid subscription
 const FREE_ROUTE_PREFIXES = [
@@ -53,14 +70,25 @@ export default function DashboardLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isPaid = subStatus === 'monthly' || subStatus === 'lifetime';
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminLoading, setAdminLoading] = useState(true);
+  const hasAccess = isPaid || isAdmin;
+  const unreadMessages = useUnreadCount();
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => { setIsAdmin(d.isAdmin ?? false); setAdminLoading(false); })
+      .catch(() => setAdminLoading(false));
+  }, []);
 
   // Redirect free users who land directly on a paid route
   useEffect(() => {
-    if (subLoading || loading) return;
-    if (!isPaid && !isFreeRoute(pathname)) {
+    if (subLoading || loading || adminLoading) return;
+    if (!hasAccess && !isFreeRoute(pathname)) {
       router.push('/pricing');
     }
-  }, [isPaid, pathname, subLoading, loading, router]);
+  }, [hasAccess, pathname, subLoading, loading, adminLoading, router]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -70,7 +98,7 @@ export default function DashboardLayout({
 
   // Helper: renders a lock badge for free users on paid links
   function LockBadge() {
-    if (isPaid) return null;
+    if (hasAccess) return null;
     return <Lock className="w-3 h-3 ml-1 text-amber-500 flex-shrink-0" />;
   }
 
@@ -177,8 +205,18 @@ export default function DashboardLayout({
               </Link>
 
               <div className="flex items-center space-x-2 pl-4 border-l border-gray-200">
+                {/* Admin link */}
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-fuchsia-400 rounded-lg text-xs font-bold hover:bg-gray-800 transition"
+                  >
+                    <Shield className="w-3 h-3" />
+                    Admin
+                  </Link>
+                )}
                 {/* Upgrade CTA for free users */}
-                {!subLoading && !isPaid && (
+                {!subLoading && !hasAccess && (
                   <Link
                     href="/pricing"
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-fuchsia-600 text-white rounded-lg text-xs font-bold hover:bg-fuchsia-700 transition"
@@ -187,6 +225,18 @@ export default function DashboardLayout({
                     Upgrade
                   </Link>
                 )}
+                <Link
+                  href="/dashboard/messages"
+                  className="relative flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                  title="Messages"
+                >
+                  <Bell className="w-4 h-4" />
+                  {unreadMessages > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-fuchsia-600 text-white text-xs font-bold rounded-full flex items-center justify-center leading-none">
+                      {unreadMessages > 9 ? '9+' : unreadMessages}
+                    </span>
+                  )}
+                </Link>
                 <Link
                   href="/dashboard/billing"
                   className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
@@ -207,7 +257,7 @@ export default function DashboardLayout({
 
             {/* Mobile Menu Button */}
             <div className="flex lg:hidden items-center gap-2">
-              {!subLoading && !isPaid && (
+              {!subLoading && !hasAccess && (
                 <Link
                   href="/pricing"
                   className="flex items-center gap-1 px-2 py-1 bg-fuchsia-600 text-white rounded-lg text-xs font-bold hover:bg-fuchsia-700 transition"
@@ -239,7 +289,7 @@ export default function DashboardLayout({
                     <Map className="w-4 h-4 mr-3" />
                     Roadmap
                   </div>
-                  {!isPaid && <Lock className="w-3 h-3 text-amber-500" />}
+                  {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
               <Link
@@ -252,7 +302,7 @@ export default function DashboardLayout({
                     <CalendarClock className="w-4 h-4 mr-3" />
                     Daily Tasks
                   </div>
-                  {!isPaid && <Lock className="w-3 h-3 text-amber-500" />}
+                  {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
               <Link
@@ -265,7 +315,7 @@ export default function DashboardLayout({
                     <Utensils className="w-4 h-4 mr-3" />
                     Fuel
                   </div>
-                  {!isPaid && <Lock className="w-3 h-3 text-amber-500" />}
+                  {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
               <Link
@@ -278,7 +328,7 @@ export default function DashboardLayout({
                     <Briefcase className="w-4 h-4 mr-3" />
                     Engine
                   </div>
-                  {!isPaid && <Lock className="w-3 h-3 text-amber-500" />}
+                  {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
               <Link
@@ -291,7 +341,7 @@ export default function DashboardLayout({
                     <Timer className="w-4 h-4 mr-3" />
                     Focus Timer
                   </div>
-                  {!isPaid && <Lock className="w-3 h-3 text-amber-500" />}
+                  {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
               <Link
@@ -304,7 +354,7 @@ export default function DashboardLayout({
                     <History className="w-4 h-4 mr-3" />
                     History
                   </div>
-                  {!isPaid && <Lock className="w-3 h-3 text-amber-500" />}
+                  {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
               <Link
@@ -317,7 +367,7 @@ export default function DashboardLayout({
                     <ChartNetwork className="w-4 h-4 mr-3" />
                     Analytics
                   </div>
-                  {!isPaid && <Lock className="w-3 h-3 text-amber-500" />}
+                  {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
               <Link
@@ -330,7 +380,7 @@ export default function DashboardLayout({
                     <BarChart2 className="w-4 h-4 mr-3" />
                     Focus Analytics
                   </div>
-                  {!isPaid && <Lock className="w-3 h-3 text-amber-500" />}
+                  {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
               <Link
@@ -355,6 +405,35 @@ export default function DashboardLayout({
               </Link>
 
               <div className="pt-4 border-t border-gray-200 mt-4 space-y-2">
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="block px-3 py-2 rounded-lg text-sm font-bold text-fuchsia-700 bg-gray-100 hover:bg-gray-200 transition"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <div className="flex items-center">
+                      <Shield className="w-4 h-4 mr-3" />
+                      Admin Dashboard
+                    </div>
+                  </Link>
+                )}
+                <Link
+                  href="/dashboard/messages"
+                  className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Bell className="w-4 h-4 mr-3" />
+                      Messages
+                    </div>
+                    {unreadMessages > 0 && (
+                      <span className="w-5 h-5 bg-fuchsia-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                        {unreadMessages > 9 ? '9+' : unreadMessages}
+                      </span>
+                    )}
+                  </div>
+                </Link>
                 <Link
                   href="/dashboard/billing"
                   className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"

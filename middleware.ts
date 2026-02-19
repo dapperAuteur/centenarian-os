@@ -58,14 +58,26 @@ export async function middleware(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
+  const { pathname } = request.nextUrl;
 
-  // Redirect to login if not authenticated
-  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+  // Admin guard — must be authenticated AND match ADMIN_EMAIL
+  if (pathname.startsWith('/admin')) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+    if (user.email !== process.env.ADMIN_EMAIL) {
+      return NextResponse.redirect(new URL('/dashboard/planner', request.url));
+    }
+    return response;
+  }
+
+  // Redirect to login if not authenticated on dashboard routes
+  if (!user && pathname.startsWith('/dashboard')) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // Redirect to dashboard if authenticated and on auth pages
-  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
+  if (user && (pathname === '/login' || pathname === '/signup')) {
     return NextResponse.redirect(new URL('/dashboard/planner', request.url));
   }
 
@@ -73,5 +85,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/signup', '/blog/:path*', '/recipes', '/recipes/:path*'],
+  matcher: ['/admin/:path*', '/dashboard/:path*', '/login', '/signup', '/blog/:path*', '/recipes', '/recipes/:path*'],
 };
