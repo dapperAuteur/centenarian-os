@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/hooks/useAuth';
 import RecipeList from '@/components/recipes/RecipeList';
+import LikedSavedRecipes from '@/components/recipes/LikedSavedRecipes';
 import UsernameSetupModal from '@/components/blog/UsernameSetupModal';
-import { PenLine, BarChart2, List, Eye } from 'lucide-react';
+import { PenLine, BarChart2, List, Eye, Heart, Bookmark } from 'lucide-react';
 import type { Profile } from '@/lib/types';
 
-type Tab = 'recipes' | 'analytics';
+type Tab = 'recipes' | 'analytics' | 'liked' | 'saved';
 
 export default function RecipeDashboardPage() {
   const { user, loading: authLoading } = useAuth();
@@ -97,6 +98,8 @@ export default function RecipeDashboardPage() {
             {([
               { id: 'recipes' as Tab, label: 'My Recipes', icon: <List className="w-4 h-4" /> },
               { id: 'analytics' as Tab, label: 'Analytics', icon: <BarChart2 className="w-4 h-4" /> },
+              { id: 'liked' as Tab, label: 'Liked', icon: <Heart className="w-4 h-4" /> },
+              { id: 'saved' as Tab, label: 'Saved', icon: <Bookmark className="w-4 h-4" /> },
             ] as const).map((tab) => (
               <button
                 key={tab.id}
@@ -118,6 +121,12 @@ export default function RecipeDashboardPage() {
           )}
           {activeTab === 'analytics' && (
             <RecipeAnalyticsPlaceholder />
+          )}
+          {activeTab === 'liked' && (
+            <LikedSavedRecipes userId={user.id} mode="liked" />
+          )}
+          {activeTab === 'saved' && (
+            <LikedSavedRecipes userId={user.id} mode="saved" />
           )}
         </>
       )}

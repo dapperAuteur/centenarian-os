@@ -6,12 +6,13 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/hooks/useAuth';
 import BlogPostList from '@/components/blog/BlogPostList';
 import BlogAnalytics from '@/components/blog/BlogAnalytics';
+import LikedSavedPosts from '@/components/blog/LikedSavedPosts';
 import UsernameSetupModal from '@/components/blog/UsernameSetupModal';
-import { PenLine, BarChart2, List, FileDown } from 'lucide-react';
+import { PenLine, BarChart2, List, FileDown, Heart, Bookmark } from 'lucide-react';
 import { isAdmin } from '@/lib/blog/admin';
 import type { Profile } from '@/lib/types';
 
-type Tab = 'posts' | 'analytics';
+type Tab = 'posts' | 'analytics' | 'liked' | 'saved';
 
 export default function BlogDashboardPage() {
   const { user, loading: authLoading } = useAuth();
@@ -101,6 +102,8 @@ export default function BlogDashboardPage() {
             {([
               { id: 'posts' as Tab, label: 'Posts', icon: <List className="w-4 h-4" /> },
               { id: 'analytics' as Tab, label: 'Analytics', icon: <BarChart2 className="w-4 h-4" /> },
+              { id: 'liked' as Tab, label: 'Liked', icon: <Heart className="w-4 h-4" /> },
+              { id: 'saved' as Tab, label: 'Saved', icon: <Bookmark className="w-4 h-4" /> },
             ] as const).map((tab) => (
               <button
                 key={tab.id}
@@ -122,6 +125,12 @@ export default function BlogDashboardPage() {
           )}
           {activeTab === 'analytics' && (
             <BlogAnalytics userId={user.id} />
+          )}
+          {activeTab === 'liked' && (
+            <LikedSavedPosts userId={user.id} mode="liked" />
+          )}
+          {activeTab === 'saved' && (
+            <LikedSavedPosts userId={user.id} mode="saved" />
           )}
         </>
       )}
