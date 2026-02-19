@@ -364,6 +364,7 @@ export default function RecipeIngredientBuilder({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
             <BarcodeScanner
+              isOpen={true}
               onSelect={(food) => {
                 handleBarcodeSelect(food);
               }}
