@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { stripe } from '@/lib/stripe';
 import Stripe from 'stripe';
+import { createShopifyPromoCode } from '@/lib/shopify/createPromoCode';
 
 // Service-role client bypasses RLS — only used server-side in this webhook
 function getServiceClient() {
@@ -49,11 +50,19 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', userId);
       } else if (session.mode === 'payment' && plan === 'lifetime') {
+        let promoCode: string | null = null;
+        try {
+          promoCode = await createShopifyPromoCode();
+        } catch (err) {
+          console.error('Failed to create Shopify promo code for user', userId, err);
+          // Do not throw — purchase is complete; code will show as pending on billing page
+        }
+
         await supabase
           .from('profiles')
           .update({
             subscription_status: 'lifetime',
-            shirt_promo_code: process.env.SHIRT_PROMO_CODE ?? null,
+            shirt_promo_code: promoCode,
             stripe_subscription_id: null,
             subscription_expires_at: null,
           })

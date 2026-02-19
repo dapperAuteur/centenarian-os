@@ -123,6 +123,20 @@ export default function BillingPage() {
         )}
       </div>
 
+      {/* Shirt promo code pending — Shopify API may still be generating it */}
+      {status === 'lifetime' && !shirtPromoCode && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-6">
+          <div className="flex items-center gap-2 mb-1">
+            <Shirt className="w-5 h-5 text-amber-600" />
+            <h2 className="font-bold text-amber-800">Shirt Promo Code Pending</h2>
+          </div>
+          <p className="text-sm text-amber-700">
+            Your unique promo code is being generated — please refresh this page in a moment.
+            If it still doesn&apos;t appear after a minute, contact support.
+          </p>
+        </div>
+      )}
+
       {/* Shirt promo code — only shown to lifetime members */}
       {status === 'lifetime' && shirtPromoCode && (
         <div className="bg-gradient-to-br from-lime-50 to-emerald-50 border border-lime-200 rounded-2xl p-6 mb-6">
