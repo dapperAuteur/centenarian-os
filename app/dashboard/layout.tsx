@@ -1,17 +1,16 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // File: app/dashboard/layout.tsx
-// Protected layout with mobile-first navigation
+// Protected layout with mobile-first navigation and subscription gating
 
 'use client';
 
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useSubscription } from '@/lib/hooks/useSubscription';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   LogOut,
   Utensils,
-  Clock,
   Map,
   ChartNetwork,
   Timer,
@@ -23,8 +22,40 @@ import {
   X,
   BookOpen,
   ChefHat,
+  Lock,
+  CreditCard,
+  Zap,
+  Bell,
+  Shield,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+
+function useUnreadCount() {
+  const [unread, setUnread] = useState(0);
+  const fetch_ = useCallback(() => {
+    fetch('/api/messages?count=true')
+      .then((r) => r.json())
+      .then((d) => setUnread(d.unread ?? 0))
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    fetch_();
+    const interval = setInterval(fetch_, 60_000);
+    return () => clearInterval(interval);
+  }, [fetch_]);
+  return unread;
+}
+
+// Routes freely accessible without a paid subscription
+const FREE_ROUTE_PREFIXES = [
+  '/dashboard/blog',
+  '/dashboard/recipes',
+  '/dashboard/billing',
+];
+
+function isFreeRoute(pathname: string) {
+  return FREE_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
 
 export default function DashboardLayout({
   children,
@@ -32,15 +63,44 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { user, loading } = useAuth();
+  const { status: subStatus, loading: subLoading } = useSubscription();
   const router = useRouter();
+  const pathname = usePathname();
   const supabase = createClient();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const isPaid = subStatus === 'monthly' || subStatus === 'lifetime';
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminLoading, setAdminLoading] = useState(true);
+  const hasAccess = isPaid || isAdmin;
+  const unreadMessages = useUnreadCount();
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => { setIsAdmin(d.isAdmin ?? false); setAdminLoading(false); })
+      .catch(() => setAdminLoading(false));
+  }, []);
+
+  // Redirect free users who land directly on a paid route
+  useEffect(() => {
+    if (subLoading || loading || adminLoading) return;
+    if (!hasAccess && !isFreeRoute(pathname)) {
+      router.push('/pricing');
+    }
+  }, [hasAccess, pathname, subLoading, loading, adminLoading, router]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/login');
     router.refresh();
   };
+
+  // Helper: renders a lock badge for free users on paid links
+  function LockBadge() {
+    if (hasAccess) return null;
+    return <Lock className="w-3 h-3 ml-1 text-amber-500 flex-shrink-0" />;
+  }
 
   if (loading) {
     return (
@@ -64,63 +124,70 @@ export default function DashboardLayout({
             </div>
 
             {/* Desktop Navigation - Hidden on mobile */}
-            <div className="hidden lg:flex items-center space-x-4">
-              <Link 
+            <div className="hidden lg:flex items-center space-x-1">
+              <Link
                 href="/dashboard/roadmap"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
                 <Map className="w-4 h-4 mr-2" />
                 Roadmap
+                <LockBadge />
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/planner"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
                 <CalendarClock className="w-4 h-4 mr-2" />
                 Daily Tasks
+                <LockBadge />
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/fuel"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
                 <Utensils className="w-4 h-4 mr-2" />
                 Fuel
+                <LockBadge />
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/engine"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
                 <Briefcase className="w-4 h-4 mr-2" />
                 Engine
+                <LockBadge />
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/engine/focus"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
                 <Timer className="w-4 h-4 mr-2" />
                 Focus Timer
+                <LockBadge />
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/engine/sessions"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
                 <History className="w-4 h-4 mr-2" />
                 History
+                <LockBadge />
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/analytics"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
                 <ChartNetwork className="w-4 h-4 mr-2" />
                 Analytics
+                <LockBadge />
               </Link>
-
               <Link
                 href="/dashboard/engine/analytics"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
                 <BarChart2 className="w-4 h-4 mr-2" />
                 Focus Analytics
+                <LockBadge />
               </Link>
               <Link
                 href="/dashboard/blog"
@@ -138,6 +205,45 @@ export default function DashboardLayout({
               </Link>
 
               <div className="flex items-center space-x-2 pl-4 border-l border-gray-200">
+                {/* Admin link */}
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-fuchsia-400 rounded-lg text-xs font-bold hover:bg-gray-800 transition"
+                  >
+                    <Shield className="w-3 h-3" />
+                    Admin
+                  </Link>
+                )}
+                {/* Upgrade CTA for free users */}
+                {!subLoading && !hasAccess && (
+                  <Link
+                    href="/pricing"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-fuchsia-600 text-white rounded-lg text-xs font-bold hover:bg-fuchsia-700 transition"
+                  >
+                    <Zap className="w-3 h-3" />
+                    Upgrade
+                  </Link>
+                )}
+                <Link
+                  href="/dashboard/messages"
+                  className="relative flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                  title="Messages"
+                >
+                  <Bell className="w-4 h-4" />
+                  {unreadMessages > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-fuchsia-600 text-white text-xs font-bold rounded-full flex items-center justify-center leading-none">
+                      {unreadMessages > 9 ? '9+' : unreadMessages}
+                    </span>
+                  )}
+                </Link>
+                <Link
+                  href="/dashboard/billing"
+                  className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Billing
+                </Link>
                 <span className="text-xs sm:text-sm text-gray-600 hidden xl:inline">{user?.email}</span>
                 <button
                   onClick={handleLogout}
@@ -150,7 +256,16 @@ export default function DashboardLayout({
             </div>
 
             {/* Mobile Menu Button */}
-            <div className="flex lg:hidden items-center">
+            <div className="flex lg:hidden items-center gap-2">
+              {!subLoading && !hasAccess && (
+                <Link
+                  href="/pricing"
+                  className="flex items-center gap-1 px-2 py-1 bg-fuchsia-600 text-white rounded-lg text-xs font-bold hover:bg-fuchsia-700 transition"
+                >
+                  <Zap className="w-3 h-3" />
+                  Upgrade
+                </Link>
+              )}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="p-2 text-gray-600 hover:text-gray-900"
@@ -164,75 +279,95 @@ export default function DashboardLayout({
           {/* Mobile Menu Dropdown */}
           {mobileMenuOpen && (
             <div className="lg:hidden py-4 space-y-2">
-              <Link 
+              <Link
                 href="/dashboard/roadmap"
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <div className="flex items-center">
-                  <Map className="w-4 h-4 mr-3" />
-                  Roadmap
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Map className="w-4 h-4 mr-3" />
+                    Roadmap
+                  </div>
+                  {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/planner"
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <div className="flex items-center">
-                  <CalendarClock className="w-4 h-4 mr-3" />
-                  Daily Tasks
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <CalendarClock className="w-4 h-4 mr-3" />
+                    Daily Tasks
+                  </div>
+                  {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/fuel"
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <div className="flex items-center">
-                  <Utensils className="w-4 h-4 mr-3" />
-                  Fuel
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Utensils className="w-4 h-4 mr-3" />
+                    Fuel
+                  </div>
+                  {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/engine"
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <div className="flex items-center">
-                  <Briefcase className="w-4 h-4 mr-3" />
-                  Engine
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Briefcase className="w-4 h-4 mr-3" />
+                    Engine
+                  </div>
+                  {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/engine/focus"
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <div className="flex items-center">
-                  <Timer className="w-4 h-4 mr-3" />
-                  Focus Timer
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Timer className="w-4 h-4 mr-3" />
+                    Focus Timer
+                  </div>
+                  {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
-
-              <Link 
+              <Link
                 href="/dashboard/engine/sessions"
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <div className="flex items-center">
-                  <History className="w-4 h-4 mr-3" />
-                  History
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <History className="w-4 h-4 mr-3" />
+                    History
+                  </div>
+                  {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
-              <Link 
+              <Link
                 href="/dashboard/analytics"
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <div className="flex items-center">
-                  <ChartNetwork className="w-4 h-4 mr-3" />
-                  Analytics
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <ChartNetwork className="w-4 h-4 mr-3" />
+                    Analytics
+                  </div>
+                  {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
               <Link
@@ -240,9 +375,12 @@ export default function DashboardLayout({
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <div className="flex items-center">
-                  <BarChart2 className="w-4 h-4 mr-3" />
-                  Focus Analytics
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <BarChart2 className="w-4 h-4 mr-3" />
+                    Focus Analytics
+                  </div>
+                  {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
               </Link>
               <Link
@@ -266,7 +404,46 @@ export default function DashboardLayout({
                 </div>
               </Link>
 
-              <div className="pt-4 border-t border-gray-200 mt-4">
+              <div className="pt-4 border-t border-gray-200 mt-4 space-y-2">
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="block px-3 py-2 rounded-lg text-sm font-bold text-fuchsia-700 bg-gray-100 hover:bg-gray-200 transition"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <div className="flex items-center">
+                      <Shield className="w-4 h-4 mr-3" />
+                      Admin Dashboard
+                    </div>
+                  </Link>
+                )}
+                <Link
+                  href="/dashboard/messages"
+                  className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Bell className="w-4 h-4 mr-3" />
+                      Messages
+                    </div>
+                    {unreadMessages > 0 && (
+                      <span className="w-5 h-5 bg-fuchsia-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                        {unreadMessages > 9 ? '9+' : unreadMessages}
+                      </span>
+                    )}
+                  </div>
+                </Link>
+                <Link
+                  href="/dashboard/billing"
+                  className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div className="flex items-center">
+                    <CreditCard className="w-4 h-4 mr-3" />
+                    Billing
+                  </div>
+                </Link>
                 <div className="px-3 py-2 text-xs text-gray-600 truncate">
                   {user?.email}
                 </div>
