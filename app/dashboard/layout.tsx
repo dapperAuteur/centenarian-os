@@ -22,6 +22,7 @@ import {
   CalendarClock,
   X,
   BookOpen,
+  ChefHat,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -127,6 +128,13 @@ export default function DashboardLayout({
               >
                 <BookOpen className="w-4 h-4 mr-2" />
                 Blog
+              </Link>
+              <Link
+                href="/dashboard/recipes"
+                className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+              >
+                <ChefHat className="w-4 h-4 mr-2" />
+                Recipes
               </Link>
 
               <div className="flex items-center space-x-2 pl-4 border-l border-gray-200">
@@ -245,6 +253,16 @@ export default function DashboardLayout({
                 <div className="flex items-center">
                   <BookOpen className="w-4 h-4 mr-3" />
                   Blog
+                </div>
+              </Link>
+              <Link
+                href="/dashboard/recipes"
+                className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <div className="flex items-center">
+                  <ChefHat className="w-4 h-4 mr-3" />
+                  Recipes
                 </div>
               </Link>
 

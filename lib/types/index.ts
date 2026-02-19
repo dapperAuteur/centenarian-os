@@ -470,3 +470,88 @@ export interface BlogEvent {
   user_id: string | null;
   created_at: string;
 }
+
+// ─── Recipe types ─────────────────────────────────────────────────────────────
+
+export type RecipeVisibility =
+  | 'draft'
+  | 'private'
+  | 'public'
+  | 'authenticated_only'
+  | 'scheduled';
+
+export interface Recipe {
+  id: string;
+  user_id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  content: object; // Tiptap JSON document (instructions)
+  cover_image_url: string | null;
+  cover_image_public_id: string | null;
+  visibility: RecipeVisibility;
+  scheduled_at: string | null;
+  tags: string[];
+  total_calories: number | null;
+  total_protein_g: number | null;
+  total_carbs_g: number | null;
+  total_fat_g: number | null;
+  total_fiber_g: number | null;
+  ncv_score: NCVScore | null;
+  servings: number | null;
+  prep_time_minutes: number | null;
+  cook_time_minutes: number | null;
+  view_count: number;
+  like_count: number;
+  save_count: number;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RecipeIngredient {
+  id: string;
+  recipe_id: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  calories: number | null;
+  protein_g: number | null;
+  carbs_g: number | null;
+  fat_g: number | null;
+  fiber_g: number | null;
+  usda_fdc_id: string | null;
+  off_barcode: string | null;
+  brand: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface RecipeMedia {
+  id: string;
+  recipe_id: string;
+  url: string;
+  public_id: string;
+  resource_type: 'image' | 'video';
+  caption: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface RecipeWithDetails extends Recipe {
+  recipe_ingredients?: RecipeIngredient[];
+  recipe_media?: RecipeMedia[];
+  is_liked?: boolean;
+  is_saved?: boolean;
+}
+
+export interface RecipeEvent {
+  id: string;
+  recipe_id: string;
+  event_type: string;
+  session_id: string | null;
+  referrer: string | null;
+  country: string | null;
+  user_id: string | null;
+  created_at: string;
+}
