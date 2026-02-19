@@ -1,5 +1,3 @@
-import { RecipeIngredient } from '@/lib/types';
-
 export type NCVScore = 'Green' | 'Yellow' | 'Red';
 
 interface NutritionTotals {
@@ -11,13 +9,21 @@ interface NutritionTotals {
   ncv_score: NCVScore;
 }
 
+type IngredientNutrition = {
+  calories: number | null;
+  protein_g: number | null;
+  carbs_g: number | null;
+  fat_g: number | null;
+  fiber_g: number | null;
+};
+
 /**
  * Aggregates nutrition totals from recipe ingredients and computes the NCV score.
  * NCV (Nutritional Caloric Value) uses the same formula as the fuel module:
  *   nutrientDensity = (protein + fiber) / calories
  *   Green > 0.15, Yellow > 0.08, Red otherwise
  */
-export function calculateRecipeNutrition(ingredients: RecipeIngredient[]): NutritionTotals {
+export function calculateRecipeNutrition(ingredients: IngredientNutrition[]): NutritionTotals {
   const totals = ingredients.reduce(
     (acc, ing) => ({
       calories: acc.calories + (ing.calories ?? 0),
