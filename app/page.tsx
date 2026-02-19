@@ -24,6 +24,9 @@ export default function LandingPage() {
               <Link href="/blog" className="text-gray-600 hover:text-gray-900 font-medium">
                 Blog
               </Link>
+              <Link href="/recipes" className="text-gray-600 hover:text-gray-900 font-medium">
+                Recipes
+              </Link>
               <Link href="/tech-roadmap" className="text-gray-600 hover:text-gray-900 font-medium">
                 Tech Roadmap
               </Link>
@@ -51,14 +54,21 @@ export default function LandingPage() {
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 pb-4 space-y-4">
-              <Link 
-                href="/blog" 
+              <Link
+                href="/blog"
                 className="block text-gray-600 hover:text-gray-900 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Blog
               </Link>
-              <Link 
+              <Link
+                href="/recipes"
+                className="block text-gray-600 hover:text-gray-900 font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Recipes
+              </Link>
+              <Link
                 href="/tech-roadmap" 
                 className="block text-gray-600 hover:text-gray-900 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
@@ -281,6 +291,9 @@ export default function LandingPage() {
             <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
               <Link href="/blog" className="text-gray-600 hover:text-gray-900 text-xs sm:text-sm">
                 Blog
+              </Link>
+              <Link href="/recipes" className="text-gray-600 hover:text-gray-900 text-xs sm:text-sm">
+                Recipes
               </Link>
               <Link href="/tech-roadmap" className="text-gray-600 hover:text-gray-900 text-xs sm:text-sm">
                 Tech Roadmap
