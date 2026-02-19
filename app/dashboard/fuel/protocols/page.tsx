@@ -4,6 +4,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Protocol, ProtocolWithIngredients } from '@/lib/types';
 import { Plus, Search } from 'lucide-react';
@@ -11,12 +12,14 @@ import { ProtocolModal } from '@/components/ProtocolModal';
 import { ProtocolCard } from '@/components/ProtocolCard';
 
 export default function ProtocolsPage() {
+  const router = useRouter();
   const [protocols, setProtocols] = useState<ProtocolWithIngredients[]>([]);
   const [filteredProtocols, setFilteredProtocols] = useState<ProtocolWithIngredients[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProtocol, setEditingProtocol] = useState<ProtocolWithIngredients | null>(null);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
   const supabase = createClient();
 
   const loadProtocols = useCallback(async () => {
@@ -65,6 +68,22 @@ export default function ProtocolsPage() {
 
     await supabase.from('protocols').delete().eq('id', id);
     loadProtocols();
+  };
+
+  const handlePublishAsRecipe = async (protocol: ProtocolWithIngredients) => {
+    setPublishingId(protocol.id);
+    try {
+      const res = await fetch(`/api/fuel/protocols/${protocol.id}/publish`, { method: 'POST' });
+      if (!res.ok) {
+        const { error } = await res.json();
+        alert(`Failed to publish: ${error}`);
+        return;
+      }
+      const { recipeId } = await res.json();
+      router.push(`/dashboard/recipes/${recipeId}/edit`);
+    } finally {
+      setPublishingId(null);
+    }
   };
 
   return (
@@ -134,6 +153,7 @@ export default function ProtocolsPage() {
               protocol={protocol}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onPublish={publishingId === protocol.id ? undefined : handlePublishAsRecipe}
             />
           ))}
         </div>

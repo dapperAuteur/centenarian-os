@@ -11,6 +11,8 @@ export const revalidate = 60;
 
 const PER_PAGE = 20;
 
+type ProfileSnippet = Pick<Profile, 'username' | 'display_name' | 'avatar_url'>;
+
 interface PageProps {
   searchParams: Promise<{ page?: string; tag?: string }>;
 }
@@ -22,15 +24,14 @@ export default async function RecipesPage({ searchParams }: PageProps) {
 
   const supabase = await createClient();
 
+  // Fetch recipes (no join — recipes.user_id → auth.users, profiles.id → auth.users,
+  // so there's no direct FK between recipes and profiles for PostgREST to traverse)
   let query = supabase
     .from('recipes')
-    .select(`
-      id, slug, title, description, cover_image_url,
-      published_at, tags, view_count, like_count, save_count, user_id,
-      total_calories, total_protein_g, ncv_score,
-      servings, prep_time_minutes, cook_time_minutes,
-      profiles!inner(username, display_name, avatar_url)
-    `, { count: 'exact' })
+    .select(
+      'id, slug, title, description, cover_image_url, published_at, tags, view_count, like_count, save_count, user_id, total_calories, total_protein_g, ncv_score, servings, prep_time_minutes, cook_time_minutes',
+      { count: 'exact' }
+    )
     .or('visibility.eq.public,and(visibility.eq.scheduled,scheduled_at.lte.now())')
     .order('published_at', { ascending: false })
     .range(offset, offset + PER_PAGE - 1);
@@ -47,6 +48,19 @@ export default async function RecipesPage({ searchParams }: PageProps) {
 
   const recipes = data || [];
   const totalPages = Math.ceil((count || 0) / PER_PAGE);
+
+  // Fetch profiles for the recipe authors in a separate query
+  const userIds = [...new Set(recipes.map((r) => r.user_id))];
+  const profilesMap: Record<string, ProfileSnippet> = {};
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, avatar_url')
+      .in('id', userIds);
+    for (const p of profiles || []) {
+      profilesMap[p.id] = { username: p.username, display_name: p.display_name, avatar_url: p.avatar_url };
+    }
+  }
 
   return (
     <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -88,18 +102,13 @@ export default async function RecipesPage({ searchParams }: PageProps) {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {recipes.map((row) => {
-              type ProfileSnippet = Pick<Profile, 'username' | 'display_name' | 'avatar_url'>;
-              const rawProfiles = (row as unknown as { profiles: ProfileSnippet | ProfileSnippet[] }).profiles;
-              const profileData = Array.isArray(rawProfiles) ? rawProfiles[0] : rawProfiles;
-              return (
-                <RecipeCard
-                  key={row.id}
-                  recipe={row as unknown as Recipe}
-                  author={profileData}
-                />
-              );
-            })}
+            {recipes.map((row) => (
+              <RecipeCard
+                key={row.id}
+                recipe={row as unknown as Recipe}
+                author={profilesMap[row.user_id]}
+              />
+            ))}
           </div>
 
           {/* Pagination */}

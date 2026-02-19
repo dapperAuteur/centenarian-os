@@ -20,15 +20,13 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(50, parseInt(searchParams.get('limit') || '20'));
   const offset = (page - 1) * limit;
 
+  // Fetch recipes without a profiles join — no direct FK between recipes and profiles
   let query = supabase
     .from('recipes')
-    .select(`
-      id, slug, title, description, cover_image_url,
-      published_at, tags, view_count, like_count, save_count, user_id,
-      total_calories, total_protein_g, ncv_score,
-      servings, prep_time_minutes, cook_time_minutes,
-      profiles!inner(username, display_name, avatar_url)
-    `, { count: 'exact' })
+    .select(
+      'id, slug, title, description, cover_image_url, published_at, tags, view_count, like_count, save_count, user_id, total_calories, total_protein_g, ncv_score, servings, prep_time_minutes, cook_time_minutes',
+      { count: 'exact' }
+    )
     .or('visibility.eq.public,and(visibility.eq.scheduled,scheduled_at.lte.now())')
     .order('published_at', { ascending: false })
     .range(offset, offset + limit - 1);
@@ -44,7 +42,22 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ recipes: data, total: count, page, limit });
+  // Fetch profiles for the recipe authors
+  const userIds = [...new Set((data || []).map((r) => r.user_id))];
+  const profilesMap: Record<string, { username: string; display_name: string | null; avatar_url: string | null }> = {};
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, avatar_url')
+      .in('id', userIds);
+    for (const p of profiles || []) {
+      profilesMap[p.id] = { username: p.username, display_name: p.display_name, avatar_url: p.avatar_url };
+    }
+  }
+
+  const recipes = (data || []).map((r) => ({ ...r, profile: profilesMap[r.user_id] ?? null }));
+
+  return NextResponse.json({ recipes, total: count, page, limit });
 }
 
 /**
@@ -79,7 +92,7 @@ export async function POST(request: NextRequest) {
 
   const content = body.content || {};
   const visibility: RecipeVisibility = body.visibility || 'draft';
-  const isPublishing = visibility !== 'draft' && visibility !== 'private';
+  const isPublishing = visibility !== 'draft';
 
   // Calculate nutrition from provided ingredients if any
   const ingredients: RecipeIngredient[] = body.ingredients || [];

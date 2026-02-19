@@ -64,9 +64,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   const newVisibility: RecipeVisibility = body.visibility || existing.visibility;
-  const isNowPublishing =
-    (newVisibility !== 'draft' && newVisibility !== 'private') &&
-    !existing.published_at;
+  const isNowPublishing = newVisibility !== 'draft' && !existing.published_at;
 
   const updates: Record<string, unknown> = {};
 

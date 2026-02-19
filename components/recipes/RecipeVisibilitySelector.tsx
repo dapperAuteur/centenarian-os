@@ -11,9 +11,7 @@ interface RecipeVisibilitySelectorProps {
 
 const VISIBILITY_OPTIONS: { value: RecipeVisibility; label: string; description: string }[] = [
   { value: 'draft', label: 'Draft', description: 'Only visible to you, not listed anywhere' },
-  { value: 'private', label: 'Private', description: 'Only visible when you are logged in' },
   { value: 'public', label: 'Public', description: 'Visible to anyone, listed in the recipe directory' },
-  { value: 'authenticated_only', label: 'Members Only', description: 'Only visible to logged-in users' },
   { value: 'scheduled', label: 'Scheduled', description: 'Publish automatically at a set date and time' },
 ];
 

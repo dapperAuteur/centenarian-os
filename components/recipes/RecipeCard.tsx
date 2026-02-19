@@ -13,7 +13,7 @@ interface RecipeCardProps {
     'ncv_score' | 'total_calories' | 'servings' | 'prep_time_minutes' | 'cook_time_minutes' |
     'like_count' | 'save_count'
   >;
-  author: Pick<Profile, 'username' | 'display_name' | 'avatar_url'>;
+  author?: Pick<Profile, 'username' | 'display_name' | 'avatar_url'>;
 }
 
 const NCV_COLORS = {
@@ -23,7 +23,8 @@ const NCV_COLORS = {
 };
 
 export default function RecipeCard({ recipe, author }: RecipeCardProps) {
-  const href = `/recipes/cooks/${author.username}/${recipe.slug}`;
+  const authorName = author?.display_name || author?.username || 'Unknown Cook';
+  const href = author?.username ? `/recipes/cooks/${author.username}/${recipe.slug}` : '#';
   const totalTime = (recipe.prep_time_minutes || 0) + (recipe.cook_time_minutes || 0);
 
   return (
@@ -47,12 +48,16 @@ export default function RecipeCard({ recipe, author }: RecipeCardProps) {
       <div className="flex flex-col flex-1 p-5 gap-3">
         {/* Author + NCV badge */}
         <div className="flex items-center justify-between gap-2">
-          <Link
-            href={`/recipes/cooks/${author.username}`}
-            className="text-xs text-gray-500 hover:text-sky-600 transition-colors truncate"
-          >
-            {author.display_name || author.username}
-          </Link>
+          {author?.username ? (
+            <Link
+              href={`/recipes/cooks/${author.username}`}
+              className="text-xs text-gray-500 hover:text-sky-600 transition-colors truncate"
+            >
+              {authorName}
+            </Link>
+          ) : (
+            <span className="text-xs text-gray-500 truncate">{authorName}</span>
+          )}
           {recipe.ncv_score && (
             <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${NCV_COLORS[recipe.ncv_score]}`}>
               {recipe.ncv_score}

@@ -51,7 +51,7 @@ export default async function PublicRecipePage({ params }: Props) {
     `)
     .eq('user_id', p.id)
     .eq('slug', slug)
-    .or('visibility.eq.public,and(visibility.eq.scheduled,scheduled_at.lte.now()),and(visibility.eq.authenticated_only,auth.uid().is.not.null)')
+    .or('visibility.eq.public,and(visibility.eq.scheduled,scheduled_at.lte.now())')
     .maybeSingle();
 
   // ── Path 1: Recipe is accessible ────────────────────────────────────────
@@ -280,12 +280,11 @@ export default async function PublicRecipePage({ params }: Props) {
           This recipe is unavailable
         </h1>
         <p className="text-gray-500 max-w-sm mx-auto">
-          This recipe may be private, a draft, or restricted to logged-in members.
-          If you think this is a mistake, try{' '}
+          This recipe is a draft or not yet published.{' '}
           <Link href="/login" className="text-orange-600 hover:underline">
-            signing in
-          </Link>
-          .
+            Sign in
+          </Link>{' '}
+          if you&apos;re the author.
         </p>
       </div>
 

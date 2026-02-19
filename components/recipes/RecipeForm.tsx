@@ -322,7 +322,7 @@ export default function RecipeForm({ recipe, username }: RecipeFormProps) {
           />
 
           {/* Public URL preview */}
-          {(visibility === 'public' || visibility === 'scheduled' || visibility === 'authenticated_only') && slug && (
+          {(visibility === 'public' || visibility === 'scheduled') && slug && (
             <div className="p-3 bg-gray-50 rounded-lg space-y-1">
               <p className="text-xs font-medium text-gray-600">Recipe URL</p>
               <p className="text-xs text-gray-500 break-all font-mono">{publicUrl}</p>

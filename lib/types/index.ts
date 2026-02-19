@@ -475,9 +475,7 @@ export interface BlogEvent {
 
 export type RecipeVisibility =
   | 'draft'
-  | 'private'
   | 'public'
-  | 'authenticated_only'
   | 'scheduled';
 
 export interface Recipe {

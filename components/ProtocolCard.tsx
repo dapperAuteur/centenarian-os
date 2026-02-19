@@ -1,12 +1,13 @@
 // File: components/ProtocolCard.tsx
 
 import { ProtocolWithIngredients } from '@/lib/types';
-import { Edit2, Trash2 } from 'lucide-react';
+import { Edit2, Trash2, Globe } from 'lucide-react';
 
 interface ProtocolCardProps {
   protocol: ProtocolWithIngredients;
   onEdit: (protocol: ProtocolWithIngredients) => void;
   onDelete: (id: string) => void;
+  onPublish?: (protocol: ProtocolWithIngredients) => void;
 }
 
 const NCV_COLORS = {
@@ -15,7 +16,7 @@ const NCV_COLORS = {
   Red: 'bg-red-100 text-red-800 border-red-500',
 };
 
-export function ProtocolCard({ protocol, onEdit, onDelete }: ProtocolCardProps) {
+export function ProtocolCard({ protocol, onEdit, onDelete, onPublish }: ProtocolCardProps) {
   const ingredientCount = protocol.protocol_ingredients?.length || 0;
 
   return (
@@ -28,6 +29,15 @@ export function ProtocolCard({ protocol, onEdit, onDelete }: ProtocolCardProps) 
           </span>
         </div>
         <div className="flex gap-2">
+          {onPublish && (
+            <button
+              onClick={() => onPublish(protocol)}
+              className="text-gray-400 hover:text-orange-600 transition"
+              title="Publish as Recipe"
+            >
+              <Globe className="w-4 h-4" />
+            </button>
+          )}
           <button
             onClick={() => onEdit(protocol)}
             className="text-gray-400 hover:text-sky-600 transition"

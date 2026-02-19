@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import DeleteRecipeModal from './DeleteRecipeModal';
-import { PenLine, Trash2, Eye, EyeOff, Clock, Globe, Users, FileText, Heart, Bookmark } from 'lucide-react';
+import { PenLine, Trash2, Clock, Globe, FileText, Heart, Bookmark } from 'lucide-react';
 import type { Recipe, RecipeVisibility } from '@/lib/types';
 
 interface RecipeListProps {
@@ -14,9 +14,7 @@ interface RecipeListProps {
 
 const VISIBILITY_META: Record<RecipeVisibility, { label: string; icon: React.ReactNode; color: string }> = {
   draft: { label: 'Draft', icon: <FileText className="w-3.5 h-3.5" />, color: 'text-gray-500 bg-gray-100' },
-  private: { label: 'Private', icon: <EyeOff className="w-3.5 h-3.5" />, color: 'text-amber-700 bg-amber-50' },
   public: { label: 'Public', icon: <Globe className="w-3.5 h-3.5" />, color: 'text-green-700 bg-green-50' },
-  authenticated_only: { label: 'Members', icon: <Users className="w-3.5 h-3.5" />, color: 'text-indigo-700 bg-indigo-50' },
   scheduled: { label: 'Scheduled', icon: <Clock className="w-3.5 h-3.5" />, color: 'text-sky-700 bg-sky-50' },
 };
 
