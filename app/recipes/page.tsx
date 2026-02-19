@@ -3,7 +3,6 @@
 
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import RecipeCard from '@/components/recipes/RecipeCard';
 import { ChefHat, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Recipe, Profile } from '@/lib/types';
@@ -44,7 +43,6 @@ export default async function RecipesPage({ searchParams }: PageProps) {
 
   if (error) {
     console.error('[/recipes] Supabase error:', error);
-    notFound();
   }
 
   const recipes = data || [];
