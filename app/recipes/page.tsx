@@ -91,7 +91,9 @@ export default async function RecipesPage({ searchParams }: PageProps) {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {recipes.map((row) => {
-              const profileData = (row as { profiles: Pick<Profile, 'username' | 'display_name' | 'avatar_url'> }).profiles;
+              type ProfileSnippet = Pick<Profile, 'username' | 'display_name' | 'avatar_url'>;
+              const rawProfiles = (row as unknown as { profiles: ProfileSnippet | ProfileSnippet[] }).profiles;
+              const profileData = Array.isArray(rawProfiles) ? rawProfiles[0] : rawProfiles;
               return (
                 <RecipeCard
                   key={row.id}
