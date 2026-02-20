@@ -16,8 +16,8 @@ function getDb() {
   );
 }
 
-// embedding-001 is universally available on all Google AI Studio keys (768-dim output)
-const EMBEDDING_MODEL = 'embedding-001';
+// gemini-embedding-001 outputs 3072 dims by default; pin to 768 to match schema
+const EMBEDDING_MODEL = 'gemini-embedding-001';
 const CHAT_MODEL = 'gemini-2.5-flash-preview-09-2025';
 
 async function getEmbedding(text: string): Promise<number[]> {
@@ -30,6 +30,7 @@ async function getEmbedding(text: string): Promise<number[]> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       content: { parts: [{ text }] },
+      outputDimensionality: 768,
     }),
   });
   if (!res.ok) throw new Error(`Embedding error: ${await res.text()}`);

@@ -14,8 +14,8 @@ function getDb() {
   );
 }
 
-// embedding-001 is universally available on all Google AI Studio keys (768-dim output)
-const EMBEDDING_MODEL = 'embedding-001';
+// gemini-embedding-001 outputs 3072 dims by default; pin to 768 to match schema
+const EMBEDDING_MODEL = 'gemini-embedding-001';
 
 async function getEmbedding(text: string): Promise<number[]> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
@@ -27,6 +27,7 @@ async function getEmbedding(text: string): Promise<number[]> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       content: { parts: [{ text }] },
+      outputDimensionality: 768,
     }),
   });
 
@@ -98,11 +99,28 @@ export async function POST(_req: NextRequest) {
   return NextResponse.json({ succeeded, failed: failed.length > 0 ? failed : undefined });
 }
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user || user.email !== process.env.ADMIN_EMAIL) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  // ?diagnose=1 → list models available to this API key
+  const diagnose = new URL(req.url).searchParams.get('diagnose');
+  if (diagnose) {
+    const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
+    if (!apiKey) return NextResponse.json({ error: 'GOOGLE_GEMINI_API_KEY not set' }, { status: 500 });
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+    );
+    const data = await r.json();
+    // Extract just the names and supported methods for embedding
+    const models = (data.models ?? []).map((m: { name: string; supportedGenerationMethods?: string[] }) => ({
+      name: m.name,
+      supportsEmbed: (m.supportedGenerationMethods ?? []).includes('embedContent'),
+    }));
+    return NextResponse.json({ models, raw: r.ok ? undefined : data });
   }
 
   const db = getDb();
