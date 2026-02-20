@@ -16,7 +16,8 @@ function getDb() {
   );
 }
 
-const EMBEDDING_MODEL = 'text-embedding-004';
+// embedding-001 is universally available on all Google AI Studio keys (768-dim output)
+const EMBEDDING_MODEL = 'embedding-001';
 const CHAT_MODEL = 'gemini-2.5-flash-preview-09-2025';
 
 async function getEmbedding(text: string): Promise<number[]> {
@@ -28,9 +29,7 @@ async function getEmbedding(text: string): Promise<number[]> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: `models/${EMBEDDING_MODEL}`,
       content: { parts: [{ text }] },
-      task_type: 'SEMANTIC_SIMILARITY',
     }),
   });
   if (!res.ok) throw new Error(`Embedding error: ${await res.text()}`);
@@ -78,8 +77,9 @@ export async function POST(request: NextRequest) {
   }
 
   // 2. Retrieve top-5 matching articles
+  // pgvector expects the vector as a bracketed string "[0.1,0.2,...]"
   const { data: matches, error: matchError } = await db.rpc('match_help_articles', {
-    query_embedding: queryEmbedding,
+    query_embedding: `[${queryEmbedding.join(',')}]`,
     match_count: 5,
     role_filter: role ?? null,
   });

@@ -13,7 +13,8 @@ function getDb() {
   );
 }
 
-const EMBEDDING_MODEL = 'text-embedding-004';
+// embedding-001 is universally available on all Google AI Studio keys (768-dim output)
+const EMBEDDING_MODEL = 'embedding-001';
 
 async function getEmbedding(text: string): Promise<number[]> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
@@ -24,9 +25,7 @@ async function getEmbedding(text: string): Promise<number[]> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: `models/${EMBEDDING_MODEL}`,
       content: { parts: [{ text }] },
-      task_type: 'SEMANTIC_SIMILARITY',
     }),
   });
 
