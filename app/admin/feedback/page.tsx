@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import { Bug, Lightbulb, MessageSquare, ChevronDown, ChevronUp, Send, Loader2 } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
+import ImageLightbox from '@/components/ui/ImageLightbox';
 
 interface FeedbackEntry {
   id: string;
@@ -39,13 +40,6 @@ const CATEGORY_CONFIG = {
   general: { label: 'General',          color: '#6b7280', icon: MessageSquare,  badgeClass: 'bg-gray-800 text-gray-400' },
 };
 
-function MediaPreview({ url }: { url: string }) {
-  const isVideo = /\.(mp4|webm|mov|avi)/i.test(url) || url.includes('/video/');
-  return isVideo
-    ? <video src={url} className="max-h-48 rounded-lg border border-gray-700 mt-2" controls />
-    // eslint-disable-next-line @next/next/no-img-element
-    : <img src={url} alt="attachment" className="max-h-48 rounded-lg border border-gray-700 mt-2 object-contain" />;
-}
 
 export default function AdminFeedbackPage() {
   const [items, setItems] = useState<FeedbackEntry[]>([]);
@@ -231,7 +225,7 @@ export default function AdminFeedbackPage() {
                     <div>
                       <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-2">Original Submission</p>
                       <p className="text-gray-200 text-sm whitespace-pre-wrap">{item.message}</p>
-                      {item.media_url && <MediaPreview url={item.media_url} />}
+                      {item.media_url && <ImageLightbox url={item.media_url} />}
                     </div>
 
                     {/* Thread */}
@@ -258,7 +252,7 @@ export default function AdminFeedbackPage() {
                                 {reply.is_admin ? 'You (Admin)' : 'User'}
                               </p>
                               <p className="text-sm whitespace-pre-wrap">{reply.body}</p>
-                              {reply.media_url && <MediaPreview url={reply.media_url} />}
+                              {reply.media_url && <ImageLightbox url={reply.media_url} />}
                               <p className="text-xs opacity-50 mt-1.5 text-right">
                                 {new Date(reply.created_at).toLocaleString()}
                               </p>

@@ -219,6 +219,13 @@ export default function DashboardLayout({
                   )}
                 </Link>
                 <Link
+                  href="/dashboard/feedback"
+                  className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                  title="My Feedback"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                </Link>
+                <Link
                   href="/dashboard/billing"
                   className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 >
@@ -413,6 +420,16 @@ export default function DashboardLayout({
                         {unreadMessages > 9 ? '9+' : unreadMessages}
                       </span>
                     )}
+                  </div>
+                </Link>
+                <Link
+                  href="/dashboard/feedback"
+                  className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div className="flex items-center">
+                    <MessageCircle className="w-4 h-4 mr-3" />
+                    My Feedback
                   </div>
                 </Link>
                 <Link

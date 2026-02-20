@@ -6,6 +6,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Bell, CheckCircle, Send, Loader2 } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
+import ImageLightbox from '@/components/ui/ImageLightbox';
 
 interface Message {
   id: string;
@@ -29,13 +30,6 @@ interface ThreadState {
   loaded: boolean;
 }
 
-function MediaPreview({ url }: { url: string }) {
-  const isVideo = /\.(mp4|webm|mov|avi)/i.test(url) || url.includes('/video/');
-  return isVideo
-    ? <video src={url} className="max-h-40 rounded-lg border border-gray-200 mt-2" controls />
-    // eslint-disable-next-line @next/next/no-img-element
-    : <img src={url} alt="attachment" className="max-h-40 rounded-lg border border-gray-200 mt-2 object-contain" />;
-}
 
 export default function MessagesPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -215,7 +209,7 @@ export default function MessagesPage() {
                                   {label}
                                 </p>
                                 <p className="text-sm whitespace-pre-wrap">{reply.body}</p>
-                                {reply.media_url && <MediaPreview url={reply.media_url} />}
+                                {reply.media_url && <ImageLightbox url={reply.media_url} />}
                                 <p className="text-xs text-gray-400 mt-1.5 text-right">
                                   {new Date(reply.created_at).toLocaleString()}
                                 </p>

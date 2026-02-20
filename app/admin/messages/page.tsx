@@ -7,6 +7,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Send, Users, CheckCircle, AlertTriangle, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import MediaUploader from '@/components/ui/MediaUploader';
+import ImageLightbox from '@/components/ui/ImageLightbox';
 
 // Tiptap is SSR-unfriendly — load client-side only
 const RichTextEditor = dynamic(() => import('@/components/ui/RichTextEditor'), { ssr: false });
@@ -66,13 +67,6 @@ function SortTh({
   );
 }
 
-function MediaPreview({ url }: { url: string }) {
-  const isVideo = /\.(mp4|webm|mov|avi)/i.test(url) || url.includes('/video/');
-  return isVideo
-    ? <video src={url} className="max-h-40 rounded-lg border border-gray-700 mt-2" controls />
-    // eslint-disable-next-line @next/next/no-img-element
-    : <img src={url} alt="attachment" className="max-h-40 rounded-lg border border-gray-700 mt-2 object-contain" />;
-}
 
 export default function AdminMessagesPage() {
   const [subject, setSubject] = useState('');
@@ -402,7 +396,7 @@ export default function AdminMessagesPage() {
                                 {reply.is_admin ? 'You (Admin)' : 'User'}
                               </p>
                               <p className="text-sm whitespace-pre-wrap">{reply.body}</p>
-                              {reply.media_url && <MediaPreview url={reply.media_url} />}
+                              {reply.media_url && <ImageLightbox url={reply.media_url} />}
                               <p className="text-xs opacity-50 mt-1.5 text-right">
                                 {new Date(reply.created_at).toLocaleString()}
                               </p>

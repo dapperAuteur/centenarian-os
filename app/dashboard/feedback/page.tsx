@@ -6,6 +6,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Bug, Lightbulb, MessageSquare, ChevronDown, ChevronUp, Send, Loader2 } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
+import ImageLightbox from '@/components/ui/ImageLightbox';
 
 interface FeedbackEntry {
   id: string;
@@ -34,13 +35,6 @@ const CATEGORY_CONFIG = {
   general: { label: 'General',          icon: MessageSquare, badgeClass: 'bg-gray-100 text-gray-600 border border-gray-200' },
 };
 
-function MediaPreview({ url }: { url: string }) {
-  const isVideo = /\.(mp4|webm|mov|avi)/i.test(url) || url.includes('/video/');
-  return isVideo
-    ? <video src={url} className="max-h-40 rounded-lg border border-gray-200 mt-2" controls />
-    // eslint-disable-next-line @next/next/no-img-element
-    : <img src={url} alt="attachment" className="max-h-40 rounded-lg border border-gray-200 mt-2 object-contain" />;
-}
 
 export default function FeedbackHistoryPage() {
   const [items, setItems] = useState<FeedbackEntry[]>([]);
@@ -174,7 +168,7 @@ export default function FeedbackHistoryPage() {
                     <div>
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Your Submission</p>
                       <p className="text-sm text-gray-700 whitespace-pre-wrap">{item.message}</p>
-                      {item.media_url && <MediaPreview url={item.media_url} />}
+                      {item.media_url && <ImageLightbox url={item.media_url} />}
                     </div>
 
                     {/* Thread */}
@@ -201,7 +195,7 @@ export default function FeedbackHistoryPage() {
                                 {reply.is_admin ? 'CentenarianOS Team' : 'You'}
                               </p>
                               <p className="text-sm whitespace-pre-wrap">{reply.body}</p>
-                              {reply.media_url && <MediaPreview url={reply.media_url} />}
+                              {reply.media_url && <ImageLightbox url={reply.media_url} />}
                               <p className="text-xs text-gray-400 mt-1.5 text-right">
                                 {new Date(reply.created_at).toLocaleString()}
                               </p>

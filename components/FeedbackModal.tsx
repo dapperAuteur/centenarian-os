@@ -4,6 +4,7 @@
 // User feedback modal with optional media attachment (Cloudinary).
 
 import { useState } from 'react';
+import Link from 'next/link';
 import Modal from '@/components/ui/Modal';
 import MediaUploader from '@/components/ui/MediaUploader';
 import { CheckCircle, Bug, Lightbulb, MessageSquare } from 'lucide-react';
@@ -72,13 +73,22 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
           <div className="flex flex-col items-center gap-3 py-6 text-center">
             <CheckCircle className="w-12 h-12 text-green-500" />
             <h3 className="text-lg font-semibold text-gray-900">Thank you!</h3>
-            <p className="text-sm text-gray-500">Your feedback has been received. We review every submission and may reply by email.</p>
-            <button
-              onClick={handleClose}
-              className="mt-2 px-5 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-semibold hover:bg-fuchsia-700 transition-colors"
-            >
-              Close
-            </button>
+            <p className="text-sm text-gray-500">Your feedback has been received. We review every submission and will reply in the thread.</p>
+            <div className="flex items-center gap-3 mt-2">
+              <Link
+                href="/dashboard/feedback"
+                onClick={handleClose}
+                className="px-5 py-2 border border-fuchsia-300 text-fuchsia-700 rounded-lg text-sm font-semibold hover:bg-fuchsia-50 transition-colors"
+              >
+                View My Feedback
+              </Link>
+              <button
+                onClick={handleClose}
+                className="px-5 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-semibold hover:bg-fuchsia-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
