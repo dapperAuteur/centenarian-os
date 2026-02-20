@@ -2,7 +2,7 @@
 // Admin-only layout — middleware enforces ADMIN_EMAIL check before this renders
 
 import Link from 'next/link';
-import { LayoutDashboard, Users, MessageSquare, FileText, Heart, ArrowLeft } from 'lucide-react';
+import { LayoutDashboard, Users, MessageSquare, FileText, Heart, ArrowLeft, MessageCircle } from 'lucide-react';
 
 const NAV = [
   { href: '/admin', label: 'Overview', icon: LayoutDashboard, exact: true },
@@ -10,6 +10,7 @@ const NAV = [
   { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
   { href: '/admin/content', label: 'Content', icon: FileText },
   { href: '/admin/engagement', label: 'Engagement', icon: Heart },
+  { href: '/admin/feedback', label: 'Feedback', icon: MessageCircle },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

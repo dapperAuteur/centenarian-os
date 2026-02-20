@@ -10,7 +10,7 @@ import { calculateRecipeNutrition } from '@/lib/recipes/nutrition';
 import RecipeVisibilitySelector from './RecipeVisibilitySelector';
 import RecipeCloudinaryUploader from './RecipeCloudinaryUploader';
 import RecipeIngredientBuilder, { type DraftIngredient } from './RecipeIngredientBuilder';
-import { Save, Loader2, ExternalLink, RefreshCw, Plus, Trash2 } from 'lucide-react';
+import { Save, Loader2, ExternalLink, RefreshCw, Plus, Trash2, Link2, Download } from 'lucide-react';
 import type { Recipe, RecipeMedia, RecipeVisibility } from '@/lib/types';
 
 const TiptapEditor = dynamic(() => import('@/components/blog/TiptapEditor'), { ssr: false });
@@ -42,6 +42,12 @@ export default function RecipeForm({ recipe, username }: RecipeFormProps) {
   const [ingredients, setIngredients] = useState<DraftIngredient[]>(recipe?.recipe_ingredients || []);
   const [media, setMedia] = useState<RecipeMedia[]>(recipe?.recipe_media || []);
 
+  const [sourceUrl, setSourceUrl] = useState(recipe?.source_url ?? '');
+  const [importUrl, setImportUrl] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState('');
+  const [importSuccess, setImportSuccess] = useState(false);
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -66,6 +72,37 @@ export default function RecipeForm({ recipe, username }: RecipeFormProps) {
 
   const handleRemoveTag = (tag: string) => {
     setTags(tags.filter((t) => t !== tag));
+  };
+
+  const handleImport = async () => {
+    if (!importUrl.trim()) return;
+    setImporting(true);
+    setImportError('');
+    setImportSuccess(false);
+    try {
+      const res = await fetch('/api/recipes/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: importUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Import failed');
+
+      if (data.title) setTitle(data.title);
+      if (data.description) setDescription(data.description);
+      if (data.servings) setServings(String(data.servings));
+      if (data.prepTime) setPrepTime(String(data.prepTime));
+      if (data.cookTime) setCookTime(String(data.cookTime));
+      if (data.ingredients?.length) setIngredients(data.ingredients);
+      if (data.sourceUrl) setSourceUrl(data.sourceUrl);
+
+      setImportSuccess(true);
+      setImportUrl('');
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Import failed. Try a different URL.');
+    } finally {
+      setImporting(false);
+    }
   };
 
   const handleSave = async (overrideVisibility?: RecipeVisibility) => {
@@ -97,6 +134,7 @@ export default function RecipeForm({ recipe, username }: RecipeFormProps) {
       servings: servings ? parseInt(servings) : null,
       prep_time_minutes: prepTime ? parseInt(prepTime) : null,
       cook_time_minutes: cookTime ? parseInt(cookTime) : null,
+      source_url: sourceUrl.trim() || null,
       ...(nutrition ? {
         total_calories: nutrition.total_calories,
         total_protein_g: nutrition.total_protein_g,
@@ -235,6 +273,43 @@ export default function RecipeForm({ recipe, username }: RecipeFormProps) {
       {!isEditing && (
         <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
           Save the recipe first to upload additional media (images and videos).
+        </div>
+      )}
+
+      {/* Import from URL — only shown for new recipes */}
+      {!isEditing && (
+        <div className="mb-6 bg-orange-50 border border-orange-200 rounded-xl p-4">
+          <p className="text-sm font-semibold text-orange-800 mb-2 flex items-center gap-1.5">
+            <Download className="w-4 h-4" />
+            Import from a recipe URL
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="url"
+              value={importUrl}
+              onChange={(e) => setImportUrl(e.target.value)}
+              placeholder="https://example.com/my-favorite-recipe"
+              className="flex-1 px-3 py-2 border border-orange-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-400"
+            />
+            <button
+              type="button"
+              onClick={handleImport}
+              disabled={importing || !importUrl.trim()}
+              className="flex items-center gap-1.5 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 disabled:opacity-60 transition"
+            >
+              {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              Import
+            </button>
+          </div>
+          {importError && <p className="text-sm text-red-600 mt-2">{importError}</p>}
+          {importSuccess && (
+            <p className="text-sm text-green-700 font-medium mt-2">
+              Recipe imported! Review and edit the fields below before saving.
+            </p>
+          )}
+          <p className="text-xs text-orange-600 mt-2">
+            Works with sites that use structured recipe data (most major food blogs).
+          </p>
         </div>
       )}
 
@@ -478,6 +553,22 @@ export default function RecipeForm({ recipe, username }: RecipeFormProps) {
                 ))}
               </div>
             )}
+          </div>
+          {/* Source URL */}
+          <div className="space-y-1">
+            <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+              <Link2 className="w-3.5 h-3.5 text-gray-400" />
+              Source URL
+              <span className="text-xs font-normal text-gray-400">(optional)</span>
+            </label>
+            <input
+              type="url"
+              value={sourceUrl}
+              onChange={(e) => setSourceUrl(e.target.value)}
+              placeholder="https://original-recipe-site.com/recipe"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+            <p className="text-xs text-gray-400">Cite the original source. Shown on the public recipe page.</p>
           </div>
         </div>
       </div>

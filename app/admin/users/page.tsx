@@ -7,6 +7,9 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Search, AlertTriangle, ChevronRight } from 'lucide-react';
+import PaginationBar from '@/components/ui/PaginationBar';
+
+const PAGE_SIZE = 20;
 
 interface UserRow {
   id: string;
@@ -31,6 +34,7 @@ function AdminUsersContent() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState(searchParams.get('filter') === 'promo_pending' ? 'promo_pending' : 'all');
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     fetch('/api/admin/users')
@@ -50,6 +54,9 @@ function AdminUsersContent() {
     return matchSearch && matchFilter;
   });
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold text-white mb-1">Users</h1>
@@ -63,14 +70,14 @@ function AdminUsersContent() {
             type="text"
             placeholder="Search email or username…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             className="w-full bg-gray-900 border border-gray-700 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500"
           />
         </div>
         {(['all', 'free', 'monthly', 'lifetime', 'promo_pending'] as const).map((f) => (
           <button
             key={f}
-            onClick={() => setFilter(f)}
+            onClick={() => { setFilter(f); setPage(1); }}
             className={`px-3 py-2 rounded-lg text-xs font-semibold transition ${filter === f ? 'bg-fuchsia-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
           >
             {f === 'promo_pending' ? '⚠ No promo code' : f.charAt(0).toUpperCase() + f.slice(1)}
@@ -100,7 +107,7 @@ function AdminUsersContent() {
                   <td colSpan={5} className="text-center py-12 text-gray-600">No users found</td>
                 </tr>
               )}
-              {filtered.map((u) => (
+              {paginated.map((u) => (
                 <tr key={u.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition">
                   <td className="px-5 py-3">
                     <p className="text-white font-medium">{u.email ?? '—'}</p>
@@ -139,6 +146,7 @@ function AdminUsersContent() {
               ))}
             </tbody>
           </table>
+          <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
         </div>
       )}
     </div>

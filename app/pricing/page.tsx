@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Check, Shirt, Zap, ArrowLeft } from 'lucide-react';
+import PurchaseModal from '@/components/PurchaseModal';
 
 const POLICIES = 'No Refunds. Cancel Anytime. Monthly fees are not transferable to lifetime membership.';
 
@@ -16,6 +17,8 @@ export default function PricingPage() {
   const { user } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState<'monthly' | 'lifetime' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState<'monthly' | 'lifetime' | null>(null);
 
   async function handleCheckout(plan: 'monthly' | 'lifetime') {
     setLoadingPlan(plan);
@@ -28,7 +31,10 @@ export default function PricingPage() {
       });
 
       if (res.status === 401) {
-        router.push('/login?redirect=/pricing');
+        // Show inline auth modal instead of redirecting away
+        setPendingPlan(plan);
+        setShowPurchaseModal(true);
+        setLoadingPlan(null);
         return;
       }
 
@@ -41,6 +47,13 @@ export default function PricingPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
       setLoadingPlan(null);
+    }
+  }
+
+  function handleAuthSuccess() {
+    if (pendingPlan) {
+      handleCheckout(pendingPlan);
+      setPendingPlan(null);
     }
   }
 
@@ -229,6 +242,12 @@ export default function PricingPage() {
           </p>
         </div>
       </main>
+
+      <PurchaseModal
+        isOpen={showPurchaseModal}
+        onClose={() => setShowPurchaseModal(false)}
+        onAuthSuccess={handleAuthSuccess}
+      />
     </div>
   );
 }

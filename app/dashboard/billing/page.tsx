@@ -12,7 +12,7 @@ import { CheckCircle, Shirt, CreditCard, Zap, ArrowRight, Copy, Check, Shield } 
 const POLICIES = 'No Refunds. Cancel Anytime. Monthly fees are not transferable to lifetime membership.';
 
 export default function BillingPage() {
-  const { status, shirtPromoCode, loading } = useSubscription();
+  const { status, shirtPromoCode, cancelAtPeriodEnd, cancelAt, subscriptionExpiresAt, loading } = useSubscription();
   const searchParams = useSearchParams();
   const justPaid = searchParams.get('success') === 'true';
   const sessionId = searchParams.get('session_id');
@@ -152,7 +152,17 @@ export default function BillingPage() {
                 <Zap className="w-5 h-5" />
                 Monthly — $10/month
               </span>
-              <p className="text-sm text-gray-500 mt-1">Full access. Cancel anytime via the portal.</p>
+              {cancelAtPeriodEnd && cancelAt ? (
+                <p className="text-sm text-amber-600 font-medium mt-1">
+                  Cancels on {new Date(cancelAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+              ) : subscriptionExpiresAt ? (
+                <p className="text-sm text-gray-500 mt-1">
+                  Renews on {new Date(subscriptionExpiresAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+              ) : (
+                <p className="text-sm text-gray-500 mt-1">Full access. Cancel anytime via the portal.</p>
+              )}
             </div>
             <button
               onClick={openPortal}

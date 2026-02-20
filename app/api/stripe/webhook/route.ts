@@ -42,11 +42,22 @@ export async function POST(request: NextRequest) {
       if (!userId) break;
 
       if (session.mode === 'subscription' && plan === 'monthly') {
+        // Expand subscription to get current_period_end for renewal date
+        let subscriptionExpiresAt: string | null = null;
+        try {
+          const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+          subscriptionExpiresAt = new Date(sub.current_period_end * 1000).toISOString();
+        } catch (err) {
+          console.error('[webhook] Failed to retrieve subscription for period_end:', err);
+        }
         const { error } = await supabase
           .from('profiles')
           .update({
             subscription_status: 'monthly',
             stripe_subscription_id: session.subscription as string,
+            subscription_expires_at: subscriptionExpiresAt,
+            cancel_at_period_end: false,
+            cancel_at: null,
           })
           .eq('id', userId);
         if (error) console.error('[webhook] Failed to update monthly status for user', userId, error);
@@ -95,6 +106,25 @@ export async function POST(request: NextRequest) {
           .eq('stripe_customer_id', customerId);
         if (error) console.error('[webhook] Failed to downgrade subscription for customer', customerId, error);
       }
+      break;
+    }
+
+    case 'customer.subscription.updated': {
+      const sub = event.data.object as Stripe.Subscription;
+      const userId = sub.metadata?.supabase_user_id;
+      if (!userId) break;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          cancel_at_period_end: sub.cancel_at_period_end,
+          cancel_at: sub.cancel_at ? new Date(sub.cancel_at * 1000).toISOString() : null,
+          cancellation_feedback: (sub.cancellation_details as { feedback?: string } | null)?.feedback ?? null,
+          cancellation_comment: (sub.cancellation_details as { comment?: string } | null)?.comment ?? null,
+          subscription_expires_at: new Date(sub.current_period_end * 1000).toISOString(),
+        })
+        .eq('id', userId);
+      if (error) console.error('[webhook] subscription.updated DB update failed for user', userId, error);
       break;
     }
 

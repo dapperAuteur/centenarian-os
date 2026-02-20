@@ -114,6 +114,7 @@ export async function POST(request: NextRequest) {
       servings: body.servings || null,
       prep_time_minutes: body.prep_time_minutes || null,
       cook_time_minutes: body.cook_time_minutes || null,
+      source_url: body.source_url || null,
       ...(nutrition ? {
         total_calories: nutrition.total_calories,
         total_protein_g: nutrition.total_protein_g,

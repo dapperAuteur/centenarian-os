@@ -86,6 +86,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   if (body.total_fat_g !== undefined) updates.total_fat_g = body.total_fat_g;
   if (body.total_fiber_g !== undefined) updates.total_fiber_g = body.total_fiber_g;
   if (body.ncv_score !== undefined) updates.ncv_score = body.ncv_score;
+  if (body.source_url !== undefined) updates.source_url = body.source_url || null;
 
   if (isNowPublishing) {
     updates.published_at = new Date().toISOString();
