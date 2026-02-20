@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { stripe } from '@/lib/stripe';
+import Stripe from 'stripe';
 import { createShopifyPromoCode } from '@/lib/shopify/createPromoCode';
 
 function getServiceClient() {
@@ -64,11 +65,23 @@ export async function POST(request: NextRequest) {
   const db = getServiceClient();
 
   if (session.mode === 'subscription' && plan === 'monthly') {
+    // Fetch subscription period end so we can show the renewal date immediately
+    let subscriptionExpiresAt: string | null = null;
+    try {
+      const sub = await stripe.subscriptions.retrieve(session.subscription as string) as unknown as Stripe.Subscription;
+      subscriptionExpiresAt = new Date(sub.current_period_end * 1000).toISOString();
+    } catch (err) {
+      console.error('[sync] Failed to retrieve subscription for period_end:', err);
+    }
+
     const { data: updated, error } = await db
       .from('profiles')
       .update({
         subscription_status: 'monthly',
         stripe_subscription_id: (session.subscription as string) ?? null,
+        subscription_expires_at: subscriptionExpiresAt,
+        cancel_at_period_end: false,
+        cancel_at: null,
       })
       .eq('id', user.id)
       .select('id');

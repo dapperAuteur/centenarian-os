@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         // Expand subscription to get current_period_end for renewal date
         let subscriptionExpiresAt: string | null = null;
         try {
-          const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+          const sub = await stripe.subscriptions.retrieve(session.subscription as string) as unknown as Stripe.Subscription;
           subscriptionExpiresAt = new Date(sub.current_period_end * 1000).toISOString();
         } catch (err) {
           console.error('[webhook] Failed to retrieve subscription for period_end:', err);

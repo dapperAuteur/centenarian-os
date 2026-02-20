@@ -12,7 +12,7 @@ import { CheckCircle, Shirt, CreditCard, Zap, ArrowRight, Copy, Check, Shield } 
 const POLICIES = 'No Refunds. Cancel Anytime. Monthly fees are not transferable to lifetime membership.';
 
 export default function BillingPage() {
-  const { status, shirtPromoCode, cancelAtPeriodEnd, cancelAt, subscriptionExpiresAt, loading } = useSubscription();
+  const { status, shirtPromoCode, cancelAtPeriodEnd, cancelAt, subscriptionExpiresAt, loading, refresh } = useSubscription();
   const searchParams = useSearchParams();
   const justPaid = searchParams.get('success') === 'true';
   const sessionId = searchParams.get('session_id');
@@ -58,6 +58,16 @@ export default function BillingPage() {
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
+
+  // For existing monthly subscribers whose subscription_expires_at was null before migration 037,
+  // fetch the renewal date directly from Stripe once and persist it.
+  useEffect(() => {
+    if (loading || status !== 'monthly' || subscriptionExpiresAt) return;
+    fetch('/api/stripe/sync-renewal', { method: 'POST' })
+      .then((r) => r.ok ? refresh() : null)
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, status, subscriptionExpiresAt]);
 
   async function openPortal() {
     setPortalLoading(true);
