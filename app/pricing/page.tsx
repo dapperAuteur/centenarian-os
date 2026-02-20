@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Check, Shirt, Zap, ArrowLeft } from 'lucide-react';
+import PurchaseModal from '@/components/PurchaseModal';
 
 const POLICIES = 'No Refunds. Cancel Anytime. Monthly fees are not transferable to lifetime membership.';
 
@@ -16,6 +17,8 @@ export default function PricingPage() {
   const { user } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState<'monthly' | 'lifetime' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState<'monthly' | 'lifetime' | null>(null);
 
   async function handleCheckout(plan: 'monthly' | 'lifetime') {
     setLoadingPlan(plan);
@@ -28,7 +31,10 @@ export default function PricingPage() {
       });
 
       if (res.status === 401) {
-        router.push('/login?redirect=/pricing');
+        // Show inline auth modal instead of redirecting away
+        setPendingPlan(plan);
+        setShowPurchaseModal(true);
+        setLoadingPlan(null);
         return;
       }
 
@@ -41,6 +47,13 @@ export default function PricingPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
       setLoadingPlan(null);
+    }
+  }
+
+  function handleAuthSuccess() {
+    if (pendingPlan) {
+      handleCheckout(pendingPlan);
+      setPendingPlan(null);
     }
   }
 
@@ -147,11 +160,9 @@ export default function PricingPage() {
                 'Fuel & nutrition tracking',
                 'The Engine (Focus timer, Debrief, Pain log)',
                 'Analytics & insights',
-                'AI Coach',
-                'Gems collection',
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm text-gray-700">
-                  <Check className="w-4 h-4 text-fuchsia-500 mt-0.5 flex-shrink-0" />
+                  <Check className="w-4 h-4 text-fuchsia-500 mt-0.5 shrink-0" />
                   {f}
                 </li>
               ))}
@@ -171,7 +182,12 @@ export default function PricingPage() {
           </div>
 
           {/* Lifetime Plan */}
-          <div className="bg-gradient-to-b from-gray-900 to-gray-800 rounded-2xl border-2 border-gray-700 p-8 flex flex-col text-white">
+          <div className="bg-linear-to-b from-gray-900 to-gray-800 rounded-2xl border-2 border-gray-700 p-8 flex flex-col text-white relative">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+              <span className="bg-lime-500 text-gray-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+                Best Value
+              </span>
+            </div>
             <div className="mb-6">
               <h2 className="text-xl font-bold mb-1">Lifetime</h2>
               <p className="text-gray-400 text-sm">Pay once, own it forever</p>
@@ -187,12 +203,12 @@ export default function PricingPage() {
                 'All future features included',
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
-                  <Check className="w-4 h-4 text-lime-400 mt-0.5 flex-shrink-0" />
+                  <Check className="w-4 h-4 text-lime-400 mt-0.5 shrink-0" />
                   {f}
                 </li>
               ))}
               <li className="flex items-start gap-2 text-sm text-lime-300 font-semibold">
-                <Shirt className="w-4 h-4 text-lime-400 mt-0.5 flex-shrink-0" />
+                <Shirt className="w-4 h-4 text-lime-400 mt-0.5 shrink-0" />
                 Free CentenarianOS shirt from AwesomeWebStore.com
               </li>
             </ul>
@@ -226,6 +242,12 @@ export default function PricingPage() {
           </p>
         </div>
       </main>
+
+      <PurchaseModal
+        isOpen={showPurchaseModal}
+        onClose={() => setShowPurchaseModal(false)}
+        onAuthSuccess={handleAuthSuccess}
+      />
     </div>
   );
 }

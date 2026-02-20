@@ -5,6 +5,9 @@
 
 import { useEffect, useState } from 'react';
 import { Eye, ThumbsUp, Bookmark, EyeOff } from 'lucide-react';
+import PaginationBar from '@/components/ui/PaginationBar';
+
+const PAGE_SIZE = 20;
 
 type ContentType = 'recipe' | 'blog';
 
@@ -33,6 +36,7 @@ export default function AdminContentPage() {
   const [items, setItems] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [unpublishing, setUnpublishing] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   function load(type: ContentType) {
     setLoading(true);
@@ -41,7 +45,7 @@ export default function AdminContentPage() {
       .then((d) => { setItems(d.items ?? []); setLoading(false); });
   }
 
-  useEffect(() => { load(tab); }, [tab]);
+  useEffect(() => { load(tab); setPage(1); }, [tab]);
 
   async function unpublish(id: string) {
     setUnpublishing(id);
@@ -92,7 +96,7 @@ export default function AdminContentPage() {
               {items.length === 0 && (
                 <tr><td colSpan={6} className="text-center py-12 text-gray-600">No content found</td></tr>
               )}
-              {items.map((item) => (
+              {items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((item) => (
                 <tr key={item.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition">
                   <td className="px-5 py-3">
                     <p className="text-white font-medium truncate max-w-xs">{item.title}</p>
@@ -132,6 +136,11 @@ export default function AdminContentPage() {
               ))}
             </tbody>
           </table>
+          <PaginationBar
+            page={page}
+            totalPages={Math.max(1, Math.ceil(items.length / PAGE_SIZE))}
+            onPageChange={setPage}
+          />
         </div>
       )}
     </div>

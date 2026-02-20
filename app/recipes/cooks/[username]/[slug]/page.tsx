@@ -9,7 +9,7 @@ import { notFound } from 'next/navigation';
 import { headers } from 'next/headers';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Lock, Clock, Users, ChefHat } from 'lucide-react';
+import { Lock, Clock, Users, ChefHat, ExternalLink } from 'lucide-react';
 import TiptapRenderer from '@/components/blog/TiptapRenderer';
 import RecipeShareBar from '@/components/recipes/RecipeShareBar';
 import RecipeLikeButton from '@/components/recipes/RecipeLikeButton';
@@ -109,6 +109,18 @@ export default async function PublicRecipePage({ params }: Props) {
 
           {r.description && (
             <p className="text-lg text-gray-600 mb-4">{r.description}</p>
+          )}
+
+          {r.source_url && (
+            <a
+              href={r.source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm text-orange-600 hover:text-orange-700 font-medium mb-4 border border-orange-200 rounded-lg px-3 py-1.5 hover:bg-orange-50 transition-colors"
+            >
+              <ExternalLink className="w-4 h-4" />
+              View Original Recipe
+            </a>
           )}
 
           {/* Meta row */}

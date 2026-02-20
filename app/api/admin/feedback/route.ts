@@ -1,7 +1,7 @@
-// app/api/admin/users/route.ts
-// Returns all users for admin panel
+// app/api/admin/feedback/route.ts
+// Admin-only: returns all user feedback submissions.
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
@@ -30,31 +30,24 @@ async function getAdminUser() {
   return user;
 }
 
-export async function GET(_request: NextRequest) {
-  const user = await getAdminUser();
-  if (!user || user.email !== process.env.ADMIN_EMAIL) {
+export async function GET() {
+  const adminUser = await getAdminUser();
+  if (!adminUser || adminUser.email !== process.env.ADMIN_EMAIL) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   const db = getServiceClient();
 
-  // Get all profiles
-  const { data: profiles, error } = await db
-    .from('profiles')
-    .select('id, username, display_name, subscription_status, shirt_promo_code, stripe_customer_id, subscription_expires_at, created_at')
-    .order('created_at', { ascending: false });
+  const { data, error } = await db
+    .from('user_feedback')
+    .select('id, category, message, media_url, is_read_by_admin, created_at, user_id')
+    .order('created_at', { ascending: false })
+    .limit(500);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[admin/feedback] Fetch failed:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
-  // Get auth user emails via admin API
-  const { data: authUsers } = await db.auth.admin.listUsers({ perPage: 1000 });
-
-  const emailMap = new Map(authUsers?.users?.map((u) => [u.id, u.email]) ?? []);
-
-  const users = (profiles ?? []).map((p) => ({
-    ...p,
-    email: emailMap.get(p.id) ?? null,
-  }));
-
-  return NextResponse.json({ users });
+  return NextResponse.json(data ?? []);
 }
