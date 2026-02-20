@@ -15,10 +15,13 @@ export default function BillingPage() {
   const { status, shirtPromoCode, loading } = useSubscription();
   const searchParams = useSearchParams();
   const justPaid = searchParams.get('success') === 'true';
+  const sessionId = searchParams.get('session_id');
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalError, setPortalError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [syncLoading, setSyncLoading] = useState(!!sessionId);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -26,6 +29,35 @@ export default function BillingPage() {
       .then((d) => setIsAdmin(d.isAdmin ?? false))
       .catch(() => {});
   }, []);
+
+  // When arriving from Stripe with a session_id, sync subscription status directly
+  useEffect(() => {
+    if (!sessionId) return;
+
+    fetch('/api/stripe/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) {
+          console.error('[billing] Sync failed:', data);
+          setSyncError(data.error ?? 'Subscription sync failed. Please contact support.');
+          setSyncLoading(false);
+        } else {
+          console.log('[billing] Sync result:', data);
+          // Hard reload without session_id — ensures fresh subscription state from DB
+          window.location.replace('/dashboard/billing?success=true');
+        }
+      })
+      .catch((err) => {
+        console.error('[billing] Sync network error:', err);
+        setSyncError('Could not connect to sync service. Please refresh the page.');
+        setSyncLoading(false);
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
 
   async function openPortal() {
     setPortalLoading(true);
@@ -49,10 +81,13 @@ export default function BillingPage() {
     });
   }
 
-  if (loading) {
+  if (loading || syncLoading) {
     return (
-      <div className="flex justify-center py-20">
+      <div className="flex flex-col items-center justify-center py-20 gap-3">
         <div className="animate-spin h-8 w-8 border-4 border-fuchsia-600 border-t-transparent rounded-full" />
+        {syncLoading && (
+          <p className="text-sm text-gray-500">Confirming your payment&hellip;</p>
+        )}
       </div>
     );
   }
@@ -62,10 +97,18 @@ export default function BillingPage() {
       <h1 className="text-3xl font-bold text-gray-900 mb-2">Billing</h1>
       <p className="text-gray-500 mb-8">Manage your subscription and membership.</p>
 
+      {/* Sync error banner */}
+      {syncError && (
+        <div className="mb-6 flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-5 py-4 text-sm">
+          <span className="font-semibold shrink-0">Sync error:</span>
+          <span>{syncError}</span>
+        </div>
+      )}
+
       {/* Success banner */}
-      {justPaid && (
+      {justPaid && !syncError && (
         <div className="mb-6 flex items-center gap-3 bg-green-50 border border-green-200 text-green-800 rounded-xl px-5 py-4">
-          <CheckCircle className="w-5 h-5 flex-shrink-0" />
+          <CheckCircle className="w-5 h-5 shrink-0" />
           <span className="font-medium">Payment successful — welcome to CentenarianOS!</span>
         </div>
       )}
@@ -157,7 +200,7 @@ export default function BillingPage() {
 
       {/* Shirt promo code — only shown to lifetime members */}
       {status === 'lifetime' && shirtPromoCode && (
-        <div className="bg-gradient-to-br from-lime-50 to-emerald-50 border border-lime-200 rounded-2xl p-6 mb-6">
+        <div className="bg-linear-to-br from-lime-50 to-emerald-50 border border-lime-200 rounded-2xl p-6 mb-6">
           <div className="flex items-center gap-2 mb-3">
             <Shirt className="w-5 h-5 text-lime-700" />
             <h2 className="font-bold text-lime-800">Your Free Shirt Promo Code</h2>
@@ -193,7 +236,7 @@ export default function BillingPage() {
       {status === 'monthly' && (
         <div className="bg-gray-900 text-white rounded-2xl p-6 mb-6">
           <div className="flex items-start gap-3">
-            <Shirt className="w-5 h-5 text-lime-400 flex-shrink-0 mt-0.5" />
+            <Shirt className="w-5 h-5 text-lime-400 shrink-0 mt-0.5" />
             <div>
               <h3 className="font-bold mb-1">Upgrade to Lifetime for $100</h3>
               <p className="text-sm text-gray-400 mb-4">

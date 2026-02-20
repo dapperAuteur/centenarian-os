@@ -42,23 +42,24 @@ export async function POST(request: NextRequest) {
       if (!userId) break;
 
       if (session.mode === 'subscription' && plan === 'monthly') {
-        await supabase
+        const { error } = await supabase
           .from('profiles')
           .update({
             subscription_status: 'monthly',
             stripe_subscription_id: session.subscription as string,
           })
           .eq('id', userId);
+        if (error) console.error('[webhook] Failed to update monthly status for user', userId, error);
       } else if (session.mode === 'payment' && plan === 'lifetime') {
         let promoCode: string | null = null;
         try {
           promoCode = await createShopifyPromoCode();
         } catch (err) {
-          console.error('Failed to create Shopify promo code for user', userId, err);
+          console.error('[webhook] Failed to create Shopify promo code for user', userId, err);
           // Do not throw — purchase is complete; code will show as pending on billing page
         }
 
-        await supabase
+        const { error } = await supabase
           .from('profiles')
           .update({
             subscription_status: 'lifetime',
@@ -67,6 +68,7 @@ export async function POST(request: NextRequest) {
             subscription_expires_at: null,
           })
           .eq('id', userId);
+        if (error) console.error('[webhook] Failed to update lifetime status for user', userId, error);
       }
       break;
     }
@@ -83,7 +85,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (profile && profile.subscription_status !== 'lifetime') {
-        await supabase
+        const { error } = await supabase
           .from('profiles')
           .update({
             subscription_status: 'free',
@@ -91,6 +93,7 @@ export async function POST(request: NextRequest) {
             subscription_expires_at: null,
           })
           .eq('stripe_customer_id', customerId);
+        if (error) console.error('[webhook] Failed to downgrade subscription for customer', customerId, error);
       }
       break;
     }

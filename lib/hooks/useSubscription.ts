@@ -1,7 +1,7 @@
 // lib/hooks/useSubscription.ts
 // Fetches the current user's subscription status from profiles
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -11,15 +11,17 @@ interface SubscriptionState {
   status: SubscriptionStatus;
   shirtPromoCode: string | null;
   loading: boolean;
+  refresh: () => void;
 }
 
 export function useSubscription(): SubscriptionState {
   const { user, loading: authLoading } = useAuth();
-  const [state, setState] = useState<SubscriptionState>({
+  const [state, setState] = useState<Omit<SubscriptionState, 'refresh'>>({
     status: 'free',
     shirtPromoCode: null,
     loading: true,
   });
+  const [refreshCount, setRefreshCount] = useState(0);
   const supabase = createClient();
 
   useEffect(() => {
@@ -34,7 +36,7 @@ export function useSubscription(): SubscriptionState {
       .from('profiles')
       .select('subscription_status, shirt_promo_code')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
       .then(({ data, error }) => {
         if (error || !data) {
           setState({ status: 'free', shirtPromoCode: null, loading: false });
@@ -46,7 +48,9 @@ export function useSubscription(): SubscriptionState {
           loading: false,
         });
       });
-  }, [user, authLoading, supabase]);
+  }, [user, authLoading, supabase, refreshCount]);
 
-  return state;
+  const refresh = useCallback(() => setRefreshCount((c) => c + 1), []);
+
+  return { ...state, refresh };
 }

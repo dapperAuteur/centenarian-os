@@ -123,8 +123,8 @@ export default function DashboardLayout({
               </Link>
             </div>
 
-            {/* Desktop Navigation - Hidden on mobile */}
-            <div className="hidden lg:flex items-center space-x-1">
+            {/* Desktop Navigation - Hidden on mobile/tablet */}
+            <div className="hidden xl:flex items-center space-x-1">
               <Link
                 href="/dashboard/roadmap"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
@@ -158,35 +158,11 @@ export default function DashboardLayout({
                 <LockBadge />
               </Link>
               <Link
-                href="/dashboard/engine/focus"
-                className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
-              >
-                <Timer className="w-4 h-4 mr-2" />
-                Focus Timer
-                <LockBadge />
-              </Link>
-              <Link
-                href="/dashboard/engine/sessions"
-                className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
-              >
-                <History className="w-4 h-4 mr-2" />
-                History
-                <LockBadge />
-              </Link>
-              <Link
                 href="/dashboard/analytics"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
                 <ChartNetwork className="w-4 h-4 mr-2" />
                 Analytics
-                <LockBadge />
-              </Link>
-              <Link
-                href="/dashboard/engine/analytics"
-                className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
-              >
-                <BarChart2 className="w-4 h-4 mr-2" />
-                Focus Analytics
                 <LockBadge />
               </Link>
               <Link
@@ -255,8 +231,8 @@ export default function DashboardLayout({
               </div>
             </div>
 
-            {/* Mobile Menu Button */}
-            <div className="flex lg:hidden items-center gap-2">
+            {/* Mobile/Tablet Menu Button */}
+            <div className="flex xl:hidden items-center gap-2">
               {!subLoading && !hasAccess && (
                 <Link
                   href="/pricing"
@@ -276,9 +252,9 @@ export default function DashboardLayout({
             </div>
           </div>
 
-          {/* Mobile Menu Dropdown */}
+          {/* Mobile/Tablet Menu Dropdown */}
           {mobileMenuOpen && (
-            <div className="lg:hidden py-4 space-y-2">
+            <div className="xl:hidden py-4 space-y-2">
               <Link
                 href="/dashboard/roadmap"
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
