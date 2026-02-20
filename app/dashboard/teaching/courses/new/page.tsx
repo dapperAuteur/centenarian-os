@@ -64,7 +64,7 @@ export default function NewCoursePage() {
       <div className="space-y-6">
         {/* Title */}
         <div>
-          <label className="block text-sm text-gray-400 mb-2">Course Title *</label>
+          <label className="block text-sm text-gray-300 mb-2">Course Title *</label>
           <input
             type="text"
             value={form.title}
@@ -76,7 +76,7 @@ export default function NewCoursePage() {
 
         {/* Description */}
         <div>
-          <label className="block text-sm text-gray-400 mb-2">Description</label>
+          <label className="block text-sm text-gray-300 mb-2">Description</label>
           <textarea
             value={form.description}
             onChange={(e) => set('description', e.target.value)}
@@ -88,7 +88,7 @@ export default function NewCoursePage() {
 
         {/* Category */}
         <div>
-          <label className="block text-sm text-gray-400 mb-2">Category</label>
+          <label className="block text-sm text-gray-300 mb-2">Category</label>
           <select
             value={form.category}
             onChange={(e) => set('category', e.target.value)}
@@ -101,7 +101,7 @@ export default function NewCoursePage() {
 
         {/* Pricing */}
         <div>
-          <label className="block text-sm text-gray-400 mb-2">Pricing</label>
+          <label className="block text-sm text-gray-300 mb-2">Pricing</label>
           <div className="grid grid-cols-3 gap-2 mb-3">
             {(['free', 'one_time', 'subscription'] as const).map((pt) => (
               <button
@@ -137,7 +137,7 @@ export default function NewCoursePage() {
 
         {/* Navigation mode */}
         <div>
-          <label className="block text-sm text-gray-400 mb-2">Learning Path Style</label>
+          <label className="block text-sm text-gray-300 mb-2">Learning Path Style</label>
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
@@ -150,7 +150,7 @@ export default function NewCoursePage() {
             >
               <ArrowRight className="w-5 h-5 text-fuchsia-400 mb-2" />
               <p className="font-semibold text-white text-sm">Linear</p>
-              <p className="text-gray-500 text-xs mt-1">Students follow lessons in order, step by step.</p>
+              <p className="text-gray-400 text-xs mt-1">Students follow lessons in order, step by step.</p>
             </button>
             <button
               type="button"
@@ -163,7 +163,7 @@ export default function NewCoursePage() {
             >
               <GitBranch className="w-5 h-5 text-fuchsia-400 mb-2" />
               <p className="font-semibold text-white text-sm">Adventure (CYOA)</p>
-              <p className="text-gray-500 text-xs mt-1">AI recommends branching paths after each lesson.</p>
+              <p className="text-gray-400 text-xs mt-1">AI recommends branching paths after each lesson.</p>
             </button>
           </div>
         </div>

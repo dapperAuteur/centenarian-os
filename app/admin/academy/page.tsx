@@ -90,9 +90,9 @@ export default function AdminAcademyPage() {
               onChange={(e) => setSettings((s) => ({ ...s, teacher_fee_percent: e.target.value }))}
               className="w-24 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-fuchsia-500"
             />
-            <span className="text-gray-500 text-sm">%</span>
+            <span className="text-gray-400 text-sm">%</span>
           </div>
-          <p className="text-gray-600 text-xs mt-2">
+          <p className="text-gray-400 text-xs mt-2">
             Applied via Stripe Connect application_fee_amount on course enrollments.
           </p>
         </div>
@@ -105,7 +105,7 @@ export default function AdminAcademyPage() {
           </div>
           <p className="text-gray-400 text-xs mb-4">
             Create prices in your Stripe dashboard, then paste the Price IDs here.
-            The env var <code className="bg-gray-800 px-1 rounded text-gray-300">TEACHER_MONTHLY_PRICE_ID</code> is used
+            The env var <code className="bg-gray-700 px-1 rounded text-gray-200">TEACHER_MONTHLY_PRICE_ID</code> is used
             as a fallback if these fields are empty.
           </p>
           <div className="space-y-4">
@@ -116,7 +116,7 @@ export default function AdminAcademyPage() {
                 placeholder="price_xxxxxxxxxxxxxxxxxxxxxxxx"
                 value={settings.teacher_monthly_price_id}
                 onChange={(e) => setSettings((s) => ({ ...s, teacher_monthly_price_id: e.target.value }))}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-fuchsia-500 font-mono"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-fuchsia-500 font-mono"
               />
             </div>
             <div>
@@ -126,7 +126,7 @@ export default function AdminAcademyPage() {
                 placeholder="price_xxxxxxxxxxxxxxxxxxxxxxxx"
                 value={settings.teacher_annual_price_id}
                 onChange={(e) => setSettings((s) => ({ ...s, teacher_annual_price_id: e.target.value }))}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-fuchsia-500 font-mono"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-fuchsia-500 font-mono"
               />
             </div>
           </div>

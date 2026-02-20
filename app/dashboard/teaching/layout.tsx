@@ -24,37 +24,35 @@ export default function TeachingLayout({ children }: { children: React.ReactNode
     pathname.startsWith('/dashboard/teaching/courses/') &&
     pathname !== '/dashboard/teaching/courses';
 
-  if (isCoursePage) {
-    return <>{children}</>;
-  }
-
   return (
     <div className="flex min-h-[calc(100vh-4rem)] bg-gray-950">
-      {/* Sidebar */}
-      <aside className="w-52 shrink-0 border-r border-gray-800 bg-gray-950 py-6">
-        <div className="px-4 mb-6">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Teaching</p>
-        </div>
-        <nav className="space-y-0.5 px-2">
-          {NAV_ITEMS.map(({ href, label, icon: Icon, exact }) => {
-            const active = exact ? pathname === href : pathname.startsWith(href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition ${
-                  active
-                    ? 'bg-fuchsia-900/40 text-fuchsia-300'
-                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                }`}
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                {label}
-              </Link>
-            );
-          })}
-        </nav>
-      </aside>
+      {/* Sidebar — hidden on individual course editor pages */}
+      {!isCoursePage && (
+        <aside className="w-52 shrink-0 border-r border-gray-800 bg-gray-950 py-6">
+          <div className="px-4 mb-6">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Teaching</p>
+          </div>
+          <nav className="space-y-0.5 px-2">
+            {NAV_ITEMS.map(({ href, label, icon: Icon, exact }) => {
+              const active = exact ? pathname === href : pathname.startsWith(href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                    active
+                      ? 'bg-fuchsia-900/40 text-fuchsia-300'
+                      : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  {label}
+                </Link>
+              );
+            })}
+          </nav>
+        </aside>
+      )}
 
       {/* Content */}
       <div className="flex-1 overflow-auto">

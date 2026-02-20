@@ -61,7 +61,7 @@ export default function AcademyPage() {
               placeholder="Search courses…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-900 border border-gray-800 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-900 border border-gray-800 rounded-xl text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500"
             />
           </div>
           {categories.length > 0 && (
@@ -81,7 +81,7 @@ export default function AcademyPage() {
             <div className="animate-spin h-8 w-8 border-4 border-fuchsia-500 border-t-transparent rounded-full" />
           </div>
         ) : courses.length === 0 ? (
-          <div className="text-center py-20 text-gray-600">
+          <div className="text-center py-20 text-gray-400">
             <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-40" />
             <p>No courses found.</p>
           </div>
@@ -121,7 +121,7 @@ export default function AcademyPage() {
                   {course.description && (
                     <p className="text-gray-500 text-sm line-clamp-2 mb-3">{course.description}</p>
                   )}
-                  <p className="text-xs text-gray-600 mb-3">
+                  <p className="text-xs text-gray-500 mb-3">
                     by {course.profiles?.display_name ?? course.profiles?.username ?? 'Instructor'}
                   </p>
 
