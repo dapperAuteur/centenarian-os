@@ -455,6 +455,8 @@ export interface BlogPost {
   tags: string[];
   reading_time_minutes: number | null;
   view_count: number;
+  like_count: number;
+  save_count: number;
   published_at: string | null;
   created_at: string;
   updated_at: string;

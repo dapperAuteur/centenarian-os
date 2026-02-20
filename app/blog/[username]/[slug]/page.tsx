@@ -6,6 +6,8 @@ import Link from 'next/link';
 import TiptapRenderer from '@/components/blog/TiptapRenderer';
 import PostMeta from '@/components/blog/PostMeta';
 import ShareBar from '@/components/blog/ShareBar';
+import BlogLikeButton from '@/components/blog/BlogLikeButton';
+import BlogSaveButton from '@/components/blog/BlogSaveButton';
 import ReadDepthTracker from '@/components/blog/ReadDepthTracker';
 import { buildShareUrls } from '@/lib/blog/share';
 import { Lock } from 'lucide-react';
@@ -41,6 +43,15 @@ export default async function PublicPostPage({ params }: Props) {
   if (post) {
     const bp = post as BlogPost;
     const { postUrl, email, linkedin } = buildShareUrls(bp, p.username);
+
+    // Check if the current user has liked/saved this post
+    const { data: { user } } = await supabase.auth.getUser();
+    const [{ data: likeRow }, { data: saveRow }] = user
+      ? await Promise.all([
+          supabase.from('blog_likes').select('post_id').eq('user_id', user.id).eq('post_id', bp.id).maybeSingle(),
+          supabase.from('blog_saves').select('post_id').eq('user_id', user.id).eq('post_id', bp.id).maybeSingle(),
+        ])
+      : [{ data: null }, { data: null }];
 
     return (
       <main className="max-w-3xl mx-auto px-4 py-12">
@@ -87,8 +98,21 @@ export default async function PublicPostPage({ params }: Props) {
         {/* Read 100% sentinel */}
         <div data-read-depth="100" aria-hidden />
 
-        {/* Share bar */}
-        <div className="mt-12 pt-6 border-t border-gray-200">
+        {/* Like / Save / Share bar */}
+        <div className="mt-12 pt-6 border-t border-gray-200 flex flex-wrap items-center gap-3">
+          <BlogLikeButton
+            postId={bp.id}
+            initialLiked={!!likeRow}
+            initialCount={bp.like_count}
+            isAuthenticated={!!user}
+          />
+          <BlogSaveButton
+            postId={bp.id}
+            initialSaved={!!saveRow}
+            initialCount={bp.save_count}
+            isAuthenticated={!!user}
+          />
+          <div className="flex-1" />
           <ShareBar
             postUrl={postUrl}
             postTitle={bp.title}
