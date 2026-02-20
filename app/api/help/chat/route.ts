@@ -18,7 +18,7 @@ function getDb() {
 
 // gemini-embedding-001 outputs 3072 dims by default; pin to 768 to match schema
 const EMBEDDING_MODEL = 'gemini-embedding-001';
-const CHAT_MODEL = 'gemini-2.5-flash-preview-09-2025';
+const CHAT_MODEL = 'gemini-2.5-flash';
 
 async function getEmbedding(text: string): Promise<number[]> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY;

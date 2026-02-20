@@ -119,6 +119,7 @@ export async function GET(req: NextRequest) {
     const models = (data.models ?? []).map((m: { name: string; supportedGenerationMethods?: string[] }) => ({
       name: m.name,
       supportsEmbed: (m.supportedGenerationMethods ?? []).includes('embedContent'),
+      supportsGenerate: (m.supportedGenerationMethods ?? []).includes('generateContent'),
     }));
     return NextResponse.json({ models, raw: r.ok ? undefined : data });
   }

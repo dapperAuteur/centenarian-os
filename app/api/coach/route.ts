@@ -6,7 +6,7 @@ import { GeminiMessage } from '@/lib/types'; // Import from our main types file
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 
 // The Gemini API model to use
-const GEMINI_MODEL = 'gemini-2.5-flash-preview-09-2025';
+const GEMINI_MODEL = 'gemini-2.5-flash';
 
 /**
  * Define the structure of the request body from the client
