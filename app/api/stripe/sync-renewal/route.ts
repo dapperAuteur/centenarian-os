@@ -7,7 +7,6 @@ import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { stripe } from '@/lib/stripe';
-import Stripe from 'stripe';
 
 function getServiceClient() {
   return createServiceClient(
@@ -38,11 +37,20 @@ export async function POST() {
     return NextResponse.json({ subscriptionExpiresAt: null });
   }
 
-  // Retrieve subscription from Stripe to get current_period_end
+  // Retrieve subscription from Stripe to get current_period_end.
+  // In Stripe API 2024-09-30 (acacia) and later, current_period_end moved from
+  // Subscription to SubscriptionItem, so we check both locations.
   let subscriptionExpiresAt: string;
   try {
-    const sub = await stripe.subscriptions.retrieve(profile.stripe_subscription_id) as unknown as Stripe.Subscription;
-    subscriptionExpiresAt = new Date(sub.current_period_end * 1000).toISOString();
+    const sub = await stripe.subscriptions.retrieve(profile.stripe_subscription_id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const s = sub as any;
+    const rawEnd: number | undefined = s.items?.data?.[0]?.current_period_end ?? s.current_period_end;
+    if (!rawEnd || typeof rawEnd !== 'number') {
+      console.error('[sync-renewal] current_period_end not found on subscription:', JSON.stringify(Object.keys(s)));
+      return NextResponse.json({ error: 'Subscription period end not available' }, { status: 502 });
+    }
+    subscriptionExpiresAt = new Date(rawEnd * 1000).toISOString();
   } catch (err) {
     console.error('[sync-renewal] Failed to retrieve Stripe subscription:', err);
     return NextResponse.json({ error: 'Could not fetch subscription from Stripe' }, { status: 502 });

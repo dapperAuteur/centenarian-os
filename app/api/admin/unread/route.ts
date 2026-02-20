@@ -1,12 +1,14 @@
-// app/api/admin/feedback/route.ts
-// Admin-only: returns all user feedback submissions.
+// app/api/admin/unread/route.ts
+// Returns unread counts for admin sidebar badges:
+// - feedback: user_feedback rows with is_read_by_admin = false
+// - messages: message_replies from users (is_admin=false) not yet read
 
 import { NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
-function getServiceClient() {
+function getDb() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -24,30 +26,26 @@ async function getAdminUser() {
         set: (name: string, value: string, options: CookieOptions) => { try { cookieStore.set({ name, value, ...options }); } catch {} },
         remove: (name: string, options: CookieOptions) => { try { cookieStore.set({ name, value: '', ...options }); } catch {} },
       },
-    },
+    }
   );
   const { data: { user } } = await supabase.auth.getUser();
   return user;
 }
 
 export async function GET() {
-  const adminUser = await getAdminUser();
-  if (!adminUser || adminUser.email !== process.env.ADMIN_EMAIL) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const admin = await getAdminUser();
+  if (!admin || admin.email !== process.env.ADMIN_EMAIL) {
+    return NextResponse.json({ feedback: 0, messages: 0 });
   }
 
-  const db = getServiceClient();
+  const db = getDb();
+  const [{ count: feedbackCount }, { count: messagesCount }] = await Promise.all([
+    db.from('user_feedback').select('*', { count: 'exact', head: true }).eq('is_read_by_admin', false),
+    db.from('message_replies').select('*', { count: 'exact', head: true }).eq('is_admin', false).eq('is_read_by_admin', false),
+  ]);
 
-  const { data, error } = await db
-    .from('user_feedback')
-    .select('id, category, message, media_url, is_read_by_admin, created_at, user_id')
-    .order('created_at', { ascending: false })
-    .limit(500);
-
-  if (error) {
-    console.error('[admin/feedback] Fetch failed:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json(data ?? []);
+  return NextResponse.json({
+    feedback: feedbackCount ?? 0,
+    messages: messagesCount ?? 0,
+  });
 }

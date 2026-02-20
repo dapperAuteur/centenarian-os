@@ -10,10 +10,13 @@ export function adminMessageTemplate({
   body: string;
   siteUrl: string;
 }): string {
-  const bodyHtml = body
-    .split('\n')
-    .map((line) => (line.trim() === '' ? '<br>' : `<p style="margin:0 0 12px">${line}</p>`))
-    .join('');
+  // If body is already HTML (from Tiptap), use it directly; otherwise convert plain text.
+  const bodyHtml = body.trimStart().startsWith('<')
+    ? body
+    : body
+        .split('\n')
+        .map((line) => (line.trim() === '' ? '<br>' : `<p style="margin:0 0 12px">${line}</p>`))
+        .join('');
 
   return `<!DOCTYPE html>
 <html>

@@ -111,9 +111,9 @@ export default async function PublicRecipePage({ params }: Props) {
             <p className="text-lg text-gray-600 mb-4">{r.description}</p>
           )}
 
-          {(r as { source_url?: string | null }).source_url && (
+          {r.source_url && (
             <a
-              href={(r as { source_url: string }).source_url}
+              href={r.source_url}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm text-orange-600 hover:text-orange-700 font-medium mb-4 border border-orange-200 rounded-lg px-3 py-1.5 hover:bg-orange-50 transition-colors"

@@ -53,6 +53,8 @@ const FREE_ROUTE_PREFIXES = [
   '/dashboard/blog',
   '/dashboard/recipes',
   '/dashboard/billing',
+  '/dashboard/messages',
+  '/dashboard/feedback',
 ];
 
 function isFreeRoute(pathname: string) {

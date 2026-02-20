@@ -42,11 +42,17 @@ export async function POST(request: NextRequest) {
       if (!userId) break;
 
       if (session.mode === 'subscription' && plan === 'monthly') {
-        // Expand subscription to get current_period_end for renewal date
+        // Expand subscription to get current_period_end for renewal date.
+        // In Stripe API 2024-09-30+ (acacia/clover), this field moved to SubscriptionItem.
         let subscriptionExpiresAt: string | null = null;
         try {
-          const sub = await stripe.subscriptions.retrieve(session.subscription as string) as unknown as Stripe.Subscription;
-          subscriptionExpiresAt = new Date(sub.current_period_end * 1000).toISOString();
+          const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const s = sub as any;
+          const rawEnd: number | undefined = s.items?.data?.[0]?.current_period_end ?? s.current_period_end;
+          if (rawEnd && typeof rawEnd === 'number') {
+            subscriptionExpiresAt = new Date(rawEnd * 1000).toISOString();
+          }
         } catch (err) {
           console.error('[webhook] Failed to retrieve subscription for period_end:', err);
         }
@@ -110,18 +116,22 @@ export async function POST(request: NextRequest) {
     }
 
     case 'customer.subscription.updated': {
-      const sub = event.data.object as Stripe.Subscription;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sub = event.data.object as any;
       const userId = sub.metadata?.supabase_user_id;
       if (!userId) break;
+
+      // current_period_end moved to SubscriptionItem in Stripe API 2024-09-30+
+      const rawEnd: number | undefined = sub.items?.data?.[0]?.current_period_end ?? sub.current_period_end;
 
       const { error } = await supabase
         .from('profiles')
         .update({
-          cancel_at_period_end: sub.cancel_at_period_end,
+          cancel_at_period_end: sub.cancel_at_period_end ?? false,
           cancel_at: sub.cancel_at ? new Date(sub.cancel_at * 1000).toISOString() : null,
-          cancellation_feedback: (sub.cancellation_details as { feedback?: string } | null)?.feedback ?? null,
-          cancellation_comment: (sub.cancellation_details as { comment?: string } | null)?.comment ?? null,
-          subscription_expires_at: new Date(sub.current_period_end * 1000).toISOString(),
+          cancellation_feedback: sub.cancellation_details?.feedback ?? null,
+          cancellation_comment: sub.cancellation_details?.comment ?? null,
+          subscription_expires_at: (rawEnd && typeof rawEnd === 'number') ? new Date(rawEnd * 1000).toISOString() : null,
         })
         .eq('id', userId);
       if (error) console.error('[webhook] subscription.updated DB update failed for user', userId, error);

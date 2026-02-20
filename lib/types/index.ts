@@ -507,6 +507,7 @@ export interface Recipe {
   published_at: string | null;
   created_at: string;
   updated_at: string;
+  source_url: string | null;
 }
 
 export interface RecipeIngredient {

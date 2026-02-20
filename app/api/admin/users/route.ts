@@ -41,7 +41,7 @@ export async function GET(_request: NextRequest) {
   // Get all profiles
   const { data: profiles, error } = await db
     .from('profiles')
-    .select('id, username, display_name, subscription_status, shirt_promo_code, stripe_customer_id, created_at')
+    .select('id, username, display_name, subscription_status, shirt_promo_code, stripe_customer_id, subscription_expires_at, created_at')
     .order('created_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

@@ -7,7 +7,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { stripe } from '@/lib/stripe';
-import Stripe from 'stripe';
 import { createShopifyPromoCode } from '@/lib/shopify/createPromoCode';
 
 function getServiceClient() {
@@ -68,8 +67,13 @@ export async function POST(request: NextRequest) {
     // Fetch subscription period end so we can show the renewal date immediately
     let subscriptionExpiresAt: string | null = null;
     try {
-      const sub = await stripe.subscriptions.retrieve(session.subscription as string) as unknown as Stripe.Subscription;
-      subscriptionExpiresAt = new Date(sub.current_period_end * 1000).toISOString();
+      const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const s = sub as any;
+      const rawEnd: number | undefined = s.items?.data?.[0]?.current_period_end ?? s.current_period_end;
+      if (rawEnd && typeof rawEnd === 'number') {
+        subscriptionExpiresAt = new Date(rawEnd * 1000).toISOString();
+      }
     } catch (err) {
       console.error('[sync] Failed to retrieve subscription for period_end:', err);
     }

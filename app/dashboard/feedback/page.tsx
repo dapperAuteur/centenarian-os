@@ -1,19 +1,18 @@
 'use client';
 
-// app/dashboard/messages/page.tsx
-// User message inbox — shows admin messages with two-way reply threads.
+// app/dashboard/feedback/page.tsx
+// User view of their submitted feedback and admin reply threads.
 
 import { useEffect, useState, useCallback } from 'react';
-import { Bell, CheckCircle, Send, Loader2 } from 'lucide-react';
+import { Bug, Lightbulb, MessageSquare, ChevronDown, ChevronUp, Send, Loader2 } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
 
-interface Message {
+interface FeedbackEntry {
   id: string;
-  subject: string;
-  body: string;
-  recipient_scope: string;
+  category: 'bug' | 'feature' | 'general';
+  message: string;
+  media_url?: string | null;
   created_at: string;
-  is_read: boolean;
 }
 
 interface Reply {
@@ -29,6 +28,12 @@ interface ThreadState {
   loaded: boolean;
 }
 
+const CATEGORY_CONFIG = {
+  bug:     { label: 'Bug Report',       icon: Bug,           badgeClass: 'bg-red-50 text-red-600 border border-red-200' },
+  feature: { label: 'Feature Request',  icon: Lightbulb,     badgeClass: 'bg-purple-50 text-purple-600 border border-purple-200' },
+  general: { label: 'General',          icon: MessageSquare, badgeClass: 'bg-gray-100 text-gray-600 border border-gray-200' },
+};
+
 function MediaPreview({ url }: { url: string }) {
   const isVideo = /\.(mp4|webm|mov|avi)/i.test(url) || url.includes('/video/');
   return isVideo
@@ -37,8 +42,8 @@ function MediaPreview({ url }: { url: string }) {
     : <img src={url} alt="attachment" className="max-h-40 rounded-lg border border-gray-200 mt-2 object-contain" />;
 }
 
-export default function MessagesPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
+export default function FeedbackHistoryPage() {
+  const [items, setItems] = useState<FeedbackEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [threads, setThreads] = useState<Record<string, ThreadState>>({});
@@ -48,27 +53,21 @@ export default function MessagesPage() {
   const [sendError, setSendError] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    fetch('/api/messages')
+    fetch('/api/feedback')
       .then((r) => r.json())
-      .then((d) => { setMessages(d.messages ?? []); setLoading(false); });
+      .then((d) => { setItems(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => setLoading(false));
   }, []);
 
-  const openMessage = useCallback(async (id: string) => {
+  const toggleExpand = useCallback(async (id: string) => {
     if (expanded === id) { setExpanded(null); return; }
     setExpanded(id);
-    // Mark as read
-    const msg = messages.find((m) => m.id === id);
-    if (msg && !msg.is_read) {
-      await fetch(`/api/messages/${id}/read`, { method: 'POST' });
-      setMessages((prev) => prev.map((m) => m.id === id ? { ...m, is_read: true } : m));
-    }
-    // Load thread
     if (!threads[id]?.loaded) {
-      const r = await fetch(`/api/messages/${id}/replies`);
+      const r = await fetch(`/api/feedback/${id}/replies`);
       const d = await r.json();
       setThreads((prev) => ({ ...prev, [id]: { replies: d.replies ?? [], loaded: true } }));
     }
-  }, [expanded, messages, threads]);
+  }, [expanded, threads]);
 
   async function sendReply(id: string) {
     const body = (replyText[id] ?? '').trim();
@@ -76,7 +75,7 @@ export default function MessagesPage() {
     setSending(id);
     setSendError((prev) => ({ ...prev, [id]: '' }));
     try {
-      const r = await fetch(`/api/messages/${id}/replies`, {
+      const r = await fetch(`/api/feedback/${id}/replies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ body, media_url: replyMedia[id] || null }),
@@ -102,8 +101,6 @@ export default function MessagesPage() {
     }
   }
 
-  const unread = messages.filter((m) => !m.is_read).length;
-
   if (loading) {
     return (
       <div className="flex justify-center py-20">
@@ -115,67 +112,70 @@ export default function MessagesPage() {
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
       <div className="flex items-center gap-3 mb-2">
-        <Bell className="w-6 h-6 text-fuchsia-600" />
-        <h1 className="text-3xl font-bold text-gray-900">Messages</h1>
-        {unread > 0 && (
-          <span className="px-2 py-0.5 bg-fuchsia-600 text-white text-xs font-bold rounded-full">{unread} new</span>
-        )}
+        <MessageSquare className="w-6 h-6 text-fuchsia-600" />
+        <h1 className="text-3xl font-bold text-gray-900">My Feedback</h1>
       </div>
-      <p className="text-gray-500 mb-8">Messages from the CentenarianOS team. You can reply to any message.</p>
+      <p className="text-gray-500 mb-8">
+        Your submitted feedback and replies from our team. Click any item to view the conversation.
+      </p>
 
-      {messages.length === 0 ? (
+      {items.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
-          <Bell className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p>No messages yet. Check back later!</p>
+          <MessageSquare className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p className="mb-4">You haven&apos;t submitted any feedback yet.</p>
+          <p className="text-sm text-gray-500">
+            Use the <span className="inline-flex items-center gap-1 font-medium text-fuchsia-600"><MessageSquare className="w-3 h-3" /> feedback button</span> in the bottom-right corner to get started.
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
-          {messages.map((m) => {
-            const isOpen = expanded === m.id;
-            const thread = threads[m.id];
+          {items.map((item) => {
+            const cfg = CATEGORY_CONFIG[item.category];
+            const Icon = cfg.icon;
+            const isOpen = expanded === item.id;
+            const thread = threads[item.id];
+            const hasReplies = thread?.replies?.length > 0;
             return (
               <div
-                key={m.id}
-                className={`rounded-2xl border transition ${m.is_read ? 'bg-white border-gray-200' : 'bg-fuchsia-50 border-fuchsia-200'}`}
+                key={item.id}
+                className="bg-white rounded-2xl border border-gray-200 overflow-hidden"
               >
-                {/* Header — click to toggle */}
+                {/* Header */}
                 <button
                   type="button"
-                  className="w-full flex items-start gap-3 p-5 text-left"
-                  onClick={() => openMessage(m.id)}
+                  onClick={() => toggleExpand(item.id)}
+                  className="w-full flex items-start gap-3 p-5 text-left hover:bg-gray-50 transition"
                 >
-                  {!m.is_read && <div className="w-2 h-2 rounded-full bg-fuchsia-600 mt-1.5 shrink-0" />}
-                  {m.is_read && <CheckCircle className="w-4 h-4 text-gray-300 mt-0.5 shrink-0" />}
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 ${cfg.badgeClass}`}>
+                    <Icon className="w-3 h-3" />
+                    {cfg.label}
+                  </span>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-4 mb-0.5">
-                      <p className={`font-semibold truncate ${m.is_read ? 'text-gray-700' : 'text-gray-900'}`}>{m.subject}</p>
-                      <p className="text-xs text-gray-400 shrink-0">{new Date(m.created_at).toLocaleDateString()}</p>
-                    </div>
-                    {!isOpen && (
-                      <p className="text-sm text-gray-500 truncate">
-                        {m.body.startsWith('<') ? m.body.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : m.body.split('\n')[0]}
-                      </p>
-                    )}
+                    <p className="text-sm text-gray-700 line-clamp-2">{item.message}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {hasReplies && (
+                        <span className="ml-2 text-fuchsia-600 font-medium">
+                          · {thread.replies.length} repl{thread.replies.length === 1 ? 'y' : 'ies'}
+                        </span>
+                      )}
+                    </p>
                   </div>
+                  {isOpen
+                    ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0 mt-1" />
+                    : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0 mt-1" />
+                  }
                 </button>
 
-                {/* Expanded content */}
+                {/* Expanded */}
                 {isOpen && (
                   <div className="px-5 pb-5 border-t border-gray-100 pt-4 space-y-4">
-                    {/* Original message body */}
-                    {m.body.startsWith('<') ? (
-                      <div
-                        className="prose prose-sm max-w-none text-gray-700"
-                        dangerouslySetInnerHTML={{ __html: m.body }}
-                      />
-                    ) : (
-                      <div>
-                        {m.body.split('\n').map((line, i) =>
-                          line.trim() === '' ? <br key={i} /> : <p key={i} className="text-gray-700 text-sm mb-2">{line}</p>
-                        )}
-                      </div>
-                    )}
-                    <p className="text-xs text-gray-400">— CentenarianOS Team</p>
+                    {/* Original submission */}
+                    <div>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Your Submission</p>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{item.message}</p>
+                      {item.media_url && <MediaPreview url={item.media_url} />}
+                    </div>
 
                     {/* Thread */}
                     {!thread?.loaded && (
@@ -213,35 +213,36 @@ export default function MessagesPage() {
 
                     {/* Reply form */}
                     <div className="pt-3 border-t border-gray-100">
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Add a Reply</p>
                       <textarea
-                        value={replyText[m.id] ?? ''}
-                        onChange={(e) => setReplyText((prev) => ({ ...prev, [m.id]: e.target.value }))}
+                        value={replyText[item.id] ?? ''}
+                        onChange={(e) => setReplyText((prev) => ({ ...prev, [item.id]: e.target.value }))}
                         rows={3}
-                        placeholder="Reply to the team…"
+                        placeholder="Add more details or respond to the team…"
                         className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent resize-none"
                       />
                       <div className="flex items-center justify-between mt-2 gap-3">
                         <MediaUploader
-                          onUpload={(url) => setReplyMedia((prev) => ({ ...prev, [m.id]: url }))}
-                          onRemove={() => setReplyMedia((prev) => ({ ...prev, [m.id]: null }))}
-                          currentUrl={replyMedia[m.id]}
+                          onUpload={(url) => setReplyMedia((prev) => ({ ...prev, [item.id]: url }))}
+                          onRemove={() => setReplyMedia((prev) => ({ ...prev, [item.id]: null }))}
+                          currentUrl={replyMedia[item.id]}
                           label="Attach"
                         />
                         <div className="flex items-center gap-3">
-                          {sendError[m.id] && (
-                            <p className="text-xs text-red-500">{sendError[m.id]}</p>
+                          {sendError[item.id] && (
+                            <p className="text-xs text-red-500">{sendError[item.id]}</p>
                           )}
                           <button
                             type="button"
-                            onClick={() => sendReply(m.id)}
-                            disabled={sending === m.id || !(replyText[m.id] ?? '').trim()}
+                            onClick={() => sendReply(item.id)}
+                            disabled={sending === item.id || !(replyText[item.id] ?? '').trim()}
                             className="flex items-center gap-2 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-semibold hover:bg-fuchsia-700 transition disabled:opacity-50"
                           >
-                            {sending === m.id
+                            {sending === item.id
                               ? <Loader2 className="w-4 h-4 animate-spin" />
                               : <Send className="w-4 h-4" />
                             }
-                            {sending === m.id ? 'Sending…' : 'Reply'}
+                            {sending === item.id ? 'Sending…' : 'Send Reply'}
                           </button>
                         </div>
                       </div>
