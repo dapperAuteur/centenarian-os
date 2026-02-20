@@ -41,6 +41,7 @@ function ToolbarButton({
 
 export default function RichTextEditor({ value, onChange, placeholder }: Props) {
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit,
       Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-fuchsia-400 underline' } }),

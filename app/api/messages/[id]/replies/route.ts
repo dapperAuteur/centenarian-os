@@ -42,26 +42,28 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const db = getDb();
 
+  const isAdmin = user.email === process.env.ADMIN_EMAIL;
+
   const { data: reply, error } = await db
     .from('message_replies')
     .insert({
       message_id: id,
       sender_id: user.id,
-      is_admin: false,
+      is_admin: isAdmin,
       body: body.trim(),
       media_url: media_url || null,
-      is_read_by_admin: false,
+      is_read_by_admin: isAdmin,
     })
     .select('id')
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Email admin notification
+  // Email admin notification (only when a non-admin user replies)
   try {
     const adminEmail = process.env.ADMIN_EMAIL;
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-    if (adminEmail) {
+    if (adminEmail && !isAdmin) {
       const { data: msg } = await db.from('admin_messages').select('subject').eq('id', id).maybeSingle();
       const resend = getResend();
       await resend.emails.send({

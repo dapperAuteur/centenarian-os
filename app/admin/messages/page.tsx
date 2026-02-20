@@ -413,7 +413,7 @@ export default function AdminMessagesPage() {
                     )}
 
                     {/* Reply form */}
-                    <div className="pt-2 border-t border-gray-800">
+                    <div className="pt-2 border-t border-gray-800 dark-input">
                       <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-3">
                         Reply{m.recipient_scope !== 'user' ? ' (only works for direct messages to specific users)' : ''}
                       </p>

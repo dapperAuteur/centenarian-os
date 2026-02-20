@@ -40,6 +40,7 @@ function MediaPreview({ url }: { url: string }) {
 export default function MessagesPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [threads, setThreads] = useState<Record<string, ThreadState>>({});
   const [replyText, setReplyText] = useState<Record<string, string>>({});
@@ -51,6 +52,10 @@ export default function MessagesPage() {
     fetch('/api/messages')
       .then((r) => r.json())
       .then((d) => { setMessages(d.messages ?? []); setLoading(false); });
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => setIsAdmin(d.isAdmin ?? false))
+      .catch(() => {});
   }, []);
 
   const openMessage = useCallback(async (id: string) => {
@@ -82,9 +87,10 @@ export default function MessagesPage() {
         body: JSON.stringify({ body, media_url: replyMedia[id] || null }),
       });
       if (!r.ok) { const d = await r.json(); throw new Error(d.error ?? 'Failed'); }
+      // Optimistically add — use isAdmin flag for correct attribution
       const newReply: Reply = {
         id: Date.now().toString(),
-        is_admin: false,
+        is_admin: isAdmin,
         body,
         media_url: replyMedia[id] || null,
         created_at: new Date().toISOString(),
@@ -100,6 +106,15 @@ export default function MessagesPage() {
     } finally {
       setSending(null);
     }
+  }
+
+  // Context-aware reply perspective:
+  // Admin viewing: their replies (is_admin=true) are "mine" → right side
+  // User viewing:  their replies (is_admin=false) are "mine" → right side
+  function getReplyMeta(reply: Reply) {
+    const isMine = isAdmin ? reply.is_admin : !reply.is_admin;
+    const label = isMine ? 'You' : (reply.is_admin ? 'CentenarianOS Team' : 'Member');
+    return { isMine, label };
   }
 
   const unread = messages.filter((m) => !m.is_read).length;
@@ -187,27 +202,27 @@ export default function MessagesPage() {
                     {thread?.loaded && thread.replies.length > 0 && (
                       <div className="space-y-3 pt-2 border-t border-gray-100">
                         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Conversation</p>
-                        {thread.replies.map((reply) => (
-                          <div
-                            key={reply.id}
-                            className={`flex ${reply.is_admin ? 'justify-start' : 'justify-end'}`}
-                          >
-                            <div className={`max-w-[80%] rounded-xl px-4 py-3 ${
-                              reply.is_admin
-                                ? 'bg-purple-50 border border-purple-100 text-gray-800'
-                                : 'bg-fuchsia-50 border border-fuchsia-200 text-gray-800'
-                            }`}>
-                              <p className={`text-xs font-semibold mb-1 ${reply.is_admin ? 'text-purple-600' : 'text-fuchsia-600'}`}>
-                                {reply.is_admin ? 'CentenarianOS Team' : 'You'}
-                              </p>
-                              <p className="text-sm whitespace-pre-wrap">{reply.body}</p>
-                              {reply.media_url && <MediaPreview url={reply.media_url} />}
-                              <p className="text-xs text-gray-400 mt-1.5 text-right">
-                                {new Date(reply.created_at).toLocaleString()}
-                              </p>
+                        {thread.replies.map((reply) => {
+                          const { isMine, label } = getReplyMeta(reply);
+                          return (
+                            <div key={reply.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                              <div className={`max-w-[80%] rounded-xl px-4 py-3 ${
+                                isMine
+                                  ? 'bg-fuchsia-50 border border-fuchsia-200 text-gray-800'
+                                  : 'bg-purple-50 border border-purple-100 text-gray-800'
+                              }`}>
+                                <p className={`text-xs font-semibold mb-1 ${isMine ? 'text-fuchsia-600' : 'text-purple-600'}`}>
+                                  {label}
+                                </p>
+                                <p className="text-sm whitespace-pre-wrap">{reply.body}</p>
+                                {reply.media_url && <MediaPreview url={reply.media_url} />}
+                                <p className="text-xs text-gray-400 mt-1.5 text-right">
+                                  {new Date(reply.created_at).toLocaleString()}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
 
@@ -217,7 +232,7 @@ export default function MessagesPage() {
                         value={replyText[m.id] ?? ''}
                         onChange={(e) => setReplyText((prev) => ({ ...prev, [m.id]: e.target.value }))}
                         rows={3}
-                        placeholder="Reply to the team…"
+                        placeholder={isAdmin ? 'Reply as the CentenarianOS team…' : 'Reply to the team…'}
                         className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent resize-none"
                       />
                       <div className="flex items-center justify-between mt-2 gap-3">

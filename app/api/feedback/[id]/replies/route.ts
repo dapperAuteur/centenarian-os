@@ -61,19 +61,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .maybeSingle();
   if (!feedback) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  const isAdmin = user.email === process.env.ADMIN_EMAIL;
+
   const { data: reply, error } = await db
     .from('feedback_replies')
-    .insert({ feedback_id: id, sender_id: user.id, is_admin: false, body: body.trim(), media_url: media_url || null })
+    .insert({ feedback_id: id, sender_id: user.id, is_admin: isAdmin, body: body.trim(), media_url: media_url || null })
     .select('id')
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Notify admin via email
+  // Notify admin via email (only when a non-admin user replies)
   try {
     const adminEmail = process.env.ADMIN_EMAIL;
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-    if (adminEmail) {
+    if (adminEmail && !isAdmin) {
       const resend = getResend();
       await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL ?? 'admin@centenarianos.com',

@@ -314,3 +314,14 @@ textarea::placeholder {
   opacity: 1;     /* override Firefox default partial opacity */
 }
 /* ─── End global input accessibility ──────────────────────────────────────── */
+
+/* ─── Dark-background form controls (admin dark UI) ──────────────────────── */
+/* Overrides the light-mode textarea/input color rule above for dark contexts  */
+.dark-input textarea,
+.dark-input input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]) {
+  color: #e5e7eb; /* gray-200 — readable on gray-800 backgrounds */
+}
+.dark-input textarea::placeholder,
+.dark-input input::placeholder {
+  color: #6b7280; /* gray-500 */
+}
