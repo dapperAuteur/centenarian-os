@@ -123,7 +123,7 @@ export default function AdminLivePage() {
       </div>
 
       {creating && (
-        <form onSubmit={handleCreate} className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6 space-y-4">
+        <form onSubmit={handleCreate} className="dark-input bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6 space-y-4">
           <h2 className="font-semibold text-white mb-2">Create Live Session</h2>
 
           <div>

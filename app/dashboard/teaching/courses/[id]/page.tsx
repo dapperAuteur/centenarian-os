@@ -209,7 +209,7 @@ export default function CourseEditorPage() {
       </div>
 
       {/* Course settings */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
+      <div className="dark-input bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
         <h2 className="font-semibold text-white mb-4">Settings</h2>
         <div className="space-y-4">
           <div>
@@ -353,7 +353,7 @@ export default function CourseEditorPage() {
         </div>
 
         {addingModule && (
-          <div className="flex gap-2 mb-4">
+          <div className="dark-input flex gap-2 mb-4">
             <input
               autoFocus
               type="text"
@@ -407,7 +407,7 @@ export default function CourseEditorPage() {
 
                   {/* Add lesson */}
                   {addingLesson === mod.id ? (
-                    <div className="border-t border-gray-800 p-4 space-y-3">
+                    <div className="dark-input border-t border-gray-800 p-4 space-y-3">
                       <input
                         autoFocus
                         type="text"

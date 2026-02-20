@@ -71,7 +71,7 @@ export default function AdminAcademyPage() {
       </div>
       <p className="text-gray-400 text-sm mb-8">Configure teacher plans and platform fees.</p>
 
-      <div className="space-y-6">
+      <div className="space-y-6 dark-input">
         {/* Teacher fee */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
           <div className="flex items-center gap-2 mb-4">

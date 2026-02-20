@@ -61,7 +61,7 @@ export default function NewCoursePage() {
 
       <h1 className="text-2xl font-bold text-white mb-8">New Course</h1>
 
-      <div className="space-y-6">
+      <div className="space-y-6 dark-input">
         {/* Title */}
         <div>
           <label className="block text-sm text-gray-300 mb-2">Course Title *</label>

@@ -130,7 +130,7 @@ export async function DELETE(request: NextRequest) {
 }
 
 async function notifyMembers(
-  db: ReturnType<typeof createServiceClient>,
+  db: ReturnType<typeof getDb>,
   session: { title: string; description: string | null; scheduled_at: string | null },
 ) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
