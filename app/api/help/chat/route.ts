@@ -16,22 +16,20 @@ function getDb() {
   );
 }
 
-const EMBEDDING_MODEL = 'text-embedding-004';
+// embedding-001 is universally available on all Google AI Studio keys (768-dim output)
+const EMBEDDING_MODEL = 'embedding-001';
 const CHAT_MODEL = 'gemini-2.5-flash-preview-09-2025';
 
 async function getEmbedding(text: string): Promise<number[]> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
   if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY not set');
 
-  // Embedding models are on the stable v1 endpoint, not v1beta
-  const url = `https://generativelanguage.googleapis.com/v1/models/${EMBEDDING_MODEL}:embedContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent?key=${apiKey}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: `models/${EMBEDDING_MODEL}`,
       content: { parts: [{ text }] },
-      task_type: 'SEMANTIC_SIMILARITY',
     }),
   });
   if (!res.ok) throw new Error(`Embedding error: ${await res.text()}`);
