@@ -4,7 +4,7 @@
 // Admin: Academy overview and platform settings (teacher fee, plan pricing).
 
 import { useEffect, useState } from 'react';
-import { GraduationCap, Percent, CreditCard, Save, Loader2 } from 'lucide-react';
+import { GraduationCap, Percent, CreditCard, Save, Loader2, BookOpen, RefreshCw, CheckCircle } from 'lucide-react';
 
 interface Settings {
   teacher_fee_percent: string;
@@ -25,6 +25,9 @@ export default function AdminAcademyPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
+  const [ingestStatus, setIngestStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [ingestResult, setIngestResult] = useState('');
+
   useEffect(() => {
     fetch('/api/admin/academy/settings')
       .then((r) => r.json())
@@ -34,6 +37,22 @@ export default function AdminAcademyPage() {
       })
       .catch(() => setLoading(false));
   }, []);
+
+  async function handleIngest() {
+    setIngestStatus('loading');
+    setIngestResult('');
+    try {
+      const r = await fetch('/api/admin/help/ingest', { method: 'POST' });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error ?? 'Ingest failed');
+      const msg = `Ingested ${d.succeeded} article${d.succeeded !== 1 ? 's' : ''}${d.failed ? ` (${d.failed.length} failed)` : ''}.`;
+      setIngestResult(msg);
+      setIngestStatus('done');
+    } catch (e) {
+      setIngestResult(e instanceof Error ? e.message : 'Ingest failed');
+      setIngestStatus('error');
+    }
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -129,6 +148,38 @@ export default function AdminAcademyPage() {
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-fuchsia-500 font-mono"
               />
             </div>
+          </div>
+        </div>
+
+        {/* Help RAG — ingest articles */}
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <div className="flex items-center gap-2 mb-3">
+            <BookOpen className="w-4 h-4 text-fuchsia-400" />
+            <h2 className="font-semibold text-white">In-App Help Articles</h2>
+          </div>
+          <p className="text-gray-400 text-xs mb-4">
+            Embed tutorial content into the RAG help system. Run this once after initial setup and
+            after any tutorial doc updates. Requires <code className="bg-gray-700 px-1 rounded text-gray-200">GOOGLE_GEMINI_API_KEY</code>.
+          </p>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleIngest}
+              disabled={ingestStatus === 'loading'}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-600 transition disabled:opacity-50"
+            >
+              {ingestStatus === 'loading'
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : ingestStatus === 'done'
+                ? <CheckCircle className="w-4 h-4 text-green-400" />
+                : <RefreshCw className="w-4 h-4" />}
+              {ingestStatus === 'loading' ? 'Ingesting…' : 'Ingest Help Articles'}
+            </button>
+            {ingestResult && (
+              <p className={`text-xs ${ingestStatus === 'error' ? 'text-red-400' : 'text-green-400'}`}>
+                {ingestResult}
+              </p>
+            )}
           </div>
         </div>
 

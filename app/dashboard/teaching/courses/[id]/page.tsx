@@ -9,7 +9,7 @@ import Link from 'next/link';
 import {
   ChevronLeft, Plus, Loader2, Save, Globe, EyeOff, Trash2,
   GitBranch, Sparkles, Play, FileText, Volume2, Presentation, GripVertical,
-  CheckCircle,
+  CheckCircle, ClipboardList,
 } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
 
@@ -198,6 +198,12 @@ export default function CourseEditorPage() {
             {publishingToggle ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : course.is_published ? <EyeOff className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
             {course.is_published ? 'Unpublish' : 'Publish'}
           </button>
+          <Link
+            href={`/dashboard/teaching/courses/${courseId}/assignments`}
+            className="flex items-center gap-1.5 px-3 py-2 bg-gray-800 text-gray-300 rounded-xl text-sm hover:bg-gray-700 transition"
+          >
+            <ClipboardList className="w-3.5 h-3.5" /> Assignments
+          </Link>
           <Link
             href={`/academy/${courseId}`}
             target="_blank"
