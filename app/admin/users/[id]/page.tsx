@@ -12,6 +12,9 @@ interface UserDetail {
     id: string; username: string; display_name: string | null;
     subscription_status: string; shirt_promo_code: string | null;
     stripe_customer_id: string | null; stripe_subscription_id: string | null;
+    cancel_at_period_end: boolean | null; cancel_at: string | null;
+    cancellation_feedback: string | null; cancellation_comment: string | null;
+    subscription_expires_at: string | null;
     created_at: string;
   };
   email: string | null;
@@ -124,6 +127,29 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
           <p className="mt-3 text-xs text-gray-600">Stripe customer: {profile.stripe_customer_id}</p>
         )}
       </div>
+
+      {/* Cancellation details — only shown when present */}
+      {(profile.cancel_at_period_end || profile.cancellation_feedback || profile.cancellation_comment) && (
+        <div className="bg-amber-900/20 border border-amber-700/40 rounded-xl p-5 mb-4">
+          <h2 className="font-semibold text-amber-300 mb-3">Cancellation Details</h2>
+          {profile.cancel_at_period_end && profile.cancel_at && (
+            <p className="text-sm text-amber-200 mb-2">
+              <span className="font-medium">Cancels on:</span>{' '}
+              {new Date(profile.cancel_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            </p>
+          )}
+          {profile.cancellation_feedback && (
+            <p className="text-sm text-amber-200 mb-1">
+              <span className="font-medium">Reason:</span> {profile.cancellation_feedback}
+            </p>
+          )}
+          {profile.cancellation_comment && (
+            <p className="text-sm text-amber-200">
+              <span className="font-medium">Comment:</span> {profile.cancellation_comment}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Promo Code */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-6">

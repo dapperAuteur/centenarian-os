@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
         customer: customerId,
         mode: 'subscription',
         line_items: [{ price: process.env.STRIPE_MONTHLY_PRICE_ID!, quantity: 1 }],
-        success_url: `${baseUrl}/dashboard/billing?success=true`,
+        success_url: `${baseUrl}/dashboard/billing?success=true&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/pricing`,
         metadata: { supabase_user_id: user.id, plan: 'monthly' },
       })
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         customer: customerId,
         mode: 'payment',
         line_items: [{ price: process.env.STRIPE_LIFETIME_PRICE_ID!, quantity: 1 }],
-        success_url: `${baseUrl}/dashboard/billing?success=true`,
+        success_url: `${baseUrl}/dashboard/billing?success=true&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/pricing`,
         metadata: { supabase_user_id: user.id, plan: 'lifetime' },
       }));

@@ -27,8 +27,10 @@ import {
   Zap,
   Bell,
   Shield,
+  MessageCircle,
 } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
+import FeedbackModal from '@/components/FeedbackModal';
 
 function useUnreadCount() {
   const [unread, setUnread] = useState(0);
@@ -51,6 +53,8 @@ const FREE_ROUTE_PREFIXES = [
   '/dashboard/blog',
   '/dashboard/recipes',
   '/dashboard/billing',
+  '/dashboard/messages',
+  '/dashboard/feedback',
 ];
 
 function isFreeRoute(pathname: string) {
@@ -68,6 +72,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const supabase = createClient();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const isPaid = subStatus === 'monthly' || subStatus === 'lifetime';
   const [isAdmin, setIsAdmin] = useState(false);
@@ -123,8 +128,8 @@ export default function DashboardLayout({
               </Link>
             </div>
 
-            {/* Desktop Navigation - Hidden on mobile */}
-            <div className="hidden lg:flex items-center space-x-1">
+            {/* Desktop Navigation - Hidden on mobile/tablet */}
+            <div className="hidden xl:flex items-center space-x-1">
               <Link
                 href="/dashboard/roadmap"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
@@ -158,35 +163,11 @@ export default function DashboardLayout({
                 <LockBadge />
               </Link>
               <Link
-                href="/dashboard/engine/focus"
-                className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
-              >
-                <Timer className="w-4 h-4 mr-2" />
-                Focus Timer
-                <LockBadge />
-              </Link>
-              <Link
-                href="/dashboard/engine/sessions"
-                className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
-              >
-                <History className="w-4 h-4 mr-2" />
-                History
-                <LockBadge />
-              </Link>
-              <Link
                 href="/dashboard/analytics"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
                 <ChartNetwork className="w-4 h-4 mr-2" />
                 Analytics
-                <LockBadge />
-              </Link>
-              <Link
-                href="/dashboard/engine/analytics"
-                className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
-              >
-                <BarChart2 className="w-4 h-4 mr-2" />
-                Focus Analytics
                 <LockBadge />
               </Link>
               <Link
@@ -238,6 +219,13 @@ export default function DashboardLayout({
                   )}
                 </Link>
                 <Link
+                  href="/dashboard/feedback"
+                  className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                  title="My Feedback"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                </Link>
+                <Link
                   href="/dashboard/billing"
                   className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                 >
@@ -255,8 +243,8 @@ export default function DashboardLayout({
               </div>
             </div>
 
-            {/* Mobile Menu Button */}
-            <div className="flex lg:hidden items-center gap-2">
+            {/* Mobile/Tablet Menu Button */}
+            <div className="flex xl:hidden items-center gap-2">
               {!subLoading && !hasAccess && (
                 <Link
                   href="/pricing"
@@ -276,9 +264,9 @@ export default function DashboardLayout({
             </div>
           </div>
 
-          {/* Mobile Menu Dropdown */}
+          {/* Mobile/Tablet Menu Dropdown */}
           {mobileMenuOpen && (
-            <div className="lg:hidden py-4 space-y-2">
+            <div className="xl:hidden py-4 space-y-2">
               <Link
                 href="/dashboard/roadmap"
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
@@ -435,6 +423,16 @@ export default function DashboardLayout({
                   </div>
                 </Link>
                 <Link
+                  href="/dashboard/feedback"
+                  className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div className="flex items-center">
+                    <MessageCircle className="w-4 h-4 mr-3" />
+                    My Feedback
+                  </div>
+                </Link>
+                <Link
                   href="/dashboard/billing"
                   className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
                   onClick={() => setMobileMenuOpen(false)}
@@ -464,6 +462,17 @@ export default function DashboardLayout({
       <main className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {children}
       </main>
+
+      {/* Floating feedback button */}
+      <button
+        onClick={() => setFeedbackOpen(true)}
+        title="Share feedback"
+        className="fixed bottom-6 right-6 z-40 bg-fuchsia-600 text-white rounded-full p-3.5 shadow-lg hover:bg-fuchsia-700 transition-colors"
+        aria-label="Share feedback"
+      >
+        <MessageCircle className="w-5 h-5" />
+      </button>
+      <FeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </div>
   );
 }

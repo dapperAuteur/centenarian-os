@@ -42,23 +42,41 @@ export async function POST(request: NextRequest) {
       if (!userId) break;
 
       if (session.mode === 'subscription' && plan === 'monthly') {
-        await supabase
+        // Expand subscription to get current_period_end for renewal date.
+        // In Stripe API 2024-09-30+ (acacia/clover), this field moved to SubscriptionItem.
+        let subscriptionExpiresAt: string | null = null;
+        try {
+          const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const s = sub as any;
+          const rawEnd: number | undefined = s.items?.data?.[0]?.current_period_end ?? s.current_period_end;
+          if (rawEnd && typeof rawEnd === 'number') {
+            subscriptionExpiresAt = new Date(rawEnd * 1000).toISOString();
+          }
+        } catch (err) {
+          console.error('[webhook] Failed to retrieve subscription for period_end:', err);
+        }
+        const { error } = await supabase
           .from('profiles')
           .update({
             subscription_status: 'monthly',
             stripe_subscription_id: session.subscription as string,
+            subscription_expires_at: subscriptionExpiresAt,
+            cancel_at_period_end: false,
+            cancel_at: null,
           })
           .eq('id', userId);
+        if (error) console.error('[webhook] Failed to update monthly status for user', userId, error);
       } else if (session.mode === 'payment' && plan === 'lifetime') {
         let promoCode: string | null = null;
         try {
           promoCode = await createShopifyPromoCode();
         } catch (err) {
-          console.error('Failed to create Shopify promo code for user', userId, err);
+          console.error('[webhook] Failed to create Shopify promo code for user', userId, err);
           // Do not throw — purchase is complete; code will show as pending on billing page
         }
 
-        await supabase
+        const { error } = await supabase
           .from('profiles')
           .update({
             subscription_status: 'lifetime',
@@ -67,6 +85,7 @@ export async function POST(request: NextRequest) {
             subscription_expires_at: null,
           })
           .eq('id', userId);
+        if (error) console.error('[webhook] Failed to update lifetime status for user', userId, error);
       }
       break;
     }
@@ -83,7 +102,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (profile && profile.subscription_status !== 'lifetime') {
-        await supabase
+        const { error } = await supabase
           .from('profiles')
           .update({
             subscription_status: 'free',
@@ -91,7 +110,31 @@ export async function POST(request: NextRequest) {
             subscription_expires_at: null,
           })
           .eq('stripe_customer_id', customerId);
+        if (error) console.error('[webhook] Failed to downgrade subscription for customer', customerId, error);
       }
+      break;
+    }
+
+    case 'customer.subscription.updated': {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sub = event.data.object as any;
+      const userId = sub.metadata?.supabase_user_id;
+      if (!userId) break;
+
+      // current_period_end moved to SubscriptionItem in Stripe API 2024-09-30+
+      const rawEnd: number | undefined = sub.items?.data?.[0]?.current_period_end ?? sub.current_period_end;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          cancel_at_period_end: sub.cancel_at_period_end ?? false,
+          cancel_at: sub.cancel_at ? new Date(sub.cancel_at * 1000).toISOString() : null,
+          cancellation_feedback: sub.cancellation_details?.feedback ?? null,
+          cancellation_comment: sub.cancellation_details?.comment ?? null,
+          subscription_expires_at: (rawEnd && typeof rawEnd === 'number') ? new Date(rawEnd * 1000).toISOString() : null,
+        })
+        .eq('id', userId);
+      if (error) console.error('[webhook] subscription.updated DB update failed for user', userId, error);
       break;
     }
 
