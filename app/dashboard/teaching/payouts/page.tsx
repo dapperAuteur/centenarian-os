@@ -56,7 +56,7 @@ function PayoutsContent() {
 
       {refresh && (
         <div className="bg-amber-900/20 border border-amber-700/50 rounded-xl p-4 mb-6 text-amber-300 text-sm">
-          Onboarding wasn't completed. Please try again to finish setting up your payout account.
+          Onboarding was not completed. Please try again to finish setting up your payout account.
         </div>
       )}
 

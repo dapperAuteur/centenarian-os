@@ -83,10 +83,16 @@ export default function AdminLivePage() {
     setSessions((prev) => prev.filter((s) => s.id !== id));
   }
 
-  async function toggleLive(session: LiveSession) {
-    // TODO: add PATCH to live route for toggling is_live
-    // For now just notify user
-    alert('To toggle live status, update the session in your database directly. A PATCH endpoint will be added soon.');
+  async function toggleLive(s: LiveSession) {
+    const res = await fetch('/api/live', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: s.id, is_live: !s.is_live }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setSessions((prev) => prev.map((item) => item.id === updated.id ? updated : item));
+    }
   }
 
   if (loading) {

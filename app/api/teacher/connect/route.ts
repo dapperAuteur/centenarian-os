@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
   );
 
   // Get or create Stripe Connect account
-  let { data: teacherProfile } = await db
+  const { data: teacherProfile } = await db
     .from('teacher_profiles')
     .select('stripe_connect_account_id, stripe_connect_onboarded')
     .eq('user_id', user.id)

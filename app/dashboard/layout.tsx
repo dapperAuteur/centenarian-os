@@ -523,7 +523,8 @@ export default function DashboardLayout({
       </nav>
 
       {/* Main Content - Mobile First Spacing */}
-      <main className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+      {/* Teaching routes get zero padding so their dark layout fills edge-to-edge */}
+      <main className={pathname.startsWith('/dashboard/teaching') ? '' : 'px-4 sm:px-6 lg:px-8 py-4 sm:py-6'}>
         {children}
       </main>
 
