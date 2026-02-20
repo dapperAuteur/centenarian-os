@@ -41,7 +41,22 @@ export async function POST(request: NextRequest) {
 
       if (!userId) break;
 
-      if (session.mode === 'subscription' && plan === 'monthly') {
+      if (session.mode === 'subscription' && plan === 'teacher') {
+        // Activate teacher role and upsert teacher_profiles
+        const { error: roleErr } = await supabase
+          .from('profiles')
+          .update({ role: 'teacher' })
+          .eq('id', userId);
+        if (roleErr) console.error('[webhook] Failed to set teacher role for user', userId, roleErr);
+
+        const { error: tpErr } = await supabase
+          .from('teacher_profiles')
+          .upsert({
+            user_id: userId,
+            stripe_subscription_id: session.subscription as string,
+          }, { onConflict: 'user_id' });
+        if (tpErr) console.error('[webhook] Failed to upsert teacher_profile for user', userId, tpErr);
+      } else if (session.mode === 'subscription' && plan === 'monthly') {
         // Expand subscription to get current_period_end for renewal date.
         // In Stripe API 2024-09-30+ (acacia/clover), this field moved to SubscriptionItem.
         let subscriptionExpiresAt: string | null = null;
@@ -93,6 +108,22 @@ export async function POST(request: NextRequest) {
     case 'customer.subscription.deleted': {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = subscription.customer as string;
+
+      // Check if this is a teacher subscription cancellation
+      const isTeacherSub = await supabase
+        .from('teacher_profiles')
+        .select('user_id')
+        .eq('stripe_subscription_id', subscription.id)
+        .maybeSingle();
+
+      if (isTeacherSub.data) {
+        // Revoke teacher role
+        await supabase
+          .from('profiles')
+          .update({ role: 'member' })
+          .eq('id', isTeacherSub.data.user_id);
+        break;
+      }
 
       // Downgrade to free unless they have a lifetime membership
       const { data: profile } = await supabase

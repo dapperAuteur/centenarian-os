@@ -19,6 +19,8 @@ interface FeedbackEntry {
   is_read_by_admin: boolean;
   created_at: string;
   user_id: string;
+  email?: string | null;
+  profiles?: { username: string; display_name?: string | null } | null;
 }
 
 interface Reply {
@@ -27,6 +29,8 @@ interface Reply {
   body: string;
   media_url?: string | null;
   created_at: string;
+  sender_username?: string | null;
+  sender_display_name?: string | null;
 }
 
 interface ThreadState {
@@ -202,7 +206,13 @@ export default function AdminFeedbackPage() {
                     {cfg.label}
                   </span>
 
-                  <p className="flex-1 text-gray-300 text-sm truncate">{item.message}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-gray-300 text-sm truncate">{item.message}</p>
+                    <p className="text-gray-600 text-xs mt-0.5 truncate">
+                      {item.profiles?.username ? `@${item.profiles.username}` : 'Unknown user'}
+                      {item.email && ` · ${item.email}`}
+                    </p>
+                  </div>
 
                   <span className="text-gray-600 text-xs whitespace-nowrap shrink-0">
                     {new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -223,7 +233,13 @@ export default function AdminFeedbackPage() {
                   <div className="border-t border-gray-800 px-5 py-4 space-y-4">
                     {/* Original message */}
                     <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-2">Original Submission</p>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Original Submission</p>
+                        <p className="text-xs text-gray-500">
+                          {item.profiles?.username ? `@${item.profiles.username}` : 'Unknown'}
+                          {item.email && ` (${item.email})`}
+                        </p>
+                      </div>
                       <p className="text-gray-200 text-sm whitespace-pre-wrap">{item.message}</p>
                       {item.media_url && <ImageLightbox url={item.media_url} />}
                     </div>
@@ -249,7 +265,7 @@ export default function AdminFeedbackPage() {
                                 : 'bg-gray-800 border border-gray-700 text-gray-200'
                             }`}>
                               <p className={`text-xs font-semibold mb-1 ${reply.is_admin ? 'text-fuchsia-400' : 'text-gray-400'}`}>
-                                {reply.is_admin ? 'You (Admin)' : 'User'}
+                                {reply.is_admin ? 'You (Admin)' : (reply.sender_display_name ?? reply.sender_username ?? 'User')}
                               </p>
                               <p className="text-sm whitespace-pre-wrap">{reply.body}</p>
                               {reply.media_url && <ImageLightbox url={reply.media_url} />}

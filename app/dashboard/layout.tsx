@@ -28,6 +28,9 @@ import {
   Bell,
   Shield,
   MessageCircle,
+  GraduationCap,
+  Radio,
+  Presentation,
 } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import FeedbackModal from '@/components/FeedbackModal';
@@ -55,6 +58,7 @@ const FREE_ROUTE_PREFIXES = [
   '/dashboard/billing',
   '/dashboard/messages',
   '/dashboard/feedback',
+  '/dashboard/teaching',
 ];
 
 function isFreeRoute(pathname: string) {
@@ -76,6 +80,7 @@ export default function DashboardLayout({
 
   const isPaid = subStatus === 'monthly' || subStatus === 'lifetime';
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isTeacher, setIsTeacher] = useState(false);
   const [adminLoading, setAdminLoading] = useState(true);
   const hasAccess = isPaid || isAdmin;
   const unreadMessages = useUnreadCount();
@@ -83,7 +88,11 @@ export default function DashboardLayout({
   useEffect(() => {
     fetch('/api/auth/me')
       .then((r) => r.json())
-      .then((d) => { setIsAdmin(d.isAdmin ?? false); setAdminLoading(false); })
+      .then((d) => {
+        setIsAdmin(d.isAdmin ?? false);
+        setIsTeacher(d.isTeacher ?? false);
+        setAdminLoading(false);
+      })
       .catch(() => setAdminLoading(false));
   }, []);
 
@@ -184,6 +193,29 @@ export default function DashboardLayout({
                 <ChefHat className="w-4 h-4 mr-2" />
                 Recipes
               </Link>
+              <Link
+                href="/academy"
+                className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+              >
+                <GraduationCap className="w-4 h-4 mr-2" />
+                Academy
+              </Link>
+              <Link
+                href="/live"
+                className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+              >
+                <Radio className="w-4 h-4 mr-2" />
+                Live
+              </Link>
+              {isTeacher && (
+                <Link
+                  href="/dashboard/teaching"
+                  className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition"
+                >
+                  <Presentation className="w-4 h-4 mr-2" />
+                  Teaching
+                </Link>
+              )}
 
               <div className="flex items-center space-x-2 pl-4 border-l border-gray-200">
                 {/* Admin link */}
@@ -391,6 +423,38 @@ export default function DashboardLayout({
                   Recipes
                 </div>
               </Link>
+              <Link
+                href="/academy"
+                className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <div className="flex items-center">
+                  <GraduationCap className="w-4 h-4 mr-3" />
+                  Academy
+                </div>
+              </Link>
+              <Link
+                href="/live"
+                className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <div className="flex items-center">
+                  <Radio className="w-4 h-4 mr-3" />
+                  Live
+                </div>
+              </Link>
+              {isTeacher && (
+                <Link
+                  href="/dashboard/teaching"
+                  className="block px-3 py-2 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div className="flex items-center">
+                    <Presentation className="w-4 h-4 mr-3" />
+                    Teaching
+                  </div>
+                </Link>
+              )}
 
               <div className="pt-4 border-t border-gray-200 mt-4 space-y-2">
                 {isAdmin && (

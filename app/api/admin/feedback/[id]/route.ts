@@ -46,7 +46,21 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   // Mark as read by admin
   await db.from('user_feedback').update({ is_read_by_admin: true }).eq('id', id);
 
-  return NextResponse.json({ feedback, replies: replies ?? [] });
+  // Enrich replies with sender profile (sender_id === profiles.id)
+  const senderIds = [...new Set((replies ?? []).map((r: { sender_id: string }) => r.sender_id).filter(Boolean))];
+  const { data: profileRows } = senderIds.length > 0
+    ? await db.from('profiles').select('id, username, display_name').in('id', senderIds)
+    : { data: [] };
+  const profileMap = Object.fromEntries(
+    (profileRows ?? []).map((p: { id: string; username: string | null; display_name: string | null }) => [p.id, p])
+  );
+  const enrichedReplies = (replies ?? []).map((r: { sender_id: string }) => ({
+    ...r,
+    sender_username: (profileMap[r.sender_id] as { username?: string | null })?.username ?? null,
+    sender_display_name: (profileMap[r.sender_id] as { display_name?: string | null })?.display_name ?? null,
+  }));
+
+  return NextResponse.json({ feedback, replies: enrichedReplies });
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -59,7 +73,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const db = getDb();
 
-  // Get feedback item + user email for notification
   const { data: feedback } = await db
     .from('user_feedback')
     .select('id, user_id, category, message')
