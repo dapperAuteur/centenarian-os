@@ -36,7 +36,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   let query = db
     .from('assignment_submissions')
-    .select('id, student_id, content, media_url, submitted_at, grade, teacher_feedback, profiles(username, display_name)')
+    .select('id, student_id, content, media_urls, submitted_at, status, grade, teacher_feedback, profiles(username, display_name)')
     .eq('assignment_id', assignmentId);
 
   if (!isTeacher) {
@@ -55,7 +55,11 @@ export async function POST(request: NextRequest, { params }: Params) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const db = getDb();
-  const { content, media_url } = await request.json();
+  const { content, media_urls, status = 'submitted' } = await request.json();
+
+  if (status !== 'draft' && status !== 'submitted') {
+    return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+  }
 
   const { data, error } = await db
     .from('assignment_submissions')
@@ -63,8 +67,9 @@ export async function POST(request: NextRequest, { params }: Params) {
       assignment_id: assignmentId,
       student_id: user.id,
       content: content ?? null,
-      media_url: media_url ?? null,
-      submitted_at: new Date().toISOString(),
+      media_urls: media_urls ?? [],
+      status,
+      submitted_at: status === 'submitted' ? new Date().toISOString() : null,
     }, { onConflict: 'assignment_id,student_id' })
     .select()
     .single();

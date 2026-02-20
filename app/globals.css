@@ -318,6 +318,7 @@ textarea::placeholder {
 /* ─── Dark-background form controls (admin dark UI) ──────────────────────── */
 /* Overrides the light-mode textarea/input color rule above for dark contexts  */
 .dark-input textarea,
+.dark-input select,
 .dark-input input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]) {
   color: #e5e7eb; /* gray-200 — readable on gray-800 backgrounds */
 }

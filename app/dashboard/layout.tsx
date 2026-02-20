@@ -33,7 +33,7 @@ import {
   Presentation,
 } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
-import FeedbackModal from '@/components/FeedbackModal';
+import FloatingActionsMenu from '@/components/ui/FloatingActionsMenu';
 
 function useUnreadCount() {
   const [unread, setUnread] = useState(0);
@@ -76,7 +76,6 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const supabase = createClient();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const isPaid = subStatus === 'monthly' || subStatus === 'lifetime';
   const [isAdmin, setIsAdmin] = useState(false);
@@ -528,16 +527,7 @@ export default function DashboardLayout({
         {children}
       </main>
 
-      {/* Floating feedback button */}
-      <button
-        onClick={() => setFeedbackOpen(true)}
-        title="Share feedback"
-        className="fixed bottom-6 right-6 z-40 bg-fuchsia-600 text-white rounded-full p-3.5 shadow-lg hover:bg-fuchsia-700 transition-colors"
-        aria-label="Share feedback"
-      >
-        <MessageCircle className="w-5 h-5" />
-      </button>
-      <FeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+      <FloatingActionsMenu />
     </div>
   );
 }

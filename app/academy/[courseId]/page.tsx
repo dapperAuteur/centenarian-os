@@ -8,7 +8,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import {
-  BookOpen, Play, Lock, CheckCircle, Clock, Loader2, ArrowRight, Share2, GitBranch,
+  BookOpen, Play, Lock, CheckCircle, Clock, Loader2, ArrowRight, Share2, GitBranch, ClipboardList,
 } from 'lucide-react';
 
 interface Lesson {
@@ -26,6 +26,12 @@ interface Module {
   title: string;
   order: number;
   lessons: Lesson[];
+}
+
+interface Assignment {
+  id: string;
+  title: string;
+  due_date: string | null;
 }
 
 interface Course {
@@ -56,6 +62,7 @@ function CourseDetailContent() {
   const justEnrolled = searchParams.get('enrolled') === 'true';
 
   const [course, setCourse] = useState<Course | null>(null);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
   const [enrollError, setEnrollError] = useState('');
@@ -66,6 +73,13 @@ function CourseDetailContent() {
       .then((d) => { setCourse(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, [courseId, justEnrolled]);
+
+  useEffect(() => {
+    fetch(`/api/academy/courses/${courseId}/assignments`)
+      .then((r) => r.json())
+      .then((d) => setAssignments(Array.isArray(d) ? d : []))
+      .catch(() => {});
+  }, [courseId]);
 
   async function handleEnroll() {
     if (!course) return;
@@ -187,6 +201,34 @@ function CourseDetailContent() {
                 </div>
               ))}
             </div>
+
+            {/* Assignments — visible to enrolled students */}
+            {course.enrolled && assignments.length > 0 && (
+              <div className="mt-8">
+                <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <ClipboardList className="w-5 h-5 text-fuchsia-400" /> Assignments
+                </h2>
+                <div className="space-y-2">
+                  {assignments.map((a) => (
+                    <Link
+                      key={a.id}
+                      href={`/academy/${courseId}/assignments/${a.id}`}
+                      className="flex items-center gap-3 bg-gray-900 border border-gray-800 rounded-xl px-5 py-3.5 hover:border-fuchsia-700/50 transition group"
+                    >
+                      <ClipboardList className="w-4 h-4 text-fuchsia-400 shrink-0" />
+                      <span className="flex-1 text-sm text-gray-200 group-hover:text-white">{a.title}</span>
+                      {a.due_date && (
+                        <span className="text-xs text-gray-500 flex items-center gap-1 shrink-0">
+                          <Clock className="w-3 h-3" />
+                          {new Date(a.due_date).toLocaleDateString()}
+                        </span>
+                      )}
+                      <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-fuchsia-400 transition shrink-0" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right: Enrollment card */}
