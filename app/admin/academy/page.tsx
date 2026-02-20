@@ -45,9 +45,12 @@ export default function AdminAcademyPage() {
       const r = await fetch('/api/admin/help/ingest', { method: 'POST' });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error ?? 'Ingest failed');
-      const msg = `Ingested ${d.succeeded} article${d.succeeded !== 1 ? 's' : ''}${d.failed ? ` (${d.failed.length} failed)` : ''}.`;
+      const firstErr = d.failed?.[0]?.error ?? '';
+      const msg = d.succeeded === 0 && d.failed?.length
+        ? `All ${d.failed.length} articles failed. First error: ${firstErr}`
+        : `Ingested ${d.succeeded} article${d.succeeded !== 1 ? 's' : ''}${d.failed ? ` (${d.failed.length} failed — first: ${firstErr})` : ''}.`;
       setIngestResult(msg);
-      setIngestStatus('done');
+      setIngestStatus(d.succeeded === 0 ? 'error' : 'done');
     } catch (e) {
       setIngestResult(e instanceof Error ? e.message : 'Ingest failed');
       setIngestStatus('error');

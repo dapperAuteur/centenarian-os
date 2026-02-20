@@ -47,6 +47,25 @@ export async function POST(_req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
+  // Preflight: validate API key exists and the Gemini API is reachable
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: 'GOOGLE_GEMINI_API_KEY is not set in environment variables.' },
+      { status: 500 },
+    );
+  }
+
+  // Quick ping to verify the key works before processing all articles
+  try {
+    await getEmbedding('test');
+  } catch (e) {
+    return NextResponse.json(
+      { error: `Gemini API key check failed: ${e instanceof Error ? e.message : String(e)}` },
+      { status: 500 },
+    );
+  }
+
   const db = getDb();
 
   // Clear existing articles before re-ingesting
@@ -58,11 +77,14 @@ export async function POST(_req: NextRequest) {
     const text = `${article.title}\n\n${article.content}`;
     try {
       const embedding = await getEmbedding(text);
+      if (!embedding.length) throw new Error('Gemini returned an empty embedding vector.');
+
+      // pgvector expects the array formatted as a bracketed string e.g. "[0.1,0.2,...]"
       const { error } = await db.from('help_articles').insert({
         title: article.title,
         content: article.content,
         role: article.role,
-        embedding,
+        embedding: `[${embedding.join(',')}]`,
       });
       if (error) throw new Error(error.message);
       results.push({ title: article.title, ok: true });

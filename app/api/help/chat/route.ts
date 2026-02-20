@@ -78,8 +78,9 @@ export async function POST(request: NextRequest) {
   }
 
   // 2. Retrieve top-5 matching articles
+  // pgvector expects the vector as a bracketed string "[0.1,0.2,...]"
   const { data: matches, error: matchError } = await db.rpc('match_help_articles', {
-    query_embedding: queryEmbedding,
+    query_embedding: `[${queryEmbedding.join(',')}]`,
     match_count: 5,
     role_filter: role ?? null,
   });
