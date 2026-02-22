@@ -51,7 +51,7 @@ function FilePreview({ file, onRemove }: { file: SubmissionFile; onRemove: () =>
   return (
     <div className="flex items-start gap-3 bg-gray-800 rounded-xl p-3">
       {isImg ? (
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        // eslint-disable-next-line @next/next/no-img-element
         <img src={file.url} alt={file.name} className="w-14 h-14 object-cover rounded-lg shrink-0" />
       ) : (
         <div className="w-14 h-14 bg-gray-700 rounded-lg flex items-center justify-center shrink-0">
