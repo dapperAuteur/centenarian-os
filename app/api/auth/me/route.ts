@@ -13,12 +13,12 @@ export async function GET() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, username')
     .eq('id', user.id)
     .maybeSingle();
 
   const role = isAdmin ? 'admin' : (profile?.role ?? 'member');
   const isTeacher = role === 'teacher' || isAdmin;
 
-  return NextResponse.json({ isAdmin, isTeacher, role });
+  return NextResponse.json({ isAdmin, isTeacher, role, username: profile?.username ?? null, userId: user.id });
 }

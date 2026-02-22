@@ -62,7 +62,7 @@ export default async function PublicRecipePage({ params }: Props) {
     const media = ((recipe as { recipe_media?: RecipeMedia[] }).recipe_media || [])
       .sort((a, b) => a.sort_order - b.sort_order);
 
-    const { recipeUrl, email, linkedin } = buildRecipeShareUrls(r, p.username);
+    const { recipeUrl, email, linkedin, facebook } = buildRecipeShareUrls(r, p.username);
 
     // Check like/save state for authenticated user
     let isLiked = false;
@@ -233,6 +233,7 @@ export default async function PublicRecipePage({ params }: Props) {
             recipeId={r.id}
             emailUrl={email}
             linkedinUrl={linkedin}
+            facebookUrl={facebook}
           />
         </div>
 

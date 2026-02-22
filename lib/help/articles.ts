@@ -126,39 +126,6 @@ export const HELP_ARTICLES: HelpArticle[] = [
     content: `Start with a free preview lesson to show potential students your teaching style. Use CYOA mode for exploratory topics like nutrition, mindset, and lifestyle where non-linear paths make sense. Keep video lessons under 15 minutes for higher completion rates. Write detailed assignment instructions — students produce better work when expectations are clear. Respond to feedback threads within 48 hours to improve student satisfaction and retention.`,
   },
 
-  // ─── ADMIN ───────────────────────────────────────────────────────────────────
-
-  {
-    role: 'admin',
-    title: 'How to configure Academy platform settings',
-    content: `Go to /admin/academy/settings. The Platform Fee % (default 15) is the percentage of each paid enrollment kept by the platform — changing it affects all future checkouts. The Teacher Stripe Price ID is the Stripe Price ID for the teacher subscription plan. In Stripe, create a Product called Centenarian Academy Teacher with monthly or annual prices, copy the Price ID (starts with price_), paste it here, and set the same value as TEACHER_MONTHLY_PRICE_ID in your environment variables.`,
-  },
-  {
-    role: 'admin',
-    title: 'How to manage live sessions as admin',
-    content: `Go to /admin/live to manage platform-wide CentenarianOS Team sessions. Click New Session, enter title, description, scheduled time, and paste the full iframe embed code from your streaming provider (Viloud.tv, Mux, Zoom, etc.). Set visibility to Public or Members Only. When your stream starts, click the Is Live toggle — this activates the Join Live button for users at /live. Toggle it off when the stream ends. Viloud.tv embed format: <iframe src="https://player.viloud.tv/embed/live/YOUR_CHANNEL_ID?autoplay=1&controls=1" width="100%" height="100%" frameborder="0" allowfullscreen allow="autoplay"></iframe>`,
-  },
-  {
-    role: 'admin',
-    title: 'How to manage user roles',
-    content: `User roles: member (can enroll in courses), teacher (can create and publish courses, grade assignments, receive payouts), admin (full platform access). To manually promote a user to teacher go to /admin/users, find the user, and update their role. This bypasses the Stripe subscription requirement — use for staff or beta teachers only. To promote to admin, set profiles.role = 'admin' directly in Supabase. Normally the webhook sets role to teacher automatically when a user subscribes to the teacher plan.`,
-  },
-  {
-    role: 'admin',
-    title: 'Academy database migrations',
-    content: `Run these migrations in the Supabase SQL Editor in order if not already applied: 039_lms_schema.sql (core LMS tables: courses, lessons, enrollments, lesson_progress, assignments, submission_messages, live_sessions), 040_visibility.sql (adds visibility and published_at to courses and live_sessions), 041_submission_drafts.sql (adds draft status and multi-file media_urls to assignment_submissions), 042_help_rag.sql (creates help_articles table with vector(768) for the in-app RAG help system).`,
-  },
-  {
-    role: 'admin',
-    title: 'Required environment variables for Academy',
-    content: `Required environment variables for the Academy feature: TEACHER_MONTHLY_PRICE_ID (Stripe Price ID for teacher subscription), STRIPE_ACADEMY_WEBHOOK_SECRET (webhook secret for the academy Stripe webhook endpoint), GOOGLE_GEMINI_API_KEY (for CYOA embeddings and help RAG chat), NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET (for lesson content and submission file uploads). Existing variables also needed: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY.`,
-  },
-  {
-    role: 'admin',
-    title: 'How to ingest help articles for the RAG system',
-    content: `The in-app help chat uses a RAG (Retrieval-Augmented Generation) system. To load help content: go to /admin/academy/settings and click Ingest Help Articles. This embeds all tutorial article chunks using Gemini text-embedding-004 and stores them in the help_articles table. Run this once after initial setup and again whenever the tutorial content is updated. Requires GOOGLE_GEMINI_API_KEY to be set.`,
-  },
-
   // ─── BLOG ────────────────────────────────────────────────────────────────────
 
   {

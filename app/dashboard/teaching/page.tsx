@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, Users, DollarSign, Plus, ArrowRight, CreditCard } from 'lucide-react';
+import { BookOpen, Users, DollarSign, Plus, ArrowRight, CreditCard, Layers } from 'lucide-react';
 
 interface Course {
   id: string;
@@ -99,6 +99,30 @@ export default function TeachingDashboard() {
             <p className="text-gray-500 text-sm mt-1">{label}</p>
           </div>
         ))}
+      </div>
+
+      {/* Quick links */}
+      <div className="flex flex-wrap gap-2 mb-8">
+        <Link
+          href="/dashboard/teaching/learning-paths"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-900 border border-gray-800 hover:border-fuchsia-700 text-gray-300 hover:text-fuchsia-300 rounded-xl text-sm font-medium transition"
+        >
+          <Layers className="w-4 h-4" />
+          Learning Paths
+        </Link>
+        <Link
+          href="/dashboard/teaching/students"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-900 border border-gray-800 hover:border-fuchsia-700 text-gray-300 hover:text-fuchsia-300 rounded-xl text-sm font-medium transition"
+        >
+          <Users className="w-4 h-4" />
+          Students
+        </Link>
+        <Link
+          href="/dashboard/teaching/live"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-900 border border-gray-800 hover:border-fuchsia-700 text-gray-300 hover:text-fuchsia-300 rounded-xl text-sm font-medium transition"
+        >
+          Live Sessions
+        </Link>
       </div>
 
       {/* Course list */}

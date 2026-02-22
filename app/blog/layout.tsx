@@ -3,10 +3,11 @@
 
 import Link from 'next/link';
 import { BookOpen } from 'lucide-react';
+import SiteFooter from '@/components/ui/SiteFooter';
 
 export default function BlogLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* ── Header ───────────────────────────────────────────────────── */}
       <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -55,9 +56,10 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
       </header>
 
       {/* ── Page content ─────────────────────────────────────────────── */}
-      <div className="bg-gray-50 text-gray-900">
+      <div className="bg-gray-50 text-gray-900 flex-1">
         {children}
       </div>
+      <SiteFooter theme="light" />
     </div>
   );
 }

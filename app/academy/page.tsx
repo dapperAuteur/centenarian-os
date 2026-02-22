@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Search, BookOpen, Play, Lock } from 'lucide-react';
+import { Search, BookOpen, Play, Lock, Layers } from 'lucide-react';
 
 interface Course {
   id: string;
@@ -50,6 +50,16 @@ export default function AcademyPage() {
         <div className="mb-12 text-center">
           <h1 className="text-4xl font-bold mb-3">Centenarian Academy</h1>
           <p className="text-gray-400 text-lg">Expert-led courses to help you live longer, stronger.</p>
+          <div className="flex items-center justify-center gap-2 mt-6">
+            <span className="px-4 py-1.5 bg-fuchsia-600 text-white rounded-full text-sm font-medium">Courses</span>
+            <Link
+              href="/academy/paths"
+              className="flex items-center gap-1.5 px-4 py-1.5 border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 rounded-full text-sm font-medium transition"
+            >
+              <Layers className="w-4 h-4" />
+              Learning Paths
+            </Link>
+          </div>
         </div>
 
         {/* Search + filter */}
