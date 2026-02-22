@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // components/ui/TagSelector.tsx
 'use client';
 
