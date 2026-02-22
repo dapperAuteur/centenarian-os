@@ -18,15 +18,15 @@ export default function TermsPage() {
 
         <Section title="1. Acceptance of Terms">
           <p>
-            By creating an account or using CentenarianOS ("the Platform," "we," "us"), you agree to
+            By creating an account or using CentenarianOS (&quot;the Platform,&quot; &quot;we,&quot; &quot;us&quot;), you agree to
             these Terms of Use and our{' '}
             <Link href="/privacy" className="text-fuchsia-400 hover:underline">Privacy Policy</Link>.
             If you do not agree, do not use the Platform.
           </p>
           <p className="mt-3">
             The Platform is operated by B4C LLC and AwesomeWebStore.com. Anthony McDonald is the founder
-            and operator. References to "CentenarianOS," "B4C LLC," "AwesomeWebStore.com," and
-            "Anthony McDonald" in these terms refer collectively to the same operating entity and its
+            and operator. References to &quot;CentenarianOS,&quot; &quot;B4C LLC,&quot; &quot;AwesomeWebStore.com,&quot; and
+            &quot;Anthony McDonald&quot; in these terms refer collectively to the same operating entity and its
             principals.
           </p>
         </Section>
@@ -131,7 +131,7 @@ export default function TermsPage() {
           </p>
           <p className="mt-3">
             Paid course enrollments are processed through Stripe. Refund eligibility is determined by
-            the individual teacher's refund policy. Contact the teacher directly for refund requests.
+            the individual teacher&apos;s refund policy. Contact the teacher directly for refund requests.
             The platform fee (a percentage of each sale) is non-refundable.
           </p>
         </Section>

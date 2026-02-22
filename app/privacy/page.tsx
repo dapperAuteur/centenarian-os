@@ -18,7 +18,7 @@ export default function PrivacyPage() {
 
         <Section title="1. Who We Are">
           <p>
-            CentenarianOS ("we," "us," "our") is a longevity and health education platform operated by
+            CentenarianOS (&quot;we,&quot; &quot;us,&quot; &quot;our&quot;) is a longevity and health education platform operated by
             B4C LLC and AwesomeWebStore.com, founded by Anthony McDonald. This Privacy Policy explains
             how we collect, use, store, and protect your personal information.
           </p>
@@ -82,9 +82,9 @@ export default function PrivacyPage() {
             AI service operated by Google. When you use these features:
           </p>
           <ul className="list-disc pl-5 mt-2 space-y-1">
-            <li>Your question or anonymized metric data is sent to Google's API</li>
+            <li>Your question or anonymized metric data is sent to Google&apos;s API</li>
             <li>Your name, email, and account ID are never included in AI prompts</li>
-            <li>Google's data handling is governed by the{' '}
+            <li>Google&apos;s data handling is governed by the{' '}
               <a
                 href="https://policies.google.com/privacy"
                 target="_blank"
