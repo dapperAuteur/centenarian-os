@@ -1,8 +1,7 @@
 // components/focus/PomodoroTimer.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Clock, Coffee, Play, Pause, SkipForward } from 'lucide-react';
+import { Clock, Coffee, SkipForward } from 'lucide-react';
 import { formatPomodoroProgress } from '@/lib/utils/pomodoroUtils';
 import { PomodoroSettings } from '@/lib/types';
 

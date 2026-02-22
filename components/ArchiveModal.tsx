@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, AlertTriangle, Archive } from 'lucide-react';
+import { X, AlertTriangle } from 'lucide-react';
 
 interface ArchiveModalProps {
   type: 'roadmap' | 'goal' | 'milestone';
