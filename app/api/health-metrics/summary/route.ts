@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
   const summary: Record<string, number | null> = {};
   for (const key of METRIC_COLUMNS) {
-    summary[key] = average((rows || []) as SummaryRow[], key);
+    summary[key] = average((rows || []) as unknown as SummaryRow[], key);
   }
 
   return NextResponse.json({
