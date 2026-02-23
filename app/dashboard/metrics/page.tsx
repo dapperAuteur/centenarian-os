@@ -46,7 +46,13 @@ const UNITS: Record<string, string> = {
   stress_score: '/100',
   recovery_score: '/100',
   weight_lbs: 'lbs',
+  body_fat_pct: '%',
+  muscle_mass_lbs: 'lbs',
+  bmi: '',
 };
+
+const BODY_COMP_KEYS = ['weight_lbs', 'body_fat_pct', 'muscle_mass_lbs', 'bmi'];
+const DECIMAL_STEP_KEYS = ['sleep_hours', 'spo2_pct', 'weight_lbs', 'body_fat_pct', 'muscle_mass_lbs', 'bmi'];
 
 export default function MetricsDashboardPage() {
   const [configs, setConfigs] = useState<MetricConfig[]>([]);
@@ -150,9 +156,9 @@ export default function MetricsDashboardPage() {
 
   const coreMetrics = configs.filter((c) => CORE_METRICS.includes(c.metric_key));
   const enrichmentMetrics = configs.filter(
-    (c) => !CORE_METRICS.includes(c.metric_key) && c.metric_key !== 'weight_lbs'
+    (c) => !CORE_METRICS.includes(c.metric_key) && !BODY_COMP_KEYS.includes(c.metric_key)
   );
-  const weightMetric = configs.find((c) => c.metric_key === 'weight_lbs');
+  const bodyCompMetrics = configs.filter((c) => BODY_COMP_KEYS.includes(c.metric_key));
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10 space-y-10">
@@ -237,12 +243,12 @@ export default function MetricsDashboardPage() {
         />
       )}
 
-      {/* Body weight — always last, locked by default */}
-      {weightMetric && (
+      {/* Body composition — always last, locked by default */}
+      {bodyCompMetrics.length > 0 && (
         <MetricSection
-          title="Body Weight"
-          subtitle="Locked by default — requires acknowledgment to enable"
-          metrics={[weightMetric]}
+          title="Body Composition"
+          subtitle="Locked by default — each metric requires acknowledgment to enable"
+          metrics={bodyCompMetrics}
           todayLog={todayLog}
           permissions={permissions}
           onChange={handleChange}
@@ -341,7 +347,7 @@ function MetricSection({
               <input
                 id={`metric-${m.metric_key}`}
                 type="number"
-                step={m.metric_key === 'sleep_hours' || m.metric_key === 'spo2_pct' || m.metric_key === 'weight_lbs' ? '0.1' : '1'}
+                step={DECIMAL_STEP_KEYS.includes(m.metric_key) ? '0.1' : '1'}
                 min="0"
                 placeholder={unlocked ? 'Enter value' : 'Locked'}
                 disabled={!unlocked}

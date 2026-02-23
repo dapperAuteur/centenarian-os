@@ -35,6 +35,7 @@ import {
   UserCircle,
   FileText,
   TrendingUp,
+  Watch,
 } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import FloatingActionsMenu from '@/components/ui/FloatingActionsMenu';
@@ -191,6 +192,14 @@ export default function DashboardLayout({
               >
                 <HeartPulse className="w-4 h-4 mr-2" />
                 Metrics
+                <LockBadge />
+              </Link>
+              <Link
+                href="/dashboard/settings/wearables"
+                className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+              >
+                <Watch className="w-4 h-4 mr-2" />
+                Wearables
                 <LockBadge />
               </Link>
               <Link
@@ -451,6 +460,19 @@ export default function DashboardLayout({
                   <div className="flex items-center">
                     <HeartPulse className="w-4 h-4 mr-3" />
                     Metrics
+                  </div>
+                  {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
+                </div>
+              </Link>
+              <Link
+                href="/dashboard/settings/wearables"
+                className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Watch className="w-4 h-4 mr-3" />
+                    Wearables
                   </div>
                   {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>

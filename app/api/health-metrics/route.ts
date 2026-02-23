@@ -17,8 +17,11 @@ function serviceClient() {
 const WRITABLE_COLUMNS = new Set([
   'resting_hr', 'steps', 'sleep_hours', 'activity_min',
   'sleep_score', 'hrv_ms', 'spo2_pct', 'active_calories',
-  'stress_score', 'recovery_score', 'weight_lbs', 'notes',
+  'stress_score', 'recovery_score', 'weight_lbs',
+  'body_fat_pct', 'muscle_mass_lbs', 'bmi', 'notes',
 ]);
+
+const LOCKED_BODY_METRICS = ['weight_lbs', 'body_fat_pct', 'muscle_mass_lbs', 'bmi'];
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -63,21 +66,23 @@ export async function POST(request: NextRequest) {
       ? body.logged_date
       : new Date().toISOString().split('T')[0];
 
-  // If the user is trying to log weight_lbs, verify they have an active unlock
-  if (body.weight_lbs !== undefined && body.weight_lbs !== null) {
-    const admin = serviceClient();
-    const { data: perm } = await admin
-      .from('user_metric_permissions')
-      .select('is_enabled, acknowledged_disclaimer')
-      .eq('user_id', user.id)
-      .eq('metric_key', 'weight_lbs')
-      .maybeSingle();
+  // Check permission for any locked body metrics the user is trying to log
+  const admin = serviceClient();
+  for (const metricKey of LOCKED_BODY_METRICS) {
+    if (body[metricKey] !== undefined && body[metricKey] !== null) {
+      const { data: perm } = await admin
+        .from('user_metric_permissions')
+        .select('is_enabled, acknowledged_disclaimer')
+        .eq('user_id', user.id)
+        .eq('metric_key', metricKey)
+        .maybeSingle();
 
-    if (!perm || !perm.is_enabled || !perm.acknowledged_disclaimer) {
-      return NextResponse.json(
-        { error: 'Body weight tracking is locked. Please unlock it first.' },
-        { status: 403 }
-      );
+      if (!perm || !perm.is_enabled || !perm.acknowledged_disclaimer) {
+        return NextResponse.json(
+          { error: `${metricKey} tracking is locked. Please unlock it first.` },
+          { status: 403 }
+        );
+      }
     }
   }
 

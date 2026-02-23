@@ -16,7 +16,8 @@ function getDb() {
 const WRITABLE_COLUMNS = new Set([
   'resting_hr', 'steps', 'sleep_hours', 'activity_min',
   'sleep_score', 'hrv_ms', 'spo2_pct', 'active_calories',
-  'stress_score', 'recovery_score', 'weight_lbs', 'notes',
+  'stress_score', 'recovery_score', 'weight_lbs',
+  'body_fat_pct', 'muscle_mass_lbs', 'bmi', 'notes',
 ]);
 
 interface ImportRow {
