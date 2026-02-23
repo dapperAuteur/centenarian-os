@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { createShortLink, updateShortLink, toSwitchySlug } from '@/lib/switchy';
 
 function getDb() {
   return createServiceClient(
@@ -70,7 +71,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const db = getDb();
-  const { data: course } = await db.from('courses').select('teacher_id').eq('id', id).single();
+  const { data: course } = await db.from('courses').select('teacher_id, is_published, title, short_link_id, description, cover_image_url').eq('id', id).single();
   if (!course) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   if (course.teacher_id !== user.id && user.email !== process.env.ADMIN_EMAIL) {
@@ -94,6 +95,36 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Switchy short link — fire and forget
+  const isNowPublishing = body.is_published === true && !course.is_published;
+  if (data && isNowPublishing && !course.short_link_id) {
+    const siteUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+    createShortLink({
+      url: `${siteUrl}/academy/${id}`,
+      slug: toSwitchySlug('c', data.title || course.title),
+      title: data.title || course.title,
+      description: data.description || course.description || undefined,
+      image: data.cover_image_url || course.cover_image_url || undefined,
+      tags: ['course'],
+    }).then(async (link) => {
+      if (link) {
+        await db.from('courses')
+          .update({ short_link_id: link.id, short_link_url: link.short_url })
+          .eq('id', id);
+      }
+    }).catch(() => { /* non-critical */ });
+  } else if (data && course.short_link_id) {
+    const changed = body.title !== undefined || body.cover_image_url !== undefined || body.description !== undefined;
+    if (changed) {
+      updateShortLink({
+        linkId: course.short_link_id,
+        title: data.title || course.title,
+        description: data.description || course.description || undefined,
+        image: data.cover_image_url || course.cover_image_url || undefined,
+      }).catch(() => { /* non-critical */ });
+    }
+  }
 
   return NextResponse.json(data);
 }

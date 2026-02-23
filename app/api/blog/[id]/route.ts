@@ -1,8 +1,17 @@
 // app/api/blog/[id]/route.ts
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { estimateReadingTime } from '@/lib/blog/reading-time';
+import { createShortLink, updateShortLink, toSwitchySlug } from '@/lib/switchy';
 import type { PostVisibility } from '@/lib/types';
+
+function getDb() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+}
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -48,10 +57,10 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
   const body = await request.json();
 
-  // Fetch current post to check published_at state
+  // Fetch current post to check published_at state and short link
   const { data: existing } = await supabase
     .from('blog_posts')
-    .select('published_at, visibility')
+    .select('published_at, visibility, slug, short_link_id, title, excerpt, cover_image_url')
     .eq('id', id)
     .eq('user_id', user.id)
     .single();
@@ -99,6 +108,42 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     }
     console.error('[Blog API] PATCH failed:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Switchy short link — fire and forget (non-blocking)
+  if (data && isNowPublishing && !existing.short_link_id) {
+    // First publish: create short link
+    const siteUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+    const db = getDb();
+    const { data: profile } = await db.from('profiles').select('username').eq('id', user.id).maybeSingle();
+    const username = profile?.username || user.id;
+    const postSlug = data.slug || existing.slug;
+
+    createShortLink({
+      url: `${siteUrl}/blog/${username}/${postSlug}`,
+      slug: toSwitchySlug('b', postSlug),
+      title: data.title,
+      description: data.excerpt || undefined,
+      image: data.cover_image_url || undefined,
+      tags: ['blog'],
+    }).then(async (link) => {
+      if (link) {
+        await db.from('blog_posts')
+          .update({ short_link_id: link.id, short_link_url: link.short_url })
+          .eq('id', id);
+      }
+    }).catch(() => { /* non-critical */ });
+  } else if (data && existing.short_link_id) {
+    // Already published: update metadata if title/image/excerpt changed
+    const changed = body.title !== undefined || body.cover_image_url !== undefined || body.excerpt !== undefined;
+    if (changed) {
+      updateShortLink({
+        linkId: existing.short_link_id,
+        title: data.title,
+        description: data.excerpt || undefined,
+        image: data.cover_image_url || undefined,
+      }).catch(() => { /* non-critical */ });
+    }
   }
 
   return NextResponse.json(data);

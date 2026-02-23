@@ -9,15 +9,15 @@ interface RecipeShareUrls {
 
 /**
  * Builds share URLs for a recipe.
- * Requires NEXT_PUBLIC_APP_URL to be set in environment variables.
- * Recipe public URL: /recipes/cooks/[username]/[slug]
+ * Uses the Switchy short link when available, falling back to the full URL.
  */
 export function buildRecipeShareUrls(
-  recipe: Pick<Recipe, 'title' | 'slug'>,
-  username: string
+  recipe: Pick<Recipe, 'title' | 'slug'> & { short_link_url?: string | null },
+  username: string,
 ): RecipeShareUrls {
   const base = process.env.NEXT_PUBLIC_APP_URL || '';
-  const recipeUrl = `${base}/recipes/cooks/${username}/${recipe.slug}`;
+  const fullUrl = `${base}/recipes/cooks/${username}/${recipe.slug}`;
+  const recipeUrl = recipe.short_link_url ?? fullUrl;
 
   return {
     recipeUrl,
