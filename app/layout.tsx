@@ -5,6 +5,7 @@ import type { Metadata, Viewport } from 'next';
 import { Analytics } from "@vercel/analytics/next"
 import { Inter } from 'next/font/google';
 import './globals.css';
+import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -27,9 +28,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#0d9488" />
+      </head>
       <body className={inter.className}>
         {children}
         <Analytics />
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );
