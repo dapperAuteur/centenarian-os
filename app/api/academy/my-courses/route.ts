@@ -26,6 +26,8 @@ export async function GET() {
     .select(`
       course_id,
       enrolled_at,
+      attempt_number,
+      metric_slots,
       courses (
         id, title, description, cover_image_url, category,
         navigation_mode, is_published,
@@ -76,6 +78,10 @@ export async function GET() {
     return {
       ...course,
       enrolled_at: e.enrolled_at,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      attempt_number: (e as any).attempt_number ?? 1,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      metric_slots: (e as any).metric_slots ?? 1,
       lesson_count: total,
       completed_count: completed,
       progress_pct: total > 0 ? Math.round((completed / total) * 100) : 0,

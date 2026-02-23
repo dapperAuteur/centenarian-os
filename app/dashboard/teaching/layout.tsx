@@ -5,12 +5,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Users, Video, Tag, CreditCard, LayoutDashboard } from 'lucide-react';
+import { BookOpen, Users, Video, Tag, CreditCard, LayoutDashboard, MessageCircle } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/dashboard/teaching',              label: 'Overview',     icon: LayoutDashboard, exact: true },
   { href: '/dashboard/teaching/courses',      label: 'Courses',      icon: BookOpen,        exact: false },
   { href: '/dashboard/teaching/students',     label: 'Students',     icon: Users,           exact: false },
+  { href: '/dashboard/teaching/messages',     label: 'Messages',     icon: MessageCircle,   exact: false },
   { href: '/dashboard/teaching/live',         label: 'Live Sessions',icon: Video,           exact: false },
   { href: '/dashboard/teaching/promo-codes',  label: 'Promo Codes',  icon: Tag,             exact: false },
   { href: '/dashboard/teaching/payouts',      label: 'Payouts',      icon: CreditCard,      exact: false },

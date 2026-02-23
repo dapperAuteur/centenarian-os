@@ -7,7 +7,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ChevronLeft, Send, CheckCircle, Loader2, ClipboardList, MessageCircle, Clock, FileEdit,
+  ChevronLeft, Send, CheckCircle, Loader2, ClipboardList, MessageCircle, Clock, FileEdit, Activity,
 } from 'lucide-react';
 import SubmissionUploader, { SubmissionFile } from '@/components/ui/SubmissionUploader';
 
@@ -53,6 +53,38 @@ export default function AssignmentPage() {
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Metric slot picker state
+  const [metricSlots, setMetricSlots] = useState(1);
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
+
+  const CORE_METRICS = [
+    { key: 'resting_hr', label: 'Resting HR' },
+    { key: 'steps', label: 'Steps' },
+    { key: 'sleep_hours', label: 'Sleep Hours' },
+    { key: 'activity_min', label: 'Activity Min' },
+  ];
+
+  // Fetch enrollment metric_slots
+  useEffect(() => {
+    fetch(`/api/academy/my-courses`)
+      .then((r) => r.json())
+      .then((courses) => {
+        if (Array.isArray(courses)) {
+          const enrolled = courses.find((c: { id: string }) => c.id === courseId);
+          if (enrolled?.metric_slots) setMetricSlots(enrolled.metric_slots);
+        }
+      })
+      .catch(() => {});
+  }, [courseId]);
+
+  function toggleMetric(key: string) {
+    setSelectedMetrics((prev) => {
+      if (prev.includes(key)) return prev.filter((k) => k !== key);
+      if (prev.length >= metricSlots) return prev;
+      return [...prev, key];
+    });
+  }
 
   useEffect(() => {
     Promise.all([
@@ -144,7 +176,7 @@ export default function AssignmentPage() {
   return (
     <div className="text-white">
       {/* Top nav */}
-      <div className="border-b border-gray-800 px-6 py-3 flex items-center gap-4">
+      <div className="border-b border-gray-800 px-4 sm:px-6 py-3 flex items-center gap-3 sm:gap-4">
         <Link
           href={`/academy/${courseId}`}
           className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition"
@@ -162,7 +194,7 @@ export default function AssignmentPage() {
         )}
       </div>
 
-      <div className="max-w-3xl mx-auto px-6 py-10">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {/* Header */}
         <div className="flex items-start gap-3 mb-2">
           <ClipboardList className="w-6 h-6 text-fuchsia-400 shrink-0 mt-0.5" />
@@ -192,8 +224,47 @@ export default function AssignmentPage() {
           </div>
         )}
 
+        {/* Metric slot picker */}
+        {metricSlots > 0 && (
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 sm:p-5 mb-6">
+            <h2 className="font-semibold text-white mb-3 flex items-center gap-2 text-sm">
+              <Activity className="w-4 h-4 text-fuchsia-400" />
+              Track Health Metrics
+              <span className="text-gray-500 font-normal">({selectedMetrics.length}/{metricSlots} slots)</span>
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {CORE_METRICS.map((m) => {
+                const isSelected = selectedMetrics.includes(m.key);
+                const isDisabled = !isSelected && selectedMetrics.length >= metricSlots;
+                return (
+                  <button
+                    key={m.key}
+                    type="button"
+                    onClick={() => toggleMetric(m.key)}
+                    disabled={isDisabled}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition min-h-9 ${
+                      isSelected
+                        ? 'bg-fuchsia-600 text-white'
+                        : isDisabled
+                        ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                );
+              })}
+            </div>
+            {metricSlots < 3 && (
+              <p className="text-gray-600 text-xs mt-2">
+                Complete the course again to unlock more metric slots.
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Submission form */}
-        <div className="dark-input bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6">
+        <div className="dark-input bg-gray-900 border border-gray-800 rounded-xl p-4 sm:p-6 mb-6">
           <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
             <FileEdit className="w-4 h-4 text-fuchsia-400" />
             {isSubmitted ? 'Your Submission' : isDraft ? 'Draft' : 'Your Work'}

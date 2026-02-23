@@ -27,7 +27,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .from('courses')
     .select(`
       id, title, description, cover_image_url, category, tags,
-      price, price_type, is_published, navigation_mode, like_count, created_at, teacher_id,
+      price, price_type, is_published, navigation_mode, like_count,
+      avg_rating, review_count, trial_period_days,
+      created_at, teacher_id,
       profiles(username, display_name, avatar_url),
       course_modules(id, title, order,
         lessons(id, title, lesson_type, duration_seconds, order, is_free_preview, content_url, text_content)
@@ -76,10 +78,13 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   const body = await request.json();
-  const allowed = ['title', 'description', 'cover_image_url', 'category', 'tags', 'price', 'price_type', 'is_published', 'navigation_mode', 'visibility', 'published_at'];
+  const allowed = ['title', 'description', 'cover_image_url', 'category', 'tags', 'price', 'price_type', 'is_published', 'navigation_mode', 'visibility', 'published_at', 'trial_period_days'];
   const updates = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
 
   if ('price_type' in updates && updates.price_type === 'free') updates.price = 0;
+  if ('trial_period_days' in updates) {
+    updates.trial_period_days = Math.max(0, Math.min(30, Number(updates.trial_period_days) || 0));
+  }
 
   const { data, error } = await db
     .from('courses')
