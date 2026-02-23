@@ -1,9 +1,201 @@
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, Circle, Clock } from 'lucide-react';
 
+const PHASES = [
+  {
+    id: 1,
+    title: 'Phase 1: Core Infrastructure',
+    status: 'completed' as const,
+    quarter: 'Q4 2025',
+    description: 'Foundation — auth, planning, subscriptions, and admin.',
+    items: [
+      { done: true, text: 'Database schema with RLS policies' },
+      { done: true, text: 'Roadmap → Goal → Milestone → Task hierarchy' },
+      { done: true, text: 'Real-time task updates via Supabase subscriptions' },
+      { done: true, text: 'Financial tracking across planning entities' },
+      { done: true, text: 'Stripe member subscriptions (monthly, annual, lifetime)' },
+      { done: true, text: 'Admin dashboard with user management and analytics' },
+      { done: true, text: 'Cloudflare Turnstile bot prevention on signup' },
+    ],
+  },
+  {
+    id: 2,
+    title: 'Phase 2: Nutrition & Recipes (Fuel Module)',
+    status: 'completed' as const,
+    quarter: 'Q1 2026',
+    description: 'Track what fuels your journey — ingredients, meals, recipes.',
+    items: [
+      { done: true, text: 'Ingredient library with NCV (Nutrient Cost Value) framework' },
+      { done: true, text: 'Protocol-based meal logging system' },
+      { done: true, text: 'Cost tracking and budget alerts' },
+      { done: true, text: 'USDA FoodData Central API integration' },
+      { done: true, text: 'Open Food Facts API integration' },
+      { done: true, text: 'Auto inventory management' },
+      { done: true, text: 'Public recipe pages with likes, saves, and sharing' },
+      { done: true, text: 'Recipe import from any URL (JSON-LD scraping)' },
+      { done: true, text: 'Public cook/author profile pages' },
+    ],
+  },
+  {
+    id: 3,
+    title: 'Phase 3: Publishing Platform (Blog & Community)',
+    status: 'completed' as const,
+    quarter: 'Q1 2026',
+    description: 'A full content publishing system for the CentenarianOS community.',
+    items: [
+      { done: true, text: 'Blog system with rich text editor and Cloudinary media upload' },
+      { done: true, text: 'Public blog pages with likes, saves, and reading progress events' },
+      { done: true, text: 'Share bars — Copy Link, Email, LinkedIn, Facebook' },
+      { done: true, text: 'Public author profile pages' },
+      { done: true, text: 'In-app AI help assistant with RAG (retrieval-augmented generation)' },
+      { done: true, text: 'Terms of Use, Privacy Policy, and Safety / Medical Disclaimer pages' },
+      { done: true, text: 'Rise Wellness of Indiana mental health resources page' },
+      { done: true, text: 'Site footer with legal links on all public pages' },
+      { done: true, text: 'Signup Terms + Privacy agreement checkbox' },
+    ],
+  },
+  {
+    id: 4,
+    title: 'Phase 4: Centenarian Academy (LMS)',
+    status: 'in-progress' as const,
+    quarter: 'Q1–Q2 2026',
+    description: 'A full learning management system — create, publish, sell, and take courses.',
+    items: [
+      { done: true, text: 'Teacher role and Stripe subscription for teachers' },
+      { done: true, text: 'Stripe Connect Express onboarding for teacher payouts' },
+      { done: true, text: 'Platform teacher bypass — admin courses pay directly to platform account' },
+      { done: true, text: 'Course builder: modules, lessons (video / text / audio / slides), free preview' },
+      { done: true, text: 'Course catalog with search, filters, and course detail pages' },
+      { done: true, text: 'Student enrollment — free courses and paid (Stripe checkout)' },
+      { done: true, text: 'Lesson progress tracking' },
+      { done: true, text: 'Choose Your Own Adventure (CYOA) navigation mode per course' },
+      { done: true, text: 'Assignment creation, student submission with file upload, teacher grading' },
+      { done: true, text: 'Teacher dashboard — course editor, assignment manager, student list' },
+      { done: true, text: 'Public teacher pages — browse any teacher\'s published courses' },
+      { done: true, text: 'Course likes and saves' },
+      { done: true, text: 'Learning paths — sequence courses to show subject proficiency' },
+      { done: true, text: 'User achievements and in-app badge shelf' },
+      { done: true, text: 'Public progress profiles (/profiles/[username])' },
+      { done: true, text: 'Completion certificates (/certificates/[achievementId])' },
+      { done: true, text: 'OG social share cards for public profiles' },
+      { done: true, text: 'Health metrics daily log — resting HR, steps, sleep, activity minutes' },
+      { done: true, text: 'Body weight metric — locked by default, unlock via disclaimer acknowledgment' },
+      { done: true, text: 'Admin metrics configuration page' },
+      { done: true, text: 'Live sessions — schedule, embed Viloud.tv stream, student access' },
+      { done: false, text: 'CYOA crossroads engine — Gemini embeddings + semantic neighbor navigation' },
+      { done: false, text: 'Threaded chat on assignment submissions (student ↔ teacher)' },
+      { done: false, text: 'Course direct messages (student ↔ teacher inbox)' },
+      { done: false, text: 'Teacher promo codes (Stripe Coupons API)' },
+      { done: false, text: 'Free trial periods for subscription courses' },
+      { done: false, text: 'Course reviews and star ratings' },
+      { done: false, text: 'Progressive metric slots per course attempt (attempt 1 = 1 metric, attempt 2 = 2, etc.)' },
+      { done: false, text: 'Re-enrollment flow ("Take Again") for completed courses' },
+      { done: false, text: 'AI-recommended learning paths for students (Gemini personalization)' },
+      { done: false, text: 'AI path suggestions for teachers (Gemini drafts path groupings from their courses)' },
+    ],
+  },
+  {
+    id: 5,
+    title: 'Phase 5: Focus Engine & AI Insights',
+    status: 'in-progress' as const,
+    quarter: 'Q2 2026',
+    description: 'Turn daily data into actionable intelligence — focus, energy, and correlations.',
+    items: [
+      { done: true, text: 'Pomodoro / focus timer linked to tasks' },
+      { done: true, text: 'Daily energy and focus rating system' },
+      { done: true, text: 'Pain tracking and body check logging' },
+      { done: false, text: 'AI-assisted weekly review generation (Gemini summarization)' },
+      { done: false, text: 'Correlation analysis — nutrition intake ↔ focus/energy performance' },
+      { done: false, text: 'Recipe ideas generated from current ingredient inventory (Gemini)' },
+      { done: false, text: 'Offline-first architecture with IndexedDB sync' },
+    ],
+  },
+  {
+    id: 6,
+    title: 'Phase 6: Link Tracking & Marketing Analytics',
+    status: 'planned' as const,
+    quarter: 'Q2 2026',
+    description: 'Auto-generate tracked short links via Switchy.io so every share is measured.',
+    items: [
+      { done: false, text: 'Switchy.io API integration — auto-create short link on every publish' },
+      { done: false, text: 'Custom domain short links (i.centenarianos.com/[slug])' },
+      { done: false, text: 'Share bars use Switchy short links (blog, recipes, courses)' },
+      { done: false, text: 'OG metadata (title, description, image) synced to Switchy on edit' },
+      { done: false, text: 'Admin backfill page — create short links for all existing content' },
+    ],
+  },
+  {
+    id: 7,
+    title: 'Phase 7: Biometrics & Recovery',
+    status: 'planned' as const,
+    quarter: 'Q3 2026',
+    description: 'Integrate wearable data to close the loop between effort and recovery.',
+    items: [
+      { done: false, text: 'Wearable integration — Oura Ring API (sleep, HRV, readiness)' },
+      { done: false, text: 'Wearable integration — Whoop API (strain, recovery, sleep)' },
+      { done: false, text: 'Wearable integration — Apple Health (steps, HR via HealthKit export)' },
+      { done: false, text: 'HRV and recovery score tracking' },
+      { done: false, text: 'Sleep quality deep-dive (stages, consistency, debt)' },
+      { done: false, text: 'Body composition logging (weight, body fat %, muscle mass)' },
+      { done: false, text: 'Recovery ↔ performance correlation dashboard' },
+    ],
+  },
+  {
+    id: 8,
+    title: 'Phase 8: Financial Dashboard',
+    status: 'planned' as const,
+    quarter: 'Q4 2026',
+    description: 'Connect every dollar to a goal — see the ROI of your longevity investment.',
+    items: [
+      { done: false, text: 'Budget tracking by goal category' },
+      { done: false, text: 'Nutrition cost integration (from Fuel module)' },
+      { done: false, text: 'ROI visualization per goal (cost vs. outcome metrics)' },
+      { done: false, text: 'Bulk data import via CSV' },
+      { done: false, text: 'CSV import template download' },
+      { done: false, text: 'Full data export (JSON + CSV)' },
+    ],
+  },
+];
+
+const STATUS_CONFIG = {
+  completed: {
+    border: 'border-lime-500',
+    dot: 'bg-lime-500',
+    badge: 'bg-lime-100 text-lime-800',
+    label: 'Completed',
+    icon: CheckCircle2,
+    checkColor: 'text-lime-600',
+  },
+  'in-progress': {
+    border: 'border-fuchsia-500',
+    dot: 'bg-fuchsia-500',
+    badge: 'bg-fuchsia-100 text-fuchsia-800',
+    label: 'In Progress',
+    icon: Clock,
+    checkColor: 'text-fuchsia-500',
+  },
+  planned: {
+    border: 'border-gray-300',
+    dot: 'bg-gray-300',
+    badge: 'bg-gray-100 text-gray-700',
+    label: 'Planned',
+    icon: Circle,
+    checkColor: 'text-gray-400',
+  },
+};
+
 export default function RoadmapPage() {
+  const completed = PHASES.filter((p) => p.status === 'completed').length;
+  const inProgress = PHASES.filter((p) => p.status === 'in-progress').length;
+  const planned = PHASES.filter((p) => p.status === 'planned').length;
+
+  const totalItems = PHASES.flatMap((p) => p.items).length;
+  const doneItems = PHASES.flatMap((p) => p.items).filter((i) => i.done).length;
+  const pct = Math.round((doneItems / totalItems) * 100);
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header */}
       <header className="border-b bg-white sticky top-0 z-50">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <Link href="/" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
@@ -11,271 +203,160 @@ export default function RoadmapPage() {
             <span className="font-medium">Back to Home</span>
           </Link>
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-fuchsia-500 to-sky-500 rounded-lg"></div>
-            <Link
-              href="/dashboard/roadmap">
+            <div className="w-8 h-8 bg-linear-to-br from-fuchsia-500 to-sky-500 rounded-lg" />
+            <Link href="/dashboard/roadmap">
               <span className="text-xl font-bold text-gray-900">CentenarianOS</span>
             </Link>
           </div>
         </nav>
       </header>
 
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8">
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-4">
+      {/* Hero */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-10">
+        <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-3">
           Product Roadmap
         </h1>
-        <p className="text-xl text-gray-600 mb-8">
-          Our journey from MVP to a comprehensive personal operating system. Updated October 2025.
+        <p className="text-xl text-gray-600 mb-2">
+          Our journey from MVP to a comprehensive personal longevity operating system.
         </p>
-        <div className="flex space-x-4">
-          <a 
-            href="https://github.com/dapperAuteur/centenarian-os" 
+        <p className="text-sm text-gray-400 mb-8">Updated February 2026</p>
+
+        {/* Overall progress bar */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+          <div className="flex items-end justify-between mb-3">
+            <div>
+              <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Overall Progress</p>
+              <p className="text-3xl font-extrabold text-gray-900">{pct}%</p>
+            </div>
+            <div className="flex gap-6 text-sm text-right">
+              <div>
+                <p className="font-bold text-lime-600 text-lg">{completed}</p>
+                <p className="text-gray-500">Phases complete</p>
+              </div>
+              <div>
+                <p className="font-bold text-fuchsia-600 text-lg">{inProgress}</p>
+                <p className="text-gray-500">In progress</p>
+              </div>
+              <div>
+                <p className="font-bold text-gray-400 text-lg">{planned}</p>
+                <p className="text-gray-500">Planned</p>
+              </div>
+            </div>
+          </div>
+          <div className="w-full bg-gray-100 rounded-full h-3">
+            <div
+              className="bg-linear-to-r from-fuchsia-500 to-lime-500 h-3 rounded-full transition-all"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <p className="text-xs text-gray-400 mt-2">{doneItems} of {totalItems} features shipped</p>
+        </div>
+
+        {/* CTA buttons */}
+        <div className="flex flex-wrap gap-3">
+          <a
+            href="https://github.com/dapperAuteur/centenarian-os"
             target="_blank"
             rel="noopener noreferrer"
             className="px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
           >
             View on GitHub
           </a>
-          <Link 
-            href="/contribute" 
+          <Link
+            href="/contribute"
             className="px-6 py-3 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-medium"
           >
             Contribute
           </Link>
+          <Link
+            href="/academy"
+            className="px-6 py-3 border border-fuchsia-300 text-fuchsia-700 rounded-lg hover:bg-fuchsia-50 transition-colors font-medium"
+          >
+            Try the Academy
+          </Link>
         </div>
       </section>
 
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      {/* Phases */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         <div className="space-y-8">
-          
-          {/* Phase 1 - Completed */}
-          <div className="relative pl-8 border-l-4 border-lime-500">
-            <div className="absolute -left-3 top-0 w-6 h-6 bg-lime-500 rounded-full flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4 text-white" />
-            </div>
-            <div className="bg-white rounded-xl shadow-md p-6 mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-2xl font-bold text-gray-900">Phase 1: Core Planner Module</h2>
-                <span className="px-3 py-1 bg-lime-100 text-lime-800 rounded-full text-sm font-semibold">
-                  Completed
-                </span>
-              </div>
-              <p className="text-gray-600 mb-4">
-                Q4 2025 • Foundation of the hierarchical goal system
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-start">
-                  <CheckCircle2 className="w-5 h-5 text-lime-600 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Database schema with RLS policies</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle2 className="w-5 h-5 text-lime-600 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Roadmap → Goal → Milestone → Task hierarchy</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle2 className="w-5 h-5 text-lime-600 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Real-time task updates via Supabase subscriptions</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle2 className="w-5 h-5 text-lime-600 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Financial tracking across all planning entities</span>
-                </li>
-              </ul>
-            </div>
-          </div>
+          {PHASES.map((phase) => {
+            const cfg = STATUS_CONFIG[phase.status];
+            const StatusIcon = cfg.icon;
+            const phaseTotal = phase.items.length;
+            const phaseDone = phase.items.filter((i) => i.done).length;
 
-          {/* Phase 2 - In Progress */}
-          <div className="relative pl-8 border-l-4 border-sky-500">
-            <div className="absolute -left-3 top-0 w-6 h-6 bg-sky-500 rounded-full flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4 text-white" />
-            </div>
-            <div className="bg-white rounded-xl shadow-md p-6 mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-2xl font-bold text-gray-900">Phase 2: Nutrition Tracking (Fuel Module)</h2>
-                <span className="px-3 py-1 bg-lime-100 text-lime-800 rounded-full text-sm font-semibold">
-                  Completed
-                </span>
-              </div>
-              <p className="text-gray-600 mb-4">
-                Q1 2026 • Track what fuels your journey
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-start">
-                  <CheckCircle2 className="w-5 h-5 text-sky-600 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Ingredient library with NCV framework</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle2 className="w-5 h-5 text-sky-600 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Protocol-based meal logging system</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle2 className="w-5 h-5 text-sky-600 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Cost tracking and budget alerts</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle2 className="w-5 h-5 text-sky-600 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">USDA API integration for ingredient data</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle2 className="w-5 h-5 text-sky-600 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Open Food Facts API integration for ingredient data</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle2 className="w-5 h-5 text-sky-600 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Auto inventory management</span>
-                </li>
-              </ul>
-            </div>
-          </div>
+            return (
+              <div key={phase.id} className={`relative pl-8 border-l-4 ${cfg.border}`}>
+                <div className={`absolute -left-3 top-0 w-6 h-6 ${cfg.dot} rounded-full flex items-center justify-center`}>
+                  <StatusIcon className="w-3.5 h-3.5 text-white" />
+                </div>
 
-          {/* Phase 3 - In Progress */}
-          <div className="relative pl-8 border-l-4 border-sky-500">
-            <div className="absolute -left-3 top-0 w-6 h-6 bg-sky-500 rounded-full flex items-center justify-center">
-              <Clock className="w-4 h-4 text-white" />
-            </div>
-            <div className="bg-white rounded-xl shadow-md p-6 mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-2xl font-bold text-gray-900">Phase 3: Focus Tracking & AI Debrief (Engine)</h2>
-                <span className="px-3 py-1 bg-sky-100 text-sky-800 rounded-full text-sm font-semibold">
-                  In Progress
-                </span>
-              </div>
-              <p className="text-gray-600 mb-4">
-                Q2 2026 • Generate insights from daily data
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-start">
-                  <CheckCircle2 className="w-5 h-5 text-sky-600 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Focus timer linked to tasks</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle2 className="w-5 h-5 text-sky-600 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Daily energy/focus rating system</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle2 className="w-5 h-5 text-sky-600 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Pain tracking and body check logging</span>
-                </li>
-                <li className="flex items-start">
-                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">AI-assisted weekly review generation</span>
-                </li>
-                <li className="flex items-start">
-                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Correlation analysis (nutrition ↔ performance)</span>
-                </li>
-                <li className="flex items-start">
-                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Offline-first architecture with IndexedDB</span>
-                </li>
-                <li className="flex items-start">
-                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Recipe Ideas from Current Ingredient Inventory</span>
-                </li>
-              </ul>
-            </div>
-          </div>
+                <div className="bg-white rounded-xl shadow-md p-6">
+                  {/* Phase header */}
+                  <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
+                    <h2 className="text-xl font-bold text-gray-900">{phase.title}</h2>
+                    <span className={`px-3 py-1 rounded-full text-sm font-semibold shrink-0 ${cfg.badge}`}>
+                      {cfg.label}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-1">{phase.quarter}</p>
+                  <p className="text-gray-600 mb-4">{phase.description}</p>
 
-          {/* Phase 4 - Planned */}
-          <div className="relative pl-8 border-l-4 border-gray-300">
-            <div className="absolute -left-3 top-0 w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center">
-              <Circle className="w-4 h-4 text-white" />
-            </div>
-            <div className="bg-white rounded-xl shadow-md p-6 mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-2xl font-bold text-gray-900">Phase 4: Biometrics & Recovery</h2>
-                <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-semibold">
-                  Planned
-                </span>
-              </div>
-              <p className="text-gray-600 mb-4">
-                Q3 2026 • Integrate wearable data
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-start">
-                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Wearable device integration (Oura, Whoop, Apple Watch)</span>
-                </li>
-                <li className="flex items-start">
-                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Sleep quality tracking</span>
-                </li>
-                <li className="flex items-start">
-                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">HRV and recovery metrics</span>
-                </li>
-                <li className="flex items-start">
-                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Body composition logging</span>
-                </li>
-              </ul>
-            </div>
-          </div>
+                  {/* Phase mini progress */}
+                  {phase.status !== 'planned' && (
+                    <div className="mb-4">
+                      <div className="flex justify-between text-xs text-gray-400 mb-1">
+                        <span>{phaseDone}/{phaseTotal} features</span>
+                        <span>{Math.round((phaseDone / phaseTotal) * 100)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-1.5">
+                        <div
+                          className={`h-1.5 rounded-full ${phase.status === 'completed' ? 'bg-lime-500' : 'bg-fuchsia-500'}`}
+                          style={{ width: `${(phaseDone / phaseTotal) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
 
-          {/* Phase 5 - Planned */}
-          <div className="relative pl-8 border-l-4 border-gray-300">
-            <div className="absolute -left-3 top-0 w-6 h-6 bg-gray-300 rounded-full"></div>
-            <div className="bg-white rounded-xl shadow-md p-6 mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-2xl font-bold text-gray-900">Phase 5: Financial Dashboard</h2>
-                <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-semibold">
-                  Planned
-                </span>
+                  {/* Items */}
+                  <ul className="space-y-2">
+                    {phase.items.map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        {item.done ? (
+                          <CheckCircle2 className={`w-5 h-5 shrink-0 mt-0.5 ${cfg.checkColor}`} />
+                        ) : (
+                          <Circle className="w-5 h-5 shrink-0 mt-0.5 text-gray-300" />
+                        )}
+                        <span className={item.done ? 'text-gray-700' : 'text-gray-500'}>{item.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-              <p className="text-gray-600 mb-4">
-                Q4 2026 • Connect spending to goals
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-start">
-                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Budget tracking by goal category</span>
-                </li>
-                <li className="flex items-start">
-                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Nutrition cost integration</span>
-                </li>
-                <li className="flex items-start">
-                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">ROI visualization per goal</span>
-                </li>
-                <li className="flex items-start">
-                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Import Bulk Data via CSV</span>
-                </li>
-                <li className="flex items-start">
-                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Download CSV Import Template</span>
-                </li>
-                <li className="flex items-start">
-                  <Circle className="w-5 h-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Export Data</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
+            );
+          })}
         </div>
       </section>
 
+      {/* CTA footer band */}
       <section className="bg-gray-900 py-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">
-            Help Build the Future
-          </h2>
+          <h2 className="text-3xl font-bold text-white mb-4">Help Build the Future</h2>
           <p className="text-gray-400 mb-8 text-lg">
             CentenarianOS is open source. Contribute code, suggest features, or report bugs.
           </p>
-          <div className="flex justify-center space-x-4">
-            <a 
-              href="https://github.com/dapperAuteur/centenarian-os" 
+          <div className="flex justify-center flex-wrap gap-4">
+            <a
+              href="https://github.com/dapperAuteur/centenarian-os"
               target="_blank"
               rel="noopener noreferrer"
               className="px-8 py-3 bg-white text-gray-900 rounded-lg hover:bg-gray-100 transition-colors font-semibold"
             >
               View Repository
             </a>
-            <Link 
-              href="/contribute" 
+            <Link
+              href="/contribute"
               className="px-8 py-3 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-semibold"
             >
               Contribution Guide
@@ -284,16 +365,11 @@ export default function RoadmapPage() {
         </div>
       </section>
 
+      {/* Footer */}
       <footer className="border-t bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex justify-between items-center">
-            <p className="text-gray-600 text-sm">
-              © 2025 CentenarianOS. MIT License.
-            </p>
-            <Link href="/" className="text-gray-600 hover:text-gray-900 text-sm">
-              Back to Home
-            </Link>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex justify-between items-center">
+          <p className="text-gray-600 text-sm">© 2026 B4C LLC / AwesomeWebStore.com. MIT License.</p>
+          <Link href="/" className="text-gray-600 hover:text-gray-900 text-sm">Back to Home</Link>
         </div>
       </footer>
     </div>
