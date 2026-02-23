@@ -125,29 +125,29 @@ export default function LessonPlayerPage() {
   return (
     <div className="text-white">
       {/* Top nav */}
-      <div className="border-b border-gray-800 px-6 py-3 flex items-center gap-4">
-        <Link href={`/academy/${courseId}`} className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition">
-          <ChevronLeft className="w-4 h-4" /> Back to course
+      <div className="border-b border-gray-800 px-3 sm:px-6 py-3 flex items-center gap-3">
+        <Link href={`/academy/${courseId}`} className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition shrink-0">
+          <ChevronLeft className="w-4 h-4" /> <span className="hidden sm:inline">Back to course</span><span className="sm:hidden">Back</span>
         </Link>
-        <span className="text-gray-700">|</span>
+        <span className="text-gray-700 hidden sm:inline">|</span>
         <div className="flex items-center gap-1.5 text-gray-400 text-sm">
           <TypeIcon className="w-3.5 h-3.5" />
-          <span className="capitalize">{lesson.lesson_type}</span>
+          <span className="capitalize hidden sm:inline">{lesson.lesson_type}</span>
         </div>
         <div className="flex-1" />
         {navigationMode === 'cyoa' && (
-          <span className="flex items-center gap-1 text-fuchsia-400 text-xs">
-            <GitBranch className="w-3.5 h-3.5" /> Adventure Mode
+          <span className="flex items-center gap-1 text-fuchsia-400 text-xs shrink-0">
+            <GitBranch className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Adventure Mode</span>
           </span>
         )}
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-10">
-        <h1 className="text-2xl font-bold mb-8">{lesson.title}</h1>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+        <h1 className="text-xl sm:text-2xl font-bold mb-6">{lesson.title}</h1>
 
         {/* Content area */}
         {lesson.lesson_type === 'video' && lesson.content_url && (
-          <div className="aspect-video bg-gray-900 rounded-2xl overflow-hidden mb-8">
+          <div className="aspect-video bg-gray-900 rounded-xl sm:rounded-2xl overflow-hidden mb-6">
             <video
               src={lesson.content_url}
               controls
@@ -158,14 +158,14 @@ export default function LessonPlayerPage() {
         )}
 
         {lesson.lesson_type === 'audio' && lesson.content_url && (
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 mb-8 flex flex-col items-center">
-            <Volume2 className="w-12 h-12 text-fuchsia-400 mb-6" />
+          <div className="bg-gray-900 border border-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-8 mb-6 flex flex-col items-center">
+            <Volume2 className="w-10 h-10 sm:w-12 sm:h-12 text-fuchsia-400 mb-4 sm:mb-6" />
             <audio src={lesson.content_url} controls className="w-full" onEnded={markComplete} />
           </div>
         )}
 
         {lesson.lesson_type === 'slides' && lesson.content_url && (
-          <div className="aspect-video bg-gray-900 rounded-2xl overflow-hidden mb-8">
+          <div className="aspect-video bg-gray-900 rounded-xl sm:rounded-2xl overflow-hidden mb-6">
             <iframe
               src={lesson.content_url}
               className="w-full h-full"
@@ -176,7 +176,7 @@ export default function LessonPlayerPage() {
         )}
 
         {lesson.text_content && (
-          <div className="prose prose-invert prose-sm max-w-none mb-8 bg-gray-900 border border-gray-800 rounded-2xl p-8">
+          <div className="prose prose-invert prose-sm max-w-none mb-6 bg-gray-900 border border-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-8">
             <div dangerouslySetInnerHTML={{ __html: lesson.text_content }} />
           </div>
         )}
@@ -186,7 +186,7 @@ export default function LessonPlayerPage() {
           <button
             type="button"
             onClick={markComplete}
-            className="flex items-center gap-2 px-5 py-2.5 bg-fuchsia-600 text-white rounded-xl font-semibold hover:bg-fuchsia-700 transition mb-8"
+            className="flex items-center gap-2 px-5 py-3 bg-fuchsia-600 text-white rounded-xl font-semibold hover:bg-fuchsia-700 transition mb-6 min-h-11 w-full sm:w-auto justify-center sm:justify-start"
           >
             <CheckCircle className="w-4 h-4" /> Mark as Complete
           </button>
@@ -202,7 +202,7 @@ export default function LessonPlayerPage() {
             {/* CYOA Crossroads */}
             {navigationMode === 'cyoa' && crossroads !== null && (
               <div>
-                <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-bold mb-4 flex items-center gap-2">
                   <GitBranch className="w-5 h-5 text-fuchsia-400" /> Choose Your Next Path
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -210,7 +210,7 @@ export default function LessonPlayerPage() {
                     <Link
                       key={opt.lesson_id}
                       href={`/academy/${courseId}/lessons/${opt.lesson_id}`}
-                      className={`p-4 rounded-xl border transition text-left group ${
+                      className={`p-4 rounded-xl border transition text-left min-h-[72px] flex flex-col justify-center ${
                         opt.path_type === 'linear'
                           ? 'bg-fuchsia-900/20 border-fuchsia-700/50 hover:bg-fuchsia-900/40'
                           : opt.path_type === 'semantic'
@@ -224,7 +224,7 @@ export default function LessonPlayerPage() {
                   ))}
                   <Link
                     href={`/academy/${courseId}`}
-                    className="p-4 rounded-xl border border-gray-800 bg-gray-900 hover:bg-gray-800 transition text-left"
+                    className="p-4 rounded-xl border border-gray-800 bg-gray-900 hover:bg-gray-800 transition text-left min-h-[72px] flex flex-col justify-center"
                   >
                     <p className="text-xs font-semibold uppercase tracking-wide mb-1 opacity-60">Course Map</p>
                     <p className="font-semibold text-white text-sm">View All Lessons</p>
@@ -235,11 +235,11 @@ export default function LessonPlayerPage() {
 
             {/* Linear navigation */}
             {(navigationMode === 'linear' || crossroads === null) && (
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-3">
                 {adjacentLessons.prev && (
                   <Link
                     href={`/academy/${courseId}/lessons/${adjacentLessons.prev}`}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-gray-800 text-gray-300 rounded-xl text-sm hover:bg-gray-700 transition"
+                    className="flex items-center gap-2 px-4 py-3 bg-gray-800 text-gray-300 rounded-xl text-sm hover:bg-gray-700 transition min-h-11"
                   >
                     <ChevronLeft className="w-4 h-4" /> Previous
                   </Link>
@@ -247,14 +247,14 @@ export default function LessonPlayerPage() {
                 {adjacentLessons.next ? (
                   <Link
                     href={`/academy/${courseId}/lessons/${adjacentLessons.next}`}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-fuchsia-600 text-white rounded-xl font-semibold hover:bg-fuchsia-700 transition"
+                    className="flex items-center gap-2 px-5 py-3 bg-fuchsia-600 text-white rounded-xl font-semibold hover:bg-fuchsia-700 transition min-h-11"
                   >
                     Next Lesson <ChevronRight className="w-4 h-4" />
                   </Link>
                 ) : (
                   <Link
                     href={`/academy/${courseId}`}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-green-700 text-white rounded-xl font-semibold hover:bg-green-800 transition"
+                    className="flex items-center gap-2 px-5 py-3 bg-green-700 text-white rounded-xl font-semibold hover:bg-green-800 transition min-h-11"
                   >
                     <CheckCircle className="w-4 h-4" /> Course Complete!
                   </Link>

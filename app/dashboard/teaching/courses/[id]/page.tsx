@@ -160,15 +160,15 @@ export default function CourseEditorPage() {
   const modules = [...course.course_modules].sort((a, b) => a.order - b.order);
 
   return (
-    <div className="p-8 max-w-3xl">
+    <div className="p-4 sm:p-8 max-w-3xl">
       <Link href="/dashboard/teaching" className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm mb-6 transition">
         <ChevronLeft className="w-4 h-4" /> Teaching Dashboard
       </Link>
 
-      {/* Header */}
-      <div className="flex items-start justify-between mb-8 gap-4">
+      {/* Header — stacks on mobile */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white">{course.title}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">{course.title}</h1>
           <div className="flex items-center gap-2 mt-1.5">
             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
               course.is_published ? 'bg-green-900/30 text-green-400' : 'bg-gray-800 text-gray-500'
@@ -182,14 +182,14 @@ export default function CourseEditorPage() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {saving && <Loader2 className="w-4 h-4 animate-spin text-gray-500" />}
           {feedback && <p className="text-sm text-green-400">{feedback}</p>}
           <button
             type="button"
             onClick={togglePublish}
             disabled={publishingToggle}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition disabled:opacity-50 ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-50 min-h-11 ${
               course.is_published
                 ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                 : 'bg-fuchsia-600 text-white hover:bg-fuchsia-700'
@@ -200,14 +200,14 @@ export default function CourseEditorPage() {
           </button>
           <Link
             href={`/dashboard/teaching/courses/${courseId}/assignments`}
-            className="flex items-center gap-1.5 px-3 py-2 bg-gray-800 text-gray-300 rounded-xl text-sm hover:bg-gray-700 transition"
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-gray-800 text-gray-300 rounded-xl text-sm hover:bg-gray-700 transition min-h-11"
           >
             <ClipboardList className="w-3.5 h-3.5" /> Assignments
           </Link>
           <Link
             href={`/academy/${courseId}`}
             target="_blank"
-            className="flex items-center gap-1.5 px-3 py-2 bg-gray-800 text-gray-300 rounded-xl text-sm hover:bg-gray-700 transition"
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-gray-800 text-gray-300 rounded-xl text-sm hover:bg-gray-700 transition min-h-11"
           >
             Preview
           </Link>
@@ -215,7 +215,7 @@ export default function CourseEditorPage() {
       </div>
 
       {/* Course settings */}
-      <div className="dark-input bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
+      <div className="dark-input bg-gray-900 border border-gray-800 rounded-2xl p-4 sm:p-6 mb-6">
         <h2 className="font-semibold text-white mb-4">Settings</h2>
         <div className="space-y-4">
           <div>
@@ -237,13 +237,14 @@ export default function CourseEditorPage() {
               className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500 resize-none"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          {/* Price — stacks on mobile */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm text-gray-200 mb-1.5">Price Type</label>
               <select
                 value={course.price_type}
                 onChange={(e) => saveCourseField({ price_type: e.target.value })}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
               >
                 <option value="free">Free</option>
                 <option value="one_time">One-time</option>
@@ -257,20 +258,20 @@ export default function CourseEditorPage() {
                   type="number"
                   defaultValue={course.price}
                   onBlur={(e) => saveCourseField({ price: Number(e.target.value) })}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
                 />
               </div>
             )}
           </div>
           <div>
             <label className="block text-sm text-gray-200 mb-1.5">Navigation Mode</label>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {(['linear', 'cyoa'] as const).map((mode) => (
                 <button
                   key={mode}
                   type="button"
                   onClick={() => saveCourseField({ navigation_mode: mode })}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                  className={`px-4 py-2.5 rounded-lg text-sm font-medium transition min-h-11 ${
                     course.navigation_mode === mode
                       ? 'bg-fuchsia-600 text-white'
                       : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
@@ -283,13 +284,13 @@ export default function CourseEditorPage() {
           </div>
           <div>
             <label className="block text-sm text-gray-200 mb-1.5">Visibility</label>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex flex-wrap gap-2">
               {(['public', 'members', 'scheduled'] as const).map((v) => (
                 <button
                   key={v}
                   type="button"
                   onClick={() => saveCourseField({ visibility: v })}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                  className={`px-4 py-2.5 rounded-lg text-sm font-medium transition min-h-11 ${
                     course.visibility === v
                       ? 'bg-fuchsia-600 text-white'
                       : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
@@ -306,7 +307,7 @@ export default function CourseEditorPage() {
                   type="datetime-local"
                   defaultValue={course.published_at ? course.published_at.slice(0, 16) : ''}
                   onBlur={(e) => saveCourseField({ published_at: e.target.value || null })}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
                 />
               </div>
             )}
@@ -316,7 +317,7 @@ export default function CourseEditorPage() {
 
       {/* CYOA: generate embeddings */}
       {course.navigation_mode === 'cyoa' && (
-        <div className="bg-fuchsia-950/30 border border-fuchsia-800/50 rounded-2xl p-5 mb-6">
+        <div className="bg-fuchsia-950/30 border border-fuchsia-800/50 rounded-2xl p-4 sm:p-5 mb-6">
           <div className="flex items-center gap-3 mb-2">
             <Sparkles className="w-5 h-5 text-fuchsia-400" />
             <h2 className="font-semibold text-white">AI Adventure Paths</h2>
@@ -325,12 +326,12 @@ export default function CourseEditorPage() {
             Generate AI embeddings for all lessons to power semantic &quot;Choose Your Own Adventure&quot; navigation.
             Run this after adding or editing lessons.
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={generateEmbeddings}
               disabled={generatingEmbeddings}
-              className="flex items-center gap-2 px-4 py-2 bg-fuchsia-600 text-white rounded-xl text-sm font-semibold hover:bg-fuchsia-700 transition disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2.5 bg-fuchsia-600 text-white rounded-xl text-sm font-semibold hover:bg-fuchsia-700 transition disabled:opacity-50 min-h-11"
             >
               {generatingEmbeddings ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
               {generatingEmbeddings ? 'Generating…' : 'Generate AI Paths'}
@@ -346,13 +347,13 @@ export default function CourseEditorPage() {
       )}
 
       {/* Curriculum builder */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 sm:p-6">
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-semibold text-white">Curriculum</h2>
           <button
             type="button"
             onClick={() => setAddingModule(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 text-gray-300 rounded-lg text-sm hover:bg-gray-700 transition"
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-gray-800 text-gray-300 rounded-lg text-sm hover:bg-gray-700 transition min-h-11"
           >
             <Plus className="w-3.5 h-3.5" /> Add Module
           </button>
@@ -367,10 +368,10 @@ export default function CourseEditorPage() {
               onChange={(e) => setNewModuleTitle(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') addModule(); if (e.key === 'Escape') setAddingModule(false); }}
               placeholder="Module title…"
-              className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+              className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500 min-h-11"
             />
-            <button onClick={addModule} className="px-3 py-2 bg-fuchsia-600 text-white rounded-xl text-sm font-semibold hover:bg-fuchsia-700 transition">Add</button>
-            <button onClick={() => setAddingModule(false)} className="px-3 py-2 bg-gray-800 text-gray-400 rounded-xl text-sm hover:bg-gray-700 transition">Cancel</button>
+            <button onClick={addModule} className="px-4 py-2.5 bg-fuchsia-600 text-white rounded-xl text-sm font-semibold hover:bg-fuchsia-700 transition min-h-11">Add</button>
+            <button onClick={() => setAddingModule(false)} className="px-3 py-2.5 bg-gray-800 text-gray-400 rounded-xl text-sm hover:bg-gray-700 transition min-h-11">Cancel</button>
           </div>
         )}
 
@@ -387,23 +388,25 @@ export default function CourseEditorPage() {
                   <div className="flex items-center gap-3 px-4 py-3 bg-gray-800/50">
                     <GripVertical className="w-4 h-4 text-gray-600 shrink-0" />
                     <p className="flex-1 font-medium text-white text-sm">{mod.title}</p>
-                    <span className="text-gray-600 text-xs">{lessons.length} lessons</span>
+                    <span className="text-gray-600 text-xs">{lessons.length} lesson{lessons.length !== 1 ? 's' : ''}</span>
                   </div>
 
                   {lessons.map((lesson) => {
                     const Icon = LESSON_TYPE_ICON[lesson.lesson_type] ?? Play;
                     return (
-                      <div key={lesson.id} className="flex items-center gap-3 px-4 py-2.5 border-t border-gray-800 group">
+                      <div key={lesson.id} className="flex items-center gap-3 px-4 py-3 border-t border-gray-800">
                         <GripVertical className="w-3.5 h-3.5 text-gray-700 shrink-0" />
                         <Icon className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-                        <span className="flex-1 text-sm text-gray-300">{lesson.title}</span>
+                        <span className="flex-1 text-sm text-gray-300 min-w-0 truncate">{lesson.title}</span>
                         {lesson.is_free_preview && (
-                          <span className="text-xs text-fuchsia-400 px-1.5 py-0.5 bg-fuchsia-900/30 rounded">Preview</span>
+                          <span className="text-xs text-fuchsia-400 px-1.5 py-0.5 bg-fuchsia-900/30 rounded shrink-0">Preview</span>
                         )}
+                        {/* Delete always visible — hover:opacity trick is invisible on mobile */}
                         <button
                           type="button"
                           onClick={() => deleteLesson(lesson.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-gray-600 hover:text-red-400 transition"
+                          className="p-2 text-gray-600 hover:text-red-400 transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
+                          aria-label="Delete lesson"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -420,39 +423,39 @@ export default function CourseEditorPage() {
                         value={newLesson.title}
                         onChange={(e) => setNewLesson((l) => ({ ...l, title: e.target.value }))}
                         placeholder="Lesson title…"
-                        className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500 min-h-11"
                       />
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-3 items-center">
                         <select
                           value={newLesson.lesson_type}
                           onChange={(e) => setNewLesson((l) => ({ ...l, lesson_type: e.target.value }))}
-                          className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                          className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
                         >
                           <option value="video">Video</option>
                           <option value="text">Text</option>
                           <option value="audio">Audio</option>
                           <option value="slides">Slides</option>
                         </select>
-                        <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+                        <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer min-h-11">
                           <input
                             type="checkbox"
                             checked={newLesson.is_free_preview}
                             onChange={(e) => setNewLesson((l) => ({ ...l, is_free_preview: e.target.checked }))}
-                            className="accent-fuchsia-500"
+                            className="accent-fuchsia-500 w-4 h-4"
                           />
                           Free preview
                         </label>
                       </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => addLesson(mod.id)} className="px-3 py-1.5 bg-fuchsia-600 text-white rounded-xl text-sm font-semibold hover:bg-fuchsia-700 transition">Add Lesson</button>
-                        <button onClick={() => setAddingLesson(null)} className="px-3 py-1.5 bg-gray-800 text-gray-400 rounded-xl text-sm hover:bg-gray-700 transition">Cancel</button>
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={() => addLesson(mod.id)} className="px-4 py-2.5 bg-fuchsia-600 text-white rounded-xl text-sm font-semibold hover:bg-fuchsia-700 transition min-h-11">Add Lesson</button>
+                        <button onClick={() => setAddingLesson(null)} className="px-4 py-2.5 bg-gray-800 text-gray-400 rounded-xl text-sm hover:bg-gray-700 transition min-h-11">Cancel</button>
                       </div>
                     </div>
                   ) : (
                     <button
                       type="button"
                       onClick={() => setAddingLesson(mod.id)}
-                      className="w-full flex items-center gap-2 px-4 py-2.5 border-t border-gray-800 text-gray-600 hover:text-fuchsia-400 text-sm hover:bg-gray-800/30 transition"
+                      className="w-full flex items-center gap-2 px-4 py-3 border-t border-gray-800 text-gray-600 hover:text-fuchsia-400 text-sm hover:bg-gray-800/30 transition min-h-11"
                     >
                       <Plus className="w-3.5 h-3.5" /> Add Lesson
                     </button>
