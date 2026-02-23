@@ -56,15 +56,15 @@ export default function TeachingCoursesPage() {
   }
 
   return (
-    <div className="p-8 max-w-5xl">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-4 sm:p-8 max-w-5xl">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white">My Courses</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">My Courses</h1>
           <p className="text-gray-400 text-sm mt-1">{courses.length} course{courses.length !== 1 ? 's' : ''}</p>
         </div>
         <Link
           href="/dashboard/teaching/courses/new"
-          className="flex items-center gap-2 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-semibold hover:bg-fuchsia-700 transition"
+          className="flex items-center justify-center gap-2 px-4 py-3 bg-fuchsia-600 text-white rounded-lg text-sm font-semibold hover:bg-fuchsia-700 transition min-h-11 sm:w-auto"
         >
           <Plus className="w-4 h-4" />
           New Course
@@ -112,7 +112,7 @@ export default function TeachingCoursesPage() {
                 <button
                   onClick={() => togglePublish(course)}
                   title={course.is_published ? 'Unpublish' : 'Publish'}
-                  className={`p-2 rounded-lg transition ${
+                  className={`w-11 h-11 flex items-center justify-center rounded-lg transition ${
                     course.is_published
                       ? 'bg-green-900/30 text-green-400 hover:bg-green-900/50'
                       : 'bg-gray-800 text-gray-500 hover:bg-gray-700'
@@ -122,7 +122,7 @@ export default function TeachingCoursesPage() {
                 </button>
                 <Link
                   href={username ? `/dashboard/teaching/${username}/courses/${course.id}` : '#'}
-                  className="p-2 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white transition"
+                  className="w-11 h-11 flex items-center justify-center rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white transition"
                   title="Edit course"
                 >
                   <Pencil className="w-4 h-4" />
