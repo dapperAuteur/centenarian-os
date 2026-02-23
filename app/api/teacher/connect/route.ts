@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
   async function createLiveModeAccount() {
     const account = await stripe.accounts.create({
       type: 'express',
-      email: user.email!,
-      metadata: { supabase_user_id: user.id },
+      email: user!.email!,
+      metadata: { supabase_user_id: user!.id },
     });
     await db
       .from('teacher_profiles')

@@ -1,7 +1,9 @@
 // app/api/academy/courses/[id]/enroll/route.ts
 // POST: enroll in a course.
 //   - Free courses: direct enrollment.
-//   - Paid courses: create Stripe checkout with application_fee for CentOS.
+//   - Paid courses: create Stripe checkout.
+//     - Platform teachers (PLATFORM_TEACHER_EMAILS): payment goes directly to platform account, no Connect fees.
+//     - Third-party teachers: application_fee + transfer_data via Stripe Connect.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
@@ -13,6 +15,14 @@ function getDb() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
+}
+
+function isPlatformTeacherEmail(email: string): boolean {
+  const platformEmails = (process.env.PLATFORM_TEACHER_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return platformEmails.length > 0 && platformEmails.includes(email.toLowerCase());
 }
 
 type Params = { params: Promise<{ id: string }> };
@@ -64,14 +74,19 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ enrolled: true });
   }
 
-  // Paid course — create Stripe checkout
+  // Determine if this is a platform teacher (payments go directly to platform, no Connect fees)
+  const { data: { user: teacherAuthUser } } = await db.auth.admin.getUserById(course.teacher_id);
+  const isPlatformTeacher = !!teacherAuthUser?.email && isPlatformTeacherEmail(teacherAuthUser.email);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const teacherProfile = (course as any).teacher_profiles;
-  if (!teacherProfile?.stripe_connect_account_id || !teacherProfile?.stripe_connect_onboarded) {
+
+  // Third-party teachers must have completed Connect onboarding
+  if (!isPlatformTeacher && (!teacherProfile?.stripe_connect_account_id || !teacherProfile?.stripe_connect_onboarded)) {
     return NextResponse.json({ error: 'Teacher has not set up payouts yet' }, { status: 503 });
   }
 
-  // Get platform fee
+  // Get platform fee (only relevant for Connect teachers)
   const { data: feeSetting } = await db
     .from('platform_settings')
     .select('value')
@@ -102,27 +117,41 @@ export async function POST(request: NextRequest, { params }: Params) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? request.headers.get('origin') ?? 'http://localhost:3000';
 
   if (course.price_type === 'one_time') {
-    // Create a one-time price on the fly (or use course.stripe_price_id if set)
-    const { data: courseWithPrice } = await db
-      .from('courses')
-      .select('stripe_price_id, stripe_product_id')
-      .eq('id', courseId)
-      .single();
-
-    let priceId = courseWithPrice?.stripe_price_id;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let priceId = (course as any).stripe_price_id as string | undefined;
 
     if (!priceId) {
-      // Create product + price in Stripe
-      const product = await stripe.products.create(
-        { name: course.title, metadata: { course_id: courseId } },
-        { stripeAccount: teacherProfile.stripe_connect_account_id },
-      );
-      const price = await stripe.prices.create(
-        { unit_amount: priceInCents, currency: 'usd', product: product.id },
-        { stripeAccount: teacherProfile.stripe_connect_account_id },
-      );
-      priceId = price.id;
-      await db.from('courses').update({ stripe_product_id: product.id, stripe_price_id: priceId }).eq('id', courseId);
+      if (isPlatformTeacher) {
+        // Create product + price on the platform account directly (no stripeAccount option)
+        const product = await stripe.products.create({ name: course.title, metadata: { course_id: courseId } });
+        const price = await stripe.prices.create({ unit_amount: priceInCents, currency: 'usd', product: product.id });
+        priceId = price.id;
+        await db.from('courses').update({ stripe_product_id: product.id, stripe_price_id: priceId }).eq('id', courseId);
+      } else {
+        // Create product + price on teacher's Connect account
+        const product = await stripe.products.create(
+          { name: course.title, metadata: { course_id: courseId } },
+          { stripeAccount: teacherProfile.stripe_connect_account_id },
+        );
+        const price = await stripe.prices.create(
+          { unit_amount: priceInCents, currency: 'usd', product: product.id },
+          { stripeAccount: teacherProfile.stripe_connect_account_id },
+        );
+        priceId = price.id;
+        await db.from('courses').update({ stripe_product_id: product.id, stripe_price_id: priceId }).eq('id', courseId);
+      }
+    }
+
+    if (isPlatformTeacher) {
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        mode: 'payment',
+        line_items: [{ price: priceId, quantity: 1 }],
+        success_url: `${baseUrl}/academy/${courseId}?enrolled=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/academy/${courseId}`,
+        metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment' },
+      });
+      return NextResponse.json({ url: session.url });
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -145,16 +174,40 @@ export async function POST(request: NextRequest, { params }: Params) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let priceId = (course as any).stripe_price_id as string | undefined;
   if (!priceId) {
-    const product = await stripe.products.create(
-      { name: course.title, metadata: { course_id: courseId } },
-      { stripeAccount: teacherProfile.stripe_connect_account_id },
-    );
-    const price = await stripe.prices.create(
-      { unit_amount: priceInCents, currency: 'usd', product: product.id, recurring: { interval: 'month' } },
-      { stripeAccount: teacherProfile.stripe_connect_account_id },
-    );
-    priceId = price.id;
-    await db.from('courses').update({ stripe_product_id: product.id, stripe_price_id: priceId }).eq('id', courseId);
+    if (isPlatformTeacher) {
+      const product = await stripe.products.create({ name: course.title, metadata: { course_id: courseId } });
+      const price = await stripe.prices.create({
+        unit_amount: priceInCents,
+        currency: 'usd',
+        product: product.id,
+        recurring: { interval: 'month' },
+      });
+      priceId = price.id;
+      await db.from('courses').update({ stripe_product_id: product.id, stripe_price_id: priceId }).eq('id', courseId);
+    } else {
+      const product = await stripe.products.create(
+        { name: course.title, metadata: { course_id: courseId } },
+        { stripeAccount: teacherProfile.stripe_connect_account_id },
+      );
+      const price = await stripe.prices.create(
+        { unit_amount: priceInCents, currency: 'usd', product: product.id, recurring: { interval: 'month' } },
+        { stripeAccount: teacherProfile.stripe_connect_account_id },
+      );
+      priceId = price.id;
+      await db.from('courses').update({ stripe_product_id: product.id, stripe_price_id: priceId }).eq('id', courseId);
+    }
+  }
+
+  if (isPlatformTeacher) {
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      mode: 'subscription',
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${baseUrl}/academy/${courseId}?enrolled=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/academy/${courseId}`,
+      metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment' },
+    });
+    return NextResponse.json({ url: session.url });
   }
 
   const session = await stripe.checkout.sessions.create({
