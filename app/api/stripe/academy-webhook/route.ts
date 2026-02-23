@@ -48,14 +48,17 @@ export async function POST(request: NextRequest) {
 
       if (session.status !== 'complete') break;
 
+      const attemptNumber = Number(session.metadata?.attempt_number ?? '1');
+
       const { error } = await db
         .from('enrollments')
         .upsert({
           user_id: userId,
           course_id: courseId,
+          attempt_number: attemptNumber,
           stripe_checkout_session_id: session.id,
           status: 'active',
-        }, { onConflict: 'user_id,course_id' });
+        }, { onConflict: 'user_id,course_id,attempt_number' });
 
       if (error) console.error('[academy-webhook] Enrollment upsert failed:', error);
       break;

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   // Get course details
   const { data: course } = await db
     .from('courses')
-    .select('id, title, price, price_type, is_published, teacher_id, stripe_price_id, stripe_product_id, teacher_profiles(stripe_connect_account_id, stripe_connect_onboarded)')
+    .select('id, title, price, price_type, is_published, teacher_id, stripe_price_id, stripe_product_id, trial_period_days, teacher_profiles(stripe_connect_account_id, stripe_connect_onboarded)')
     .eq('id', courseId)
     .single();
 
@@ -51,25 +51,42 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'You cannot enroll in your own course' }, { status: 400 });
   }
 
-  // Check existing enrollment
-  const { data: existing } = await db
+  // Parse optional reattempt flag from request body
+  let reattempt = false;
+  try {
+    const reqBody = await request.clone().json();
+    reattempt = reqBody?.reattempt === true;
+  } catch { /* no body or invalid JSON — default enrollment */ }
+
+  // Check existing enrollments (ordered by latest attempt)
+  const { data: existingEnrollments } = await db
     .from('enrollments')
-    .select('status')
+    .select('status, attempt_number, metric_slots')
     .eq('user_id', user.id)
     .eq('course_id', courseId)
-    .maybeSingle();
+    .order('attempt_number', { ascending: false });
 
-  if (existing?.status === 'active') {
+  const latestEnrollment = existingEnrollments?.[0];
+
+  if (latestEnrollment?.status === 'active') {
     return NextResponse.json({ error: 'Already enrolled' }, { status: 400 });
   }
 
+  // Determine attempt number and metric slots for re-enrollment
+  const attemptNumber = reattempt && latestEnrollment
+    ? latestEnrollment.attempt_number + 1
+    : latestEnrollment?.attempt_number ?? 1;
+  const metricSlots = Math.min(attemptNumber, 3);
+
   // Free course — enroll directly
   if (course.price_type === 'free' || Number(course.price) === 0) {
-    await db.from('enrollments').upsert({
+    await db.from('enrollments').insert({
       user_id: user.id,
       course_id: courseId,
       status: 'active',
-    }, { onConflict: 'user_id,course_id' });
+      attempt_number: attemptNumber,
+      metric_slots: metricSlots,
+    });
 
     return NextResponse.json({ enrolled: true });
   }
@@ -149,7 +166,7 @@ export async function POST(request: NextRequest, { params }: Params) {
         line_items: [{ price: priceId, quantity: 1 }],
         success_url: `${baseUrl}/academy/${courseId}?enrolled=true&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/academy/${courseId}`,
-        metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment' },
+        metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment', attempt_number: String(attemptNumber) },
       });
       return NextResponse.json({ url: session.url });
     }
@@ -164,7 +181,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       },
       success_url: `${baseUrl}/academy/${courseId}?enrolled=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/academy/${courseId}`,
-      metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment' },
+      metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment', attempt_number: String(attemptNumber) },
     }, { stripeAccount: teacherProfile.stripe_connect_account_id });
 
     return NextResponse.json({ url: session.url });
@@ -198,14 +215,23 @@ export async function POST(request: NextRequest, { params }: Params) {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const trialDays = Number((course as any).trial_period_days ?? 0);
+
   if (isPlatformTeacher) {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
+      ...(trialDays > 0 && {
+        subscription_data: {
+          trial_period_days: trialDays,
+          trial_settings: { end_behavior: { missing_payment_method: 'cancel' } },
+        },
+      }),
       success_url: `${baseUrl}/academy/${courseId}?enrolled=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/academy/${courseId}`,
-      metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment' },
+      metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment', attempt_number: String(attemptNumber) },
     });
     return NextResponse.json({ url: session.url });
   }
@@ -217,10 +243,14 @@ export async function POST(request: NextRequest, { params }: Params) {
     subscription_data: {
       application_fee_percent: feePercent,
       transfer_data: { destination: teacherProfile.stripe_connect_account_id },
+      ...(trialDays > 0 && {
+        trial_period_days: trialDays,
+        trial_settings: { end_behavior: { missing_payment_method: 'cancel' } },
+      }),
     },
     success_url: `${baseUrl}/academy/${courseId}?enrolled=true&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/academy/${courseId}`,
-    metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment' },
+    metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment', attempt_number: String(attemptNumber) },
   }, { stripeAccount: teacherProfile.stripe_connect_account_id });
 
   return NextResponse.json({ url: session.url });

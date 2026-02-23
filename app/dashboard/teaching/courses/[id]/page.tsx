@@ -44,6 +44,7 @@ interface Course {
   navigation_mode: 'linear' | 'cyoa';
   visibility: 'public' | 'members' | 'scheduled';
   published_at: string | null;
+  trial_period_days: number;
   course_modules: Module[];
 }
 
@@ -263,6 +264,24 @@ export default function CourseEditorPage() {
               </div>
             )}
           </div>
+          {course.price_type === 'subscription' && (
+            <div>
+              <label className="block text-sm text-gray-200 mb-1.5">Free Trial (days)</label>
+              <input
+                type="number"
+                min={0}
+                max={30}
+                defaultValue={course.trial_period_days ?? 0}
+                onBlur={(e) => {
+                  const val = Number(e.target.value);
+                  if (val !== (course.trial_period_days ?? 0)) saveCourseField({ trial_period_days: val } as Partial<Course>);
+                }}
+                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
+                placeholder="0 = no trial"
+              />
+              <p className="text-gray-600 text-xs mt-1">0 = no trial. Max 30 days.</p>
+            </div>
+          )}
           <div>
             <label className="block text-sm text-gray-200 mb-1.5">Navigation Mode</label>
             <div className="flex flex-wrap gap-2">
