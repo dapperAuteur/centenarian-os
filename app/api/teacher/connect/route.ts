@@ -36,29 +36,56 @@ export async function POST(request: NextRequest) {
 
   let accountId = teacherProfile?.stripe_connect_account_id;
 
-  if (!accountId) {
+  async function createLiveModeAccount() {
     const account = await stripe.accounts.create({
       type: 'express',
-      email: user.email,
-      metadata: { supabase_user_id: user.id },
+      email: user!.email!,
+      metadata: { supabase_user_id: user!.id },
     });
-    accountId = account.id;
-
     await db
       .from('teacher_profiles')
-      .upsert({ user_id: user.id, stripe_connect_account_id: accountId }, { onConflict: 'user_id' });
+      .upsert(
+        { user_id: user!.id, stripe_connect_account_id: account.id, stripe_connect_onboarded: false },
+        { onConflict: 'user_id' },
+      );
+    return account.id;
+  }
+
+  if (!accountId) {
+    accountId = await createLiveModeAccount();
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? request.headers.get('origin') ?? 'http://localhost:3000';
 
-  const accountLink = await stripe.accountLinks.create({
-    account: accountId,
-    refresh_url: `${baseUrl}/dashboard/teaching/payouts?refresh=true`,
-    return_url: `${baseUrl}/dashboard/teaching/payouts?connected=true`,
-    type: 'account_onboarding',
-  });
+  try {
+    const accountLink = await stripe.accountLinks.create({
+      account: accountId,
+      refresh_url: `${baseUrl}/dashboard/teaching/payouts?refresh=true`,
+      return_url: `${baseUrl}/dashboard/teaching/payouts?connected=true`,
+      type: 'account_onboarding',
+    });
+    return NextResponse.json({ url: accountLink.url });
+  } catch (err: unknown) {
+    // Stale test-mode account stored — clear it and create a fresh live-mode account
+    const isTestModeConflict =
+      typeof err === 'object' &&
+      err !== null &&
+      'type' in err &&
+      (err as { type: string }).type === 'StripeInvalidRequestError';
 
-  return NextResponse.json({ url: accountLink.url });
+    if (isTestModeConflict) {
+      accountId = await createLiveModeAccount();
+      const accountLink = await stripe.accountLinks.create({
+        account: accountId,
+        refresh_url: `${baseUrl}/dashboard/teaching/payouts?refresh=true`,
+        return_url: `${baseUrl}/dashboard/teaching/payouts?connected=true`,
+        type: 'account_onboarding',
+      });
+      return NextResponse.json({ url: accountLink.url });
+    }
+
+    throw err;
+  }
 }
 
 export async function GET() {
@@ -83,17 +110,22 @@ export async function GET() {
 
   // Check live status from Stripe if not yet marked onboarded
   if (!data.stripe_connect_onboarded) {
-    const account = await stripe.accounts.retrieve(data.stripe_connect_account_id);
-    const onboarded = account.details_submitted && account.charges_enabled;
+    try {
+      const account = await stripe.accounts.retrieve(data.stripe_connect_account_id);
+      const onboarded = !!(account.details_submitted && account.charges_enabled);
 
-    if (onboarded) {
-      await db
-        .from('teacher_profiles')
-        .update({ stripe_connect_onboarded: true })
-        .eq('user_id', user.id);
+      if (onboarded) {
+        await db
+          .from('teacher_profiles')
+          .update({ stripe_connect_onboarded: true })
+          .eq('user_id', user.id);
+      }
+
+      return NextResponse.json({ connected: true, onboarded });
+    } catch {
+      // Stale test-mode account — treat as not yet connected so POST can recreate it
+      return NextResponse.json({ connected: false, onboarded: false });
     }
-
-    return NextResponse.json({ connected: true, onboarded });
   }
 
   return NextResponse.json({ connected: true, onboarded: true });
