@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     await db
       .from('teacher_profiles')
       .upsert(
-        { user_id: user.id, stripe_connect_account_id: account.id, stripe_connect_onboarded: false },
+        { user_id: user!.id, stripe_connect_account_id: account.id, stripe_connect_onboarded: false },
         { onConflict: 'user_id' },
       );
     return account.id;
