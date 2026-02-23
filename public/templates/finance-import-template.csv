@@ -1,0 +1,5 @@
+date,amount,type,description,vendor,category
+2026-01-15,-45.99,expense,Monthly supplements,Amazon,Supplements
+2026-01-16,-89.00,expense,Gym membership,Equinox,Fitness
+2026-01-20,3500.00,income,Freelance project,Client ABC,
+2026-01-22,-32.50,expense,Groceries,Whole Foods,Food
