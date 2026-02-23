@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Activity, Lock, CheckCircle2, TrendingUp, Calendar } from 'lucide-react';
+import { Activity, Lock, CheckCircle2, TrendingUp, Calendar, Upload } from 'lucide-react';
+import Link from 'next/link';
 import MetricUnlockModal from '@/components/metrics/MetricUnlockModal';
 
 interface MetricConfig {
@@ -164,11 +165,20 @@ export default function MetricsDashboardPage() {
           </h1>
           <p className="text-gray-500 mt-1">Log your daily data from your wearable device</p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Calendar className="w-4 h-4" />
-          {new Date(today + 'T12:00:00').toLocaleDateString('en-US', {
-            weekday: 'long', month: 'long', day: 'numeric',
-          })}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard/metrics/import"
+            className="flex items-center gap-1.5 px-3 py-2 bg-fuchsia-100 text-fuchsia-700 rounded-lg text-sm font-medium hover:bg-fuchsia-200 transition min-h-10"
+          >
+            <Upload className="w-4 h-4" />
+            Import
+          </Link>
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Calendar className="w-4 h-4" />
+            {new Date(today + 'T12:00:00').toLocaleDateString('en-US', {
+              weekday: 'long', month: 'long', day: 'numeric',
+            })}
+          </div>
         </div>
       </div>
 

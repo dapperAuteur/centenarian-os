@@ -1,7 +1,16 @@
 // app/api/recipes/[id]/route.ts
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { createShortLink, updateShortLink, toSwitchySlug } from '@/lib/switchy';
 import type { RecipeVisibility } from '@/lib/types';
+
+function getDb() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+}
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -54,7 +63,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
   const { data: existing } = await supabase
     .from('recipes')
-    .select('published_at, visibility')
+    .select('published_at, visibility, slug, short_link_id, title, description, cover_image_url')
     .eq('id', id)
     .eq('user_id', user.id)
     .single();
@@ -106,6 +115,40 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     }
     console.error('[Recipes API] PATCH failed:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Switchy short link — fire and forget
+  if (data && isNowPublishing && !existing.short_link_id) {
+    const siteUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+    const db = getDb();
+    const { data: profile } = await db.from('profiles').select('username').eq('id', user.id).maybeSingle();
+    const username = profile?.username || user.id;
+    const recipeSlug = data.slug || existing.slug;
+
+    createShortLink({
+      url: `${siteUrl}/recipes/cooks/${username}/${recipeSlug}`,
+      slug: toSwitchySlug('r', recipeSlug),
+      title: data.title,
+      description: data.description || undefined,
+      image: data.cover_image_url || undefined,
+      tags: ['recipe'],
+    }).then(async (link) => {
+      if (link) {
+        await db.from('recipes')
+          .update({ short_link_id: link.id, short_link_url: link.short_url })
+          .eq('id', id);
+      }
+    }).catch(() => { /* non-critical */ });
+  } else if (data && existing.short_link_id) {
+    const changed = body.title !== undefined || body.cover_image_url !== undefined || body.description !== undefined;
+    if (changed) {
+      updateShortLink({
+        linkId: existing.short_link_id,
+        title: data.title,
+        description: data.description || undefined,
+        image: data.cover_image_url || undefined,
+      }).catch(() => { /* non-critical */ });
+    }
   }
 
   return NextResponse.json(data);

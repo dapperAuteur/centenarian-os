@@ -9,11 +9,15 @@ interface ShareUrls {
 
 /**
  * Builds share URLs for a blog post.
- * Requires NEXT_PUBLIC_APP_URL to be set in environment variables.
+ * Uses the Switchy short link when available, falling back to the full URL.
  */
-export function buildShareUrls(post: Pick<BlogPost, 'title' | 'slug'>, username: string): ShareUrls {
+export function buildShareUrls(
+  post: Pick<BlogPost, 'title' | 'slug'> & { short_link_url?: string | null },
+  username: string,
+): ShareUrls {
   const base = process.env.NEXT_PUBLIC_APP_URL || '';
-  const postUrl = `${base}/blog/${username}/${post.slug}`;
+  const fullUrl = `${base}/blog/${username}/${post.slug}`;
+  const postUrl = post.short_link_url ?? fullUrl;
 
   return {
     postUrl,
