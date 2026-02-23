@@ -4,6 +4,7 @@ interface ShareUrls {
   postUrl: string;
   email: string;
   linkedin: string;
+  facebook: string;
 }
 
 /**
@@ -18,5 +19,6 @@ export function buildShareUrls(post: Pick<BlogPost, 'title' | 'slug'>, username:
     postUrl,
     email: `mailto:?subject=${encodeURIComponent(post.title)}&body=${encodeURIComponent(postUrl)}`,
     linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postUrl)}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`,
   };
 }

@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { BookOpen, Plus, Pencil, Eye, EyeOff } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface Course {
   id: string;
@@ -21,16 +22,19 @@ interface Course {
 export default function TeachingCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [username, setUsername] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    fetch('/api/academy/courses?mine=true')
-      .then((r) => r.json())
-      .then((data) => {
-        setCourses(Array.isArray(data) ? data : []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+    Promise.all([
+      fetch('/api/academy/courses?mine=true').then((r) => r.json()),
+      fetch('/api/auth/me').then((r) => r.json()),
+    ]).then(([coursesData, meData]) => {
+      setCourses(Array.isArray(coursesData) ? coursesData : []);
+      setUsername(meData.username ?? null);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [router]);
 
   async function togglePublish(course: Course) {
     await fetch(`/api/academy/courses/${course.id}`, {
@@ -117,7 +121,7 @@ export default function TeachingCoursesPage() {
                   {course.is_published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                 </button>
                 <Link
-                  href={`/dashboard/teaching/courses/${course.id}`}
+                  href={username ? `/dashboard/teaching/${username}/courses/${course.id}` : '#'}
                   className="p-2 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white transition"
                   title="Edit course"
                 >

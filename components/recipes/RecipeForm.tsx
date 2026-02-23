@@ -10,7 +10,7 @@ import { calculateRecipeNutrition } from '@/lib/recipes/nutrition';
 import RecipeVisibilitySelector from './RecipeVisibilitySelector';
 import RecipeCloudinaryUploader from './RecipeCloudinaryUploader';
 import RecipeIngredientBuilder, { type DraftIngredient } from './RecipeIngredientBuilder';
-import { Save, Loader2, ExternalLink, RefreshCw, Plus, Trash2, Link2, Download } from 'lucide-react';
+import { Save, Loader2, ExternalLink, RefreshCw, Trash2, Link2, Download } from 'lucide-react';
 import type { Recipe, RecipeMedia, RecipeVisibility } from '@/lib/types';
 
 const TiptapEditor = dynamic(() => import('@/components/blog/TiptapEditor'), { ssr: false });

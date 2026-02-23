@@ -4,6 +4,7 @@ interface RecipeShareUrls {
   recipeUrl: string;
   email: string;
   linkedin: string;
+  facebook: string;
 }
 
 /**
@@ -22,5 +23,6 @@ export function buildRecipeShareUrls(
     recipeUrl,
     email: `mailto:?subject=${encodeURIComponent(recipe.title)}&body=${encodeURIComponent(recipeUrl)}`,
     linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(recipeUrl)}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(recipeUrl)}`,
   };
 }

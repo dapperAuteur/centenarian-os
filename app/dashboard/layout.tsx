@@ -31,6 +31,8 @@ import {
   GraduationCap,
   Radio,
   Presentation,
+  HeartPulse,
+  UserCircle,
 } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import FloatingActionsMenu from '@/components/ui/FloatingActionsMenu';
@@ -80,6 +82,7 @@ export default function DashboardLayout({
   const isPaid = subStatus === 'monthly' || subStatus === 'lifetime';
   const [isAdmin, setIsAdmin] = useState(false);
   const [isTeacher, setIsTeacher] = useState(false);
+  const [username, setUsername] = useState<string | null>(null);
   const [adminLoading, setAdminLoading] = useState(true);
   const hasAccess = isPaid || isAdmin;
   const unreadMessages = useUnreadCount();
@@ -90,6 +93,7 @@ export default function DashboardLayout({
       .then((d) => {
         setIsAdmin(d.isAdmin ?? false);
         setIsTeacher(d.isTeacher ?? false);
+        setUsername(d.username ?? null);
         setAdminLoading(false);
       })
       .catch(() => setAdminLoading(false));
@@ -179,6 +183,14 @@ export default function DashboardLayout({
                 <LockBadge />
               </Link>
               <Link
+                href="/dashboard/metrics"
+                className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+              >
+                <HeartPulse className="w-4 h-4 mr-2" />
+                Metrics
+                <LockBadge />
+              </Link>
+              <Link
                 href="/dashboard/blog"
                 className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               >
@@ -256,6 +268,15 @@ export default function DashboardLayout({
                 >
                   <MessageCircle className="w-4 h-4" />
                 </Link>
+                {username && (
+                  <Link
+                    href={`/profiles/${username}`}
+                    className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                    title="My Public Profile"
+                  >
+                    <UserCircle className="w-4 h-4" />
+                  </Link>
+                )}
                 <Link
                   href="/dashboard/billing"
                   className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
@@ -398,6 +419,19 @@ export default function DashboardLayout({
                   <div className="flex items-center">
                     <BarChart2 className="w-4 h-4 mr-3" />
                     Focus Analytics
+                  </div>
+                  {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
+                </div>
+              </Link>
+              <Link
+                href="/dashboard/metrics"
+                className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <HeartPulse className="w-4 h-4 mr-3" />
+                    Metrics
                   </div>
                   {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>

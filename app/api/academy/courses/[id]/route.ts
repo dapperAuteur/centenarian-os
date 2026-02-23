@@ -27,7 +27,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .from('courses')
     .select(`
       id, title, description, cover_image_url, category, tags,
-      price, price_type, is_published, navigation_mode, created_at, teacher_id,
+      price, price_type, is_published, navigation_mode, like_count, created_at, teacher_id,
       profiles(username, display_name, avatar_url),
       course_modules(id, title, order,
         lessons(id, title, lesson_type, duration_seconds, order, is_free_preview, content_url, text_content)
@@ -43,19 +43,22 @@ export async function GET(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  // Determine enrollment status
+  // Determine enrollment status, liked, and saved
   let enrolled = false;
+  let liked = false;
+  let saved = false;
   if (user) {
-    const { data: enrollment } = await db
-      .from('enrollments')
-      .select('status')
-      .eq('user_id', user.id)
-      .eq('course_id', id)
-      .maybeSingle();
-    enrolled = enrollment?.status === 'active';
+    const [enrollmentRes, likeRes, saveRes] = await Promise.all([
+      db.from('enrollments').select('status').eq('user_id', user.id).eq('course_id', id).maybeSingle(),
+      db.from('course_likes').select('user_id').eq('user_id', user.id).eq('course_id', id).maybeSingle(),
+      db.from('course_saves').select('user_id').eq('user_id', user.id).eq('course_id', id).maybeSingle(),
+    ]);
+    enrolled = enrollmentRes.data?.status === 'active';
+    liked = !!likeRes.data;
+    saved = !!saveRes.data;
   }
 
-  return NextResponse.json({ ...course, enrolled });
+  return NextResponse.json({ ...course, enrolled, liked, saved });
 }
 
 export async function PATCH(request: NextRequest, { params }: Params) {

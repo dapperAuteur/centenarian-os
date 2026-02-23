@@ -25,6 +25,7 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const widgetIdRef = useRef<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
@@ -46,6 +47,11 @@ export default function SignupPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!agreedToTerms) {
+      setError('Please agree to the Terms of Use and Privacy Policy to continue.');
+      return;
+    }
 
     // Skip Turnstile if no site key configured (dev environment)
     if (siteKey) {
@@ -151,6 +157,25 @@ export default function SignupPage() {
               <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
             </div>
 
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500 shrink-0"
+              />
+              <span className="text-sm text-gray-600">
+                I agree to the{' '}
+                <Link href="/terms" className="text-sky-600 hover:underline font-medium" target="_blank">
+                  Terms of Use
+                </Link>
+                {' '}and{' '}
+                <Link href="/privacy" className="text-sky-600 hover:underline font-medium" target="_blank">
+                  Privacy Policy
+                </Link>
+              </span>
+            </label>
+
             {/* Cloudflare Turnstile widget — only rendered when site key is configured */}
             {siteKey && (
               <div id="turnstile-widget" className="flex justify-center" />
@@ -158,7 +183,7 @@ export default function SignupPage() {
 
             <button
               type="submit"
-              disabled={loading || (!!siteKey && !turnstileToken)}
+              disabled={loading || !agreedToTerms || (!!siteKey && !turnstileToken)}
               className="w-full bg-sky-600 text-white py-3 rounded-lg font-semibold hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
             >
               {loading ? 'Creating account…' : 'Sign up'}

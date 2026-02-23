@@ -4,7 +4,7 @@
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { Target, TrendingUp, Calendar } from 'lucide-react';
-import { formatGoalTime, getProgressBarColor } from '@/lib/utils/goalUtils';
+import { formatGoalTime } from '@/lib/utils/goalUtils';
 
 interface GoalProgressWidgetProps {
   title: string;

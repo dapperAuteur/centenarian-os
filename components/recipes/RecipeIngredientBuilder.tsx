@@ -68,7 +68,6 @@ export default function RecipeIngredientBuilder({
       // Auto-recalculate nutrition when quantity changes and we have per-100g data
       if ('quantity' in updates || 'unit' in updates) {
         const unit = merged.unit;
-        const qty = merged.quantity;
         // Only auto-calc if unit is grams (most USDA/OFF data is per 100g)
         if (unit === 'g' && merged.usda_fdc_id) {
           // We'd need the original per-100g values — stored in the lookup source

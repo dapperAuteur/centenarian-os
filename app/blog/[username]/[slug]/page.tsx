@@ -42,7 +42,7 @@ export default async function PublicPostPage({ params }: Props) {
   // ── Post is accessible — render it normally ──────────────────────────────
   if (post) {
     const bp = post as BlogPost;
-    const { postUrl, email, linkedin } = buildShareUrls(bp, p.username);
+    const { postUrl, email, linkedin, facebook } = buildShareUrls(bp, p.username);
 
     // Check if the current user has liked/saved this post
     const { data: { user } } = await supabase.auth.getUser();
@@ -119,6 +119,7 @@ export default async function PublicPostPage({ params }: Props) {
             postId={bp.id}
             emailUrl={email}
             linkedinUrl={linkedin}
+            facebookUrl={facebook}
           />
         </div>
 

@@ -141,10 +141,12 @@ export function useOfflineSync<T extends { id: string }>(
     };
   }, []);
 
-  // Load data on mount
+  // Load data on mount and when table/options change
+  const optionsKey = JSON.stringify(options);
   useEffect(() => {
     loadData();
-  }, [table, JSON.stringify(options)]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [table, optionsKey]);
 
   // Update sync status periodically
   useEffect(() => {
@@ -154,6 +156,7 @@ export function useOfflineSync<T extends { id: string }>(
     }, 5000); // Every 5 seconds
 
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {
