@@ -378,7 +378,7 @@ export default function TravelPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} tickFormatter={(v) => v.substring(5)} />
                   <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v: number) => [`${fmt(v)} mi`]} />
+                  <Tooltip formatter={(v: number | string) => [`${fmt(Number(v))} mi`]} />
                   <Bar dataKey="bike_miles" fill="#22c55e" name="Bike" stackId="a" radius={[0, 0, 0, 0]} />
                   <Bar dataKey="car_miles" fill="#ef4444" name="Car" stackId="a" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -394,7 +394,7 @@ export default function TravelPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v: string) => v.substring(5)} />
                     <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} />
-                    <Tooltip formatter={(v: number) => [`${fmt(v, 1)} MPG`]} />
+                    <Tooltip formatter={(v: number | string) => [`${fmt(Number(v), 1)} MPG`]} />
                     <Line type="monotone" dataKey="mpg" stroke="#3b82f6" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
