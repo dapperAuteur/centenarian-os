@@ -39,6 +39,7 @@ interface Vehicle {
   model: string | null;
   year: number | null;
   active: boolean;
+  latest_odometer: number | null;
 }
 
 interface Trip {
@@ -472,9 +473,10 @@ export default function TravelPage() {
                 <span className="text-2xl">{v.type === 'car' ? '🚗' : v.type === 'bike' ? '🚲' : v.type === 'ebike' ? '⚡🚲' : '🛵'}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900">{v.nickname}</p>
-                  {(v.make || v.year) && (
-                    <p className="text-xs text-gray-500">{[v.year, v.make, v.model].filter(Boolean).join(' ')}</p>
-                  )}
+                  <p className="text-xs text-gray-500">
+                    {[v.year, v.make, v.model].filter(Boolean).join(' ') || v.type}
+                    {v.latest_odometer != null && ` · ${v.latest_odometer.toLocaleString()} mi`}
+                  </p>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button onClick={() => handleEditVehicle(v)} className="text-xs text-sky-500 hover:text-sky-700 transition">edit</button>

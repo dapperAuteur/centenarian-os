@@ -142,6 +142,12 @@ export default function MealLoggingPage() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this meal log?')) return;
+    await supabase.from('meal_logs').delete().eq('id', id);
+    loadData();
+  };
+
   const groupedMeals = useMemo(() => {
     const grouped: Record<string, MealLog[]> = {};
     mealLogs.forEach(meal => {
@@ -207,7 +213,7 @@ export default function MealLoggingPage() {
                   id="isRestaurant"
                   checked={isRestaurant}
                   onChange={(e) => setIsRestaurant(e.target.checked)}
-                  className="w-4 h-4 text-sky-600 border-gray-300 rounded focus:ring-sky-500 form-input text-gray-800"
+                  className="w-4 h-4 text-sky-600 border-gray-300 rounded focus:ring-sky-500"
                 />
                 <label htmlFor="isRestaurant" className="ml-2 text-sm font-medium text-gray-700">
                   Restaurant/Eating Out
@@ -356,7 +362,7 @@ export default function MealLoggingPage() {
                         const protocol = protocols.find(p => p.id === meal.protocol_id);
                         return (
                           <div key={meal.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div className="flex-grow">
+                            <div className="grow">
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium text-gray-900">{meal.time}</span>
                                 <span className="text-xs px-2 py-1 bg-sky-100 text-sky-700 rounded-full">
@@ -378,16 +384,24 @@ export default function MealLoggingPage() {
                                 <p className="text-xs text-gray-500 mt-1">{meal.notes}</p>
                               )}
                             </div>
-                            {protocol && (
-                              <div className="text-right">
-                                <div className="text-sm font-semibold text-gray-900">
-                                  {protocol.total_calories.toFixed(0)} cal
+                            <div className="flex items-center gap-3 shrink-0">
+                              {protocol && (
+                                <div className="text-right">
+                                  <div className="text-sm font-semibold text-gray-900">
+                                    {protocol.total_calories.toFixed(0)} cal
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    ${protocol.total_cost.toFixed(2)}
+                                  </div>
                                 </div>
-                                <div className="text-xs text-gray-500">
-                                  ${protocol.total_cost.toFixed(2)}
-                                </div>
-                              </div>
-                            )}
+                              )}
+                              <button
+                                onClick={() => handleDelete(meal.id)}
+                                className="text-xs text-red-400 hover:text-red-600 transition"
+                              >
+                                del
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
