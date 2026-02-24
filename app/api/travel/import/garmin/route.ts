@@ -59,8 +59,6 @@ export async function POST(request: NextRequest) {
   const idxTime = colIdx('Total Time');
   const idxAvgHR = colIdx('Avg HR');
   const idxSteps = colIdx('Steps');
-  const idxAvgSpeed = colIdx('Avg Speed');
-
   if (idxType === -1 || idxDate === -1) {
     return NextResponse.json({ error: 'CSV missing required columns (Activity Type, Date)' }, { status: 400 });
   }

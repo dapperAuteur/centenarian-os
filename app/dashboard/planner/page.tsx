@@ -4,7 +4,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Task, RecurringTask } from '@/lib/types';
-import { Calendar, Filter, DollarSign, Repeat } from 'lucide-react';
+import { Calendar, DollarSign, Repeat } from 'lucide-react';
 import { EditTaskModal } from '@/components/EditTaskModal';
 import CreateRecurringTaskModal, { RecurringTaskData } from '@/components/planner/CreateRecurringTaskModal';
 
@@ -108,7 +108,7 @@ export default function PlannerPage() {
   // Recurring task state
   const [showRecurringModal, setShowRecurringModal] = useState(false);
   const [selectedMilestoneForRecurring, setSelectedMilestoneForRecurring] = useState<string | null>(null);
-  const [recurringTasks, setRecurringTasks] = useState<RecurringTask[]>([]);
+  const [, setRecurringTasks] = useState<RecurringTask[]>([]);
   
   const supabase = createClient();
 

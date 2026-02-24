@@ -16,7 +16,7 @@ export async function GET() {
 
   // Attach latest odometer reading from fuel_logs for each vehicle
   const vehicleIds = (data || []).map((v) => v.id);
-  let latestOdo: Record<string, number> = {};
+  const latestOdo: Record<string, number> = {};
   if (vehicleIds.length > 0) {
     const { data: odoRows } = await supabase
       .from('fuel_logs')

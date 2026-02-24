@@ -4,6 +4,7 @@
 // Teacher DM inbox: conversation list + message thread for all courses.
 
 import { useEffect, useState, useRef } from 'react';
+import Image from 'next/image';
 import {
   MessageCircle, Send, Loader2, ChevronLeft,
 } from 'lucide-react';
@@ -125,7 +126,7 @@ export default function TeacherMessagesPage() {
                   >
                     <div className="flex items-center gap-3">
                       {conv.partner_avatar ? (
-                        <img src={conv.partner_avatar} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
+                        <Image src={conv.partner_avatar} alt="" width={36} height={36} className="w-9 h-9 rounded-full object-cover shrink-0" />
                       ) : (
                         <div className="w-9 h-9 rounded-full bg-gray-800 flex items-center justify-center text-gray-500 text-xs font-bold shrink-0">
                           {conv.partner_name[0]?.toUpperCase()}

@@ -5,7 +5,6 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Check, Shirt, Zap, ArrowLeft } from 'lucide-react';
 import PurchaseModal from '@/components/PurchaseModal';
@@ -13,7 +12,6 @@ import PurchaseModal from '@/components/PurchaseModal';
 const POLICIES = 'No Refunds. Cancel Anytime. Monthly fees are not transferable to lifetime membership.';
 
 export default function PricingPage() {
-  const router = useRouter();
   const { user } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState<'monthly' | 'lifetime' | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +56,7 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen bg-linear-to-b from-gray-50 to-white">
       {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
@@ -124,7 +122,7 @@ export default function PricingPage() {
                 'Public profile',
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm text-gray-700">
-                  <Check className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <Check className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
                   {f}
                 </li>
               ))}

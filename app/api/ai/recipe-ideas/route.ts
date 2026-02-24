@@ -28,7 +28,6 @@ async function callGemini(prompt: string): Promise<string> {
     }),
   });
   if (!res.ok) throw new Error(`Gemini error: ${res.status}`);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const json = await res.json() as { candidates: { content: { parts: { text: string }[] } }[] };
   return json.candidates?.[0]?.content?.parts?.[0]?.text ?? '[]';
 }

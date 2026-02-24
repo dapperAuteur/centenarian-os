@@ -25,6 +25,7 @@ export default function PomodoroTab({ sessions, timeRange }: PomodoroTabProps) {
 
   useEffect(() => {
     loadPomodoroStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessions]);
 
   const loadPomodoroStats = async () => {
