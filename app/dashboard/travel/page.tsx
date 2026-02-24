@@ -95,8 +95,9 @@ export default function TravelPage() {
   });
   const [savingTrip, setSavingTrip] = useState(false);
 
-  // Add vehicle modal state
+  // Add/edit vehicle modal state
   const [showAddVehicle, setShowAddVehicle] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [vehicleForm, setVehicleForm] = useState({
     type: 'car', nickname: '', make: '', model: '', year: '', color: '',
   });
@@ -189,24 +190,50 @@ export default function TravelPage() {
     }
   };
 
+  const handleEditVehicle = (v: Vehicle) => {
+    setEditingVehicle(v);
+    setVehicleForm({
+      type: v.type,
+      nickname: v.nickname,
+      make: v.make ?? '',
+      model: v.model ?? '',
+      year: v.year != null ? String(v.year) : '',
+      color: '',
+    });
+    setShowAddVehicle(true);
+  };
+
+  const handleDeleteVehicle = async (id: string) => {
+    if (!confirm('Delete this vehicle? This will not delete its logs.')) return;
+    await fetch('/api/travel/vehicles', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    load();
+  };
+
   const handleSaveVehicle = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingVehicle(true);
     try {
+      const payload = {
+        ...(editingVehicle ? { id: editingVehicle.id } : {}),
+        type: vehicleForm.type,
+        nickname: vehicleForm.nickname,
+        make: vehicleForm.make || null,
+        model: vehicleForm.model || null,
+        year: vehicleForm.year ? parseInt(vehicleForm.year) : null,
+        color: vehicleForm.color || null,
+      };
       const res = await fetch('/api/travel/vehicles', {
-        method: 'POST',
+        method: editingVehicle ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: vehicleForm.type,
-          nickname: vehicleForm.nickname,
-          make: vehicleForm.make || null,
-          model: vehicleForm.model || null,
-          year: vehicleForm.year ? parseInt(vehicleForm.year) : null,
-          color: vehicleForm.color || null,
-        }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         setShowAddVehicle(false);
+        setEditingVehicle(null);
         setVehicleForm({ type: 'car', nickname: '', make: '', model: '', year: '', color: '' });
         load();
       }
@@ -378,7 +405,8 @@ export default function TravelPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} tickFormatter={(v) => v.substring(5)} />
                   <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v: number | string) => [`${fmt(Number(v))} mi`]} />
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  <Tooltip formatter={(v: any) => [`${fmt(Number(v))} mi`]} />
                   <Bar dataKey="bike_miles" fill="#22c55e" name="Bike" stackId="a" radius={[0, 0, 0, 0]} />
                   <Bar dataKey="car_miles" fill="#ef4444" name="Car" stackId="a" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -394,7 +422,8 @@ export default function TravelPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v: string) => v.substring(5)} />
                     <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} />
-                    <Tooltip formatter={(v: number | string) => [`${fmt(Number(v), 1)} MPG`]} />
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  <Tooltip formatter={(v: any) => [`${fmt(Number(v), 1)} MPG`]} />
                     <Line type="monotone" dataKey="mpg" stroke="#3b82f6" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -428,7 +457,7 @@ export default function TravelPage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-700">Vehicles</h2>
           <button
-            onClick={() => setShowAddVehicle(true)}
+            onClick={() => { setVehicleForm({ type: 'car', nickname: '', make: '', model: '', year: '', color: '' }); setEditingVehicle(null); setShowAddVehicle(true); }}
             className="text-xs text-sky-600 hover:text-sky-700 font-medium flex items-center gap-1"
           >
             <Plus className="w-3 h-3" /> Add
@@ -441,11 +470,15 @@ export default function TravelPage() {
             {vehicles.filter((v) => v.active).map((v) => (
               <div key={v.id} className="border border-gray-100 rounded-xl p-3 flex items-center gap-3">
                 <span className="text-2xl">{v.type === 'car' ? '🚗' : v.type === 'bike' ? '🚲' : v.type === 'ebike' ? '⚡🚲' : '🛵'}</span>
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900">{v.nickname}</p>
                   {(v.make || v.year) && (
                     <p className="text-xs text-gray-500">{[v.year, v.make, v.model].filter(Boolean).join(' ')}</p>
                   )}
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button onClick={() => handleEditVehicle(v)} className="text-xs text-sky-500 hover:text-sky-700 transition">edit</button>
+                  <button onClick={() => handleDeleteVehicle(v.id)} className="text-xs text-red-400 hover:text-red-600 transition">del</button>
                 </div>
               </div>
             ))}
@@ -634,14 +667,14 @@ export default function TravelPage() {
         </div>
       )}
 
-      {/* Add Vehicle Modal */}
+      {/* Add / Edit Vehicle Modal */}
       {showAddVehicle && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <form
             onSubmit={handleSaveVehicle}
             className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl"
           >
-            <h2 className="text-lg font-bold text-gray-900">Add Vehicle</h2>
+            <h2 className="text-lg font-bold text-gray-900">{editingVehicle ? 'Edit Vehicle' : 'Add Vehicle'}</h2>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Type</label>
@@ -692,13 +725,13 @@ export default function TravelPage() {
               </div>
             </div>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => setShowAddVehicle(false)}
+              <button type="button" onClick={() => { setShowAddVehicle(false); setEditingVehicle(null); }}
                 className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
                 Cancel
               </button>
               <button type="submit" disabled={savingVehicle}
                 className="flex-1 bg-sky-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-50">
-                {savingVehicle ? 'Saving…' : 'Add Vehicle'}
+                {savingVehicle ? 'Saving…' : editingVehicle ? 'Update Vehicle' : 'Add Vehicle'}
               </button>
             </div>
           </form>

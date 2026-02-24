@@ -60,6 +60,7 @@ export default function MaintenancePage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(BLANK_FORM);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -83,28 +84,47 @@ export default function MaintenancePage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const handleEdit = (r: MaintenanceRecord) => {
+    setEditingId(r.id);
+    setForm({
+      vehicle_id: r.vehicles?.id ?? '',
+      service_type: r.service_type,
+      date: r.date,
+      odometer_at_service: r.odometer_at_service != null ? String(r.odometer_at_service) : '',
+      cost: r.cost != null ? String(r.cost) : '',
+      vendor: r.vendor ?? '',
+      notes: r.notes ?? '',
+      next_service_miles: r.next_service_miles != null ? String(r.next_service_miles) : '',
+      next_service_date: r.next_service_date ?? '',
+    });
+    setShowForm(true);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
+      const payload = {
+        ...(editingId ? { id: editingId } : {}),
+        vehicle_id: form.vehicle_id || null,
+        service_type: form.service_type,
+        date: form.date,
+        odometer_at_service: form.odometer_at_service ? parseFloat(form.odometer_at_service) : null,
+        cost: form.cost ? parseFloat(form.cost) : null,
+        vendor: form.vendor || null,
+        notes: form.notes || null,
+        next_service_miles: form.next_service_miles ? parseFloat(form.next_service_miles) : null,
+        next_service_date: form.next_service_date || null,
+      };
       const res = await fetch('/api/travel/maintenance', {
-        method: 'POST',
+        method: editingId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          vehicle_id: form.vehicle_id || null,
-          service_type: form.service_type,
-          date: form.date,
-          odometer_at_service: form.odometer_at_service ? parseFloat(form.odometer_at_service) : null,
-          cost: form.cost ? parseFloat(form.cost) : null,
-          vendor: form.vendor || null,
-          notes: form.notes || null,
-          next_service_miles: form.next_service_miles ? parseFloat(form.next_service_miles) : null,
-          next_service_date: form.next_service_date || null,
-        }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         setShowForm(false);
         setForm(BLANK_FORM);
+        setEditingId(null);
         load();
       }
     } finally {
@@ -152,7 +172,7 @@ export default function MaintenancePage() {
           </div>
         </div>
         <button
-          onClick={() => { setForm(BLANK_FORM); setShowForm(true); }}
+          onClick={() => { setForm(BLANK_FORM); setEditingId(null); setShowForm(true); }}
           className="flex items-center gap-1.5 px-3 py-2 bg-sky-600 text-white rounded-xl text-sm font-medium hover:bg-sky-700 transition"
         >
           <Plus className="w-4 h-4" />
@@ -209,12 +229,20 @@ export default function MaintenancePage() {
                     )}
                     {r.notes && <p className="text-xs text-gray-400 mt-0.5">{r.notes}</p>}
                   </div>
-                  <button
-                    onClick={() => handleDelete(r.id)}
-                    className="text-xs text-red-400 hover:text-red-600 transition ml-4 shrink-0"
-                  >
-                    del
-                  </button>
+                  <div className="flex gap-3 ml-4 shrink-0">
+                    <button
+                      onClick={() => handleEdit(r)}
+                      className="text-xs text-sky-500 hover:text-sky-700 transition"
+                    >
+                      edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(r.id)}
+                      className="text-xs text-red-400 hover:text-red-600 transition"
+                    >
+                      del
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -229,7 +257,7 @@ export default function MaintenancePage() {
             onSubmit={handleSave}
             className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl max-h-[90vh] overflow-y-auto"
           >
-            <h2 className="text-lg font-bold text-gray-900">Log Service</h2>
+            <h2 className="text-lg font-bold text-gray-900">{editingId ? 'Edit Service Record' : 'Log Service'}</h2>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -307,13 +335,13 @@ export default function MaintenancePage() {
             </div>
 
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => setShowForm(false)}
+              <button type="button" onClick={() => { setShowForm(false); setEditingId(null); }}
                 className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
                 Cancel
               </button>
               <button type="submit" disabled={saving}
                 className="flex-1 bg-sky-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-50">
-                {saving ? 'Saving…' : 'Save Record'}
+                {saving ? 'Saving…' : editingId ? 'Update Record' : 'Save Record'}
               </button>
             </div>
           </form>

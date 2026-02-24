@@ -63,6 +63,7 @@ export default function FuelLogPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(BLANK_FORM);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrNotes, setOcrNotes] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
@@ -124,33 +125,56 @@ export default function FuelLogPage() {
     }
   };
 
+  const handleEdit = (log: FuelLog) => {
+    setEditingId(log.id);
+    setForm({
+      vehicle_id: log.vehicles?.id ?? '',
+      date: log.date,
+      odometer_miles: log.odometer_miles != null ? String(log.odometer_miles) : '',
+      miles_since_last_fill: log.miles_since_last_fill != null ? String(log.miles_since_last_fill) : '',
+      miles_this_month: log.miles_this_month != null ? String(log.miles_this_month) : '',
+      mpg_display: log.mpg_display != null ? String(log.mpg_display) : '',
+      gallons: log.gallons != null ? String(log.gallons) : '',
+      total_cost: log.total_cost != null ? String(log.total_cost) : '',
+      cost_per_gallon: log.cost_per_gallon != null ? String(log.cost_per_gallon) : '',
+      fuel_grade: log.fuel_grade ?? 'regular',
+      station: log.station ?? '',
+      notes: '',
+    });
+    setOcrNotes('');
+    setShowForm(true);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
+      const payload = {
+        ...(editingId ? { id: editingId } : {}),
+        vehicle_id: form.vehicle_id || null,
+        date: form.date,
+        odometer_miles: form.odometer_miles ? parseFloat(form.odometer_miles) : null,
+        miles_since_last_fill: form.miles_since_last_fill ? parseFloat(form.miles_since_last_fill) : null,
+        miles_this_month: form.miles_this_month ? parseFloat(form.miles_this_month) : null,
+        mpg_display: form.mpg_display ? parseFloat(form.mpg_display) : null,
+        gallons: form.gallons ? parseFloat(form.gallons) : null,
+        total_cost: form.total_cost ? parseFloat(form.total_cost) : null,
+        cost_per_gallon: form.cost_per_gallon ? parseFloat(form.cost_per_gallon) : null,
+        fuel_grade: form.fuel_grade || null,
+        station: form.station || null,
+        notes: form.notes || null,
+        source: editingId ? undefined : 'manual',
+      };
       const res = await fetch('/api/travel/fuel', {
-        method: 'POST',
+        method: editingId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          vehicle_id: form.vehicle_id || null,
-          date: form.date,
-          odometer_miles: form.odometer_miles ? parseFloat(form.odometer_miles) : null,
-          miles_since_last_fill: form.miles_since_last_fill ? parseFloat(form.miles_since_last_fill) : null,
-          miles_this_month: form.miles_this_month ? parseFloat(form.miles_this_month) : null,
-          mpg_display: form.mpg_display ? parseFloat(form.mpg_display) : null,
-          gallons: form.gallons ? parseFloat(form.gallons) : null,
-          total_cost: form.total_cost ? parseFloat(form.total_cost) : null,
-          cost_per_gallon: form.cost_per_gallon ? parseFloat(form.cost_per_gallon) : null,
-          fuel_grade: form.fuel_grade || null,
-          station: form.station || null,
-          notes: form.notes || null,
-          source: 'manual',
-        }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         setShowForm(false);
         setForm(BLANK_FORM);
         setOcrNotes('');
+        setEditingId(null);
         load();
       }
     } finally {
@@ -223,7 +247,7 @@ export default function FuelLogPage() {
             />
           </label>
           <button
-            onClick={() => { setForm(BLANK_FORM); setOcrNotes(''); setShowForm(true); }}
+            onClick={() => { setForm(BLANK_FORM); setOcrNotes(''); setEditingId(null); setShowForm(true); }}
             className="flex items-center gap-1.5 px-3 py-2 bg-sky-600 text-white rounded-xl text-sm font-medium hover:bg-sky-700 transition"
           >
             <Plus className="w-4 h-4" />
@@ -243,7 +267,8 @@ export default function FuelLogPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} />
-                  <Tooltip formatter={(v: number | string) => [`${fmt(Number(v), 1)} MPG`]} />
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  <Tooltip formatter={(v: any) => [`${fmt(Number(v), 1)} MPG`]} />
                   <Line type="monotone" dataKey="mpg" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
@@ -258,7 +283,8 @@ export default function FuelLogPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip formatter={(v: number | string) => [fmtMoney(Number(v))]} />
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    <Tooltip formatter={(v: any) => [fmtMoney(Number(v))]} />
                     <Bar dataKey="total_cost" fill="#ef4444" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -318,7 +344,13 @@ export default function FuelLogPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <button
+                        onClick={() => handleEdit(log)}
+                        className="text-xs text-sky-500 hover:text-sky-700 transition mr-2"
+                      >
+                        edit
+                      </button>
                       <button
                         onClick={() => handleDelete(log.id)}
                         className="text-xs text-red-400 hover:text-red-600 transition"
@@ -341,7 +373,7 @@ export default function FuelLogPage() {
             onSubmit={handleSave}
             className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-4 shadow-xl max-h-[90vh] overflow-y-auto"
           >
-            <h2 className="text-lg font-bold text-gray-900">Add Fuel Entry</h2>
+            <h2 className="text-lg font-bold text-gray-900">{editingId ? 'Edit Fuel Entry' : 'Add Fuel Entry'}</h2>
 
             {ocrNotes && (
               <div className="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 text-xs text-purple-800 flex items-start gap-2">
@@ -443,7 +475,7 @@ export default function FuelLogPage() {
             </div>
 
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => { setShowForm(false); setOcrNotes(''); }}
+              <button type="button" onClick={() => { setShowForm(false); setOcrNotes(''); setEditingId(null); }}
                 className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
                 Cancel
               </button>

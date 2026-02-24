@@ -18,11 +18,31 @@ interface Trip {
   cost: number | null;
   source: string;
   notes: string | null;
+  vehicles?: { id: string; nickname: string } | null;
+}
+
+interface Vehicle {
+  id: string;
+  nickname: string;
+  type: string;
 }
 
 const MODE_ICONS: Record<string, string> = {
   bike: '🚲', car: '🚗', bus: '🚌', train: '🚂', plane: '✈️',
   walk: '🚶', run: '🏃', ferry: '⛴️', rideshare: '🚕', other: '🚐',
+};
+
+const BLANK_FORM = {
+  mode: 'bike',
+  date: new Date().toISOString().split('T')[0],
+  origin: '',
+  destination: '',
+  distance_miles: '',
+  duration_min: '',
+  purpose: 'commute',
+  calories_burned: '',
+  notes: '',
+  vehicle_id: '',
 };
 
 function fmt(n: number | null | undefined, d = 1) {
@@ -32,10 +52,15 @@ function fmt(n: number | null | undefined, d = 1) {
 
 export default function TripsPage() {
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [page, setPage] = useState(0);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(BLANK_FORM);
+  const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const limit = 50;
 
   const load = useCallback(async () => {
@@ -46,11 +71,18 @@ export default function TripsPage() {
         offset: String(page * limit),
       });
       if (filter) params.set('mode', filter);
-      const res = await fetch(`/api/travel/trips?${params}`);
-      if (res.ok) {
-        const d = await res.json();
+      const [tripsRes, vehiclesRes] = await Promise.all([
+        fetch(`/api/travel/trips?${params}`),
+        fetch('/api/travel/vehicles'),
+      ]);
+      if (tripsRes.ok) {
+        const d = await tripsRes.json();
         setTrips(d.trips || []);
         setTotal(d.total || 0);
+      }
+      if (vehiclesRes.ok) {
+        const d = await vehiclesRes.json();
+        setVehicles(d.vehicles || []);
       }
     } finally {
       setLoading(false);
@@ -69,6 +101,56 @@ export default function TripsPage() {
     load();
   };
 
+  const handleEdit = (t: Trip) => {
+    setEditingId(t.id);
+    setForm({
+      mode: t.mode,
+      date: t.date,
+      origin: t.origin ?? '',
+      destination: t.destination ?? '',
+      distance_miles: t.distance_miles != null ? String(t.distance_miles) : '',
+      duration_min: t.duration_min != null ? String(t.duration_min) : '',
+      purpose: t.purpose ?? 'commute',
+      calories_burned: t.calories_burned != null ? String(t.calories_burned) : '',
+      notes: t.notes ?? '',
+      vehicle_id: t.vehicles?.id ?? '',
+    });
+    setShowForm(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload = {
+        ...(editingId ? { id: editingId } : {}),
+        mode: form.mode,
+        date: form.date,
+        origin: form.origin || null,
+        destination: form.destination || null,
+        distance_miles: form.distance_miles ? parseFloat(form.distance_miles) : null,
+        duration_min: form.duration_min ? parseInt(form.duration_min) : null,
+        purpose: form.purpose || null,
+        calories_burned: form.calories_burned ? parseInt(form.calories_burned) : null,
+        notes: form.notes || null,
+        vehicle_id: form.vehicle_id || null,
+      };
+      const res = await fetch('/api/travel/trips', {
+        method: editingId ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        setShowForm(false);
+        setForm(BLANK_FORM);
+        setEditingId(null);
+        load();
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const totalPages = Math.ceil(total / limit);
 
   return (
@@ -84,13 +166,13 @@ export default function TripsPage() {
             <p className="text-sm text-gray-500">{total.toLocaleString()} trips</p>
           </div>
         </div>
-        <Link
-          href="/dashboard/travel"
+        <button
+          onClick={() => { setForm(BLANK_FORM); setEditingId(null); setShowForm(true); }}
           className="flex items-center gap-1.5 px-3 py-2 bg-sky-600 text-white rounded-xl text-sm font-medium hover:bg-sky-700 transition"
         >
           <Plus className="w-4 h-4" />
           Add Trip
-        </Link>
+        </button>
       </div>
 
       {/* Mode Filter */}
@@ -144,7 +226,7 @@ export default function TripsPage() {
                       <span className="text-base">{MODE_ICONS[t.mode] ?? '🚐'}</span>{' '}
                       <span className="text-gray-700 capitalize">{t.mode}</span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate">
+                    <td className="px-4 py-3 text-gray-600 max-w-50 truncate">
                       {t.origin && t.destination
                         ? `${t.origin} → ${t.destination}`
                         : t.notes?.substring(0, 40) ?? '—'}
@@ -156,7 +238,13 @@ export default function TripsPage() {
                     <td className="px-4 py-3 text-gray-400 text-xs">
                       {t.source === 'garmin_import' ? 'Garmin' : t.source === 'csv_import' ? 'CSV' : 'Manual'}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <button
+                        onClick={() => handleEdit(t)}
+                        className="text-xs text-sky-500 hover:text-sky-700 transition mr-2"
+                      >
+                        edit
+                      </button>
                       <button
                         onClick={() => handleDelete(t.id)}
                         className="text-xs text-red-400 hover:text-red-600 transition"
@@ -192,6 +280,133 @@ export default function TripsPage() {
           >
             Next
           </button>
+        </div>
+      )}
+
+      {/* Add / Edit Trip Modal */}
+      {showForm && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <form
+            onSubmit={handleSave}
+            className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl max-h-[90vh] overflow-y-auto"
+          >
+            <h2 className="text-lg font-bold text-gray-900">{editingId ? 'Edit Trip' : 'Log Trip'}</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Mode</label>
+                <select
+                  value={form.mode}
+                  onChange={(e) => setForm((f) => ({ ...f, mode: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                >
+                  {['bike','car','bus','train','plane','walk','run','ferry','rideshare','other'].map((m) => (
+                    <option key={m} value={m}>{MODE_ICONS[m]} {m}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
+                <input
+                  type="date" value={form.date}
+                  onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                  required
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
+                <input
+                  type="text" value={form.origin} placeholder="Origin"
+                  onChange={(e) => setForm((f) => ({ ...f, origin: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
+                <input
+                  type="text" value={form.destination} placeholder="Destination"
+                  onChange={(e) => setForm((f) => ({ ...f, destination: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Miles</label>
+                <input
+                  type="number" step="0.01" value={form.distance_miles} placeholder="0.0"
+                  onChange={(e) => setForm((f) => ({ ...f, distance_miles: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Duration (min)</label>
+                <input
+                  type="number" value={form.duration_min} placeholder="0"
+                  onChange={(e) => setForm((f) => ({ ...f, duration_min: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Calories</label>
+                <input
+                  type="number" value={form.calories_burned} placeholder="0"
+                  onChange={(e) => setForm((f) => ({ ...f, calories_burned: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Purpose</label>
+                <select
+                  value={form.purpose}
+                  onChange={(e) => setForm((f) => ({ ...f, purpose: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                >
+                  {['commute','leisure','work','errand','exercise','other'].map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+              {vehicles.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Vehicle</label>
+                  <select
+                    value={form.vehicle_id}
+                    onChange={(e) => setForm((f) => ({ ...f, vehicle_id: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                  >
+                    <option value="">None</option>
+                    {vehicles.map((v) => <option key={v.id} value={v.id}>{v.nickname}</option>)}
+                  </select>
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+              <input
+                type="text" value={form.notes} placeholder="Optional notes"
+                onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => { setShowForm(false); setEditingId(null); }}
+                className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button type="submit" disabled={saving}
+                className="flex-1 bg-sky-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-50">
+                {saving ? 'Saving…' : editingId ? 'Update Trip' : 'Save Trip'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>
