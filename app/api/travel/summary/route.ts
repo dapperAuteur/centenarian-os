@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       .lte('date', endDate),
     supabase
       .from('vehicle_maintenance')
-      .select('date, cost, service_type, vehicle_id, next_service_miles, next_service_date, vehicles(id, nickname, type, active)')
+      .select('id, date, cost, service_type, vehicle_id, next_service_miles, next_service_date, vehicles(id, nickname, type, active)')
       .eq('user_id', user.id),
   ]);
 
