@@ -1,0 +1,709 @@
+'use client';
+
+import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, CartesianGrid,
+} from 'recharts';
+import {
+  Bike, Car, Flame, Leaf, DollarSign, Gauge,
+  Plus, ChevronRight, AlertCircle, Upload, Zap,
+} from 'lucide-react';
+
+interface Summary {
+  currentMonth: {
+    milesByMode: Record<string, number>;
+    calsByMode: Record<string, number>;
+    totalCo2EmittedKg: number;
+    co2SavedKgVsCar: number;
+    fuelSpend: number;
+    fuelGallons: number;
+    avgMpg: number | null;
+    bikeCommuteDays: number;
+    bikeMiles: number;
+    carMiles: number;
+    bikeSavings: number | null;
+    carCostPerMile: number | null;
+  };
+  monthlyTrend: { month: string; miles: number; fuel_cost: number; bike_miles: number; car_miles: number; co2_kg: number }[];
+  mpgTrend: { date: string; mpg: number }[];
+  maintenanceAlerts: { id: string; service_type: string; vehicle: { nickname: string } | null; next_service_miles: number | null; next_service_date: string | null }[];
+}
+
+interface Vehicle {
+  id: string;
+  type: string;
+  nickname: string;
+  make: string | null;
+  model: string | null;
+  year: number | null;
+  active: boolean;
+}
+
+interface Trip {
+  id: string;
+  mode: string;
+  date: string;
+  origin: string | null;
+  destination: string | null;
+  distance_miles: number | null;
+  duration_min: number | null;
+  purpose: string | null;
+  calories_burned: number | null;
+}
+
+interface TravelSettings {
+  commute_distance_miles: number | null;
+  commute_duration_min: number | null;
+  default_vehicle_id: string | null;
+}
+
+const MODE_ICONS: Record<string, string> = {
+  bike: '🚲', car: '🚗', bus: '🚌', train: '🚂', plane: '✈️',
+  walk: '🚶', run: '🏃', ferry: '⛴️', rideshare: '🚕', other: '🚐',
+};
+
+const MODE_COLORS: Record<string, string> = {
+  bike: '#22c55e', car: '#ef4444', bus: '#3b82f6', train: '#8b5cf6',
+  plane: '#f59e0b', walk: '#06b6d4', run: '#f97316', other: '#6b7280',
+};
+
+function fmt(n: number | null | undefined, decimals = 1) {
+  if (n == null) return '—';
+  return n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+function fmtMoney(n: number | null | undefined) {
+  if (n == null) return '—';
+  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
+}
+
+export default function TravelPage() {
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [recentTrips, setRecentTrips] = useState<Trip[]>([]);
+  const [settings, setSettings] = useState<TravelSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Add trip modal state
+  const [showAddTrip, setShowAddTrip] = useState(false);
+  const [tripForm, setTripForm] = useState({
+    mode: 'bike', date: new Date().toISOString().split('T')[0],
+    origin: '', destination: '', distance_miles: '', duration_min: '',
+    purpose: 'commute', calories_burned: '', notes: '', vehicle_id: '',
+  });
+  const [savingTrip, setSavingTrip] = useState(false);
+
+  // Add vehicle modal state
+  const [showAddVehicle, setShowAddVehicle] = useState(false);
+  const [vehicleForm, setVehicleForm] = useState({
+    type: 'car', nickname: '', make: '', model: '', year: '', color: '',
+  });
+  const [savingVehicle, setSavingVehicle] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [sumRes, vehiclesRes, tripsRes, settingsRes] = await Promise.all([
+        fetch('/api/travel/summary?months=6'),
+        fetch('/api/travel/vehicles'),
+        fetch('/api/travel/trips?limit=10'),
+        fetch('/api/travel/settings'),
+      ]);
+      if (sumRes.ok) setSummary(await sumRes.json());
+      if (vehiclesRes.ok) {
+        const { vehicles: v } = await vehiclesRes.json();
+        setVehicles(v || []);
+      }
+      if (tripsRes.ok) {
+        const { trips } = await tripsRes.json();
+        setRecentTrips(trips || []);
+      }
+      if (settingsRes.ok) {
+        const { settings: s } = await settingsRes.json();
+        setSettings(s);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const logCommuteByBike = async () => {
+    if (!settings?.commute_distance_miles) {
+      setTripForm((f) => ({ ...f, mode: 'bike', purpose: 'commute' }));
+      setShowAddTrip(true);
+      return;
+    }
+    setSavingTrip(true);
+    try {
+      const calories = settings.commute_duration_min
+        ? Math.round(settings.commute_duration_min * 8) // ~8 cal/min cycling
+        : null;
+      await fetch('/api/travel/trips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'bike', purpose: 'commute',
+          date: new Date().toISOString().split('T')[0],
+          distance_miles: settings.commute_distance_miles,
+          duration_min: settings.commute_duration_min,
+          calories_burned: calories,
+        }),
+      });
+      load();
+    } finally {
+      setSavingTrip(false);
+    }
+  };
+
+  const handleSaveTrip = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingTrip(true);
+    try {
+      const res = await fetch('/api/travel/trips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: tripForm.mode,
+          date: tripForm.date,
+          origin: tripForm.origin || null,
+          destination: tripForm.destination || null,
+          distance_miles: tripForm.distance_miles ? parseFloat(tripForm.distance_miles) : null,
+          duration_min: tripForm.duration_min ? parseInt(tripForm.duration_min) : null,
+          purpose: tripForm.purpose || null,
+          calories_burned: tripForm.calories_burned ? parseInt(tripForm.calories_burned) : null,
+          notes: tripForm.notes || null,
+          vehicle_id: tripForm.vehicle_id || null,
+        }),
+      });
+      if (res.ok) {
+        setShowAddTrip(false);
+        setTripForm({ mode: 'bike', date: new Date().toISOString().split('T')[0], origin: '', destination: '', distance_miles: '', duration_min: '', purpose: 'commute', calories_burned: '', notes: '', vehicle_id: '' });
+        load();
+      }
+    } finally {
+      setSavingTrip(false);
+    }
+  };
+
+  const handleSaveVehicle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingVehicle(true);
+    try {
+      const res = await fetch('/api/travel/vehicles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: vehicleForm.type,
+          nickname: vehicleForm.nickname,
+          make: vehicleForm.make || null,
+          model: vehicleForm.model || null,
+          year: vehicleForm.year ? parseInt(vehicleForm.year) : null,
+          color: vehicleForm.color || null,
+        }),
+      });
+      if (res.ok) {
+        setShowAddVehicle(false);
+        setVehicleForm({ type: 'car', nickname: '', make: '', model: '', year: '', color: '' });
+        load();
+      }
+    } finally {
+      setSavingVehicle(false);
+    }
+  };
+
+  const cm = summary?.currentMonth;
+  const totalMilesMonth = Object.values(cm?.milesByMode ?? {}).reduce((s, v) => s + v, 0);
+
+  if (loading) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-10 flex items-center justify-center h-64">
+        <div className="animate-spin h-8 w-8 border-4 border-sky-600 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Travel</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Track your miles, fuel, and commute impact</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={logCommuteByBike}
+            disabled={savingTrip}
+            className="flex items-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition disabled:opacity-50"
+          >
+            <Bike className="w-4 h-4" />
+            Log Commute
+          </button>
+          <button
+            onClick={() => setShowAddTrip(true)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-sky-600 text-white rounded-xl text-sm font-medium hover:bg-sky-700 transition"
+          >
+            <Plus className="w-4 h-4" />
+            Add Trip
+          </button>
+        </div>
+      </div>
+
+      {/* Setup prompt if no vehicles */}
+      {vehicles.length === 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-amber-800">Set up your vehicles first</p>
+            <p className="text-xs text-amber-700 mt-1">Add your car and bike to unlock fuel tracking, maintenance logs, and savings analysis.</p>
+            <button
+              onClick={() => setShowAddVehicle(true)}
+              className="mt-2 text-xs font-medium text-amber-800 underline"
+            >
+              Add a vehicle
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-white border border-gray-200 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Bike className="w-4 h-4 text-green-600" />
+            <span className="text-xs font-medium text-gray-500">Bike Miles</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{fmt(cm?.bikeMiles)}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{cm?.bikeCommuteDays ?? 0} commute days</p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <DollarSign className="w-4 h-4 text-emerald-600" />
+            <span className="text-xs font-medium text-gray-500">Bike Savings</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{fmtMoney(cm?.bikeSavings)}</p>
+          <p className="text-xs text-gray-400 mt-0.5">vs. driving this month</p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Leaf className="w-4 h-4 text-teal-600" />
+            <span className="text-xs font-medium text-gray-500">CO₂ Saved</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{fmt(cm?.co2SavedKgVsCar)} kg</p>
+          <p className="text-xs text-gray-400 mt-0.5">by biking vs. driving</p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Flame className="w-4 h-4 text-orange-500" />
+            <span className="text-xs font-medium text-gray-500">Commute Cals</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">
+            {fmt(cm?.calsByMode?.['bike'] ?? 0, 0)}
+          </p>
+          <p className="text-xs text-gray-400 mt-0.5">burned biking</p>
+        </div>
+      </div>
+
+      {/* Fuel stats if we have data */}
+      {(cm?.fuelSpend ?? 0) > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <div className="bg-white border border-gray-200 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Car className="w-4 h-4 text-red-500" />
+              <span className="text-xs font-medium text-gray-500">Fuel Spend</span>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{fmtMoney(cm?.fuelSpend)}</p>
+            <p className="text-xs text-gray-400 mt-0.5">{fmt(cm?.fuelGallons, 2)} gallons</p>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Gauge className="w-4 h-4 text-blue-500" />
+              <span className="text-xs font-medium text-gray-500">Avg MPG</span>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{cm?.avgMpg != null ? fmt(cm.avgMpg, 1) : '—'}</p>
+            <p className="text-xs text-gray-400 mt-0.5">this month</p>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Car className="w-4 h-4 text-gray-500" />
+              <span className="text-xs font-medium text-gray-500">Car Miles</span>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{fmt(cm?.carMiles)}</p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {cm?.carCostPerMile != null ? `$${fmt(cm.carCostPerMile, 3)}/mile` : 'this month'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Miles by mode breakdown */}
+      {totalMilesMonth > 0 && (
+        <div className="bg-white border border-gray-200 rounded-2xl p-5">
+          <h2 className="text-sm font-semibold text-gray-700 mb-4">Miles by Mode — This Month</h2>
+          <div className="space-y-2">
+            {Object.entries(cm?.milesByMode ?? {})
+              .sort(([, a], [, b]) => b - a)
+              .map(([mode, miles]) => {
+                const pct = totalMilesMonth > 0 ? (miles / totalMilesMonth) * 100 : 0;
+                return (
+                  <div key={mode} className="flex items-center gap-3">
+                    <span className="text-base w-6 text-center">{MODE_ICONS[mode] ?? '🚐'}</span>
+                    <span className="text-sm text-gray-700 w-16 capitalize">{mode}</span>
+                    <div className="flex-1 bg-gray-100 rounded-full h-2">
+                      <div
+                        className="h-2 rounded-full transition-all"
+                        style={{ width: `${pct}%`, backgroundColor: MODE_COLORS[mode] ?? '#6b7280' }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 w-16 text-right">{fmt(miles)} mi</span>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
+      {/* Charts */}
+      {(summary?.monthlyTrend?.length ?? 0) > 1 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5">
+            <h2 className="text-sm font-semibold text-gray-700 mb-4">Monthly Miles</h2>
+            <div className="h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={summary!.monthlyTrend} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11 }} tickFormatter={(v) => v.substring(5)} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip formatter={(v: number) => [`${fmt(v)} mi`]} />
+                  <Bar dataKey="bike_miles" fill="#22c55e" name="Bike" stackId="a" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="car_miles" fill="#ef4444" name="Car" stackId="a" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          {(summary?.mpgTrend?.length ?? 0) > 1 && (
+            <div className="bg-white border border-gray-200 rounded-2xl p-5">
+              <h2 className="text-sm font-semibold text-gray-700 mb-4">MPG Trend</h2>
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={summary!.mpgTrend} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v: string) => v.substring(5)} />
+                    <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} />
+                    <Tooltip formatter={(v: number) => [`${fmt(v, 1)} MPG`]} />
+                    <Line type="monotone" dataKey="mpg" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Maintenance Alerts */}
+      {(summary?.maintenanceAlerts?.length ?? 0) > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
+          <h2 className="text-sm font-semibold text-amber-800 mb-3">Service Reminders</h2>
+          <div className="space-y-2">
+            {summary!.maintenanceAlerts.map((alert) => (
+              <div key={alert.id} className="flex items-center justify-between text-sm">
+                <span className="text-amber-900">
+                  {alert.vehicle?.nickname ?? 'Vehicle'} — {alert.service_type.replace('_', ' ')}
+                </span>
+                <span className="text-amber-700 font-medium">
+                  {alert.next_service_date ?? `@ ${alert.next_service_miles?.toLocaleString()} mi`}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Vehicles */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-gray-700">Vehicles</h2>
+          <button
+            onClick={() => setShowAddVehicle(true)}
+            className="text-xs text-sky-600 hover:text-sky-700 font-medium flex items-center gap-1"
+          >
+            <Plus className="w-3 h-3" /> Add
+          </button>
+        </div>
+        {vehicles.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-4">No vehicles yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {vehicles.filter((v) => v.active).map((v) => (
+              <div key={v.id} className="border border-gray-100 rounded-xl p-3 flex items-center gap-3">
+                <span className="text-2xl">{v.type === 'car' ? '🚗' : v.type === 'bike' ? '🚲' : v.type === 'ebike' ? '⚡🚲' : '🛵'}</span>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{v.nickname}</p>
+                  {(v.make || v.year) && (
+                    <p className="text-xs text-gray-500">{[v.year, v.make, v.model].filter(Boolean).join(' ')}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Recent Trips */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-gray-700">Recent Trips</h2>
+          <Link href="/dashboard/travel/trips" className="text-xs text-sky-600 hover:text-sky-700 font-medium flex items-center gap-1">
+            View all <ChevronRight className="w-3 h-3" />
+          </Link>
+        </div>
+        {recentTrips.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-4">No trips logged yet.</p>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {recentTrips.map((trip) => (
+              <div key={trip.id} className="flex items-center justify-between py-2.5">
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">{MODE_ICONS[trip.mode] ?? '🚐'}</span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {trip.origin && trip.destination
+                        ? `${trip.origin} → ${trip.destination}`
+                        : `${trip.mode} trip`}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {trip.date}
+                      {trip.distance_miles ? ` · ${fmt(trip.distance_miles)} mi` : ''}
+                      {trip.duration_min ? ` · ${trip.duration_min} min` : ''}
+                    </p>
+                  </div>
+                </div>
+                {trip.calories_burned ? (
+                  <span className="text-xs text-orange-600 font-medium">{trip.calories_burned} cal</span>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Quick links */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { href: '/dashboard/travel/fuel', icon: <Gauge className="w-5 h-5" />, label: 'Fuel Log', color: 'text-blue-600' },
+          { href: '/dashboard/travel/maintenance', icon: <Car className="w-5 h-5" />, label: 'Maintenance', color: 'text-orange-600' },
+          { href: '/dashboard/travel/import', icon: <Upload className="w-5 h-5" />, label: 'Import Data', color: 'text-purple-600' },
+          { href: '/dashboard/travel/trips', icon: <Zap className="w-5 h-5" />, label: 'All Trips', color: 'text-green-600' },
+        ].map(({ href, icon, label, color }) => (
+          <Link
+            key={href}
+            href={href}
+            className="bg-white border border-gray-200 rounded-2xl p-4 flex flex-col items-center gap-2 hover:bg-gray-50 transition"
+          >
+            <span className={color}>{icon}</span>
+            <span className="text-xs font-medium text-gray-700">{label}</span>
+          </Link>
+        ))}
+      </div>
+
+      {/* Add Trip Modal */}
+      {showAddTrip && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <form
+            onSubmit={handleSaveTrip}
+            className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl"
+          >
+            <h2 className="text-lg font-bold text-gray-900">Log Trip</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Mode</label>
+                <select
+                  value={tripForm.mode}
+                  onChange={(e) => setTripForm((f) => ({ ...f, mode: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                >
+                  {['bike','car','bus','train','plane','walk','run','ferry','rideshare','other'].map((m) => (
+                    <option key={m} value={m}>{MODE_ICONS[m]} {m}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
+                <input
+                  type="date" value={tripForm.date}
+                  onChange={(e) => setTripForm((f) => ({ ...f, date: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                  required
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
+                <input
+                  type="text" value={tripForm.origin} placeholder="Origin"
+                  onChange={(e) => setTripForm((f) => ({ ...f, origin: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
+                <input
+                  type="text" value={tripForm.destination} placeholder="Destination"
+                  onChange={(e) => setTripForm((f) => ({ ...f, destination: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Miles</label>
+                <input
+                  type="number" step="0.01" value={tripForm.distance_miles} placeholder="0.0"
+                  onChange={(e) => setTripForm((f) => ({ ...f, distance_miles: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Duration (min)</label>
+                <input
+                  type="number" value={tripForm.duration_min} placeholder="0"
+                  onChange={(e) => setTripForm((f) => ({ ...f, duration_min: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Calories</label>
+                <input
+                  type="number" value={tripForm.calories_burned} placeholder="0"
+                  onChange={(e) => setTripForm((f) => ({ ...f, calories_burned: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Purpose</label>
+                <select
+                  value={tripForm.purpose}
+                  onChange={(e) => setTripForm((f) => ({ ...f, purpose: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                >
+                  {['commute','leisure','work','errand','exercise','other'].map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+              {vehicles.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Vehicle</label>
+                  <select
+                    value={tripForm.vehicle_id}
+                    onChange={(e) => setTripForm((f) => ({ ...f, vehicle_id: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                  >
+                    <option value="">None</option>
+                    {vehicles.map((v) => <option key={v.id} value={v.id}>{v.nickname}</option>)}
+                  </select>
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+              <input
+                type="text" value={tripForm.notes} placeholder="Optional notes"
+                onChange={(e) => setTripForm((f) => ({ ...f, notes: e.target.value }))}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => setShowAddTrip(false)}
+                className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+                Cancel
+              </button>
+              <button type="submit" disabled={savingTrip}
+                className="flex-1 bg-sky-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-50">
+                {savingTrip ? 'Saving…' : 'Save Trip'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Add Vehicle Modal */}
+      {showAddVehicle && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <form
+            onSubmit={handleSaveVehicle}
+            className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl"
+          >
+            <h2 className="text-lg font-bold text-gray-900">Add Vehicle</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Type</label>
+                <select
+                  value={vehicleForm.type}
+                  onChange={(e) => setVehicleForm((f) => ({ ...f, type: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                >
+                  {['car','bike','ebike','motorcycle','scooter'].map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Nickname *</label>
+                <input
+                  type="text" value={vehicleForm.nickname} placeholder="My Camry"
+                  onChange={(e) => setVehicleForm((f) => ({ ...f, nickname: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                  required
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Year</label>
+                <input
+                  type="number" value={vehicleForm.year} placeholder="2020"
+                  onChange={(e) => setVehicleForm((f) => ({ ...f, year: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Make</label>
+                <input
+                  type="text" value={vehicleForm.make} placeholder="Toyota"
+                  onChange={(e) => setVehicleForm((f) => ({ ...f, make: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Model</label>
+                <input
+                  type="text" value={vehicleForm.model} placeholder="Camry"
+                  onChange={(e) => setVehicleForm((f) => ({ ...f, model: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => setShowAddVehicle(false)}
+                className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+                Cancel
+              </button>
+              <button type="submit" disabled={savingVehicle}
+                className="flex-1 bg-sky-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-50">
+                {savingVehicle ? 'Saving…' : 'Add Vehicle'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}

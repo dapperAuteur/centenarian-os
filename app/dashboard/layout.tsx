@@ -37,6 +37,7 @@ import {
   TrendingUp,
   Watch,
   DollarSign,
+  Navigation,
 } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import FloatingActionsMenu from '@/components/ui/FloatingActionsMenu';
@@ -225,6 +226,14 @@ export default function DashboardLayout({
               >
                 <DollarSign className="w-4 h-4 mr-2" />
                 Finance
+                <LockBadge />
+              </Link>
+              <Link
+                href="/dashboard/travel"
+                className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+              >
+                <Navigation className="w-4 h-4 mr-2" />
+                Travel
                 <LockBadge />
               </Link>
               <Link
@@ -521,6 +530,19 @@ export default function DashboardLayout({
                   <div className="flex items-center">
                     <DollarSign className="w-4 h-4 mr-3" />
                     Finance
+                  </div>
+                  {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
+                </div>
+              </Link>
+              <Link
+                href="/dashboard/travel"
+                className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Navigation className="w-4 h-4 mr-3" />
+                    Travel
                   </div>
                   {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
                 </div>
