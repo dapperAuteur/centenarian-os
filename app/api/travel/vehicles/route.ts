@@ -13,7 +13,31 @@ export async function GET() {
     .order('created_at', { ascending: true });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ vehicles: data || [] });
+
+  // Attach latest odometer reading from fuel_logs for each vehicle
+  const vehicleIds = (data || []).map((v) => v.id);
+  let latestOdo: Record<string, number> = {};
+  if (vehicleIds.length > 0) {
+    const { data: odoRows } = await supabase
+      .from('fuel_logs')
+      .select('vehicle_id, odometer_miles, date')
+      .in('vehicle_id', vehicleIds)
+      .eq('user_id', user.id)
+      .not('odometer_miles', 'is', null)
+      .order('date', { ascending: false });
+    for (const row of odoRows ?? []) {
+      if (row.vehicle_id && !(row.vehicle_id in latestOdo)) {
+        latestOdo[row.vehicle_id] = row.odometer_miles;
+      }
+    }
+  }
+
+  const vehicles = (data || []).map((v) => ({
+    ...v,
+    latest_odometer: latestOdo[v.id] ?? null,
+  }));
+
+  return NextResponse.json({ vehicles });
 }
 
 export async function POST(request: NextRequest) {

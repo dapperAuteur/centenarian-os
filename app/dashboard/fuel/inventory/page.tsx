@@ -49,6 +49,12 @@ export default function InventoryPage() {
     setModalOpen(true);
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm('Remove this item from inventory?')) return;
+    await supabase.from('inventory').delete().eq('id', id);
+    loadData();
+  };
+
   const handleRestock = async (id: string, newQuantity: number) => {
     await supabase
       .from('inventory')
@@ -159,6 +165,7 @@ export default function InventoryPage() {
                     item={item}
                     onEdit={handleEdit}
                     onRestock={handleRestock}
+                    onDelete={handleDelete}
                     isLowStock={true}
                   />
                 ))}
@@ -179,6 +186,7 @@ export default function InventoryPage() {
                     item={item}
                     onEdit={handleEdit}
                     onRestock={handleRestock}
+                    onDelete={handleDelete}
                     isLowStock={false}
                   />
                 ))}
@@ -207,10 +215,11 @@ interface InventoryCardProps {
   item: InventoryWithIngredient;
   onEdit: (item: InventoryWithIngredient) => void;
   onRestock: (id: string, quantity: number) => void;
+  onDelete: (id: string) => void;
   isLowStock: boolean;
 }
 
-function InventoryCard({ item, onEdit, onRestock, isLowStock }: InventoryCardProps) {
+function InventoryCard({ item, onEdit, onRestock, onDelete, isLowStock }: InventoryCardProps) {
   const [restockQuantity, setRestockQuantity] = useState('');
 
   const handleQuickRestock = () => {
@@ -235,12 +244,10 @@ function InventoryCard({ item, onEdit, onRestock, isLowStock }: InventoryCardPro
             {item.quantity.toFixed(1)} {item.unit}
           </p>
         </div>
-        <button
-          onClick={() => onEdit(item)}
-          className="text-gray-400 hover:text-gray-600"
-        >
-          Edit
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => onEdit(item)} className="text-gray-400 hover:text-gray-600 text-sm">Edit</button>
+          <button onClick={() => onDelete(item.id)} className="text-red-400 hover:text-red-600 text-sm">Del</button>
+        </div>
       </div>
 
       {/* Stock Level Bar */}
