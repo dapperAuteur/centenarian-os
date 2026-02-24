@@ -1,7 +1,7 @@
 // File: public/sw.js
 // Service Worker — network-first for API, cache-first for pages
 
-const CACHE_VERSION = 'centos-v2';
+const CACHE_VERSION = 'centos-v3';
 const STATIC_URLS = [
   '/',
   '/dashboard/planner',

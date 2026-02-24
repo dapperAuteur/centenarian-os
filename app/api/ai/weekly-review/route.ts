@@ -58,7 +58,7 @@ function weekEndDate(weekStart: string): string {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildWeekSummary(data: { health: any[]; focus: any[]; meals: any[]; tasks: any[]; lessons: any[]; logs: any[] }) {
+function buildWeekSummary(data: { health: any[]; focus: any[]; meals: any[]; tasks: any[]; lessons: any[]; logs: any[]; trips: any[]; fuel: any[] }) {
   const greenMeals = data.meals.filter((m) => {
     const p = Array.isArray(m.protocols) ? m.protocols[0] : m.protocols;
     return p?.ncv_score === 'Green';
@@ -126,6 +126,28 @@ function buildWeekSummary(data: { health: any[]; focus: any[]; meals: any[]; tas
       total_spent: sum(data.logs, 'total_spent'),
       total_earned: sum(data.logs, 'total_earned'),
     },
+    travel: (() => {
+      const bikeMiles = data.trips.filter((t) => t.mode === 'bike').reduce((s: number, t) => s + (Number(t.distance_miles) || 0), 0);
+      const bikeCommuteDays = data.trips.filter((t) => t.mode === 'bike' && t.purpose === 'commute').length;
+      const bikeCals = data.trips.filter((t) => t.mode === 'bike').reduce((s: number, t) => s + (Number(t.calories_burned) || 0), 0);
+      const carMiles = data.trips.filter((t) => t.mode === 'car').reduce((s: number, t) => s + (Number(t.distance_miles) || 0), 0);
+      const co2Saved = Math.round(bikeMiles * 0.170 * 10) / 10;
+      const fuelSpend = data.fuel.reduce((s: number, f) => s + (Number(f.total_cost) || 0), 0);
+      const modeBreakdown: Record<string, number> = {};
+      for (const t of data.trips) {
+        modeBreakdown[t.mode] = (modeBreakdown[t.mode] || 0) + (Number(t.distance_miles) || 0);
+      }
+      return {
+        total_trips: data.trips.length,
+        bike_miles: Math.round(bikeMiles * 10) / 10,
+        bike_commute_days: bikeCommuteDays,
+        bike_calories_burned: bikeCals,
+        car_miles: Math.round(carMiles * 10) / 10,
+        co2_saved_kg_by_biking: co2Saved,
+        fuel_spend: Math.round(fuelSpend * 100) / 100,
+        mode_breakdown: modeBreakdown,
+      };
+    })(),
   };
 }
 
@@ -198,8 +220,8 @@ export async function POST(request: NextRequest) {
   const db = getDb();
   const weekEnd = weekEndDate(weekStart);
 
-  // Aggregate data from 6 sources in parallel
-  const [healthRes, focusRes, mealsRes, tasksRes, lessonsRes, logsRes] = await Promise.all([
+  // Aggregate data from 8 sources in parallel
+  const [healthRes, focusRes, mealsRes, tasksRes, lessonsRes, logsRes, tripsRes, fuelRes] = await Promise.all([
     // 1. Health metrics
     db.from('user_health_metrics')
       .select('logged_date, resting_hr, steps, sleep_hours, activity_min, sleep_score, hrv_ms, recovery_score, stress_score')
@@ -245,6 +267,20 @@ export async function POST(request: NextRequest) {
       .gte('date', weekStart)
       .lte('date', weekEnd)
       .order('date'),
+
+    // 7. Trips
+    db.from('trips')
+      .select('date, mode, distance_miles, duration_min, calories_burned, co2_kg, purpose')
+      .eq('user_id', user.id)
+      .gte('date', weekStart)
+      .lte('date', weekEnd),
+
+    // 8. Fuel logs
+    db.from('fuel_logs')
+      .select('date, total_cost, gallons, mpg_display, mpg_calculated')
+      .eq('user_id', user.id)
+      .gte('date', weekStart)
+      .lte('date', weekEnd),
   ]);
 
   const summary = buildWeekSummary({
@@ -254,17 +290,20 @@ export async function POST(request: NextRequest) {
     tasks: tasksRes.data ?? [],
     lessons: lessonsRes.data ?? [],
     logs: logsRes.data ?? [],
+    trips: tripsRes.data ?? [],
+    fuel: fuelRes.data ?? [],
   });
 
   const prompt = `You are a longevity coach on CentenarianOS, a health and longevity platform.
-Based on this week's data (${weekStart} to ${weekEnd}), write an encouraging, personalized weekly review (250–400 words).
+Based on this week's data (${weekStart} to ${weekEnd}), write an encouraging, personalized weekly review (300–450 words).
 
 Cover these areas:
 1. Energy & Recovery — sleep hours, resting heart rate, HRV, recovery scores, energy ratings, pain levels
 2. Focus & Productivity — deep work sessions, quality ratings, task completion rate, revenue generated
 3. Nutrition Consistency — meal logging frequency, NCV score distribution (Green/Yellow/Red = healthy/moderate/poor), restaurant vs home meals
-4. Learning Progress — lessons completed, courses studied, watch time
-5. One Recommended Focus for Next Week — based on the weakest area or biggest opportunity
+4. Travel & Movement — miles by mode (bike, car, etc.), bike commute days, calories burned commuting, CO2 saved by biking, fuel costs if any
+5. Learning Progress — lessons completed, courses studied, watch time
+6. One Recommended Focus for Next Week — based on the weakest area or biggest opportunity
 
 Here is the user's aggregated data for the week:
 ${JSON.stringify(summary, null, 2)}
@@ -272,6 +311,7 @@ ${JSON.stringify(summary, null, 2)}
 Guidelines:
 - Be encouraging but honest about areas needing improvement
 - Reference specific numbers from the data
+- For travel: highlight how bike commuting contributes to fitness and savings; if no trips logged, skip this section
 - If a category has no data (null values or zero counts), briefly note it and suggest the user start tracking it
 - Keep the tone warm and coach-like, like a supportive mentor
 - Use plain text with line breaks between sections — do NOT use markdown headers or formatting
