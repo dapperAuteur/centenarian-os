@@ -75,8 +75,8 @@ export default function LandingPage() {
               >
                 Tech Roadmap
               </Link>
-              <Link 
-                href="/contribute" 
+              <Link
+                href="/contribute"
                 className="block text-gray-600 hover:text-gray-900 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
