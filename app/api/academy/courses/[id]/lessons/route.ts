@@ -73,7 +73,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const db = getDb();
-  const { data: course } = await db.from('courses').select('teacher_id').eq('id', courseId).single();
+  const { data: course } = await db.from('courses').select('teacher_id, price_type').eq('id', courseId).single();
   if (!course) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   if (course.teacher_id !== user.id && user.email !== process.env.ADMIN_EMAIL) {
@@ -81,10 +81,12 @@ export async function POST(request: NextRequest, { params }: Params) {
   }
 
   const body = await request.json();
+  const isFreeByDefault = body.is_free_preview ?? (course.price_type === 'free');
   const {
     title, lesson_type = 'video', content_url, text_content,
-    duration_seconds, order = 0, is_free_preview = false, module_id,
+    duration_seconds, order = 0, module_id,
   } = body;
+  const is_free_preview = isFreeByDefault;
 
   if (!title?.trim()) return NextResponse.json({ error: 'Title is required' }, { status: 400 });
 

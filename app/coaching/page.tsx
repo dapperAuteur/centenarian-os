@@ -441,6 +441,7 @@ export default function CoachingPage() {
             <span className="text-sm font-semibold text-gray-700">CentenarianOS</span>
           </Link>
           <div className="flex items-center gap-6 text-sm text-gray-500">
+            <Link href="/academy" className="hover:text-gray-700">Academy</Link>
             <Link href="/blog" className="hover:text-gray-700">Blog</Link>
             <Link href="/recipes" className="hover:text-gray-700">Recipes</Link>
             <Link href="/pricing" className="hover:text-gray-700">Pricing</Link>

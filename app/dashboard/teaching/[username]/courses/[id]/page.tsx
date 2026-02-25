@@ -9,7 +9,7 @@ import Link from 'next/link';
 import {
   ChevronLeft, Plus, Loader2, Save, Globe, EyeOff, Trash2,
   GitBranch, Sparkles, Play, FileText, Volume2, Presentation, GripVertical,
-  CheckCircle, ClipboardList, Pencil, ChevronUp, ChevronDown, X,
+  CheckCircle, ClipboardList, Pencil, ChevronUp, ChevronDown, X, Eye,
 } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
 
@@ -93,6 +93,25 @@ export default function CourseEditorPage() {
       });
       if (!r.ok) { const d = await r.json(); throw new Error(d.error); }
       setCourse((c) => c ? { ...c, ...updates } : c);
+
+      // When price_type changes to 'free', mark all lessons as free preview
+      if (updates.price_type === 'free') {
+        const allLessons = course.course_modules.flatMap((m) => m.lessons);
+        const nonFree = allLessons.filter((l) => !l.is_free_preview);
+        if (nonFree.length > 0) {
+          await Promise.all(
+            nonFree.map((l) =>
+              fetch(`/api/academy/courses/${courseId}/lessons/${l.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_free_preview: true }),
+              })
+            )
+          );
+          fetchCourse();
+        }
+      }
+
       setFeedback('Saved');
       setTimeout(() => setFeedback(''), 2000);
     } catch (e) {
@@ -209,6 +228,22 @@ export default function CourseEditorPage() {
         body: JSON.stringify({ order: lessons[idx].order }),
       }),
     ]);
+    fetchCourse();
+  }
+
+  async function bulkSetFreePreview(moduleId: string, value: boolean) {
+    if (!course) return;
+    const mod = course.course_modules.find((m) => m.id === moduleId);
+    if (!mod || mod.lessons.length === 0) return;
+    await Promise.all(
+      mod.lessons.map((l) =>
+        fetch(`/api/academy/courses/${courseId}/lessons/${l.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_free_preview: value }),
+        })
+      )
+    );
     fetchCourse();
   }
 
@@ -525,6 +560,18 @@ export default function CourseEditorPage() {
 
                     {editingModuleId !== mod.id && (
                       <>
+                        {lessons.length > 0 && (() => {
+                          const allFree = lessons.every((l) => l.is_free_preview);
+                          return (
+                            <button type="button"
+                              onClick={() => bulkSetFreePreview(mod.id, !allFree)}
+                              className={`p-1 transition shrink-0 ${allFree ? 'text-fuchsia-400 hover:text-gray-400' : 'text-gray-600 hover:text-fuchsia-400'}`}
+                              title={allFree ? 'Remove free preview from all lessons' : 'Mark all lessons as free preview'}
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                          );
+                        })()}
                         <button type="button"
                           onClick={() => { setEditingModuleId(mod.id); setEditingModuleTitle(mod.title); }}
                           className="p-1 text-gray-600 hover:text-gray-300 transition shrink-0" title="Rename module">
@@ -687,7 +734,10 @@ export default function CourseEditorPage() {
                       </div>
                     </div>
                   ) : (
-                    <button type="button" onClick={() => setAddingLesson(mod.id)}
+                    <button type="button" onClick={() => {
+                      setNewLesson({ title: '', lesson_type: 'video', content_url: '', is_free_preview: course.price_type === 'free' });
+                      setAddingLesson(mod.id);
+                    }}
                       className="w-full flex items-center gap-2 px-4 py-2.5 border-t border-gray-800 text-gray-600 hover:text-fuchsia-400 text-sm hover:bg-gray-800/30 transition">
                       <Plus className="w-3.5 h-3.5" /> Add Lesson
                     </button>

@@ -15,6 +15,9 @@ export default function LandingPage() {
             </Link>
           </div>
           <div className="flex items-center space-x-6">
+            <Link href="/academy" className="text-gray-600 hover:text-gray-900 font-medium">
+              Academy
+            </Link>
             <Link href="/tech-roadmap" className="text-gray-600 hover:text-gray-900 font-medium">
               Tech Roadmap
             </Link>
@@ -200,6 +203,9 @@ export default function LandingPage() {
               © 2025 CentenarianOS. Open source under MIT License.
             </p>
             <div className="flex space-x-6">
+              <Link href="/academy" className="text-gray-600 hover:text-gray-900 text-sm">
+                Academy
+              </Link>
               <Link href="/tech-roadmap" className="text-gray-600 hover:text-gray-900 text-sm">
                 Tech Roadmap
               </Link>

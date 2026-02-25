@@ -21,6 +21,9 @@ export default function LandingPage() {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-6">
+              <Link href="/academy" className="text-gray-600 hover:text-gray-900 font-medium">
+                Academy
+              </Link>
               <Link href="/blog" className="text-gray-600 hover:text-gray-900 font-medium">
                 Blog
               </Link>
@@ -54,6 +57,13 @@ export default function LandingPage() {
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 pb-4 space-y-4">
+              <Link
+                href="/academy"
+                className="block text-gray-600 hover:text-gray-900 font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Academy
+              </Link>
               <Link
                 href="/blog"
                 className="block text-gray-600 hover:text-gray-900 font-medium"
@@ -289,6 +299,9 @@ export default function LandingPage() {
               © 2025 CentenarianOS. Open source under MIT License.
             </p>
             <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
+              <Link href="/academy" className="text-gray-600 hover:text-gray-900 text-xs sm:text-sm">
+                Academy
+              </Link>
               <Link href="/blog" className="text-gray-600 hover:text-gray-900 text-xs sm:text-sm">
                 Blog
               </Link>

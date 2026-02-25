@@ -278,24 +278,34 @@ function CourseDetailContent() {
                   <div className="divide-y divide-gray-800">
                     {[...mod.lessons].sort((a, b) => a.order - b.order).map((lesson) => {
                       const canAccess = course.enrolled || lesson.is_free_preview;
+                      const lessonHref = `/academy/${courseId}/lessons/${lesson.id}`;
                       return (
                         <div key={lesson.id} className="flex items-center gap-3 px-4 sm:px-5 py-3">
                           {canAccess
                             ? <Play className="w-3.5 h-3.5 text-fuchsia-400 shrink-0" />
                             : <Lock className="w-3.5 h-3.5 text-gray-600 shrink-0" />
                           }
-                          <span className={`flex-1 text-sm min-w-0 ${canAccess ? 'text-gray-200' : 'text-gray-600'}`}>
-                            {lesson.title}
-                            {lesson.is_free_preview && !course.enrolled && (
-                              <span className="ml-2 text-xs text-fuchsia-400">Free preview</span>
-                            )}
-                          </span>
+                          {canAccess ? (
+                            <Link
+                              href={lessonHref}
+                              className="flex-1 text-sm min-w-0 text-gray-200 hover:text-fuchsia-300 transition"
+                            >
+                              {lesson.title}
+                              {lesson.is_free_preview && !course.enrolled && (
+                                <span className="ml-2 text-xs text-fuchsia-400">Free preview</span>
+                              )}
+                            </Link>
+                          ) : (
+                            <span className="flex-1 text-sm min-w-0 text-gray-600">
+                              {lesson.title}
+                            </span>
+                          )}
                           {lesson.duration_seconds && (
                             <span className="text-gray-600 text-xs shrink-0">{formatDuration(lesson.duration_seconds)}</span>
                           )}
                           {canAccess && (
                             <Link
-                              href={`/academy/${courseId}/lessons/${lesson.id}`}
+                              href={lessonHref}
                               className="text-xs text-fuchsia-400 hover:text-fuchsia-300 shrink-0"
                             >
                               Start
