@@ -33,6 +33,9 @@ export default function LandingPage() {
               <Link href="/contribute" className="text-gray-600 hover:text-gray-900 font-medium">
                 Contribute
               </Link>
+              <Link href="/coaching" className="text-gray-600 hover:text-gray-900 font-medium">
+                Coaching
+              </Link>
               <Link
                 href="/pricing"
                 className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-medium"
@@ -75,12 +78,19 @@ export default function LandingPage() {
               >
                 Tech Roadmap
               </Link>
-              <Link 
-                href="/contribute" 
+              <Link
+                href="/contribute"
                 className="block text-gray-600 hover:text-gray-900 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Contribute
+              </Link>
+              <Link
+                href="/coaching"
+                className="block text-gray-600 hover:text-gray-900 font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Coaching
               </Link>
               <Link
                 href="/pricing"
