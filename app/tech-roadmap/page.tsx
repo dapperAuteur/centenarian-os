@@ -90,6 +90,7 @@ const PHASES = [
       { done: true, text: 'Tutorial course series — Engine module (10 lessons, CYOA navigation)' },
       { done: true, text: 'Tutorial course series — Health Metrics module (8 lessons, CYOA navigation)' },
       { done: true, text: 'Tutorial course series — Finance module (7 lessons, CYOA navigation)' },
+      { done: true, text: 'Tutorial course series — Coach & Gems module (8 lessons, CYOA navigation)' },
       { done: true, text: 'Free preview lessons — visitor access without account required' },
       { done: false, text: 'Threaded chat on assignment submissions (student ↔ teacher)' },
       { done: false, text: 'Course direct messages (student ↔ teacher inbox)' },
