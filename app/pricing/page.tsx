@@ -5,6 +5,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Check, Shirt, Zap, ArrowLeft } from 'lucide-react';
 import PurchaseModal from '@/components/PurchaseModal';
@@ -13,6 +14,8 @@ const POLICIES = 'No Refunds. Cancel Anytime. Monthly fees are not transferable 
 
 export default function PricingPage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const fromSignup = searchParams.get('from') === 'signup';
   const [loadingPlan, setLoadingPlan] = useState<'monthly' | 'lifetime' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
@@ -90,6 +93,12 @@ export default function PricingPage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        {fromSignup && (
+          <div className="mb-8 max-w-xl mx-auto bg-fuchsia-50 border border-fuchsia-200 text-fuchsia-800 rounded-xl px-5 py-4 text-center text-sm font-medium">
+            Account created! Choose a plan below to access your dashboard.
+          </div>
+        )}
+
         <div className="text-center mb-12">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-4">
             Simple, Transparent Pricing

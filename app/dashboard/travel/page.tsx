@@ -39,6 +39,7 @@ interface Vehicle {
   model: string | null;
   year: number | null;
   active: boolean;
+  ownership_type: 'owned' | 'rental' | 'borrowed';
   latest_odometer: number | null;
 }
 
@@ -93,6 +94,7 @@ export default function TravelPage() {
     mode: 'bike', date: new Date().toISOString().split('T')[0],
     origin: '', destination: '', distance_miles: '', duration_min: '',
     purpose: 'commute', calories_burned: '', notes: '', vehicle_id: '',
+    tax_category: 'personal', trip_category: 'travel',
   });
   const [savingTrip, setSavingTrip] = useState(false);
 
@@ -101,15 +103,17 @@ export default function TravelPage() {
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [vehicleForm, setVehicleForm] = useState({
     type: 'car', nickname: '', make: '', model: '', year: '', color: '',
+    ownership_type: 'owned',
   });
   const [savingVehicle, setSavingVehicle] = useState(false);
+  const [showRetired, setShowRetired] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const [sumRes, vehiclesRes, tripsRes, settingsRes] = await Promise.all([
         fetch('/api/travel/summary?months=6'),
-        fetch('/api/travel/vehicles'),
+        fetch('/api/travel/vehicles?include_retired=true'),
         fetch('/api/travel/trips?limit=10'),
         fetch('/api/travel/settings'),
       ]);
@@ -153,6 +157,8 @@ export default function TravelPage() {
           distance_miles: settings.commute_distance_miles,
           duration_min: settings.commute_duration_min,
           calories_burned: calories,
+          trip_category: 'travel',
+          tax_category: 'personal',
         }),
       });
       load();
@@ -179,11 +185,13 @@ export default function TravelPage() {
           calories_burned: tripForm.calories_burned ? parseInt(tripForm.calories_burned) : null,
           notes: tripForm.notes || null,
           vehicle_id: tripForm.vehicle_id || null,
+          tax_category: tripForm.tax_category || 'personal',
+          trip_category: tripForm.trip_category || 'travel',
         }),
       });
       if (res.ok) {
         setShowAddTrip(false);
-        setTripForm({ mode: 'bike', date: new Date().toISOString().split('T')[0], origin: '', destination: '', distance_miles: '', duration_min: '', purpose: 'commute', calories_burned: '', notes: '', vehicle_id: '' });
+        setTripForm({ mode: 'bike', date: new Date().toISOString().split('T')[0], origin: '', destination: '', distance_miles: '', duration_min: '', purpose: 'commute', calories_burned: '', notes: '', vehicle_id: '', tax_category: 'personal', trip_category: 'travel' });
         load();
       }
     } finally {
@@ -200,8 +208,28 @@ export default function TravelPage() {
       model: v.model ?? '',
       year: v.year != null ? String(v.year) : '',
       color: '',
+      ownership_type: v.ownership_type || 'owned',
     });
     setShowAddVehicle(true);
+  };
+
+  const handleRetireVehicle = async (id: string) => {
+    if (!confirm('Retire this vehicle? All your data will be preserved and you can reactivate it later.')) return;
+    await fetch('/api/travel/vehicles', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, retire: true }),
+    });
+    load();
+  };
+
+  const handleReactivateVehicle = async (id: string) => {
+    await fetch('/api/travel/vehicles', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, reactivate: true }),
+    });
+    load();
   };
 
   const handleDeleteVehicle = async (id: string) => {
@@ -226,6 +254,7 @@ export default function TravelPage() {
         model: vehicleForm.model || null,
         year: vehicleForm.year ? parseInt(vehicleForm.year) : null,
         color: vehicleForm.color || null,
+        ownership_type: vehicleForm.ownership_type || 'owned',
       };
       const res = await fetch('/api/travel/vehicles', {
         method: editingVehicle ? 'PATCH' : 'POST',
@@ -235,7 +264,7 @@ export default function TravelPage() {
       if (res.ok) {
         setShowAddVehicle(false);
         setEditingVehicle(null);
-        setVehicleForm({ type: 'car', nickname: '', make: '', model: '', year: '', color: '' });
+        setVehicleForm({ type: 'car', nickname: '', make: '', model: '', year: '', color: '', ownership_type: 'owned' });
         load();
       }
     } finally {
@@ -458,33 +487,82 @@ export default function TravelPage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-700">Vehicles</h2>
           <button
-            onClick={() => { setVehicleForm({ type: 'car', nickname: '', make: '', model: '', year: '', color: '' }); setEditingVehicle(null); setShowAddVehicle(true); }}
+            onClick={() => { setVehicleForm({ type: 'car', nickname: '', make: '', model: '', year: '', color: '', ownership_type: 'owned' }); setEditingVehicle(null); setShowAddVehicle(true); }}
             className="text-xs text-sky-600 hover:text-sky-700 font-medium flex items-center gap-1"
           >
             <Plus className="w-3 h-3" /> Add
           </button>
         </div>
-        {vehicles.length === 0 ? (
+        {vehicles.filter((v) => v.active).length === 0 && vehicles.filter((v) => !v.active).length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-4">No vehicles yet.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {vehicles.filter((v) => v.active).map((v) => (
-              <div key={v.id} className="border border-gray-100 rounded-xl p-3 flex items-center gap-3">
-                <span className="text-2xl">{v.type === 'car' ? '🚗' : v.type === 'bike' ? '🚲' : v.type === 'ebike' ? '⚡🚲' : '🛵'}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{v.nickname}</p>
-                  <p className="text-xs text-gray-500">
-                    {[v.year, v.make, v.model].filter(Boolean).join(' ') || v.type}
-                    {v.latest_odometer != null && ` · ${v.latest_odometer.toLocaleString()} mi`}
-                  </p>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {vehicles.filter((v) => v.active).map((v) => (
+                <div key={v.id} className="border border-gray-100 rounded-xl p-3 flex items-center gap-3">
+                  <span className="text-2xl">{v.type === 'car' ? '🚗' : v.type === 'bike' ? '🚲' : v.type === 'ebike' ? '⚡🚲' : '🛵'}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-gray-900">{v.nickname}</p>
+                      {v.ownership_type === 'rental' && (
+                        <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-medium">Rental</span>
+                      )}
+                      {v.ownership_type === 'borrowed' && (
+                        <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-medium">Borrowed</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      {[v.year, v.make, v.model].filter(Boolean).join(' ') || v.type}
+                      {v.latest_odometer != null && ` · ${v.latest_odometer.toLocaleString()} mi`}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button onClick={() => handleEditVehicle(v)} className="text-xs text-sky-500 hover:text-sky-700 transition">edit</button>
+                    {v.ownership_type === 'owned' && (
+                      <button onClick={() => handleRetireVehicle(v.id)} className="text-xs text-gray-400 hover:text-gray-600 transition">retire</button>
+                    )}
+                    <button onClick={() => handleDeleteVehicle(v.id)} className="text-xs text-red-400 hover:text-red-600 transition">del</button>
+                  </div>
                 </div>
-                <div className="flex gap-2 shrink-0">
-                  <button onClick={() => handleEditVehicle(v)} className="text-xs text-sky-500 hover:text-sky-700 transition">edit</button>
-                  <button onClick={() => handleDeleteVehicle(v.id)} className="text-xs text-red-400 hover:text-red-600 transition">del</button>
-                </div>
+              ))}
+            </div>
+
+            {/* Retired vehicles toggle */}
+            {vehicles.filter((v) => !v.active).length > 0 && (
+              <div className="mt-4">
+                <button
+                  onClick={() => setShowRetired((s) => !s)}
+                  className="text-xs text-gray-400 hover:text-gray-600 transition font-medium"
+                >
+                  {showRetired ? 'Hide' : 'Show'} retired vehicles ({vehicles.filter((v) => !v.active).length})
+                </button>
+                {showRetired && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                    {vehicles.filter((v) => !v.active).map((v) => (
+                      <div key={v.id} className="border border-gray-100 rounded-xl p-3 flex items-center gap-3 opacity-50">
+                        <span className="text-2xl grayscale">{v.type === 'car' ? '🚗' : v.type === 'bike' ? '🚲' : v.type === 'ebike' ? '⚡🚲' : '🛵'}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-gray-500">{v.nickname}</p>
+                            <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-medium">Retired</span>
+                          </div>
+                          <p className="text-xs text-gray-400">
+                            {[v.year, v.make, v.model].filter(Boolean).join(' ') || v.type}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleReactivateVehicle(v.id)}
+                          className="text-xs text-sky-500 hover:text-sky-700 transition shrink-0"
+                        >
+                          reactivate
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
 
@@ -633,20 +711,60 @@ export default function TravelPage() {
                   ))}
                 </select>
               </div>
-              {vehicles.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Vehicle</label>
-                  <select
-                    value={tripForm.vehicle_id}
-                    onChange={(e) => setTripForm((f) => ({ ...f, vehicle_id: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                  >
-                    <option value="">None</option>
-                    {vehicles.map((v) => <option key={v.id} value={v.id}>{v.nickname}</option>)}
-                  </select>
-                </div>
-              )}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Tax purpose</label>
+                <select
+                  value={tripForm.tax_category}
+                  onChange={(e) => setTripForm((f) => ({ ...f, tax_category: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="personal">Personal</option>
+                  <option value="business">Business</option>
+                  <option value="medical">Medical</option>
+                  <option value="charitable">Charitable</option>
+                </select>
+              </div>
             </div>
+            {/* Travel vs Fitness toggle — only for human-powered modes */}
+            {['bike','walk','run','other'].includes(tripForm.mode) && (
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Trip type</label>
+                <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
+                  <button
+                    type="button"
+                    onClick={() => setTripForm((f) => ({ ...f, trip_category: 'travel' }))}
+                    className={`flex-1 py-2 font-medium transition ${tripForm.trip_category === 'travel' ? 'bg-sky-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                  >
+                    Travel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTripForm((f) => ({ ...f, trip_category: 'fitness' }))}
+                    className={`flex-1 py-2 font-medium transition ${tripForm.trip_category === 'fitness' ? 'bg-sky-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                  >
+                    Fitness
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Travel counts toward commute savings. Fitness is for workouts.</p>
+              </div>
+            )}
+            {vehicles.filter((v) => v.active).length > 0 && (
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Vehicle</label>
+                <select
+                  value={tripForm.vehicle_id}
+                  onChange={(e) => setTripForm((f) => ({ ...f, vehicle_id: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="">None</option>
+                  {vehicles.filter((v) => v.active).map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.nickname}{v.ownership_type !== 'owned' ? ` (${v.ownership_type})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
               <input
@@ -691,14 +809,26 @@ export default function TravelPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Nickname *</label>
-                <input
-                  type="text" value={vehicleForm.nickname} placeholder="My Camry"
-                  onChange={(e) => setVehicleForm((f) => ({ ...f, nickname: e.target.value }))}
+                <label className="block text-xs font-medium text-gray-600 mb-1">Ownership</label>
+                <select
+                  value={vehicleForm.ownership_type}
+                  onChange={(e) => setVehicleForm((f) => ({ ...f, ownership_type: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                  required
-                />
+                >
+                  <option value="owned">Owned</option>
+                  <option value="rental">Rental</option>
+                  <option value="borrowed">Borrowed</option>
+                </select>
               </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Nickname *</label>
+              <input
+                type="text" value={vehicleForm.nickname} placeholder="My Camry"
+                onChange={(e) => setVehicleForm((f) => ({ ...f, nickname: e.target.value }))}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                required
+              />
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>
@@ -727,7 +857,7 @@ export default function TravelPage() {
               </div>
             </div>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => { setShowAddVehicle(false); setEditingVehicle(null); }}
+              <button type="button" onClick={() => { setShowAddVehicle(false); setEditingVehicle(null); setVehicleForm({ type: 'car', nickname: '', make: '', model: '', year: '', color: '', ownership_type: 'owned' }); }}
                 className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
                 Cancel
               </button>

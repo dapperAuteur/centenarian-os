@@ -118,6 +118,8 @@ export async function POST(request: NextRequest) {
       garmin_activity_id: garminId,
       notes: notesParts.length > 0 ? notesParts.join(' | ') : null,
       source: 'garmin_import',
+      trip_category: 'fitness',
+      tax_category: 'personal',
     });
   }
 
