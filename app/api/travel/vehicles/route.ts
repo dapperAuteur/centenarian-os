@@ -1,17 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data, error } = await supabase
+  const includeRetired = request.nextUrl.searchParams.get('include_retired') === 'true';
+
+  let query = supabase
     .from('vehicles')
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: true });
 
+  if (!includeRetired) {
+    query = query.eq('active', true);
+  }
+
+  const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   // Attach latest odometer reading from fuel_logs for each vehicle
@@ -46,7 +53,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { type, nickname, make, model, year, color } = body;
+  const { type, nickname, make, model, year, color, ownership_type } = body;
 
   if (!type || !nickname) {
     return NextResponse.json({ error: 'type and nickname are required' }, { status: 400 });
@@ -54,7 +61,16 @@ export async function POST(request: NextRequest) {
 
   const { data, error } = await supabase
     .from('vehicles')
-    .insert({ user_id: user.id, type, nickname, make, model, year, color })
+    .insert({
+      user_id: user.id,
+      type,
+      nickname,
+      make,
+      model,
+      year,
+      color,
+      ownership_type: ownership_type || 'owned',
+    })
     .select()
     .single();
 
@@ -68,8 +84,12 @@ export async function PATCH(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { id, ...updates } = body;
+  const { id, retire, reactivate, ...updates } = body;
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+  // Shorthand flags for retire/reactivate
+  if (retire) updates.active = false;
+  if (reactivate) updates.active = true;
 
   const { data, error } = await supabase
     .from('vehicles')

@@ -33,8 +33,8 @@ export default function LandingPage() {
               <Link href="/contribute" className="text-gray-600 hover:text-gray-900 font-medium">
                 Contribute
               </Link>
-              <Link 
-                href="/signup" 
+              <Link
+                href="/pricing"
                 className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-medium"
               >
                 Get Started
@@ -82,8 +82,8 @@ export default function LandingPage() {
               >
                 Contribute
               </Link>
-              <Link 
-                href="/signup" 
+              <Link
+                href="/pricing"
                 className="block w-full text-center px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -107,8 +107,8 @@ export default function LandingPage() {
 
           {/* Buttons - Stack on mobile, side-by-side on tablet+ */}
           <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4 sm:px-0">
-            <Link 
-              href="/signup" 
+            <Link
+              href="/pricing"
               className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-semibold text-base sm:text-lg flex items-center justify-center"
             >
               Start Your Journey
@@ -271,11 +271,11 @@ export default function LandingPage() {
           <p className="text-white/90 mb-6 sm:mb-8 text-base sm:text-lg max-w-2xl mx-auto px-2">
             Join the beta and help shape the future of long-term goal execution.
           </p>
-          <Link 
-            href="/signup" 
+          <Link
+            href="/pricing"
             className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-fuchsia-600 rounded-lg hover:bg-gray-100 transition-colors font-bold text-base sm:text-lg"
           >
-            Create Free Account
+            View Plans &amp; Get Started
             <ArrowRight className="ml-2 w-5 h-5" />
           </Link>
         </div>

@@ -21,6 +21,9 @@ function calcCo2(mode: string, distanceMiles: number | null): number | null {
   return parseFloat((factor * distanceMiles).toFixed(3));
 }
 
+// Modes that support the travel/fitness distinction
+const HUMAN_POWERED_MODES = new Set(['bike', 'walk', 'run', 'other']);
+
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -31,6 +34,8 @@ export async function GET(request: NextRequest) {
   const to = params.get('to');
   const mode = params.get('mode');
   const purpose = params.get('purpose');
+  const tax_category = params.get('tax_category');
+  const trip_category = params.get('trip_category');
   const limit = Math.min(parseInt(params.get('limit') || '50'), 500);
   const offset = parseInt(params.get('offset') || '0');
 
@@ -45,6 +50,8 @@ export async function GET(request: NextRequest) {
   if (to) query = query.lte('date', to);
   if (mode) query = query.eq('mode', mode);
   if (purpose) query = query.eq('purpose', purpose);
+  if (tax_category) query = query.eq('tax_category', tax_category);
+  if (trip_category) query = query.eq('trip_category', trip_category);
 
   const { data, error, count } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -62,6 +69,7 @@ export async function POST(request: NextRequest) {
     origin, destination, distance_miles, duration_min,
     purpose, calories_burned, cost, transaction_id,
     garmin_activity_id, health_metric_date, notes, source,
+    tax_category, trip_category,
   } = body;
 
   if (!mode || !date) {
@@ -69,6 +77,12 @@ export async function POST(request: NextRequest) {
   }
 
   const co2_kg = calcCo2(mode, distance_miles);
+
+  // Default trip_category: human-powered modes default to 'travel' for manual entries;
+  // non-human-powered modes are always 'travel'.
+  const resolvedTripCategory = HUMAN_POWERED_MODES.has(mode)
+    ? (trip_category || 'travel')
+    : 'travel';
 
   const { data, error } = await supabase
     .from('trips')
@@ -92,6 +106,8 @@ export async function POST(request: NextRequest) {
       health_metric_date: health_metric_date || null,
       notes,
       source: source || 'manual',
+      tax_category: tax_category || 'personal',
+      trip_category: resolvedTripCategory,
     })
     .select()
     .single();
@@ -120,6 +136,11 @@ export async function PATCH(request: NextRequest) {
     const mode = updates.mode ?? existing.data?.mode;
     const dist = updates.distance_miles ?? existing.data?.distance_miles;
     updates.co2_kg = calcCo2(mode, dist);
+  }
+
+  // If mode changes to a non-human-powered mode, force trip_category to 'travel'
+  if (updates.mode !== undefined && !HUMAN_POWERED_MODES.has(updates.mode)) {
+    updates.trip_category = 'travel';
   }
 
   const { data, error } = await supabase

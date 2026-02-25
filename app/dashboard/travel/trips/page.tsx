@@ -18,6 +18,8 @@ interface Trip {
   cost: number | null;
   source: string;
   notes: string | null;
+  tax_category: string | null;
+  trip_category: string | null;
   vehicles?: { id: string; nickname: string } | null;
 }
 
@@ -25,12 +27,16 @@ interface Vehicle {
   id: string;
   nickname: string;
   type: string;
+  active: boolean;
+  ownership_type: string;
 }
 
 const MODE_ICONS: Record<string, string> = {
   bike: '🚲', car: '🚗', bus: '🚌', train: '🚂', plane: '✈️',
   walk: '🚶', run: '🏃', ferry: '⛴️', rideshare: '🚕', other: '🚐',
 };
+
+const HUMAN_POWERED_MODES = ['bike', 'walk', 'run', 'other'];
 
 const BLANK_FORM = {
   mode: 'bike',
@@ -43,6 +49,8 @@ const BLANK_FORM = {
   calories_burned: '',
   notes: '',
   vehicle_id: '',
+  tax_category: 'personal',
+  trip_category: 'travel',
 };
 
 function fmt(n: number | null | undefined, d = 1) {
@@ -55,7 +63,9 @@ export default function TripsPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('');
+  const [modeFilter, setModeFilter] = useState('');
+  const [taxFilter, setTaxFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [page, setPage] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(BLANK_FORM);
@@ -70,10 +80,12 @@ export default function TripsPage() {
         limit: String(limit),
         offset: String(page * limit),
       });
-      if (filter) params.set('mode', filter);
+      if (modeFilter) params.set('mode', modeFilter);
+      if (taxFilter) params.set('tax_category', taxFilter);
+      if (categoryFilter) params.set('trip_category', categoryFilter);
       const [tripsRes, vehiclesRes] = await Promise.all([
         fetch(`/api/travel/trips?${params}`),
-        fetch('/api/travel/vehicles'),
+        fetch('/api/travel/vehicles'), // active only
       ]);
       if (tripsRes.ok) {
         const d = await tripsRes.json();
@@ -87,7 +99,7 @@ export default function TripsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, filter]);
+  }, [page, modeFilter, taxFilter, categoryFilter]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -114,6 +126,8 @@ export default function TripsPage() {
       calories_burned: t.calories_burned != null ? String(t.calories_burned) : '',
       notes: t.notes ?? '',
       vehicle_id: t.vehicles?.id ?? '',
+      tax_category: t.tax_category ?? 'personal',
+      trip_category: t.trip_category ?? 'travel',
     });
     setShowForm(true);
   };
@@ -134,6 +148,8 @@ export default function TripsPage() {
         calories_burned: form.calories_burned ? parseInt(form.calories_burned) : null,
         notes: form.notes || null,
         vehicle_id: form.vehicle_id || null,
+        tax_category: form.tax_category || 'personal',
+        trip_category: form.trip_category || 'travel',
       };
       const res = await fetch('/api/travel/trips', {
         method: editingId ? 'PATCH' : 'POST',
@@ -151,6 +167,8 @@ export default function TripsPage() {
     }
   };
 
+  const clearFilters = () => { setModeFilter(''); setTaxFilter(''); setCategoryFilter(''); setPage(0); };
+  const hasFilter = modeFilter || taxFilter || categoryFilter;
   const totalPages = Math.ceil(total / limit);
 
   return (
@@ -175,21 +193,67 @@ export default function TripsPage() {
         </button>
       </div>
 
-      {/* Mode Filter */}
-      <div className="flex flex-wrap gap-2">
-        {['', 'bike', 'car', 'walk', 'run', 'bus', 'train', 'plane'].map((m) => (
+      {/* Filters */}
+      <div className="space-y-2">
+        {/* Mode filters */}
+        <div className="flex flex-wrap gap-2">
+          {['', 'bike', 'car', 'walk', 'run', 'bus', 'train', 'plane'].map((m) => (
+            <button
+              key={m}
+              onClick={() => { setModeFilter(m); setPage(0); }}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
+                modeFilter === m && !taxFilter && !categoryFilter
+                  ? 'bg-sky-600 text-white'
+                  : modeFilter === m
+                    ? 'bg-sky-100 text-sky-700 border border-sky-300'
+                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              {m ? `${MODE_ICONS[m] ?? ''} ${m}` : 'All'}
+            </button>
+          ))}
+        </div>
+        {/* Tax and category filters */}
+        <div className="flex flex-wrap gap-2">
           <button
-            key={m}
-            onClick={() => { setFilter(m); setPage(0); }}
+            onClick={() => { setTaxFilter(taxFilter === 'business' ? '' : 'business'); setPage(0); }}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
-              filter === m
-                ? 'bg-sky-600 text-white'
+              taxFilter === 'business'
+                ? 'bg-indigo-600 text-white'
                 : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
-            {m ? `${MODE_ICONS[m] ?? ''} ${m}` : 'All'}
+            Business
           </button>
-        ))}
+          <button
+            onClick={() => { setTaxFilter(taxFilter === 'medical' ? '' : 'medical'); setPage(0); }}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
+              taxFilter === 'medical'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            Medical
+          </button>
+          <button
+            onClick={() => { setCategoryFilter(categoryFilter === 'fitness' ? '' : 'fitness'); setPage(0); }}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
+              categoryFilter === 'fitness'
+                ? 'bg-orange-500 text-white'
+                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            Fitness only
+          </button>
+          {hasFilter && (
+            <button
+              onClick={clearFilters}
+              className="px-3 py-1.5 rounded-full text-xs font-medium text-gray-400 hover:text-gray-600 transition"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -213,7 +277,7 @@ export default function TripsPage() {
                   <th className="px-4 py-3 text-right">Miles</th>
                   <th className="px-4 py-3 text-right">Min</th>
                   <th className="px-4 py-3 text-right">Cal</th>
-                  <th className="px-4 py-3 text-left">Purpose</th>
+                  <th className="px-4 py-3 text-left">Tags</th>
                   <th className="px-4 py-3 text-left">Source</th>
                   <th className="px-4 py-3" />
                 </tr>
@@ -234,7 +298,20 @@ export default function TripsPage() {
                     <td className="px-4 py-3 text-right text-gray-700">{fmt(t.distance_miles) ?? '—'}</td>
                     <td className="px-4 py-3 text-right text-gray-700">{t.duration_min ?? '—'}</td>
                     <td className="px-4 py-3 text-right text-orange-600">{t.calories_burned ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-500 capitalize">{t.purpose ?? '—'}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {t.tax_category && t.tax_category !== 'personal' && (
+                          <span className="text-xs bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded capitalize font-medium">
+                            {t.tax_category}
+                          </span>
+                        )}
+                        {t.trip_category === 'fitness' && (
+                          <span className="text-xs bg-orange-50 text-orange-600 px-1.5 py-0.5 rounded font-medium">
+                            Fitness
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-gray-400 text-xs">
                       {t.source === 'garmin_import' ? 'Garmin' : t.source === 'csv_import' ? 'CSV' : 'Manual'}
                     </td>
@@ -371,20 +448,60 @@ export default function TripsPage() {
                   ))}
                 </select>
               </div>
-              {vehicles.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Vehicle</label>
-                  <select
-                    value={form.vehicle_id}
-                    onChange={(e) => setForm((f) => ({ ...f, vehicle_id: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                  >
-                    <option value="">None</option>
-                    {vehicles.map((v) => <option key={v.id} value={v.id}>{v.nickname}</option>)}
-                  </select>
-                </div>
-              )}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Tax purpose</label>
+                <select
+                  value={form.tax_category}
+                  onChange={(e) => setForm((f) => ({ ...f, tax_category: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="personal">Personal</option>
+                  <option value="business">Business</option>
+                  <option value="medical">Medical</option>
+                  <option value="charitable">Charitable</option>
+                </select>
+              </div>
             </div>
+            {/* Travel vs Fitness toggle — only for human-powered modes */}
+            {HUMAN_POWERED_MODES.includes(form.mode) && (
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Trip type</label>
+                <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, trip_category: 'travel' }))}
+                    className={`flex-1 py-2 font-medium transition ${form.trip_category === 'travel' ? 'bg-sky-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                  >
+                    Travel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, trip_category: 'fitness' }))}
+                    className={`flex-1 py-2 font-medium transition ${form.trip_category === 'fitness' ? 'bg-sky-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                  >
+                    Fitness
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Travel counts toward commute savings. Fitness is for workouts.</p>
+              </div>
+            )}
+            {vehicles.length > 0 && (
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Vehicle</label>
+                <select
+                  value={form.vehicle_id}
+                  onChange={(e) => setForm((f) => ({ ...f, vehicle_id: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="">None</option>
+                  {vehicles.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.nickname}{v.ownership_type !== 'owned' ? ` (${v.ownership_type})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
               <input
@@ -396,7 +513,7 @@ export default function TripsPage() {
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => { setShowForm(false); setEditingId(null); }}
+                onClick={() => { setShowForm(false); setEditingId(null); setForm(BLANK_FORM); }}
                 className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
               >
                 Cancel

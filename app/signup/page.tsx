@@ -91,7 +91,7 @@ export default function SignupPage() {
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
 
-      router.push('/dashboard/planner');
+      router.push('/pricing?from=signup');
       router.refresh();
     } catch (err: any) {
       setError(err.message);

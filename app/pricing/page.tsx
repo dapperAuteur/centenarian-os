@@ -4,10 +4,21 @@
 // Public pricing page — no auth required
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Check, Shirt, Zap, ArrowLeft } from 'lucide-react';
 import PurchaseModal from '@/components/PurchaseModal';
+
+function FromSignupBanner() {
+  const searchParams = useSearchParams();
+  if (searchParams.get('from') !== 'signup') return null;
+  return (
+    <div className="mb-8 max-w-xl mx-auto bg-fuchsia-50 border border-fuchsia-200 text-fuchsia-800 rounded-xl px-5 py-4 text-center text-sm font-medium">
+      Account created! Choose a plan below to access your dashboard.
+    </div>
+  );
+}
 
 const POLICIES = 'No Refunds. Cancel Anytime. Monthly fees are not transferable to lifetime membership.';
 
@@ -81,7 +92,7 @@ export default function PricingPage() {
                   href="/signup"
                   className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors text-sm font-medium"
                 >
-                  Sign up free
+                  Create Account
                 </Link>
               </>
             )}
@@ -90,12 +101,16 @@ export default function PricingPage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <Suspense fallback={null}>
+          <FromSignupBanner />
+        </Suspense>
+
         <div className="text-center mb-12">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-4">
             Simple, Transparent Pricing
           </h1>
           <p className="text-lg text-gray-600">
-            Start free. Upgrade when you&apos;re ready to unlock your full operating system.
+            Choose a plan and unlock your full personal operating system.
           </p>
         </div>
 
@@ -105,36 +120,7 @@ export default function PricingPage() {
           </div>
         )}
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {/* Free Plan */}
-          <div className="bg-white rounded-2xl border-2 border-gray-200 p-8 flex flex-col">
-            <div className="mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-1">Free</h2>
-              <p className="text-gray-500 text-sm">Forever free</p>
-              <div className="mt-4">
-                <span className="text-4xl font-extrabold text-gray-900">$0</span>
-              </div>
-            </div>
-            <ul className="space-y-3 mb-8 flex-1">
-              {[
-                'Blog — read & write posts',
-                'Recipes — browse & save recipes',
-                'Public profile',
-              ].map((f) => (
-                <li key={f} className="flex items-start gap-2 text-sm text-gray-700">
-                  <Check className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <Link
-              href="/signup"
-              className="w-full text-center px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:border-gray-400 transition-colors font-semibold text-sm"
-            >
-              Get started free
-            </Link>
-          </div>
-
+        <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
           {/* Monthly Plan */}
           <div className="bg-white rounded-2xl border-2 border-fuchsia-400 p-8 flex flex-col relative shadow-lg">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
