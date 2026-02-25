@@ -11,6 +11,7 @@ import {
   ChevronLeft, ChevronRight, GitBranch, CheckCircle, Loader2,
   Play, FileText, Volume2, Presentation,
 } from 'lucide-react';
+import { marked } from 'marked';
 
 interface Lesson {
   id: string;
@@ -177,7 +178,7 @@ export default function LessonPlayerPage() {
 
         {lesson.text_content && (
           <div className="prose prose-invert prose-sm max-w-none mb-6 bg-gray-900 border border-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-8">
-            <div dangerouslySetInnerHTML={{ __html: lesson.text_content }} />
+            <div dangerouslySetInnerHTML={{ __html: marked.parse(lesson.text_content, { async: false }) as string }} />
           </div>
         )}
 
