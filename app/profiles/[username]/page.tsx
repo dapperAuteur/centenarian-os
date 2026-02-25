@@ -4,88 +4,26 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   BookOpen, ChefHat, Trophy, Layers, Flame, Award,
-  BookMarked, Star, Heart, Zap, Calendar,
+  BookMarked, Star, Heart, Zap, Calendar, Bike, Footprints,
+  Leaf, MapPin, GraduationCap,
 } from 'lucide-react';
 import SiteFooter from '@/components/ui/SiteFooter';
+import { getPublicProfile, type ProfileResponse } from '@/lib/profiles/getPublicProfile';
 
 type Params = { params: Promise<{ username: string }> };
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-interface ProfileData {
-  id: string;
-  username: string;
-  display_name: string | null;
-  bio: string | null;
-  avatar_url: string | null;
-  created_at: string;
-}
-
-interface Achievement {
-  id: string;
-  achievement_type: string;
-  ref_id: string | null;
-  earned_at: string;
-}
-
-interface Course {
-  id: string;
-  title: string;
-  cover_image_url: string | null;
-  category: string | null;
-}
-
-interface PathCompletion {
-  id: string;
-  completed_at: string;
-  path_id: string;
-  learning_paths: { title: string; description: string | null } | null;
-}
-
-interface BlogPost {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string | null;
-  published_at: string | null;
-  tags: string[];
-  like_count: number;
-}
-
-interface Recipe {
-  id: string;
-  title: string;
-  slug: string;
-  description: string | null;
-  cover_image_url: string | null;
-  like_count: number;
-}
-
-interface ProfileResponse {
-  profile: ProfileData;
-  stats: {
-    courses_completed: number;
-    paths_completed: number;
-    blog_posts: number;
-    recipes: number;
-    metric_streak: number;
-  };
-  achievements: Achievement[];
-  completed_courses: Course[];
-  path_completions: PathCompletion[];
-  blog_posts: BlogPost[];
-  recipes: Recipe[];
-}
 
 // ─── Meta ─────────────────────────────────────────────────────────────────────
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { username } = await params;
-  const base = process.env.NEXT_PUBLIC_APP_URL || '';
-  const res = await fetch(`${base}/api/profiles/${username}`, { cache: 'no-store' });
-  if (!res.ok) return { title: 'Profile not found' };
-  const { profile, stats } = (await res.json()) as ProfileResponse;
+  const data = await getPublicProfile(username);
+  if (!data) return { title: 'Profile not found' };
+
+  const { profile, stats } = data;
   const name = profile.display_name || profile.username;
+  const base = process.env.NEXT_PUBLIC_APP_URL
+    ? `https://${process.env.NEXT_PUBLIC_APP_URL.replace(/^https?:\/\//, '')}`
+    : '';
 
   return {
     title: `${name} — CentenarianOS`,
@@ -121,13 +59,10 @@ const BADGE_CONFIG: Record<string, { label: string; icon: React.ElementType; col
 
 export default async function PublicProfilePage({ params }: Params) {
   const { username } = await params;
-  const base = process.env.NEXT_PUBLIC_APP_URL || '';
+  const data = await getPublicProfile(username);
+  if (!data) notFound();
 
-  const res = await fetch(`${base}/api/profiles/${username}`, { cache: 'no-store' });
-  if (!res.ok) notFound();
-
-  const data = (await res.json()) as ProfileResponse;
-  const { profile, stats, achievements, completed_courses, path_completions, blog_posts, recipes } = data;
+  const { profile, stats, achievements, completed_courses, path_completions, blog_posts, recipes, travel, teacher } = data;
 
   const name = profile.display_name || profile.username;
 
@@ -193,13 +128,14 @@ export default async function PublicProfilePage({ params }: Params) {
           </div>
 
           {/* Stats strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {[
-              { icon: BookMarked, label: 'Courses',    value: stats.courses_completed },
-              { icon: Layers,     label: 'Paths',      value: stats.paths_completed },
-              { icon: Flame,      label: 'Day Streak', value: stats.metric_streak },
-              { icon: BookOpen,   label: 'Posts',      value: stats.blog_posts },
-              { icon: ChefHat,    label: 'Recipes',    value: stats.recipes },
+              { icon: BookMarked, label: 'Courses',         value: stats.courses_completed },
+              { icon: Layers,     label: 'Paths',           value: stats.paths_completed },
+              { icon: Flame,      label: 'Day Streak',      value: stats.metric_streak },
+              { icon: Zap,        label: 'Metrics Logged',  value: stats.metrics_logged },
+              { icon: BookOpen,   label: 'Posts',            value: stats.blog_posts },
+              { icon: ChefHat,    label: 'Recipes',         value: stats.recipes },
             ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="bg-white rounded-2xl border border-gray-200 p-4 text-center">
                 <Icon className="w-5 h-5 text-fuchsia-500 mx-auto mb-1.5" />
@@ -208,6 +144,91 @@ export default async function PublicProfilePage({ params }: Params) {
               </div>
             ))}
           </div>
+
+          {/* Travel stats */}
+          {travel && (
+            <section>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-fuchsia-500" />
+                Travel
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { icon: MapPin,      label: 'Total Miles',  value: Math.round(travel.total_miles).toLocaleString() },
+                  { icon: Bike,        label: 'Bike Miles',   value: Math.round(travel.bike_miles).toLocaleString() },
+                  { icon: Footprints,  label: 'Walk Miles',   value: Math.round(travel.walk_miles).toLocaleString() },
+                  { icon: Leaf,        label: 'CO₂ Saved (kg)', value: Math.round(travel.co2_saved_kg).toLocaleString() },
+                ].map(({ icon: Icon, label, value }) => (
+                  <div key={label} className="bg-white rounded-2xl border border-gray-200 p-4 text-center">
+                    <Icon className="w-5 h-5 text-emerald-500 mx-auto mb-1.5" />
+                    <p className="text-2xl font-bold text-gray-900">{value}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{label}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Teacher section */}
+          {teacher && (
+            <section>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <GraduationCap className="w-5 h-5 text-fuchsia-500" />
+                Teaching
+              </h2>
+              {teacher.bio && (
+                <p className="text-gray-600 mb-4 max-w-xl leading-relaxed">{teacher.bio}</p>
+              )}
+              {teacher.specialties.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {teacher.specialties.map((s) => (
+                    <span
+                      key={s}
+                      className="px-3 py-1 rounded-full text-xs font-medium bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200"
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {teacher.published_courses.length > 0 && (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {teacher.published_courses.map((c) => (
+                    <Link
+                      key={c.id}
+                      href={`/academy/${c.id}`}
+                      className="group block bg-white border border-gray-200 hover:border-fuchsia-200 rounded-xl overflow-hidden transition"
+                    >
+                      {c.cover_image_url ? (
+                        <div className="aspect-video overflow-hidden">
+                          <Image
+                            src={c.cover_image_url}
+                            alt={c.title}
+                            width={400}
+                            height={225}
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                          />
+                        </div>
+                      ) : (
+                        <div className="aspect-video bg-fuchsia-50 flex items-center justify-center">
+                          <GraduationCap className="w-8 h-8 text-fuchsia-200" />
+                        </div>
+                      )}
+                      <div className="p-3">
+                        <p className="font-medium text-gray-900 text-sm truncate group-hover:text-fuchsia-700 transition">
+                          {c.title}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
+                          {c.category && <span>{c.category}</span>}
+                          <span>{c.price_type === 'free' ? 'Free' : `$${c.price}`}</span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
 
           {/* Badge shelf */}
           {uniqueBadges.length > 0 && (
