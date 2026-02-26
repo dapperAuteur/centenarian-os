@@ -278,14 +278,14 @@ export default function BrandsPage() {
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-gray-900 text-sm">{b.name}</span>
                     {b.dba_name && (
-                      <span className="text-xs text-gray-400">dba {b.dba_name}</span>
+                      <span className="text-xs text-gray-600">dba {b.dba_name}</span>
                     )}
                     {!b.is_active && (
-                      <span className="text-xs bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded">inactive</span>
+                      <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">inactive</span>
                     )}
                   </div>
-                  {b.ein && <p className="text-xs text-gray-400 mt-0.5">EIN: {b.ein}</p>}
-                  {b.description && <p className="text-xs text-gray-400 mt-0.5 truncate max-w-xs">{b.description}</p>}
+                  {b.ein && <p className="text-xs text-gray-600 mt-0.5">EIN: {b.ein}</p>}
+                  {b.description && <p className="text-xs text-gray-600 mt-0.5 truncate max-w-xs">{b.description}</p>}
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0 ml-4">
@@ -450,7 +450,7 @@ export default function BrandsPage() {
                 <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: plBrand.color }} />
                 <div>
                   <h2 className="text-base font-bold text-gray-900">{plBrand.name} — P&L</h2>
-                  {plBrand.ein && <p className="text-xs text-gray-400">EIN: {plBrand.ein}</p>}
+                  {plBrand.ein && <p className="text-xs text-gray-600">EIN: {plBrand.ein}</p>}
                 </div>
               </div>
               <button onClick={() => { setPlBrand(null); setPlData(null); }} className="text-gray-400 hover:text-gray-600">

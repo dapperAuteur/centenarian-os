@@ -332,7 +332,7 @@ export default function TripsPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">
+                    <td className="px-4 py-3 text-gray-600 text-xs">
                       {t.source === 'garmin_import' ? 'Garmin' : t.source === 'csv_import' ? 'CSV' : 'Manual'}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">

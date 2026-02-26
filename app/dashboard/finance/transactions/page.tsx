@@ -231,7 +231,7 @@ export default function TransactionsPage() {
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="text-sm font-medium text-gray-900">{tx.description || tx.vendor || 'Transaction'}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">
+                        <p className="text-xs text-gray-600 mt-0.5">
                           {new Date(tx.transaction_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           {tx.budget_categories && (
                             <span className="ml-2 inline-flex items-center gap-1">
@@ -345,7 +345,7 @@ export default function TransactionsPage() {
                           )}
                         </div>
                       ) : tx.budget_categories ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-gray-700">
                           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: tx.budget_categories.color }} />
                           {tx.budget_categories.name}
                         </span>
