@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const {
     vehicle_id, service_type, date, odometer_at_service,
-    cost, vendor, notes, next_service_miles, next_service_date,
+    cost, vendor, notes, next_service_miles, next_service_date, finance_category_id,
   } = body;
 
   if (!service_type || !date) {
@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
         source_module: 'vehicle_maintenance',
         source_module_id: data.id,
         description: service_type,
+        category_id: finance_category_id ?? null,
       });
       await supabase.from('vehicle_maintenance').update({ transaction_id: txId }).eq('id', data.id);
       data.transaction_id = txId;

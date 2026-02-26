@@ -224,7 +224,7 @@ export default function TransactionsPage() {
                       />
                       <div className="flex gap-2">
                         <button onClick={() => handleEditSave(tx.id)} className="px-3 py-1 bg-fuchsia-600 text-white rounded text-xs">Save</button>
-                        <button onClick={() => setEditId(null)} className="px-3 py-1 bg-gray-100 rounded text-xs">Cancel</button>
+                        <button onClick={() => setEditId(null)} className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">Cancel</button>
                       </div>
                     </div>
                   ) : (
@@ -372,7 +372,7 @@ export default function TransactionsPage() {
                       {editId === tx.id ? (
                         <div className="flex items-center justify-center gap-1">
                           <button onClick={() => handleEditSave(tx.id)} className="px-2 py-1 bg-fuchsia-600 text-white rounded text-xs">Save</button>
-                          <button onClick={() => setEditId(null)} className="px-2 py-1 bg-gray-100 rounded text-xs">Cancel</button>
+                          <button onClick={() => setEditId(null)} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">Cancel</button>
                         </div>
                       ) : (
                         <div className="flex items-center justify-center gap-1">

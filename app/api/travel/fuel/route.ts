@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
   const {
     vehicle_id, date, odometer_miles, miles_since_last_fill, miles_this_month,
     mpg_display, gallons, total_cost, cost_per_gallon, fuel_grade,
-    station, source, notes,
+    station, source, notes, finance_category_id,
   } = body;
 
   if (!date) return NextResponse.json({ error: 'date is required' }, { status: 400 });
@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
         source_module: 'fuel_log',
         source_module_id: data.id,
         description: `Fuel${grade}`,
+        category_id: finance_category_id ?? null,
       });
       await supabase.from('fuel_logs').update({ transaction_id: txId }).eq('id', data.id);
       data.transaction_id = txId;

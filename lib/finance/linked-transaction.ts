@@ -15,6 +15,7 @@ interface CreateParams {
   source_module: SourceModule;
   source_module_id: string;
   description?: string;
+  category_id?: string | null;
 }
 
 interface UpdateParams {
@@ -32,7 +33,7 @@ export async function createLinkedTransaction(
   db: SupabaseClient,
   params: CreateParams,
 ): Promise<string> {
-  const { userId, amount, vendor, date, source_module, source_module_id, description } = params;
+  const { userId, amount, vendor, date, source_module, source_module_id, description, category_id } = params;
 
   const { data, error } = await db
     .from('financial_transactions')
@@ -46,6 +47,7 @@ export async function createLinkedTransaction(
       source: source_module,
       source_module,
       source_module_id,
+      category_id: category_id ?? null,
     })
     .select('id')
     .single();

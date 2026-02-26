@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     origin, destination, distance_miles, duration_min,
     purpose, calories_burned, cost,
     garmin_activity_id, health_metric_date, notes, source,
-    tax_category, trip_category,
+    tax_category, trip_category, finance_category_id,
   } = body;
 
   if (!mode || !date) {
@@ -133,6 +133,7 @@ export async function POST(request: NextRequest) {
         source_module: 'trip',
         source_module_id: data.id,
         description: tripDescription(mode, origin, destination),
+        category_id: finance_category_id ?? null,
       });
       await supabase.from('trips').update({ transaction_id: txId }).eq('id', data.id);
       data.transaction_id = txId;

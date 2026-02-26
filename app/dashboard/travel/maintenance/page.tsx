@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Plus, AlertCircle, Wrench } from 'lucide-react';
+import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 
 interface MaintenanceRecord {
   id: string;
@@ -46,6 +47,7 @@ const BLANK_FORM = {
   notes: '',
   next_service_miles: '',
   next_service_date: '',
+  finance_category_id: '',
 };
 
 function fmtMoney(n: number | null | undefined) {
@@ -53,9 +55,12 @@ function fmtMoney(n: number | null | undefined) {
   return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
 }
 
+interface FinanceCategory { id: string; name: string; color: string; }
+
 export default function MaintenancePage() {
   const [records, setRecords] = useState<MaintenanceRecord[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [financeCategories, setFinanceCategories] = useState<FinanceCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(BLANK_FORM);
@@ -66,9 +71,10 @@ export default function MaintenancePage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [recRes, vehiclesRes] = await Promise.all([
+      const [recRes, vehiclesRes, catRes] = await Promise.all([
         fetch('/api/travel/maintenance'),
         fetch('/api/travel/vehicles'),
+        fetch('/api/finance/categories'),
       ]);
       if (recRes.ok) {
         const d = await recRes.json();
@@ -77,6 +83,10 @@ export default function MaintenancePage() {
       if (vehiclesRes.ok) {
         const d = await vehiclesRes.json();
         setVehicles(d.vehicles || []);
+      }
+      if (catRes.ok) {
+        const d = await catRes.json();
+        setFinanceCategories(d.categories || []);
       }
     } finally {
       setLoading(false);
@@ -97,6 +107,7 @@ export default function MaintenancePage() {
       notes: r.notes ?? '',
       next_service_miles: r.next_service_miles != null ? String(r.next_service_miles) : '',
       next_service_date: r.next_service_date ?? '',
+      finance_category_id: '',
     });
     setShowForm(true);
   };
@@ -116,6 +127,7 @@ export default function MaintenancePage() {
         notes: form.notes || null,
         next_service_miles: form.next_service_miles ? parseFloat(form.next_service_miles) : null,
         next_service_date: form.next_service_date || null,
+        finance_category_id: form.finance_category_id || null,
       };
       const res = await fetch('/api/travel/maintenance', {
         method: editingId ? 'PATCH' : 'POST',
@@ -348,10 +360,30 @@ export default function MaintenancePage() {
 
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Shop / Vendor</label>
-              <input type="text" value={form.vendor} placeholder="Jiffy Lube"
-                onChange={(e) => setForm((f) => ({ ...f, vendor: e.target.value }))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+              <ContactAutocomplete
+                value={form.vendor}
+                contactType="vendor"
+                placeholder="Jiffy Lube"
+                onChange={(name) => setForm((f) => ({ ...f, vendor: name }))}
+                inputClassName="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+              />
             </div>
+
+            {financeCategories.length > 0 && (
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Finance Category</label>
+                <select
+                  value={form.finance_category_id}
+                  onChange={(e) => setForm((f) => ({ ...f, finance_category_id: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="">Uncategorized</option>
+                  {financeCategories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <div>
