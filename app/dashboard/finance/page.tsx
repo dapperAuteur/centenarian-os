@@ -11,6 +11,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface CategoryBreakdown {
   id: string;
@@ -85,11 +86,11 @@ export default function FinanceDashboardPage() {
     setLoading(true);
     try {
       const [sumRes, catRes, acctRes, brandsRes, remRes] = await Promise.all([
-        fetch('/api/finance/summary?months=6'),
-        fetch('/api/finance/categories'),
-        fetch('/api/finance/accounts'),
-        fetch('/api/brands'),
-        fetch('/api/finance/reminders'),
+        offlineFetch('/api/finance/summary?months=6'),
+        offlineFetch('/api/finance/categories'),
+        offlineFetch('/api/finance/accounts'),
+        offlineFetch('/api/brands'),
+        offlineFetch('/api/finance/reminders'),
       ]);
       if (sumRes.ok) setSummary(await sumRes.json());
       if (catRes.ok) {
@@ -113,7 +114,7 @@ export default function FinanceDashboardPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await fetch('/api/finance/transactions', {
+      const res = await offlineFetch('/api/finance/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(addForm),
@@ -134,7 +135,7 @@ export default function FinanceDashboardPage() {
 
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch('/api/finance/categories', {
+    const res = await offlineFetch('/api/finance/categories', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

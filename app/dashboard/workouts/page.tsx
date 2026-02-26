@@ -8,6 +8,7 @@ import {
   Plus, Play, Trash2, Edit3, Clock, Dumbbell,
   ChevronDown, ChevronUp, X,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Exercise {
   id?: string;
@@ -121,8 +122,8 @@ export default function WorkoutsPage() {
     setLoading(true);
     try {
       const [tmplRes, logsRes] = await Promise.all([
-        fetch('/api/workouts'),
-        fetch('/api/workouts/logs?limit=20'),
+        offlineFetch('/api/workouts'),
+        offlineFetch('/api/workouts/logs?limit=20'),
       ]);
       if (tmplRes.ok) setTemplates(await tmplRes.json());
       if (logsRes.ok) setLogs(await logsRes.json());
@@ -172,7 +173,7 @@ export default function WorkoutsPage() {
       };
 
       const url = editingId ? `/api/workouts/${editingId}` : '/api/workouts';
-      const res = await fetch(url, {
+      const res = await offlineFetch(url, {
         method: editingId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -199,13 +200,13 @@ export default function WorkoutsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this workout template?')) return;
-    await fetch(`/api/workouts/${id}`, { method: 'DELETE' });
+    await offlineFetch(`/api/workouts/${id}`, { method: 'DELETE' });
     load();
   };
 
   const handleDeleteLog = async (id: string) => {
     if (!confirm('Delete this workout log?')) return;
-    await fetch(`/api/workouts/logs/${id}`, { method: 'DELETE' });
+    await offlineFetch(`/api/workouts/logs/${id}`, { method: 'DELETE' });
     load();
   };
 
@@ -227,7 +228,7 @@ export default function WorkoutsPage() {
     e.preventDefault();
     setLoggingSave(true);
     try {
-      const res = await fetch('/api/workouts/logs', {
+      const res = await offlineFetch('/api/workouts/logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -265,7 +266,7 @@ export default function WorkoutsPage() {
     e.preventDefault();
     setLoggingSave(true);
     try {
-      const res = await fetch('/api/workouts/logs', {
+      const res = await offlineFetch('/api/workouts/logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

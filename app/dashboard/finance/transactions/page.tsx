@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Category {
   id: string;
@@ -71,7 +72,7 @@ export default function TransactionsPage() {
     if (filterTo) params.set('to', filterTo);
 
     try {
-      const res = await fetch(`/api/finance/transactions?${params}`);
+      const res = await offlineFetch(`/api/finance/transactions?${params}`);
       if (res.ok) {
         const data = await res.json();
         setTransactions(data.transactions || []);
@@ -84,8 +85,8 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/finance/categories').then((r) => r.json()).then((d) => setCategories(d.categories || [])),
-      fetch('/api/brands').then((r) => r.json()).then((d) => setBrands(Array.isArray(d) ? d : [])),
+      offlineFetch('/api/finance/categories').then((r) => r.json()).then((d) => setCategories(d.categories || [])),
+      offlineFetch('/api/brands').then((r) => r.json()).then((d) => setBrands(Array.isArray(d) ? d : [])),
     ]).catch(() => {});
   }, []);
 
@@ -93,12 +94,12 @@ export default function TransactionsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this transaction?')) return;
-    const res = await fetch(`/api/finance/transactions?id=${id}`, { method: 'DELETE' });
+    const res = await offlineFetch(`/api/finance/transactions?id=${id}`, { method: 'DELETE' });
     if (res.ok) fetchTransactions();
   };
 
   const handleEditSave = async (id: string) => {
-    const res = await fetch('/api/finance/transactions', {
+    const res = await offlineFetch('/api/finance/transactions', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, ...editForm }),

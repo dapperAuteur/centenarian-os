@@ -11,6 +11,7 @@ import {
   Plus, ChevronRight, AlertCircle, Upload, Zap,
   Repeat, Wrench, Play,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Summary {
   currentMonth: {
@@ -127,11 +128,11 @@ export default function TravelPage() {
     setLoading(true);
     try {
       const [sumRes, vehiclesRes, tripsRes, settingsRes, tmplRes] = await Promise.all([
-        fetch('/api/travel/summary?months=6'),
-        fetch('/api/travel/vehicles?include_retired=true'),
-        fetch('/api/travel/trips?limit=10'),
-        fetch('/api/travel/settings'),
-        fetch('/api/travel/templates'),
+        offlineFetch('/api/travel/summary?months=6'),
+        offlineFetch('/api/travel/vehicles?include_retired=true'),
+        offlineFetch('/api/travel/trips?limit=10'),
+        offlineFetch('/api/travel/settings'),
+        offlineFetch('/api/travel/templates'),
       ]);
       if (sumRes.ok) setSummary(await sumRes.json());
       if (vehiclesRes.ok) {
@@ -165,7 +166,7 @@ export default function TravelPage() {
       const calories = settings.commute_duration_min
         ? Math.round(settings.commute_duration_min * 8) // ~8 cal/min cycling
         : null;
-      await fetch('/api/travel/trips', {
+      await offlineFetch('/api/travel/trips', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -188,7 +189,7 @@ export default function TravelPage() {
     e.preventDefault();
     setSavingTrip(true);
     try {
-      const res = await fetch('/api/travel/trips', {
+      const res = await offlineFetch('/api/travel/trips', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -209,7 +210,7 @@ export default function TravelPage() {
       if (res.ok) {
         // Optionally save as template
         if (tripForm.save_as_template && tripForm.template_name.trim()) {
-          await fetch('/api/travel/templates', {
+          await offlineFetch('/api/travel/templates', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -251,7 +252,7 @@ export default function TravelPage() {
 
   const handleRetireVehicle = async (id: string) => {
     if (!confirm('Retire this vehicle? All your data will be preserved and you can reactivate it later.')) return;
-    await fetch('/api/travel/vehicles', {
+    await offlineFetch('/api/travel/vehicles', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, retire: true }),
@@ -260,7 +261,7 @@ export default function TravelPage() {
   };
 
   const handleReactivateVehicle = async (id: string) => {
-    await fetch('/api/travel/vehicles', {
+    await offlineFetch('/api/travel/vehicles', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, reactivate: true }),
@@ -270,7 +271,7 @@ export default function TravelPage() {
 
   const handleDeleteVehicle = async (id: string) => {
     if (!confirm('Delete this vehicle? This will not delete its logs.')) return;
-    await fetch('/api/travel/vehicles', {
+    await offlineFetch('/api/travel/vehicles', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
@@ -292,7 +293,7 @@ export default function TravelPage() {
         color: vehicleForm.color || null,
         ownership_type: vehicleForm.ownership_type || 'owned',
       };
-      const res = await fetch('/api/travel/vehicles', {
+      const res = await offlineFetch('/api/travel/vehicles', {
         method: editingVehicle ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -311,7 +312,7 @@ export default function TravelPage() {
   const logFromTemplate = async (tmpl: TripTemplate) => {
     setLoggingTemplate(tmpl.id);
     try {
-      const res = await fetch('/api/travel/templates', {
+      const res = await offlineFetch('/api/travel/templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

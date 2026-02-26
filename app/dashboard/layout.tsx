@@ -13,6 +13,7 @@ import DesktopNav from '@/components/nav/DesktopNav';
 import MobileBottomBar from '@/components/nav/MobileBottomBar';
 import FloatingActionsMenu from '@/components/ui/FloatingActionsMenu';
 import OfflineIndicator from '@/components/ui/OfflineIndicator';
+import { SyncProvider } from '@/lib/contexts/SyncContext';
 
 // Routes freely accessible without a paid subscription
 const FREE_ROUTE_PREFIXES = [
@@ -92,24 +93,26 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <DesktopNav {...navProps} />
-      <OfflineIndicator />
+    <SyncProvider>
+      <div className="min-h-screen bg-gray-50">
+        <DesktopNav {...navProps} />
+        <OfflineIndicator />
 
-      {/* Teaching routes get zero padding so their dark layout fills edge-to-edge */}
-      <main
-        id="main-content"
-        className={`${
-          pathname.startsWith('/dashboard/teaching') ? '' : 'px-4 sm:px-6 lg:px-8 py-4 sm:py-6'
-        } pb-16 lg:pb-0`}
-      >
-        {children}
-      </main>
+        {/* Teaching routes get zero padding so their dark layout fills edge-to-edge */}
+        <main
+          id="main-content"
+          className={`${
+            pathname.startsWith('/dashboard/teaching') ? '' : 'px-4 sm:px-6 lg:px-8 py-4 sm:py-6'
+          } pb-16 lg:pb-0`}
+        >
+          {children}
+        </main>
 
-      {/* Mobile bottom tab bar — fixed, sits above safe area */}
-      <MobileBottomBar {...navProps} />
+        {/* Mobile bottom tab bar — fixed, sits above safe area */}
+        <MobileBottomBar {...navProps} />
 
-      <FloatingActionsMenu />
-    </div>
+        <FloatingActionsMenu />
+      </div>
+    </SyncProvider>
   );
 }

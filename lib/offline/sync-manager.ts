@@ -1,91 +1,69 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // File: lib/offline/sync-manager.ts
+// URL-keyed offline cache + mutation sync queue using IndexedDB.
 
-import { createClient } from '@/lib/supabase/client';
-
-/**
- * Operation types for sync queue
- */
-export type SyncOperation = 'INSERT' | 'UPDATE' | 'DELETE';
-
-/**
- * Supported tables for offline sync
- */
-export type SyncTable = 
-  | 'tasks' 
-  | 'meal_logs' 
-  | 'focus_sessions' 
-  | 'daily_logs'
-  | 'inventory';
-
-/**
- * Queue item structure
- */
 export interface SyncQueueItem {
   id: string;
-  operation: SyncOperation;
-  table: SyncTable;
-  data: any;
+  url: string;
+  method: string;
+  body: any;
   timestamp: number;
   retries: number;
   error?: string;
 }
 
+export interface SyncStatus {
+  pending: number;
+  failed: number;
+}
+
+type StatusListener = (status: SyncStatus) => void;
+
 /**
- * Offline Sync Manager
- * 
- * Handles all offline operations with IndexedDB cache and sync queue.
- * 
- * **User Flow:**
- * 1. User marks task complete
- * 2. UI updates instantly (optimistic)
- * 3. Change saved to IndexedDB
- * 4. Operation queued for sync
- * 5. When online, queue processes automatically
- * 
- * **Developer Flow:**
- * ```typescript
- * const sync = OfflineSyncManager.getInstance();
- * await sync.queueOperation('UPDATE', 'tasks', { id: '123', completed: true });
- * ```
+ * Offline Sync Manager (singleton)
+ *
+ * - Caches GET responses by URL in IndexedDB
+ * - Queues POST/PATCH/DELETE mutations for replay when back online
+ * - 30-second sync loop + immediate sync on `online` event
+ * - Event-based status notifications (no polling needed)
  */
 export class OfflineSyncManager {
   private static instance: OfflineSyncManager;
   private db: IDBDatabase | null = null;
   private syncInProgress = false;
   private readonly DB_NAME = 'centenarian_offline';
-  private readonly DB_VERSION = 1;
+  private readonly DB_VERSION = 3;
+  private listeners = new Set<StatusListener>();
+  private initPromise: Promise<void>;
 
   private constructor() {
-    this.init();
+    this.initPromise = this.init();
   }
 
-  /**
-   * Singleton instance
-   */
-  public static getInstance(): OfflineSyncManager {
+  static getInstance(): OfflineSyncManager {
     if (!OfflineSyncManager.instance) {
       OfflineSyncManager.instance = new OfflineSyncManager();
     }
     return OfflineSyncManager.instance;
   }
 
-  /**
-   * Initialize IndexedDB and start sync loop
-   */
+  /** Wait for IndexedDB to be ready before performing operations */
+  async ready(): Promise<void> {
+    await this.initPromise;
+  }
+
+  // ── Initialisation ────────────────────────────────────────────────────
+
   private async init() {
     try {
       this.db = await this.openDB();
       this.startSyncLoop();
       this.setupOnlineListener();
     } catch (error) {
-      console.error('Failed to initialize OfflineSyncManager:', error);
+      console.error('[OfflineSync] Init failed:', error);
     }
   }
 
-  /**
-   * Open IndexedDB connection
-   */
   private openDB(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
@@ -96,57 +74,74 @@ export class OfflineSyncManager {
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
 
-        // Create sync queue store
-        if (!db.objectStoreNames.contains('sync_queue')) {
-          const queueStore = db.createObjectStore('sync_queue', { keyPath: 'id' });
-          queueStore.createIndex('timestamp', 'timestamp', { unique: false });
+        // Delete legacy stores from v1/v2
+        const legacy = [
+          'tasks', 'meal_logs', 'focus_sessions', 'daily_logs', 'inventory',
+        ];
+        for (const name of legacy) {
+          if (db.objectStoreNames.contains(name)) db.deleteObjectStore(name);
         }
 
-        // Create cache stores for each table
-        const tables: SyncTable[] = ['tasks', 'meal_logs', 'focus_sessions', 'daily_logs', 'inventory'];
-        tables.forEach(table => {
-          if (!db.objectStoreNames.contains(table)) {
-            db.createObjectStore(table, { keyPath: 'id' });
+        // URL-keyed response cache
+        if (!db.objectStoreNames.contains('api_cache')) {
+          db.createObjectStore('api_cache', { keyPath: 'url' });
+        }
+
+        // Mutation sync queue
+        if (!db.objectStoreNames.contains('sync_queue')) {
+          // v3 schema — may need to recreate if schema changed
+          if (event.oldVersion > 0 && event.oldVersion < 3) {
+            try { db.deleteObjectStore('sync_queue'); } catch { /* may not exist */ }
           }
-        });
+          const store = db.createObjectStore('sync_queue', { keyPath: 'id' });
+          store.createIndex('timestamp', 'timestamp', { unique: false });
+        }
       };
     });
   }
 
-  /**
-   * Queue an operation for sync
-   * 
-   * @param operation - INSERT, UPDATE, or DELETE
-   * @param table - Table name
-   * @param data - Record data (must include 'id' field)
-   */
-  public async queueOperation(
-    operation: SyncOperation,
-    table: SyncTable,
-    data: any
-  ): Promise<void> {
-    if (!this.db) {
-      throw new Error('IndexedDB not initialized');
-    }
+  // ── Cache (GET responses) ─────────────────────────────────────────────
 
-    const queueItem: SyncQueueItem = {
-      id: `${table}-${data.id}-${Date.now()}`,
-      operation,
-      table,
-      data,
+  /** Cache a GET response by URL */
+  async cacheResponse(url: string, data: any): Promise<void> {
+    await this.ready();
+    if (!this.db) return;
+    await this.put('api_cache', { url, data, timestamp: Date.now() });
+  }
+
+  /** Retrieve cached GET response */
+  async getCached<T = any>(url: string): Promise<T | null> {
+    await this.ready();
+    if (!this.db) return null;
+    const row = await this.get<{ url: string; data: T; timestamp: number }>('api_cache', url);
+    return row?.data ?? null;
+  }
+
+  /** Clear all cached responses */
+  async clearCache(): Promise<void> {
+    await this.ready();
+    if (!this.db) return;
+    await this.clear('api_cache');
+  }
+
+  // ── Mutation queue ────────────────────────────────────────────────────
+
+  /** Queue a mutation for sync when back online */
+  async queueMutation(url: string, method: string, body: any): Promise<void> {
+    await this.ready();
+    if (!this.db) throw new Error('IndexedDB not initialised');
+
+    const item: SyncQueueItem = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      url,
+      method,
+      body,
       timestamp: Date.now(),
       retries: 0,
     };
 
-    // Save to sync queue
-    await this.saveToStore('sync_queue', queueItem);
-
-    // Update local cache immediately (optimistic update)
-    if (operation === 'DELETE') {
-      await this.deleteFromStore(table, data.id);
-    } else {
-      await this.saveToStore(table, data);
-    }
+    await this.put('sync_queue', item);
+    this.notifyListeners();
 
     // Try to sync immediately if online
     if (navigator.onLine && !this.syncInProgress) {
@@ -154,197 +149,139 @@ export class OfflineSyncManager {
     }
   }
 
-  /**
-   * Process sync queue
-   */
-  private async processSyncQueue(): Promise<void> {
-    if (!this.db || this.syncInProgress) return;
-
+  /** Process all queued mutations */
+  async processSyncQueue(): Promise<void> {
+    if (!this.db || this.syncInProgress || !navigator.onLine) return;
     this.syncInProgress = true;
-    const supabase = createClient();
+    this.notifyListeners();
 
     try {
-      const queue = await this.getAllFromStore<SyncQueueItem>('sync_queue');
-      
+      const queue = await this.getAll<SyncQueueItem>('sync_queue');
+      if (queue.length === 0) return;
+
       for (const item of queue) {
         try {
-          // Execute operation on Supabase
-          if (item.operation === 'INSERT') {
-            const { error } = await supabase.from(item.table).insert(item.data);
-            if (error) throw error;
-          } else if (item.operation === 'UPDATE') {
-            const { error } = await supabase
-              .from(item.table)
-              .update(item.data)
-              .eq('id', item.data.id);
-            if (error) throw error;
-          } else if (item.operation === 'DELETE') {
-            const { error } = await supabase
-              .from(item.table)
-              .delete()
-              .eq('id', item.data.id);
-            if (error) throw error;
+          const res = await fetch(item.url, {
+            method: item.method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item.body),
+          });
+
+          if (!res.ok) {
+            throw new Error(`${res.status} ${res.statusText}`);
           }
 
-          // Success - remove from queue
-          await this.deleteFromStore('sync_queue', item.id);
-          console.log(`✓ Synced: ${item.operation} ${item.table}`);
-
+          // Success — remove from queue
+          await this.del('sync_queue', item.id);
         } catch (error) {
-          // Increment retry count
           item.retries += 1;
           item.error = error instanceof Error ? error.message : 'Unknown error';
 
           if (item.retries > 5) {
-            // Give up after 5 retries - move to error log
-            console.error('❌ Sync failed permanently:', item);
-            await this.deleteFromStore('sync_queue', item.id);
+            console.error('[OfflineSync] Permanently failed:', item);
+            await this.del('sync_queue', item.id);
           } else {
-            // Update retry count in queue
-            await this.saveToStore('sync_queue', item);
-            console.warn(`⚠️ Sync failed (retry ${item.retries}/5):`, item.table);
+            await this.put('sync_queue', item);
           }
         }
       }
     } finally {
       this.syncInProgress = false;
+      this.notifyListeners();
     }
   }
 
-  /**
-   * Start background sync loop (every 30 seconds)
-   */
+  // ── Status ────────────────────────────────────────────────────────────
+
+  /** Get current queue counts */
+  async getSyncStatus(): Promise<SyncStatus> {
+    await this.ready();
+    if (!this.db) return { pending: 0, failed: 0 };
+
+    const queue = await this.getAll<SyncQueueItem>('sync_queue');
+    return {
+      pending: queue.filter((i) => i.retries === 0).length,
+      failed: queue.filter((i) => i.retries > 0).length,
+    };
+  }
+
+  /** Subscribe to sync-status changes. Returns unsubscribe function. */
+  onStatusChange(cb: StatusListener): () => void {
+    this.listeners.add(cb);
+    // Emit current status immediately
+    this.getSyncStatus().then(cb);
+    return () => this.listeners.delete(cb);
+  }
+
+  get isSyncing(): boolean {
+    return this.syncInProgress;
+  }
+
+  private async notifyListeners() {
+    const status = await this.getSyncStatus();
+    this.listeners.forEach((cb) => cb(status));
+  }
+
+  // ── Background sync loop ─────────────────────────────────────────────
+
   private startSyncLoop() {
     setInterval(() => {
       if (navigator.onLine && !this.syncInProgress) {
         this.processSyncQueue();
       }
-    }, 30000); // 30 seconds
+    }, 30_000);
   }
 
-  /**
-   * Setup online event listener
-   */
   private setupOnlineListener() {
     window.addEventListener('online', () => {
-      console.log('🌐 Connection restored - syncing...');
       this.processSyncQueue();
     });
+  }
 
-    window.addEventListener('offline', () => {
-      console.log('📡 Offline mode - operations will queue');
+  // ── IndexedDB helpers ─────────────────────────────────────────────────
+
+  private put(store: string, data: any): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction(store, 'readwrite');
+      tx.objectStore(store).put(data);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
     });
   }
 
-  /**
-   * Get all items from cache (for reading data while offline)
-   */
-  public async getFromCache<T>(table: SyncTable): Promise<T[]> {
-    if (!this.db) return [];
-    return this.getAllFromStore<T>(table);
-  }
-
-  /**
-   * Get single item from cache
-   */
-  public async getFromCacheById<T>(table: SyncTable, id: string): Promise<T | null> {
-    if (!this.db) return null;
-    
+  private get<T>(store: string, key: string): Promise<T | undefined> {
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(table, 'readonly');
-      const store = transaction.objectStore(table);
-      const request = store.get(id);
-
-      request.onsuccess = () => resolve(request.result || null);
-      request.onerror = () => reject(request.error);
+      const tx = this.db!.transaction(store, 'readonly');
+      const req = tx.objectStore(store).get(key);
+      req.onsuccess = () => resolve(req.result as T | undefined);
+      req.onerror = () => reject(req.error);
     });
   }
 
-  /**
-   * Clear all cached data (use sparingly)
-   */
-  public async clearCache(): Promise<void> {
-    if (!this.db) return;
-
-    const tables: SyncTable[] = ['tasks', 'meal_logs', 'focus_sessions', 'daily_logs', 'inventory'];
-    
-    for (const table of tables) {
-      await this.clearStore(table);
-    }
-  }
-
-  /**
-   * Get sync queue status
-   */
-  public async getSyncStatus(): Promise<{
-    pending: number;
-    failed: number;
-    lastSync: number | null;
-  }> {
-    if (!this.db) {
-      return { pending: 0, failed: 0, lastSync: null };
-    }
-
-    const queue = await this.getAllFromStore<SyncQueueItem>('sync_queue');
-    
-    return {
-      pending: queue.filter(item => item.retries === 0).length,
-      failed: queue.filter(item => item.retries > 0).length,
-      lastSync: queue.length > 0 ? Math.max(...queue.map(item => item.timestamp)) : null,
-    };
-  }
-
-  // ===== Helper Methods =====
-
-  private saveToStore(storeName: string, data: any): Promise<void> {
+  private getAll<T>(store: string): Promise<T[]> {
     return new Promise((resolve, reject) => {
-      if (!this.db) return reject('DB not initialized');
-
-      const transaction = this.db.transaction(storeName, 'readwrite');
-      const store = transaction.objectStore(storeName);
-      const request = store.put(data);
-
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
+      const tx = this.db!.transaction(store, 'readonly');
+      const req = tx.objectStore(store).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
     });
   }
 
-  private deleteFromStore(storeName: string, id: string): Promise<void> {
+  private del(store: string, key: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (!this.db) return reject('DB not initialized');
-
-      const transaction = this.db.transaction(storeName, 'readwrite');
-      const store = transaction.objectStore(storeName);
-      const request = store.delete(id);
-
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
+      const tx = this.db!.transaction(store, 'readwrite');
+      tx.objectStore(store).delete(key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
     });
   }
 
-  private getAllFromStore<T>(storeName: string): Promise<T[]> {
+  private clear(store: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (!this.db) return resolve([]);
-
-      const transaction = this.db.transaction(storeName, 'readonly');
-      const store = transaction.objectStore(storeName);
-      const request = store.getAll();
-
-      request.onsuccess = () => resolve(request.result || []);
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  private clearStore(storeName: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!this.db) return reject('DB not initialized');
-
-      const transaction = this.db.transaction(storeName, 'readwrite');
-      const store = transaction.objectStore(storeName);
-      const request = store.clear();
-
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
+      const tx = this.db!.transaction(store, 'readwrite');
+      tx.objectStore(store).clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
     });
   }
 }

@@ -6,6 +6,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Plus, AlertTriangle, CheckCircle2, Trash2, Archive } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Vehicle {
   id: string;
@@ -78,8 +79,8 @@ export default function ComponentWearPage() {
     setLoading(true);
     try {
       const [compRes, vehRes] = await Promise.all([
-        fetch('/api/travel/components?include_retired=true'),
-        fetch('/api/travel/vehicles'),
+        offlineFetch('/api/travel/components?include_retired=true'),
+        offlineFetch('/api/travel/vehicles'),
       ]);
       if (compRes.ok) setComponents(await compRes.json());
       if (vehRes.ok) {
@@ -110,7 +111,7 @@ export default function ComponentWearPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await fetch('/api/travel/components', {
+      const res = await offlineFetch('/api/travel/components', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -138,7 +139,7 @@ export default function ComponentWearPage() {
     const vehicle = vehicles.find((v) => v.id === c.vehicle_id);
     const miles = vehicle?.latest_odometer ?? undefined;
     if (!confirm(`Retire this ${COMPONENT_TYPES.find((t) => t.value === c.component_type)?.label ?? c.component_type}${miles ? ` at ${miles.toLocaleString()} miles` : ''}?`)) return;
-    await fetch(`/api/travel/components/${c.id}`, {
+    await offlineFetch(`/api/travel/components/${c.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ retire: true, retired_miles: miles }),
@@ -148,7 +149,7 @@ export default function ComponentWearPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this component record?')) return;
-    await fetch(`/api/travel/components/${id}`, { method: 'DELETE' });
+    await offlineFetch(`/api/travel/components/${id}`, { method: 'DELETE' });
     load();
   };
 

@@ -8,6 +8,7 @@ import {
   FileText, Sparkles, ChevronLeft, ChevronRight,
   Clock, Loader2, RefreshCw, Calendar,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface ReviewMeta {
   id: string;
@@ -56,13 +57,13 @@ export default function WeeklyReviewPage() {
   const isFutureWeek = selectedWeek > currentMonday;
 
   const loadReview = useCallback(async (weekStart: string) => {
-    const res = await fetch(`/api/ai/weekly-review?week_start=${weekStart}`);
+    const res = await offlineFetch(`/api/ai/weekly-review?week_start=${weekStart}`);
     const data = await res.json();
     setReview(data?.content ? data : null);
   }, []);
 
   const loadArchive = useCallback(async () => {
-    const res = await fetch('/api/ai/weekly-review?all=true');
+    const res = await offlineFetch('/api/ai/weekly-review?all=true');
     const data = await res.json();
     setArchive(Array.isArray(data) ? data : []);
   }, []);
@@ -83,7 +84,7 @@ export default function WeeklyReviewPage() {
   async function handleGenerate() {
     setGenerating(true);
     try {
-      const res = await fetch('/api/ai/weekly-review', {
+      const res = await offlineFetch('/api/ai/weekly-review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ week_start: selectedWeek }),

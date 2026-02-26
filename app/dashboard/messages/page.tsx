@@ -7,6 +7,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Bell, CheckCircle, Send, Loader2 } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
 import ImageLightbox from '@/components/ui/ImageLightbox';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Message {
   id: string;
@@ -43,10 +44,10 @@ export default function MessagesPage() {
   const [sendError, setSendError] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    fetch('/api/messages')
+    offlineFetch('/api/messages')
       .then((r) => r.json())
       .then((d) => { setMessages(d.messages ?? []); setLoading(false); });
-    fetch('/api/auth/me')
+    offlineFetch('/api/auth/me')
       .then((r) => r.json())
       .then((d) => setIsAdmin(d.isAdmin ?? false))
       .catch(() => {});
@@ -58,12 +59,12 @@ export default function MessagesPage() {
     // Mark as read
     const msg = messages.find((m) => m.id === id);
     if (msg && !msg.is_read) {
-      await fetch(`/api/messages/${id}/read`, { method: 'POST' });
+      await offlineFetch(`/api/messages/${id}/read`, { method: 'POST' });
       setMessages((prev) => prev.map((m) => m.id === id ? { ...m, is_read: true } : m));
     }
     // Load thread
     if (!threads[id]?.loaded) {
-      const r = await fetch(`/api/messages/${id}/replies`);
+      const r = await offlineFetch(`/api/messages/${id}/replies`);
       const d = await r.json();
       setThreads((prev) => ({ ...prev, [id]: { replies: d.replies ?? [], loaded: true } }));
     }
@@ -75,7 +76,7 @@ export default function MessagesPage() {
     setSending(id);
     setSendError((prev) => ({ ...prev, [id]: '' }));
     try {
-      const r = await fetch(`/api/messages/${id}/replies`, {
+      const r = await offlineFetch(`/api/messages/${id}/replies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ body, media_url: replyMedia[id] || null }),
