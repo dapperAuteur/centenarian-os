@@ -25,22 +25,51 @@ const PRICE_LABEL: Record<string, string> = {
   subscription: 'Subscription',
 };
 
+type SortKey = 'created-desc' | 'created-asc' | 'name-asc' | 'name-desc' | 'category-asc' | 'category-desc' | 'teacher-asc' | 'price-asc' | 'price-desc';
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'created-desc', label: 'Newest first' },
+  { value: 'created-asc', label: 'Oldest first' },
+  { value: 'name-asc', label: 'Name A → Z' },
+  { value: 'name-desc', label: 'Name Z → A' },
+  { value: 'category-asc', label: 'Category A → Z' },
+  { value: 'category-desc', label: 'Category Z → A' },
+  { value: 'teacher-asc', label: 'Teacher A → Z' },
+  { value: 'price-asc', label: 'Price: Low → High' },
+  { value: 'price-desc', label: 'Price: High → Low' },
+];
+
 export default function AcademyPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [category, setCategory] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('created-desc');
 
   useEffect(() => {
+    const [sort, dir] = sortKey.split('-') as [string, string];
     const params = new URLSearchParams();
     if (q) params.set('q', q);
     if (category) params.set('category', category);
+    // teacher sort is handled client-side; send created as fallback
+    if (sort !== 'teacher') {
+      params.set('sort', sort);
+      params.set('dir', dir);
+    }
     setLoading(true);
     fetch(`/api/academy/courses?${params}`)
       .then((r) => r.json())
       .then((d) => { setCourses(Array.isArray(d) ? d : []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [q, category]);
+  }, [q, category, sortKey]);
+
+  const sortedCourses = sortKey === 'teacher-asc'
+    ? [...courses].sort((a, b) => {
+        const aName = a.profiles?.display_name ?? a.profiles?.username ?? '';
+        const bName = b.profiles?.display_name ?? b.profiles?.username ?? '';
+        return aName.localeCompare(bName);
+      })
+    : courses;
 
   const categories = Array.from(new Set(courses.map((c) => c.category).filter(Boolean))) as string[];
 
@@ -84,6 +113,13 @@ export default function AcademyPage() {
               {categories.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           )}
+          <select
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value as SortKey)}
+            className="w-full sm:w-auto px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
+          >
+            {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
         </div>
 
         {loading ? (
@@ -97,7 +133,7 @@ export default function AcademyPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course) => (
+            {sortedCourses.map((course) => (
               <Link
                 key={course.id}
                 href={`/academy/${course.id}`}

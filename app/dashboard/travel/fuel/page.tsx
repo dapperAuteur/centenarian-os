@@ -7,6 +7,7 @@ import {
 } from 'recharts';
 import { Camera, Plus, Loader2, ChevronLeft, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 
 interface FuelLog {
   id: string;
@@ -31,6 +32,12 @@ interface Vehicle {
   type: string;
 }
 
+interface FinanceCategory {
+  id: string;
+  name: string;
+  color: string;
+}
+
 const BLANK_FORM = {
   vehicle_id: '',
   date: new Date().toISOString().split('T')[0],
@@ -44,6 +51,7 @@ const BLANK_FORM = {
   fuel_grade: 'regular',
   station: '',
   notes: '',
+  finance_category_id: '',
 };
 
 function fmt(n: number | null | undefined, d = 1) {
@@ -58,6 +66,7 @@ function fmtMoney(n: number | null | undefined) {
 export default function FuelLogPage() {
   const [logs, setLogs] = useState<FuelLog[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [financeCategories, setFinanceCategories] = useState<FinanceCategory[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -66,14 +75,16 @@ export default function FuelLogPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrNotes, setOcrNotes] = useState('');
+  const [linkedTxDialog, setLinkedTxDialog] = useState<{ transactionId: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [logsRes, vehiclesRes] = await Promise.all([
+      const [logsRes, vehiclesRes, catRes] = await Promise.all([
         fetch('/api/travel/fuel?limit=100'),
         fetch('/api/travel/vehicles'),
+        fetch('/api/finance/categories'),
       ]);
       if (logsRes.ok) {
         const d = await logsRes.json();
@@ -85,6 +96,10 @@ export default function FuelLogPage() {
         setVehicles((d.vehicles || []).filter((v: Vehicle & { type: string }) =>
           v.type === 'car' || v.type === 'motorcycle'
         ));
+      }
+      if (catRes.ok) {
+        const d = await catRes.json();
+        setFinanceCategories(d.categories || []);
       }
     } finally {
       setLoading(false);
@@ -140,6 +155,7 @@ export default function FuelLogPage() {
       fuel_grade: log.fuel_grade ?? 'regular',
       station: log.station ?? '',
       notes: '',
+      finance_category_id: '',
     });
     setOcrNotes('');
     setShowForm(true);
@@ -164,6 +180,7 @@ export default function FuelLogPage() {
         station: form.station || null,
         notes: form.notes || null,
         source: editingId ? undefined : 'manual',
+        finance_category_id: form.finance_category_id || null,
       };
       const res = await fetch('/api/travel/fuel', {
         method: editingId ? 'PATCH' : 'POST',
@@ -184,12 +201,26 @@ export default function FuelLogPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this fuel log?')) return;
-    await fetch('/api/travel/fuel', {
+    const res = await fetch('/api/travel/fuel', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     });
+    if (res.ok) {
+      const d = await res.json();
+      if (d.hasLinkedTransaction) setLinkedTxDialog({ transactionId: d.transactionId });
+    }
     load();
+  };
+
+  const handleLinkedTxYes = async () => {
+    if (!linkedTxDialog) return;
+    await fetch('/api/finance/transactions', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: linkedTxDialog.transactionId }),
+    });
+    setLinkedTxDialog(null);
   };
 
   // Build chart data from logs (sorted ascending)
@@ -261,7 +292,7 @@ export default function FuelLogPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <h2 className="text-sm font-semibold text-gray-700 mb-4">MPG Over Time</h2>
-            <div className="h-[180px]">
+            <div className="h-45">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -277,7 +308,7 @@ export default function FuelLogPage() {
           {spendData.length > 1 && (
             <div className="bg-white border border-gray-200 rounded-2xl p-5">
               <h2 className="text-sm font-semibold text-gray-700 mb-4">Monthly Fuel Spend</h2>
-              <div className="h-[180px]">
+              <div className="h-45">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={spendData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -365,6 +396,32 @@ export default function FuelLogPage() {
           </div>
         )}
       </div>
+
+      {/* Linked transaction confirmation dialog */}
+      {linkedTxDialog && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl space-y-4">
+            <h2 className="text-base font-bold text-gray-900">Delete linked transaction?</h2>
+            <p className="text-sm text-gray-600">
+              This fuel log had a linked finance expense. Do you also want to delete it?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setLinkedTxDialog(null)}
+                className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+              >
+                Keep transaction
+              </button>
+              <button
+                onClick={handleLinkedTxYes}
+                className="flex-1 bg-red-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-red-700 transition"
+              >
+                Delete it too
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add / Edit Form Modal */}
       {showForm && (
@@ -469,10 +526,30 @@ export default function FuelLogPage() {
 
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Station</label>
-              <input type="text" value={form.station} placeholder="Costco"
-                onChange={(e) => setForm((f) => ({ ...f, station: e.target.value }))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+              <ContactAutocomplete
+                value={form.station}
+                contactType="vendor"
+                placeholder="Costco"
+                onChange={(name) => setForm((f) => ({ ...f, station: name }))}
+                inputClassName="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+              />
             </div>
+
+            {financeCategories.length > 0 && (
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Finance Category</label>
+                <select
+                  value={form.finance_category_id}
+                  onChange={(e) => setForm((f) => ({ ...f, finance_category_id: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="">Uncategorized</option>
+                  {financeCategories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="flex gap-3 pt-2">
               <button type="button" onClick={() => { setShowForm(false); setOcrNotes(''); setEditingId(null); }}
