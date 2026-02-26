@@ -13,9 +13,9 @@
 --     -H "Content-Type: application/json" \
 --     -d '{
 --       "tutorial_email": "tutorial@centenarianos.com",
---       "tutorial_password": "YourTutorialPassword1!",
+--       "tutorial_password": "****",
 --       "visitor_email": "demo@centenarianos.com",
---       "visitor_password": "YourVisitorPassword1!"
+--       "visitor_password": "****"
 --     }'
 --
 -- 3. The response includes the UUIDs. Add them to .env.local + Vercel env vars:
