@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Plus } from 'lucide-react';
+import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 
 interface Trip {
   id: string;
@@ -394,18 +395,22 @@ export default function TripsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
-                <input
-                  type="text" value={form.origin} placeholder="Origin"
-                  onChange={(e) => setForm((f) => ({ ...f, origin: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                <ContactAutocomplete
+                  value={form.origin}
+                  contactType="location"
+                  placeholder="Origin"
+                  onChange={(name) => setForm((f) => ({ ...f, origin: name }))}
+                  inputClassName="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
-                <input
-                  type="text" value={form.destination} placeholder="Destination"
-                  onChange={(e) => setForm((f) => ({ ...f, destination: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                <ContactAutocomplete
+                  value={form.destination}
+                  contactType="location"
+                  placeholder="Destination"
+                  onChange={(name) => setForm((f) => ({ ...f, destination: name }))}
+                  inputClassName="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
             </div>

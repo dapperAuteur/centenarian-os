@@ -12,6 +12,7 @@ import {
   CheckCircle, ClipboardList, Pencil, ChevronUp, ChevronDown, X, Eye,
 } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
+import LessonTextEditor from '@/components/academy/LessonTextEditor';
 
 interface Lesson {
   id: string;
@@ -19,6 +20,7 @@ interface Lesson {
   lesson_type: string;
   content_url: string | null;
   text_content: string | null;
+  content_format: 'markdown' | 'tiptap';
   duration_seconds: number | null;
   order: number;
   is_free_preview: boolean;
@@ -190,7 +192,7 @@ export default function CourseEditorPage() {
       }),
     });
     if (r.ok) {
-      setNewLesson({ title: '', lesson_type: 'video', content_url: '', is_free_preview: false });
+      setNewLesson({ title: '', lesson_type: 'video', content_url: '', is_free_preview: course?.price_type === 'free' });
       setAddingLesson(null);
       fetchCourse();
     }
@@ -363,11 +365,22 @@ export default function CourseEditorPage() {
             <label className="block text-sm text-gray-200 mb-1.5">Category</label>
             <input
               type="text"
+              list="course-categories"
               defaultValue={course.category ?? ''}
               onBlur={(e) => { if (e.target.value !== course.category) saveCourseField({ category: e.target.value || null }); }}
               placeholder="e.g. Nutrition, Fitness, Longevity…"
               className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
             />
+            <datalist id="course-categories">
+              <option value="Platform Guide" />
+              <option value="Health &amp; Longevity" />
+              <option value="Fitness" />
+              <option value="Nutrition" />
+              <option value="Finance" />
+              <option value="Travel" />
+              <option value="Mindset" />
+              <option value="Technology" />
+            </datalist>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -616,6 +629,7 @@ export default function CourseEditorPage() {
                                   lesson_type: lesson.lesson_type,
                                   content_url: lesson.content_url ?? '',
                                   text_content: lesson.text_content ?? '',
+                                  content_format: lesson.content_format ?? 'markdown',
                                   is_free_preview: lesson.is_free_preview,
                                   duration_seconds: lesson.duration_seconds ?? undefined,
                                 });
@@ -673,13 +687,38 @@ export default function CourseEditorPage() {
                                 className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
                               />
                             ) : (
-                              <textarea
-                                value={editingLesson.text_content ?? ''}
-                                onChange={(e) => setEditingLesson((l) => ({ ...l, text_content: e.target.value }))}
-                                placeholder="Text content (markdown supported)…"
-                                rows={5}
-                                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500 resize-none"
-                              />
+                              <div className="space-y-2">
+                                <div className="flex gap-1 text-xs">
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingLesson((l) => ({ ...l, content_format: 'markdown' }))}
+                                    className={`px-2.5 py-1 rounded-lg transition ${editingLesson.content_format !== 'tiptap' ? 'bg-fuchsia-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
+                                  >
+                                    Markdown
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingLesson((l) => ({ ...l, content_format: 'tiptap' }))}
+                                    className={`px-2.5 py-1 rounded-lg transition ${editingLesson.content_format === 'tiptap' ? 'bg-fuchsia-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
+                                  >
+                                    Rich Text
+                                  </button>
+                                </div>
+                                {editingLesson.content_format === 'tiptap' ? (
+                                  <LessonTextEditor
+                                    content={editingLesson.text_content ?? null}
+                                    onChange={(json) => setEditingLesson((l) => ({ ...l, text_content: json }))}
+                                  />
+                                ) : (
+                                  <textarea
+                                    value={editingLesson.text_content ?? ''}
+                                    onChange={(e) => setEditingLesson((l) => ({ ...l, text_content: e.target.value }))}
+                                    placeholder="Text content (markdown supported)…"
+                                    rows={5}
+                                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500 resize-none"
+                                  />
+                                )}
+                              </div>
                             )}
                             <input
                               type="number"
@@ -735,7 +774,8 @@ export default function CourseEditorPage() {
                     </div>
                   ) : (
                     <button type="button" onClick={() => {
-                      setNewLesson({ title: '', lesson_type: 'video', content_url: '', is_free_preview: course.price_type === 'free' });
+                      const allFree = mod.lessons.length > 0 && mod.lessons.every((l) => l.is_free_preview);
+                      setNewLesson({ title: '', lesson_type: 'video', content_url: '', is_free_preview: course.price_type === 'free' || allFree });
                       setAddingLesson(mod.id);
                     }}
                       className="w-full flex items-center gap-2 px-4 py-2.5 border-t border-gray-800 text-gray-600 hover:text-fuchsia-400 text-sm hover:bg-gray-800/30 transition">

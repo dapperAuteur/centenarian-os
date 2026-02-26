@@ -12,6 +12,32 @@ import {
   Play, FileText, Volume2, Presentation,
 } from 'lucide-react';
 import { marked } from 'marked';
+import { generateHTML } from '@tiptap/html';
+import StarterKit from '@tiptap/starter-kit';
+import TiptapLink from '@tiptap/extension-link';
+import TiptapImage from '@tiptap/extension-image';
+import TiptapCodeBlock from '@tiptap/extension-code-block';
+import TiptapHeading from '@tiptap/extension-heading';
+
+const TIPTAP_EXTENSIONS = [
+  StarterKit.configure({ codeBlock: false, heading: false }),
+  TiptapHeading.configure({ levels: [1, 2, 3] }),
+  TiptapCodeBlock,
+  TiptapLink.configure({ openOnClick: false }),
+  TiptapImage,
+];
+
+function renderTextContent(text_content: string | null, content_format?: string): string {
+  if (!text_content) return '';
+  if (content_format === 'tiptap') {
+    try {
+      return generateHTML(JSON.parse(text_content), TIPTAP_EXTENSIONS);
+    } catch {
+      return '';
+    }
+  }
+  return marked.parse(text_content, { async: false }) as string;
+}
 
 interface Lesson {
   id: string;
@@ -19,6 +45,7 @@ interface Lesson {
   lesson_type: 'video' | 'text' | 'audio' | 'slides';
   content_url: string | null;
   text_content: string | null;
+  content_format: 'markdown' | 'tiptap';
   duration_seconds: number | null;
   is_free_preview: boolean;
   order: number;
@@ -178,7 +205,7 @@ export default function LessonPlayerPage() {
 
         {lesson.text_content && (
           <div className="prose prose-invert prose-sm max-w-none mb-6 bg-gray-900 border border-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-8">
-            <div dangerouslySetInnerHTML={{ __html: marked.parse(lesson.text_content, { async: false }) as string }} />
+            <div dangerouslySetInnerHTML={{ __html: renderTextContent(lesson.text_content, lesson.content_format) }} />
           </div>
         )}
 

@@ -3,13 +3,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   DollarSign, TrendingUp, TrendingDown, Plus, ArrowRight,
-  Upload, Download, Settings, Loader2,
+  Upload, Download, Settings, Loader2, CreditCard, Wallet,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
+import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 
 interface CategoryBreakdown {
   id: string;
@@ -41,9 +42,28 @@ interface Category {
   color: string;
 }
 
+interface Account {
+  id: string;
+  name: string;
+  account_type: string;
+  institution_name: string | null;
+  last_four: string | null;
+  balance: number;
+  is_active: boolean;
+}
+
+const ACCOUNT_TYPE_LABEL: Record<string, string> = {
+  checking: 'Checking',
+  savings: 'Savings',
+  credit_card: 'Credit Card',
+  loan: 'Loan',
+  cash: 'Cash',
+};
+
 export default function FinanceDashboardPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Add transaction modal
@@ -51,7 +71,7 @@ export default function FinanceDashboardPage() {
   const [addForm, setAddForm] = useState({
     amount: '', type: 'expense', description: '', vendor: '',
     transaction_date: new Date().toISOString().split('T')[0],
-    category_id: '',
+    category_id: '', account_id: '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -62,15 +82,17 @@ export default function FinanceDashboardPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [sumRes, catRes] = await Promise.all([
+      const [sumRes, catRes, acctRes] = await Promise.all([
         fetch('/api/finance/summary?months=6'),
         fetch('/api/finance/categories'),
+        fetch('/api/finance/accounts'),
       ]);
       if (sumRes.ok) setSummary(await sumRes.json());
       if (catRes.ok) {
         const { categories: cats } = await catRes.json();
         setCategories(cats || []);
       }
+      if (acctRes.ok) setAccounts(await acctRes.json());
     } finally {
       setLoading(false);
     }
@@ -92,7 +114,7 @@ export default function FinanceDashboardPage() {
         setAddForm({
           amount: '', type: 'expense', description: '', vendor: '',
           transaction_date: new Date().toISOString().split('T')[0],
-          category_id: '',
+          category_id: '', account_id: '',
         });
         load();
       }
@@ -156,6 +178,13 @@ export default function FinanceDashboardPage() {
             <Upload className="w-4 h-4" />
             Import
           </Link>
+          <Link
+            href="/dashboard/finance/accounts"
+            className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+          >
+            <CreditCard className="w-4 h-4" />
+            Accounts
+          </Link>
           <a
             href="/api/finance/export"
             className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
@@ -165,6 +194,35 @@ export default function FinanceDashboardPage() {
           </a>
         </div>
       </div>
+
+      {/* Accounts Row */}
+      {accounts.filter((a) => a.is_active).length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <Wallet className="w-4 h-4 text-fuchsia-600" />
+              Accounts
+            </h2>
+            <Link href="/dashboard/finance/accounts" className="text-xs text-fuchsia-600 hover:underline">
+              Manage
+            </Link>
+          </div>
+          <div className="flex gap-3 flex-wrap">
+            {accounts.filter((a) => a.is_active).map((acct) => (
+              <div key={acct.id} className="bg-white border border-gray-200 rounded-xl px-4 py-3 min-w-[160px]">
+                <p className="text-xs text-gray-500 mb-0.5">
+                  {ACCOUNT_TYPE_LABEL[acct.account_type] ?? acct.account_type}
+                  {acct.last_four && <span className="ml-1">··{acct.last_four}</span>}
+                </p>
+                <p className="text-sm font-semibold text-gray-800 truncate">{acct.name}</p>
+                <p className={`text-base font-bold mt-0.5 ${acct.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                  {acct.balance < 0 ? '-' : ''}${Math.abs(acct.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -359,13 +417,21 @@ export default function FinanceDashboardPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Vendor</label>
-                  <input
-                    type="text"
+                  <label className="text-xs font-medium text-gray-600">
+                    {addForm.type === 'income' ? 'Source / Payer' : 'Vendor'}
+                  </label>
+                  <ContactAutocomplete
                     value={addForm.vendor}
-                    onChange={(e) => setAddForm((p) => ({ ...p, vendor: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
-                    placeholder="Store/company"
+                    contactType={addForm.type === 'income' ? 'customer' : 'vendor'}
+                    placeholder={addForm.type === 'income' ? 'Employer, client…' : 'Store/company'}
+                    onChange={(name, defaultCategoryId) => {
+                      setAddForm((p) => ({
+                        ...p,
+                        vendor: name,
+                        category_id: defaultCategoryId ?? p.category_id,
+                      }));
+                    }}
+                    inputClassName="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
                   />
                 </div>
                 <div>
@@ -382,6 +448,23 @@ export default function FinanceDashboardPage() {
                   </select>
                 </div>
               </div>
+              {accounts.filter((a) => a.is_active).length > 0 && (
+                <div>
+                  <label className="text-xs font-medium text-gray-600">Account</label>
+                  <select
+                    value={addForm.account_id}
+                    onChange={(e) => setAddForm((p) => ({ ...p, account_id: e.target.value }))}
+                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                  >
+                    <option value="">No account</option>
+                    {accounts.filter((a) => a.is_active).map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}{a.last_four ? ` ··${a.last_four}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"

@@ -13,20 +13,32 @@ function getDb() {
   );
 }
 
+const SORT_COLUMN: Record<string, string> = {
+  name: 'title',
+  created: 'created_at',
+  category: 'category',
+  price: 'price',
+};
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const mine = searchParams.get('mine') === 'true';
   const category = searchParams.get('category');
   const q = searchParams.get('q');
+  const sort = searchParams.get('sort') ?? 'created';
+  const dir = searchParams.get('dir') ?? 'desc';
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+
+  const col = SORT_COLUMN[sort] ?? 'created_at';
+  const ascending = dir === 'asc';
 
   const db = getDb();
   let query = db
     .from('courses')
     .select('id, title, description, cover_image_url, category, tags, price, price_type, is_published, navigation_mode, like_count, created_at, teacher_id, profiles(username, display_name, avatar_url)')
-    .order('created_at', { ascending: false });
+    .order(col, { ascending, nullsFirst: false });
 
   if (mine && user) {
     query = query.eq('teacher_id', user.id);
