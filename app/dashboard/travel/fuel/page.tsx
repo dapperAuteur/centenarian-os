@@ -366,8 +366,8 @@ export default function FuelLogPage() {
                     </td>
                     <td className="px-4 py-3 text-right text-gray-700">{fmt(log.gallons, 3)}</td>
                     <td className="px-4 py-3 text-right font-medium text-gray-900">{fmtMoney(log.total_cost)}</td>
-                    <td className="px-4 py-3 text-right text-gray-500">{fmt(log.cost_per_gallon, 3)}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">
+                    <td className="px-4 py-3 text-right text-gray-600">{fmt(log.cost_per_gallon, 3)}</td>
+                    <td className="px-4 py-3 text-gray-600 text-xs">
                       {log.station ?? '—'}
                       {log.source === 'image_ocr' && (
                         <span className="ml-1 text-purple-500 font-medium" title="OCR scan">

@@ -244,7 +244,7 @@ export default function MaintenancePage() {
                         <span className="text-xs text-gray-500">{fmtMoney(r.cost)}</span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="text-xs text-gray-600 mt-0.5">
                       {r.date}
                       {r.odometer_at_service && ` · ${r.odometer_at_service.toLocaleString()} mi`}
                       {r.vendor && ` · ${r.vendor}`}
@@ -254,7 +254,7 @@ export default function MaintenancePage() {
                         Next: {r.next_service_date ?? `@ ${r.next_service_miles?.toLocaleString()} mi`}
                       </p>
                     )}
-                    {r.notes && <p className="text-xs text-gray-400 mt-0.5">{r.notes}</p>}
+                    {r.notes && <p className="text-xs text-gray-600 mt-0.5">{r.notes}</p>}
                   </div>
                   <div className="flex gap-3 ml-4 shrink-0">
                     <button
