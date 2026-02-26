@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   DollarSign, TrendingUp, TrendingDown, Plus, ArrowRight,
-  Upload, Download, Settings, Loader2, CreditCard, Wallet,
+  Upload, Download, Settings, Loader2, CreditCard, Wallet, FileText, AlertTriangle,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -65,6 +65,7 @@ export default function FinanceDashboardPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [brands, setBrands] = useState<{ id: string; name: string; color: string }[]>([]);
+  const [reminders, setReminders] = useState<{ overdue_count: number; due_soon_count: number; invoices: { id: string; direction: string; contact_name: string; balance_due: number; due_date: string; urgency: string }[]; accounts: { id: string; name: string; due_day: number; urgency: string }[] }>({ overdue_count: 0, due_soon_count: 0, invoices: [], accounts: [] });
   const [loading, setLoading] = useState(true);
 
   // Add transaction modal
@@ -83,11 +84,12 @@ export default function FinanceDashboardPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [sumRes, catRes, acctRes, brandsRes] = await Promise.all([
+      const [sumRes, catRes, acctRes, brandsRes, remRes] = await Promise.all([
         fetch('/api/finance/summary?months=6'),
         fetch('/api/finance/categories'),
         fetch('/api/finance/accounts'),
         fetch('/api/brands'),
+        fetch('/api/finance/reminders'),
       ]);
       if (sumRes.ok) setSummary(await sumRes.json());
       if (catRes.ok) {
@@ -99,6 +101,7 @@ export default function FinanceDashboardPage() {
         const d = await brandsRes.json();
         setBrands(Array.isArray(d) ? d.filter((b: { is_active: boolean }) => b.is_active) : []);
       }
+      if (remRes.ok) setReminders(await remRes.json());
     } finally {
       setLoading(false);
     }
@@ -192,6 +195,13 @@ export default function FinanceDashboardPage() {
             Accounts
           </Link>
           <Link
+            href="/dashboard/finance/invoices"
+            className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+          >
+            <FileText className="w-4 h-4" />
+            Invoices
+          </Link>
+          <Link
             href="/dashboard/finance/brands"
             className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
           >
@@ -207,6 +217,29 @@ export default function FinanceDashboardPage() {
           </a>
         </div>
       </div>
+
+      {/* Reminders Banner */}
+      {(reminders.overdue_count > 0 || reminders.due_soon_count > 0) && (
+        <div className={`rounded-xl p-4 flex flex-wrap items-center justify-between gap-3 ${reminders.overdue_count > 0 ? 'bg-red-50 border border-red-200' : 'bg-amber-50 border border-amber-200'}`}>
+          <div className="flex items-center gap-2">
+            <AlertTriangle className={`w-5 h-5 ${reminders.overdue_count > 0 ? 'text-red-500' : 'text-amber-500'}`} />
+            <div>
+              <p className={`text-sm font-medium ${reminders.overdue_count > 0 ? 'text-red-800' : 'text-amber-800'}`}>
+                {reminders.overdue_count > 0 && `${reminders.overdue_count} overdue`}
+                {reminders.overdue_count > 0 && reminders.due_soon_count > 0 && ' · '}
+                {reminders.due_soon_count > 0 && `${reminders.due_soon_count} due soon`}
+              </p>
+              <p className="text-xs text-gray-500">
+                {reminders.invoices.filter((r) => r.urgency === 'overdue').map((r) => r.contact_name).join(', ')}
+                {reminders.accounts.filter((r) => r.urgency === 'due_now' || r.urgency === 'due_soon').map((r) => r.name).join(', ')}
+              </p>
+            </div>
+          </div>
+          <Link href="/dashboard/finance/invoices" className="text-sm font-medium text-fuchsia-600 hover:underline">
+            View Invoices
+          </Link>
+        </div>
+      )}
 
       {/* Accounts Row */}
       {accounts.filter((a) => a.is_active).length > 0 && (

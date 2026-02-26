@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { useSubscription } from '@/lib/hooks/useSubscription';
 import { useUnreadCount } from '@/lib/hooks/useUnreadCount';
 import { createClient } from '@/lib/supabase/client';
-import { GraduationCap, Radio, LogIn, BookOpen, ChefHat } from 'lucide-react';
+import { GraduationCap, Radio, LogIn, BookOpen, ChefHat, Zap } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import DesktopNav from '@/components/nav/DesktopNav';
 import MobileBottomBar from '@/components/nav/MobileBottomBar';
@@ -59,6 +59,13 @@ function PublicHeader() {
           >
             <LogIn className="w-4 h-4" />
             Login
+          </Link>
+          <Link
+            href="/pricing"
+            className="flex items-center gap-1.5 px-3 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 transition"
+          >
+            <Zap className="w-4 h-4" />
+            Get Started
           </Link>
         </div>
       </div>

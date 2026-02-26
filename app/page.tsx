@@ -1,26 +1,143 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Target, Utensils, Brain, TrendingUp, Zap, Shield, Menu, X } from 'lucide-react';
+import { ArrowRight, Target, Utensils, Brain, Car, DollarSign, Heart, GraduationCap, BookOpen, TrendingUp, Zap, Shield, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+
+const MODULES = [
+  {
+    name: 'The Planner',
+    color: 'border-fuchsia-500',
+    iconColor: 'text-fuchsia-600',
+    checkColor: 'text-fuchsia-600',
+    Icon: Target,
+    description: 'Hierarchical goal tracking from multi-decade roadmaps down to daily tasks.',
+    features: [
+      'Roadmap \u2192 Goals \u2192 Milestones \u2192 Tasks',
+      'Week/3-day/daily views',
+      'Real-time progress tracking',
+    ],
+  },
+  {
+    name: 'The Fuel',
+    color: 'border-sky-500',
+    iconColor: 'text-sky-600',
+    checkColor: 'text-sky-600',
+    Icon: Utensils,
+    description: 'Nutrition tracking with the NCV framework. Optimize for performance and longevity.',
+    features: [
+      'Ingredient library with cost tracking',
+      'Green/Yellow/Red scoring',
+      'Recipe import from any URL',
+      'Auto inventory management',
+    ],
+  },
+  {
+    name: 'The Engine',
+    color: 'border-lime-500',
+    iconColor: 'text-lime-600',
+    checkColor: 'text-lime-600',
+    Icon: Brain,
+    description: 'Focus tracking, Pomodoro timers, and daily debriefs to maintain momentum.',
+    features: [
+      'Pomodoro focus sessions linked to tasks',
+      'Daily energy/focus ratings',
+      'Body check & pain tracking',
+      'Weekly AI-powered reviews',
+    ],
+  },
+  {
+    name: 'Travel & Vehicles',
+    color: 'border-amber-500',
+    iconColor: 'text-amber-600',
+    checkColor: 'text-amber-600',
+    Icon: Car,
+    description: 'Track every mile, fuel-up, and the real cost of getting around.',
+    features: [
+      'Vehicle profiles & fuel logging with OCR',
+      'Trip tracking (car, bike, walk, run)',
+      'Bike savings vs. car cost-per-mile',
+      'Garmin activity import',
+    ],
+  },
+  {
+    name: 'Financial Dashboard',
+    color: 'border-emerald-500',
+    iconColor: 'text-emerald-600',
+    checkColor: 'text-emerald-600',
+    Icon: DollarSign,
+    description: 'Full financial tracking — accounts, budgets, brands, and P&L reporting.',
+    features: [
+      'Checking, savings, credit card, loan, cash',
+      'Budget categories with spending charts',
+      'Brand / business P&L tracking',
+      'CSV import & export',
+    ],
+  },
+  {
+    name: 'Health Metrics',
+    color: 'border-rose-500',
+    iconColor: 'text-rose-600',
+    checkColor: 'text-rose-600',
+    Icon: Heart,
+    description: 'Daily vitals logging and wearable integration for the full health picture.',
+    features: [
+      'RHR, steps, sleep, activity minutes',
+      'Oura, WHOOP & Garmin sync',
+      'Body composition tracking',
+      'CSV import (Apple Health, InBody)',
+    ],
+  },
+  {
+    name: 'Academy',
+    color: 'border-violet-500',
+    iconColor: 'text-violet-600',
+    checkColor: 'text-violet-600',
+    Icon: GraduationCap,
+    description: 'A full LMS — create, publish, sell, and take courses.',
+    features: [
+      'Video, text, audio & slide lessons',
+      'Choose Your Own Adventure navigation',
+      'Assignments, certificates & badges',
+      '11 free tutorial course series',
+    ],
+  },
+  {
+    name: 'Blog & Recipes',
+    color: 'border-orange-500',
+    iconColor: 'text-orange-600',
+    checkColor: 'text-orange-600',
+    Icon: BookOpen,
+    description: 'Community content publishing with rich text and recipe sharing.',
+    features: [
+      'Rich text editor with media upload',
+      'Public recipe pages with likes & saves',
+      'Recipe import from any URL',
+      'Public author/cook profiles',
+    ],
+  },
+];
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen bg-linear-to-b from-gray-50 to-white">
       {/* Header - Mobile First */}
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-fuchsia-500 to-sky-500 rounded-lg flex-shrink-0"></div>
+              <div className="w-8 h-8 bg-linear-to-br from-fuchsia-500 to-sky-500 rounded-lg shrink-0"></div>
               <span className="text-lg sm:text-xl font-bold text-gray-900">CentenarianOS</span>
             </Link>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-6">
+              <Link href="/demo" className="text-gray-600 hover:text-gray-900 font-medium">
+                Demo
+              </Link>
               <Link href="/academy" className="text-gray-600 hover:text-gray-900 font-medium">
                 Academy
               </Link>
@@ -58,6 +175,13 @@ export default function LandingPage() {
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 pb-4 space-y-4">
               <Link
+                href="/demo"
+                className="block text-gray-600 hover:text-gray-900 font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Demo
+              </Link>
+              <Link
                 href="/academy"
                 className="block text-gray-600 hover:text-gray-900 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
@@ -79,7 +203,7 @@ export default function LandingPage() {
                 Recipes
               </Link>
               <Link
-                href="/tech-roadmap" 
+                href="/tech-roadmap"
                 className="block text-gray-600 hover:text-gray-900 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -107,16 +231,15 @@ export default function LandingPage() {
       {/* Hero Section - Mobile First */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 md:pt-20 pb-8 sm:pb-12 md:pb-16">
         <div className="text-center max-w-3xl mx-auto">
-          {/* Mobile: 2xl, Tablet: 4xl, Desktop: 6xl */}
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-4 sm:mb-6 leading-tight">
-            Turn <span className="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-600 to-sky-600">Multi-Decade Goals</span> Into Daily Action
+            Turn <span className="text-transparent bg-clip-text bg-linear-to-r from-fuchsia-600 to-sky-600">Multi-Decade Goals</span> Into Daily Action
           </h1>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 px-2">
-            The personal operating system for executing audacious, long-term goals through data-driven daily habits. Plan, fuel, track, and iterate—all offline-first.
+            The personal operating system for executing audacious, long-term goals through data-driven daily habits. Plan, fuel, track, and iterate—all in one place.
           </p>
 
-          {/* Buttons - Stack on mobile, side-by-side on tablet+ */}
-          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4 sm:px-0">
+          {/* Buttons - Stack on mobile, wrap on tablet+ */}
+          <div className="flex flex-col sm:flex-row sm:flex-wrap justify-center gap-3 sm:gap-4 px-4 sm:px-0">
             <Link
               href="/pricing"
               className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-semibold text-base sm:text-lg flex items-center justify-center"
@@ -124,8 +247,14 @@ export default function LandingPage() {
               Start Your Journey
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
-            <Link 
-              href="/tech-roadmap" 
+            <Link
+              href="/demo"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-white border-2 border-fuchsia-300 text-fuchsia-700 rounded-lg hover:bg-fuchsia-50 transition-colors font-semibold text-base sm:text-lg text-center"
+            >
+              Try the Demo
+            </Link>
+            <Link
+              href="/tech-roadmap"
               className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:border-gray-400 transition-colors font-semibold text-base sm:text-lg text-center"
             >
               View Tech Roadmap
@@ -134,115 +263,43 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Core Modules */}
+      {/* All Modules */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
         <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-6 sm:mb-8 md:mb-12">
-          Three Integrated Modules
+          Your Personal Operating System
         </h2>
-        
-        {/* Grid: 1 col mobile, 3 cols tablet+ */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-          {/* Planner */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 border-t-4 border-fuchsia-500">
-            <Target className="w-10 h-10 sm:w-12 sm:h-12 text-fuchsia-600 mb-3 sm:mb-4" />
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">The Planner</h3>
-            <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
-              Hierarchical goal tracking from multi-decade roadmaps down to daily tasks. Connect every action to your long-term vision.
-            </p>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li className="flex items-start">
-                <span className="text-fuchsia-600 mr-2 flex-shrink-0">✓</span>
-                Roadmap → Goals → Milestones → Tasks
-              </li>
-              <li className="flex items-start">
-                <span className="text-fuchsia-600 mr-2 flex-shrink-0">✓</span>
-                Week/3-day/daily views
-              </li>
-              <li className="flex items-start">
-                <span className="text-fuchsia-600 mr-2 flex-shrink-0">✓</span>
-                Real-time progress tracking
-              </li>
-            </ul>
-          </div>
 
-          {/* Fuel */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 border-t-4 border-sky-500">
-            <Utensils className="w-10 h-10 sm:w-12 sm:h-12 text-sky-600 mb-3 sm:mb-4" />
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">The Fuel</h3>
-            <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
-              Nutrition tracking with the NCV framework. Optimize your fuel for performance and longevity.
-            </p>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li className="flex items-start">
-                <span className="text-sky-600 mr-2 flex-shrink-0">✓</span>
-                Ingredient library with cost tracking
-              </li>
-              <li className="flex items-start">
-                <span className="text-sky-600 mr-2 flex-shrink-0">✓</span>
-                Green/Yellow/Red scoring
-              </li>
-              <li className="flex items-start">
-                <span className="text-sky-600 mr-2 flex-shrink-0">✓</span>
-                Meal prep batch tracking
-              </li>
-              <li className="flex items-start">
-                <span className="text-sky-600 mr-2 flex-shrink-0">✓</span>
-                Auto inventory management
-              </li>
-              <li className="flex items-start">
-                <span className="text-sky-600 mr-2 flex-shrink-0">✓</span>
-                Restaurant vs home-cooked analytics
-              </li>
-            </ul>
-          </div>
-
-          {/* Engine */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 border-t-4 border-lime-500">
-            <Brain className="w-10 h-10 sm:w-12 sm:h-12 text-lime-600 mb-3 sm:mb-4" />
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">The Engine</h3>
-            <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
-              Focus tracking, Pomodoro timers, and daily debriefs to maintain momentum.
-            </p>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li className="flex items-start">
-                <span className="text-lime-600 mr-2 flex-shrink-0">✓</span>
-                Pomodoro focus sessions
-              </li>
-              <li className="flex items-start">
-                <span className="text-lime-600 mr-2">✓</span>
-                Focus timer linked to tasks
-              </li>
-              <li className="flex items-start">
-                <span className="text-lime-600 mr-2 flex-shrink-0">✓</span>
-                Daily energy + win/challenge logs
-              </li>
-              <li className="flex items-start">
-                <span className="text-lime-600 mr-2">✓</span>
-                Daily energy/focus ratings
-              </li>
-              <li className="flex items-start">
-                <span className="text-lime-600 mr-2 flex-shrink-0">✓</span>
-                Body check & pain tracking
-              </li>
-              <li className="flex items-start">
-                <span className="text-lime-600 mr-2">✓</span>
-                Weekly AI-powered reviews
-              </li>
-            </ul>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {MODULES.map((mod) => (
+            <div key={mod.name} className={`bg-white rounded-2xl shadow-lg p-6 border-t-4 ${mod.color}`}>
+              <mod.Icon className={`w-10 h-10 ${mod.iconColor} mb-3`} />
+              <h3 className="text-lg font-bold text-gray-900 mb-2">{mod.name}</h3>
+              <p className="text-sm text-gray-600 mb-3">
+                {mod.description}
+              </p>
+              <ul className="space-y-1.5 text-sm text-gray-600">
+                {mod.features.map((f) => (
+                  <li key={f} className="flex items-start">
+                    <span className={`${mod.checkColor} mr-2 shrink-0`}>&check;</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Why Offline-First */}
+      {/* Why CentenarianOS */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
         <div className="bg-gray-100 rounded-2xl p-6 sm:p-8 md:p-12">
           <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-6 sm:mb-8">
             Built for Real Life
           </h2>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             <div className="flex items-start space-x-3 sm:space-x-4">
-              <Zap className="w-7 h-7 sm:w-8 sm:h-8 text-fuchsia-600 flex-shrink-0" />
+              <Zap className="w-7 h-7 sm:w-8 sm:h-8 text-fuchsia-600 shrink-0" />
               <div>
                 <h3 className="font-bold text-gray-900 mb-1 sm:mb-2 text-base sm:text-lg">Offline-First</h3>
                 <p className="text-gray-600 text-sm">
@@ -251,7 +308,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="flex items-start space-x-3 sm:space-x-4">
-              <Shield className="w-7 h-7 sm:w-8 sm:h-8 text-fuchsia-600 flex-shrink-0" />
+              <Shield className="w-7 h-7 sm:w-8 sm:h-8 text-fuchsia-600 shrink-0" />
               <div>
                 <h3 className="font-bold text-gray-900 mb-1 sm:mb-2 text-base sm:text-lg">Privacy-First</h3>
                 <p className="text-gray-600 text-sm">
@@ -260,7 +317,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="flex items-start space-x-3 sm:space-x-4">
-              <TrendingUp className="w-7 h-7 sm:w-8 sm:h-8 text-fuchsia-600 flex-shrink-0" />
+              <TrendingUp className="w-7 h-7 sm:w-8 sm:h-8 text-fuchsia-600 shrink-0" />
               <div>
                 <h3 className="font-bold text-gray-900 mb-1 sm:mb-2 text-base sm:text-lg">Data-Driven</h3>
                 <p className="text-gray-600 text-sm">
@@ -274,20 +331,28 @@ export default function LandingPage() {
 
       {/* CTA */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
-        <div className="bg-gradient-to-r from-fuchsia-600 to-sky-600 rounded-2xl p-6 sm:p-8 md:p-12 text-center">
+        <div className="bg-linear-to-r from-fuchsia-600 to-sky-600 rounded-2xl p-6 sm:p-8 md:p-12 text-center">
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 sm:mb-4">
             Start Your Centenarian Journey Today
           </h2>
           <p className="text-white/90 mb-6 sm:mb-8 text-base sm:text-lg max-w-2xl mx-auto px-2">
-            Join the beta and help shape the future of long-term goal execution.
+            Join the community and take control of your long-term goals, finances, health, and productivity.
           </p>
-          <Link
-            href="/pricing"
-            className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-fuchsia-600 rounded-lg hover:bg-gray-100 transition-colors font-bold text-base sm:text-lg"
-          >
-            View Plans &amp; Get Started
-            <ArrowRight className="ml-2 w-5 h-5" />
-          </Link>
+          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+            <Link
+              href="/pricing"
+              className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-fuchsia-600 rounded-lg hover:bg-gray-100 transition-colors font-bold text-base sm:text-lg"
+            >
+              View Plans & Get Started
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Link>
+            <Link
+              href="/demo"
+              className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 bg-white/20 text-white border border-white/40 rounded-lg hover:bg-white/30 transition-colors font-semibold text-base sm:text-lg"
+            >
+              Try the Demo
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -296,9 +361,12 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0">
             <p className="text-gray-600 text-xs sm:text-sm text-center sm:text-left">
-              © 2025 CentenarianOS. Open source under MIT License.
+              &copy; 2026 B4C LLC / AwesomeWebStore.com. Open source under MIT License.
             </p>
             <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
+              <Link href="/demo" className="text-gray-600 hover:text-gray-900 text-xs sm:text-sm">
+                Demo
+              </Link>
               <Link href="/academy" className="text-gray-600 hover:text-gray-900 text-xs sm:text-sm">
                 Academy
               </Link>
@@ -314,8 +382,8 @@ export default function LandingPage() {
               <Link href="/contribute" className="text-gray-600 hover:text-gray-900 text-xs sm:text-sm">
                 Contribute
               </Link>
-              <a 
-                href="https://github.com/dapperAuteur/centenarian-os" 
+              <a
+                href="https://github.com/dapperAuteur/centenarian-os"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-600 hover:text-gray-900 text-xs sm:text-sm"

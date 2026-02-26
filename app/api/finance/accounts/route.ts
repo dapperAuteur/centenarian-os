@@ -39,7 +39,11 @@ export async function GET() {
 
       const income = (totals ?? []).filter((t) => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
       const expenses = (totals ?? []).filter((t) => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
-      const balance = Number(acct.opening_balance) + income - expenses;
+      let balance = Number(acct.opening_balance) + income - expenses;
+
+      // Debt accounts (credit cards, loans): invert so positive spending shows as negative debt
+      const isDebtAccount = acct.account_type === 'credit_card' || acct.account_type === 'loan';
+      if (isDebtAccount) balance = -balance;
 
       return { ...acct, balance };
     })
@@ -85,5 +89,7 @@ export async function POST(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ ...data, balance: Number(opening_balance) }, { status: 201 });
+  const isDebt = account_type === 'credit_card' || account_type === 'loan';
+  const balance = isDebt ? -Number(opening_balance) : Number(opening_balance);
+  return NextResponse.json({ ...data, balance }, { status: 201 });
 }

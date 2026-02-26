@@ -32,7 +32,7 @@ export default function FloatingActionsMenu({ userRole }: Props) {
   return (
     <>
       {/* Speed-dial stack */}
-      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3">
+      <div className="fixed bottom-22 lg:bottom-6 right-6 z-40 flex flex-col items-end gap-3">
         {/* Help action */}
         <div
           className={`flex items-center gap-2.5 transition-all duration-200 ${

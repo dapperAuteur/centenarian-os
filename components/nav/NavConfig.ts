@@ -17,6 +17,7 @@ import {
   ChefHat,
   GraduationCap,
   Radio,
+  Dumbbell,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -54,6 +55,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Fuel', href: '/dashboard/fuel', icon: Utensils, paid: true },
       { label: 'Metrics', href: '/dashboard/metrics', icon: HeartPulse, paid: true },
       { label: 'Wearables', href: '/dashboard/settings/wearables', icon: Watch, paid: true },
+      { label: 'Workouts', href: '/dashboard/workouts', icon: Dumbbell, paid: true },
       { label: 'Correlations', href: '/dashboard/correlations', icon: TrendingUp, paid: true },
       { label: 'Analytics', href: '/dashboard/analytics', icon: ChartNetwork, paid: true },
     ],
