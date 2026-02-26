@@ -10,6 +10,7 @@ import { Protocol, ProtocolWithIngredients } from '@/lib/types';
 import { Plus, Search } from 'lucide-react';
 import { ProtocolModal } from '@/components/ProtocolModal';
 import { ProtocolCard } from '@/components/ProtocolCard';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 export default function ProtocolsPage() {
   const router = useRouter();
@@ -73,7 +74,7 @@ export default function ProtocolsPage() {
   const handlePublishAsRecipe = async (protocol: ProtocolWithIngredients) => {
     setPublishingId(protocol.id);
     try {
-      const res = await fetch(`/api/fuel/protocols/${protocol.id}/publish`, { method: 'POST' });
+      const res = await offlineFetch(`/api/fuel/protocols/${protocol.id}/publish`, { method: 'POST' });
       if (!res.ok) {
         const { error } = await res.json();
         alert(`Failed to publish: ${error}`);

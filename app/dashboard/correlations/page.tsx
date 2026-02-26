@@ -9,6 +9,7 @@ import {
   ResponsiveContainer, ZAxis,
 } from 'recharts';
 import { TrendingUp, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface CorrelationPair {
   metric_a: string;
@@ -49,7 +50,7 @@ export default function CorrelationsPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/ai/correlations?days=${days}`)
+    offlineFetch(`/api/ai/correlations?days=${days}`)
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));

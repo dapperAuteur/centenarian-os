@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Activity, Lock, CheckCircle2, TrendingUp, Calendar, Upload } from 'lucide-react';
 import Link from 'next/link';
 import MetricUnlockModal from '@/components/metrics/MetricUnlockModal';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface MetricConfig {
   metric_key: string;
@@ -70,9 +71,9 @@ export default function MetricsDashboardPage() {
     setLoading(true);
     try {
       const [configRes, logRes, summaryRes] = await Promise.all([
-        fetch('/api/health-metrics/config'),
-        fetch(`/api/health-metrics?date=${today}`),
-        fetch('/api/health-metrics/summary?days=7'),
+        offlineFetch('/api/health-metrics/config'),
+        offlineFetch(`/api/health-metrics?date=${today}`),
+        offlineFetch('/api/health-metrics/summary?days=7'),
       ]);
 
       if (configRes.ok) {
@@ -81,7 +82,7 @@ export default function MetricsDashboardPage() {
         setConfigs(enabled);
 
         // Extract permissions from config response (joined)
-        const permRes = await fetch('/api/health-metrics/permissions');
+        const permRes = await offlineFetch('/api/health-metrics/permissions');
         if (permRes.ok) {
           const { data: perms } = await permRes.json() as { data: UserPermission[] };
           const map = new Map<string, UserPermission>();
@@ -127,7 +128,7 @@ export default function MetricsDashboardPage() {
           payload[config.metric_key] = val === '' ? null : val ?? null;
         }
       }
-      const res = await fetch('/api/health-metrics', {
+      const res = await offlineFetch('/api/health-metrics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Plus } from 'lucide-react';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Trip {
   id: string;
@@ -88,8 +89,8 @@ export default function TripsPage() {
       if (taxFilter) params.set('tax_category', taxFilter);
       if (categoryFilter) params.set('trip_category', categoryFilter);
       const [tripsRes, vehiclesRes] = await Promise.all([
-        fetch(`/api/travel/trips?${params}`),
-        fetch('/api/travel/vehicles'), // active only
+        offlineFetch(`/api/travel/trips?${params}`),
+        offlineFetch('/api/travel/vehicles'), // active only
       ]);
       if (tripsRes.ok) {
         const d = await tripsRes.json();
@@ -109,7 +110,7 @@ export default function TripsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this trip?')) return;
-    const res = await fetch('/api/travel/trips', {
+    const res = await offlineFetch('/api/travel/trips', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
@@ -123,7 +124,7 @@ export default function TripsPage() {
 
   const handleLinkedTxYes = async () => {
     if (!linkedTxDialog) return;
-    await fetch('/api/finance/transactions', {
+    await offlineFetch('/api/finance/transactions', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: linkedTxDialog.transactionId }),
@@ -171,7 +172,7 @@ export default function TripsPage() {
         tax_category: form.tax_category || 'personal',
         trip_category: form.trip_category || 'travel',
       };
-      const res = await fetch('/api/travel/trips', {
+      const res = await offlineFetch('/api/travel/trips', {
         method: editingId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

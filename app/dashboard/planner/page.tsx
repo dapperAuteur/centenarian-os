@@ -7,6 +7,8 @@ import { Task, RecurringTask } from '@/lib/types';
 import { Calendar, DollarSign, Repeat } from 'lucide-react';
 import { EditTaskModal } from '@/components/EditTaskModal';
 import CreateRecurringTaskModal, { RecurringTaskData } from '@/components/planner/CreateRecurringTaskModal';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
+import { OfflineSyncManager } from '@/lib/offline/sync-manager';
 
 type ViewMode = 'day' | 'week' | 'month';
 
@@ -128,21 +130,33 @@ export default function PlannerPage() {
       endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
     }
 
-    const { data } = await supabase
-      .from('tasks')
-      .select('*')
-      .gte('date', startDate)
-      .lte('date', endDate)
-      .order('date')
-      .order('time');
+    const cacheKey = `supabase://tasks?start=${startDate}&end=${endDate}`;
+    const manager = OfflineSyncManager.getInstance();
 
-    if (data) setTasks(data);
+    try {
+      const { data } = await supabase
+        .from('tasks')
+        .select('*')
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date')
+        .order('time');
+
+      if (data) {
+        setTasks(data);
+        await manager.cacheResponse(cacheKey, data);
+      }
+    } catch {
+      // Offline or error — fall back to cache
+      const cached = await manager.getCached<Task[]>(cacheKey);
+      if (cached) setTasks(cached);
+    }
     setLoading(false);
   }, [supabase, selectedDate, viewMode]);
 
   const loadRecurringTasks = async () => {
     try {
-      const response = await fetch('/api/recurring-tasks');
+      const response = await offlineFetch('/api/recurring-tasks');
       if (response.ok) {
         const data = await response.json();
         setRecurringTasks(data);
@@ -171,7 +185,7 @@ export default function PlannerPage() {
 
   const handleSaveRecurringTask = async (data: RecurringTaskData) => {
     try {
-      const response = await fetch('/api/recurring-tasks', {
+      const response = await offlineFetch('/api/recurring-tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -179,9 +193,9 @@ export default function PlannerPage() {
 
       if (response.ok) {
         await loadRecurringTasks();
-        
+
         // Generate tasks for today
-        await fetch('/api/recurring-tasks/generate', {
+        await offlineFetch('/api/recurring-tasks/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 

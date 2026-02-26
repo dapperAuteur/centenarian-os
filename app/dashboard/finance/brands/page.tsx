@@ -7,6 +7,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Plus, Pencil, Trash2, BarChart2, Download, X } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Brand {
   id: string;
@@ -75,7 +76,7 @@ export default function BrandsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/brands');
+      const res = await offlineFetch('/api/brands');
       if (res.ok) setBrands(await res.json());
     } finally {
       setLoading(false);
@@ -118,12 +119,12 @@ export default function BrandsPage() {
         description: form.description || null,
       };
       const res = editingId
-        ? await fetch(`/api/brands/${editingId}`, {
+        ? await offlineFetch(`/api/brands/${editingId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           })
-        : await fetch('/api/brands', {
+        : await offlineFetch('/api/brands', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -138,7 +139,7 @@ export default function BrandsPage() {
   };
 
   const handleToggleActive = async (b: Brand) => {
-    await fetch(`/api/brands/${b.id}`, {
+    await offlineFetch(`/api/brands/${b.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_active: !b.is_active }),
@@ -148,7 +149,7 @@ export default function BrandsPage() {
 
   const handleDelete = async (b: Brand) => {
     if (!confirm(`Delete brand "${b.name}"? This will unlink any assigned transactions.`)) return;
-    await fetch(`/api/brands/${b.id}`, { method: 'DELETE' });
+    await offlineFetch(`/api/brands/${b.id}`, { method: 'DELETE' });
     load();
   };
 
@@ -162,7 +163,7 @@ export default function BrandsPage() {
   const loadPL = useCallback(async (brandId: string, from: string, to: string) => {
     setPlLoading(true);
     try {
-      const res = await fetch(`/api/brands/${brandId}/pl?from=${from}&to=${to}`);
+      const res = await offlineFetch(`/api/brands/${brandId}/pl?from=${from}&to=${to}`);
       if (res.ok) setPlData(await res.json());
     } finally {
       setPlLoading(false);

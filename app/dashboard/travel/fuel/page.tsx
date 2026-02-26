@@ -8,6 +8,7 @@ import {
 import { Camera, Plus, Loader2, ChevronLeft, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface FuelLog {
   id: string;
@@ -82,9 +83,9 @@ export default function FuelLogPage() {
     setLoading(true);
     try {
       const [logsRes, vehiclesRes, catRes] = await Promise.all([
-        fetch('/api/travel/fuel?limit=100'),
-        fetch('/api/travel/vehicles'),
-        fetch('/api/finance/categories'),
+        offlineFetch('/api/travel/fuel?limit=100'),
+        offlineFetch('/api/travel/vehicles'),
+        offlineFetch('/api/finance/categories'),
       ]);
       if (logsRes.ok) {
         const d = await logsRes.json();
@@ -117,7 +118,7 @@ export default function FuelLogPage() {
       for (let i = 0; i < Math.min(files.length, 4); i++) {
         fd.append('images', files[i]);
       }
-      const res = await fetch('/api/travel/fuel/ocr', { method: 'POST', body: fd });
+      const res = await offlineFetch('/api/travel/fuel/ocr', { method: 'POST', body: fd });
       if (!res.ok) { setOcrNotes('OCR failed — fill in manually'); return; }
       const { extracted } = await res.json();
       setForm((f) => ({
@@ -182,7 +183,7 @@ export default function FuelLogPage() {
         source: editingId ? undefined : 'manual',
         finance_category_id: form.finance_category_id || null,
       };
-      const res = await fetch('/api/travel/fuel', {
+      const res = await offlineFetch('/api/travel/fuel', {
         method: editingId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -201,7 +202,7 @@ export default function FuelLogPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this fuel log?')) return;
-    const res = await fetch('/api/travel/fuel', {
+    const res = await offlineFetch('/api/travel/fuel', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
@@ -215,7 +216,7 @@ export default function FuelLogPage() {
 
   const handleLinkedTxYes = async () => {
     if (!linkedTxDialog) return;
-    await fetch('/api/finance/transactions', {
+    await offlineFetch('/api/finance/transactions', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: linkedTxDialog.transactionId }),

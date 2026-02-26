@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface InvoiceItem {
   id?: string;
@@ -90,10 +91,10 @@ export default function InvoicesPage() {
   const load = useCallback(async () => {
     setLoading(true);
     const [invRes, acctRes, catRes, brandRes] = await Promise.all([
-      fetch(`/api/finance/invoices${filter !== 'all' ? `?direction=${filter}` : ''}`),
-      fetch('/api/finance/accounts'),
-      fetch('/api/finance/categories'),
-      fetch('/api/finance/brands'),
+      offlineFetch(`/api/finance/invoices${filter !== 'all' ? `?direction=${filter}` : ''}`),
+      offlineFetch('/api/finance/accounts'),
+      offlineFetch('/api/finance/categories'),
+      offlineFetch('/api/finance/brands'),
     ]);
 
     const invData = await invRes.json();
@@ -131,7 +132,7 @@ export default function InvoicesPage() {
         sort_order: i,
       }));
 
-    const res = await fetch('/api/finance/invoices', {
+    const res = await offlineFetch('/api/finance/invoices', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -158,7 +159,7 @@ export default function InvoicesPage() {
   }
 
   async function markPaid(id: string) {
-    await fetch(`/api/finance/invoices/${id}`, {
+    await offlineFetch(`/api/finance/invoices/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mark_paid: true }),
@@ -167,7 +168,7 @@ export default function InvoicesPage() {
   }
 
   async function markSent(id: string) {
-    await fetch(`/api/finance/invoices/${id}`, {
+    await offlineFetch(`/api/finance/invoices/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'sent' }),
@@ -176,7 +177,7 @@ export default function InvoicesPage() {
   }
 
   async function deleteInvoice(id: string) {
-    await fetch(`/api/finance/invoices/${id}`, { method: 'DELETE' });
+    await offlineFetch(`/api/finance/invoices/${id}`, { method: 'DELETE' });
     load();
   }
 

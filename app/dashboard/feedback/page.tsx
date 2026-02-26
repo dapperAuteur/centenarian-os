@@ -7,6 +7,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Bug, Lightbulb, MessageSquare, ChevronDown, ChevronUp, Send, Loader2 } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
 import ImageLightbox from '@/components/ui/ImageLightbox';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface FeedbackEntry {
   id: string;
@@ -47,7 +48,7 @@ export default function FeedbackHistoryPage() {
   const [sendError, setSendError] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    fetch('/api/feedback')
+    offlineFetch('/api/feedback')
       .then((r) => r.json())
       .then((d) => { setItems(Array.isArray(d) ? d : []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -57,7 +58,7 @@ export default function FeedbackHistoryPage() {
     if (expanded === id) { setExpanded(null); return; }
     setExpanded(id);
     if (!threads[id]?.loaded) {
-      const r = await fetch(`/api/feedback/${id}/replies`);
+      const r = await offlineFetch(`/api/feedback/${id}/replies`);
       const d = await r.json();
       setThreads((prev) => ({ ...prev, [id]: { replies: d.replies ?? [], loaded: true } }));
     }
@@ -69,7 +70,7 @@ export default function FeedbackHistoryPage() {
     setSending(id);
     setSendError((prev) => ({ ...prev, [id]: '' }));
     try {
-      const r = await fetch(`/api/feedback/${id}/replies`, {
+      const r = await offlineFetch(`/api/feedback/${id}/replies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ body, media_url: replyMedia[id] || null }),

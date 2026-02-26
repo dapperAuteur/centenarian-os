@@ -5,6 +5,7 @@
 
 import { useState } from 'react';
 import { Sparkles, Loader2, Clock, Users, ChefHat, Save, Check, AlertCircle } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface RecipeIdea {
   name: string;
@@ -32,7 +33,7 @@ export default function RecipeIdeasPage() {
     setError(null);
     setSavedIds(new Set());
     try {
-      const res = await fetch('/api/ai/recipe-ideas', { method: 'POST' });
+      const res = await offlineFetch('/api/ai/recipe-ideas', { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to generate');
       if (data.message && (!data.recipes || data.recipes.length === 0)) {
@@ -52,7 +53,7 @@ export default function RecipeIdeasPage() {
   const saveAsDraft = async (recipe: RecipeIdea, index: number) => {
     setSavingId(index);
     try {
-      const res = await fetch('/api/recipes', {
+      const res = await offlineFetch('/api/recipes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

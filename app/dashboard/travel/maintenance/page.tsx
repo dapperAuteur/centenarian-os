@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Plus, AlertCircle, Wrench } from 'lucide-react';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface MaintenanceRecord {
   id: string;
@@ -72,9 +73,9 @@ export default function MaintenancePage() {
     setLoading(true);
     try {
       const [recRes, vehiclesRes, catRes] = await Promise.all([
-        fetch('/api/travel/maintenance'),
-        fetch('/api/travel/vehicles'),
-        fetch('/api/finance/categories'),
+        offlineFetch('/api/travel/maintenance'),
+        offlineFetch('/api/travel/vehicles'),
+        offlineFetch('/api/finance/categories'),
       ]);
       if (recRes.ok) {
         const d = await recRes.json();
@@ -129,7 +130,7 @@ export default function MaintenancePage() {
         next_service_date: form.next_service_date || null,
         finance_category_id: form.finance_category_id || null,
       };
-      const res = await fetch('/api/travel/maintenance', {
+      const res = await offlineFetch('/api/travel/maintenance', {
         method: editingId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -147,7 +148,7 @@ export default function MaintenancePage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this maintenance record?')) return;
-    const res = await fetch('/api/travel/maintenance', {
+    const res = await offlineFetch('/api/travel/maintenance', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
@@ -161,7 +162,7 @@ export default function MaintenancePage() {
 
   const handleLinkedTxYes = async () => {
     if (!linkedTxDialog) return;
-    await fetch('/api/finance/transactions', {
+    await offlineFetch('/api/finance/transactions', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: linkedTxDialog.transactionId }),

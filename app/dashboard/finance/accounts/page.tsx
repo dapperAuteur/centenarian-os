@@ -9,6 +9,7 @@ import {
   Building2, Check, X,
 } from 'lucide-react';
 import Link from 'next/link';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Account {
   id: string;
@@ -61,7 +62,7 @@ export default function AccountsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/finance/accounts');
+      const res = await offlineFetch('/api/finance/accounts');
       if (res.ok) setAccounts(await res.json());
     } finally {
       setLoading(false);
@@ -87,7 +88,7 @@ export default function AccountsPage() {
         statement_date: form.statement_date ? Number(form.statement_date) : null,
         notes: form.notes || null,
       };
-      const res = await fetch('/api/finance/accounts', {
+      const res = await offlineFetch('/api/finance/accounts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -107,7 +108,7 @@ export default function AccountsPage() {
         body[k] = v || null;
       }
     }
-    const res = await fetch(`/api/finance/accounts/${id}`, {
+    const res = await offlineFetch(`/api/finance/accounts/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -117,12 +118,12 @@ export default function AccountsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Remove this account? If it has transactions it will be deactivated instead of deleted.')) return;
-    await fetch(`/api/finance/accounts/${id}`, { method: 'DELETE' });
+    await offlineFetch(`/api/finance/accounts/${id}`, { method: 'DELETE' });
     load();
   };
 
   const handleToggleActive = async (acct: Account) => {
-    await fetch(`/api/finance/accounts/${acct.id}`, {
+    await offlineFetch(`/api/finance/accounts/${acct.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_active: !acct.is_active }),
