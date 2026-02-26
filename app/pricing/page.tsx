@@ -138,12 +138,16 @@ export default function PricingPage() {
             </div>
             <ul className="space-y-3 mb-8 flex-1">
               {[
-                'Everything in Free',
                 'Roadmap & goal hierarchy',
-                'Daily task planner',
-                'Fuel & nutrition tracking',
-                'The Engine (Focus timer, Debrief, Pain log)',
-                'Analytics & insights',
+                'Daily task planner (week/3-day/daily views)',
+                'Fuel & nutrition tracking (NCV framework)',
+                'Focus Engine (timer, debrief, pain log)',
+                'Travel & vehicle tracking with fuel OCR',
+                'Financial dashboard (accounts, budgets, brands)',
+                'Health metrics & wearable sync',
+                'Academy courses & tutorial guides',
+                'Blog & recipe publishing',
+                'AI-powered weekly reviews',
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm text-gray-700">
                   <Check className="w-4 h-4 text-fuchsia-500 mt-0.5 shrink-0" />
@@ -184,7 +188,6 @@ export default function PricingPage() {
               {[
                 'Everything in Monthly',
                 'No recurring fees ever',
-                'All future features included',
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
                   <Check className="w-4 h-4 text-lime-400 mt-0.5 shrink-0" />
@@ -216,8 +219,18 @@ export default function PricingPage() {
           <p className="text-sm text-gray-500 font-medium">{POLICIES}</p>
         </div>
 
+        {/* Try demo */}
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-600">
+            Want to try before you buy?{' '}
+            <Link href="/demo" className="text-fuchsia-600 hover:underline font-medium">
+              Explore the demo account
+            </Link>
+          </p>
+        </div>
+
         {/* Feature comparison note */}
-        <div className="mt-8 bg-gray-50 rounded-xl p-6 text-center">
+        <div className="mt-4 bg-gray-50 rounded-xl p-6 text-center">
           <p className="text-sm text-gray-600">
             Have questions?{' '}
             <a href="mailto:support@centenarianos.com" className="text-fuchsia-600 hover:underline font-medium">

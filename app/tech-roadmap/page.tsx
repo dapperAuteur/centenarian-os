@@ -145,6 +145,21 @@ const PHASES = [
     ],
   },
   {
+    id: 7,
+    title: 'Phase 7: Demo Accounts & Onboarding',
+    status: 'completed' as const,
+    quarter: 'Q1 2026',
+    description: 'Public demo accounts and guided onboarding to showcase the full platform.',
+    items: [
+      { done: true, text: 'Demo account infrastructure — automated setup and daily data reset via cron' },
+      { done: true, text: 'Visitor demo account with rich seeded data (finance, travel, fuel, brands)' },
+      { done: true, text: 'Tutorial recording account with clean, intentional seed data' },
+      { done: true, text: 'Public demo login page — one-click access, no signup needed' },
+      { done: true, text: 'Saved contacts system — vendor/customer/location directory' },
+      { done: true, text: 'Contact autocomplete with default category auto-fill' },
+    ],
+  },
+  {
     id: 8,
     title: 'Phase 8: Link Tracking & Marketing Analytics',
     status: 'planned' as const,
@@ -161,32 +176,38 @@ const PHASES = [
   {
     id: 9,
     title: 'Phase 9: Biometrics & Recovery',
-    status: 'planned' as const,
-    quarter: 'Q3 2026',
+    status: 'in-progress' as const,
+    quarter: 'Q1–Q2 2026',
     description: 'Integrate wearable data to close the loop between effort and recovery.',
     items: [
-      { done: false, text: 'Wearable integration — Oura Ring API (sleep, HRV, readiness)' },
-      { done: false, text: 'Wearable integration — Whoop API (strain, recovery, sleep)' },
-      { done: false, text: 'Wearable integration — Apple Health (steps, HR via HealthKit export)' },
+      { done: true, text: 'Health metrics daily log — resting HR, steps, sleep hours, activity minutes' },
+      { done: true, text: 'Body weight tracking — locked by default, unlock via disclaimer acknowledgment' },
+      { done: true, text: 'Wearable integration — Oura Ring OAuth (sleep, HRV, readiness)' },
+      { done: true, text: 'Wearable integration — WHOOP OAuth (strain, recovery, sleep)' },
+      { done: true, text: 'Wearable integration — Garmin OAuth (daily auto-sync)' },
+      { done: true, text: 'CSV import — Apple Health, Google Health, InBody, Hume Health' },
+      { done: true, text: 'Admin metrics configuration page' },
+      { done: true, text: '3-tier metrics — Core (RHR/steps/sleep/activity), Enrichment (per-metric unlock), Body Composition' },
       { done: false, text: 'HRV and recovery score tracking' },
       { done: false, text: 'Sleep quality deep-dive (stages, consistency, debt)' },
-      { done: false, text: 'Body composition logging (weight, body fat %, muscle mass)' },
-      { done: false, text: 'Recovery ↔ performance correlation dashboard' },
+      { done: false, text: 'Recovery vs. performance correlation dashboard' },
     ],
   },
   {
     id: 10,
     title: 'Phase 10: Financial Dashboard',
-    status: 'planned' as const,
-    quarter: 'Q4 2026',
-    description: 'Connect every dollar to a goal — see the ROI of your longevity investment.',
+    status: 'completed' as const,
+    quarter: 'Q1 2026',
+    description: 'Full financial tracking — accounts, transactions, budgets, brands, and CSV workflows.',
     items: [
-      { done: false, text: 'Budget tracking by goal category' },
-      { done: false, text: 'Nutrition cost integration (from Fuel module)' },
-      { done: false, text: 'ROI visualization per goal (cost vs. outcome metrics)' },
-      { done: false, text: 'Bulk data import via CSV' },
-      { done: false, text: 'CSV import template download' },
-      { done: false, text: 'Full data export (JSON + CSV)' },
+      { done: true, text: 'Financial accounts — checking, savings, credit card, loan, cash' },
+      { done: true, text: 'Transaction tracking with vendor, category, and account assignment' },
+      { done: true, text: 'Budget categories with monthly limits and color-coded progress' },
+      { done: true, text: 'Brand / business P&L — track income and expenses per brand' },
+      { done: true, text: 'Bulk CSV import and full data CSV export' },
+      { done: true, text: 'Saved contacts — vendor/customer directory with auto-fill' },
+      { done: true, text: 'Account balance tracking — opening balance + transaction history' },
+      { done: true, text: 'Account deactivation — soft-delete preserves transaction history' },
     ],
   },
 ];
@@ -307,6 +328,12 @@ export default function RoadmapPage() {
             className="px-6 py-3 border border-fuchsia-300 text-fuchsia-700 rounded-lg hover:bg-fuchsia-50 transition-colors font-medium"
           >
             Try the Academy
+          </Link>
+          <Link
+            href="/demo"
+            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+          >
+            Try the Demo
           </Link>
         </div>
       </section>

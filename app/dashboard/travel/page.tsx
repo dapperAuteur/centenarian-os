@@ -9,6 +9,7 @@ import {
 import {
   Bike, Car, Flame, Leaf, DollarSign, Gauge,
   Plus, ChevronRight, AlertCircle, Upload, Zap,
+  Repeat, Wrench, Play,
 } from 'lucide-react';
 
 interface Summary {
@@ -61,6 +62,18 @@ interface TravelSettings {
   default_vehicle_id: string | null;
 }
 
+interface TripTemplate {
+  id: string;
+  name: string;
+  mode: string;
+  origin: string | null;
+  destination: string | null;
+  distance_miles: number | null;
+  duration_min: number | null;
+  use_count: number;
+  vehicles: { nickname: string; type: string } | null;
+}
+
 const MODE_ICONS: Record<string, string> = {
   bike: '🚲', car: '🚗', bus: '🚌', train: '🚂', plane: '✈️',
   walk: '🚶', run: '🏃', ferry: '⛴️', rideshare: '🚕', other: '🚐',
@@ -94,7 +107,7 @@ export default function TravelPage() {
     mode: 'bike', date: new Date().toISOString().split('T')[0],
     origin: '', destination: '', distance_miles: '', duration_min: '',
     purpose: 'commute', calories_burned: '', notes: '', vehicle_id: '',
-    tax_category: 'personal', trip_category: 'travel',
+    tax_category: 'personal', trip_category: 'travel', save_as_template: false, template_name: '',
   });
   const [savingTrip, setSavingTrip] = useState(false);
 
@@ -107,15 +120,18 @@ export default function TravelPage() {
   });
   const [savingVehicle, setSavingVehicle] = useState(false);
   const [showRetired, setShowRetired] = useState(false);
+  const [templates, setTemplates] = useState<TripTemplate[]>([]);
+  const [loggingTemplate, setLoggingTemplate] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [sumRes, vehiclesRes, tripsRes, settingsRes] = await Promise.all([
+      const [sumRes, vehiclesRes, tripsRes, settingsRes, tmplRes] = await Promise.all([
         fetch('/api/travel/summary?months=6'),
         fetch('/api/travel/vehicles?include_retired=true'),
         fetch('/api/travel/trips?limit=10'),
         fetch('/api/travel/settings'),
+        fetch('/api/travel/templates'),
       ]);
       if (sumRes.ok) setSummary(await sumRes.json());
       if (vehiclesRes.ok) {
@@ -130,6 +146,7 @@ export default function TravelPage() {
         const { settings: s } = await settingsRes.json();
         setSettings(s);
       }
+      if (tmplRes.ok) setTemplates(await tmplRes.json());
     } finally {
       setLoading(false);
     }
@@ -190,8 +207,27 @@ export default function TravelPage() {
         }),
       });
       if (res.ok) {
+        // Optionally save as template
+        if (tripForm.save_as_template && tripForm.template_name.trim()) {
+          await fetch('/api/travel/templates', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: tripForm.template_name.trim(),
+              mode: tripForm.mode,
+              vehicle_id: tripForm.vehicle_id || null,
+              origin: tripForm.origin || null,
+              destination: tripForm.destination || null,
+              distance_miles: tripForm.distance_miles ? parseFloat(tripForm.distance_miles) : null,
+              duration_min: tripForm.duration_min ? parseInt(tripForm.duration_min) : null,
+              purpose: tripForm.purpose || null,
+              trip_category: tripForm.trip_category || 'travel',
+              tax_category: tripForm.tax_category || 'personal',
+            }),
+          });
+        }
         setShowAddTrip(false);
-        setTripForm({ mode: 'bike', date: new Date().toISOString().split('T')[0], origin: '', destination: '', distance_miles: '', duration_min: '', purpose: 'commute', calories_burned: '', notes: '', vehicle_id: '', tax_category: 'personal', trip_category: 'travel' });
+        setTripForm({ mode: 'bike', date: new Date().toISOString().split('T')[0], origin: '', destination: '', distance_miles: '', duration_min: '', purpose: 'commute', calories_burned: '', notes: '', vehicle_id: '', tax_category: 'personal', trip_category: 'travel', save_as_template: false, template_name: '' });
         load();
       }
     } finally {
@@ -269,6 +305,25 @@ export default function TravelPage() {
       }
     } finally {
       setSavingVehicle(false);
+    }
+  };
+
+  const logFromTemplate = async (tmpl: TripTemplate) => {
+    setLoggingTemplate(tmpl.id);
+    try {
+      const res = await fetch('/api/travel/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          create_trip: true,
+          template_id: tmpl.id,
+          name: tmpl.name,
+          mode: tmpl.mode,
+        }),
+      });
+      if (res.ok) load();
+    } finally {
+      setLoggingTemplate(null);
     }
   };
 
@@ -500,7 +555,7 @@ export default function TravelPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {vehicles.filter((v) => v.active).map((v) => (
                 <div key={v.id} className="border border-gray-100 rounded-xl p-3 flex items-center gap-3">
-                  <span className="text-2xl">{v.type === 'car' ? '🚗' : v.type === 'bike' ? '🚲' : v.type === 'ebike' ? '⚡🚲' : '🛵'}</span>
+                  <span className="text-2xl">{v.type === 'car' ? '🚗' : v.type === 'bike' ? '🚲' : v.type === 'ebike' ? '⚡🚲' : v.type === 'shoes' ? '👟' : '🛵'}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-gray-900">{v.nickname}</p>
@@ -540,7 +595,7 @@ export default function TravelPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                     {vehicles.filter((v) => !v.active).map((v) => (
                       <div key={v.id} className="border border-gray-100 rounded-xl p-3 flex items-center gap-3 opacity-50">
-                        <span className="text-2xl grayscale">{v.type === 'car' ? '🚗' : v.type === 'bike' ? '🚲' : v.type === 'ebike' ? '⚡🚲' : '🛵'}</span>
+                        <span className="text-2xl grayscale">{v.type === 'car' ? '🚗' : v.type === 'bike' ? '🚲' : v.type === 'ebike' ? '⚡🚲' : v.type === 'shoes' ? '👟' : '🛵'}</span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-medium text-gray-500">{v.nickname}</p>
@@ -604,13 +659,48 @@ export default function TravelPage() {
         )}
       </div>
 
+      {/* Trip Templates */}
+      {templates.length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-700">Quick Re-log</h2>
+            <span className="text-xs text-gray-400">{templates.length} saved templates</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {templates.slice(0, 6).map((t) => (
+              <button
+                key={t.id}
+                onClick={() => logFromTemplate(t)}
+                disabled={loggingTemplate === t.id}
+                className="flex items-center gap-3 border border-gray-100 rounded-xl p-3 text-left hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                <div className="w-8 h-8 bg-sky-50 rounded-lg flex items-center justify-center shrink-0">
+                  <Play className="w-4 h-4 text-sky-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{t.name}</p>
+                  <p className="text-xs text-gray-500">
+                    {MODE_ICONS[t.mode] ?? '🚐'} {t.mode}
+                    {t.distance_miles ? ` · ${fmt(t.distance_miles)} mi` : ''}
+                    {t.use_count > 0 ? ` · ${t.use_count}x` : ''}
+                  </p>
+                </div>
+                <Repeat className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Quick links */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {[
           { href: '/dashboard/travel/fuel', icon: <Gauge className="w-5 h-5" />, label: 'Fuel Log', color: 'text-blue-600' },
           { href: '/dashboard/travel/maintenance', icon: <Car className="w-5 h-5" />, label: 'Maintenance', color: 'text-orange-600' },
+          { href: '/dashboard/travel/components', icon: <Wrench className="w-5 h-5" />, label: 'Component Wear', color: 'text-amber-600' },
           { href: '/dashboard/travel/import', icon: <Upload className="w-5 h-5" />, label: 'Import Data', color: 'text-purple-600' },
           { href: '/dashboard/travel/trips', icon: <Zap className="w-5 h-5" />, label: 'All Trips', color: 'text-green-600' },
+          { href: '/dashboard/workouts', icon: <Repeat className="w-5 h-5" />, label: 'Workouts', color: 'text-lime-600' },
         ].map(({ href, icon, label, color }) => (
           <Link
             key={href}
@@ -773,6 +863,28 @@ export default function TravelPage() {
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
               />
             </div>
+            {/* Save as template */}
+            <div className="border border-gray-100 rounded-lg p-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={tripForm.save_as_template}
+                  onChange={(e) => setTripForm((f) => ({ ...f, save_as_template: e.target.checked }))}
+                  className="rounded border-gray-300"
+                />
+                <span className="text-xs font-medium text-gray-600">Save as template for quick re-logging</span>
+              </label>
+              {tripForm.save_as_template && (
+                <input
+                  type="text"
+                  value={tripForm.template_name}
+                  onChange={(e) => setTripForm((f) => ({ ...f, template_name: e.target.value }))}
+                  placeholder="Template name (e.g. Morning Commute)"
+                  className="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                  required={tripForm.save_as_template}
+                />
+              )}
+            </div>
             <div className="flex gap-3 pt-2">
               <button type="button" onClick={() => setShowAddTrip(false)}
                 className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
@@ -803,7 +915,7 @@ export default function TravelPage() {
                   onChange={(e) => setVehicleForm((f) => ({ ...f, type: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                 >
-                  {['car','bike','ebike','motorcycle','scooter'].map((t) => (
+                  {['car','bike','ebike','motorcycle','scooter','shoes'].map((t) => (
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
