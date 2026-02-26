@@ -66,6 +66,7 @@ export default function FuelLogPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrNotes, setOcrNotes] = useState('');
+  const [linkedTxDialog, setLinkedTxDialog] = useState<{ transactionId: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -184,12 +185,26 @@ export default function FuelLogPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this fuel log?')) return;
-    await fetch('/api/travel/fuel', {
+    const res = await fetch('/api/travel/fuel', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     });
+    if (res.ok) {
+      const d = await res.json();
+      if (d.hasLinkedTransaction) setLinkedTxDialog({ transactionId: d.transactionId });
+    }
     load();
+  };
+
+  const handleLinkedTxYes = async () => {
+    if (!linkedTxDialog) return;
+    await fetch('/api/finance/transactions', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: linkedTxDialog.transactionId }),
+    });
+    setLinkedTxDialog(null);
   };
 
   // Build chart data from logs (sorted ascending)
@@ -261,7 +276,7 @@ export default function FuelLogPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <h2 className="text-sm font-semibold text-gray-700 mb-4">MPG Over Time</h2>
-            <div className="h-[180px]">
+            <div className="h-45">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -277,7 +292,7 @@ export default function FuelLogPage() {
           {spendData.length > 1 && (
             <div className="bg-white border border-gray-200 rounded-2xl p-5">
               <h2 className="text-sm font-semibold text-gray-700 mb-4">Monthly Fuel Spend</h2>
-              <div className="h-[180px]">
+              <div className="h-45">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={spendData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -365,6 +380,32 @@ export default function FuelLogPage() {
           </div>
         )}
       </div>
+
+      {/* Linked transaction confirmation dialog */}
+      {linkedTxDialog && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl space-y-4">
+            <h2 className="text-base font-bold text-gray-900">Delete linked transaction?</h2>
+            <p className="text-sm text-gray-600">
+              This fuel log had a linked finance expense. Do you also want to delete it?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setLinkedTxDialog(null)}
+                className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+              >
+                Keep transaction
+              </button>
+              <button
+                onClick={handleLinkedTxYes}
+                className="flex-1 bg-red-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-red-700 transition"
+              >
+                Delete it too
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add / Edit Form Modal */}
       {showForm && (

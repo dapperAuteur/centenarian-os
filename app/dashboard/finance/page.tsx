@@ -64,6 +64,7 @@ export default function FinanceDashboardPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [brands, setBrands] = useState<{ id: string; name: string; color: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Add transaction modal
@@ -71,7 +72,7 @@ export default function FinanceDashboardPage() {
   const [addForm, setAddForm] = useState({
     amount: '', type: 'expense', description: '', vendor: '',
     transaction_date: new Date().toISOString().split('T')[0],
-    category_id: '', account_id: '',
+    category_id: '', account_id: '', brand_id: '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -82,10 +83,11 @@ export default function FinanceDashboardPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [sumRes, catRes, acctRes] = await Promise.all([
+      const [sumRes, catRes, acctRes, brandsRes] = await Promise.all([
         fetch('/api/finance/summary?months=6'),
         fetch('/api/finance/categories'),
         fetch('/api/finance/accounts'),
+        fetch('/api/brands'),
       ]);
       if (sumRes.ok) setSummary(await sumRes.json());
       if (catRes.ok) {
@@ -93,6 +95,10 @@ export default function FinanceDashboardPage() {
         setCategories(cats || []);
       }
       if (acctRes.ok) setAccounts(await acctRes.json());
+      if (brandsRes.ok) {
+        const d = await brandsRes.json();
+        setBrands(Array.isArray(d) ? d.filter((b: { is_active: boolean }) => b.is_active) : []);
+      }
     } finally {
       setLoading(false);
     }
@@ -114,7 +120,7 @@ export default function FinanceDashboardPage() {
         setAddForm({
           amount: '', type: 'expense', description: '', vendor: '',
           transaction_date: new Date().toISOString().split('T')[0],
-          category_id: '', account_id: '',
+          category_id: '', account_id: '', brand_id: '',
         });
         load();
       }
@@ -184,6 +190,13 @@ export default function FinanceDashboardPage() {
           >
             <CreditCard className="w-4 h-4" />
             Accounts
+          </Link>
+          <Link
+            href="/dashboard/finance/brands"
+            className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+          >
+            <Wallet className="w-4 h-4" />
+            Brands
           </Link>
           <a
             href="/api/finance/export"
@@ -461,6 +474,21 @@ export default function FinanceDashboardPage() {
                       <option key={a.id} value={a.id}>
                         {a.name}{a.last_four ? ` ··${a.last_four}` : ''}
                       </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {brands.length > 0 && (
+                <div>
+                  <label className="text-xs font-medium text-gray-600">Brand (optional)</label>
+                  <select
+                    value={addForm.brand_id}
+                    onChange={(e) => setAddForm((p) => ({ ...p, brand_id: e.target.value }))}
+                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                  >
+                    <option value="">No brand</option>
+                    {brands.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
                     ))}
                   </select>
                 </div>

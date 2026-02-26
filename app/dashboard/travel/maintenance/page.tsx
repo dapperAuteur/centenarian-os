@@ -61,6 +61,7 @@ export default function MaintenancePage() {
   const [form, setForm] = useState(BLANK_FORM);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [linkedTxDialog, setLinkedTxDialog] = useState<{ transactionId: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -134,12 +135,26 @@ export default function MaintenancePage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this maintenance record?')) return;
-    await fetch('/api/travel/maintenance', {
+    const res = await fetch('/api/travel/maintenance', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     });
+    if (res.ok) {
+      const d = await res.json();
+      if (d.hasLinkedTransaction) setLinkedTxDialog({ transactionId: d.transactionId });
+    }
     load();
+  };
+
+  const handleLinkedTxYes = async () => {
+    if (!linkedTxDialog) return;
+    await fetch('/api/finance/transactions', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: linkedTxDialog.transactionId }),
+    });
+    setLinkedTxDialog(null);
   };
 
   // Group by vehicle
@@ -248,6 +263,32 @@ export default function MaintenancePage() {
             </div>
           </div>
         ))
+      )}
+
+      {/* Linked transaction confirmation dialog */}
+      {linkedTxDialog && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl space-y-4">
+            <h2 className="text-base font-bold text-gray-900">Delete linked transaction?</h2>
+            <p className="text-sm text-gray-600">
+              This service record had a linked finance expense. Do you also want to delete it?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setLinkedTxDialog(null)}
+                className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+              >
+                Keep transaction
+              </button>
+              <button
+                onClick={handleLinkedTxYes}
+                className="flex-1 bg-red-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-red-700 transition"
+              >
+                Delete it too
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Add Form Modal */}

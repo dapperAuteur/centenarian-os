@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import {
+  createLinkedTransaction,
+  updateLinkedTransaction,
+  deleteLinkedTransaction,
+} from '@/lib/finance/linked-transaction';
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -38,12 +43,11 @@ export async function POST(request: NextRequest) {
   const {
     vehicle_id, date, odometer_miles, miles_since_last_fill, miles_this_month,
     mpg_display, gallons, total_cost, cost_per_gallon, fuel_grade,
-    station, transaction_id, source, notes,
+    station, source, notes,
   } = body;
 
   if (!date) return NextResponse.json({ error: 'date is required' }, { status: 400 });
 
-  // Auto-calculate derived fields if possible
   const mpg_calculated =
     miles_since_last_fill && gallons && gallons > 0
       ? parseFloat((miles_since_last_fill / gallons).toFixed(2))
@@ -71,7 +75,6 @@ export async function POST(request: NextRequest) {
       cost_per_gallon: cpg,
       fuel_grade,
       station,
-      transaction_id: transaction_id || null,
       source: source || 'manual',
       notes,
     })
@@ -79,6 +82,27 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Auto-create linked finance transaction if cost is provided
+  if (total_cost && total_cost > 0) {
+    try {
+      const grade = fuel_grade ? ` – ${fuel_grade}` : '';
+      const txId = await createLinkedTransaction(supabase, {
+        userId: user.id,
+        amount: total_cost,
+        vendor: station ?? null,
+        date,
+        source_module: 'fuel_log',
+        source_module_id: data.id,
+        description: `Fuel${grade}`,
+      });
+      await supabase.from('fuel_logs').update({ transaction_id: txId }).eq('id', data.id);
+      data.transaction_id = txId;
+    } catch {
+      // Non-fatal — log link failure but still return the fuel record
+    }
+  }
+
   return NextResponse.json({ log: data }, { status: 201 });
 }
 
@@ -91,17 +115,20 @@ export async function PATCH(request: NextRequest) {
   const { id, ...updates } = body;
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
-  // Recalculate derived fields if source values changed
-  if (updates.miles_since_last_fill !== undefined || updates.gallons !== undefined) {
-    const existing = await supabase
-      .from('fuel_logs')
-      .select('miles_since_last_fill, gallons')
-      .eq('id', id)
-      .eq('user_id', user.id)
-      .maybeSingle();
+  // Fetch existing record for derived-field recalculation and transaction sync
+  const { data: existing } = await supabase
+    .from('fuel_logs')
+    .select('miles_since_last_fill, gallons, total_cost, station, date, transaction_id')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .maybeSingle();
 
-    const miles = updates.miles_since_last_fill ?? existing.data?.miles_since_last_fill;
-    const gals = updates.gallons ?? existing.data?.gallons;
+  if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  // Recalculate MPG if source values changed
+  if (updates.miles_since_last_fill !== undefined || updates.gallons !== undefined) {
+    const miles = updates.miles_since_last_fill ?? existing.miles_since_last_fill;
+    const gals = updates.gallons ?? existing.gallons;
     if (miles && gals && gals > 0) {
       updates.mpg_calculated = parseFloat((miles / gals).toFixed(2));
     }
@@ -116,6 +143,51 @@ export async function PATCH(request: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Sync linked finance transaction if cost-related fields changed
+  const costChanged = updates.total_cost !== undefined;
+  const vendorChanged = updates.station !== undefined;
+  const dateChanged = updates.date !== undefined;
+
+  if (costChanged || vendorChanged || dateChanged) {
+    const newCost = updates.total_cost ?? existing.total_cost;
+    const newVendor = updates.station ?? existing.station;
+    const newDate = updates.date ?? existing.date;
+
+    if (existing.transaction_id) {
+      if (!newCost || newCost <= 0) {
+        // Cost removed — delete linked transaction
+        try {
+          await deleteLinkedTransaction(supabase, existing.transaction_id);
+          await supabase.from('fuel_logs').update({ transaction_id: null }).eq('id', id);
+        } catch { /* non-fatal */ }
+      } else {
+        try {
+          await updateLinkedTransaction(supabase, existing.transaction_id, {
+            amount: newCost,
+            vendor: newVendor,
+            date: newDate,
+          });
+        } catch { /* non-fatal */ }
+      }
+    } else if (newCost && newCost > 0) {
+      // Cost added for the first time — create linked transaction
+      try {
+        const txId = await createLinkedTransaction(supabase, {
+          userId: user.id,
+          amount: newCost,
+          vendor: newVendor ?? null,
+          date: newDate,
+          source_module: 'fuel_log',
+          source_module_id: id,
+          description: `Fuel`,
+        });
+        await supabase.from('fuel_logs').update({ transaction_id: txId }).eq('id', id);
+        data.transaction_id = txId;
+      } catch { /* non-fatal */ }
+    }
+  }
+
   return NextResponse.json({ log: data });
 }
 
@@ -127,6 +199,16 @@ export async function DELETE(request: NextRequest) {
   const { id } = await request.json();
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
+  // Check for linked finance transaction before deleting
+  const { data: existing } = await supabase
+    .from('fuel_logs')
+    .select('transaction_id')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
   const { error } = await supabase
     .from('fuel_logs')
     .delete()
@@ -134,5 +216,10 @@ export async function DELETE(request: NextRequest) {
     .eq('user_id', user.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+
+  return NextResponse.json({
+    ok: true,
+    hasLinkedTransaction: !!existing.transaction_id,
+    transactionId: existing.transaction_id ?? null,
+  });
 }

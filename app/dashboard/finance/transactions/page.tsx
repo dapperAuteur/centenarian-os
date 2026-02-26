@@ -10,6 +10,12 @@ interface Category {
   color: string;
 }
 
+interface Brand {
+  id: string;
+  name: string;
+  color: string;
+}
+
 interface Transaction {
   id: string;
   amount: number;
@@ -18,17 +24,26 @@ interface Transaction {
   vendor: string | null;
   transaction_date: string;
   source: string;
+  source_module: string | null;
   category_id: string | null;
+  brand_id: string | null;
   budget_categories: Category | null;
   notes: string | null;
   created_at: string;
 }
+
+const SOURCE_MODULE_BADGE: Record<string, { label: string; className: string }> = {
+  fuel_log: { label: 'Fuel', className: 'bg-sky-50 text-sky-700' },
+  vehicle_maintenance: { label: 'Maint.', className: 'bg-amber-50 text-amber-700' },
+  trip: { label: 'Trip', className: 'bg-orange-50 text-orange-700' },
+};
 
 const PAGE_SIZE = 25;
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -36,6 +51,7 @@ export default function TransactionsPage() {
   // Filters
   const [filterType, setFilterType] = useState<string>('');
   const [filterCategory, setFilterCategory] = useState<string>('');
+  const [filterBrand, setFilterBrand] = useState<string>('');
   const [filterFrom, setFilterFrom] = useState<string>('');
   const [filterTo, setFilterTo] = useState<string>('');
 
@@ -50,6 +66,7 @@ export default function TransactionsPage() {
     params.set('offset', String(page * PAGE_SIZE));
     if (filterType) params.set('type', filterType);
     if (filterCategory) params.set('category_id', filterCategory);
+    if (filterBrand) params.set('brand_id', filterBrand);
     if (filterFrom) params.set('from', filterFrom);
     if (filterTo) params.set('to', filterTo);
 
@@ -63,13 +80,13 @@ export default function TransactionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, filterType, filterCategory, filterFrom, filterTo]);
+  }, [page, filterType, filterCategory, filterBrand, filterFrom, filterTo]);
 
   useEffect(() => {
-    fetch('/api/finance/categories')
-      .then((r) => r.json())
-      .then((d) => setCategories(d.categories || []))
-      .catch(() => {});
+    Promise.all([
+      fetch('/api/finance/categories').then((r) => r.json()).then((d) => setCategories(d.categories || [])),
+      fetch('/api/brands').then((r) => r.json()).then((d) => setBrands(Array.isArray(d) ? d : [])),
+    ]).catch(() => {});
   }, []);
 
   useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
@@ -101,6 +118,7 @@ export default function TransactionsPage() {
       transaction_date: tx.transaction_date,
       type: tx.type,
       category_id: tx.category_id || '',
+      brand_id: tx.brand_id || '',
     });
   };
 
@@ -125,7 +143,7 @@ export default function TransactionsPage() {
           <Filter className="w-4 h-4 text-gray-500" />
           <span className="text-sm font-medium text-gray-700">Filters</span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           <select
             value={filterType}
             onChange={(e) => { setFilterType(e.target.value); setPage(0); }}
@@ -143,6 +161,16 @@ export default function TransactionsPage() {
             <option value="">All Categories</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+          <select
+            value={filterBrand}
+            onChange={(e) => { setFilterBrand(e.target.value); setPage(0); }}
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg"
+          >
+            <option value="">All Brands</option>
+            {brands.map((b) => (
+              <option key={b.id} value={b.id}>{b.name}</option>
             ))}
           </select>
           <input
@@ -268,7 +296,14 @@ export default function TransactionsPage() {
                           className="px-2 py-1 text-xs border rounded w-full"
                         />
                       ) : (
-                        tx.description || '-'
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span>{tx.description || '-'}</span>
+                          {tx.source_module && SOURCE_MODULE_BADGE[tx.source_module] && (
+                            <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${SOURCE_MODULE_BADGE[tx.source_module].className}`}>
+                              {SOURCE_MODULE_BADGE[tx.source_module].label}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </td>
                     <td className="px-4 py-3 text-gray-600">
@@ -285,16 +320,30 @@ export default function TransactionsPage() {
                     </td>
                     <td className="px-4 py-3">
                       {editId === tx.id ? (
-                        <select
-                          value={editForm.category_id}
-                          onChange={(e) => setEditForm((p) => ({ ...p, category_id: e.target.value }))}
-                          className="px-2 py-1 text-xs border rounded"
-                        >
-                          <option value="">None</option>
-                          {categories.map((c) => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                          ))}
-                        </select>
+                        <div className="flex flex-col gap-1">
+                          <select
+                            value={editForm.category_id}
+                            onChange={(e) => setEditForm((p) => ({ ...p, category_id: e.target.value }))}
+                            className="px-2 py-1 text-xs border rounded"
+                          >
+                            <option value="">No category</option>
+                            {categories.map((c) => (
+                              <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                          </select>
+                          {brands.length > 0 && (
+                            <select
+                              value={editForm.brand_id}
+                              onChange={(e) => setEditForm((p) => ({ ...p, brand_id: e.target.value }))}
+                              className="px-2 py-1 text-xs border rounded"
+                            >
+                              <option value="">No brand</option>
+                              {brands.map((b) => (
+                                <option key={b.id} value={b.id}>{b.name}</option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
                       ) : tx.budget_categories ? (
                         <span className="inline-flex items-center gap-1.5 text-xs">
                           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: tx.budget_categories.color }} />

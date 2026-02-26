@@ -17,6 +17,7 @@ interface Trip {
   calories_burned: number | null;
   co2_kg: number | null;
   cost: number | null;
+  transaction_id: string | null;
   source: string;
   notes: string | null;
   tax_category: string | null;
@@ -49,6 +50,7 @@ const BLANK_FORM = {
   purpose: 'commute',
   calories_burned: '',
   notes: '',
+  cost: '',
   vehicle_id: '',
   tax_category: 'personal',
   trip_category: 'travel',
@@ -72,6 +74,7 @@ export default function TripsPage() {
   const [form, setForm] = useState(BLANK_FORM);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [linkedTxDialog, setLinkedTxDialog] = useState<{ transactionId: string } | null>(null);
   const limit = 50;
 
   const load = useCallback(async () => {
@@ -106,12 +109,26 @@ export default function TripsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this trip?')) return;
-    await fetch('/api/travel/trips', {
+    const res = await fetch('/api/travel/trips', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     });
+    if (res.ok) {
+      const d = await res.json();
+      if (d.hasLinkedTransaction) setLinkedTxDialog({ transactionId: d.transactionId });
+    }
     load();
+  };
+
+  const handleLinkedTxYes = async () => {
+    if (!linkedTxDialog) return;
+    await fetch('/api/finance/transactions', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: linkedTxDialog.transactionId }),
+    });
+    setLinkedTxDialog(null);
   };
 
   const handleEdit = (t: Trip) => {
@@ -125,6 +142,7 @@ export default function TripsPage() {
       duration_min: t.duration_min != null ? String(t.duration_min) : '',
       purpose: t.purpose ?? 'commute',
       calories_burned: t.calories_burned != null ? String(t.calories_burned) : '',
+      cost: t.cost != null ? String(t.cost) : '',
       notes: t.notes ?? '',
       vehicle_id: t.vehicles?.id ?? '',
       tax_category: t.tax_category ?? 'personal',
@@ -147,6 +165,7 @@ export default function TripsPage() {
         duration_min: form.duration_min ? parseInt(form.duration_min) : null,
         purpose: form.purpose || null,
         calories_burned: form.calories_burned ? parseInt(form.calories_burned) : null,
+        cost: form.cost ? parseFloat(form.cost) : null,
         notes: form.notes || null,
         vehicle_id: form.vehicle_id || null,
         tax_category: form.tax_category || 'personal',
@@ -361,6 +380,32 @@ export default function TripsPage() {
         </div>
       )}
 
+      {/* Linked transaction confirmation dialog */}
+      {linkedTxDialog && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl space-y-4">
+            <h2 className="text-base font-bold text-gray-900">Delete linked transaction?</h2>
+            <p className="text-sm text-gray-600">
+              This trip had a linked finance expense. Do you also want to delete it?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setLinkedTxDialog(null)}
+                className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+              >
+                Keep transaction
+              </button>
+              <button
+                onClick={handleLinkedTxYes}
+                className="flex-1 bg-red-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-red-700 transition"
+              >
+                Delete it too
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Add / Edit Trip Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
@@ -439,6 +484,14 @@ export default function TripsPage() {
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Cost ($)</label>
+              <input
+                type="number" step="0.01" value={form.cost} placeholder="0.00"
+                onChange={(e) => setForm((f) => ({ ...f, cost: e.target.value }))}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

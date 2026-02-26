@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import {
+  createLinkedTransaction,
+  updateLinkedTransaction,
+  deleteLinkedTransaction,
+} from '@/lib/finance/linked-transaction';
 
 // CO2 emission factors in kg per mile
 const CO2_PER_MILE: Record<string, number> = {
@@ -23,6 +28,11 @@ function calcCo2(mode: string, distanceMiles: number | null): number | null {
 
 // Modes that support the travel/fitness distinction
 const HUMAN_POWERED_MODES = new Set(['bike', 'walk', 'run', 'other']);
+
+function tripDescription(mode: string, origin?: string | null, destination?: string | null): string {
+  const route = origin && destination ? ` – ${origin} to ${destination}` : '';
+  return `Trip: ${mode}${route}`;
+}
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -67,7 +77,7 @@ export async function POST(request: NextRequest) {
   const {
     mode, vehicle_id, date, departed_at, arrived_at,
     origin, destination, distance_miles, duration_min,
-    purpose, calories_burned, cost, transaction_id,
+    purpose, calories_burned, cost,
     garmin_activity_id, health_metric_date, notes, source,
     tax_category, trip_category,
   } = body;
@@ -78,8 +88,6 @@ export async function POST(request: NextRequest) {
 
   const co2_kg = calcCo2(mode, distance_miles);
 
-  // Default trip_category: human-powered modes default to 'travel' for manual entries;
-  // non-human-powered modes are always 'travel'.
   const resolvedTripCategory = HUMAN_POWERED_MODES.has(mode)
     ? (trip_category || 'travel')
     : 'travel';
@@ -101,7 +109,7 @@ export async function POST(request: NextRequest) {
       calories_burned,
       co2_kg,
       cost,
-      transaction_id: transaction_id || null,
+      transaction_id: null,
       garmin_activity_id: garmin_activity_id || null,
       health_metric_date: health_metric_date || null,
       notes,
@@ -113,6 +121,26 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Auto-create linked finance transaction if cost is provided
+  if (cost && cost > 0) {
+    try {
+      const txId = await createLinkedTransaction(supabase, {
+        userId: user.id,
+        amount: cost,
+        vendor: origin && destination ? `${origin} → ${destination}` : null,
+        date,
+        source_module: 'trip',
+        source_module_id: data.id,
+        description: tripDescription(mode, origin, destination),
+      });
+      await supabase.from('trips').update({ transaction_id: txId }).eq('id', data.id);
+      data.transaction_id = txId;
+    } catch {
+      // Non-fatal
+    }
+  }
+
   return NextResponse.json({ trip: data }, { status: 201 });
 }
 
@@ -125,16 +153,20 @@ export async function PATCH(request: NextRequest) {
   const { id, ...updates } = body;
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
+  // Fetch existing record for CO2 recalc and transaction sync
+  const { data: existing } = await supabase
+    .from('trips')
+    .select('mode, distance_miles, cost, origin, destination, date, transaction_id')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
   // Recalculate CO2 if mode or distance changed
   if (updates.mode !== undefined || updates.distance_miles !== undefined) {
-    const existing = await supabase
-      .from('trips')
-      .select('mode, distance_miles')
-      .eq('id', id)
-      .eq('user_id', user.id)
-      .maybeSingle();
-    const mode = updates.mode ?? existing.data?.mode;
-    const dist = updates.distance_miles ?? existing.data?.distance_miles;
+    const mode = updates.mode ?? existing.mode;
+    const dist = updates.distance_miles ?? existing.distance_miles;
     updates.co2_kg = calcCo2(mode, dist);
   }
 
@@ -152,6 +184,55 @@ export async function PATCH(request: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Sync linked finance transaction if cost-related fields changed
+  const costChanged = updates.cost !== undefined;
+  const originChanged = updates.origin !== undefined;
+  const destinationChanged = updates.destination !== undefined;
+  const dateChanged = updates.date !== undefined;
+  const modeChanged = updates.mode !== undefined;
+
+  if (costChanged || originChanged || destinationChanged || dateChanged || modeChanged) {
+    const newCost = updates.cost ?? existing.cost;
+    const newOrigin = updates.origin ?? existing.origin;
+    const newDest = updates.destination ?? existing.destination;
+    const newDate = updates.date ?? existing.date;
+    const newMode = updates.mode ?? existing.mode;
+    const newVendor = newOrigin && newDest ? `${newOrigin} → ${newDest}` : null;
+
+    if (existing.transaction_id) {
+      if (!newCost || newCost <= 0) {
+        try {
+          await deleteLinkedTransaction(supabase, existing.transaction_id);
+          await supabase.from('trips').update({ transaction_id: null }).eq('id', id);
+        } catch { /* non-fatal */ }
+      } else {
+        try {
+          await updateLinkedTransaction(supabase, existing.transaction_id, {
+            amount: newCost,
+            vendor: newVendor,
+            date: newDate,
+            description: tripDescription(newMode, newOrigin, newDest),
+          });
+        } catch { /* non-fatal */ }
+      }
+    } else if (newCost && newCost > 0) {
+      try {
+        const txId = await createLinkedTransaction(supabase, {
+          userId: user.id,
+          amount: newCost,
+          vendor: newVendor,
+          date: newDate,
+          source_module: 'trip',
+          source_module_id: id,
+          description: tripDescription(newMode, newOrigin, newDest),
+        });
+        await supabase.from('trips').update({ transaction_id: txId }).eq('id', id);
+        data.transaction_id = txId;
+      } catch { /* non-fatal */ }
+    }
+  }
+
   return NextResponse.json({ trip: data });
 }
 
@@ -163,6 +244,16 @@ export async function DELETE(request: NextRequest) {
   const { id } = await request.json();
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
+  // Check for linked finance transaction before deleting
+  const { data: existing } = await supabase
+    .from('trips')
+    .select('transaction_id')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
   const { error } = await supabase
     .from('trips')
     .delete()
@@ -170,5 +261,10 @@ export async function DELETE(request: NextRequest) {
     .eq('user_id', user.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+
+  return NextResponse.json({
+    ok: true,
+    hasLinkedTransaction: !!existing.transaction_id,
+    transactionId: existing.transaction_id ?? null,
+  });
 }
