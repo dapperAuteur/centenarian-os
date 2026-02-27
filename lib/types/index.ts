@@ -311,11 +311,22 @@ export const DEFAULT_POMODORO_SETTINGS: PomodoroSettings = {
 };
 
 /**
+ * Metadata for a file attached to a coach chat message.
+ * Stored in JSONB — does NOT contain file content.
+ */
+export interface AttachmentMeta {
+  name: string;
+  mimeType: string;
+  size: number;
+}
+
+/**
  * Structure of a chat message for the Gemini API
  */
 export interface GeminiMessage {
   role: 'user' | 'model';
   parts: [{ text: string }];
+  attachments?: AttachmentMeta[];
 }
 
 /**
@@ -346,11 +357,18 @@ export interface ActionResult {
 /**
  * Represents a chat session with an AI Gem
  */
+export interface SessionFileData {
+  name: string;
+  headers?: string[];
+  rows?: Record<string, string>[];
+}
+
 export interface LanguageCoachSession {
   id: string;
   user_id: string;
   gem_persona_id: string | null;
-  messages: GeminiMessage[]; // Stored as JSONB
+  messages: GeminiMessage[];
+  file_data: SessionFileData[];
   created_at: string;
   updated_at: string;
 }
