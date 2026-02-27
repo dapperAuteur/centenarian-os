@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
       .from('financial_transactions')
       .select('amount, type, transaction_date, category_id')
       .eq('user_id', user.id)
+      .neq('source', 'transfer')
       .gte('transaction_date', startDate)
       .lte('transaction_date', endDate),
     supabase

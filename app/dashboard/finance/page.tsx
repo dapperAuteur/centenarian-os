@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   DollarSign, TrendingUp, TrendingDown, Plus, ArrowRight,
   Upload, Download, Settings, Loader2, CreditCard, Wallet, FileText, AlertTriangle,
+  ArrowRightLeft, RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -12,6 +13,7 @@ import {
 } from 'recharts';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import TransferModal from '@/components/finance/TransferModal';
 
 interface CategoryBreakdown {
   id: string;
@@ -78,6 +80,9 @@ export default function FinanceDashboardPage() {
   });
   const [saving, setSaving] = useState(false);
 
+  // Transfer modal
+  const [showTransfer, setShowTransfer] = useState(false);
+
   // Add category modal
   const [showCatForm, setShowCatForm] = useState(false);
   const [catForm, setCatForm] = useState({ name: '', monthly_budget: '', color: '#6366f1' });
@@ -108,7 +113,15 @@ export default function FinanceDashboardPage() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    // Auto-generate due recurring transactions
+    offlineFetch('/api/finance/recurring/generate', { method: 'POST' })
+      .then((r) => r.json())
+      .then((d) => { if (d.generated > 0) load(); })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,6 +194,13 @@ export default function FinanceDashboardPage() {
             <Plus className="w-4 h-4" />
             Add Transaction
           </button>
+          <button
+            onClick={() => setShowTransfer(true)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-fuchsia-50 text-fuchsia-700 rounded-lg text-sm font-medium hover:bg-fuchsia-100 transition"
+          >
+            <ArrowRightLeft className="w-4 h-4" />
+            Transfer
+          </button>
           <Link
             href="/dashboard/finance/import"
             className="flex items-center gap-1.5 px-3 py-2 bg-fuchsia-50 text-fuchsia-700 rounded-lg text-sm font-medium hover:bg-fuchsia-100 transition"
@@ -194,6 +214,13 @@ export default function FinanceDashboardPage() {
           >
             <CreditCard className="w-4 h-4" />
             Accounts
+          </Link>
+          <Link
+            href="/dashboard/finance/recurring"
+            className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Recurring
           </Link>
           <Link
             href="/dashboard/finance/invoices"
@@ -409,6 +436,13 @@ export default function FinanceDashboardPage() {
           <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
+
+      <TransferModal
+        isOpen={showTransfer}
+        onClose={() => setShowTransfer(false)}
+        accounts={accounts}
+        onSuccess={load}
+      />
 
       {/* Add Transaction Modal */}
       {showAdd && (
