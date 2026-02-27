@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Plus } from 'lucide-react';
+import { ChevronLeft, Plus, Route } from 'lucide-react';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
+import MultiStopForm from '@/components/travel/MultiStopForm';
+import RouteCard from '@/components/travel/RouteCard';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Trip {
@@ -23,6 +25,7 @@ interface Trip {
   notes: string | null;
   tax_category: string | null;
   trip_category: string | null;
+  is_round_trip: boolean;
   vehicles?: { id: string; nickname: string } | null;
 }
 
@@ -55,6 +58,7 @@ const BLANK_FORM = {
   vehicle_id: '',
   tax_category: 'personal',
   trip_category: 'travel',
+  is_round_trip: false,
 };
 
 function fmt(n: number | null | undefined, d = 1) {
@@ -76,6 +80,13 @@ export default function TripsPage() {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [linkedTxDialog, setLinkedTxDialog] = useState<{ transactionId: string } | null>(null);
+  const [showMultiStop, setShowMultiStop] = useState(false);
+  const [routes, setRoutes] = useState<Array<{
+    id: string; name: string | null; date: string;
+    total_distance: number | null; total_duration: number | null;
+    total_cost: number | null; total_co2_kg: number | null;
+    is_round_trip: boolean; leg_count: number;
+  }>>([]);
   const limit = 50;
 
   const load = useCallback(async () => {
@@ -88,9 +99,10 @@ export default function TripsPage() {
       if (modeFilter) params.set('mode', modeFilter);
       if (taxFilter) params.set('tax_category', taxFilter);
       if (categoryFilter) params.set('trip_category', categoryFilter);
-      const [tripsRes, vehiclesRes] = await Promise.all([
+      const [tripsRes, vehiclesRes, routesRes] = await Promise.all([
         offlineFetch(`/api/travel/trips?${params}`),
         offlineFetch('/api/travel/vehicles'), // active only
+        page === 0 ? offlineFetch('/api/travel/routes?limit=10') : null,
       ]);
       if (tripsRes.ok) {
         const d = await tripsRes.json();
@@ -100,6 +112,10 @@ export default function TripsPage() {
       if (vehiclesRes.ok) {
         const d = await vehiclesRes.json();
         setVehicles(d.vehicles || []);
+      }
+      if (routesRes?.ok) {
+        const d = await routesRes.json();
+        setRoutes(d.routes || []);
       }
     } finally {
       setLoading(false);
@@ -148,6 +164,7 @@ export default function TripsPage() {
       vehicle_id: t.vehicles?.id ?? '',
       tax_category: t.tax_category ?? 'personal',
       trip_category: t.trip_category ?? 'travel',
+      is_round_trip: t.is_round_trip ?? false,
     });
     setShowForm(true);
   };
@@ -171,6 +188,7 @@ export default function TripsPage() {
         vehicle_id: form.vehicle_id || null,
         tax_category: form.tax_category || 'personal',
         trip_category: form.trip_category || 'travel',
+        is_round_trip: form.is_round_trip,
       };
       const res = await offlineFetch('/api/travel/trips', {
         method: editingId ? 'PATCH' : 'POST',
@@ -205,13 +223,22 @@ export default function TripsPage() {
             <p className="text-sm text-gray-500">{total.toLocaleString()} trips</p>
           </div>
         </div>
-        <button
-          onClick={() => { setForm(BLANK_FORM); setEditingId(null); setShowForm(true); }}
-          className="flex items-center gap-1.5 px-3 py-2 bg-sky-600 text-white rounded-xl text-sm font-medium hover:bg-sky-700 transition"
-        >
-          <Plus className="w-4 h-4" />
-          Add Trip
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowMultiStop(true)}
+            className="flex items-center gap-1.5 px-3 py-2 border border-sky-600 text-sky-600 rounded-xl text-sm font-medium hover:bg-sky-50 transition"
+          >
+            <Route className="w-4 h-4" />
+            Multi-Stop
+          </button>
+          <button
+            onClick={() => { setForm(BLANK_FORM); setEditingId(null); setShowForm(true); }}
+            className="flex items-center gap-1.5 px-3 py-2 bg-sky-600 text-white rounded-xl text-sm font-medium hover:bg-sky-700 transition"
+          >
+            <Plus className="w-4 h-4" />
+            Add Trip
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -277,6 +304,32 @@ export default function TripsPage() {
         </div>
       </div>
 
+      {/* Routes */}
+      {routes.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-medium text-gray-500">Recent Routes</h2>
+          {routes.map((r) => (
+            <RouteCard
+              key={r.id}
+              route={r}
+              onDelete={async (id) => {
+                if (!confirm('Delete this route and all its trips?')) return;
+                const res = await offlineFetch(`/api/travel/routes/${id}`, { method: 'DELETE' });
+                if (res.ok) load();
+              }}
+              onExpand={async (id) => {
+                const res = await offlineFetch(`/api/travel/routes/${id}`);
+                if (res.ok) {
+                  const d = await res.json();
+                  return d.legs || [];
+                }
+                return [];
+              }}
+            />
+          ))}
+        </div>
+      )}
+
       {/* Table */}
       <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
         {loading ? (
@@ -313,7 +366,7 @@ export default function TripsPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-600 max-w-50 truncate">
                       {t.origin && t.destination
-                        ? `${t.origin} → ${t.destination}`
+                        ? `${t.origin} ${t.is_round_trip ? '↔' : '→'} ${t.destination}`
                         : t.notes?.substring(0, 40) ?? '—'}
                     </td>
                     <td className="px-4 py-3 text-right text-gray-700">{fmt(t.distance_miles) ?? '—'}</td>
@@ -321,6 +374,11 @@ export default function TripsPage() {
                     <td className="px-4 py-3 text-right text-orange-600">{t.calories_burned ?? '—'}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
+                        {t.is_round_trip && (
+                          <span className="text-xs bg-sky-50 text-sky-600 px-1.5 py-0.5 rounded font-medium">
+                            RT
+                          </span>
+                        )}
                         {t.tax_category && t.tax_category !== 'personal' && (
                           <span className="text-xs bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded capitalize font-medium">
                             {t.tax_category}
@@ -407,6 +465,15 @@ export default function TripsPage() {
         </div>
       )}
 
+      {/* Multi-Stop Form Modal */}
+      {showMultiStop && (
+        <MultiStopForm
+          vehicles={vehicles}
+          onClose={() => setShowMultiStop(false)}
+          onSaved={load}
+        />
+      )}
+
       {/* Add / Edit Trip Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
@@ -447,6 +514,7 @@ export default function TripsPage() {
                   placeholder="Origin"
                   onChange={(name) => setForm((f) => ({ ...f, origin: name }))}
                   inputClassName="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                  showLocations
                 />
               </div>
               <div>
@@ -457,9 +525,19 @@ export default function TripsPage() {
                   placeholder="Destination"
                   onChange={(name) => setForm((f) => ({ ...f, destination: name }))}
                   inputClassName="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                  showLocations
                 />
               </div>
             </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.is_round_trip}
+                onChange={(e) => setForm((f) => ({ ...f, is_round_trip: e.target.checked }))}
+                className="rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+              />
+              <span className="text-xs font-medium text-gray-600">Round trip (distance counted both ways)</span>
+            </label>
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Miles</label>

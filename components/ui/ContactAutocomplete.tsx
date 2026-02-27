@@ -6,6 +6,7 @@
 // - On blur with a new (unsaved) value, offers a "Save" inline prompt
 // - When a saved contact is selected, fires onChange with optional default_category_id
 // - Increments use_count server-side on selection
+// - Optional showLocations mode: after selecting a contact, shows location sub-select
 
 import { useEffect, useRef, useState } from 'react';
 
@@ -16,6 +17,14 @@ interface Contact {
   default_category_id: string | null;
 }
 
+interface ContactLocation {
+  id: string;
+  label: string;
+  address: string | null;
+  is_default: boolean;
+  sort_order: number;
+}
+
 interface ContactAutocompleteProps {
   value: string;
   onChange: (name: string, defaultCategoryId?: string | null) => void;
@@ -23,6 +32,8 @@ interface ContactAutocompleteProps {
   placeholder?: string;
   className?: string;
   inputClassName?: string;
+  showLocations?: boolean;
+  onLocationSelect?: (locationId: string | null, locationLabel: string | null) => void;
 }
 
 export default function ContactAutocomplete({
@@ -32,9 +43,14 @@ export default function ContactAutocomplete({
   placeholder,
   className,
   inputClassName,
+  showLocations,
+  onLocationSelect,
 }: ContactAutocompleteProps) {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [showSave, setShowSave] = useState(false);
+  const [locations, setLocations] = useState<ContactLocation[]>([]);
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
+  const [loadingLocations, setLoadingLocations] = useState(false);
   const listId = `contacts-${contactType}-${Math.random().toString(36).slice(2, 7)}`;
   const listIdRef = useRef(listId);
 
@@ -45,10 +61,35 @@ export default function ContactAutocomplete({
       .catch(() => {});
   }, [contactType]);
 
+  // Fetch locations when a contact is selected and showLocations is enabled
+  useEffect(() => {
+    if (!showLocations || !selectedContactId) {
+      setLocations([]);
+      return;
+    }
+    setLoadingLocations(true);
+    fetch(`/api/contacts/${selectedContactId}/locations`)
+      .then((r) => r.json())
+      .then((d) => {
+        const locs = Array.isArray(d) ? d : [];
+        setLocations(locs);
+        // Auto-select default location if there is one
+        const defaultLoc = locs.find((l: ContactLocation) => l.is_default);
+        if (defaultLoc && onLocationSelect) {
+          onLocationSelect(defaultLoc.id, defaultLoc.label);
+        }
+      })
+      .catch(() => setLocations([]))
+      .finally(() => setLoadingLocations(false));
+  }, [selectedContactId, showLocations, onLocationSelect]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     onChange(val);
     setShowSave(false);
+    setSelectedContactId(null);
+    setLocations([]);
+    if (onLocationSelect) onLocationSelect(null, null);
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -64,10 +105,12 @@ export default function ContactAutocomplete({
         body: JSON.stringify({ name: match.name, contact_type: contactType }),
       });
       onChange(match.name, match.default_category_id);
+      setSelectedContactId(match.id);
       setShowSave(false);
     } else {
       // Unknown value — offer to save
       setShowSave(true);
+      setSelectedContactId(null);
     }
   };
 
@@ -81,8 +124,21 @@ export default function ContactAutocomplete({
     if (res.ok) {
       const newContact = await res.json();
       setContacts((prev) => [newContact, ...prev.filter((c) => c.id !== newContact.id)]);
+      setSelectedContactId(newContact.id);
     }
     setShowSave(false);
+  };
+
+  const handleLocationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const locId = e.target.value;
+    if (!locId) {
+      if (onLocationSelect) onLocationSelect(null, null);
+      return;
+    }
+    const loc = locations.find((l) => l.id === locId);
+    if (loc && onLocationSelect) {
+      onLocationSelect(loc.id, loc.label);
+    }
   };
 
   return (
@@ -120,6 +176,23 @@ export default function ContactAutocomplete({
             Dismiss
           </button>
         </div>
+      )}
+      {showLocations && locations.length > 0 && (
+        <select
+          onChange={handleLocationChange}
+          className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm mt-1 text-gray-600"
+          defaultValue={locations.find((l) => l.is_default)?.id ?? ''}
+        >
+          <option value="">Select location...</option>
+          {locations.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.label}{l.address ? ` — ${l.address}` : ''}
+            </option>
+          ))}
+        </select>
+      )}
+      {showLocations && loadingLocations && (
+        <p className="text-xs text-gray-400 mt-1">Loading locations...</p>
       )}
     </div>
   );

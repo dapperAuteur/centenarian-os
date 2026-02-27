@@ -94,6 +94,8 @@ export interface Task {
   revenue: number;
   status: ItemStatus;  // ADD THIS
   archived_at: string | null;
+  contact_id: string | null;
+  location_id: string | null;
 }
 
 // Nutrition types
