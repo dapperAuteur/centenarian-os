@@ -4,11 +4,12 @@
 import { useState } from 'react';
 import { Repeat, X } from 'lucide-react';
 import { RecurrencePattern, RecurrenceType } from '@/lib/types';
+import RoadmapItemPicker from '@/components/planner/RoadmapItemPicker';
 
 interface CreateRecurringTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  milestoneId: string;
+  milestoneId?: string;
   onSave: (data: RecurringTaskData) => Promise<void>;
 }
 
@@ -25,9 +26,10 @@ export interface RecurringTaskData {
 export default function CreateRecurringTaskModal({
   isOpen,
   onClose,
-  milestoneId,
+  milestoneId: initialMilestoneId,
   onSave,
 }: CreateRecurringTaskModalProps) {
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState(initialMilestoneId || '');
   const [activity, setActivity] = useState('');
   const [description, setDescription] = useState('');
   const [tag, setTag] = useState('GENERAL');
@@ -56,6 +58,10 @@ export default function CreateRecurringTaskModal({
       alert('Activity is required');
       return;
     }
+    if (!selectedMilestoneId) {
+      alert('Please select a milestone');
+      return;
+    }
 
     const pattern: RecurrencePattern = {
       type: recurrenceType,
@@ -76,7 +82,7 @@ export default function CreateRecurringTaskModal({
     setSaving(true);
     try {
       await onSave({
-        milestone_id: milestoneId,
+        milestone_id: selectedMilestoneId,
         activity,
         description: description || undefined,
         tag,
@@ -118,6 +124,13 @@ export default function CreateRecurringTaskModal({
           </div>
           <div className="p-6">
             <div className="space-y-4">
+        {/* Milestone Picker */}
+        <RoadmapItemPicker
+          value={selectedMilestoneId}
+          onChange={setSelectedMilestoneId}
+          required
+        />
+
         {/* Activity */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">

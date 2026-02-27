@@ -4,9 +4,11 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Task, RecurringTask } from '@/lib/types';
-import { Calendar, DollarSign, Repeat } from 'lucide-react';
+import { Calendar, DollarSign, Plus, Repeat } from 'lucide-react';
 import { EditTaskModal } from '@/components/EditTaskModal';
 import CreateRecurringTaskModal, { RecurringTaskData } from '@/components/planner/CreateRecurringTaskModal';
+import CreateTaskModal from '@/components/planner/CreateTaskModal';
+import TaskCompletionActionsModal from '@/components/planner/TaskCompletionActionsModal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { OfflineSyncManager } from '@/lib/offline/sync-manager';
 
@@ -30,7 +32,7 @@ function TaskCard({ task, onToggle, onEdit }: TaskCardProps) {
       <div className="flex items-start gap-3">
         <button
           onClick={() => onToggle(task.id, !task.completed)}
-          className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition mt-1 ${
+          className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition mt-1 ${
             task.completed 
               ? 'bg-lime-500 hover:bg-lime-600' 
               : 'border-2 border-gray-300 hover:border-lime-500'
@@ -109,8 +111,13 @@ export default function PlannerPage() {
   
   // Recurring task state
   const [showRecurringModal, setShowRecurringModal] = useState(false);
-  const [selectedMilestoneForRecurring, setSelectedMilestoneForRecurring] = useState<string | null>(null);
   const [, setRecurringTasks] = useState<RecurringTask[]>([]);
+
+  // Create task state
+  const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
+
+  // Completion actions state
+  const [completedTask, setCompletedTask] = useState<Task | null>(null);
   
   const supabase = createClient();
 
@@ -174,13 +181,20 @@ export default function PlannerPage() {
   const handleToggle = async (taskId: string, completed: boolean) => {
     const { error } = await supabase
       .from('tasks')
-      .update({ 
+      .update({
         completed,
-        completed_at: completed ? new Date().toISOString() : null 
+        completed_at: completed ? new Date().toISOString() : null
       })
       .eq('id', taskId);
 
-    if (!error) loadTasks();
+    if (!error) {
+      await loadTasks();
+      // Show completion actions only when marking complete
+      if (completed) {
+        const task = tasks.find(t => t.id === taskId);
+        if (task) setCompletedTask({ ...task, completed: true });
+      }
+    }
   };
 
   const handleSaveRecurringTask = async (data: RecurringTaskData) => {
@@ -240,16 +254,6 @@ export default function PlannerPage() {
     return { total, completed, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 };
   }, [tasks]);
 
-  // Get first milestone ID for recurring task button (simplified)
-  const getDefaultMilestoneId = (): string => {
-    // In a real app, you'd get this from context or props
-    // For now, we'll need to get it from tasks
-    if (tasks.length > 0 && tasks[0].milestone_id) {
-      return tasks[0].milestone_id;
-    }
-    return '';
-  };
-
   return (
     <div className="max-w-7xl mx-auto p-6">
       <header className="mb-8">
@@ -276,15 +280,14 @@ export default function PlannerPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              const milestoneId = getDefaultMilestoneId();
-              if (milestoneId) {
-                setSelectedMilestoneForRecurring(milestoneId);
-                setShowRecurringModal(true);
-              } else {
-                alert('Please create a milestone first in your roadmap');
-              }
-            }}
+            onClick={() => setShowCreateTaskModal(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Task</span>
+          </button>
+          <button
+            onClick={() => setShowRecurringModal(true)}
             className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
           >
             <Repeat className="w-4 h-4" />
@@ -352,8 +355,14 @@ export default function PlannerPage() {
       ) : tasks.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
           <div className="text-6xl mb-4">📅</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">No tasks found</h2>
-          <p className="text-gray-600">Create tasks in your Roadmap to see them here</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">No tasks for this period</h2>
+          <p className="text-gray-600 mb-4">Create a task to get started</p>
+          <button
+            onClick={() => setShowCreateTaskModal(true)}
+            className="px-6 py-3 bg-sky-600 text-white rounded-lg hover:bg-sky-700 font-medium transition"
+          >
+            Create a Task
+          </button>
         </div>
       ) : (
         <div className="space-y-6">
@@ -390,12 +399,21 @@ export default function PlannerPage() {
 
       <CreateRecurringTaskModal
         isOpen={showRecurringModal}
-        onClose={() => {
-          setShowRecurringModal(false);
-          setSelectedMilestoneForRecurring(null);
-        }}
-        milestoneId={selectedMilestoneForRecurring || ''}
+        onClose={() => setShowRecurringModal(false)}
         onSave={handleSaveRecurringTask}
+      />
+
+      <CreateTaskModal
+        isOpen={showCreateTaskModal}
+        onClose={() => setShowCreateTaskModal(false)}
+        defaultDate={selectedDate}
+        onCreated={loadTasks}
+      />
+
+      <TaskCompletionActionsModal
+        isOpen={!!completedTask}
+        onClose={() => setCompletedTask(null)}
+        task={completedTask!}
       />
     </div>
   );
