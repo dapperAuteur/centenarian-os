@@ -11,6 +11,7 @@ import {
   BookOpen, Play, Lock, CheckCircle, Clock, Loader2, ArrowRight, Share2,
   GitBranch, ClipboardList, Star, MessageCircle, Send,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Lesson {
   id: string;
@@ -116,21 +117,21 @@ function CourseDetailContent() {
   const [myExistingReview, setMyExistingReview] = useState<Review | null>(null);
 
   useEffect(() => {
-    fetch(`/api/academy/courses/${courseId}`)
+    offlineFetch(`/api/academy/courses/${courseId}`)
       .then((r) => r.json())
       .then((d) => { setCourse(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, [courseId, justEnrolled]);
 
   useEffect(() => {
-    fetch(`/api/academy/courses/${courseId}/assignments`)
+    offlineFetch(`/api/academy/courses/${courseId}/assignments`)
       .then((r) => r.json())
       .then((d) => setAssignments(Array.isArray(d) ? d : []))
       .catch(() => {});
   }, [courseId]);
 
   useEffect(() => {
-    fetch(`/api/academy/courses/${courseId}/reviews`)
+    offlineFetch(`/api/academy/courses/${courseId}/reviews`)
       .then((r) => r.json())
       .then((d) => {
         setReviews(d.reviews ?? []);

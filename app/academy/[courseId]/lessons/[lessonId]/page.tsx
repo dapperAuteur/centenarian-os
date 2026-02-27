@@ -11,6 +11,7 @@ import {
   ChevronLeft, ChevronRight, GitBranch, CheckCircle, Loader2,
   Play, FileText, Volume2, Presentation, ClipboardList, ArrowRight,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { marked } from 'marked';
 import { generateHTML } from '@tiptap/html';
 import StarterKit from '@tiptap/starter-kit';
@@ -87,8 +88,8 @@ export default function LessonPlayerPage() {
     progressSaved.current = false;
 
     Promise.all([
-      fetch(`/api/academy/courses/${courseId}/lessons/${lessonId}`).then((r) => r.json()),
-      fetch(`/api/academy/courses/${courseId}`).then((r) => r.json()),
+      offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}`).then((r) => r.json()),
+      offlineFetch(`/api/academy/courses/${courseId}`).then((r) => r.json()),
     ]).then(([lessonData, courseData]) => {
       if (lessonData.locked) {
         router.push(`/academy/${courseId}`);
@@ -113,7 +114,7 @@ export default function LessonPlayerPage() {
   }, [courseId, lessonId, router]);
 
   useEffect(() => {
-    fetch(`/api/academy/courses/${courseId}/assignments?scope=lesson&lesson_id=${lessonId}`)
+    offlineFetch(`/api/academy/courses/${courseId}/assignments?scope=lesson&lesson_id=${lessonId}`)
       .then((r) => r.json())
       .then((d) => setLessonAssignments(Array.isArray(d) ? d : []))
       .catch(() => {});
@@ -123,7 +124,7 @@ export default function LessonPlayerPage() {
     if (progressSaved.current) return;
     progressSaved.current = true;
 
-    await fetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/progress`, {
+    await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/progress`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ completed: true }),
@@ -133,7 +134,7 @@ export default function LessonPlayerPage() {
 
     if (navigationMode === 'cyoa') {
       // Fetch CYOA crossroads options
-      const r = await fetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/crossroads`);
+      const r = await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/crossroads`);
       if (r.ok) {
         const d = await r.json();
         setCrossroads(d);
