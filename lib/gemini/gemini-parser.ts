@@ -71,21 +71,46 @@ export function parseFlashcardsFromText(text: string): Flashcard[] {
   return flashcards;
 }
 
+// ── Action Block Parsing ──────────────────────────────────────────────
+
+export type ActionType =
+  | 'CREATE_RECIPE'
+  | 'LOG_WORKOUT'
+  | 'CREATE_TRANSACTION'
+  | 'CREATE_TASK'
+  | 'CREATE_GEM';
+
+export interface GemAction {
+  type: ActionType;
+  data: Record<string, unknown>;
+}
+
 /**
- * ====================================================================
- * EXAMPLE: How to modify the `Gemini Gem Instructions Draft.md`
- * to use this new format.
- * ====================================================================
- * * You should add this to your "Active Production Flashcard System"
- * instructions in your `gem_personas` table:
- * * "When you generate flashcards, you MUST output them in the
- * following format, inside a special block.
- * * [START_FLASHCARDS]
- * F:: [Spanish phrase]
- * B:: [English translation]
- * F:: [Spanish word]
- * B:: [English definition]
- * [END_FLASHCARDS]
- * * Only use this format. Do not add any other text inside the
- * [START_FLASHCARDS] and [END_FLASHCARDS] block."
+ * Parses action blocks from AI response text.
+ * Format: [ACTION:TYPE]{...json...}[/ACTION:TYPE]
  */
+export function parseActionsFromText(text: string): GemAction[] {
+  const actions: GemAction[] = [];
+  const actionBlockRegex = /\[ACTION:(\w+)\]([\s\S]*?)\[\/ACTION:\1\]/g;
+
+  let match;
+  while ((match = actionBlockRegex.exec(text)) !== null) {
+    const type = match[1] as ActionType;
+    try {
+      const data = JSON.parse(match[2].trim());
+      actions.push({ type, data });
+    } catch {
+      console.error(`Failed to parse action block [${type}]`);
+    }
+  }
+
+  return actions;
+}
+
+/**
+ * Strips action blocks from display text so the user sees
+ * the conversational response without raw JSON.
+ */
+export function stripActionBlocks(text: string): string {
+  return text.replace(/\[ACTION:\w+\][\s\S]*?\[\/ACTION:\w+\]/g, '').trim();
+}

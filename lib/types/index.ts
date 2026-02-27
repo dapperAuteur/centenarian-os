@@ -325,8 +325,20 @@ export interface GemPersona {
   name: string;
   description: string | null;
   system_prompt: string;
+  data_sources: string[];
+  category: string;
+  is_starter: boolean;
+  can_take_actions: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface ActionResult {
+  type: string;
+  success: boolean;
+  message: string;
+  entityId?: string;
+  entityUrl?: string;
 }
 
 /**
