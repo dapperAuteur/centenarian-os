@@ -78,7 +78,8 @@ export type ActionType =
   | 'LOG_WORKOUT'
   | 'CREATE_TRANSACTION'
   | 'CREATE_TASK'
-  | 'CREATE_GEM';
+  | 'CREATE_GEM'
+  | 'IMPORT_TRANSACTIONS';
 
 export interface GemAction {
   type: ActionType;

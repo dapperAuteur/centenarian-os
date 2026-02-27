@@ -18,13 +18,14 @@ export async function executeActions(
   sessionId: string | null,
   gemPersonaId: string,
   actions: GemAction[],
+  fileData?: { name: string; headers?: string[]; rows?: Record<string, string>[] }[],
 ): Promise<ActionResult[]> {
   const results: ActionResult[] = [];
 
   for (const action of actions) {
     let result: ActionResult;
     try {
-      result = await executeSingleAction(db, userId, action);
+      result = await executeSingleAction(db, userId, action, fileData);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       result = { type: action.type, success: false, message: msg };
@@ -57,6 +58,7 @@ async function executeSingleAction(
   db: SupabaseClient,
   userId: string,
   action: GemAction,
+  fileData?: { name: string; headers?: string[]; rows?: Record<string, string>[] }[],
 ): Promise<ActionResult> {
   switch (action.type) {
     case 'CREATE_RECIPE':
@@ -69,6 +71,8 @@ async function executeSingleAction(
       return createTask(db, userId, action.data);
     case 'CREATE_GEM':
       return createGem(db, userId, action.data);
+    case 'IMPORT_TRANSACTIONS':
+      return importTransactions(db, userId, action.data, fileData);
     default:
       return { type: action.type, success: false, message: `Unknown action type: ${action.type}` };
   }
@@ -298,5 +302,143 @@ async function createGem(
     success: true,
     message: `Gem "${name}" created`,
     entityId: gem.id,
+  };
+}
+
+async function importTransactions(
+  db: SupabaseClient,
+  userId: string,
+  data: Record<string, unknown>,
+  fileData?: { name: string; headers?: string[]; rows?: Record<string, string>[] }[],
+): Promise<ActionResult> {
+  const sourceFile = data.source_file as string;
+  const columnMapping = data.column_mapping as Record<string, string> | undefined;
+  const defaults = (data.defaults as Record<string, string>) || {};
+
+  if (!sourceFile || !columnMapping) {
+    return { type: 'IMPORT_TRANSACTIONS', success: false, message: 'Missing source_file or column_mapping' };
+  }
+
+  // Find the file data by name
+  const file = fileData?.find(f => f.name === sourceFile);
+  if (!file?.rows?.length) {
+    return { type: 'IMPORT_TRANSACTIONS', success: false, message: `No parsed data found for "${sourceFile}"` };
+  }
+
+  // Fetch existing budget categories for name matching
+  const { data: categories } = await db
+    .from('budget_categories')
+    .select('id, name')
+    .eq('user_id', userId);
+
+  const catMap = new Map<string, string>();
+  for (const c of categories || []) {
+    catMap.set(c.name.toLowerCase(), c.id);
+  }
+
+  const payloads: Record<string, unknown>[] = [];
+  const errors: string[] = [];
+
+  for (let i = 0; i < file.rows.length; i++) {
+    const row = file.rows[i];
+
+    // Map columns using the AI-provided mapping
+    const dateCol = columnMapping.transaction_date;
+    const amountCol = columnMapping.amount;
+    const typeCol = columnMapping.type;
+    const vendorCol = columnMapping.vendor;
+    const descCol = columnMapping.description;
+    const categoryCol = columnMapping.category_name;
+    const notesCol = columnMapping.notes;
+
+    // Extract values from CSV row using mapped column names
+    let dateVal = dateCol ? row[dateCol]?.trim() : undefined;
+    const amountVal = amountCol ? row[amountCol]?.trim() : undefined;
+    const typeVal = typeCol ? row[typeCol]?.trim() : defaults.type;
+    const vendorVal = vendorCol ? row[vendorCol]?.trim() : undefined;
+    const descVal = descCol ? row[descCol]?.trim() : undefined;
+    const categoryVal = categoryCol ? row[categoryCol]?.trim() : undefined;
+    const notesVal = notesCol ? row[notesCol]?.trim() : undefined;
+
+    // Validate and normalize date
+    if (!dateVal) {
+      errors.push(`Row ${i + 1}: missing date`);
+      continue;
+    }
+    // Handle MM/DD/YYYY format
+    const mdyMatch = dateVal.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (mdyMatch) {
+      dateVal = `${mdyMatch[3]}-${mdyMatch[1].padStart(2, '0')}-${mdyMatch[2].padStart(2, '0')}`;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateVal)) {
+      errors.push(`Row ${i + 1}: invalid date "${dateVal}"`);
+      continue;
+    }
+
+    // Validate amount
+    const rawAmount = amountVal ? parseFloat(amountVal.replace(/[,$]/g, '')) : NaN;
+    if (isNaN(rawAmount) || rawAmount === 0) {
+      errors.push(`Row ${i + 1}: invalid amount "${amountVal}"`);
+      continue;
+    }
+
+    // Determine type from amount sign or mapping or default
+    let txType: string;
+    if (typeVal) {
+      txType = typeVal.toLowerCase().includes('income') ? 'income' : 'expense';
+    } else {
+      txType = rawAmount < 0 ? 'expense' : 'income';
+    }
+
+    // Resolve category by name
+    const categoryId = categoryVal ? catMap.get(categoryVal.toLowerCase()) || null : null;
+
+    payloads.push({
+      user_id: userId,
+      transaction_date: dateVal,
+      amount: Math.abs(rawAmount),
+      type: txType,
+      description: descVal || null,
+      vendor: vendorVal || null,
+      category_id: categoryId,
+      notes: notesVal || null,
+      source: 'csv_import',
+    });
+  }
+
+  if (payloads.length === 0) {
+    return {
+      type: 'IMPORT_TRANSACTIONS',
+      success: false,
+      message: `No valid rows to import. ${errors.length} errors: ${errors.slice(0, 3).join('; ')}`,
+    };
+  }
+
+  // Bulk insert (Supabase supports up to ~1000 rows per insert)
+  const BATCH_SIZE = 500;
+  let totalInserted = 0;
+
+  for (let i = 0; i < payloads.length; i += BATCH_SIZE) {
+    const batch = payloads.slice(i, i + BATCH_SIZE);
+    const { data: inserted, error } = await db
+      .from('financial_transactions')
+      .insert(batch)
+      .select('id');
+
+    if (error) {
+      return {
+        type: 'IMPORT_TRANSACTIONS',
+        success: false,
+        message: `Import failed at batch ${Math.floor(i / BATCH_SIZE) + 1}: ${error.message}. ${totalInserted} rows imported before failure.`,
+      };
+    }
+    totalInserted += inserted?.length || 0;
+  }
+
+  const skipped = file.rows.length - payloads.length;
+  return {
+    type: 'IMPORT_TRANSACTIONS',
+    success: true,
+    message: `Imported ${totalInserted} transactions from "${sourceFile}"${skipped > 0 ? ` (${skipped} rows skipped)` : ''}`,
   };
 }

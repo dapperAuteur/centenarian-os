@@ -2,7 +2,7 @@
 // File: app/api/coach/route.ts
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { GeminiMessage } from '@/lib/types';
+import { GeminiMessage, AttachmentMeta } from '@/lib/types';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { fetchDataContext, DataSourceKey } from '@/lib/gemini/data-fetchers';
 import { parseActionsFromText, stripActionBlocks } from '@/lib/gemini/gemini-parser';
@@ -22,15 +22,145 @@ const BASE_DIRECTIVE = `CORE DIRECTIVES — these override everything else:
 - Disagree when warranted. A yes-man is useless. The value is in surfacing what the user isn't seeing.
 - Be direct, concise, and substantive. Every sentence should carry information or provoke thought.`;
 
-interface CoachRequestBody {
-  message: string;
-  gemPersonaId: string;
-  sessionId?: string;
+// ── File handling constants ──────────────────────────────────────────
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILES = 5;
+const MAX_CSV_DISPLAY_ROWS = 500;
+const ALLOWED_MIME_TYPES = new Set([
+  'text/csv',
+  'text/plain',
+  'text/markdown',
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/gif',
+]);
+
+interface GeminiPart {
+  text?: string;
+  inlineData?: { mimeType: string; data: string };
+}
+
+interface SessionFileData {
+  name: string;
+  headers?: string[];
+  rows?: Record<string, string>[];
 }
 
 interface ParsedFlashcard {
   front: string;
   back: string;
+}
+
+/**
+ * Parse a CSV string into an array of header-keyed objects.
+ */
+function parseCsvToRows(text: string): { headers: string[]; rows: Record<string, string>[] } {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return { headers: [], rows: [] };
+
+  // Parse a single CSV line respecting quoted fields
+  const parseLine = (line: string): string[] => {
+    const fields: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (ch === ',' && !inQuotes) {
+        fields.push(current.trim());
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+    fields.push(current.trim());
+    return fields;
+  };
+
+  const headers = parseLine(lines[0]);
+  const rows: Record<string, string>[] = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const values = parseLine(lines[i]);
+    const row: Record<string, string> = {};
+    for (let j = 0; j < headers.length; j++) {
+      row[headers[j]] = values[j] ?? '';
+    }
+    rows.push(row);
+  }
+
+  return { headers, rows };
+}
+
+/**
+ * Process uploaded files into Gemini-compatible parts + session file data.
+ */
+async function processFiles(files: File[]): Promise<{
+  geminiParts: GeminiPart[];
+  attachmentMeta: AttachmentMeta[];
+  fileData: SessionFileData[];
+}> {
+  const geminiParts: GeminiPart[] = [];
+  const attachmentMeta: AttachmentMeta[] = [];
+  const fileData: SessionFileData[] = [];
+
+  for (const file of files) {
+    attachmentMeta.push({
+      name: file.name,
+      mimeType: file.type,
+      size: file.size,
+    });
+
+    const bytes = await file.arrayBuffer();
+
+    if (file.type === 'text/csv' || file.type === 'text/plain' || file.type === 'text/markdown') {
+      const textContent = new TextDecoder().decode(bytes);
+
+      // For CSV files, parse into structured rows for import actions
+      if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+        const { headers, rows } = parseCsvToRows(textContent);
+        fileData.push({ name: file.name, headers, rows });
+
+        // Truncate display for Gemini if CSV is very large
+        const displayLines = textContent.split('\n');
+        const totalRows = displayLines.length - 1; // minus header
+        let displayText: string;
+        if (totalRows > MAX_CSV_DISPLAY_ROWS) {
+          displayText = displayLines.slice(0, MAX_CSV_DISPLAY_ROWS + 1).join('\n');
+          displayText += `\n\n[Truncated: showing ${MAX_CSV_DISPLAY_ROWS} of ${totalRows} rows. All ${totalRows} rows are available for import.]`;
+        } else {
+          displayText = textContent;
+        }
+        geminiParts.push({
+          text: `--- FILE: ${file.name} (${file.type}, ${totalRows} rows) ---\n${displayText}\n--- END FILE ---`,
+        });
+      } else {
+        // Plain text / markdown — send as text part
+        geminiParts.push({
+          text: `--- FILE: ${file.name} (${file.type}) ---\n${textContent}\n--- END FILE ---`,
+        });
+      }
+    } else {
+      // Binary files (PDF, images) — send as base64 inlineData
+      const base64 = Buffer.from(bytes).toString('base64');
+      geminiParts.push({
+        inlineData: {
+          mimeType: file.type,
+          data: base64,
+        },
+      });
+    }
+  }
+
+  return { geminiParts, attachmentMeta, fileData };
 }
 
 export async function POST(req: NextRequest) {
@@ -42,10 +172,41 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { message, gemPersonaId, sessionId: existingSessionId }: CoachRequestBody = await req.json();
+    // ── Parse request (FormData or JSON) ─────────────────────────────
+    const contentType = req.headers.get('content-type') || '';
+    let message: string;
+    let gemPersonaId: string;
+    let existingSessionId: string | undefined;
+    let files: File[] = [];
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await req.formData();
+      message = formData.get('message') as string;
+      gemPersonaId = formData.get('gemPersonaId') as string;
+      existingSessionId = (formData.get('sessionId') as string) || undefined;
+      files = formData.getAll('files') as File[];
+    } else {
+      const body = await req.json();
+      message = body.message;
+      gemPersonaId = body.gemPersonaId;
+      existingSessionId = body.sessionId;
+    }
 
     if (!message || !gemPersonaId) {
       return NextResponse.json({ error: 'Missing message or gemPersonaId' }, { status: 400 });
+    }
+
+    // ── Validate files ───────────────────────────────────────────────
+    if (files.length > MAX_FILES) {
+      return NextResponse.json({ error: `Maximum ${MAX_FILES} files allowed` }, { status: 400 });
+    }
+    for (const file of files) {
+      if (file.size > MAX_FILE_SIZE) {
+        return NextResponse.json({ error: `File "${file.name}" exceeds 10MB limit` }, { status: 400 });
+      }
+      if (!ALLOWED_MIME_TYPES.has(file.type) && !file.name.endsWith('.csv')) {
+        return NextResponse.json({ error: `File type "${file.type}" is not supported` }, { status: 400 });
+      }
     }
 
     const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
@@ -86,29 +247,71 @@ export async function POST(req: NextRequest) {
 
     let sessionId = existingSessionId;
     let chatHistory: GeminiMessage[] = [];
+    let existingFileData: SessionFileData[] = [];
 
     // Fetch existing chat history OR create a new session
     if (sessionId) {
       const { data: sessionData, error: sessionError } = await (await supabase)
         .from('language_coach_sessions')
-        .select('messages')
+        .select('messages, file_data')
         .eq('id', sessionId)
         .eq('user_id', user.id)
         .single();
 
       if (!sessionError && sessionData) {
         chatHistory = (sessionData.messages as GeminiMessage[]) || [];
+        existingFileData = (sessionData.file_data as SessionFileData[]) || [];
       } else {
         sessionId = undefined;
       }
     }
 
-    const userMessage: GeminiMessage = { role: 'user', parts: [{ text: message }] };
-    chatHistory.push(userMessage);
+    // ── Process files ────────────────────────────────────────────────
+    let geminiFileParts: GeminiPart[] = [];
+    let attachmentMeta: AttachmentMeta[] = [];
+    let newFileData: SessionFileData[] = [];
+
+    if (files.length > 0) {
+      const processed = await processFiles(files);
+      geminiFileParts = processed.geminiParts;
+      attachmentMeta = processed.attachmentMeta;
+      newFileData = processed.fileData;
+    }
+
+    // Merge new file data with existing (replace files with same name)
+    const mergedFileData = [...existingFileData];
+    for (const nf of newFileData) {
+      const idx = mergedFileData.findIndex(f => f.name === nf.name);
+      if (idx >= 0) {
+        mergedFileData[idx] = nf;
+      } else {
+        mergedFileData.push(nf);
+      }
+    }
+
+    // Build the user message for STORAGE (metadata only, no file content)
+    const userMessageForStorage: GeminiMessage = {
+      role: 'user',
+      parts: [{ text: message }],
+      ...(attachmentMeta.length > 0 && { attachments: attachmentMeta }),
+    };
+    chatHistory.push(userMessageForStorage);
+
+    // Build the Gemini contents: previous messages text-only,
+    // current message includes file parts alongside text
+    const geminiContents = chatHistory.map((msg, index) => {
+      if (index === chatHistory.length - 1 && msg.role === 'user' && geminiFileParts.length > 0) {
+        return {
+          role: 'user',
+          parts: [{ text: message }, ...geminiFileParts],
+        };
+      }
+      return { role: msg.role, parts: msg.parts };
+    });
 
     // Call the Gemini API
     const payload = {
-      contents: chatHistory,
+      contents: geminiContents,
       systemInstruction: {
         parts: [{ text: fullSystemPrompt }]
       },
@@ -150,6 +353,7 @@ export async function POST(req: NextRequest) {
           sessionId ?? null,
           gemPersonaId,
           actions,
+          mergedFileData,
         );
         displayText = stripActionBlocks(modelResponseText);
       }
@@ -166,7 +370,8 @@ export async function POST(req: NextRequest) {
         .insert({
           user_id: user.id,
           gem_persona_id: gemPersonaId,
-          messages: chatHistory as any
+          messages: chatHistory as any,
+          file_data: mergedFileData as any,
         })
         .select('id')
         .single();
@@ -179,7 +384,10 @@ export async function POST(req: NextRequest) {
     } else {
       const { error: updateError } = await (await supabase)
         .from('language_coach_sessions')
-        .update({ messages: chatHistory as any })
+        .update({
+          messages: chatHistory as any,
+          file_data: mergedFileData as any,
+        })
         .eq('id', sessionId)
         .eq('user_id', user.id);
 

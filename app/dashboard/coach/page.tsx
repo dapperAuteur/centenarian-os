@@ -4,8 +4,25 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { GemPersona, GeminiMessage, ActionResult } from '@/lib/types';
-import { Send, Plus, BrainCircuit, User, Loader2, Bot, MessagesSquare, Database, Zap, CheckCircle2, XCircle } from 'lucide-react';
+import { GemPersona, GeminiMessage, ActionResult, AttachmentMeta } from '@/lib/types';
+import {
+  Send, Plus, BrainCircuit, User, Loader2, Bot,
+  MessagesSquare, Database, Zap, CheckCircle2, XCircle,
+  Paperclip, X as XIcon, FileText, Image as ImageIcon,
+} from 'lucide-react';
+
+// ── Constants ────────────────────────────────────────────────────────
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILES = 5;
+const ACCEPTED_TYPES = '.csv,.txt,.md,.pdf,.png,.jpg,.jpeg,.webp,.gif';
+
+// ── Pending file type ────────────────────────────────────────────────
+interface PendingFile {
+  file: File;
+  name: string;
+  mimeType: string;
+  size: number;
+}
 
 /**
  * Renders a single action result card
@@ -35,7 +52,14 @@ function ActionResultCard({ action }: { action: ActionResult }) {
 /**
  * A component to render a single chat message
  */
-function ChatMessage({ role, text, actions }: { role: 'user' | 'model'; text: string; actions?: ActionResult[] }) {
+function ChatMessage({
+  role, text, actions, attachments,
+}: {
+  role: 'user' | 'model';
+  text: string;
+  actions?: ActionResult[];
+  attachments?: AttachmentMeta[];
+}) {
   const isUser = role === 'user';
 
   return (
@@ -46,6 +70,24 @@ function ChatMessage({ role, text, actions }: { role: 'user' | 'model'; text: st
         </div>
       )}
       <div className="max-w-xl space-y-2">
+        {/* Attachment badges */}
+        {attachments && attachments.length > 0 && (
+          <div className={`flex flex-wrap gap-1.5 ${isUser ? 'justify-end' : ''}`}>
+            {attachments.map((att, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-sky-50 text-sky-700 rounded-full border border-sky-200"
+              >
+                {att.mimeType.startsWith('image/') ? (
+                  <ImageIcon className="w-3 h-3" />
+                ) : (
+                  <Paperclip className="w-3 h-3" />
+                )}
+                {att.name}
+              </span>
+            ))}
+          </div>
+        )}
         <div
           className={`p-4 rounded-2xl ${
             isUser
@@ -83,10 +125,14 @@ export default function CoachPage() {
   const [sessions, setSessions] = useState<SessionStub[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
-  // Messages now include optional action results
+  // Messages now include optional action results and attachments
   type MessageWithActions = GeminiMessage & { actions?: ActionResult[] };
   const [messages, setMessages] = useState<MessageWithActions[]>([]);
   const [currentInput, setCurrentInput] = useState('');
+
+  // File attachments
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isLoadingGems, setIsLoadingGems] = useState(true);
   const [isLoadingSession, setIsLoadingSession] = useState(false);
@@ -167,12 +213,38 @@ export default function CoachPage() {
   const handleNewChat = () => {
     setSelectedSessionId(null);
     setMessages([]);
+    setPendingFiles([]);
     setError(null);
     if (gems.length > 0) {
       setSelectedGemId(gems[0].id);
     }
   };
 
+  // ── File handling ──────────────────────────────────────────────────
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files ?? []);
+    if (!selected.length) return;
+
+    const remaining = MAX_FILES - pendingFiles.length;
+    const toAdd = selected.slice(0, remaining);
+
+    const valid: PendingFile[] = [];
+    for (const file of toAdd) {
+      if (file.size > MAX_FILE_SIZE) {
+        setError(`"${file.name}" exceeds 10MB limit`);
+        continue;
+      }
+      valid.push({ file, name: file.name, mimeType: file.type, size: file.size });
+    }
+    setPendingFiles(prev => [...prev, ...valid]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeFile = (index: number) => {
+    setPendingFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // ── Message submission ─────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentInput.trim() || isSendingMessage || !selectedGemId) return;
@@ -180,21 +252,52 @@ export default function CoachPage() {
     setIsSendingMessage(true);
     setError(null);
     const messageText = currentInput.trim();
+    const filesToSend = [...pendingFiles];
     setCurrentInput('');
+    setPendingFiles([]);
 
-    const userMessage: MessageWithActions = { role: 'user', parts: [{ text: messageText }] };
+    // Build optimistic user message with attachment metadata
+    const userMessage: MessageWithActions = {
+      role: 'user',
+      parts: [{ text: messageText }],
+      ...(filesToSend.length > 0 && {
+        attachments: filesToSend.map(f => ({
+          name: f.name,
+          mimeType: f.mimeType,
+          size: f.size,
+        })),
+      }),
+    };
     setMessages(prev => [...prev, userMessage]);
 
     try {
-      const response = await fetch('/api/coach', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: messageText,
-          gemPersonaId: selectedGemId,
-          sessionId: selectedSessionId
-        })
-      });
+      let response: Response;
+
+      if (filesToSend.length > 0) {
+        // Use FormData for multipart upload
+        const formData = new FormData();
+        formData.append('message', messageText);
+        formData.append('gemPersonaId', selectedGemId);
+        if (selectedSessionId) formData.append('sessionId', selectedSessionId);
+        for (const pf of filesToSend) {
+          formData.append('files', pf.file);
+        }
+        response = await fetch('/api/coach', {
+          method: 'POST',
+          body: formData,
+        });
+      } else {
+        // Standard JSON request (backward compatible)
+        response = await fetch('/api/coach', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: messageText,
+            gemPersonaId: selectedGemId,
+            sessionId: selectedSessionId
+          })
+        });
+      }
 
       if (!response.ok) {
         const err = await response.json();
@@ -264,7 +367,7 @@ export default function CoachPage() {
         </div>
 
         <h3 className="text-lg font-semibold text-gray-800 mb-2 border-t pt-4">History</h3>
-        <div className="flex-grow overflow-y-auto space-y-2">
+        <div className="grow overflow-y-auto space-y-2">
           {sessions.map(session => (
             <button
               key={session.id}
@@ -283,13 +386,13 @@ export default function CoachPage() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="w-2/3 flex-grow bg-white rounded-2xl shadow-lg flex flex-col">
+      <div className="w-2/3 grow bg-white rounded-2xl shadow-lg flex flex-col">
         {isLoadingGems ? (
-          <div className="flex-grow flex items-center justify-center">
+          <div className="grow flex items-center justify-center">
             <Loader2 className="w-8 h-8 text-sky-600 animate-spin" />
           </div>
         ) : gems.length === 0 ? (
-          <div className="flex-grow flex flex-col items-center justify-center text-center p-8">
+          <div className="grow flex flex-col items-center justify-center text-center p-8">
             <BrainCircuit className="w-16 h-16 text-sky-500 mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">No AI Gems Found</h2>
             <p className="text-gray-600">
@@ -324,9 +427,9 @@ export default function CoachPage() {
             )}
 
             {/* Chat Messages */}
-            <div ref={chatContainerRef} className="flex-grow p-6 space-y-6 overflow-y-auto">
+            <div ref={chatContainerRef} className="grow p-6 space-y-6 overflow-y-auto">
               {messages.length === 0 && !isLoadingSession && (
-                <div className="flex-grow flex flex-col items-center justify-center text-center p-8">
+                <div className="grow flex flex-col items-center justify-center text-center p-8">
                   <MessagesSquare className="w-16 h-16 text-gray-400 mb-4" />
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">
                     {selectedGem?.name || 'AI Coach'}
@@ -337,7 +440,7 @@ export default function CoachPage() {
                 </div>
               )}
               {isLoadingSession && (
-                <div className="flex-grow flex items-center justify-center">
+                <div className="grow flex items-center justify-center">
                   <Loader2 className="w-8 h-8 text-sky-600 animate-spin" />
                 </div>
               )}
@@ -347,6 +450,7 @@ export default function CoachPage() {
                   role={msg.role}
                   text={msg.parts[0].text}
                   actions={msg.actions}
+                  attachments={msg.attachments}
                 />
               ))}
             </div>
@@ -358,7 +462,55 @@ export default function CoachPage() {
                   <strong>Error:</strong> {error}
                 </div>
               )}
+
+              {/* Pending file preview strip */}
+              {pendingFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {pendingFiles.map((pf, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-1.5 bg-gray-100 px-2.5 py-1.5 rounded-lg text-sm border border-gray-200"
+                    >
+                      {pf.mimeType.startsWith('image/') ? (
+                        <ImageIcon className="w-3.5 h-3.5 text-gray-500" />
+                      ) : (
+                        <FileText className="w-3.5 h-3.5 text-gray-500" />
+                      )}
+                      <span className="text-gray-700 max-w-35 truncate">{pf.name}</span>
+                      <span className="text-gray-400 text-xs">
+                        ({pf.size < 1024 ? `${pf.size}B` : `${(pf.size / 1024).toFixed(0)}KB`})
+                      </span>
+                      <button
+                        onClick={() => removeFile(i)}
+                        className="text-gray-400 hover:text-red-500 transition"
+                      >
+                        <XIcon className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="flex items-start gap-3">
+                {/* Attach button */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isSendingMessage || pendingFiles.length >= MAX_FILES}
+                  className="shrink-0 p-2 mt-1 text-gray-400 hover:text-sky-600 transition disabled:opacity-30 rounded-lg hover:bg-gray-100"
+                  title="Attach files (CSV, PDF, images, text)"
+                >
+                  <Paperclip className="w-5 h-5" />
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept={ACCEPTED_TYPES}
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+
                 <textarea
                   value={currentInput}
                   onChange={e => setCurrentInput(e.target.value)}
@@ -370,7 +522,7 @@ export default function CoachPage() {
                   }}
                   disabled={isSendingMessage}
                   placeholder="Send a message..."
-                  className="form-input flex-grow resize-none"
+                  className="form-input grow resize-none"
                   rows={2}
                 />
                 <button
