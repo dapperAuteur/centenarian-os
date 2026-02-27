@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Task } from '@/lib/types';
-import { X, DollarSign } from 'lucide-react';
+import { X, DollarSign, MapPin } from 'lucide-react';
+import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
+import ActivityLinker from '@/components/ui/ActivityLinker';
 
 interface EditTaskModalProps {
   task: Task;
@@ -15,6 +17,7 @@ interface EditTaskModalProps {
 export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalProps) {
   const [formData, setFormData] = useState<Partial<Task>>({});
   const [saving, setSaving] = useState(false);
+  const [locationName, setLocationName] = useState('');
   const supabase = createClient();
 
   useEffect(() => {
@@ -146,6 +149,28 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
             <p className="text-xs text-gray-500 mt-2">
               Track money spent (cost) or earned (revenue) related to this task
             </p>
+          </div>
+
+          {/* Location */}
+          <div className="pt-4 border-t border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <MapPin className="w-5 h-5 mr-2 text-sky-600" />
+              Location
+            </h3>
+            <ContactAutocomplete
+              value={locationName}
+              contactType="location"
+              placeholder="Where does this task happen?"
+              onChange={(name) => setLocationName(name)}
+              inputClassName="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              showLocations
+              onLocationSelect={(locId) => setFormData({ ...formData, location_id: locId })}
+            />
+          </div>
+
+          {/* Linked Activities */}
+          <div className="pt-4 border-t border-gray-200">
+            <ActivityLinker entityType="task" entityId={task.id} />
           </div>
         </div>
 

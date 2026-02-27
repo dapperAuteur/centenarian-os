@@ -8,7 +8,7 @@ import {
   Leaf, MapPin, GraduationCap,
 } from 'lucide-react';
 import SiteFooter from '@/components/ui/SiteFooter';
-import { getPublicProfile, type ProfileResponse } from '@/lib/profiles/getPublicProfile';
+import { getPublicProfile } from '@/lib/profiles/getPublicProfile';
 
 type Params = { params: Promise<{ username: string }> };
 

@@ -20,18 +20,20 @@ const CO2_PER_MILE: Record<string, number> = {
   other: 0,
 };
 
-function calcCo2(mode: string, distanceMiles: number | null): number | null {
+function calcCo2(mode: string, distanceMiles: number | null, isRoundTrip = false): number | null {
   if (!distanceMiles || distanceMiles <= 0) return null;
   const factor = CO2_PER_MILE[mode] ?? 0;
-  return parseFloat((factor * distanceMiles).toFixed(3));
+  const effectiveDist = isRoundTrip ? distanceMiles * 2 : distanceMiles;
+  return parseFloat((factor * effectiveDist).toFixed(3));
 }
 
 // Modes that support the travel/fitness distinction
 const HUMAN_POWERED_MODES = new Set(['bike', 'walk', 'run', 'other']);
 
-function tripDescription(mode: string, origin?: string | null, destination?: string | null): string {
+function tripDescription(mode: string, origin?: string | null, destination?: string | null, isRoundTrip = false): string {
   const route = origin && destination ? ` – ${origin} to ${destination}` : '';
-  return `Trip: ${mode}${route}`;
+  const prefix = isRoundTrip ? 'Round trip' : 'Trip';
+  return `${prefix}: ${mode}${route}`;
 }
 
 export async function GET(request: NextRequest) {
@@ -80,13 +82,15 @@ export async function POST(request: NextRequest) {
     purpose, calories_burned, cost,
     garmin_activity_id, health_metric_date, notes, source,
     tax_category, trip_category, finance_category_id,
+    is_round_trip,
   } = body;
 
   if (!mode || !date) {
     return NextResponse.json({ error: 'mode and date are required' }, { status: 400 });
   }
 
-  const co2_kg = calcCo2(mode, distance_miles);
+  const roundTrip = is_round_trip === true;
+  const co2_kg = calcCo2(mode, distance_miles, roundTrip);
 
   const resolvedTripCategory = HUMAN_POWERED_MODES.has(mode)
     ? (trip_category || 'travel')
@@ -116,6 +120,7 @@ export async function POST(request: NextRequest) {
       source: source || 'manual',
       tax_category: tax_category || 'personal',
       trip_category: resolvedTripCategory,
+      is_round_trip: roundTrip,
     })
     .select()
     .single();
@@ -125,14 +130,15 @@ export async function POST(request: NextRequest) {
   // Auto-create linked finance transaction if cost is provided
   if (cost && cost > 0) {
     try {
+      const arrow = roundTrip ? '↔' : '→';
       const txId = await createLinkedTransaction(supabase, {
         userId: user.id,
         amount: cost,
-        vendor: origin && destination ? `${origin} → ${destination}` : null,
+        vendor: origin && destination ? `${origin} ${arrow} ${destination}` : null,
         date,
         source_module: 'trip',
         source_module_id: data.id,
-        description: tripDescription(mode, origin, destination),
+        description: tripDescription(mode, origin, destination, roundTrip),
         category_id: finance_category_id ?? null,
       });
       await supabase.from('trips').update({ transaction_id: txId }).eq('id', data.id);
@@ -157,18 +163,20 @@ export async function PATCH(request: NextRequest) {
   // Fetch existing record for CO2 recalc and transaction sync
   const { data: existing } = await supabase
     .from('trips')
-    .select('mode, distance_miles, cost, origin, destination, date, transaction_id')
+    .select('mode, distance_miles, cost, origin, destination, date, transaction_id, is_round_trip')
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  // Recalculate CO2 if mode or distance changed
-  if (updates.mode !== undefined || updates.distance_miles !== undefined) {
+  // Recalculate CO2 if mode, distance, or round-trip changed
+  const roundTripChanged = updates.is_round_trip !== undefined;
+  if (updates.mode !== undefined || updates.distance_miles !== undefined || roundTripChanged) {
     const mode = updates.mode ?? existing.mode;
     const dist = updates.distance_miles ?? existing.distance_miles;
-    updates.co2_kg = calcCo2(mode, dist);
+    const rt = updates.is_round_trip ?? existing.is_round_trip;
+    updates.co2_kg = calcCo2(mode, dist, rt);
   }
 
   // If mode changes to a non-human-powered mode, force trip_category to 'travel'
@@ -193,13 +201,15 @@ export async function PATCH(request: NextRequest) {
   const dateChanged = updates.date !== undefined;
   const modeChanged = updates.mode !== undefined;
 
-  if (costChanged || originChanged || destinationChanged || dateChanged || modeChanged) {
+  if (costChanged || originChanged || destinationChanged || dateChanged || modeChanged || roundTripChanged) {
     const newCost = updates.cost ?? existing.cost;
     const newOrigin = updates.origin ?? existing.origin;
     const newDest = updates.destination ?? existing.destination;
     const newDate = updates.date ?? existing.date;
     const newMode = updates.mode ?? existing.mode;
-    const newVendor = newOrigin && newDest ? `${newOrigin} → ${newDest}` : null;
+    const newRt = updates.is_round_trip ?? existing.is_round_trip;
+    const arrow = newRt ? '↔' : '→';
+    const newVendor = newOrigin && newDest ? `${newOrigin} ${arrow} ${newDest}` : null;
 
     if (existing.transaction_id) {
       if (!newCost || newCost <= 0) {
@@ -213,7 +223,7 @@ export async function PATCH(request: NextRequest) {
             amount: newCost,
             vendor: newVendor,
             date: newDate,
-            description: tripDescription(newMode, newOrigin, newDest),
+            description: tripDescription(newMode, newOrigin, newDest, newRt),
           });
         } catch { /* non-fatal */ }
       }
@@ -226,7 +236,7 @@ export async function PATCH(request: NextRequest) {
           date: newDate,
           source_module: 'trip',
           source_module_id: id,
-          description: tripDescription(newMode, newOrigin, newDest),
+          description: tripDescription(newMode, newOrigin, newDest, newRt),
         });
         await supabase.from('trips').update({ transaction_id: txId }).eq('id', id);
         data.transaction_id = txId;

@@ -64,7 +64,6 @@ export async function POST() {
       return dayMap.get(date)!;
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const s of sleepData.data ?? []) {
       const d = getDay(s.day);
       if (s.contributors?.total_sleep) d.sleep_score = s.score;
@@ -74,7 +73,6 @@ export async function POST() {
       }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const a of activityData.data ?? []) {
       const d = getDay(a.day);
       d.steps = a.steps;
@@ -84,7 +82,6 @@ export async function POST() {
       }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const r of readinessData.data ?? []) {
       const d = getDay(r.day);
       d.recovery_score = r.score;

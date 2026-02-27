@@ -56,7 +56,6 @@ export default function BillingPage() {
         setSyncError('Could not connect to sync service. Please refresh the page.');
         setSyncLoading(false);
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
   // For existing monthly subscribers whose subscription_expires_at was null before migration 037,

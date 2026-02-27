@@ -19,11 +19,16 @@ export async function GET(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const type = request.nextUrl.searchParams.get('type');
+  const includeLocations = request.nextUrl.searchParams.get('include_locations') === 'true';
 
   const db = getDb();
+  const selectCols = includeLocations
+    ? 'id, name, contact_type, default_category_id, notes, use_count, contact_locations(id, label, address, lat, lng, is_default, sort_order)'
+    : 'id, name, contact_type, default_category_id, notes, use_count';
+
   let query = db
     .from('user_contacts')
-    .select('id, name, contact_type, default_category_id, notes, use_count')
+    .select(selectCols)
     .eq('user_id', user.id)
     .order('use_count', { ascending: false })
     .order('name', { ascending: true });
