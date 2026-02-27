@@ -12,6 +12,8 @@ import {
   Presentation,
   Shield,
   LogOut,
+  Bot,
+  Gem,
 } from 'lucide-react';
 import BottomSheet from './BottomSheet';
 
@@ -94,14 +96,32 @@ export default function MeSheet({
         )}
 
         {isAdmin && (
-          <Link
-            href="/admin"
-            className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-fuchsia-700 hover:bg-fuchsia-50 transition"
-            onClick={onClose}
-          >
-            <Shield className="w-5 h-5 shrink-0" />
-            Admin Dashboard
-          </Link>
+          <>
+            <Link
+              href="/dashboard/coach"
+              className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-fuchsia-700 hover:bg-fuchsia-50 transition"
+              onClick={onClose}
+            >
+              <Bot className="w-5 h-5 shrink-0" />
+              Coach
+            </Link>
+            <Link
+              href="/dashboard/gems"
+              className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-fuchsia-700 hover:bg-fuchsia-50 transition"
+              onClick={onClose}
+            >
+              <Gem className="w-5 h-5 shrink-0" />
+              Gems
+            </Link>
+            <Link
+              href="/admin"
+              className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-fuchsia-700 hover:bg-fuchsia-50 transition"
+              onClick={onClose}
+            >
+              <Shield className="w-5 h-5 shrink-0" />
+              Admin Dashboard
+            </Link>
+          </>
         )}
 
         <div className="my-1 border-t border-gray-100" />
