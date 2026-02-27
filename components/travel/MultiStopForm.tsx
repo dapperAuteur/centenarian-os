@@ -9,6 +9,7 @@ interface Vehicle {
   nickname: string;
   type: string;
   ownership_type: string;
+  trip_mode: string | null;
 }
 
 interface Stop {
@@ -25,6 +26,11 @@ const MODE_OPTIONS = ['bike', 'car', 'bus', 'train', 'plane', 'walk', 'run', 'fe
 const MODE_ICONS: Record<string, string> = {
   bike: '🚲', car: '🚗', bus: '🚌', train: '🚂', plane: '✈️',
   walk: '🚶', run: '🏃', ferry: '⛴️', rideshare: '🚕', other: '🚐',
+};
+
+const VEHICLE_TYPE_TO_MODE: Record<string, string> = {
+  car: 'car', bike: 'bike', ebike: 'bike',
+  motorcycle: 'car', scooter: 'car', shoes: 'walk',
 };
 
 const BLANK_STOP: Stop = {
@@ -219,7 +225,15 @@ export default function MultiStopForm({ vehicles, onClose, onSaved }: MultiStopF
                 {idx > 0 && vehicles.length > 0 && (
                   <select
                     value={stop.vehicle_id}
-                    onChange={(e) => updateStop(idx, 'vehicle_id', e.target.value)}
+                    onChange={(e) => {
+                      const vid = e.target.value;
+                      const v = vehicles.find((veh) => veh.id === vid);
+                      const autoMode = v ? (v.trip_mode || VEHICLE_TYPE_TO_MODE[v.type]) : undefined;
+                      setStops((s) => s.map((st, i) => i === idx
+                        ? { ...st, vehicle_id: vid, ...(autoMode ? { mode: autoMode } : {}) }
+                        : st
+                      ));
+                    }}
                     className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs"
                   >
                     <option value="">No vehicle</option>

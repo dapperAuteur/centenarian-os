@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { type, nickname, make, model, year, color, ownership_type } = body;
+  const { type, nickname, make, model, year, color, ownership_type, trip_mode } = body;
 
   if (!type || !nickname) {
     return NextResponse.json({ error: 'type and nickname are required' }, { status: 400 });
@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
       year,
       color,
       ownership_type: ownership_type || 'owned',
+      trip_mode: trip_mode || null,
     })
     .select()
     .single();

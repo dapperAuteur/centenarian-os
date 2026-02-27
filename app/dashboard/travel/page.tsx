@@ -42,6 +42,7 @@ interface Vehicle {
   year: number | null;
   active: boolean;
   ownership_type: 'owned' | 'rental' | 'borrowed';
+  trip_mode: string | null;
   latest_odometer: number | null;
 }
 
@@ -78,6 +79,11 @@ interface TripTemplate {
 const MODE_ICONS: Record<string, string> = {
   bike: '🚲', car: '🚗', bus: '🚌', train: '🚂', plane: '✈️',
   walk: '🚶', run: '🏃', ferry: '⛴️', rideshare: '🚕', other: '🚐',
+};
+
+const VEHICLE_TYPE_TO_MODE: Record<string, string> = {
+  car: 'car', bike: 'bike', ebike: 'bike',
+  motorcycle: 'car', scooter: 'car', shoes: 'walk',
 };
 
 const MODE_COLORS: Record<string, string> = {
@@ -117,7 +123,7 @@ export default function TravelPage() {
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [vehicleForm, setVehicleForm] = useState({
     type: 'car', nickname: '', make: '', model: '', year: '', color: '',
-    ownership_type: 'owned',
+    ownership_type: 'owned', trip_mode: '',
   });
   const [savingVehicle, setSavingVehicle] = useState(false);
   const [showRetired, setShowRetired] = useState(false);
@@ -246,6 +252,7 @@ export default function TravelPage() {
       year: v.year != null ? String(v.year) : '',
       color: '',
       ownership_type: v.ownership_type || 'owned',
+      trip_mode: v.trip_mode ?? '',
     });
     setShowAddVehicle(true);
   };
@@ -292,6 +299,7 @@ export default function TravelPage() {
         year: vehicleForm.year ? parseInt(vehicleForm.year) : null,
         color: vehicleForm.color || null,
         ownership_type: vehicleForm.ownership_type || 'owned',
+        trip_mode: vehicleForm.trip_mode || null,
       };
       const res = await offlineFetch('/api/travel/vehicles', {
         method: editingVehicle ? 'PATCH' : 'POST',
@@ -301,7 +309,7 @@ export default function TravelPage() {
       if (res.ok) {
         setShowAddVehicle(false);
         setEditingVehicle(null);
-        setVehicleForm({ type: 'car', nickname: '', make: '', model: '', year: '', color: '', ownership_type: 'owned' });
+        setVehicleForm({ type: 'car', nickname: '', make: '', model: '', year: '', color: '', ownership_type: 'owned', trip_mode: '' });
         load();
       }
     } finally {
@@ -543,7 +551,7 @@ export default function TravelPage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-700">Vehicles</h2>
           <button
-            onClick={() => { setVehicleForm({ type: 'car', nickname: '', make: '', model: '', year: '', color: '', ownership_type: 'owned' }); setEditingVehicle(null); setShowAddVehicle(true); }}
+            onClick={() => { setVehicleForm({ type: 'car', nickname: '', make: '', model: '', year: '', color: '', ownership_type: 'owned', trip_mode: '' }); setEditingVehicle(null); setShowAddVehicle(true); }}
             className="text-xs text-sky-600 hover:text-sky-700 font-medium flex items-center gap-1"
           >
             <Plus className="w-3 h-3" /> Add
@@ -844,7 +852,16 @@ export default function TravelPage() {
                 <label className="block text-xs font-medium text-gray-600 mb-1">Vehicle</label>
                 <select
                   value={tripForm.vehicle_id}
-                  onChange={(e) => setTripForm((f) => ({ ...f, vehicle_id: e.target.value }))}
+                  onChange={(e) => {
+                    const vid = e.target.value;
+                    const v = vehicles.find((veh) => veh.id === vid);
+                    const autoMode = v ? (v.trip_mode || VEHICLE_TYPE_TO_MODE[v.type]) : undefined;
+                    setTripForm((f) => ({
+                      ...f,
+                      vehicle_id: vid,
+                      ...(autoMode ? { mode: autoMode } : {}),
+                    }));
+                  }}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                 >
                   <option value="">None</option>
@@ -935,6 +952,20 @@ export default function TravelPage() {
               </div>
             </div>
             <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Trip Mode</label>
+              <select
+                value={vehicleForm.trip_mode}
+                onChange={(e) => setVehicleForm((f) => ({ ...f, trip_mode: e.target.value }))}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">Auto (from type)</option>
+                {['bike','car','bus','train','plane','walk','run','ferry','rideshare','other'].map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400 mt-0.5">Auto-fills trip mode when logging trips</p>
+            </div>
+            <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Nickname *</label>
               <input
                 type="text" value={vehicleForm.nickname} placeholder="My Camry"
@@ -970,7 +1001,7 @@ export default function TravelPage() {
               </div>
             </div>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => { setShowAddVehicle(false); setEditingVehicle(null); setVehicleForm({ type: 'car', nickname: '', make: '', model: '', year: '', color: '', ownership_type: 'owned' }); }}
+              <button type="button" onClick={() => { setShowAddVehicle(false); setEditingVehicle(null); setVehicleForm({ type: 'car', nickname: '', make: '', model: '', year: '', color: '', ownership_type: 'owned', trip_mode: '' }); }}
                 className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
                 Cancel
               </button>

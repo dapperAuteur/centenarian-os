@@ -35,6 +35,7 @@ interface Vehicle {
   type: string;
   active: boolean;
   ownership_type: string;
+  trip_mode: string | null;
 }
 
 const MODE_ICONS: Record<string, string> = {
@@ -43,6 +44,11 @@ const MODE_ICONS: Record<string, string> = {
 };
 
 const HUMAN_POWERED_MODES = ['bike', 'walk', 'run', 'other'];
+
+const VEHICLE_TYPE_TO_MODE: Record<string, string> = {
+  car: 'car', bike: 'bike', ebike: 'bike',
+  motorcycle: 'car', scooter: 'car', shoes: 'walk',
+};
 
 const BLANK_FORM = {
   mode: 'bike',
@@ -627,7 +633,16 @@ export default function TripsPage() {
                 <label className="block text-xs font-medium text-gray-600 mb-1">Vehicle</label>
                 <select
                   value={form.vehicle_id}
-                  onChange={(e) => setForm((f) => ({ ...f, vehicle_id: e.target.value }))}
+                  onChange={(e) => {
+                    const vid = e.target.value;
+                    const v = vehicles.find((veh) => veh.id === vid);
+                    const autoMode = v ? (v.trip_mode || VEHICLE_TYPE_TO_MODE[v.type]) : undefined;
+                    setForm((f) => ({
+                      ...f,
+                      vehicle_id: vid,
+                      ...(autoMode ? { mode: autoMode } : {}),
+                    }));
+                  }}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                 >
                   <option value="">None</option>
