@@ -16,6 +16,16 @@ interface Assignment {
   title: string;
   description: string | null;
   due_date: string | null;
+  scope: 'course' | 'module' | 'lesson';
+  module_id: string | null;
+  lesson_id: string | null;
+}
+
+interface CourseModule {
+  id: string;
+  title: string;
+  order: number;
+  lessons: { id: string; title: string; order: number }[];
 }
 
 interface Submission {
@@ -33,9 +43,14 @@ export default function CourseAssignmentsPage() {
   const { id: courseId } = useParams<{ id: string }>();
 
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [modules, setModules] = useState<CourseModule[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const [newForm, setNewForm] = useState({ title: '', description: '', due_date: '' });
+  const [newForm, setNewForm] = useState({
+    title: '', description: '', due_date: '',
+    scope: 'course' as 'course' | 'module' | 'lesson',
+    module_id: '', lesson_id: '',
+  });
   const [saving, setSaving] = useState(false);
   const [createError, setCreateError] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -44,10 +59,18 @@ export default function CourseAssignmentsPage() {
   const [gradeForm, setGradeForm] = useState({ grade: '', teacher_feedback: '' });
 
   useEffect(() => {
-    fetch(`/api/academy/courses/${courseId}/assignments`)
-      .then((r) => r.json())
-      .then((d) => { setAssignments(Array.isArray(d) ? d : []); setLoading(false); })
-      .catch(() => setLoading(false));
+    Promise.all([
+      fetch(`/api/academy/courses/${courseId}/assignments`).then((r) => r.json()),
+      fetch(`/api/academy/courses/${courseId}`).then((r) => r.json()),
+    ]).then(([assignData, courseData]) => {
+      setAssignments(Array.isArray(assignData) ? assignData : []);
+      if (courseData.course_modules) {
+        setModules(
+          [...courseData.course_modules].sort((a: CourseModule, b: CourseModule) => a.order - b.order),
+        );
+      }
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, [courseId]);
 
   async function loadSubmissions(assignmentId: string) {
@@ -79,13 +102,16 @@ export default function CourseAssignmentsPage() {
         title: newForm.title.trim(),
         description: newForm.description.trim() || null,
         due_date: newForm.due_date || null,
+        scope: newForm.scope,
+        module_id: newForm.scope === 'module' ? newForm.module_id || null : null,
+        lesson_id: newForm.scope === 'lesson' ? newForm.lesson_id || null : null,
       }),
     });
     const d = await r.json();
     if (!r.ok) { setCreateError(d.error ?? 'Failed'); setSaving(false); return; }
     setAssignments((prev) => [d, ...prev]);
     setCreating(false);
-    setNewForm({ title: '', description: '', due_date: '' });
+    setNewForm({ title: '', description: '', due_date: '', scope: 'course', module_id: '', lesson_id: '' });
     setSaving(false);
   }
 
@@ -176,6 +202,75 @@ export default function CourseAssignmentsPage() {
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
             />
           </div>
+          <div>
+            <label className="block text-xs text-gray-300 mb-1">Scope</label>
+            <div className="flex flex-wrap gap-2">
+              {(['course', 'module', 'lesson'] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setNewForm((f) => ({ ...f, scope: s, module_id: '', lesson_id: '' }))}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition min-h-9 ${
+                    newForm.scope === s
+                      ? 'bg-fuchsia-600 text-white'
+                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  }`}
+                >
+                  {s === 'course' ? 'Course-wide' : s === 'module' ? 'Module' : 'Lesson'}
+                </button>
+              ))}
+            </div>
+          </div>
+          {newForm.scope === 'module' && (
+            <div>
+              <label className="block text-xs text-gray-300 mb-1">Module *</label>
+              <select
+                value={newForm.module_id}
+                onChange={(e) => setNewForm((f) => ({ ...f, module_id: e.target.value }))}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
+              >
+                <option value="">Select module...</option>
+                {modules.map((m) => (
+                  <option key={m.id} value={m.id}>{m.title}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          {newForm.scope === 'lesson' && (
+            <>
+              <div>
+                <label className="block text-xs text-gray-300 mb-1">Module</label>
+                <select
+                  value={newForm.module_id}
+                  onChange={(e) => setNewForm((f) => ({ ...f, module_id: e.target.value, lesson_id: '' }))}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
+                >
+                  <option value="">Select module...</option>
+                  {modules.map((m) => (
+                    <option key={m.id} value={m.id}>{m.title}</option>
+                  ))}
+                </select>
+              </div>
+              {newForm.module_id && (
+                <div>
+                  <label className="block text-xs text-gray-300 mb-1">Lesson *</label>
+                  <select
+                    value={newForm.lesson_id}
+                    onChange={(e) => setNewForm((f) => ({ ...f, lesson_id: e.target.value }))}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
+                  >
+                    <option value="">Select lesson...</option>
+                    {modules
+                      .find((m) => m.id === newForm.module_id)
+                      ?.lessons.sort((a, b) => a.order - b.order)
+                      .map((l) => (
+                        <option key={l.id} value={l.id}>{l.title}</option>
+                      ))}
+                  </select>
+                </div>
+              )}
+            </>
+          )}
           {createError && <p className="text-red-400 text-sm">{createError}</p>}
           <div className="flex flex-wrap gap-3">
             <button
@@ -219,7 +314,18 @@ export default function CourseAssignmentsPage() {
                 >
                   <ClipboardList className="w-4 h-4 text-fuchsia-400 shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white text-sm">{a.title}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium text-white text-sm">{a.title}</p>
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium shrink-0 ${
+                        a.scope === 'course' ? 'bg-blue-900/30 text-blue-400' :
+                        a.scope === 'module' ? 'bg-amber-900/30 text-amber-400' :
+                        'bg-green-900/30 text-green-400'
+                      }`}>
+                        {a.scope === 'course' ? 'Course' :
+                         a.scope === 'module' ? modules.find((m) => m.id === a.module_id)?.title ?? 'Module' :
+                         (() => { for (const m of modules) { const l = m.lessons.find((l) => l.id === a.lesson_id); if (l) return l.title; } return 'Lesson'; })()}
+                      </span>
+                    </div>
                     {a.due_date && (
                       <p className="text-gray-500 text-xs flex items-center gap-1 mt-0.5">
                         <Clock className="w-3 h-3" />

@@ -9,8 +9,9 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ChevronLeft, ChevronRight, GitBranch, CheckCircle, Loader2,
-  Play, FileText, Volume2, Presentation,
+  Play, FileText, Volume2, Presentation, ClipboardList, ArrowRight,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { marked } from 'marked';
 import { generateHTML } from '@tiptap/html';
 import StarterKit from '@tiptap/starter-kit';
@@ -76,6 +77,7 @@ export default function LessonPlayerPage() {
   const [crossroads, setCrossroads] = useState<CrossroadsOption[] | null>(null);
   const [navigationMode, setNavigationMode] = useState<'linear' | 'cyoa'>('linear');
   const [adjacentLessons, setAdjacentLessons] = useState<{ prev: string | null; next: string | null }>({ prev: null, next: null });
+  const [lessonAssignments, setLessonAssignments] = useState<{ id: string; title: string; due_date: string | null }[]>([]);
 
   const progressSaved = useRef(false);
 
@@ -86,8 +88,8 @@ export default function LessonPlayerPage() {
     progressSaved.current = false;
 
     Promise.all([
-      fetch(`/api/academy/courses/${courseId}/lessons/${lessonId}`).then((r) => r.json()),
-      fetch(`/api/academy/courses/${courseId}`).then((r) => r.json()),
+      offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}`).then((r) => r.json()),
+      offlineFetch(`/api/academy/courses/${courseId}`).then((r) => r.json()),
     ]).then(([lessonData, courseData]) => {
       if (lessonData.locked) {
         router.push(`/academy/${courseId}`);
@@ -111,11 +113,18 @@ export default function LessonPlayerPage() {
     }).catch(() => setLoading(false));
   }, [courseId, lessonId, router]);
 
+  useEffect(() => {
+    offlineFetch(`/api/academy/courses/${courseId}/assignments?scope=lesson&lesson_id=${lessonId}`)
+      .then((r) => r.json())
+      .then((d) => setLessonAssignments(Array.isArray(d) ? d : []))
+      .catch(() => {});
+  }, [courseId, lessonId]);
+
   async function markComplete() {
     if (progressSaved.current) return;
     progressSaved.current = true;
 
-    await fetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/progress`, {
+    await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/progress`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ completed: true }),
@@ -125,7 +134,7 @@ export default function LessonPlayerPage() {
 
     if (navigationMode === 'cyoa') {
       // Fetch CYOA crossroads options
-      const r = await fetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/crossroads`);
+      const r = await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/crossroads`);
       if (r.ok) {
         const d = await r.json();
         setCrossroads(d);
@@ -206,6 +215,33 @@ export default function LessonPlayerPage() {
         {lesson.text_content && (
           <div className="prose prose-invert prose-sm max-w-none mb-6 bg-gray-900 border border-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-8">
             <div dangerouslySetInnerHTML={{ __html: renderTextContent(lesson.text_content, lesson.content_format) }} />
+          </div>
+        )}
+
+        {/* Lesson-scoped assignments */}
+        {lessonAssignments.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-base font-bold mb-3 flex items-center gap-2">
+              <ClipboardList className="w-4 h-4 text-fuchsia-400" /> Assignments for this Lesson
+            </h2>
+            <div className="space-y-2">
+              {lessonAssignments.map((a) => (
+                <Link
+                  key={a.id}
+                  href={`/academy/${courseId}/assignments/${a.id}`}
+                  className="flex items-center gap-3 bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 hover:border-fuchsia-700/50 transition group"
+                >
+                  <ClipboardList className="w-4 h-4 text-fuchsia-400 shrink-0" />
+                  <span className="flex-1 text-sm text-gray-200 group-hover:text-white">{a.title}</span>
+                  {a.due_date && (
+                    <span className="text-xs text-gray-500 shrink-0">
+                      Due {new Date(a.due_date).toLocaleDateString()}
+                    </span>
+                  )}
+                  <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-fuchsia-400 transition shrink-0" />
+                </Link>
+              ))}
+            </div>
           </div>
         )}
 

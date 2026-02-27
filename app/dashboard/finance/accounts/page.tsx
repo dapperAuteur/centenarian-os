@@ -6,10 +6,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   ArrowLeft, Plus, Pencil, Trash2, Loader2, CreditCard,
-  Building2, Check, X,
+  Building2, Check, X, ArrowRightLeft, Percent,
 } from 'lucide-react';
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import TransferModal from '@/components/finance/TransferModal';
 
 interface Account {
   id: string;
@@ -58,6 +59,8 @@ export default function AccountsPage() {
   const [form, setForm] = useState({ ...emptyForm });
   const [editId, setEditId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Record<string, string>>({});
+  const [showTransfer, setShowTransfer] = useState(false);
+  const [applyingInterest, setApplyingInterest] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -122,6 +125,27 @@ export default function AccountsPage() {
     load();
   };
 
+  const handleApplyInterest = async (acct: Account) => {
+    if (!confirm(`Apply interest for the most recent statement period on "${acct.name}"?\n\nAPR: ${acct.interest_rate}%\nStatement day: ${acct.statement_date}`)) return;
+    setApplyingInterest(acct.id);
+    try {
+      const res = await offlineFetch(`/api/finance/accounts/${acct.id}/interest`, { method: 'POST' });
+      const d = await res.json();
+      if (!res.ok) {
+        alert(d.error || 'Failed to apply interest');
+        return;
+      }
+      if (d.transaction) {
+        alert(`Interest of $${d.breakdown.interestAmount.toFixed(2)} applied.\n\nAvg Daily Balance: $${d.breakdown.averageDailyBalance.toFixed(2)}\nPeriod: ${d.breakdown.periodStart} to ${d.breakdown.periodEnd}`);
+      } else if (d.message) {
+        alert(d.message);
+      }
+      load();
+    } finally {
+      setApplyingInterest(null);
+    }
+  };
+
   const handleToggleActive = async (acct: Account) => {
     await offlineFetch(`/api/finance/accounts/${acct.id}`, {
       method: 'PATCH',
@@ -154,13 +178,22 @@ export default function AccountsPage() {
             <p className="text-gray-500 text-sm mt-0.5">Manage your bank accounts, credit cards, and loans</p>
           </div>
         </div>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-1.5 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 transition"
-        >
-          <Plus className="w-4 h-4" />
-          Add Account
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowTransfer(true)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+          >
+            <ArrowRightLeft className="w-4 h-4" />
+            Transfer
+          </button>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 transition"
+          >
+            <Plus className="w-4 h-4" />
+            Add Account
+          </button>
+        </div>
       </div>
 
       {accounts.length === 0 ? (
@@ -308,6 +341,16 @@ export default function AccountsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
+                    {(acct.account_type === 'credit_card' || acct.account_type === 'loan') && acct.interest_rate != null && acct.statement_date != null && (
+                      <button
+                        onClick={() => handleApplyInterest(acct)}
+                        disabled={applyingInterest === acct.id}
+                        className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition disabled:opacity-50"
+                        title="Apply Interest"
+                      >
+                        {applyingInterest === acct.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Percent className="w-4 h-4" />}
+                      </button>
+                    )}
                     <button
                       onClick={() => { setEditId(acct.id); setEditForm({ name: acct.name, account_type: acct.account_type, institution_name: acct.institution_name ?? '', last_four: acct.last_four ?? '', interest_rate: acct.interest_rate?.toString() ?? '', credit_limit: acct.credit_limit?.toString() ?? '', opening_balance: acct.opening_balance.toString(), monthly_fee: acct.monthly_fee?.toString() ?? '', due_date: acct.due_date?.toString() ?? '', statement_date: acct.statement_date?.toString() ?? '', notes: acct.notes ?? '' }); }}
                       className="p-1.5 text-gray-400 hover:text-fuchsia-600 hover:bg-fuchsia-50 rounded-lg transition"
@@ -336,6 +379,13 @@ export default function AccountsPage() {
           ))}
         </div>
       )}
+
+      <TransferModal
+        isOpen={showTransfer}
+        onClose={() => setShowTransfer(false)}
+        accounts={accounts}
+        onSuccess={load}
+      />
 
       {/* Add Account Modal */}
       {showAdd && (

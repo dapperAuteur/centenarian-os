@@ -11,6 +11,7 @@ import {
   BookOpen, Play, Lock, CheckCircle, Clock, Loader2, ArrowRight, Share2,
   GitBranch, ClipboardList, Star, MessageCircle, Send,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Lesson {
   id: string;
@@ -33,6 +34,9 @@ interface Assignment {
   id: string;
   title: string;
   due_date: string | null;
+  scope: 'course' | 'module' | 'lesson';
+  module_id: string | null;
+  lesson_id: string | null;
 }
 
 interface Course {
@@ -113,21 +117,21 @@ function CourseDetailContent() {
   const [myExistingReview, setMyExistingReview] = useState<Review | null>(null);
 
   useEffect(() => {
-    fetch(`/api/academy/courses/${courseId}`)
+    offlineFetch(`/api/academy/courses/${courseId}`)
       .then((r) => r.json())
       .then((d) => { setCourse(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, [courseId, justEnrolled]);
 
   useEffect(() => {
-    fetch(`/api/academy/courses/${courseId}/assignments`)
+    offlineFetch(`/api/academy/courses/${courseId}/assignments`)
       .then((r) => r.json())
       .then((d) => setAssignments(Array.isArray(d) ? d : []))
       .catch(() => {});
   }, [courseId]);
 
   useEffect(() => {
-    fetch(`/api/academy/courses/${courseId}/reviews`)
+    offlineFetch(`/api/academy/courses/${courseId}/reviews`)
       .then((r) => r.json())
       .then((d) => {
         setReviews(d.reviews ?? []);
@@ -326,23 +330,40 @@ function CourseDetailContent() {
                   <ClipboardList className="w-5 h-5 text-fuchsia-400" /> Assignments
                 </h2>
                 <div className="space-y-2">
-                  {assignments.map((a) => (
-                    <Link
-                      key={a.id}
-                      href={`/academy/${courseId}/assignments/${a.id}`}
-                      className="flex items-center gap-3 bg-gray-900 border border-gray-800 rounded-xl px-4 sm:px-5 py-3.5 hover:border-fuchsia-700/50 transition group"
-                    >
-                      <ClipboardList className="w-4 h-4 text-fuchsia-400 shrink-0" />
-                      <span className="flex-1 text-sm text-gray-200 group-hover:text-white min-w-0">{a.title}</span>
-                      {a.due_date && (
-                        <span className="text-xs text-gray-500 flex items-center gap-1 shrink-0">
-                          <Clock className="w-3 h-3" />
-                          {new Date(a.due_date).toLocaleDateString()}
-                        </span>
-                      )}
-                      <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-fuchsia-400 transition shrink-0" />
-                    </Link>
-                  ))}
+                  {assignments.map((a) => {
+                    let scopeLabel = '';
+                    if (a.scope === 'module' && a.module_id) {
+                      const mod = modules.find((m) => m.id === a.module_id);
+                      scopeLabel = mod ? mod.title : 'Module';
+                    } else if (a.scope === 'lesson' && a.lesson_id) {
+                      for (const mod of modules) {
+                        const les = mod.lessons.find((l) => l.id === a.lesson_id);
+                        if (les) { scopeLabel = les.title; break; }
+                      }
+                    }
+                    return (
+                      <Link
+                        key={a.id}
+                        href={`/academy/${courseId}/assignments/${a.id}`}
+                        className="flex items-center gap-3 bg-gray-900 border border-gray-800 rounded-xl px-4 sm:px-5 py-3.5 hover:border-fuchsia-700/50 transition group"
+                      >
+                        <ClipboardList className="w-4 h-4 text-fuchsia-400 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm text-gray-200 group-hover:text-white">{a.title}</span>
+                          {scopeLabel && (
+                            <span className="block text-xs text-gray-500 mt-0.5">{scopeLabel}</span>
+                          )}
+                        </div>
+                        {a.due_date && (
+                          <span className="text-xs text-gray-500 flex items-center gap-1 shrink-0">
+                            <Clock className="w-3 h-3" />
+                            {new Date(a.due_date).toLocaleDateString()}
+                          </span>
+                        )}
+                        <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-fuchsia-400 transition shrink-0" />
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             )}

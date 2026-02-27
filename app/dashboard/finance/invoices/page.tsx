@@ -94,7 +94,7 @@ export default function InvoicesPage() {
       offlineFetch(`/api/finance/invoices${filter !== 'all' ? `?direction=${filter}` : ''}`),
       offlineFetch('/api/finance/accounts'),
       offlineFetch('/api/finance/categories'),
-      offlineFetch('/api/finance/brands'),
+      offlineFetch('/api/brands'),
     ]);
 
     const invData = await invRes.json();

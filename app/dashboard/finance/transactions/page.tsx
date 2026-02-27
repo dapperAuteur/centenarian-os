@@ -39,6 +39,12 @@ const SOURCE_MODULE_BADGE: Record<string, { label: string; className: string }> 
   trip: { label: 'Trip', className: 'bg-orange-50 text-orange-700' },
 };
 
+const SOURCE_BADGE: Record<string, { label: string; className: string }> = {
+  transfer: { label: 'Transfer', className: 'bg-indigo-50 text-indigo-700' },
+  interest: { label: 'Interest', className: 'bg-red-50 text-red-700' },
+  recurring: { label: 'Recurring', className: 'bg-teal-50 text-teal-700' },
+};
+
 const PAGE_SIZE = 25;
 
 export default function TransactionsPage() {
@@ -302,6 +308,11 @@ export default function TransactionsPage() {
                           {tx.source_module && SOURCE_MODULE_BADGE[tx.source_module] && (
                             <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${SOURCE_MODULE_BADGE[tx.source_module].className}`}>
                               {SOURCE_MODULE_BADGE[tx.source_module].label}
+                            </span>
+                          )}
+                          {tx.source && SOURCE_BADGE[tx.source] && (
+                            <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${SOURCE_BADGE[tx.source].className}`}>
+                              {SOURCE_BADGE[tx.source].label}
                             </span>
                           )}
                         </div>
