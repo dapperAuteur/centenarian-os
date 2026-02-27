@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, ChevronRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useMilestoneHierarchy } from '@/lib/hooks/useMilestoneHierarchy';
@@ -37,9 +37,18 @@ export default function RoadmapItemPicker({ value, onChange, required }: Roadmap
     [milestones, selectedGoalId]
   );
 
-  // Auto-select based on current value or first available
+  // Track whether we've done the initial sync from hierarchy data
+  const initializedRef = useRef(false);
+
+  // One-time initialization: sync selects from value prop or pick first available
   useEffect(() => {
-    if (value && milestones.length > 0) {
+    if (loading || initializedRef.current) return;
+    if (roadmaps.length === 0) return;
+
+    initializedRef.current = true;
+
+    // If a value is already set, resolve its parents
+    if (value) {
       const ms = milestones.find(m => m.id === value);
       if (ms) {
         const goal = goals.find(g => g.id === ms.goal_id);
@@ -50,36 +59,43 @@ export default function RoadmapItemPicker({ value, onChange, required }: Roadmap
         }
       }
     }
-    // Auto-select first roadmap if none selected
-    if (!selectedRoadmapId && roadmaps.length > 0) {
-      setSelectedRoadmapId(roadmaps[0].id);
-    }
-  }, [value, roadmaps, goals, milestones, selectedRoadmapId]);
 
-  // Auto-select first goal when roadmap changes
-  useEffect(() => {
-    if (selectedRoadmapId) {
-      const goalsForRoadmap = goals.filter(g => g.roadmap_id === selectedRoadmapId);
-      if (goalsForRoadmap.length > 0 && !goalsForRoadmap.find(g => g.id === selectedGoalId)) {
-        setSelectedGoalId(goalsForRoadmap[0].id);
-      } else if (goalsForRoadmap.length === 0) {
-        setSelectedGoalId('');
-      }
-    }
-  }, [selectedRoadmapId, goals, selectedGoalId]);
+    // Otherwise cascade: first roadmap → first goal → first milestone
+    const firstRoadmap = roadmaps[0];
+    setSelectedRoadmapId(firstRoadmap.id);
 
-  // Auto-select first milestone when goal changes
-  useEffect(() => {
-    if (selectedGoalId) {
-      const msForGoal = milestones.filter(m => m.goal_id === selectedGoalId);
-      if (msForGoal.length > 0 && !msForGoal.find(m => m.id === value)) {
-        onChange(msForGoal[0].id);
-      } else if (msForGoal.length === 0 && value) {
-        onChange('');
-      }
+    const firstGoal = goals.find(g => g.roadmap_id === firstRoadmap.id);
+    if (firstGoal) {
+      setSelectedGoalId(firstGoal.id);
+      const firstMs = milestones.find(m => m.goal_id === firstGoal.id);
+      if (firstMs) onChange(firstMs.id);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedGoalId, milestones]);
+  }, [loading, roadmaps, goals, milestones]);
+
+  // Cascade handlers — called from onChange, not effects
+  const handleRoadmapChange = (roadmapId: string) => {
+    setSelectedRoadmapId(roadmapId);
+    // Auto-pick first goal under this roadmap
+    const goalsForRoadmap = goals.filter(g => g.roadmap_id === roadmapId);
+    if (goalsForRoadmap.length > 0) {
+      const firstGoal = goalsForRoadmap[0];
+      setSelectedGoalId(firstGoal.id);
+      // Auto-pick first milestone under this goal
+      const msForGoal = milestones.filter(m => m.goal_id === firstGoal.id);
+      onChange(msForGoal.length > 0 ? msForGoal[0].id : '');
+    } else {
+      setSelectedGoalId('');
+      onChange('');
+    }
+  };
+
+  const handleGoalChange = (goalId: string) => {
+    setSelectedGoalId(goalId);
+    // Auto-pick first milestone under this goal
+    const msForGoal = milestones.filter(m => m.goal_id === goalId);
+    onChange(msForGoal.length > 0 ? msForGoal[0].id : '');
+  };
 
   const handleCreate = async () => {
     if (!newTitle.trim() || saving) return;
@@ -173,7 +189,7 @@ export default function RoadmapItemPicker({ value, onChange, required }: Roadmap
       <div className="flex gap-2">
         <select
           value={selectedRoadmapId}
-          onChange={e => setSelectedRoadmapId(e.target.value)}
+          onChange={e => handleRoadmapChange(e.target.value)}
           className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent"
         >
           <option value="">Select roadmap...</option>
@@ -196,7 +212,7 @@ export default function RoadmapItemPicker({ value, onChange, required }: Roadmap
         <div className="flex gap-2">
           <select
             value={selectedGoalId}
-            onChange={e => setSelectedGoalId(e.target.value)}
+            onChange={e => handleGoalChange(e.target.value)}
             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent"
           >
             <option value="">Select goal...</option>
