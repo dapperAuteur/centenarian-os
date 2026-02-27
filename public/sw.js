@@ -1,24 +1,9 @@
 // File: public/sw.js
 // Service Worker — stale-while-revalidate for API, cache-first for pages, offline fallback
 
-const CACHE_VERSION = 'centos-v4';
+const CACHE_VERSION = 'centos-v5';
 const STATIC_URLS = [
-  '/',
   '/offline.html',
-  '/dashboard/planner',
-  '/dashboard/fuel',
-  '/dashboard/fuel/meals',
-  '/dashboard/engine',
-  '/dashboard/analytics',
-  '/dashboard/metrics',
-  '/dashboard/weekly-review',
-  '/dashboard/correlations',
-  '/dashboard/fuel/recipe-ideas',
-  '/dashboard/finance',
-  '/dashboard/finance/transactions',
-  '/dashboard/travel',
-  '/dashboard/travel/trips',
-  '/dashboard/workouts',
 ];
 
 // Install: pre-cache static pages
@@ -77,7 +62,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Pages & assets: cache-first with network fallback + offline.html safety net
+  // Navigation requests: network-first (always hit server, fall back to cache when offline)
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_VERSION).then((cache) => cache.put(request, clone));
+          return response;
+        })
+        .catch(() =>
+          caches.match(request).then((cached) => cached || caches.match('/offline.html'))
+        )
+    );
+    return;
+  }
+
+  // Static assets (JS, CSS, images): cache-first with network fallback
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;
@@ -87,13 +88,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_VERSION).then((cache) => cache.put(request, clone));
           return response;
         })
-        .catch(() => {
-          // Navigation request with no cache — show offline page
-          if (request.mode === 'navigate') {
-            return caches.match('/offline.html');
-          }
-          return new Response('', { status: 503 });
-        });
+        .catch(() => new Response('', { status: 503 }));
     })
   );
 });
