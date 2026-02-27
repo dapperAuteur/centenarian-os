@@ -34,7 +34,7 @@ export async function GET() {
 
   // For multi-stop templates, fetch their stops
   const multiStopIds = (data ?? []).filter((t) => t.is_multi_stop).map((t) => t.id);
-  let stopsMap: Record<string, unknown[]> = {};
+  const stopsMap: Record<string, unknown[]> = {};
   if (multiStopIds.length > 0) {
     const { data: stops } = await db
       .from('trip_template_stops')

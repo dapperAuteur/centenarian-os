@@ -92,6 +92,7 @@ export default function MyCoursesPage() {
                 {/* Cover thumbnail */}
                 <div className="w-24 sm:w-28 h-16 sm:h-20 bg-gray-800 rounded-xl overflow-hidden shrink-0 hidden sm:block">
                   {course.cover_image_url ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={course.cover_image_url}
                       alt={course.title}

@@ -428,6 +428,7 @@ function CourseDetailContent() {
                     <div key={review.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
                       <div className="flex items-center gap-3 mb-2">
                         {review.profiles?.avatar_url ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
                           <img src={review.profiles.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-gray-500 text-xs font-bold">
@@ -463,6 +464,7 @@ function CourseDetailContent() {
           <div className="lg:col-span-1">
             <div className="sticky top-6 bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
               {course.cover_image_url && (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={course.cover_image_url} alt={course.title} className="w-full aspect-video object-cover" />
               )}
               <div className="p-5 sm:p-6">

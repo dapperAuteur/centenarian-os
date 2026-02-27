@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
   // Fetch leg counts for each route
   const routeIds = (data ?? []).map((r) => r.id);
-  let legCounts: Record<string, number> = {};
+  const legCounts: Record<string, number> = {};
   if (routeIds.length > 0) {
     const { data: legs } = await db
       .from('trips')

@@ -142,6 +142,7 @@ export default function AcademyPage() {
                 {/* Cover image */}
                 <div className="aspect-video bg-gray-800 relative overflow-hidden">
                   {course.cover_image_url ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={course.cover_image_url}
                       alt={course.title}
