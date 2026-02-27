@@ -18,8 +18,10 @@ import {
   CreditCard,
   MessageCircle,
   LogOut,
+  Menu,
 } from 'lucide-react';
-import { NAV_GROUPS, isGroupActive, isItemActive } from './NavConfig';
+import { getVisibleGroups, isGroupActive, isItemActive } from './NavConfig';
+import MobileDrawer from './MobileDrawer';
 
 export interface DesktopNavProps {
   hasAccess: boolean;
@@ -43,7 +45,9 @@ export default function DesktopNav({
   const pathname = usePathname();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
+  const visibleGroups = getVisibleGroups(isAdmin);
 
   // Close all dropdowns on route change
   useEffect(() => {
@@ -87,7 +91,7 @@ export default function DesktopNav({
 
           {/* Group dropdown buttons */}
           <div className="flex items-center gap-0.5">
-            {NAV_GROUPS.map((group) => {
+            {visibleGroups.map((group) => {
               const active = isGroupActive(group, pathname);
               const isOpen = openGroup === group.id;
               return (
@@ -264,11 +268,19 @@ export default function DesktopNav({
         </div>
 
         {/* ── Mobile compact header (< lg) ─────────────────────────────── */}
-        {/* Main navigation is handled by MobileBottomBar — this is just logo + utility icons */}
         <div className="flex lg:hidden items-center justify-between h-16">
-          <Link href="/" className="text-xl font-bold text-gray-900">
-            CentenarianOS
-          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+              aria-label="Open menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <Link href="/" className="text-xl font-bold text-gray-900">
+              CentenarianOS
+            </Link>
+          </div>
           <div className="flex items-center gap-2">
             {!subLoading && !hasAccess && (
               <Link
@@ -294,6 +306,18 @@ export default function DesktopNav({
           </div>
         </div>
       </div>
+
+      {/* Mobile navigation drawer */}
+      <MobileDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        hasAccess={hasAccess}
+        isAdmin={isAdmin}
+        isTeacher={isTeacher}
+        username={username}
+        unreadMessages={unreadMessages}
+        onLogout={onLogout}
+      />
     </nav>
   );
 }

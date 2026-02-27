@@ -18,6 +18,9 @@ import {
   GraduationCap,
   Radio,
   Dumbbell,
+  Sparkles,
+  Bot,
+  Gem,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -26,6 +29,7 @@ export interface NavItem {
   href: string;
   icon: LucideIcon;
   paid: boolean;
+  adminOnly?: boolean;
 }
 
 export interface NavGroup {
@@ -80,7 +84,25 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Live', href: '/live', icon: Radio, paid: false },
     ],
   },
+  {
+    id: 'ai',
+    label: 'AI',
+    icon: Sparkles,
+    items: [
+      { label: 'Coach', href: '/dashboard/coach', icon: Bot, paid: true, adminOnly: true },
+      { label: 'Gems', href: '/dashboard/gems', icon: Gem, paid: true, adminOnly: true },
+    ],
+  },
 ];
+
+export function getVisibleGroups(isAdmin: boolean): NavGroup[] {
+  return NAV_GROUPS
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((i) => !i.adminOnly || isAdmin),
+    }))
+    .filter((g) => g.items.length > 0);
+}
 
 export function isGroupActive(group: NavGroup, pathname: string): boolean {
   return group.items.some((item) => isItemActive(item.href, pathname));

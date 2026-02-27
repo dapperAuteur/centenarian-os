@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Lock, UserCircle } from 'lucide-react';
-import { NAV_GROUPS, isGroupActive, isItemActive } from './NavConfig';
+import { getVisibleGroups, isGroupActive, isItemActive } from './NavConfig';
 import BottomSheet from './BottomSheet';
 import MeSheet from './MeSheet';
 import type { DesktopNavProps } from './DesktopNav';
@@ -26,20 +26,21 @@ export default function MobileBottomBar({
   const pathname = usePathname();
   const router = useRouter();
   const [openSheet, setOpenSheet] = useState<string | null>(null); // group id | 'me' | null
+  const visibleGroups = getVisibleGroups(isAdmin);
 
   // Close sheet on route change
   useEffect(() => {
     setOpenSheet(null);
   }, [pathname]);
 
-  const activeGroupId = NAV_GROUPS.find((g) => isGroupActive(g, pathname))?.id ?? null;
+  const activeGroupId = visibleGroups.find((g) => isGroupActive(g, pathname))?.id ?? null;
 
   function handleTabPress(tabId: string) {
     if (tabId === 'me') {
       setOpenSheet('me');
       return;
     }
-    const group = NAV_GROUPS.find((g) => g.id === tabId);
+    const group = visibleGroups.find((g) => g.id === tabId);
     if (!group) return;
 
     if (activeGroupId === tabId) {
@@ -52,7 +53,7 @@ export default function MobileBottomBar({
   }
 
   const tabs = [
-    ...NAV_GROUPS.map((g) => ({ id: g.id, label: g.label, Icon: g.icon })),
+    ...visibleGroups.map((g) => ({ id: g.id, label: g.label, Icon: g.icon })),
     { id: 'me', label: 'Me', Icon: UserCircle },
   ];
 
@@ -88,7 +89,7 @@ export default function MobileBottomBar({
       </div>
 
       {/* ── Group item sheets ─────────────────────────────────────────── */}
-      {NAV_GROUPS.map((group) => (
+      {visibleGroups.map((group) => (
         <BottomSheet
           key={group.id}
           open={openSheet === group.id}
