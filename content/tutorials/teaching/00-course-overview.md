@@ -35,6 +35,7 @@ The Teaching dashboard is where teacher-role accounts create and manage courses 
 | 12 | Building Quiz Lessons | Quiz JSON structure, writing good questions, explanations and APA citations |
 | 13 | Podcast Links & Data Importer | Platform-specific podcast links, CSV template, bulk lesson import |
 | 14 | Sequential Module Locking | Enforcing module-order progression, combining with CYOA navigation |
+| 15 | Bulk Course Import Workflow | Full CSV import: spreadsheet prep, JSON fields, Google Sheets, Create + Update mode |
 
 ---
 
@@ -53,5 +54,6 @@ The Teaching dashboard is where teacher-role accounts create and manage courses 
 - Both linear and CYOA navigation modes are available
 - Paid courses require Stripe Connect to receive your earnings
 - Rich content types: chapter markers, transcripts, interactive maps, documents, podcast links, quizzes
-- Data Importer allows bulk lesson creation from CSV
+- Bulk Course Importer creates full course structure (modules + lessons) from a single CSV
+- Google Sheets integration: maintain course content in a living spreadsheet
 - Sequential module locking enforces prerequisite completion across modules
