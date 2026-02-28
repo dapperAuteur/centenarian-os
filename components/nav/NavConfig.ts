@@ -21,6 +21,7 @@ import {
   Sparkles,
   Bot,
   Gem,
+  Package,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -71,6 +72,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Finance', href: '/dashboard/finance', icon: DollarSign, paid: true },
       { label: 'Travel', href: '/dashboard/travel', icon: Navigation, paid: true },
+      { label: 'Equipment', href: '/dashboard/equipment', icon: Package, paid: true },
     ],
   },
   {
