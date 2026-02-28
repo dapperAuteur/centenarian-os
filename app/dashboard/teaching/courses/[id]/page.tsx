@@ -9,7 +9,7 @@ import Link from 'next/link';
 import {
   ChevronLeft, Plus, Loader2, Save, Globe, EyeOff, Trash2,
   GitBranch, Sparkles, Play, FileText, Volume2, Presentation, GripVertical,
-  CheckCircle, ClipboardList,
+  CheckCircle, ClipboardList, HelpCircle, X,
 } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
 
@@ -42,6 +42,7 @@ interface Course {
   price_type: string;
   is_published: boolean;
   navigation_mode: 'linear' | 'cyoa';
+  is_sequential: boolean;
   visibility: 'public' | 'members' | 'scheduled';
   published_at: string | null;
   trial_period_days: number;
@@ -49,8 +50,18 @@ interface Course {
 }
 
 const LESSON_TYPE_ICON: Record<string, React.ElementType> = {
-  video: Play, text: FileText, audio: Volume2, slides: Presentation,
+  video: Play, text: FileText, audio: Volume2, slides: Presentation, quiz: HelpCircle,
 };
+
+interface QuizQuestionDraft {
+  id: string;
+  questionText: string;
+  questionType: 'multiple_choice' | 'true_false';
+  options: Array<{ id: string; text: string }>;
+  correctOptionId: string;
+  explanation: string;
+  citation: string;
+}
 
 export default function CourseEditorPage() {
   const { id: courseId } = useParams<{ id: string }>();
@@ -64,6 +75,11 @@ export default function CourseEditorPage() {
   const [newModuleTitle, setNewModuleTitle] = useState('');
   const [addingLesson, setAddingLesson] = useState<string | null>(null); // module_id
   const [newLesson, setNewLesson] = useState({ title: '', lesson_type: 'video', content_url: '', is_free_preview: false });
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestionDraft[]>([]);
+  const [quizPassingScore, setQuizPassingScore] = useState(80);
+  const [quizAttemptsAllowed, setQuizAttemptsAllowed] = useState(-1);
+  const [audioChapters, setAudioChapters] = useState<Array<{ id: string; title: string; startTime: number; endTime: number }>>([]);
+  const [transcriptText, setTranscriptText] = useState('');
   const [feedback, setFeedback] = useState('');
 
   const fetchCourse = useCallback(() => {
@@ -114,20 +130,116 @@ export default function CourseEditorPage() {
 
   async function addLesson(moduleId: string) {
     if (!newLesson.title.trim()) return;
+    const payload: Record<string, unknown> = {
+      ...newLesson,
+      module_id: moduleId,
+      order: (course?.course_modules.find((m) => m.id === moduleId)?.lessons.length ?? 0),
+    };
+    if (newLesson.lesson_type === 'quiz' && quizQuestions.length > 0) {
+      payload.quiz_content = {
+        questions: quizQuestions,
+        passingScore: quizPassingScore,
+        attemptsAllowed: quizAttemptsAllowed,
+      };
+    }
+    if (newLesson.lesson_type === 'audio') {
+      if (audioChapters.length > 0) payload.audio_chapters = audioChapters;
+      if (transcriptText.trim()) payload.transcript_content = parseTranscriptText(transcriptText);
+    }
     const r = await fetch(`/api/academy/courses/${courseId}/lessons`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...newLesson,
-        module_id: moduleId,
-        order: (course?.course_modules.find((m) => m.id === moduleId)?.lessons.length ?? 0),
-      }),
+      body: JSON.stringify(payload),
     });
     if (r.ok) {
       setNewLesson({ title: '', lesson_type: 'video', content_url: '', is_free_preview: false });
+      setQuizQuestions([]);
+      setQuizPassingScore(80);
+      setQuizAttemptsAllowed(-1);
+      setAudioChapters([]);
+      setTranscriptText('');
       setAddingLesson(null);
       fetchCourse();
     }
+  }
+
+  function addQuizQuestion() {
+    const id = crypto.randomUUID();
+    setQuizQuestions((prev) => [...prev, {
+      id,
+      questionText: '',
+      questionType: 'multiple_choice',
+      options: [
+        { id: crypto.randomUUID(), text: '' },
+        { id: crypto.randomUUID(), text: '' },
+      ],
+      correctOptionId: '',
+      explanation: '',
+      citation: '',
+    }]);
+  }
+
+  function updateQuizQuestion(qId: string, updates: Partial<QuizQuestionDraft>) {
+    setQuizQuestions((prev) => prev.map((q) => q.id === qId ? { ...q, ...updates } : q));
+  }
+
+  function removeQuizQuestion(qId: string) {
+    setQuizQuestions((prev) => prev.filter((q) => q.id !== qId));
+  }
+
+  function addQuizOption(qId: string) {
+    setQuizQuestions((prev) => prev.map((q) => {
+      if (q.id !== qId) return q;
+      return { ...q, options: [...q.options, { id: crypto.randomUUID(), text: '' }] };
+    }));
+  }
+
+  function updateQuizOption(qId: string, optId: string, text: string) {
+    setQuizQuestions((prev) => prev.map((q) => {
+      if (q.id !== qId) return q;
+      return { ...q, options: q.options.map((o) => o.id === optId ? { ...o, text } : o) };
+    }));
+  }
+
+  function removeQuizOption(qId: string, optId: string) {
+    setQuizQuestions((prev) => prev.map((q) => {
+      if (q.id !== qId) return q;
+      return {
+        ...q,
+        options: q.options.filter((o) => o.id !== optId),
+        correctOptionId: q.correctOptionId === optId ? '' : q.correctOptionId,
+      };
+    }));
+  }
+
+  function addAudioChapter() {
+    setAudioChapters((prev) => [...prev, { id: crypto.randomUUID(), title: '', startTime: 0, endTime: 0 }]);
+  }
+
+  function updateAudioChapter(chId: string, updates: Partial<{ title: string; startTime: number; endTime: number }>) {
+    setAudioChapters((prev) => prev.map((c) => c.id === chId ? { ...c, ...updates } : c));
+  }
+
+  function removeAudioChapter(chId: string) {
+    setAudioChapters((prev) => prev.filter((c) => c.id !== chId));
+  }
+
+  function parseTranscriptText(raw: string): Array<{ startTime: number; endTime: number; text: string }> {
+    const lines = raw.split('\n').filter((l) => l.trim());
+    const segments: Array<{ startTime: number; endTime: number; text: string }> = [];
+    for (const line of lines) {
+      const match = line.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s+(.+)$/);
+      if (!match) continue;
+      const [, h, m, s, text] = match;
+      const startTime = s ? Number(h) * 3600 + Number(m) * 60 + Number(s) : Number(h) * 60 + Number(m);
+      segments.push({ startTime, endTime: 0, text: text.trim() });
+    }
+    // Fill endTime from next segment's startTime
+    for (let i = 0; i < segments.length - 1; i++) {
+      segments[i].endTime = segments[i + 1].startTime;
+    }
+    if (segments.length > 0) segments[segments.length - 1].endTime = segments[segments.length - 1].startTime + 30;
+    return segments;
   }
 
   async function deleteLesson(lessonId: string) {
@@ -302,6 +414,20 @@ export default function CourseEditorPage() {
             </div>
           </div>
           <div>
+            <label className="flex items-center gap-3 cursor-pointer min-h-11">
+              <input
+                type="checkbox"
+                checked={course.is_sequential}
+                onChange={(e) => saveCourseField({ is_sequential: e.target.checked } as Partial<Course>)}
+                className="accent-fuchsia-500 w-4 h-4"
+              />
+              <div>
+                <span className="text-sm text-gray-200">Sequential Modules</span>
+                <p className="text-xs text-gray-500">Students must complete all lessons in a module before unlocking the next.</p>
+              </div>
+            </label>
+          </div>
+          <div>
             <label className="block text-sm text-gray-200 mb-1.5">Visibility</label>
             <div className="flex flex-wrap gap-2">
               {(['public', 'members', 'scheduled'] as const).map((v) => (
@@ -454,6 +580,7 @@ export default function CourseEditorPage() {
                           <option value="text">Text</option>
                           <option value="audio">Audio</option>
                           <option value="slides">Slides</option>
+                          <option value="quiz">Quiz</option>
                         </select>
                         <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer min-h-11">
                           <input
@@ -465,6 +592,174 @@ export default function CourseEditorPage() {
                           Free preview
                         </label>
                       </div>
+                      {/* Quiz editor — shown when lesson_type is quiz */}
+                      {/* Audio chapter/transcript editor */}
+                      {newLesson.lesson_type === 'audio' && (
+                        <div className="space-y-4 border border-gray-700 rounded-xl p-3 bg-gray-800/30">
+                          {/* Chapter markers */}
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-sm font-semibold text-gray-200">Chapter Markers</h4>
+                              <button type="button" onClick={addAudioChapter} className="flex items-center gap-1 text-xs text-fuchsia-400 hover:text-fuchsia-300 transition">
+                                <Plus className="w-3 h-3" /> Add Chapter
+                              </button>
+                            </div>
+                            {audioChapters.length === 0 && (
+                              <p className="text-xs text-gray-600 text-center py-2">No chapters. Students can still listen without chapters.</p>
+                            )}
+                            <div className="space-y-2">
+                              {audioChapters.map((ch, ci) => (
+                                <div key={ch.id} className="flex items-center gap-2">
+                                  <span className="text-xs text-gray-500 shrink-0 w-5">{ci + 1}</span>
+                                  <input
+                                    type="text"
+                                    value={ch.title}
+                                    onChange={(e) => updateAudioChapter(ch.id, { title: e.target.value })}
+                                    placeholder="Chapter title…"
+                                    className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+                                  />
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    step={1}
+                                    value={ch.startTime}
+                                    onChange={(e) => updateAudioChapter(ch.id, { startTime: Number(e.target.value) })}
+                                    className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                                    title="Start time (seconds)"
+                                    placeholder="Start (s)"
+                                  />
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    step={1}
+                                    value={ch.endTime}
+                                    onChange={(e) => updateAudioChapter(ch.id, { endTime: Number(e.target.value) })}
+                                    className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                                    title="End time (seconds)"
+                                    placeholder="End (s)"
+                                  />
+                                  <button type="button" onClick={() => removeAudioChapter(ch.id)} className="text-gray-600 hover:text-red-400 transition p-1 shrink-0">
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          {/* Transcript */}
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-200 mb-1.5">Transcript</label>
+                            <p className="text-xs text-gray-500 mb-2">Paste timestamped transcript. Format: <code className="text-gray-400">MM:SS text</code> (one per line). e.g. <code className="text-gray-400">01:30 Welcome back to the show</code></p>
+                            <textarea
+                              value={transcriptText}
+                              onChange={(e) => setTranscriptText(e.target.value)}
+                              rows={6}
+                              placeholder={"00:00 Introduction\n00:45 Today's topic\n03:20 First segment…"}
+                              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500 resize-none font-mono"
+                            />
+                          </div>
+                        </div>
+                      )}
+                      {newLesson.lesson_type === 'quiz' && (
+                        <div className="space-y-3 border border-gray-700 rounded-xl p-3 bg-gray-800/30">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-semibold text-gray-200">Quiz Questions</h4>
+                            <button type="button" onClick={addQuizQuestion} className="flex items-center gap-1 text-xs text-fuchsia-400 hover:text-fuchsia-300 transition">
+                              <Plus className="w-3 h-3" /> Add Question
+                            </button>
+                          </div>
+                          {quizQuestions.length === 0 && (
+                            <p className="text-xs text-gray-600 text-center py-3">No questions yet. Add your first question above.</p>
+                          )}
+                          {quizQuestions.map((q, qi) => (
+                            <div key={q.id} className="border border-gray-700 rounded-lg p-3 space-y-2">
+                              <div className="flex items-start gap-2">
+                                <span className="text-xs text-gray-500 mt-3 shrink-0">Q{qi + 1}</span>
+                                <div className="flex-1 space-y-2">
+                                  <input
+                                    type="text"
+                                    value={q.questionText}
+                                    onChange={(e) => updateQuizQuestion(q.id, { questionText: e.target.value })}
+                                    placeholder="Question text…"
+                                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+                                  />
+                                  <div className="space-y-1.5">
+                                    {q.options.map((opt) => (
+                                      <div key={opt.id} className="flex items-center gap-2">
+                                        <input
+                                          type="radio"
+                                          name={`correct-${q.id}`}
+                                          checked={q.correctOptionId === opt.id}
+                                          onChange={() => updateQuizQuestion(q.id, { correctOptionId: opt.id })}
+                                          className="accent-green-500 shrink-0"
+                                          title="Mark as correct answer"
+                                        />
+                                        <input
+                                          type="text"
+                                          value={opt.text}
+                                          onChange={(e) => updateQuizOption(q.id, opt.id, e.target.value)}
+                                          placeholder="Option text…"
+                                          className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+                                        />
+                                        {q.options.length > 2 && (
+                                          <button type="button" onClick={() => removeQuizOption(q.id, opt.id)} className="text-gray-600 hover:text-red-400 transition p-1">
+                                            <X className="w-3 h-3" />
+                                          </button>
+                                        )}
+                                      </div>
+                                    ))}
+                                    {q.options.length < 6 && (
+                                      <button type="button" onClick={() => addQuizOption(q.id)} className="text-xs text-gray-500 hover:text-fuchsia-400 transition ml-6">
+                                        + Add option
+                                      </button>
+                                    )}
+                                  </div>
+                                  <input
+                                    type="text"
+                                    value={q.explanation}
+                                    onChange={(e) => updateQuizQuestion(q.id, { explanation: e.target.value })}
+                                    placeholder="Explanation (shown after answering)…"
+                                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={q.citation}
+                                    onChange={(e) => updateQuizQuestion(q.id, { citation: e.target.value })}
+                                    placeholder="Citation (optional, APA format)…"
+                                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-400 placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+                                  />
+                                </div>
+                                <button type="button" onClick={() => removeQuizQuestion(q.id)} className="text-gray-600 hover:text-red-400 transition p-1 mt-2 shrink-0">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                          <div className="flex flex-wrap gap-3 pt-1">
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Passing Score (%)</label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={quizPassingScore}
+                                onChange={(e) => setQuizPassingScore(Number(e.target.value))}
+                                className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Attempts (-1 = unlimited)</label>
+                              <input
+                                type="number"
+                                min={-1}
+                                value={quizAttemptsAllowed}
+                                onChange={(e) => setQuizAttemptsAllowed(Number(e.target.value))}
+                                className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="flex flex-wrap gap-2">
                         <button onClick={() => addLesson(mod.id)} className="px-4 py-2.5 bg-fuchsia-600 text-white rounded-xl text-sm font-semibold hover:bg-fuchsia-700 transition min-h-11">Add Lesson</button>
                         <button onClick={() => setAddingLesson(null)} className="px-4 py-2.5 bg-gray-800 text-gray-400 rounded-xl text-sm hover:bg-gray-700 transition min-h-11">Cancel</button>

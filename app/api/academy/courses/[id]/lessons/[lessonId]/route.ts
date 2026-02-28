@@ -32,7 +32,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   if (error || !lesson) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const { data: course } = await db.from('courses').select('teacher_id').eq('id', courseId).single();
+  const { data: course } = await db.from('courses').select('teacher_id, is_sequential').eq('id', courseId).single();
   const isOwner = user?.id === course?.teacher_id || user?.email === process.env.ADMIN_EMAIL;
 
   let enrolled = false;
@@ -51,6 +51,43 @@ export async function GET(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Enroll to access this lesson', locked: true }, { status: 403 });
   }
 
+  // Sequential module locking check
+  if (course?.is_sequential && enrolled && user && !isOwner && !lesson.is_free_preview && lesson.module_id) {
+    const { data: modules } = await db
+      .from('course_modules')
+      .select('id, order')
+      .eq('course_id', courseId)
+      .order('order', { ascending: true });
+
+    const lessonModule = modules?.find((m) => m.id === lesson.module_id);
+    if (lessonModule && modules) {
+      const priorModules = modules.filter((m) => m.order < lessonModule.order);
+      if (priorModules.length > 0) {
+        // Get all non-free lessons in prior modules
+        const { data: priorLessons } = await db
+          .from('lessons')
+          .select('id, is_free_preview, module_id')
+          .eq('course_id', courseId)
+          .in('module_id', priorModules.map((m) => m.id));
+        const requiredIds = (priorLessons ?? []).filter((l) => !l.is_free_preview).map((l) => l.id);
+
+        if (requiredIds.length > 0) {
+          const { data: progress } = await db
+            .from('lesson_progress')
+            .select('lesson_id')
+            .eq('user_id', user.id)
+            .in('lesson_id', requiredIds)
+            .not('completed_at', 'is', null);
+          const completedIds = new Set((progress ?? []).map((p) => p.lesson_id));
+          const allPriorComplete = requiredIds.every((id) => completedIds.has(id));
+          if (!allPriorComplete) {
+            return NextResponse.json({ error: 'Complete previous modules first', locked: true, module_locked: true }, { status: 403 });
+          }
+        }
+      }
+    }
+  }
+
   return NextResponse.json(lesson);
 }
 
@@ -67,7 +104,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   const body = await request.json();
-  const allowed = ['title', 'lesson_type', 'content_url', 'text_content', 'content_format', 'duration_seconds', 'order', 'is_free_preview', 'module_id'];
+  const allowed = ['title', 'lesson_type', 'content_url', 'text_content', 'content_format', 'duration_seconds', 'order', 'is_free_preview', 'module_id', 'quiz_content', 'audio_chapters', 'transcript_content'];
   const updates = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
 
   const { data, error } = await db

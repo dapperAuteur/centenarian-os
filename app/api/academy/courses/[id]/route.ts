@@ -29,7 +29,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .select(`
       id, title, description, cover_image_url, category, tags,
       price, price_type, is_published, navigation_mode, like_count,
-      avg_rating, review_count, trial_period_days,
+      avg_rating, review_count, trial_period_days, is_sequential,
       created_at, teacher_id,
       profiles(username, display_name, avatar_url),
       course_modules(id, title, order,
@@ -79,7 +79,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   const body = await request.json();
-  const allowed = ['title', 'description', 'cover_image_url', 'category', 'tags', 'price', 'price_type', 'is_published', 'navigation_mode', 'visibility', 'published_at', 'trial_period_days'];
+  const allowed = ['title', 'description', 'cover_image_url', 'category', 'tags', 'price', 'price_type', 'is_published', 'navigation_mode', 'visibility', 'published_at', 'trial_period_days', 'is_sequential'];
   const updates = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
 
   if ('price_type' in updates && updates.price_type === 'free') updates.price = 0;
