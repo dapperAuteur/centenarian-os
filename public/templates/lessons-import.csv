@@ -1,0 +1,5 @@
+lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+1,Welcome to the Course,video,300,true,https://res.cloudinary.com/your-cloud/video/upload/welcome.mp4,,markdown,,,,,,
+2,Setting Up Your Workspace,text,240,true,,This is the lesson content in **markdown** format.,markdown,,,,,,
+3,Understanding the Basics,video,600,false,https://res.cloudinary.com/your-cloud/video/upload/basics.mp4,,markdown,"[{""id"":""ch1"",""title"":""Intro"",""startTime"":0,""endTime"":120}]",,,,
+4,Knowledge Check,quiz,180,false,,,,,,,,,"{ ""questions"": [{ ""id"": ""q1"", ""question"": ""What is the main purpose?"", ""options"": [""A"", ""B"", ""C"", ""D""], ""correctIndex"": 0, ""explanation"": ""A is correct."" }] }"

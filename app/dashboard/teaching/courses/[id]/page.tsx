@@ -7,7 +7,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ChevronLeft, Plus, Loader2, Save, Globe, EyeOff, Trash2,
+  ChevronLeft, Plus, Loader2, Save, Globe, EyeOff, Trash2, Upload,
   GitBranch, Sparkles, Play, FileText, Volume2, Presentation, GripVertical,
   CheckCircle, ClipboardList, HelpCircle, X, Map, ChevronDown, Paperclip,
 } from 'lucide-react';
@@ -93,6 +93,11 @@ export default function CourseEditorPage() {
   const [lessonDocuments, setLessonDocuments] = useState<Array<{ id: string; url: string; title: string; description: string; source_url: string }>>([]);
   // Podcast links state
   const [podcastLinks, setPodcastLinks] = useState<Array<{ id: string; url: string; label: string }>>([]);
+  // Bulk import state
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [bulkImporting, setBulkImporting] = useState(false);
+  const [bulkImportResult, setBulkImportResult] = useState<{ message: string; errors?: string[] } | null>(null);
+  const [bulkImportMode, setBulkImportMode] = useState<'create' | 'upsert'>('create');
   const [feedback, setFeedback] = useState('');
 
   const fetchCourse = useCallback(() => {
@@ -350,6 +355,26 @@ export default function CourseEditorPage() {
 
   function removePodcastLink(linkId: string) {
     setPodcastLinks((prev) => prev.filter((l) => l.id !== linkId));
+  }
+
+  async function handleBulkImport(rows: Record<string, string>[]) {
+    setBulkImporting(true);
+    setBulkImportResult(null);
+    try {
+      const r = await fetch(`/api/academy/courses/${courseId}/import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows, mode: bulkImportMode }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Import failed');
+      setBulkImportResult({ message: d.message, errors: d.stats?.errors });
+      fetchCourse(); // Refresh modules + lessons
+    } catch (e) {
+      setBulkImportResult({ message: e instanceof Error ? e.message : 'Import failed', errors: [] });
+    } finally {
+      setBulkImporting(false);
+    }
   }
 
   async function deleteLesson(lessonId: string) {
@@ -629,6 +654,81 @@ export default function CourseEditorPage() {
             <button onClick={() => setAddingModule(false)} className="px-3 py-2.5 bg-gray-800 text-gray-400 rounded-xl text-sm hover:bg-gray-700 transition min-h-11">Cancel</button>
           </div>
         )}
+
+        {/* Bulk CSV Import */}
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => setShowBulkImport(!showBulkImport)}
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-fuchsia-400 transition"
+          >
+            <Upload className="w-3 h-3" />
+            {showBulkImport ? 'Hide' : 'Bulk Import from CSV'}
+            <ChevronDown className={`w-3 h-3 transition-transform ${showBulkImport ? 'rotate-180' : ''}`} />
+          </button>
+          {showBulkImport && (
+            <div className="mt-3 p-4 bg-gray-800/40 border border-gray-700 rounded-xl space-y-3">
+              <p className="text-xs text-gray-400">
+                Import modules and lessons from a CSV file. Each row creates a lesson; modules are auto-created from the <code className="text-fuchsia-400">module_title</code> column.
+              </p>
+              <div className="flex items-center gap-3">
+                <label className="text-xs text-gray-500">Mode:</label>
+                <button
+                  type="button"
+                  onClick={() => setBulkImportMode('create')}
+                  className={`px-2 py-1 rounded text-xs font-medium transition ${bulkImportMode === 'create' ? 'bg-fuchsia-600 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`}
+                >
+                  Create only
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBulkImportMode('upsert')}
+                  className={`px-2 py-1 rounded text-xs font-medium transition ${bulkImportMode === 'upsert' ? 'bg-fuchsia-600 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`}
+                >
+                  Create + Update
+                </button>
+              </div>
+              <DataImporter
+                label="Course CSV"
+                columns={[
+                  { key: 'module_title', label: 'Module Title' },
+                  { key: 'module_order', label: 'Module Order' },
+                  { key: 'lesson_order', label: 'Lesson Order' },
+                  { key: 'title', label: 'Title', required: true },
+                  { key: 'lesson_type', label: 'Type' },
+                  { key: 'duration_seconds', label: 'Duration (sec)' },
+                  { key: 'is_free_preview', label: 'Free Preview' },
+                  { key: 'content_url', label: 'Content URL' },
+                  { key: 'text_content', label: 'Text Content' },
+                  { key: 'content_format', label: 'Format' },
+                  { key: 'audio_chapters', label: 'Chapters JSON' },
+                  { key: 'transcript_content', label: 'Transcript JSON' },
+                  { key: 'map_content', label: 'Map JSON' },
+                  { key: 'documents', label: 'Documents JSON' },
+                  { key: 'podcast_links', label: 'Podcast JSON' },
+                  { key: 'quiz_content', label: 'Quiz JSON' },
+                ]}
+                onImport={handleBulkImport}
+                templateCsvUrl="/templates/course-import.csv"
+              />
+              {bulkImporting && (
+                <p className="text-xs text-gray-500 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Importing...</p>
+              )}
+              {bulkImportResult && (
+                <div className="space-y-1">
+                  <p className={`text-xs ${bulkImportResult.errors && bulkImportResult.errors.length > 0 ? 'text-yellow-400' : 'text-green-400'}`}>
+                    {bulkImportResult.message}
+                  </p>
+                  {bulkImportResult.errors && bulkImportResult.errors.length > 0 && (
+                    <ul className="text-xs text-red-400 space-y-0.5 max-h-32 overflow-y-auto">
+                      {bulkImportResult.errors.map((err, i) => <li key={i}>{err}</li>)}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {modules.length === 0 ? (
           <div className="text-center py-10 text-gray-600 border border-dashed border-gray-800 rounded-xl">
