@@ -21,6 +21,7 @@ interface Lesson {
   order: number;
   is_free_preview: boolean;
   locked: boolean;
+  module_locked?: boolean;
 }
 
 interface Module {
@@ -48,6 +49,7 @@ interface Course {
   price: number;
   price_type: string;
   navigation_mode: 'linear' | 'cyoa';
+  is_sequential: boolean;
   enrolled: boolean;
   teacher_id: string;
   avg_rating: number;
@@ -273,15 +275,24 @@ function CourseDetailContent() {
             {/* Curriculum */}
             <h2 className="text-lg font-bold mb-4">Curriculum</h2>
             <div className="space-y-3">
-              {modules.map((mod) => (
+              {modules.map((mod) => {
+                const modLessons = [...mod.lessons].sort((a, b) => a.order - b.order);
+                const isModuleLocked = modLessons.some((l) => l.module_locked);
+                return (
                 <div key={mod.id} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                  <div className="px-4 sm:px-5 py-3 bg-gray-800/50">
-                    <p className="font-semibold text-white text-sm">{mod.title}</p>
-                    <p className="text-gray-500 text-xs mt-0.5">{mod.lessons.length} lessons</p>
+                  <div className="px-4 sm:px-5 py-3 bg-gray-800/50 flex items-center gap-2">
+                    {isModuleLocked && <Lock className="w-3.5 h-3.5 text-gray-600 shrink-0" />}
+                    <div className="flex-1">
+                      <p className="font-semibold text-white text-sm">{mod.title}</p>
+                      <p className="text-gray-500 text-xs mt-0.5">
+                        {mod.lessons.length} lessons
+                        {isModuleLocked && <span className="ml-1.5 text-gray-600">· Complete previous modules to unlock</span>}
+                      </p>
+                    </div>
                   </div>
                   <div className="divide-y divide-gray-800">
-                    {[...mod.lessons].sort((a, b) => a.order - b.order).map((lesson) => {
-                      const canAccess = course.enrolled || lesson.is_free_preview;
+                    {modLessons.map((lesson) => {
+                      const canAccess = (course.enrolled || lesson.is_free_preview) && !lesson.locked;
                       const lessonHref = `/academy/${courseId}/lessons/${lesson.id}`;
                       return (
                         <div key={lesson.id} className="flex items-center gap-3 px-4 sm:px-5 py-3">
@@ -320,7 +331,8 @@ function CourseDetailContent() {
                     })}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Assignments — visible to enrolled students */}

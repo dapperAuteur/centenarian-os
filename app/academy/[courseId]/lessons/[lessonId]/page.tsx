@@ -9,9 +9,17 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ChevronLeft, ChevronRight, GitBranch, CheckCircle, Loader2,
-  Play, FileText, Volume2, Presentation, ClipboardList, ArrowRight,
+  Play, FileText, Volume2, Presentation, ClipboardList, ArrowRight, HelpCircle,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import QuizPlayer from '@/components/academy/QuizPlayer';
+import AudioPlayer from '@/components/academy/AudioPlayer';
+import LessonDiscussion from '@/components/academy/LessonDiscussion';
+import PodcastLinks from '@/components/academy/PodcastLinks';
+import DocumentViewer from '@/components/academy/DocumentViewer';
+
+const MapViewer = dynamic(() => import('@/components/academy/MapViewer'), { ssr: false });
 import { marked } from 'marked';
 import { generateHTML } from '@tiptap/html';
 import StarterKit from '@tiptap/starter-kit';
@@ -43,7 +51,7 @@ function renderTextContent(text_content: string | null, content_format?: string)
 interface Lesson {
   id: string;
   title: string;
-  lesson_type: 'video' | 'text' | 'audio' | 'slides';
+  lesson_type: 'video' | 'text' | 'audio' | 'slides' | 'quiz';
   content_url: string | null;
   text_content: string | null;
   content_format: 'markdown' | 'tiptap';
@@ -51,6 +59,30 @@ interface Lesson {
   is_free_preview: boolean;
   order: number;
   course_id: string;
+  quiz_content: {
+    questions: Array<{
+      id: string;
+      questionText: string;
+      questionType: 'multiple_choice' | 'true_false';
+      options: Array<{ id: string; text: string }>;
+      correctOptionId: string;
+      explanation: string;
+      citation?: string;
+    }>;
+    passingScore: number;
+    attemptsAllowed: number;
+  } | null;
+  audio_chapters: Array<{ id: string; title: string; startTime: number; endTime: number }> | null;
+  transcript_content: Array<{ startTime: number; endTime: number; text: string }> | null;
+  map_content: {
+    center: [number, number];
+    zoom: number;
+    markers?: Array<{ id: string; lat: number; lng: number; title: string; description?: string; color?: string }>;
+    lines?: Array<{ id: string; coords: [number, number][]; title: string; color?: string; description?: string }>;
+    polygons?: Array<{ id: string; coords: [number, number][]; title: string; color?: string; fillColor?: string; description?: string }>;
+  } | null;
+  documents: Array<{ id: string; url: string; title: string; description?: string; source_url?: string }> | null;
+  podcast_links: Array<{ url: string; label?: string }> | null;
 }
 
 interface CrossroadsOption {
@@ -65,6 +97,7 @@ const LESSON_TYPE_ICON: Record<string, React.ElementType> = {
   text: FileText,
   audio: Volume2,
   slides: Presentation,
+  quiz: HelpCircle,
 };
 
 export default function LessonPlayerPage() {
@@ -78,6 +111,7 @@ export default function LessonPlayerPage() {
   const [navigationMode, setNavigationMode] = useState<'linear' | 'cyoa'>('linear');
   const [adjacentLessons, setAdjacentLessons] = useState<{ prev: string | null; next: string | null }>({ prev: null, next: null });
   const [lessonAssignments, setLessonAssignments] = useState<{ id: string; title: string; due_date: string | null }[]>([]);
+  const [currentUser, setCurrentUser] = useState<{ userId: string | null; isTeacher: boolean }>({ userId: null, isTeacher: false });
 
   const progressSaved = useRef(false);
 
@@ -119,6 +153,13 @@ export default function LessonPlayerPage() {
       .then((d) => setLessonAssignments(Array.isArray(d) ? d : []))
       .catch(() => {});
   }, [courseId, lessonId]);
+
+  useEffect(() => {
+    offlineFetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => setCurrentUser({ userId: d.userId ?? null, isTeacher: !!d.isTeacher }))
+      .catch(() => {});
+  }, []);
 
   async function markComplete() {
     if (progressSaved.current) return;
@@ -195,10 +236,16 @@ export default function LessonPlayerPage() {
         )}
 
         {lesson.lesson_type === 'audio' && lesson.content_url && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-8 mb-6 flex flex-col items-center">
-            <Volume2 className="w-10 h-10 sm:w-12 sm:h-12 text-fuchsia-400 mb-4 sm:mb-6" />
-            <audio src={lesson.content_url} controls className="w-full" onEnded={markComplete} />
-          </div>
+          <AudioPlayer
+            src={lesson.content_url}
+            chapters={lesson.audio_chapters}
+            transcript={lesson.transcript_content}
+            onEnded={markComplete}
+          />
+        )}
+
+        {lesson.podcast_links && lesson.podcast_links.length > 0 && (
+          <PodcastLinks podcastLinks={lesson.podcast_links} />
         )}
 
         {lesson.lesson_type === 'slides' && lesson.content_url && (
@@ -212,10 +259,27 @@ export default function LessonPlayerPage() {
           </div>
         )}
 
+        {lesson.lesson_type === 'quiz' && lesson.quiz_content && (
+          <QuizPlayer
+            quizContent={lesson.quiz_content}
+            courseId={courseId}
+            lessonId={lessonId}
+            onComplete={markComplete}
+          />
+        )}
+
         {lesson.text_content && (
           <div className="prose prose-invert prose-sm max-w-none mb-6 bg-gray-900 border border-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-8">
             <div dangerouslySetInnerHTML={{ __html: renderTextContent(lesson.text_content, lesson.content_format) }} />
           </div>
+        )}
+
+        {lesson.map_content && (
+          <MapViewer mapContent={lesson.map_content} />
+        )}
+
+        {lesson.documents && lesson.documents.length > 0 && (
+          <DocumentViewer documents={lesson.documents} />
         )}
 
         {/* Lesson-scoped assignments */}
@@ -242,6 +306,18 @@ export default function LessonPlayerPage() {
                 </Link>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Discussion */}
+        {currentUser.userId && (
+          <div className="mb-6">
+            <LessonDiscussion
+              courseId={courseId}
+              lessonId={lessonId}
+              currentUserId={currentUser.userId}
+              isTeacher={currentUser.isTeacher}
+            />
           </div>
         )}
 
