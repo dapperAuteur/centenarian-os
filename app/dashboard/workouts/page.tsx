@@ -340,6 +340,7 @@ export default function WorkoutsPage() {
           </Link>
           <a
             href="/api/workouts/logs/export"
+            download
             className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition"
           >
             <Download className="w-4 h-4" />

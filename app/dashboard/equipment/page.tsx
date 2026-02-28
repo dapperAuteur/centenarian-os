@@ -88,6 +88,7 @@ export default function EquipmentHubPage() {
           </Link>
           <a
             href="/api/equipment/export"
+            download
             className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition"
           >
             <Download className="w-4 h-4" />

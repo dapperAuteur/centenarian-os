@@ -118,6 +118,7 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
               />
             ) : (
               <div className="flex items-center justify-center h-full">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={selected.url}
                   alt={selected.title}
