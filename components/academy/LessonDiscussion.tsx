@@ -180,6 +180,7 @@ export default function LessonDiscussion({ courseId, lessonId, currentUserId, is
         <div className={`flex gap-3 py-3 ${post.is_pinned && !isReply ? 'bg-fuchsia-950/20 -mx-3 px-3 rounded-lg' : ''}`}>
           {/* Avatar */}
           {post.author.avatar_url ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
             <img src={post.author.avatar_url} alt="" className="w-8 h-8 rounded-full shrink-0 object-cover" />
           ) : (
             <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-300 shrink-0">

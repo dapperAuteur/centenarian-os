@@ -9,7 +9,7 @@ import {
 import {
   Bike, Car, Flame, Leaf, DollarSign, Gauge,
   Plus, ChevronRight, AlertCircle, Upload, Zap,
-  Repeat, Wrench, Play,
+  Repeat, Wrench, Play, Download,
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
@@ -708,6 +708,7 @@ export default function TravelPage() {
           { href: '/dashboard/travel/maintenance', icon: <Car className="w-5 h-5" />, label: 'Maintenance', color: 'text-orange-600' },
           { href: '/dashboard/travel/components', icon: <Wrench className="w-5 h-5" />, label: 'Component Wear', color: 'text-amber-600' },
           { href: '/dashboard/travel/import', icon: <Upload className="w-5 h-5" />, label: 'Import Data', color: 'text-purple-600' },
+          { href: '/api/travel/trips/export', icon: <Download className="w-5 h-5" />, label: 'Export Trips', color: 'text-indigo-600' },
           { href: '/dashboard/travel/trips', icon: <Zap className="w-5 h-5" />, label: 'All Trips', color: 'text-green-600' },
           { href: '/dashboard/workouts', icon: <Repeat className="w-5 h-5" />, label: 'Workouts', color: 'text-lime-600' },
         ].map(({ href, icon, label, color }) => (

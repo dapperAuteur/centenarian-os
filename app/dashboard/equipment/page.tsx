@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Package, Plus, TrendingDown, DollarSign, Layers } from 'lucide-react';
+import Link from 'next/link';
+import { Package, Plus, TrendingDown, DollarSign, Layers, Upload, Download } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import EquipmentCard, { type EquipmentItem } from '@/components/equipment/EquipmentCard';
 import CategoryFilter from '@/components/equipment/CategoryFilter';
@@ -78,6 +79,21 @@ export default function EquipmentHubPage() {
             <Plus className="w-4 h-4" />
             Add Item
           </button>
+          <Link
+            href="/dashboard/data/import/equipment"
+            className="flex items-center gap-1.5 px-3 py-2 bg-fuchsia-50 text-fuchsia-700 rounded-xl text-sm font-medium hover:bg-fuchsia-100 transition"
+          >
+            <Upload className="w-4 h-4" />
+            Import
+          </Link>
+          <a
+            href="/api/equipment/export"
+            download
+            className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition"
+          >
+            <Download className="w-4 h-4" />
+            Export
+          </a>
         </div>
       </div>
 

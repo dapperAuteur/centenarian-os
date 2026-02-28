@@ -105,6 +105,7 @@ const PHASES = [
       { done: true, text: 'Tutorial course series — Settings & Billing guide (4 lessons, CYOA navigation)' },
       { done: true, text: 'Tutorial course series — Equipment Tracker guide (8 lessons, CYOA navigation)' },
       { done: true, text: 'Tutorial course series — Getting Started guide (6 lessons, CYOA navigation)' },
+      { done: true, text: 'Tutorial course series — Data Hub guide (3 lessons, CYOA navigation)' },
       { done: true, text: 'Free preview lessons — visitor access without account required' },
       { done: false, text: 'Threaded chat on assignment submissions (student ↔ teacher)' },
       { done: false, text: 'Course direct messages (student ↔ teacher inbox)' },
@@ -223,6 +224,7 @@ const PHASES = [
       { done: true, text: 'Account balance tracking — opening balance + transaction history' },
       { done: true, text: 'Account deactivation — soft-delete preserves transaction history' },
       { done: true, text: 'Contact locations — sub-locations per vendor/customer' },
+      { done: true, text: 'Data Hub — centralized import/export for all 10 modules with CSV templates, date-range filtering, and Google Sheets support' },
     ],
   },
   {

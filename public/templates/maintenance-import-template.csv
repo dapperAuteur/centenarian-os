@@ -1,0 +1,4 @@
+date,vehicle_nickname,service_type,odometer_at_service,cost,vendor,next_service_date,next_service_miles,notes
+2026-01-20,Blue Civic,oil_change,47800,62.50,Jiffy Lube Northgate,2026-04-20,52800,Synthetic 0W-20 full change
+2026-02-05,Red F-150,tire_rotation,31200,35.00,Les Schwab Tires,2026-08-05,36200,All tires at 6/32 tread depth
+2026-02-22,Blue Civic,brake_service,48500,385.00,Honda Dealership,,,Front pads and rotors replaced

@@ -4,9 +4,10 @@
 // Workout templates + log history
 
 import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import {
   Plus, Play, Trash2, Edit3, Clock, Dumbbell,
-  ChevronDown, ChevronUp, X,
+  ChevronDown, ChevronUp, X, Upload, Download,
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
@@ -330,6 +331,21 @@ export default function WorkoutsPage() {
             <Plus className="w-4 h-4" />
             New Template
           </button>
+          <Link
+            href="/dashboard/data/import/workouts"
+            className="flex items-center gap-1.5 px-3 py-2 bg-fuchsia-50 text-fuchsia-700 rounded-xl text-sm font-medium hover:bg-fuchsia-100 transition"
+          >
+            <Upload className="w-4 h-4" />
+            Import
+          </Link>
+          <a
+            href="/api/workouts/logs/export"
+            download
+            className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition"
+          >
+            <Download className="w-4 h-4" />
+            Export
+          </a>
         </div>
       </div>
 

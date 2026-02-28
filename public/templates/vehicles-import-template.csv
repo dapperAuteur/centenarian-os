@@ -1,0 +1,4 @@
+type,nickname,make,model,year,color,ownership_type,trip_mode
+car,Blue Civic,Honda,Civic,2022,Blue,owned,car
+truck,Red F-150,Ford,F-150,2024,Red,leased,car
+bicycle,Trek FX3,Trek,FX3,2023,Black,owned,bike

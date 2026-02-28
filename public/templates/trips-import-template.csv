@@ -1,0 +1,4 @@
+date,mode,origin,destination,distance_miles,duration_min,purpose,cost,trip_category,tax_category,is_round_trip,vehicle_nickname,notes
+2026-02-15,car,Home,Downtown Office,12.4,25,Morning commute to work,0,commute,standard_mileage,true,Blue Civic,Light traffic on I-5
+2026-02-18,flight,SEA,LAX,954,150,Client meeting in Los Angeles,289.00,business,actual_expenses,false,,Delta flight DL1423
+2026-02-22,bike,Greenlake Park,Woodland Park,3.2,18,Saturday morning ride,0,fitness,not_deductible,false,Trek FX3,Nice weather along the trail
