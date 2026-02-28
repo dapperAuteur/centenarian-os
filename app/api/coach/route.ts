@@ -229,21 +229,40 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Could not find Gem Persona' }, { status: 404 });
     }
 
-    // Build full system prompt: base directive + gem prompt + data context
+    // Build full system prompt: base directive + gem prompt + data context + knowledge base
     const dataSources = (personaData.data_sources || []) as DataSourceKey[];
     let dataContext = '';
 
+    const adminDb = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+
     if (dataSources.length > 0) {
-      const adminDb = createAdminClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      );
       dataContext = await fetchDataContext(adminDb, user.id, dataSources);
     }
 
-    const fullSystemPrompt = dataContext
-      ? `${BASE_DIRECTIVE}\n\n${personaData.system_prompt}\n\n--- YOUR USER'S CURRENT DATA ---\n${dataContext}\n--- END DATA ---`
-      : `${BASE_DIRECTIVE}\n\n${personaData.system_prompt}`;
+    // Fetch persistent knowledge base documents for this gem
+    const { data: gemDocs } = await adminDb
+      .from('gem_documents')
+      .select('name, content')
+      .eq('gem_persona_id', gemPersonaId)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true });
+
+    const kbContext = (gemDocs && gemDocs.length > 0)
+      ? gemDocs.map((d: { name: string; content: string }) =>
+          `--- KNOWLEDGE BASE: ${d.name} ---\n${d.content}\n--- END ---`
+        ).join('\n\n')
+      : '';
+
+    let fullSystemPrompt = `${BASE_DIRECTIVE}\n\n${personaData.system_prompt}`;
+    if (dataContext) {
+      fullSystemPrompt += `\n\n--- YOUR USER'S CURRENT DATA ---\n${dataContext}\n--- END DATA ---`;
+    }
+    if (kbContext) {
+      fullSystemPrompt += `\n\n--- KNOWLEDGE BASE DOCUMENTS ---\n${kbContext}\n--- END KNOWLEDGE BASE ---`;
+    }
 
     let sessionId = existingSessionId;
     let chatHistory: GeminiMessage[] = [];

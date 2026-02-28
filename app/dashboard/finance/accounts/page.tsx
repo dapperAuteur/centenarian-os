@@ -352,7 +352,7 @@ export default function AccountsPage() {
                       </button>
                     )}
                     <button
-                      onClick={() => { setEditId(acct.id); setEditForm({ name: acct.name, account_type: acct.account_type, institution_name: acct.institution_name ?? '', last_four: acct.last_four ?? '', interest_rate: acct.interest_rate?.toString() ?? '', credit_limit: acct.credit_limit?.toString() ?? '', opening_balance: acct.opening_balance.toString(), monthly_fee: acct.monthly_fee?.toString() ?? '', due_date: acct.due_date?.toString() ?? '', statement_date: acct.statement_date?.toString() ?? '', notes: acct.notes ?? '' }); }}
+                      onClick={() => { setEditId(acct.id); setEditForm({ name: acct.name, account_type: acct.account_type, institution_name: acct.institution_name ?? '', last_four: acct.last_four ?? '', interest_rate: acct.interest_rate?.toString() ?? '', credit_limit: acct.credit_limit?.toString() ?? '', opening_balance: String(acct.opening_balance ?? 0), monthly_fee: acct.monthly_fee?.toString() ?? '', due_date: acct.due_date?.toString() ?? '', statement_date: acct.statement_date?.toString() ?? '', notes: acct.notes ?? '' }); }}
                       className="p-1.5 text-gray-400 hover:text-fuchsia-600 hover:bg-fuchsia-50 rounded-lg transition"
                       title="Edit"
                     >
@@ -389,8 +389,8 @@ export default function AccountsPage() {
 
       {/* Add Account Modal */}
       {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto" onClick={() => setShowAdd(false)}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-4 my-4" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowAdd(false)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-4 my-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-gray-900">Add Account</h3>
             <form onSubmit={handleAdd} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
