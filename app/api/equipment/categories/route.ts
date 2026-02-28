@@ -20,13 +20,14 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let { data, error } = await supabase
+  const { data: existing, error } = await supabase
     .from('equipment_categories')
     .select('*')
     .eq('user_id', user.id)
     .order('sort_order', { ascending: true });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  let data = existing;
 
   // Seed defaults on first access
   if (!data || data.length === 0) {
