@@ -145,9 +145,11 @@ export default function PricingPage() {
                 'Travel & vehicle tracking with fuel OCR',
                 'Financial dashboard (accounts, budgets, brands)',
                 'Health metrics & wearable sync',
-                'Academy courses & tutorial guides',
+                'Equipment & asset tracking with valuations',
+                'Academy courses & 13 tutorial guides',
                 'Blog & recipe publishing',
                 'AI-powered weekly reviews',
+                'Cross-module activity linking',
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm text-gray-700">
                   <Check className="w-4 h-4 text-fuchsia-500 mt-0.5 shrink-0" />

@@ -22,6 +22,7 @@ Create these modules (chapters) in this order:
 2. **Fuel Logs** — 3 lessons
 3. **Trips & Activities** — 3 lessons
 4. **Vehicle Maintenance** — 2 lessons
+5. **Advanced Trips** — 3 lessons (multi-stop routes, templates, round trips, contact locations)
 
 ### Per-Lesson Settings
 - Set **is_free_preview = true** on ALL lessons
@@ -35,6 +36,7 @@ Create these modules (chapters) in this order:
   - Fuel Log lessons together (03, 04, 05)
   - Trip lessons together (06, 07, 08)
   - Maintenance lessons together (09, 10)
+  - Advanced trip lessons together (11, 12, 13)
 - This means learners who finish any one section will be suggested a related section next
 
 ### After Publishing

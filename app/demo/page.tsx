@@ -135,7 +135,7 @@ export default function DemoPage() {
                   Learn with the Academy
                 </h2>
                 <p className="text-gray-600 mb-4">
-                  CentenarianOS includes 11 tutorial course series covering every module — Travel, Fuel, Finance, Planner, Engine, Health Metrics, Coach, Correlations, Academy, Teaching, and Settings. All tutorial lessons are free with Choose Your Own Adventure navigation.
+                  CentenarianOS includes 13 tutorial course series covering every module — Getting Started, Travel, Fuel, Finance, Planner, Engine, Health Metrics, Equipment, Coach, Correlations, Academy, Teaching, and Settings. All tutorial lessons are free with Choose Your Own Adventure navigation.
                 </p>
                 <Link
                   href="/academy"

@@ -30,6 +30,11 @@ The Teaching dashboard is where teacher-role accounts create and manage courses 
 | 07 | Promo Codes | Creating discount codes tied to Stripe for student checkout |
 | 08 | Payouts | Stripe Connect onboarding and managing your payout account |
 | 09 | Learning Paths | Creating multi-course sequences manually or with AI suggestions |
+| 10 | Adding Audio & Video Chapters | Chapter markers JSON, transcript segments, and how students use them |
+| 11 | Creating Map & Document Lessons | MapViewer JSON (markers, polygons, lines), DocumentViewer JSON, combining with text |
+| 12 | Building Quiz Lessons | Quiz JSON structure, writing good questions, explanations and APA citations |
+| 13 | Podcast Links & Data Importer | Platform-specific podcast links, CSV template, bulk lesson import |
+| 14 | Sequential Module Locking | Enforcing module-order progression, combining with CYOA navigation |
 
 ---
 
@@ -47,3 +52,6 @@ The Teaching dashboard is where teacher-role accounts create and manage courses 
 - Course content is organized as Modules → Lessons
 - Both linear and CYOA navigation modes are available
 - Paid courses require Stripe Connect to receive your earnings
+- Rich content types: chapter markers, transcripts, interactive maps, documents, podcast links, quizzes
+- Data Importer allows bulk lesson creation from CSV
+- Sequential module locking enforces prerequisite completion across modules

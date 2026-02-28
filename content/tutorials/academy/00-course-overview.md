@@ -27,6 +27,11 @@ The Centenarian Academy is the learning platform inside CentenarianOS. This cour
 | 06 | Assignments | Submitting work, metric slots, and reading teacher feedback |
 | 07 | Messaging Your Teacher | The course messaging system and how to get support |
 | 08 | Learning Paths | Curated multi-course sequences and how to follow them |
+| 09 | Video & Audio Chapters | Chapter markers on the progress bar, transcript sync, playback controls |
+| 10 | Interactive Maps & Documents | MapViewer with markers/polygons/lines, DocumentViewer with PDFs and images |
+| 11 | Taking Quizzes | Quiz lesson interface, scoring, explanations, and citations |
+| 12 | Lesson Discussions | Threaded comments, teacher responses, discussion etiquette |
+| 13 | Podcast Episodes & External Links | Platform-specific podcast buttons, podcast-based courses |
 
 ---
 
@@ -42,3 +47,6 @@ No prior setup required. You need a CentenarianOS account. Some courses require 
 - Free preview lessons are available without enrollment on every course
 - Progress is tracked automatically as you complete lessons
 - Teachers can assign work and respond to submissions with feedback
+- Rich media features: chapter markers, transcript sync, interactive maps, document viewers, podcast links
+- Quiz lessons provide self-assessment with explanations and citations
+- Threaded discussions allow student-teacher conversation on individual lessons
