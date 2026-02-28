@@ -9,7 +9,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 
 const VALID_TYPES = new Set([
   'task', 'trip', 'route', 'transaction', 'recipe',
-  'fuel_log', 'maintenance', 'invoice', 'workout', 'equipment',
+  'fuel_log', 'maintenance', 'invoice', 'workout', 'equipment', 'focus_session',
 ]);
 
 function getDb() {
@@ -73,6 +73,14 @@ async function resolveDisplayName(
       const cat = data.equipment_categories as any;
       const catName = cat?.name as string | undefined;
       return catName ? `${data.name} (${catName})` : data.name;
+    }
+    case 'focus_session': {
+      const { data } = await db.from('focus_sessions').select('start_time, duration, session_type').eq('id', entityId).maybeSingle();
+      if (!data) return 'Focus Session';
+      const mins = data.duration ? Math.round(data.duration / 60) : 0;
+      const dateStr = data.start_time ? new Date(data.start_time).toLocaleDateString() : '?';
+      const label = data.session_type === 'work' ? 'Work' : 'Focus';
+      return `${label}: ${mins}min (${dateStr})`;
     }
     default:
       return entityType;

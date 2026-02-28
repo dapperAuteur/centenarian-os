@@ -30,6 +30,7 @@ async function getAdminUser() {
   return user;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function GET(_request: NextRequest) {
   const user = await getAdminUser();
   if (!user || user.email !== process.env.ADMIN_EMAIL) {

@@ -40,6 +40,7 @@ async function getEmbedding(text: string): Promise<number[]> {
   return data.embedding?.values ?? [];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function POST(_req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

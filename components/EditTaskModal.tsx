@@ -9,7 +9,7 @@ import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 
 interface EditTaskModalProps {
-  task: Task;
+  task: Task | null;
   isOpen: boolean;
   onClose: () => void;
   onSave: () => void;
@@ -22,7 +22,7 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
   const supabase = createClient();
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && task) {
       setFormData({
         activity: task.activity,
         description: task.description,
@@ -34,6 +34,8 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
       });
     }
   }, [task, isOpen]);
+
+  if (!task) return null;
 
   const handleSave = async () => {
     setSaving(true);

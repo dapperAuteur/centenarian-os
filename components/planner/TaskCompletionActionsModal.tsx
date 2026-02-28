@@ -1,17 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { DollarSign, MapPin, Dumbbell, Heart, FileText, Check, ChevronDown } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { DollarSign, MapPin, Dumbbell, Heart, FileText, Check, ChevronDown, Clock, Package, Fuel, Wrench } from 'lucide-react';
 import { Task } from '@/lib/types';
 import Modal from '@/components/ui/Modal';
+import { createClient } from '@/lib/supabase/client';
 
 interface TaskCompletionActionsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  task: Task;
+  task: Task | null;
 }
 
-type ActionType = 'transaction' | 'trip' | 'workout' | 'health' | 'invoice';
+type ActionType = 'transaction' | 'trip' | 'workout' | 'health' | 'invoice' | 'focus' | 'equipment' | 'fuel' | 'maintenance';
 
 interface ActionConfig {
   type: ActionType;
@@ -56,6 +57,34 @@ const ACTIONS: ActionConfig[] = [
     description: 'Generate a receivable or payable',
     icon: <FileText className="w-5 h-5" />,
     color: 'text-violet-600 bg-violet-50 border-violet-200',
+  },
+  {
+    type: 'focus',
+    label: 'Log Focus Time',
+    description: 'Record a focus or work session',
+    icon: <Clock className="w-5 h-5" />,
+    color: 'text-orange-600 bg-orange-50 border-orange-200',
+  },
+  {
+    type: 'equipment',
+    label: 'Link Equipment',
+    description: 'Associate gear used for this task',
+    icon: <Package className="w-5 h-5" />,
+    color: 'text-teal-600 bg-teal-50 border-teal-200',
+  },
+  {
+    type: 'fuel',
+    label: 'Log Fuel Fill-up',
+    description: 'Record a fuel stop',
+    icon: <Fuel className="w-5 h-5" />,
+    color: 'text-blue-600 bg-blue-50 border-blue-200',
+  },
+  {
+    type: 'maintenance',
+    label: 'Log Maintenance',
+    description: 'Record a vehicle service',
+    icon: <Wrench className="w-5 h-5" />,
+    color: 'text-amber-600 bg-amber-50 border-amber-200',
   },
 ];
 
@@ -445,6 +474,467 @@ function InvoiceForm({ task, onDone }: { task: Task; onDone: () => void }) {
   );
 }
 
+const FOCUS_TAGS = ['deep-work', 'meeting', 'admin', 'learning', 'creative', 'coding', 'planning', 'review'];
+
+function FocusForm({ task, onDone }: { task: Task; onDone: () => void }) {
+  const [durationMin, setDurationMin] = useState('');
+  const [sessionType, setSessionType] = useState<'focus' | 'work'>('focus');
+  const [hourlyRate, setHourlyRate] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [notes, setNotes] = useState('');
+  const [equipmentItems, setEquipmentItems] = useState<{ id: string; name: string; category: string }[]>([]);
+  const [selectedEquipment, setSelectedEquipment] = useState<Set<string>>(new Set());
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/equipment').then(r => r.ok ? r.json() : { equipment: [] }).then(d => {
+      setEquipmentItems((d.equipment || []).map((e: Record<string, unknown>) => {
+        const cat = e.equipment_categories as { name: string } | null;
+        return { id: String(e.id), name: String(e.name), category: cat?.name || '' };
+      }));
+    });
+  }, []);
+
+  const toggleTag = (tag: string) => {
+    setTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+  };
+
+  const toggleEquipment = (id: string) => {
+    setSelectedEquipment(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSave = async () => {
+    if (!durationMin || Number(durationMin) <= 0) return;
+    setSaving(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const dur = Number(durationMin) * 60;
+      const now = new Date();
+      const start = new Date(now.getTime() - dur * 1000);
+      const rate = hourlyRate ? Number(hourlyRate) : 0;
+      const revenue = rate > 0 ? rate * (dur / 3600) : 0;
+
+      const { data: session, error } = await supabase
+        .from('focus_sessions')
+        .insert({
+          user_id: user.id,
+          task_id: task.id,
+          start_time: start.toISOString(),
+          end_time: now.toISOString(),
+          duration: dur,
+          net_work_duration: dur,
+          session_type: sessionType,
+          hourly_rate: rate,
+          revenue: Math.round(revenue * 100) / 100,
+          tags: tags.length > 0 ? tags : null,
+          notes: notes.trim() || null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await createActivityLink(task.id, 'focus_session', session.id);
+
+      // Link selected equipment to the focus session
+      for (const equipId of selectedEquipment) {
+        await fetch('/api/activity-links', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            source_type: 'focus_session',
+            source_id: session.id,
+            target_type: 'equipment',
+            target_id: equipId,
+          }),
+        });
+      }
+
+      onDone();
+    } catch (err) {
+      console.error('Focus session creation failed:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-2">
+        {(['focus', 'work'] as const).map(t => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setSessionType(t)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition capitalize ${
+              sessionType === t
+                ? 'bg-orange-100 text-orange-700 border-orange-300'
+                : 'bg-gray-50 text-gray-500 border-gray-200'
+            }`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+      <input
+        type="number"
+        min="1"
+        value={durationMin}
+        onChange={e => setDurationMin(e.target.value)}
+        placeholder="Duration (minutes) *"
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+      />
+      <input
+        type="number"
+        step="0.01"
+        min="0"
+        value={hourlyRate}
+        onChange={e => setHourlyRate(e.target.value)}
+        placeholder="Hourly rate (optional)"
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+      />
+      <div>
+        <label className="text-xs font-medium text-gray-600 mb-1 block">Tags</label>
+        <div className="flex flex-wrap gap-1.5">
+          {FOCUS_TAGS.map(tag => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => toggleTag(tag)}
+              className={`px-2 py-1 rounded-md text-xs border transition ${
+                tags.includes(tag)
+                  ? 'bg-orange-100 text-orange-700 border-orange-300'
+                  : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
+              }`}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      </div>
+      <input
+        type="text"
+        value={notes}
+        onChange={e => setNotes(e.target.value)}
+        placeholder="Notes (optional)"
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+      />
+      {equipmentItems.length > 0 && (
+        <div>
+          <label className="text-xs font-medium text-gray-600 mb-1 block">Equipment used</label>
+          <div className="max-h-28 overflow-y-auto space-y-1 border border-gray-200 rounded-lg p-2">
+            {equipmentItems.map(item => (
+              <label key={item.id} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-gray-50 rounded p-1">
+                <input
+                  type="checkbox"
+                  checked={selectedEquipment.has(item.id)}
+                  onChange={() => toggleEquipment(item.id)}
+                  className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                />
+                <span>{item.name}</span>
+                {item.category && <span className="text-gray-400">({item.category})</span>}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+      <button
+        onClick={handleSave}
+        disabled={saving || !durationMin || Number(durationMin) <= 0}
+        className="w-full px-3 py-2 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 disabled:opacity-50 transition"
+      >
+        {saving ? 'Saving...' : 'Save & Link'}
+      </button>
+    </div>
+  );
+}
+
+function EquipmentForm({ task, onDone }: { task: Task; onDone: () => void }) {
+  const [items, setItems] = useState<{ id: string; name: string; category: string }[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/equipment').then(r => r.ok ? r.json() : { equipment: [] }).then(d => {
+      setItems((d.equipment || []).map((e: Record<string, unknown>) => {
+        const cat = e.equipment_categories as { name: string } | null;
+        return { id: String(e.id), name: String(e.name), category: cat?.name || '' };
+      }));
+      setLoading(false);
+    });
+  }, []);
+
+  const toggle = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSave = async () => {
+    if (selected.size === 0) return;
+    setSaving(true);
+    try {
+      for (const equipId of selected) {
+        await createActivityLink(task.id, 'equipment', equipId);
+      }
+      onDone();
+    } catch (err) {
+      console.error('Equipment linking failed:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <p className="text-xs text-gray-400 py-2">Loading equipment...</p>;
+  if (items.length === 0) return <p className="text-xs text-gray-500 py-2">No equipment items found. Add some in the Equipment tracker first.</p>;
+
+  return (
+    <div className="space-y-3">
+      <div className="max-h-40 overflow-y-auto space-y-1 border border-gray-200 rounded-lg p-2">
+        {items.map(item => (
+          <label key={item.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 rounded p-1.5">
+            <input
+              type="checkbox"
+              checked={selected.has(item.id)}
+              onChange={() => toggle(item.id)}
+              className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+            />
+            <span>{item.name}</span>
+            {item.category && <span className="text-xs text-gray-400">({item.category})</span>}
+          </label>
+        ))}
+      </div>
+      <button
+        onClick={handleSave}
+        disabled={saving || selected.size === 0}
+        className="w-full px-3 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 disabled:opacity-50 transition"
+      >
+        {saving ? 'Linking...' : `Link ${selected.size} Item${selected.size !== 1 ? 's' : ''}`}
+      </button>
+    </div>
+  );
+}
+
+function FuelForm({ task, onDone }: { task: Task; onDone: () => void }) {
+  const [vehicles, setVehicles] = useState<{ id: string; nickname: string }[]>([]);
+  const [vehicleId, setVehicleId] = useState('');
+  const [gallons, setGallons] = useState('');
+  const [totalCost, setTotalCost] = useState('');
+  const [station, setStation] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/travel/vehicles').then(r => r.ok ? r.json() : { vehicles: [] }).then(d => {
+      const v = (d.vehicles || []).map((v: Record<string, string>) => ({ id: v.id, nickname: v.nickname || v.make || 'Vehicle' }));
+      setVehicles(v);
+      if (v.length === 1) setVehicleId(v[0].id);
+    });
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/travel/fuel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: task.date,
+          vehicle_id: vehicleId || null,
+          gallons: gallons ? Number(gallons) : null,
+          total_cost: totalCost ? Number(totalCost) : null,
+          station: station.trim() || null,
+          notes: notes.trim() || null,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      const data = await res.json();
+      await createActivityLink(task.id, 'fuel_log', data.id);
+      onDone();
+    } catch (err) {
+      console.error('Fuel log creation failed:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      {vehicles.length > 0 && (
+        <select
+          value={vehicleId}
+          onChange={e => setVehicleId(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="">Select vehicle...</option>
+          {vehicles.map(v => (
+            <option key={v.id} value={v.id}>{v.nickname}</option>
+          ))}
+        </select>
+      )}
+      <div className="grid grid-cols-2 gap-3">
+        <input
+          type="number"
+          step="0.001"
+          min="0"
+          value={gallons}
+          onChange={e => setGallons(e.target.value)}
+          placeholder="Gallons"
+          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          value={totalCost}
+          onChange={e => setTotalCost(e.target.value)}
+          placeholder="Total cost"
+          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </div>
+      <input
+        type="text"
+        value={station}
+        onChange={e => setStation(e.target.value)}
+        placeholder="Station (optional)"
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      />
+      <input
+        type="text"
+        value={notes}
+        onChange={e => setNotes(e.target.value)}
+        placeholder="Notes (optional)"
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      />
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
+      >
+        {saving ? 'Saving...' : 'Save & Link'}
+      </button>
+    </div>
+  );
+}
+
+const SERVICE_TYPES = [
+  'oil_change', 'tire_rotation', 'tire_replacement', 'brake_service',
+  'battery', 'transmission', 'coolant', 'filter', 'inspection',
+  'alignment', 'detailing', 'other',
+];
+
+function MaintenanceForm({ task, onDone }: { task: Task; onDone: () => void }) {
+  const [vehicles, setVehicles] = useState<{ id: string; nickname: string }[]>([]);
+  const [vehicleId, setVehicleId] = useState('');
+  const [serviceType, setServiceType] = useState('');
+  const [cost, setCost] = useState('');
+  const [vendor, setVendor] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/travel/vehicles').then(r => r.ok ? r.json() : { vehicles: [] }).then(d => {
+      const v = (d.vehicles || []).map((v: Record<string, string>) => ({ id: v.id, nickname: v.nickname || v.make || 'Vehicle' }));
+      setVehicles(v);
+      if (v.length === 1) setVehicleId(v[0].id);
+    });
+  }, []);
+
+  const handleSave = async () => {
+    if (!serviceType) return;
+    setSaving(true);
+    try {
+      const res = await fetch('/api/travel/maintenance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: task.date,
+          vehicle_id: vehicleId || null,
+          service_type: serviceType,
+          cost: cost ? Number(cost) : null,
+          vendor: vendor.trim() || null,
+          notes: notes.trim() || null,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      const data = await res.json();
+      await createActivityLink(task.id, 'maintenance', data.id);
+      onDone();
+    } catch (err) {
+      console.error('Maintenance record creation failed:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <select
+        value={serviceType}
+        onChange={e => setServiceType(e.target.value)}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+      >
+        <option value="">Select service type *</option>
+        {SERVICE_TYPES.map(s => (
+          <option key={s} value={s}>{s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>
+        ))}
+      </select>
+      {vehicles.length > 0 && (
+        <select
+          value={vehicleId}
+          onChange={e => setVehicleId(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+        >
+          <option value="">Select vehicle...</option>
+          {vehicles.map(v => (
+            <option key={v.id} value={v.id}>{v.nickname}</option>
+          ))}
+        </select>
+      )}
+      <input
+        type="number"
+        step="0.01"
+        min="0"
+        value={cost}
+        onChange={e => setCost(e.target.value)}
+        placeholder="Cost (optional)"
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+      />
+      <input
+        type="text"
+        value={vendor}
+        onChange={e => setVendor(e.target.value)}
+        placeholder="Vendor / shop (optional)"
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+      />
+      <input
+        type="text"
+        value={notes}
+        onChange={e => setNotes(e.target.value)}
+        placeholder="Notes (optional)"
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+      />
+      <button
+        onClick={handleSave}
+        disabled={saving || !serviceType}
+        className="w-full px-3 py-2 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 disabled:opacity-50 transition"
+      >
+        {saving ? 'Saving...' : 'Save & Link'}
+      </button>
+    </div>
+  );
+}
+
 // --- Main modal ---
 
 export default function TaskCompletionActionsModal({ isOpen, onClose, task }: TaskCompletionActionsModalProps) {
@@ -465,6 +955,10 @@ export default function TaskCompletionActionsModal({ isOpen, onClose, task }: Ta
       case 'workout': return <WorkoutForm task={task} onDone={() => handleDone('workout')} />;
       case 'health': return <HealthForm task={task} onDone={() => handleDone('health')} />;
       case 'invoice': return <InvoiceForm task={task} onDone={() => handleDone('invoice')} />;
+      case 'focus': return <FocusForm task={task} onDone={() => handleDone('focus')} />;
+      case 'equipment': return <EquipmentForm task={task} onDone={() => handleDone('equipment')} />;
+      case 'fuel': return <FuelForm task={task} onDone={() => handleDone('fuel')} />;
+      case 'maintenance': return <MaintenanceForm task={task} onDone={() => handleDone('maintenance')} />;
     }
   };
 
