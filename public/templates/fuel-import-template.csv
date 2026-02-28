@@ -1,0 +1,4 @@
+date,vehicle_nickname,odometer_miles,gallons,total_cost,cost_per_gallon,fuel_grade,station,notes
+2026-02-10,Blue Civic,48230,10.45,38.14,3.65,regular,Shell on 45th & Aurora,Filled up before road trip
+2026-02-17,Red F-150,31520,18.2,72.80,4.00,regular,Costco Gas Lynnwood,Used membership discount
+2026-02-25,Blue Civic,48612,9.8,42.14,4.30,premium,Chevron Downtown,Switched to premium for engine knock

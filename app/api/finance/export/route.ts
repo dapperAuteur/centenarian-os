@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { buildCsvResponse } from '@/lib/csv/helpers';
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -26,36 +27,22 @@ export async function GET(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const rows = data || [];
-
-  // Build CSV
-  const header = 'Date,Type,Amount,Description,Vendor,Category,Notes';
-  const csvRows = rows.map((tx) => {
+  const rows = (data || []).map((tx) => {
     const cat = tx.budget_categories as { name: string } | null;
     return [
-      tx.transaction_date,
-      tx.type,
-      tx.amount,
-      csvEscape(tx.description || ''),
-      csvEscape(tx.vendor || ''),
-      csvEscape(cat?.name || ''),
-      csvEscape(tx.notes || ''),
-    ].join(',');
+      tx.transaction_date || '',
+      tx.type || '',
+      String(tx.amount ?? ''),
+      tx.description || '',
+      tx.vendor || '',
+      cat?.name || '',
+      tx.notes || '',
+    ];
   });
 
-  const csv = [header, ...csvRows].join('\n');
-
-  return new NextResponse(csv, {
-    headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="centenarianos-finance-export.csv"`,
-    },
-  });
-}
-
-function csvEscape(value: string): string {
-  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
+  return buildCsvResponse(
+    ['Date', 'Type', 'Amount', 'Description', 'Vendor', 'Category', 'Notes'],
+    rows,
+    'centenarianos-finance-export.csv',
+  );
 }

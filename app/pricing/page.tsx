@@ -146,7 +146,7 @@ export default function PricingPage() {
                 'Financial dashboard (accounts, budgets, brands)',
                 'Health metrics & wearable sync',
                 'Equipment & asset tracking with valuations',
-                'Academy courses & 13 tutorial guides (CSV bulk import)',
+                'Academy courses & 14 tutorial guides + Data Hub (bulk import/export)',
                 'Blog & recipe publishing',
                 'AI-powered weekly reviews',
                 'Cross-module activity linking',

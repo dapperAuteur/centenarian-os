@@ -4,7 +4,8 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Task, RecurringTask } from '@/lib/types';
-import { Calendar, DollarSign, Plus, Repeat } from 'lucide-react';
+import Link from 'next/link';
+import { Calendar, DollarSign, Plus, Repeat, Upload, Download } from 'lucide-react';
 import { EditTaskModal } from '@/components/EditTaskModal';
 import CreateRecurringTaskModal, { RecurringTaskData } from '@/components/planner/CreateRecurringTaskModal';
 import CreateTaskModal from '@/components/planner/CreateTaskModal';
@@ -293,6 +294,20 @@ export default function PlannerPage() {
             <Repeat className="w-4 h-4" />
             <span>Recurring Task</span>
           </button>
+          <Link
+            href="/dashboard/data/import/tasks"
+            className="flex items-center gap-1.5 px-3 py-2 bg-fuchsia-50 text-fuchsia-700 rounded-lg text-sm font-medium hover:bg-fuchsia-100 transition"
+          >
+            <Upload className="w-4 h-4" />
+            Import
+          </Link>
+          <a
+            href="/api/planner/export"
+            className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+          >
+            <Download className="w-4 h-4" />
+            Export
+          </a>
           <Calendar className="w-5 h-5 text-gray-500" />
           <input
             type="date"

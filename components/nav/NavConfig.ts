@@ -22,6 +22,7 @@ import {
   Bot,
   Gem,
   Package,
+  Database,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -73,6 +74,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Finance', href: '/dashboard/finance', icon: DollarSign, paid: true },
       { label: 'Travel', href: '/dashboard/travel', icon: Navigation, paid: true },
       { label: 'Equipment', href: '/dashboard/equipment', icon: Package, paid: true },
+      { label: 'Data Hub', href: '/dashboard/data', icon: Database, paid: true },
     ],
   },
   {

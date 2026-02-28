@@ -135,7 +135,7 @@ export default function DemoPage() {
                   Learn with the Academy
                 </h2>
                 <p className="text-gray-600 mb-4">
-                  CentenarianOS includes 13 tutorial course series covering every module — Getting Started, Travel, Fuel, Finance, Planner, Engine, Health Metrics, Equipment, Coach, Correlations, Academy, Teaching, and Settings. All tutorial lessons are free with Choose Your Own Adventure navigation. Teachers can build courses with the Bulk Course Importer — upload a CSV or Google Sheet to create modules and lessons in one operation.
+                  CentenarianOS includes 14 tutorial course series covering every module — Getting Started, Travel, Fuel, Finance, Planner, Engine, Health Metrics, Equipment, Data Hub, Coach, Correlations, Academy, Teaching, and Settings. All tutorial lessons are free with Choose Your Own Adventure navigation. The Data Hub lets you bulk import and export data across all 10 modules with CSV templates and Google Sheets support. Teachers can build courses with the Bulk Course Importer.
                 </p>
                 <Link
                   href="/academy"
