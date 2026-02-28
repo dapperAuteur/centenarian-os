@@ -9,9 +9,10 @@ import Link from 'next/link';
 import {
   ChevronLeft, Plus, Loader2, Save, Globe, EyeOff, Trash2,
   GitBranch, Sparkles, Play, FileText, Volume2, Presentation, GripVertical,
-  CheckCircle, ClipboardList, HelpCircle, X,
+  CheckCircle, ClipboardList, HelpCircle, X, Map, ChevronDown, Paperclip,
 } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
+import DataImporter from '@/components/academy/DataImporter';
 
 interface Lesson {
   id: string;
@@ -80,6 +81,18 @@ export default function CourseEditorPage() {
   const [quizAttemptsAllowed, setQuizAttemptsAllowed] = useState(-1);
   const [audioChapters, setAudioChapters] = useState<Array<{ id: string; title: string; startTime: number; endTime: number }>>([]);
   const [transcriptText, setTranscriptText] = useState('');
+  // Map editor state
+  const [showMapSection, setShowMapSection] = useState(false);
+  const [mapCenter, setMapCenter] = useState({ lat: 0, lng: 0 });
+  const [mapZoom, setMapZoom] = useState(3);
+  const [mapMarkers, setMapMarkers] = useState<Array<{ id: string; lat: number; lng: number; title: string; description: string; color: string }>>([]);
+  const [mapLines, setMapLines] = useState<Array<{ id: string; coords: [number, number][]; title: string; color: string; description: string }>>([]);
+  const [mapPolygons, setMapPolygons] = useState<Array<{ id: string; coords: [number, number][]; title: string; color: string; fillColor: string; description: string }>>([]);
+  // Document editor state
+  const [showDocSection, setShowDocSection] = useState(false);
+  const [lessonDocuments, setLessonDocuments] = useState<Array<{ id: string; url: string; title: string; description: string; source_url: string }>>([]);
+  // Podcast links state
+  const [podcastLinks, setPodcastLinks] = useState<Array<{ id: string; url: string; label: string }>>([]);
   const [feedback, setFeedback] = useState('');
 
   const fetchCourse = useCallback(() => {
@@ -145,6 +158,23 @@ export default function CourseEditorPage() {
     if (newLesson.lesson_type === 'audio') {
       if (audioChapters.length > 0) payload.audio_chapters = audioChapters;
       if (transcriptText.trim()) payload.transcript_content = parseTranscriptText(transcriptText);
+      const validLinks = podcastLinks.filter((l) => l.url.trim());
+      if (validLinks.length > 0) payload.podcast_links = validLinks.map(({ url, label }) => ({ url, label }));
+    }
+    // Map content (any lesson type)
+    const hasMapData = mapMarkers.length > 0 || mapLines.length > 0 || mapPolygons.length > 0;
+    if (hasMapData) {
+      payload.map_content = {
+        center: [mapCenter.lat, mapCenter.lng],
+        zoom: mapZoom,
+        ...(mapMarkers.length > 0 ? { markers: mapMarkers } : {}),
+        ...(mapLines.length > 0 ? { lines: mapLines } : {}),
+        ...(mapPolygons.length > 0 ? { polygons: mapPolygons } : {}),
+      };
+    }
+    // Documents (any lesson type)
+    if (lessonDocuments.length > 0) {
+      payload.documents = lessonDocuments.filter((d) => d.url.trim());
     }
     const r = await fetch(`/api/academy/courses/${courseId}/lessons`, {
       method: 'POST',
@@ -158,6 +188,15 @@ export default function CourseEditorPage() {
       setQuizAttemptsAllowed(-1);
       setAudioChapters([]);
       setTranscriptText('');
+      setMapCenter({ lat: 0, lng: 0 });
+      setMapZoom(3);
+      setMapMarkers([]);
+      setMapLines([]);
+      setMapPolygons([]);
+      setShowMapSection(false);
+      setLessonDocuments([]);
+      setShowDocSection(false);
+      setPodcastLinks([]);
       setAddingLesson(null);
       fetchCourse();
     }
@@ -240,6 +279,75 @@ export default function CourseEditorPage() {
     }
     if (segments.length > 0) segments[segments.length - 1].endTime = segments[segments.length - 1].startTime + 30;
     return segments;
+  }
+
+  function handleMarkerImport(rows: Record<string, string>[]) {
+    const markers = rows.map((r) => ({
+      id: crypto.randomUUID(),
+      lat: parseFloat(r.lat) || 0,
+      lng: parseFloat(r.lng) || 0,
+      title: r.title || '',
+      description: r.description || '',
+      color: r.color || '',
+    }));
+    setMapMarkers(markers);
+    if (markers.length > 0 && mapCenter.lat === 0 && mapCenter.lng === 0) {
+      setMapCenter({ lat: markers[0].lat, lng: markers[0].lng });
+    }
+  }
+
+  function handleLineImport(rows: Record<string, string>[]) {
+    const grouped: Record<string, { coords: [number, number][]; title: string; color: string; description: string }> = {};
+    for (const r of rows) {
+      const lid = r.line_id || 'default';
+      if (!grouped[lid]) grouped[lid] = { coords: [], title: r.title || '', color: r.color || '', description: r.description || '' };
+      grouped[lid].coords.push([parseFloat(r.lat) || 0, parseFloat(r.lng) || 0]);
+    }
+    setMapLines(Object.entries(grouped).map(([, v]) => ({ id: crypto.randomUUID(), ...v })));
+  }
+
+  function handlePolygonImport(rows: Record<string, string>[]) {
+    const grouped: Record<string, { coords: [number, number][]; title: string; color: string; fillColor: string; description: string }> = {};
+    for (const r of rows) {
+      const pid = r.polygon_id || 'default';
+      if (!grouped[pid]) grouped[pid] = { coords: [], title: r.title || '', color: r.color || '', fillColor: r.fill_color || '', description: r.description || '' };
+      grouped[pid].coords.push([parseFloat(r.lat) || 0, parseFloat(r.lng) || 0]);
+    }
+    setMapPolygons(Object.entries(grouped).map(([, v]) => ({ id: crypto.randomUUID(), ...v })));
+  }
+
+  function handleDocumentImport(rows: Record<string, string>[]) {
+    setLessonDocuments(rows.map((r) => ({
+      id: crypto.randomUUID(),
+      url: r.url || '',
+      title: r.title || '',
+      description: r.description || '',
+      source_url: r.source_url || '',
+    })));
+  }
+
+  function addDocument() {
+    setLessonDocuments((prev) => [...prev, { id: crypto.randomUUID(), url: '', title: '', description: '', source_url: '' }]);
+  }
+
+  function updateDocument(docId: string, updates: Partial<{ url: string; title: string; description: string; source_url: string }>) {
+    setLessonDocuments((prev) => prev.map((d) => d.id === docId ? { ...d, ...updates } : d));
+  }
+
+  function removeDocument(docId: string) {
+    setLessonDocuments((prev) => prev.filter((d) => d.id !== docId));
+  }
+
+  function addPodcastLink() {
+    setPodcastLinks((prev) => [...prev, { id: crypto.randomUUID(), url: '', label: '' }]);
+  }
+
+  function updatePodcastLink(linkId: string, updates: Partial<{ url: string; label: string }>) {
+    setPodcastLinks((prev) => prev.map((l) => l.id === linkId ? { ...l, ...updates } : l));
+  }
+
+  function removePodcastLink(linkId: string) {
+    setPodcastLinks((prev) => prev.filter((l) => l.id !== linkId));
   }
 
   async function deleteLesson(lessonId: string) {
@@ -759,6 +867,240 @@ export default function CourseEditorPage() {
                           </div>
                         </div>
                       )}
+
+                      {/* Podcast links — audio lessons only */}
+                      {newLesson.lesson_type === 'audio' && (
+                        <div className="space-y-2 border border-gray-700 rounded-xl p-3 bg-gray-800/30">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-semibold text-gray-200">Podcast Links</h4>
+                            <button type="button" onClick={addPodcastLink} className="flex items-center gap-1 text-xs text-fuchsia-400 hover:text-fuchsia-300 transition">
+                              <Plus className="w-3 h-3" /> Add Platform
+                            </button>
+                          </div>
+                          {podcastLinks.length === 0 && (
+                            <p className="text-xs text-gray-600 text-center py-2">No podcast links. Add links to Spotify, Apple Podcasts, YouTube, etc.</p>
+                          )}
+                          <div className="space-y-2">
+                            {podcastLinks.map((link, li) => (
+                              <div key={link.id} className="flex items-center gap-2">
+                                <span className="text-xs text-gray-500 shrink-0 w-5">{li + 1}</span>
+                                <input
+                                  type="url"
+                                  value={link.url}
+                                  onChange={(e) => updatePodcastLink(link.id, { url: e.target.value })}
+                                  placeholder="https://open.spotify.com/episode/..."
+                                  className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+                                />
+                                <input
+                                  type="text"
+                                  value={link.label}
+                                  onChange={(e) => updatePodcastLink(link.id, { label: e.target.value })}
+                                  placeholder="Label (auto-detected)"
+                                  className="w-36 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+                                />
+                                <button type="button" onClick={() => removePodcastLink(link.id)} className="text-gray-600 hover:text-red-400 transition p-1 shrink-0">
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-xs text-gray-600">Leave label blank to auto-detect platform from URL (Spotify, Apple, YouTube, etc.)</p>
+                        </div>
+                      )}
+
+                      {/* Interactive Map — any lesson type */}
+                      <div className="border border-gray-700 rounded-xl overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setShowMapSection((v) => !v)}
+                          className="w-full flex items-center gap-2 px-3 py-2.5 bg-gray-800/50 text-sm font-semibold text-gray-300 hover:bg-gray-800 transition"
+                        >
+                          <Map className="w-3.5 h-3.5 text-fuchsia-400" />
+                          Interactive Map
+                          <span className="text-xs text-gray-600 ml-1">
+                            {mapMarkers.length > 0 || mapLines.length > 0 || mapPolygons.length > 0
+                              ? `(${mapMarkers.length} markers, ${mapLines.length} lines, ${mapPolygons.length} polygons)`
+                              : '(optional)'}
+                          </span>
+                          <ChevronDown className={`w-3.5 h-3.5 ml-auto text-gray-600 transition-transform ${showMapSection ? 'rotate-180' : ''}`} />
+                        </button>
+                        {showMapSection && (
+                          <div className="p-3 space-y-3 bg-gray-800/20">
+                            <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-1">Center Lat</label>
+                                <input
+                                  type="number"
+                                  step="any"
+                                  value={mapCenter.lat}
+                                  onChange={(e) => setMapCenter((c) => ({ ...c, lat: parseFloat(e.target.value) || 0 }))}
+                                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-1">Center Lng</label>
+                                <input
+                                  type="number"
+                                  step="any"
+                                  value={mapCenter.lng}
+                                  onChange={(e) => setMapCenter((c) => ({ ...c, lng: parseFloat(e.target.value) || 0 }))}
+                                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-1">Zoom (1-18)</label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={18}
+                                  value={mapZoom}
+                                  onChange={(e) => setMapZoom(Number(e.target.value) || 3)}
+                                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                                />
+                              </div>
+                            </div>
+                            <DataImporter
+                              label="Markers"
+                              columns={[
+                                { key: 'lat', label: 'Lat', required: true },
+                                { key: 'lng', label: 'Lng', required: true },
+                                { key: 'title', label: 'Title', required: true },
+                                { key: 'description', label: 'Description' },
+                                { key: 'color', label: 'Color' },
+                              ]}
+                              onImport={handleMarkerImport}
+                              templateCsvUrl="/templates/map-markers.csv"
+                            />
+                            <DataImporter
+                              label="Lines (trade routes, paths)"
+                              columns={[
+                                { key: 'line_id', label: 'Line ID', required: true },
+                                { key: 'lat', label: 'Lat', required: true },
+                                { key: 'lng', label: 'Lng', required: true },
+                                { key: 'title', label: 'Title' },
+                                { key: 'color', label: 'Color' },
+                                { key: 'description', label: 'Description' },
+                              ]}
+                              onImport={handleLineImport}
+                              templateCsvUrl="/templates/map-lines.csv"
+                            />
+                            <DataImporter
+                              label="Polygons (regions, territories)"
+                              columns={[
+                                { key: 'polygon_id', label: 'Polygon ID', required: true },
+                                { key: 'lat', label: 'Lat', required: true },
+                                { key: 'lng', label: 'Lng', required: true },
+                                { key: 'title', label: 'Title' },
+                                { key: 'color', label: 'Color' },
+                                { key: 'fill_color', label: 'Fill Color' },
+                                { key: 'description', label: 'Description' },
+                              ]}
+                              onImport={handlePolygonImport}
+                              templateCsvUrl="/templates/map-polygons.csv"
+                            />
+                            {(mapMarkers.length > 0 || mapLines.length > 0 || mapPolygons.length > 0) && (
+                              <div className="flex items-center gap-3 pt-1">
+                                <p className="text-xs text-green-400">
+                                  {mapMarkers.length} markers, {mapLines.length} lines, {mapPolygons.length} polygons loaded
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => { setMapMarkers([]); setMapLines([]); setMapPolygons([]); }}
+                                  className="text-xs text-red-400 hover:text-red-300 transition"
+                                >
+                                  Clear all
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Documents — any lesson type */}
+                      <div className="border border-gray-700 rounded-xl overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setShowDocSection((v) => !v)}
+                          className="w-full flex items-center gap-2 px-3 py-2.5 bg-gray-800/50 text-sm font-semibold text-gray-300 hover:bg-gray-800 transition"
+                        >
+                          <Paperclip className="w-3.5 h-3.5 text-fuchsia-400" />
+                          Documents
+                          <span className="text-xs text-gray-600 ml-1">
+                            {lessonDocuments.length > 0 ? `(${lessonDocuments.length} docs)` : '(optional)'}
+                          </span>
+                          <ChevronDown className={`w-3.5 h-3.5 ml-auto text-gray-600 transition-transform ${showDocSection ? 'rotate-180' : ''}`} />
+                        </button>
+                        {showDocSection && (
+                          <div className="p-3 space-y-3 bg-gray-800/20">
+                            <DataImporter
+                              label="Batch import from CSV"
+                              columns={[
+                                { key: 'url', label: 'URL', required: true },
+                                { key: 'title', label: 'Title', required: true },
+                                { key: 'description', label: 'Description' },
+                                { key: 'source_url', label: 'Source URL' },
+                              ]}
+                              onImport={handleDocumentImport}
+                              templateCsvUrl="/templates/documents.csv"
+                            />
+                            <div className="border-t border-gray-700 pt-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Manual entry</p>
+                                <button type="button" onClick={addDocument} className="flex items-center gap-1 text-xs text-fuchsia-400 hover:text-fuchsia-300 transition">
+                                  <Plus className="w-3 h-3" /> Add Document
+                                </button>
+                              </div>
+                              {lessonDocuments.length === 0 && (
+                                <p className="text-xs text-gray-600 text-center py-2">No documents. Import via CSV or add manually.</p>
+                              )}
+                              <div className="space-y-2">
+                                {lessonDocuments.map((doc, di) => (
+                                  <div key={doc.id} className="border border-gray-700 rounded-lg p-2 space-y-1.5">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-500 shrink-0 w-5">{di + 1}</span>
+                                      <input
+                                        type="text"
+                                        value={doc.title}
+                                        onChange={(e) => updateDocument(doc.id, { title: e.target.value })}
+                                        placeholder="Document title…"
+                                        className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+                                      />
+                                      <button type="button" onClick={() => removeDocument(doc.id)} className="text-gray-600 hover:text-red-400 transition p-1 shrink-0">
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                    <div className="ml-7">
+                                      <MediaUploader
+                                        dark
+                                        onUpload={(url) => updateDocument(doc.id, { url })}
+                                        onRemove={() => updateDocument(doc.id, { url: '' })}
+                                        currentUrl={doc.url || undefined}
+                                        label="Upload PDF or image"
+                                      />
+                                    </div>
+                                    <div className="ml-7 grid grid-cols-2 gap-2">
+                                      <input
+                                        type="text"
+                                        value={doc.description}
+                                        onChange={(e) => updateDocument(doc.id, { description: e.target.value })}
+                                        placeholder="Description…"
+                                        className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+                                      />
+                                      <input
+                                        type="url"
+                                        value={doc.source_url}
+                                        onChange={(e) => updateDocument(doc.id, { source_url: e.target.value })}
+                                        placeholder="Original source URL…"
+                                        className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
 
                       <div className="flex flex-wrap gap-2">
                         <button onClick={() => addLesson(mod.id)} className="px-4 py-2.5 bg-fuchsia-600 text-white rounded-xl text-sm font-semibold hover:bg-fuchsia-700 transition min-h-11">Add Lesson</button>

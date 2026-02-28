@@ -11,10 +11,15 @@ import {
   ChevronLeft, ChevronRight, GitBranch, CheckCircle, Loader2,
   Play, FileText, Volume2, Presentation, ClipboardList, ArrowRight, HelpCircle,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import QuizPlayer from '@/components/academy/QuizPlayer';
 import AudioPlayer from '@/components/academy/AudioPlayer';
 import LessonDiscussion from '@/components/academy/LessonDiscussion';
+import PodcastLinks from '@/components/academy/PodcastLinks';
+import DocumentViewer from '@/components/academy/DocumentViewer';
+
+const MapViewer = dynamic(() => import('@/components/academy/MapViewer'), { ssr: false });
 import { marked } from 'marked';
 import { generateHTML } from '@tiptap/html';
 import StarterKit from '@tiptap/starter-kit';
@@ -69,6 +74,15 @@ interface Lesson {
   } | null;
   audio_chapters: Array<{ id: string; title: string; startTime: number; endTime: number }> | null;
   transcript_content: Array<{ startTime: number; endTime: number; text: string }> | null;
+  map_content: {
+    center: [number, number];
+    zoom: number;
+    markers?: Array<{ id: string; lat: number; lng: number; title: string; description?: string; color?: string }>;
+    lines?: Array<{ id: string; coords: [number, number][]; title: string; color?: string; description?: string }>;
+    polygons?: Array<{ id: string; coords: [number, number][]; title: string; color?: string; fillColor?: string; description?: string }>;
+  } | null;
+  documents: Array<{ id: string; url: string; title: string; description?: string; source_url?: string }> | null;
+  podcast_links: Array<{ url: string; label?: string }> | null;
 }
 
 interface CrossroadsOption {
@@ -230,6 +244,10 @@ export default function LessonPlayerPage() {
           />
         )}
 
+        {lesson.podcast_links && lesson.podcast_links.length > 0 && (
+          <PodcastLinks podcastLinks={lesson.podcast_links} />
+        )}
+
         {lesson.lesson_type === 'slides' && lesson.content_url && (
           <div className="aspect-video bg-gray-900 rounded-xl sm:rounded-2xl overflow-hidden mb-6">
             <iframe
@@ -254,6 +272,14 @@ export default function LessonPlayerPage() {
           <div className="prose prose-invert prose-sm max-w-none mb-6 bg-gray-900 border border-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-8">
             <div dangerouslySetInnerHTML={{ __html: renderTextContent(lesson.text_content, lesson.content_format) }} />
           </div>
+        )}
+
+        {lesson.map_content && (
+          <MapViewer mapContent={lesson.map_content} />
+        )}
+
+        {lesson.documents && lesson.documents.length > 0 && (
+          <DocumentViewer documents={lesson.documents} />
         )}
 
         {/* Lesson-scoped assignments */}

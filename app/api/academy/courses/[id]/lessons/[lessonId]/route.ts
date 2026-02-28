@@ -104,7 +104,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   const body = await request.json();
-  const allowed = ['title', 'lesson_type', 'content_url', 'text_content', 'content_format', 'duration_seconds', 'order', 'is_free_preview', 'module_id', 'quiz_content', 'audio_chapters', 'transcript_content'];
+  const allowed = ['title', 'lesson_type', 'content_url', 'text_content', 'content_format', 'duration_seconds', 'order', 'is_free_preview', 'module_id', 'quiz_content', 'audio_chapters', 'transcript_content', 'map_content', 'documents', 'podcast_links'];
   const updates = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
 
   const { data, error } = await db

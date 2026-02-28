@@ -46,7 +46,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   const { data: lessons, error } = await db
     .from('lessons')
-    .select('id, title, lesson_type, duration_seconds, order, is_free_preview, module_id, content_url, text_content, quiz_content, audio_chapters, transcript_content')
+    .select('id, title, lesson_type, duration_seconds, order, is_free_preview, module_id, content_url, text_content, quiz_content, audio_chapters, transcript_content, map_content, documents, podcast_links')
     .eq('course_id', courseId)
     .order('order', { ascending: true });
 
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   const {
     title, lesson_type = 'video', content_url, text_content,
     duration_seconds, order = 0, module_id, quiz_content,
-    audio_chapters, transcript_content,
+    audio_chapters, transcript_content, map_content, documents, podcast_links,
   } = body;
   const is_free_preview = isFreeByDefault;
 
@@ -147,6 +147,9 @@ export async function POST(request: NextRequest, { params }: Params) {
       ...(quiz_content ? { quiz_content } : {}),
       ...(audio_chapters ? { audio_chapters } : {}),
       ...(transcript_content ? { transcript_content } : {}),
+      ...(map_content ? { map_content } : {}),
+      ...(documents ? { documents } : {}),
+      ...(podcast_links ? { podcast_links } : {}),
     })
     .select()
     .single();
