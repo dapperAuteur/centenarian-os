@@ -32,11 +32,11 @@ export default function FloatingActionsMenu({ userRole }: Props) {
   return (
     <>
       {/* Speed-dial stack */}
-      <div className="fixed bottom-22 lg:bottom-6 right-6 z-40 flex flex-col items-end gap-3">
+      <div className="fixed bottom-22 lg:bottom-6 right-6 z-40 flex flex-col items-end gap-3 pointer-events-none">
         {/* Help action */}
         <div
           className={`flex items-center gap-2.5 transition-all duration-200 ${
-            open ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+            open ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4'
           }`}
         >
           <span className="bg-gray-900 text-gray-200 text-xs font-medium px-2.5 py-1 rounded-full shadow border border-gray-700">
@@ -55,7 +55,7 @@ export default function FloatingActionsMenu({ userRole }: Props) {
         {/* Feedback action */}
         <div
           className={`flex items-center gap-2.5 transition-all duration-200 delay-75 ${
-            open ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+            open ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4'
           }`}
         >
           <span className="bg-gray-900 text-gray-200 text-xs font-medium px-2.5 py-1 rounded-full shadow border border-gray-700">
@@ -75,7 +75,7 @@ export default function FloatingActionsMenu({ userRole }: Props) {
         <button
           onClick={() => setOpen((v) => !v)}
           title={open ? 'Close menu' : 'Help & Feedback'}
-          className="bg-fuchsia-600 text-white rounded-full p-3.5 shadow-lg hover:bg-fuchsia-700 transition-colors"
+          className="bg-fuchsia-600 text-white rounded-full p-3.5 shadow-lg hover:bg-fuchsia-700 transition-colors pointer-events-auto"
           aria-label={open ? 'Close menu' : 'Help & Feedback'}
         >
           {open

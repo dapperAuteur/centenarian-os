@@ -10,6 +10,7 @@ import {
   MessagesSquare, Database, Zap, CheckCircle2, XCircle,
   Paperclip, X as XIcon, FileText, Image as ImageIcon,
 } from 'lucide-react';
+import GemKnowledgeBase from '@/components/ai/GemKnowledgeBase';
 
 // ── Constants ────────────────────────────────────────────────────────
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -365,6 +366,8 @@ export default function CoachPage() {
             </p>
           )}
         </div>
+
+        {selectedGemId && <GemKnowledgeBase gemId={selectedGemId} />}
 
         <h3 className="text-lg font-semibold text-gray-800 mb-2 border-t pt-4">History</h3>
         <div className="grow overflow-y-auto space-y-2">

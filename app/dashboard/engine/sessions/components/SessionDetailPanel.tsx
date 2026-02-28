@@ -50,7 +50,7 @@ export default function SessionDetailPanel({
       {/* Backdrop - mobile only */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity sm:hidden"
+          className="fixed inset-0 bg-black/30 z-40 transition-opacity sm:hidden"
           onClick={onClose}
           aria-hidden="true"
         />

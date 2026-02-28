@@ -39,11 +39,12 @@ export async function GET() {
 
       const income = (totals ?? []).filter((t) => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
       const expenses = (totals ?? []).filter((t) => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
-      let balance = Number(acct.opening_balance) + income - expenses;
 
-      // Debt accounts (credit cards, loans): invert so positive spending shows as negative debt
       const isDebtAccount = acct.account_type === 'credit_card' || acct.account_type === 'loan';
-      if (isDebtAccount) balance = -balance;
+      // Debt accounts: expenses increase debt, payments (income) decrease it
+      const balance = isDebtAccount
+        ? -(Number(acct.opening_balance) + expenses - income)
+        : Number(acct.opening_balance) + income - expenses;
 
       return { ...acct, balance };
     })
