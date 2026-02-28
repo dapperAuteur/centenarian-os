@@ -9,7 +9,7 @@ import { Link2, X, Plus, Search } from 'lucide-react';
 
 type EntityType =
   | 'task' | 'trip' | 'route' | 'transaction' | 'recipe'
-  | 'fuel_log' | 'maintenance' | 'invoice' | 'workout';
+  | 'fuel_log' | 'maintenance' | 'invoice' | 'workout' | 'equipment';
 
 interface ActivityLink {
   id: string;
@@ -39,6 +39,7 @@ const TYPE_LABELS: Record<EntityType, string> = {
   maintenance: 'Maintenance',
   invoice: 'Invoice',
   workout: 'Workout',
+  equipment: 'Equipment',
 };
 
 const TYPE_COLORS: Record<EntityType, string> = {
@@ -51,11 +52,12 @@ const TYPE_COLORS: Record<EntityType, string> = {
   maintenance: 'bg-gray-50 text-gray-700 border-gray-200',
   invoice: 'bg-blue-50 text-blue-700 border-blue-200',
   workout: 'bg-rose-50 text-rose-700 border-rose-200',
+  equipment: 'bg-teal-50 text-teal-700 border-teal-200',
 };
 
 // Linkable types (exclude the current entity type)
 const LINKABLE_TYPES: EntityType[] = [
-  'task', 'trip', 'route', 'transaction', 'recipe', 'workout',
+  'task', 'trip', 'route', 'transaction', 'recipe', 'workout', 'equipment',
 ];
 
 export default function ActivityLinker({ entityType, entityId }: ActivityLinkerProps) {
@@ -163,6 +165,26 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
                 id: r.id,
                 display_name: r.title || 'Recipe',
               }));
+          }
+          break;
+        }
+        case 'equipment': {
+          const res = await fetch('/api/equipment');
+          if (res.ok) {
+            const d = await res.json();
+            results = (d.equipment || [])
+              .filter((e: Record<string, unknown>) => {
+                const search = `${e.name || ''} ${e.brand || ''} ${e.model || ''}`.toLowerCase();
+                return search.includes(q);
+              })
+              .slice(0, 10)
+              .map((e: Record<string, unknown>) => {
+                const cat = e.equipment_categories as { name: string } | null;
+                return {
+                  id: String(e.id),
+                  display_name: cat ? `${e.name} (${cat.name})` : String(e.name),
+                };
+              });
           }
           break;
         }

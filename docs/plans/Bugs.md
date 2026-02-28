@@ -1,2 +1,0 @@
-I have milestones on roadmap but when I try to create recurring task it says "Please create a milestone first in your roadmap".
-Also, I'd like to be able to create one off tasks on task planner and assign them to roadmap items. these tasks when complete should allow user to create financial transactions, money transfers, travel, exercise, meal plans, meals consumed, actions that add data to other modules, etc. How do we do this?
