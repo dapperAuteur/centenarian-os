@@ -6,10 +6,11 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Link2, X, Plus, Search } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 type EntityType =
   | 'task' | 'trip' | 'route' | 'transaction' | 'recipe'
-  | 'fuel_log' | 'maintenance' | 'invoice' | 'workout' | 'equipment';
+  | 'fuel_log' | 'maintenance' | 'invoice' | 'workout' | 'equipment' | 'focus_session';
 
 interface ActivityLink {
   id: string;
@@ -40,6 +41,7 @@ const TYPE_LABELS: Record<EntityType, string> = {
   invoice: 'Invoice',
   workout: 'Workout',
   equipment: 'Equipment',
+  focus_session: 'Focus Session',
 };
 
 const TYPE_COLORS: Record<EntityType, string> = {
@@ -53,11 +55,12 @@ const TYPE_COLORS: Record<EntityType, string> = {
   invoice: 'bg-blue-50 text-blue-700 border-blue-200',
   workout: 'bg-rose-50 text-rose-700 border-rose-200',
   equipment: 'bg-teal-50 text-teal-700 border-teal-200',
+  focus_session: 'bg-orange-50 text-orange-700 border-orange-200',
 };
 
 // Linkable types (exclude the current entity type)
 const LINKABLE_TYPES: EntityType[] = [
-  'task', 'trip', 'route', 'transaction', 'recipe', 'workout', 'equipment',
+  'task', 'trip', 'route', 'transaction', 'recipe', 'workout', 'equipment', 'focus_session',
 ];
 
 export default function ActivityLinker({ entityType, entityId }: ActivityLinkerProps) {
@@ -188,6 +191,32 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
           }
           break;
         }
+        case 'focus_session': {
+          const supabase = createClient();
+          const { data: sessions } = await supabase
+            .from('focus_sessions')
+            .select('id, start_time, duration, session_type, notes')
+            .order('start_time', { ascending: false })
+            .limit(20);
+          if (sessions) {
+            results = sessions
+              .filter((s) => {
+                const search = `${s.notes || ''} ${s.session_type || ''} ${s.start_time || ''}`.toLowerCase();
+                return search.includes(q);
+              })
+              .slice(0, 10)
+              .map((s) => {
+                const mins = s.duration ? Math.round(s.duration / 60) : 0;
+                const dateStr = s.start_time ? new Date(s.start_time).toLocaleDateString() : '?';
+                const label = s.session_type === 'work' ? 'Work' : 'Focus';
+                return {
+                  id: s.id,
+                  display_name: `${label}: ${mins}min (${dateStr})`,
+                };
+              });
+          }
+          break;
+        }
         case 'task': {
           // Tasks are queried via supabase client on the planner, not a dedicated API
           // Show a simplified message
@@ -283,7 +312,7 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
                 setSearchResults([]);
                 setSearchQuery('');
               }}
-              className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs flex-shrink-0"
+              className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs shrink-0"
             >
               <option value="">Select type...</option>
               {LINKABLE_TYPES

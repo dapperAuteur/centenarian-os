@@ -406,7 +406,7 @@ export default function PlannerPage() {
       )}
 
       <EditTaskModal
-        task={editingTask!}
+        task={editingTask}
         isOpen={!!editingTask}
         onClose={() => setEditingTask(null)}
         onSave={loadTasks}
@@ -428,7 +428,7 @@ export default function PlannerPage() {
       <TaskCompletionActionsModal
         isOpen={!!completedTask}
         onClose={() => setCompletedTask(null)}
-        task={completedTask!}
+        task={completedTask}
       />
     </div>
   );
