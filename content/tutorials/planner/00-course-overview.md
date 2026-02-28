@@ -31,6 +31,8 @@ The first two lessons are sequential (the hierarchy and how to build one). After
 | 09 | Financial Tracking in Your Plan | ~5 min | text/video |
 | 10 | Archiving and Restoring | ~5 min | text/video |
 | 11 | The AI Weekly Review | ~6 min | text/video |
+| 12 | Task Contacts & Locations | ~4 min | text/video |
+| 13 | Cross-Module Activity Links | ~4 min | text/video |
 
 ---
 
@@ -46,6 +48,7 @@ Recommended paths:
 - *Want to track project finances?* → 09
 - *Want to see the AI review in action?* → 11
 - *Need to clean up old plans?* → 10
+- *Want to link tasks to contacts, locations, or other modules?* → 12 → 13
 
 ---
 
