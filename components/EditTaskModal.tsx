@@ -21,10 +21,8 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
   const [locationName, setLocationName] = useState('');
   const supabase = createClient();
 
-  if (!task) return null;
-
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && task) {
       setFormData({
         activity: task.activity,
         description: task.description,
@@ -36,6 +34,8 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
       });
     }
   }, [task, isOpen]);
+
+  if (!task) return null;
 
   const handleSave = async () => {
     setSaving(true);

@@ -8,7 +8,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  Layers, BookOpen, CheckCircle2, Lock, ChevronRight, Trophy, ArrowRight,
+  Layers, BookOpen, CheckCircle2, ChevronRight, Trophy, ArrowRight,
 } from 'lucide-react';
 
 interface CourseStub {
