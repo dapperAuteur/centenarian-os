@@ -155,9 +155,11 @@ export default function CourseEditorPage() {
         attemptsAllowed: quizAttemptsAllowed,
       };
     }
-    if (newLesson.lesson_type === 'audio') {
+    if (newLesson.lesson_type === 'audio' || newLesson.lesson_type === 'video') {
       if (audioChapters.length > 0) payload.audio_chapters = audioChapters;
       if (transcriptText.trim()) payload.transcript_content = parseTranscriptText(transcriptText);
+    }
+    if (newLesson.lesson_type === 'audio') {
       const validLinks = podcastLinks.filter((l) => l.url.trim());
       if (validLinks.length > 0) payload.podcast_links = validLinks.map(({ url, label }) => ({ url, label }));
     }
@@ -701,8 +703,8 @@ export default function CourseEditorPage() {
                         </label>
                       </div>
                       {/* Quiz editor — shown when lesson_type is quiz */}
-                      {/* Audio chapter/transcript editor */}
-                      {newLesson.lesson_type === 'audio' && (
+                      {/* Chapter/transcript editor — audio & video */}
+                      {(newLesson.lesson_type === 'audio' || newLesson.lesson_type === 'video') && (
                         <div className="space-y-4 border border-gray-700 rounded-xl p-3 bg-gray-800/30">
                           {/* Chapter markers */}
                           <div>

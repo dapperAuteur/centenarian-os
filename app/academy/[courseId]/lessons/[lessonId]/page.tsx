@@ -15,6 +15,7 @@ import dynamic from 'next/dynamic';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import QuizPlayer from '@/components/academy/QuizPlayer';
 import AudioPlayer from '@/components/academy/AudioPlayer';
+import VideoPlayer from '@/components/academy/VideoPlayer';
 import LessonDiscussion from '@/components/academy/LessonDiscussion';
 import PodcastLinks from '@/components/academy/PodcastLinks';
 import DocumentViewer from '@/components/academy/DocumentViewer';
@@ -225,14 +226,12 @@ export default function LessonPlayerPage() {
 
         {/* Content area */}
         {lesson.lesson_type === 'video' && lesson.content_url && (
-          <div className="aspect-video bg-gray-900 rounded-xl sm:rounded-2xl overflow-hidden mb-6">
-            <video
-              src={lesson.content_url}
-              controls
-              className="w-full h-full"
-              onEnded={markComplete}
-            />
-          </div>
+          <VideoPlayer
+            src={lesson.content_url}
+            chapters={lesson.audio_chapters}
+            transcript={lesson.transcript_content}
+            onEnded={markComplete}
+          />
         )}
 
         {lesson.lesson_type === 'audio' && lesson.content_url && (
