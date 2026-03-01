@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Plus, Route } from 'lucide-react';
+import ActivityLinker from '@/components/ui/ActivityLinker';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import MultiStopForm from '@/components/travel/MultiStopForm';
 import RouteCard from '@/components/travel/RouteCard';
@@ -662,6 +663,11 @@ export default function TripsPage() {
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
               />
             </div>
+            {editingId && (
+              <div className="pt-3 border-t border-gray-200">
+                <ActivityLinker entityType="trip" entityId={editingId} />
+              </div>
+            )}
             <div className="flex gap-3 pt-2">
               <button
                 type="button"

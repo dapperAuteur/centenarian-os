@@ -11,6 +11,7 @@ import RecipeVisibilitySelector from './RecipeVisibilitySelector';
 import RecipeCloudinaryUploader from './RecipeCloudinaryUploader';
 import RecipeIngredientBuilder, { type DraftIngredient } from './RecipeIngredientBuilder';
 import { Save, Loader2, ExternalLink, RefreshCw, Trash2, Link2, Download } from 'lucide-react';
+import ActivityLinker from '@/components/ui/ActivityLinker';
 import type { Recipe, RecipeMedia, RecipeVisibility } from '@/lib/types';
 
 const TiptapEditor = dynamic(() => import('@/components/blog/TiptapEditor'), { ssr: false });
@@ -570,6 +571,12 @@ export default function RecipeForm({ recipe, username }: RecipeFormProps) {
             />
             <p className="text-xs text-gray-400">Cite the original source. Shown on the public recipe page.</p>
           </div>
+
+          {isEditing && recipe?.id && (
+            <div className="bg-white border border-gray-200 rounded-xl p-4">
+              <ActivityLinker entityType="recipe" entityId={recipe.id} />
+            </div>
+          )}
         </div>
       </div>
     </div>
