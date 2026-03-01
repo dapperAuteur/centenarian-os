@@ -7,8 +7,9 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Plus, Play, Trash2, Edit3, Clock, Dumbbell,
-  ChevronDown, ChevronUp, X, Upload, Download,
+  ChevronDown, ChevronUp, X, Upload, Download, Link2,
 } from 'lucide-react';
+import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Exercise {
@@ -109,6 +110,8 @@ export default function WorkoutsPage() {
   const [form, setForm] = useState({ name: '', description: '', category: '', estimated_duration_min: '' });
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [saving, setSaving] = useState(false);
+
+  const [linkingLogId, setLinkingLogId] = useState<string | null>(null);
 
   // Log workout modal
   const [logModal, setLogModal] = useState<Template | null>(null);
@@ -464,9 +467,14 @@ export default function WorkoutsPage() {
                     {log.duration_min ? ` · ${log.duration_min} min` : ''}
                   </p>
                 </div>
-                <button onClick={() => handleDeleteLog(log.id)} className="text-xs text-red-400 hover:text-red-600">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setLinkingLogId(log.id)} className="text-xs text-gray-400 hover:text-sky-600" title="Link activities">
+                    <Link2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => handleDeleteLog(log.id)} className="text-xs text-red-400 hover:text-red-600" title="Delete">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
               {log.notes && <p className="text-xs text-gray-500 mb-2">{log.notes}</p>}
               {log.workout_log_exercises.length > 0 && (
@@ -687,6 +695,14 @@ export default function WorkoutsPage() {
           </form>
         </div>
       )}
+
+      <ActivityLinkModal
+        isOpen={!!linkingLogId}
+        onClose={() => setLinkingLogId(null)}
+        entityType="workout"
+        entityId={linkingLogId || ''}
+        title="Link Workout"
+      />
     </div>
   );
 }

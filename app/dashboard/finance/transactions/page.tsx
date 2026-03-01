@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight, Link2 } from 'lucide-react';
 import Link from 'next/link';
+import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Category {
@@ -65,6 +66,7 @@ export default function TransactionsPage() {
   // Edit inline
   const [editId, setEditId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Record<string, string>>({});
+  const [linkingId, setLinkingId] = useState<string | null>(null);
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
@@ -391,6 +393,9 @@ export default function TransactionsPage() {
                           <button onClick={() => startEdit(tx)} className="p-1.5 hover:bg-gray-100 rounded-lg transition" title="Edit">
                             <Edit3 className="w-3.5 h-3.5 text-gray-400" />
                           </button>
+                          <button onClick={() => setLinkingId(tx.id)} className="p-1.5 hover:bg-sky-50 rounded-lg transition" title="Link activities">
+                            <Link2 className="w-3.5 h-3.5 text-gray-400" />
+                          </button>
                           <button onClick={() => handleDelete(tx.id)} className="p-1.5 hover:bg-red-50 rounded-lg transition" title="Delete">
                             <Trash2 className="w-3.5 h-3.5 text-red-400" />
                           </button>
@@ -429,6 +434,14 @@ export default function TransactionsPage() {
           </div>
         )}
       </div>
+
+      <ActivityLinkModal
+        isOpen={!!linkingId}
+        onClose={() => setLinkingId(null)}
+        entityType="transaction"
+        entityId={linkingId || ''}
+        title="Link Transaction"
+      />
     </div>
   );
 }

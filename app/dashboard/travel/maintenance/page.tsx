@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Plus, AlertCircle, Wrench } from 'lucide-react';
+import ActivityLinker from '@/components/ui/ActivityLinker';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
@@ -407,6 +408,12 @@ export default function MaintenancePage() {
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
             </div>
+
+            {editingId && (
+              <div className="pt-3 border-t border-gray-200">
+                <ActivityLinker entityType="maintenance" entityId={editingId} />
+              </div>
+            )}
 
             <div className="flex gap-3 pt-2">
               <button type="button" onClick={() => { setShowForm(false); setEditingId(null); }}

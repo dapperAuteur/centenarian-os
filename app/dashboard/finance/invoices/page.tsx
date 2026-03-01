@@ -3,10 +3,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   Plus, FileText, ArrowDownLeft, ArrowUpRight, Clock, CheckCircle2,
-  AlertTriangle, Trash2, Loader2, X,
+  AlertTriangle, Trash2, Loader2, X, Link2,
 } from 'lucide-react';
 import Link from 'next/link';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
+import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface InvoiceItem {
@@ -69,6 +70,8 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'receivable' | 'payable'>('all');
   const [statusFilter, setStatusFilter] = useState<string>('active');
+
+  const [linkingId, setLinkingId] = useState<string | null>(null);
 
   // Create modal
   const [showCreate, setShowCreate] = useState(false);
@@ -332,31 +335,40 @@ export default function InvoicesPage() {
               )}
 
               {/* Actions */}
-              {inv.status !== 'paid' && inv.status !== 'cancelled' && (
-                <div className="mt-3 pl-8 flex flex-wrap gap-2">
-                  {inv.status === 'draft' && (
+              <div className="mt-3 pl-8 flex flex-wrap gap-2">
+                {inv.status !== 'paid' && inv.status !== 'cancelled' && (
+                  <>
+                    {inv.status === 'draft' && (
+                      <button
+                        onClick={() => markSent(inv.id)}
+                        className="px-3 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100"
+                      >
+                        Mark Sent
+                      </button>
+                    )}
                     <button
-                      onClick={() => markSent(inv.id)}
-                      className="px-3 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100"
+                      onClick={() => markPaid(inv.id)}
+                      className="px-3 py-1 text-xs font-medium bg-green-50 text-green-700 rounded-lg hover:bg-green-100"
                     >
-                      Mark Sent
+                      Mark Paid
                     </button>
-                  )}
-                  <button
-                    onClick={() => markPaid(inv.id)}
-                    className="px-3 py-1 text-xs font-medium bg-green-50 text-green-700 rounded-lg hover:bg-green-100"
-                  >
-                    Mark Paid
-                  </button>
-                  <button
-                    onClick={() => deleteInvoice(inv.id)}
-                    className="px-3 py-1 text-xs font-medium bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
-                  >
-                    <Trash2 className="w-3 h-3 inline mr-1" />
-                    Delete
-                  </button>
-                </div>
-              )}
+                    <button
+                      onClick={() => deleteInvoice(inv.id)}
+                      className="px-3 py-1 text-xs font-medium bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
+                    >
+                      <Trash2 className="w-3 h-3 inline mr-1" />
+                      Delete
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => setLinkingId(inv.id)}
+                  className="px-3 py-1 text-xs font-medium bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100"
+                >
+                  <Link2 className="w-3 h-3 inline mr-1" />
+                  Link
+                </button>
+              </div>
             </div>
           );
         })}
@@ -558,6 +570,14 @@ export default function InvoicesPage() {
           </div>
         </div>
       )}
+
+      <ActivityLinkModal
+        isOpen={!!linkingId}
+        onClose={() => setLinkingId(null)}
+        entityType="invoice"
+        entityId={linkingId || ''}
+        title="Link Invoice"
+      />
     </div>
   );
 }

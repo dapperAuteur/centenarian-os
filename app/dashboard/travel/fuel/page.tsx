@@ -8,6 +8,7 @@ import {
 import { Camera, Plus, Loader2, ChevronLeft, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
+import ActivityLinker from '@/components/ui/ActivityLinker';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface FuelLog {
@@ -549,6 +550,12 @@ export default function FuelLogPage() {
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
+              </div>
+            )}
+
+            {editingId && (
+              <div className="pt-3 border-t border-gray-200">
+                <ActivityLinker entityType="fuel_log" entityId={editingId} />
               </div>
             )}
 
