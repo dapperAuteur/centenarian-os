@@ -6,6 +6,7 @@ import { ChevronLeft, Plus, AlertCircle, Wrench } from 'lucide-react';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import CategorySelect from '@/components/finance/CategorySelect';
 
 interface MaintenanceRecord {
   id: string;
@@ -371,21 +372,13 @@ export default function MaintenancePage() {
               />
             </div>
 
-            {financeCategories.length > 0 && (
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Finance Category</label>
-                <select
-                  value={form.finance_category_id}
-                  onChange={(e) => setForm((f) => ({ ...f, finance_category_id: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value="">Uncategorized</option>
-                  {financeCategories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+            <CategorySelect
+              value={form.finance_category_id}
+              onChange={(id) => setForm((f) => ({ ...f, finance_category_id: id }))}
+              categories={financeCategories}
+              onCategoryCreated={(cat) => setFinanceCategories((prev) => [...prev, cat])}
+              label="Finance Category"
+            />
 
             <div className="grid grid-cols-2 gap-3">
               <div>
