@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  ArrowLeft, Calendar, MapPin, Clock, Gauge, Flame, Leaf, DollarSign,
+  ArrowLeft, MapPin, Clock, Gauge, Flame, Leaf, DollarSign,
   Copy, Trash2, Loader2, Car, Bike, Footprints, Train, Plane,
 } from 'lucide-react';
 import Link from 'next/link';

@@ -43,20 +43,6 @@ interface ModuleGroup {
   items: UncategorizedItem[];
 }
 
-const ENTITY_LABELS: Record<string, string> = {
-  transaction: 'Finance',
-  task: 'Tasks',
-  trip: 'Trips',
-  workout: 'Workouts',
-  equipment: 'Equipment',
-  focus_session: 'Focus',
-  recipe: 'Recipes',
-  fuel_log: 'Fuel',
-  maintenance: 'Maintenance',
-  invoice: 'Invoices',
-  route: 'Routes',
-};
-
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<LifeCategory[]>([]);
   const [analytics, setAnalytics] = useState<CategoryAnalytics[]>([]);
