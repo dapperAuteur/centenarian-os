@@ -263,7 +263,7 @@ export default function PlannerPage() {
       </header>
 
       {/* View Controls */}
-      <div className="bg-white rounded-xl shadow-lg p-4 mb-6 flex flex-wrap gap-4 items-center justify-between">
+      <div className="bg-white rounded-xl shadow-lg p-4 mb-6 flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between">
         <div className="flex gap-2">
           {(['day', 'week', 'month'] as ViewMode[]).map(mode => (
             <button
@@ -279,7 +279,7 @@ export default function PlannerPage() {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setShowCreateTaskModal(true)}
             className="flex items-center space-x-2 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition"
@@ -308,13 +308,21 @@ export default function PlannerPage() {
             <Download className="w-4 h-4" />
             Export
           </a>
-          <Calendar className="w-5 h-5 text-gray-500" />
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
-          />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+              className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+            >
+              Today
+            </button>
+            <Calendar className="w-5 h-5 text-gray-500 hidden sm:block" />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
+            />
+          </div>
         </div>
       </div>
 

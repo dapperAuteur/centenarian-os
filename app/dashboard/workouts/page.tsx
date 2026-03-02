@@ -4,6 +4,7 @@
 // Workout templates + log history
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Plus, Play, Trash2, Edit3, Clock, Dumbbell,
@@ -99,6 +100,7 @@ function DraftExerciseRow({
 }
 
 export default function WorkoutsPage() {
+  const router = useRouter();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [logs, setLogs] = useState<WorkoutLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -458,7 +460,7 @@ export default function WorkoutsPage() {
             </div>
           )}
           {logs.map((log) => (
-            <div key={log.id} className="bg-white border border-gray-200 rounded-2xl p-4">
+            <div key={log.id} className="bg-white border border-gray-200 rounded-2xl p-4 cursor-pointer hover:border-gray-300 transition" onClick={() => router.push(`/dashboard/workouts/${log.id}`)}>
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <p className="text-sm font-semibold text-gray-900">{log.name}</p>
@@ -467,7 +469,7 @@ export default function WorkoutsPage() {
                     {log.duration_min ? ` · ${log.duration_min} min` : ''}
                   </p>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                   <button onClick={() => setLinkingLogId(log.id)} className="text-xs text-gray-400 hover:text-sky-600" title="Link activities">
                     <Link2 className="w-3.5 h-3.5" />
                   </button>

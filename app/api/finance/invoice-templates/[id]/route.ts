@@ -1,6 +1,6 @@
-// app/api/workouts/logs/[id]/route.ts
-// GET: fetch single workout log with exercises
-// DELETE: remove a workout log and its exercises
+// app/api/finance/invoice-templates/[id]/route.ts
+// PATCH: update template
+// DELETE: delete template
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -13,8 +13,8 @@ function getDb() {
   );
 }
 
-export async function GET(
-  _request: NextRequest,
+export async function PATCH(
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
@@ -23,22 +23,28 @@ export async function GET(
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const db = getDb();
-  const { data, error } = await db
-    .from('workout_logs')
-    .select('*, workout_log_exercises(*)')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .maybeSingle();
+  const body = await request.json();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-
-  // Sort exercises by sort_order
-  if (data.workout_log_exercises) {
-    data.workout_log_exercises.sort((a: { sort_order: number }, b: { sort_order: number }) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  const allowed = [
+    'name', 'direction', 'contact_name', 'contact_id',
+    'subtotal', 'tax_amount', 'total',
+    'account_id', 'brand_id', 'category_id', 'notes',
+  ];
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  for (const key of allowed) {
+    if (key in body) updates[key] = body[key];
   }
 
-  return NextResponse.json({ workout: data });
+  const { data, error } = await db
+    .from('invoice_templates')
+    .update(updates)
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .select('*')
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
 }
 
 export async function DELETE(
@@ -51,9 +57,8 @@ export async function DELETE(
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const db = getDb();
-  // Exercises cascade-delete via FK
   const { error } = await db
-    .from('workout_logs')
+    .from('invoice_templates')
     .delete()
     .eq('id', id)
     .eq('user_id', user.id);

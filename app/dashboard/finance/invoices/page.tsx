@@ -1,15 +1,25 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Plus, FileText, ArrowDownLeft, ArrowUpRight, Clock, CheckCircle2,
-  AlertTriangle, Trash2, Loader2, X, Link2,
+  AlertTriangle, Trash2, Loader2, X, Link2, Bookmark, ChevronDown,
 } from 'lucide-react';
 import Link from 'next/link';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
 import CategorySelect from '@/components/finance/CategorySelect';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+
+interface InvoiceTemplate {
+  id: string;
+  name: string;
+  direction: string;
+  contact_name: string | null;
+  total: number;
+  use_count: number;
+}
 
 interface InvoiceItem {
   id?: string;
@@ -65,13 +75,16 @@ const STATUS_BADGE: Record<string, { bg: string; text: string; Icon: typeof Cloc
 };
 
 export default function InvoicesPage() {
+  const router = useRouter();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [templates, setTemplates] = useState<InvoiceTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'receivable' | 'payable'>('all');
   const [statusFilter, setStatusFilter] = useState<string>('active');
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const [linkingId, setLinkingId] = useState<string | null>(null);
 
@@ -95,22 +108,25 @@ export default function InvoicesPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [invRes, acctRes, catRes, brandRes] = await Promise.all([
+    const [invRes, acctRes, catRes, brandRes, tmplRes] = await Promise.all([
       offlineFetch(`/api/finance/invoices${filter !== 'all' ? `?direction=${filter}` : ''}`),
       offlineFetch('/api/finance/accounts'),
       offlineFetch('/api/finance/categories'),
       offlineFetch('/api/brands'),
+      offlineFetch('/api/finance/invoice-templates'),
     ]);
 
     const invData = await invRes.json();
     const acctData = await acctRes.json();
     const catData = await catRes.json();
     const brandData = await brandRes.json();
+    const tmplData = await tmplRes.json();
 
     setInvoices(invData.invoices ?? []);
     setAccounts(Array.isArray(acctData) ? acctData.filter((a: Account & { is_active: boolean }) => a.is_active) : []);
     setCategories(catData.categories || []);
     setBrands(Array.isArray(brandData) ? brandData : []);
+    setTemplates(tmplData.templates ?? []);
     setLoading(false);
   }, [filter]);
 
@@ -203,6 +219,18 @@ export default function InvoicesPage() {
 
   const lineTotal = lineItems.reduce((s, li) => s + (Number(li.quantity) || 1) * (Number(li.unit_price) || 0), 0);
 
+  async function createFromTemplate(templateId: string) {
+    const res = await offlineFetch('/api/finance/invoice-templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from_template_id: templateId }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      router.push(`/dashboard/finance/invoices/${data.id}`);
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -222,13 +250,42 @@ export default function InvoicesPage() {
             {' / '}Invoices
           </p>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 text-sm font-medium"
-        >
-          <Plus className="w-4 h-4" />
-          New Invoice
-        </button>
+        <div className="flex items-center gap-2">
+          {templates.length > 0 && (
+            <div className="relative">
+              <button
+                onClick={() => setShowTemplates(!showTemplates)}
+                className="flex items-center gap-2 px-4 py-2 bg-violet-50 text-violet-700 rounded-lg hover:bg-violet-100 text-sm font-medium transition"
+              >
+                <Bookmark className="w-4 h-4" />
+                From Template
+                <ChevronDown className="w-3 h-3" />
+              </button>
+              {showTemplates && (
+                <div className="absolute right-0 mt-1 w-64 bg-white border border-gray-200 rounded-xl shadow-lg z-10 py-1">
+                  {templates.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => { setShowTemplates(false); createFromTemplate(t.id); }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition"
+                    >
+                      <span className="font-medium text-gray-900">{t.name}</span>
+                      {t.contact_name && <span className="text-gray-500 ml-1">({t.contact_name})</span>}
+                      <span className="text-xs text-gray-400 block">${Number(t.total).toFixed(2)} · Used {t.use_count}x</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            New Invoice
+          </button>
+        </div>
       </div>
 
       {/* Summary cards */}
@@ -290,7 +347,10 @@ export default function InvoicesPage() {
 
           return (
             <div key={inv.id} className={`bg-white border rounded-xl p-4 ${isOverdue ? 'border-red-300' : ''}`}>
-              <div className="flex flex-wrap items-start justify-between gap-3">
+              <div
+                className="flex flex-wrap items-start justify-between gap-3 cursor-pointer"
+                onClick={() => router.push(`/dashboard/finance/invoices/${inv.id}`)}
+              >
                 <div className="flex items-center gap-3">
                   {inv.direction === 'receivable' ? (
                     <ArrowDownLeft className="w-5 h-5 text-green-500 shrink-0" />
@@ -326,7 +386,10 @@ export default function InvoicesPage() {
 
               {/* Line items summary */}
               {inv.invoice_items?.length > 0 && (
-                <div className="mt-2 pl-8 text-xs text-gray-500">
+                <div
+                  className="mt-2 pl-8 text-xs text-gray-500 cursor-pointer"
+                  onClick={() => router.push(`/dashboard/finance/invoices/${inv.id}`)}
+                >
                   {inv.invoice_items.map((item, i) => (
                     <span key={i}>
                       {i > 0 && ' · '}
@@ -423,7 +486,7 @@ export default function InvoicesPage() {
               </div>
 
               {/* Invoice number + dates */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Invoice #</label>
                   <input
@@ -431,7 +494,7 @@ export default function InvoicesPage() {
                     value={form.invoice_number}
                     onChange={(e) => setForm({ ...form, invoice_number: e.target.value })}
                     placeholder="INV-001"
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
                   />
                 </div>
                 <div>
@@ -440,7 +503,7 @@ export default function InvoicesPage() {
                     type="date"
                     value={form.invoice_date}
                     onChange={(e) => setForm({ ...form, invoice_date: e.target.value })}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
                   />
                 </div>
               </div>
@@ -451,7 +514,7 @@ export default function InvoicesPage() {
                   type="date"
                   value={form.due_date}
                   onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
                 />
               </div>
 
@@ -466,14 +529,14 @@ export default function InvoicesPage() {
                         placeholder="Description"
                         value={li.description}
                         onChange={(e) => updateLineItem(i, 'description', e.target.value)}
-                        className="flex-1 border rounded-lg px-3 py-2 text-sm"
+                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
                       />
                       <input
                         type="number"
                         placeholder="Qty"
                         value={li.quantity}
                         onChange={(e) => updateLineItem(i, 'quantity', e.target.value)}
-                        className="w-16 border rounded-lg px-2 py-2 text-sm text-center"
+                        className="w-16 border border-gray-300 rounded-lg px-2 py-2 text-sm text-center text-gray-900"
                         min="1"
                       />
                       <input
@@ -481,7 +544,7 @@ export default function InvoicesPage() {
                         placeholder="Price"
                         value={li.unit_price}
                         onChange={(e) => updateLineItem(i, 'unit_price', e.target.value)}
-                        className="w-24 border rounded-lg px-2 py-2 text-sm text-right"
+                        className="w-24 border border-gray-300 rounded-lg px-2 py-2 text-sm text-right text-gray-900"
                         step="0.01"
                         min="0"
                       />
@@ -505,13 +568,13 @@ export default function InvoicesPage() {
               </div>
 
               {/* Optional fields */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Account</label>
                   <select
                     value={form.account_id}
                     onChange={(e) => setForm({ ...form, account_id: e.target.value })}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
                   >
                     <option value="">None</option>
                     {accounts.map((a) => (
@@ -533,7 +596,7 @@ export default function InvoicesPage() {
                   <select
                     value={form.brand_id}
                     onChange={(e) => setForm({ ...form, brand_id: e.target.value })}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
                   >
                     <option value="">None</option>
                     {brands.map((b) => (
@@ -549,7 +612,7 @@ export default function InvoicesPage() {
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   rows={2}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
                 />
               </div>
 

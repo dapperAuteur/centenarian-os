@@ -731,7 +731,7 @@ export default function TravelPage() {
             className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl"
           >
             <h2 className="text-lg font-bold text-gray-900">Log Trip</h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Mode</label>
                 <select
@@ -754,7 +754,7 @@ export default function TravelPage() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
                 <input
@@ -772,7 +772,7 @@ export default function TravelPage() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Miles</label>
                 <input
@@ -798,7 +798,7 @@ export default function TravelPage() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Purpose</label>
                 <select
@@ -926,7 +926,7 @@ export default function TravelPage() {
             className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl"
           >
             <h2 className="text-lg font-bold text-gray-900">{editingVehicle ? 'Edit Vehicle' : 'Add Vehicle'}</h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Type</label>
                 <select
@@ -975,7 +975,7 @@ export default function TravelPage() {
                 required
               />
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Year</label>
                 <input

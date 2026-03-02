@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Plus, AlertCircle, Wrench } from 'lucide-react';
 import ActivityLinker from '@/components/ui/ActivityLinker';
@@ -61,6 +62,7 @@ function fmtMoney(n: number | null | undefined) {
 interface FinanceCategory { id: string; name: string; color: string; }
 
 export default function MaintenancePage() {
+  const router = useRouter();
   const [records, setRecords] = useState<MaintenanceRecord[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [financeCategories, setFinanceCategories] = useState<FinanceCategory[]>([]);
@@ -237,7 +239,7 @@ export default function MaintenancePage() {
             </div>
             <div className="divide-y divide-gray-100">
               {vRecords.map((r) => (
-                <div key={r.id} className="px-5 py-4 flex items-start justify-between">
+                <div key={r.id} className="px-5 py-4 flex items-start justify-between cursor-pointer hover:bg-gray-50 transition" onClick={() => router.push(`/dashboard/travel/maintenance/${r.id}`)}>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-gray-900">
@@ -259,7 +261,7 @@ export default function MaintenancePage() {
                     )}
                     {r.notes && <p className="text-xs text-gray-600 mt-0.5">{r.notes}</p>}
                   </div>
-                  <div className="flex gap-3 ml-4 shrink-0">
+                  <div className="flex gap-3 ml-4 shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => handleEdit(r)}
                       className="text-xs text-sky-500 hover:text-sky-700 transition"
@@ -315,7 +317,7 @@ export default function MaintenancePage() {
           >
             <h2 className="text-lg font-bold text-gray-900">{editingId ? 'Edit Service Record' : 'Log Service'}</h2>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Service Type *</label>
                 <select value={form.service_type}
@@ -346,7 +348,7 @@ export default function MaintenancePage() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Odometer</label>
                 <input type="number" step="0.1" value={form.odometer_at_service} placeholder="98832"
@@ -380,7 +382,7 @@ export default function MaintenancePage() {
               label="Finance Category"
             />
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Next service (miles)</label>
                 <input type="number" value={form.next_service_miles} placeholder="103000"

@@ -200,7 +200,7 @@ export default function RecurringPage() {
             <div key={rp.id} className={`bg-white border rounded-2xl p-5 ${!rp.is_active ? 'opacity-60' : 'border-gray-200'}`}>
               {editId === rp.id ? (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-gray-500">Description</label>
                       <input value={editForm.description ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
@@ -214,7 +214,7 @@ export default function RecurringPage() {
                       </select>
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="text-xs text-gray-500">Amount ($)</label>
                       <input type="number" step="0.01" value={editForm.amount ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, amount: e.target.value }))}
@@ -338,7 +338,7 @@ export default function RecurringPage() {
                 <input required value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                   className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. Car payment" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-gray-600">Account *</label>
                   <select required value={form.account_id} onChange={(e) => setForm((f) => ({ ...f, account_id: e.target.value }))}
@@ -354,7 +354,7 @@ export default function RecurringPage() {
                     className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="0.00" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-gray-600">Type</label>
                   <select value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
