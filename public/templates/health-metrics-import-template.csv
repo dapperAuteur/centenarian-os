@@ -1,4 +1,4 @@
-logged_date,resting_hr,steps,sleep_hours,activity_min,sleep_score,hrv_ms,spo2_pct,active_calories,stress_score,recovery_score,weight_lbs,notes
-2026-02-25,58,9432,7.5,42,82,48,97,385,32,74,178.4,Good recovery day after rest
-2026-02-26,61,12870,6.8,65,71,39,96,520,45,62,178.0,Heavy leg day impacted HRV
-2026-02-27,56,8215,8.2,35,89,55,98,310,25,85,177.8,Best sleep score this week
+logged_date,resting_hr,steps,sleep_hours,activity_min,sleep_score,hrv_ms,spo2_pct,active_calories,stress_score,recovery_score,weight_lbs,body_fat_pct,muscle_mass_lbs,bmi,notes
+2026-02-25,58,9432,7.5,42,82,48,97,385,32,74,195.5,14.2,156.6,28.2,Good recovery day after rest
+2026-02-26,61,12870,6.8,65,71,39,96,520,45,62,195.0,14.0,157.1,28.1,Heavy leg day impacted HRV
+2026-02-27,56,8215,8.2,35,89,55,98,310,25,85,194.8,13.9,157.3,28.1,Best sleep score this week
