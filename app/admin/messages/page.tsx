@@ -3,7 +3,7 @@
 // app/admin/messages/page.tsx
 // Admin compose and send messages to users (rich text with Tiptap) + reply threads.
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Send, Users, CheckCircle, AlertTriangle, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -69,7 +69,15 @@ function SortTh({
 }
 
 
-export default function AdminMessagesPage() {
+export default function AdminMessagesPageWrapper() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-20"><div className="animate-spin h-8 w-8 border-4 border-fuchsia-500 border-t-transparent rounded-full" /></div>}>
+      <AdminMessagesPage />
+    </Suspense>
+  );
+}
+
+function AdminMessagesPage() {
   const searchParams = useSearchParams();
   const prefilled = useRef(false);
   const [subject, setSubject] = useState('');
