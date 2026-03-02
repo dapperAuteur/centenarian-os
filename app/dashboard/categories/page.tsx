@@ -43,20 +43,6 @@ interface ModuleGroup {
   items: UncategorizedItem[];
 }
 
-const ENTITY_LABELS: Record<string, string> = {
-  transaction: 'Finance',
-  task: 'Tasks',
-  trip: 'Trips',
-  workout: 'Workouts',
-  equipment: 'Equipment',
-  focus_session: 'Focus',
-  recipe: 'Recipes',
-  fuel_log: 'Fuel',
-  maintenance: 'Maintenance',
-  invoice: 'Invoices',
-  route: 'Routes',
-};
-
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<LifeCategory[]>([]);
   const [analytics, setAnalytics] = useState<CategoryAnalytics[]>([]);
@@ -252,7 +238,7 @@ export default function CategoriesPage() {
               value={newCatName}
               onChange={(e) => setNewCatName(e.target.value)}
               placeholder="New category name"
-              className="flex-1 px-3 py-2 text-sm border rounded-lg"
+              className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-900"
             />
             <input
               type="color"
@@ -277,7 +263,7 @@ export default function CategoriesPage() {
                       type="text"
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      className="flex-1 px-2 py-1 text-sm border rounded"
+                      className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded text-gray-900"
                     />
                     <input
                       type="color"
@@ -425,7 +411,7 @@ export default function CategoriesPage() {
               <select
                 value={batchCategoryId}
                 onChange={(e) => setBatchCategoryId(e.target.value)}
-                className="text-xs border rounded-lg px-2 py-1.5"
+                className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 text-gray-900"
               >
                 <option value="">Tag as...</option>
                 {categories.map((c) => (

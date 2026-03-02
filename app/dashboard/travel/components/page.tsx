@@ -317,7 +317,7 @@ export default function ComponentWearPage() {
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <form onSubmit={handleSave} className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl">
             <h2 className="text-lg font-bold text-gray-900">Add Component</h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Vehicle *</label>
                 <select value={form.vehicle_id} onChange={(e) => setForm((f) => ({ ...f, vehicle_id: e.target.value }))}
@@ -334,7 +334,7 @@ export default function ComponentWearPage() {
                 </select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Brand</label>
                 <input value={form.brand} onChange={(e) => setForm((f) => ({ ...f, brand: e.target.value }))}
@@ -346,7 +346,7 @@ export default function ComponentWearPage() {
                   placeholder="e.g. GP5000" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Installed date</label>
                 <input type="date" value={form.installed_date}

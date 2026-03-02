@@ -341,7 +341,7 @@ function HealthForm({ task, onDone }: { task: Task; onDone: () => void }) {
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <input
           type="number"
           value={steps}
@@ -782,7 +782,7 @@ function FuelForm({ task, onDone }: { task: Task; onDone: () => void }) {
           ))}
         </select>
       )}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <input
           type="number"
           step="0.001"
@@ -941,6 +941,12 @@ export default function TaskCompletionActionsModal({ isOpen, onClose, task }: Ta
   const [expandedAction, setExpandedAction] = useState<ActionType | null>(null);
   const [completed, setCompleted] = useState<Set<ActionType>>(new Set());
 
+  // Reset state when switching to a different task
+  useEffect(() => {
+    setExpandedAction(null);
+    setCompleted(new Set());
+  }, [task?.id]);
+
   if (!task) return null;
 
   const handleDone = (type: ActionType) => {
@@ -978,12 +984,8 @@ export default function TaskCompletionActionsModal({ isOpen, onClose, task }: Ta
               <div key={action.type} className={`border rounded-lg overflow-hidden transition ${action.color}`}>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (isCompleted) return;
-                    setExpandedAction(isExpanded ? null : action.type);
-                  }}
-                  className={`w-full flex items-center justify-between p-3 text-left ${isCompleted ? 'opacity-60' : 'hover:opacity-80'}`}
-                  disabled={isCompleted}
+                  onClick={() => setExpandedAction(isExpanded ? null : action.type)}
+                  className="w-full flex items-center justify-between p-3 text-left hover:opacity-80"
                 >
                   <div className="flex items-center gap-3">
                     {isCompleted ? <Check className="w-5 h-5 text-green-600" /> : action.icon}

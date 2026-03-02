@@ -246,8 +246,7 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
       }),
     });
     if (res.ok) {
-      setShowAdd(false);
-      setAddType('');
+      // Keep panel open + type selected for batch linking
       setSearchQuery('');
       setSearchResults([]);
       loadLinks();

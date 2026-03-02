@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, BarChart, Bar,
@@ -67,6 +68,7 @@ function fmtMoney(n: number | null | undefined) {
 }
 
 export default function FuelLogPage() {
+  const router = useRouter();
   const [logs, setLogs] = useState<FuelLog[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [financeCategories, setFinanceCategories] = useState<FinanceCategory[]>([]);
@@ -357,7 +359,7 @@ export default function FuelLogPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-gray-50 transition">
+                  <tr key={log.id} className="hover:bg-gray-50 transition cursor-pointer" onClick={() => router.push(`/dashboard/travel/fuel/${log.id}`)}>
                     <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">{log.date}</td>
                     <td className="px-4 py-3 text-right text-gray-700 whitespace-nowrap">
                       {log.odometer_miles ? log.odometer_miles.toLocaleString() : '—'}
@@ -378,7 +380,7 @@ export default function FuelLogPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => handleEdit(log)}
                         className="text-xs text-sky-500 hover:text-sky-700 transition mr-2"
@@ -442,7 +444,7 @@ export default function FuelLogPage() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Date *</label>
                 <input
@@ -466,7 +468,7 @@ export default function FuelLogPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Odometer</label>
                 <input type="number" step="0.1" value={form.odometer_miles} placeholder="98832"
@@ -487,7 +489,7 @@ export default function FuelLogPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">MPG (display)</label>
                 <input type="number" step="0.1" value={form.mpg_display} placeholder="29.8"
@@ -506,7 +508,7 @@ export default function FuelLogPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Gallons</label>
                 <input type="number" step="0.001" value={form.gallons} placeholder="9.352"

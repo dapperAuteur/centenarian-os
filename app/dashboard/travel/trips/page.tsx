@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Plus, Route } from 'lucide-react';
 import ActivityLinker from '@/components/ui/ActivityLinker';
@@ -74,6 +75,7 @@ function fmt(n: number | null | undefined, d = 1) {
 }
 
 export default function TripsPage() {
+  const router = useRouter();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [total, setTotal] = useState(0);
@@ -365,7 +367,7 @@ export default function TripsPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {trips.map((t) => (
-                  <tr key={t.id} className="hover:bg-gray-50 transition">
+                  <tr key={t.id} className="hover:bg-gray-50 transition cursor-pointer" onClick={() => router.push(`/dashboard/travel/trips/${t.id}`)}>
                     <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{t.date}</td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span className="text-base">{MODE_ICONS[t.mode] ?? '🚐'}</span>{' '}
@@ -401,7 +403,7 @@ export default function TripsPage() {
                     <td className="px-4 py-3 text-gray-600 text-xs">
                       {t.source === 'garmin_import' ? 'Garmin' : t.source === 'csv_import' ? 'CSV' : 'Manual'}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => handleEdit(t)}
                         className="text-xs text-sky-500 hover:text-sky-700 transition mr-2"
@@ -489,7 +491,7 @@ export default function TripsPage() {
             className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl max-h-[90vh] overflow-y-auto"
           >
             <h2 className="text-lg font-bold text-gray-900">{editingId ? 'Edit Trip' : 'Log Trip'}</h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Mode</label>
                 <select
@@ -512,7 +514,7 @@ export default function TripsPage() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
                 <ContactAutocomplete
@@ -545,7 +547,7 @@ export default function TripsPage() {
               />
               <span className="text-xs font-medium text-gray-600">Round trip (distance counted both ways)</span>
             </label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Miles</label>
                 <input
@@ -579,7 +581,7 @@ export default function TripsPage() {
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Purpose</label>
                 <select

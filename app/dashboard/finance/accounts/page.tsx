@@ -207,7 +207,7 @@ export default function AccountsPage() {
             <div key={acct.id} className={`bg-white border rounded-2xl p-5 ${!acct.is_active ? 'opacity-60' : 'border-gray-200'}`}>
               {editId === acct.id ? (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-gray-500">Name</label>
                       <input value={editForm.name ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
@@ -221,7 +221,7 @@ export default function AccountsPage() {
                       </select>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-gray-500">Institution</label>
                       <input value={editForm.institution_name ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, institution_name: e.target.value }))}
@@ -233,7 +233,7 @@ export default function AccountsPage() {
                         className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="1234" />
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="text-xs text-gray-500">Opening Balance ($)</label>
                       <input type="number" step="0.01" value={editForm.opening_balance ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, opening_balance: e.target.value }))}
@@ -250,7 +250,7 @@ export default function AccountsPage() {
                         className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" />
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="text-xs text-gray-500">Monthly Fee ($)</label>
                       <input type="number" step="0.01" value={editForm.monthly_fee ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, monthly_fee: e.target.value }))}
@@ -393,7 +393,7 @@ export default function AccountsPage() {
           <div className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-4 my-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-gray-900">Add Account</h3>
             <form onSubmit={handleAdd} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-gray-600">Name *</label>
                   <input required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -407,7 +407,7 @@ export default function AccountsPage() {
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-gray-600">Institution</label>
                   <input value={form.institution_name} onChange={(e) => setForm((f) => ({ ...f, institution_name: e.target.value }))}
@@ -419,7 +419,7 @@ export default function AccountsPage() {
                     className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="1234" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-gray-600">Opening Balance ($)</label>
                   <input type="number" step="0.01" value={form.opening_balance} onChange={(e) => setForm((f) => ({ ...f, opening_balance: e.target.value }))}
@@ -431,7 +431,7 @@ export default function AccountsPage() {
                     className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 24.99" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-gray-600">Credit Limit ($)</label>
                   <input type="number" step="0.01" min="0" value={form.credit_limit} onChange={(e) => setForm((f) => ({ ...f, credit_limit: e.target.value }))}
@@ -443,7 +443,7 @@ export default function AccountsPage() {
                     className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="Annual fee / 12" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-gray-600">Payment Due Date (day of month)</label>
                   <input type="number" min="1" max="28" value={form.due_date} onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))}

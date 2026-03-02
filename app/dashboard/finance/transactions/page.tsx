@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight, Link2 } from 'lucide-react';
 import Link from 'next/link';
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
@@ -49,6 +50,7 @@ const SOURCE_BADGE: Record<string, { label: string; className: string }> = {
 const PAGE_SIZE = 25;
 
 export default function TransactionsPage() {
+  const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -222,13 +224,13 @@ export default function TransactionsPage() {
                         step="0.01"
                         value={editForm.amount}
                         onChange={(e) => setEditForm((p) => ({ ...p, amount: e.target.value }))}
-                        className="w-full px-2 py-1 text-sm border rounded"
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-900"
                       />
                       <input
                         type="text"
                         value={editForm.description}
                         onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))}
-                        className="w-full px-2 py-1 text-sm border rounded"
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-900"
                         placeholder="Description"
                       />
                       <div className="flex gap-2">
@@ -238,7 +240,10 @@ export default function TransactionsPage() {
                     </div>
                   ) : (
                     <div className="flex items-start justify-between">
-                      <div>
+                      <div
+                        className="flex-1 cursor-pointer"
+                        onClick={() => router.push(`/dashboard/finance/transactions/${tx.id}`)}
+                      >
                         <p className="text-sm font-medium text-gray-900">{tx.description || tx.vendor || 'Transaction'}</p>
                         <p className="text-xs text-gray-600 mt-0.5">
                           {new Date(tx.transaction_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -281,14 +286,18 @@ export default function TransactionsPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {transactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-gray-50">
+                  <tr
+                    key={tx.id}
+                    className={`hover:bg-gray-50 ${editId !== tx.id ? 'cursor-pointer' : ''}`}
+                    onClick={() => { if (editId !== tx.id) router.push(`/dashboard/finance/transactions/${tx.id}`); }}
+                  >
                     <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
                       {editId === tx.id ? (
                         <input
                           type="date"
                           value={editForm.transaction_date}
                           onChange={(e) => setEditForm((p) => ({ ...p, transaction_date: e.target.value }))}
-                          className="px-2 py-1 text-xs border rounded w-32"
+                          className="px-2 py-1 text-xs border border-gray-300 rounded w-32 text-gray-900"
                         />
                       ) : (
                         new Date(tx.transaction_date + 'T12:00:00').toLocaleDateString('en-US', {
@@ -302,7 +311,7 @@ export default function TransactionsPage() {
                           type="text"
                           value={editForm.description}
                           onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))}
-                          className="px-2 py-1 text-xs border rounded w-full"
+                          className="px-2 py-1 text-xs border border-gray-300 rounded w-full text-gray-900"
                         />
                       ) : (
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -326,7 +335,7 @@ export default function TransactionsPage() {
                           type="text"
                           value={editForm.vendor}
                           onChange={(e) => setEditForm((p) => ({ ...p, vendor: e.target.value }))}
-                          className="px-2 py-1 text-xs border rounded w-full"
+                          className="px-2 py-1 text-xs border border-gray-300 rounded w-full text-gray-900"
                         />
                       ) : (
                         tx.vendor || '-'
@@ -338,7 +347,7 @@ export default function TransactionsPage() {
                           <select
                             value={editForm.category_id}
                             onChange={(e) => setEditForm((p) => ({ ...p, category_id: e.target.value }))}
-                            className="px-2 py-1 text-xs border rounded"
+                            className="px-2 py-1 text-xs border border-gray-300 rounded text-gray-900"
                           >
                             <option value="">No category</option>
                             {categories.map((c) => (
@@ -349,7 +358,7 @@ export default function TransactionsPage() {
                             <select
                               value={editForm.brand_id}
                               onChange={(e) => setEditForm((p) => ({ ...p, brand_id: e.target.value }))}
-                              className="px-2 py-1 text-xs border rounded"
+                              className="px-2 py-1 text-xs border border-gray-300 rounded text-gray-900"
                             >
                               <option value="">No brand</option>
                               {brands.map((b) => (
@@ -374,7 +383,7 @@ export default function TransactionsPage() {
                           step="0.01"
                           value={editForm.amount}
                           onChange={(e) => setEditForm((p) => ({ ...p, amount: e.target.value }))}
-                          className="px-2 py-1 text-xs border rounded w-24 text-right"
+                          className="px-2 py-1 text-xs border border-gray-300 rounded w-24 text-right text-gray-900"
                         />
                       ) : (
                         <span className={`font-medium ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
@@ -382,7 +391,7 @@ export default function TransactionsPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                       {editId === tx.id ? (
                         <div className="flex items-center justify-center gap-1">
                           <button onClick={() => handleEditSave(tx.id)} className="px-2 py-1 bg-fuchsia-600 text-white rounded text-xs">Save</button>

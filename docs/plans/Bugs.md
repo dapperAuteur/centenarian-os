@@ -1,1 +1,1 @@
-There isn't a place to manage categories for invoices. Categories should be accessible across modules to connect data.
+user should be able to undo things like sent/paid of invoices when marked by mistake

@@ -1,6 +1,7 @@
 // app/api/finance/invoices/[id]/route.ts
-// PATCH: update invoice fields, mark as paid (auto-creates transaction)
-// DELETE: delete invoice (only if draft or cancelled)
+// GET: fetch single invoice with full details
+// PATCH: update invoice fields, mark as paid, unmark paid/sent
+// DELETE: delete invoice (only if not paid)
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -11,6 +12,45 @@ function getDb() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
+}
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const db = getDb();
+  const { data, error } = await db
+    .from('invoices')
+    .select('*, invoice_items(*), budget_categories(id, name, color)')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  // Sort line items by sort_order
+  if (data.invoice_items) {
+    data.invoice_items.sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order);
+  }
+
+  // Fetch linked transaction details if paid
+  let linked_transaction = null;
+  if (data.transaction_id) {
+    const { data: tx } = await db
+      .from('financial_transactions')
+      .select('id, amount, transaction_date, description')
+      .eq('id', data.transaction_id)
+      .maybeSingle();
+    linked_transaction = tx;
+  }
+
+  return NextResponse.json({ invoice: data, linked_transaction });
 }
 
 export async function PATCH(
@@ -35,6 +75,52 @@ export async function PATCH(
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const body = await request.json();
+
+  // Handle "unmark paid" — revert paid invoice
+  if (body.unmark_paid) {
+    if (existing.status !== 'paid') {
+      return NextResponse.json({ error: 'Invoice is not paid' }, { status: 400 });
+    }
+
+    // Delete the auto-created transaction
+    if (existing.transaction_id) {
+      await db.from('financial_transactions').delete().eq('id', existing.transaction_id);
+    }
+
+    const revertStatus = body.revert_to || 'sent';
+    const { data, error } = await db
+      .from('invoices')
+      .update({
+        status: revertStatus,
+        paid_date: null,
+        amount_paid: 0,
+        transaction_id: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select('*, invoice_items(*)')
+      .single();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data);
+  }
+
+  // Handle "unmark sent" — revert to draft
+  if (body.unmark_sent) {
+    if (existing.status !== 'sent' && existing.status !== 'overdue') {
+      return NextResponse.json({ error: 'Invoice is not in sent/overdue status' }, { status: 400 });
+    }
+
+    const { data, error } = await db
+      .from('invoices')
+      .update({ status: 'draft', updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select('*, invoice_items(*)')
+      .single();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data);
+  }
 
   // Handle "mark as paid" action
   if (body.mark_paid) {
