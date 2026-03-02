@@ -3,7 +3,8 @@
 // app/admin/messages/page.tsx
 // Admin compose and send messages to users (rich text with Tiptap) + reply threads.
 
-import { useEffect, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Send, Users, CheckCircle, AlertTriangle, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import MediaUploader from '@/components/ui/MediaUploader';
@@ -68,7 +69,17 @@ function SortTh({
 }
 
 
-export default function AdminMessagesPage() {
+export default function AdminMessagesPageWrapper() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-20"><div className="animate-spin h-8 w-8 border-4 border-fuchsia-500 border-t-transparent rounded-full" /></div>}>
+      <AdminMessagesPage />
+    </Suspense>
+  );
+}
+
+function AdminMessagesPage() {
+  const searchParams = useSearchParams();
+  const prefilled = useRef(false);
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [scope, setScope] = useState<string>('all');
@@ -153,15 +164,16 @@ export default function AdminMessagesPage() {
     }
   }
 
-  async function lookupUser() {
-    if (!targetEmail) return;
+  async function lookupUserByEmail(email?: string) {
+    const emailToLookup = email || targetEmail;
+    if (!emailToLookup) return;
     setLookingUp(true);
     setTargetId(null);
     try {
       const res = await fetch(`/api/admin/users`);
       const d = await res.json();
       const found = (d.users ?? []).find((u: { email: string; id: string }) =>
-        u.email?.toLowerCase() === targetEmail.toLowerCase()
+        u.email?.toLowerCase() === emailToLookup.toLowerCase()
       );
       if (found) {
         setTargetId(found.id);
@@ -174,6 +186,21 @@ export default function AdminMessagesPage() {
       setLookingUp(false);
     }
   }
+
+  // Pre-fill from URL params (e.g. from admin course management)
+  useEffect(() => {
+    if (prefilled.current) return;
+    const emailParam = searchParams.get('email');
+    const subjectParam = searchParams.get('subject');
+    if (emailParam) {
+      prefilled.current = true;
+      setScope('user');
+      setTargetEmail(emailParam);
+      if (subjectParam) setSubject(subjectParam);
+      lookupUserByEmail(emailParam);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   async function sendMessage() {
     const plainBody = body.replace(/<[^>]*>/g, '').trim();
@@ -251,7 +278,7 @@ export default function AdminMessagesPage() {
             />
             <button
               type="button"
-              onClick={lookupUser}
+              onClick={() => lookupUserByEmail()}
               disabled={lookingUp}
               className="px-4 py-2 bg-gray-700 text-white rounded-lg text-sm font-semibold hover:bg-gray-600 transition disabled:opacity-50"
             >

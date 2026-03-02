@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, Plus, Pencil, Eye, EyeOff } from 'lucide-react';
+import { BookOpen, Plus, Pencil, Eye, EyeOff, Trash2, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface Course {
@@ -23,6 +23,7 @@ export default function TeachingCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -35,6 +36,19 @@ export default function TeachingCoursesPage() {
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [router]);
+
+  async function handleDelete(courseId: string) {
+    if (!confirm('Delete this course and all its lessons, enrollments, and student data? This cannot be undone.')) return;
+    setDeletingId(courseId);
+    try {
+      const r = await fetch(`/api/academy/courses/${courseId}`, { method: 'DELETE' });
+      if (r.ok) {
+        setCourses((prev) => prev.filter((c) => c.id !== courseId));
+      }
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function togglePublish(course: Course) {
     await fetch(`/api/academy/courses/${course.id}`, {
@@ -127,6 +141,14 @@ export default function TeachingCoursesPage() {
                 >
                   <Pencil className="w-4 h-4" />
                 </Link>
+                <button
+                  onClick={() => handleDelete(course.id)}
+                  disabled={deletingId === course.id}
+                  title="Delete course"
+                  className="w-11 h-11 flex items-center justify-center rounded-lg bg-gray-800 text-gray-500 hover:bg-red-900/30 hover:text-red-400 transition disabled:opacity-50"
+                >
+                  {deletingId === course.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                </button>
               </div>
             </div>
           ))}

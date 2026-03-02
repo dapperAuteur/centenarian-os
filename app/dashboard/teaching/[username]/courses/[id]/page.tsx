@@ -4,7 +4,7 @@
 // Course editor: full CRUD for settings, modules, lessons; publish toggle; CYOA embeddings.
 
 import { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ChevronLeft, Plus, Loader2, Save, Globe, EyeOff, Trash2,
@@ -55,6 +55,7 @@ const LESSON_TYPE_ICON: Record<string, React.ElementType> = {
 
 export default function CourseEditorPage() {
   const { id: courseId, username } = useParams<{ id: string; username: string }>();
+  const router = useRouter();
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -66,6 +67,7 @@ export default function CourseEditorPage() {
   const [addingLesson, setAddingLesson] = useState<string | null>(null);
   const [newLesson, setNewLesson] = useState({ title: '', lesson_type: 'video', content_url: '', is_free_preview: false });
   const [feedback, setFeedback] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const [courseCategories, setCourseCategories] = useState<string[]>([]);
 
@@ -273,6 +275,17 @@ export default function CourseEditorPage() {
     }
   }
 
+  async function handleDeleteCourse() {
+    if (!confirm('Delete this course and all its lessons, enrollments, and student data? This cannot be undone.')) return;
+    setDeleting(true);
+    try {
+      const r = await fetch(`/api/academy/courses/${courseId}`, { method: 'DELETE' });
+      if (r.ok) router.push('/dashboard/teaching/courses');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   if (loading) {
     return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-fuchsia-500" /></div>;
   }
@@ -335,6 +348,15 @@ export default function CourseEditorPage() {
           >
             Preview
           </Link>
+          <button
+            type="button"
+            onClick={handleDeleteCourse}
+            disabled={deleting}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-gray-800 text-red-400 hover:bg-red-900/30 transition disabled:opacity-50"
+          >
+            {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            Delete
+          </button>
         </div>
       </div>
 
