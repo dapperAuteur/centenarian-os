@@ -3,12 +3,10 @@
 // app/dashboard/teaching/courses/new/page.tsx
 // Create a new course — multi-field form.
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Loader2, Save, GitBranch, ArrowRight } from 'lucide-react';
-
-const CATEGORIES = ['Fitness', 'Nutrition', 'Recovery', 'Longevity', 'Mental Health', 'Sleep', 'Mindset', 'Biomechanics', 'Other'];
 
 export default function NewCoursePage() {
   const router = useRouter();
@@ -23,6 +21,14 @@ export default function NewCoursePage() {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [categories, setCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch('/api/academy/course-categories')
+      .then((r) => r.json())
+      .then((d) => setCategories((d.categories || []).map((c: { name: string }) => c.name)))
+      .catch(() => {});
+  }, []);
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -95,7 +101,7 @@ export default function NewCoursePage() {
             className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-fuchsia-500 text-sm"
           >
             <option value="">Select a category…</option>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
 

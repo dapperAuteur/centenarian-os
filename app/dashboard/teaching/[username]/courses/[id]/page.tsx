@@ -67,6 +67,15 @@ export default function CourseEditorPage() {
   const [newLesson, setNewLesson] = useState({ title: '', lesson_type: 'video', content_url: '', is_free_preview: false });
   const [feedback, setFeedback] = useState('');
 
+  const [courseCategories, setCourseCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch('/api/academy/course-categories')
+      .then((r) => r.json())
+      .then((d) => setCourseCategories((d.categories || []).map((c: { name: string }) => c.name)))
+      .catch(() => {});
+  }, []);
+
   // Module inline editing
   const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
   const [editingModuleTitle, setEditingModuleTitle] = useState('');
@@ -372,14 +381,9 @@ export default function CourseEditorPage() {
               className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
             />
             <datalist id="course-categories">
-              <option value="Platform Guide" />
-              <option value="Health &amp; Longevity" />
-              <option value="Fitness" />
-              <option value="Nutrition" />
-              <option value="Finance" />
-              <option value="Travel" />
-              <option value="Mindset" />
-              <option value="Technology" />
+              {courseCategories.map((c) => (
+                <option key={c} value={c} />
+              ))}
             </datalist>
           </div>
           <div className="grid grid-cols-2 gap-3">
