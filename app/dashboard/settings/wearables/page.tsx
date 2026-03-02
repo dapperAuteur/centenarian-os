@@ -26,8 +26,6 @@ interface ProviderInfo {
 }
 
 const PROVIDERS: ProviderInfo[] = [
-  { key: 'oura', name: 'Oura Ring', description: 'Sleep, activity, readiness scores', hasOAuth: true, color: 'bg-gray-900' },
-  { key: 'whoop', name: 'WHOOP', description: 'Recovery, strain, sleep performance', hasOAuth: true, color: 'bg-red-600' },
   { key: 'garmin', name: 'Garmin', description: 'Steps, sleep, heart rate, stress', hasOAuth: true, color: 'bg-blue-600' },
   { key: 'apple_health', name: 'Apple Health', description: 'Import via CSV export from iPhone', hasOAuth: false, color: 'bg-pink-500' },
   { key: 'google_health', name: 'Google Health', description: 'Import via CSV export from Android', hasOAuth: false, color: 'bg-green-500' },

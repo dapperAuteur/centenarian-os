@@ -26,6 +26,7 @@ export default function SiteFooter({ theme = 'dark' }: SiteFooterProps) {
           <Link href="/terms" className={linkCls}>Terms of Use</Link>
           <Link href="/privacy" className={linkCls}>Privacy Policy</Link>
           <Link href="/safety" className={linkCls}>Safety &amp; Resources</Link>
+          <Link href="/safety#rise-wellness" className={linkCls}>Rise Wellness</Link>
           <Link href="/blog" className={linkCls}>Blog</Link>
           <Link href="/recipes" className={linkCls}>Recipes</Link>
           <Link href="/academy" className={linkCls}>Academy</Link>

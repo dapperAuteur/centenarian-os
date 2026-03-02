@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowRight, Target, Utensils, Brain, Car, DollarSign, Heart, GraduationCap, BookOpen, TrendingUp, Zap, Shield, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import SiteFooter from '@/components/ui/SiteFooter';
 
 const MODULES = [
   {
@@ -83,7 +84,7 @@ const MODULES = [
     description: 'Daily vitals logging and wearable integration for the full health picture.',
     features: [
       'RHR, steps, sleep, activity minutes',
-      'Oura, WHOOP & Garmin sync',
+      'Garmin wearable sync',
       'Body composition tracking',
       'CSV import (Apple Health, InBody)',
     ],
@@ -329,6 +330,32 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Rise Wellness */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
+        <div className="bg-fuchsia-50 border border-fuchsia-200 rounded-2xl p-6 sm:p-8 md:p-10">
+          <div className="flex items-center gap-2 mb-3">
+            <Heart className="w-6 h-6 text-fuchsia-600" />
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Mental Health Matters</h2>
+          </div>
+          <p className="text-gray-700 text-sm sm:text-base leading-relaxed mb-4 max-w-3xl">
+            CentenarianOS is proud to collaborate with <strong>Rise Wellness of Indiana</strong>, an
+            independent mental health provider offering compassionate, personalized, holistic care.
+            Their evidence-based approach to anxiety, depression, ADHD, maternal mental health, and
+            more supports our community&apos;s whole-person wellness journey.
+          </p>
+          <p className="text-gray-500 text-xs mb-5">
+            Rise Wellness of Indiana is an independent organization, not affiliated with CentenarianOS, B4C LLC, or AwesomeWebStore.com.
+          </p>
+          <Link
+            href="/safety#rise-wellness"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-lg font-semibold text-sm transition"
+          >
+            <Heart className="w-4 h-4" />
+            Learn More &amp; Contact Rise Wellness
+          </Link>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
         <div className="bg-linear-to-r from-fuchsia-600 to-sky-600 rounded-2xl p-6 sm:p-8 md:p-12 text-center">
@@ -356,44 +383,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0">
-            <p className="text-gray-600 text-xs sm:text-sm text-center sm:text-left">
-              &copy; 2026 B4C LLC / AwesomeWebStore.com. Open source under MIT License.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
-              <Link href="/demo" className="text-gray-600 hover:text-gray-900 text-xs sm:text-sm">
-                Demo
-              </Link>
-              <Link href="/academy" className="text-gray-600 hover:text-gray-900 text-xs sm:text-sm">
-                Academy
-              </Link>
-              <Link href="/blog" className="text-gray-600 hover:text-gray-900 text-xs sm:text-sm">
-                Blog
-              </Link>
-              <Link href="/recipes" className="text-gray-600 hover:text-gray-900 text-xs sm:text-sm">
-                Recipes
-              </Link>
-              <Link href="/tech-roadmap" className="text-gray-600 hover:text-gray-900 text-xs sm:text-sm">
-                Tech Roadmap
-              </Link>
-              <Link href="/contribute" className="text-gray-600 hover:text-gray-900 text-xs sm:text-sm">
-                Contribute
-              </Link>
-              <a
-                href="https://github.com/dapperAuteur/centenarian-os"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-600 hover:text-gray-900 text-xs sm:text-sm"
-              >
-                GitHub
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter theme="light" />
     </div>
   );
 }
