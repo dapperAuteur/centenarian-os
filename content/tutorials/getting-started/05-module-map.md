@@ -46,6 +46,8 @@ This lesson is a reference. It lists every module in CentenarianOS, what it does
 | **Finance** | `/dashboard/finance` | Financial accounts (checking, savings, credit card, loan, cash). Transaction tracking with vendors, categories, and account assignment. Budget categories with monthly limits. Brand/business P&L tracking. CSV import/export. Saved contacts with autocomplete. | Yes |
 | **Travel** | `/dashboard/travel` | Vehicle profiles, fuel logs with MPG calculation, receipt OCR (Gemini Vision), trip logging (manual + Garmin import), multi-stop routes, trip templates, round trips, vehicle maintenance, bike savings calculator. | Yes |
 | **Equipment** | `/dashboard/equipment` | Catalog gear and possessions. Categories, purchase price, current value, valuation history with charts. Link to financial transactions. Cross-module activity links. Summary dashboard with depreciation and ROI. | Yes |
+| **Categories** | `/dashboard/categories` | Life Categories — tag any item across all modules with high-level life areas (Health, Finance, Career, Fitness, etc.). Analytics dashboard with spending breakdown, activity charts, and uncategorized items view for quick batch tagging. | Yes |
+| **Data Hub** | `/dashboard/data` | Centralized import/export hub for all modules. CSV templates, Google Sheets integration, date-range exports. | Yes |
 
 ---
 
@@ -77,6 +79,8 @@ These features work across multiple modules:
 
 **Activity Links** — bidirectional connections between records in different modules. Link a task to a trip, a transaction to equipment, a recipe to a workout. Available on equipment detail pages, task edit modals, and other module detail views.
 
+**Life Categories** — a cross-module tagging layer. Assign high-level life areas (Health, Finance, Career, Fitness, etc.) to any item in any module. The Categories dashboard shows spending breakdown, activity charts, and an uncategorized items view for quickly tagging items after bulk imports.
+
 **Contact Locations** — sub-locations within a saved contact. A vendor can have multiple addresses (e.g., "Main Office", "Warehouse"). Used in Travel for trip endpoints and in Planner for task locations.
 
 ---
@@ -97,6 +101,8 @@ These features work across multiple modules:
 /dashboard/finance       — Financial Dashboard
 /dashboard/travel        — Travel & Vehicles
 /dashboard/equipment     — Equipment Tracker
+/dashboard/categories    — Life Categories
+/dashboard/data          — Data Hub
 /dashboard/blog          — Blog
 /dashboard/recipes       — Recipes
 /academy                 — Academy
@@ -115,7 +121,7 @@ These features work across multiple modules:
 
 > [SCREEN: Click through one module from each group — Daily Tasks, Fuel, Finance, Academy, Coach — show each hub page briefly]
 
-> [SCREENSHOT: Sidebar with all groups labeled — callout per group: "Operate (4)", "Health (6)", "Life (3)", "Learn (4)", "AI (2)"]
+> [SCREENSHOT: Sidebar with all groups labeled — callout per group: "Operate (4)", "Health (6)", "Life (5)", "Learn (4)", "AI (2)"]
 
 > [SCREEN: Navigate to /dashboard/finance — show a saved contact autocomplete in action]
 
@@ -127,10 +133,10 @@ These features work across multiple modules:
 
 ## Key Takeaways
 
-- 5 nav groups: Operate (4 modules), Health (6), Life (3), Learn (4), AI (2 admin-only)
+- 5 nav groups: Operate (4 modules), Health (6), Life (5), Learn (4), AI (2 admin-only)
 - Free modules: Blog, Recipes, Academy, Live
 - Everything else requires Monthly ($10/mo) or Lifetime ($100)
-- Cross-module features: Saved Contacts, Activity Links, Contact Locations
+- Cross-module features: Saved Contacts, Activity Links, Life Categories, Contact Locations
 - All paths are bookmarkable — use the quick reference list above
 
 ---
@@ -154,6 +160,8 @@ If this lesson is rendered with the MapViewer, use this `map_content` JSON to sh
     { "lat": 33.4484, "lng": -112.0740, "title": "Life: Finance", "description": "Accounts, transactions, budgets, brands" },
     { "lat": 33.4384, "lng": -112.0640, "title": "Life: Travel", "description": "Vehicles, fuel, trips, maintenance" },
     { "lat": 33.4584, "lng": -112.0840, "title": "Life: Equipment", "description": "Gear catalog, valuations, activity links" },
+    { "lat": 33.4684, "lng": -112.0740, "title": "Life: Categories", "description": "Cross-module life category tagging and analytics" },
+    { "lat": 33.4284, "lng": -112.0540, "title": "Life: Data Hub", "description": "Centralized import/export for all modules" },
     { "lat": 25.7617, "lng": -80.1918, "title": "Learn: Academy", "description": "Course catalog, enrollment, CYOA navigation" },
     { "lat": 25.7717, "lng": -80.1818, "title": "Learn: Blog", "description": "Write and publish articles" },
     { "lat": 25.7517, "lng": -80.2018, "title": "Learn: Recipes", "description": "Create, import, share recipes" }
