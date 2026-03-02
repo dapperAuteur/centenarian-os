@@ -8,6 +8,7 @@ import {
 import Link from 'next/link';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
+import CategorySelect from '@/components/finance/CategorySelect';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface InvoiceItem {
@@ -47,6 +48,7 @@ interface Account {
 interface Category {
   id: string;
   name: string;
+  color: string;
 }
 
 interface Brand {
@@ -107,7 +109,7 @@ export default function InvoicesPage() {
 
     setInvoices(invData.invoices ?? []);
     setAccounts(Array.isArray(acctData) ? acctData.filter((a: Account & { is_active: boolean }) => a.is_active) : []);
-    setCategories(Array.isArray(catData) ? catData : []);
+    setCategories(catData.categories || []);
     setBrands(Array.isArray(brandData) ? brandData : []);
     setLoading(false);
   }, [filter]);
@@ -517,19 +519,12 @@ export default function InvoicesPage() {
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Category</label>
-                  <select
-                    value={form.category_id}
-                    onChange={(e) => setForm({ ...form, category_id: e.target.value })}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
-                  >
-                    <option value="">None</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
+                <CategorySelect
+                  value={form.category_id}
+                  onChange={(id) => setForm({ ...form, category_id: id })}
+                  categories={categories}
+                  onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
+                />
               </div>
 
               {brands.length > 0 && (

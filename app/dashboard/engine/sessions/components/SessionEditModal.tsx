@@ -14,6 +14,7 @@ import {
   formatDuration,
 } from '@/lib/utils/sessionValidation';
 import TagSelector from '@/components/ui/TagSelector';
+import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
 
 interface SessionEditModalProps {
   isOpen: boolean;
@@ -325,6 +326,13 @@ export default function SessionEditModal({
             onChange={setTags}
           />
         </div>
+
+        {/* Life Categories */}
+        {session?.id && (
+          <div className="pt-4 border-t border-gray-200">
+            <LifeCategoryTagger entityType="focus_session" entityId={session.id} />
+          </div>
+        )}
 
         {/* Actions */}
         <div className="mt-6 flex items-center justify-end space-x-3">

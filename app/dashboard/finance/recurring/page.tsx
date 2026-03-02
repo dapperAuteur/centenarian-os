@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import CategorySelect from '@/components/finance/CategorySelect';
 
 interface Account {
   id: string;
@@ -72,7 +73,10 @@ export default function RecurringPage() {
         const all = await acctRes.json();
         setAccounts(all.filter((a: { is_active: boolean }) => a.is_active));
       }
-      if (catRes.ok) setCategories(await catRes.json());
+      if (catRes.ok) {
+        const d = await catRes.json();
+        setCategories(d.categories || []);
+      }
     } finally {
       setLoading(false);
     }
@@ -230,14 +234,12 @@ export default function RecurringPage() {
                         className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" />
                     </div>
                   </div>
-                  <div>
-                    <label className="text-xs text-gray-500">Category</label>
-                    <select value={editForm.category_id ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, category_id: e.target.value }))}
-                      className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg">
-                      <option value="">None</option>
-                      {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                  </div>
+                  <CategorySelect
+                    value={editForm.category_id ?? ''}
+                    onChange={(id) => setEditForm((f) => ({ ...f, category_id: id }))}
+                    categories={categories}
+                    onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
+                  />
                   <div className="flex gap-2 pt-1">
                     <button onClick={() => handleSaveEdit(rp.id)}
                       className="flex items-center gap-1 px-3 py-1.5 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 transition">
@@ -368,14 +370,12 @@ export default function RecurringPage() {
                     className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 15" />
                 </div>
               </div>
-              <div>
-                <label className="text-xs font-medium text-gray-600">Category</label>
-                <select value={form.category_id} onChange={(e) => setForm((f) => ({ ...f, category_id: e.target.value }))}
-                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg">
-                  <option value="">None</option>
-                  {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
+              <CategorySelect
+                value={form.category_id}
+                onChange={(id) => setForm((f) => ({ ...f, category_id: id }))}
+                categories={categories}
+                onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
+              />
               <div className="flex gap-3 pt-2">
                 <button type="submit" disabled={saving}
                   className="flex-1 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 disabled:opacity-50 transition flex items-center justify-center gap-2">

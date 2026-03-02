@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import CategorySelect from '@/components/finance/CategorySelect';
 import TransferModal from '@/components/finance/TransferModal';
 
 interface CategoryBreakdown {
@@ -515,19 +516,12 @@ export default function FinanceDashboardPage() {
                     inputClassName="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
                   />
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Category</label>
-                  <select
-                    value={addForm.category_id}
-                    onChange={(e) => setAddForm((p) => ({ ...p, category_id: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
-                  >
-                    <option value="">Uncategorized</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
+                <CategorySelect
+                  value={addForm.category_id}
+                  onChange={(id) => setAddForm((p) => ({ ...p, category_id: id }))}
+                  categories={categories}
+                  onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
+                />
               </div>
               {accounts.filter((a) => a.is_active).length > 0 && (
                 <div>
