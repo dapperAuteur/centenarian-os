@@ -4,7 +4,8 @@
 // Admin: Academy overview and platform settings (teacher fee, plan pricing).
 
 import { useEffect, useState } from 'react';
-import { GraduationCap, Percent, CreditCard, Save, Loader2, BookOpen, RefreshCw, CheckCircle, Tags, Plus, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { GraduationCap, Percent, CreditCard, Save, Loader2, BookOpen, RefreshCw, CheckCircle, Tags, Plus, Trash2, ChevronRight } from 'lucide-react';
 
 interface Settings {
   teacher_fee_percent: string;
@@ -147,6 +148,21 @@ export default function AdminAcademyPage() {
         <h1 className="text-2xl font-bold text-white">Academy Settings</h1>
       </div>
       <p className="text-gray-400 text-sm mb-8">Configure teacher plans and platform fees.</p>
+
+      {/* Manage Courses link */}
+      <Link
+        href="/admin/academy/courses"
+        className="flex items-center justify-between bg-gray-900 border border-gray-800 rounded-xl px-6 py-4 mb-6 hover:border-gray-700 transition group"
+      >
+        <div className="flex items-center gap-3">
+          <BookOpen className="w-5 h-5 text-fuchsia-400" />
+          <div>
+            <p className="font-semibold text-white text-sm">Manage Courses</p>
+            <p className="text-gray-500 text-xs">Unpublish, delete, or contact teachers about their courses</p>
+          </div>
+        </div>
+        <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gray-400 transition" />
+      </Link>
 
       <div className="space-y-6 dark-input">
         {/* Teacher fee */}
