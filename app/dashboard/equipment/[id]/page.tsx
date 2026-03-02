@@ -6,6 +6,7 @@ import { ArrowLeft, Package, Calendar, DollarSign, Plus } from 'lucide-react';
 import Image from 'next/image';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import ActivityLinker from '@/components/ui/ActivityLinker';
+import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
 import ValuationChart from '@/components/equipment/ValuationChart';
 
 interface EquipmentDetail {
@@ -288,6 +289,11 @@ export default function EquipmentDetailPage() {
       {/* Activity Links */}
       <div className="bg-white border border-gray-200 rounded-2xl p-5">
         <ActivityLinker entityType="equipment" entityId={id} />
+      </div>
+
+      {/* Life Categories */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-5">
+        <LifeCategoryTagger entityType="equipment" entityId={id} />
       </div>
     </div>
   );

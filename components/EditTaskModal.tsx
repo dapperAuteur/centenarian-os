@@ -7,6 +7,7 @@ import { DollarSign, MapPin } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import ActivityLinker from '@/components/ui/ActivityLinker';
+import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
 
 interface EditTaskModalProps {
   task: Task | null;
@@ -164,6 +165,11 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
         {/* Linked Activities */}
         <div className="pt-4 border-t border-gray-200">
           <ActivityLinker entityType="task" entityId={task.id} />
+        </div>
+
+        {/* Life Categories */}
+        <div className="pt-4 border-t border-gray-200">
+          <LifeCategoryTagger entityType="task" entityId={task.id} />
         </div>
       </div>
 

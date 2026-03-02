@@ -2,6 +2,7 @@
 
 import Modal from '@/components/ui/Modal';
 import ActivityLinker from '@/components/ui/ActivityLinker';
+import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
 
 interface ActivityLinkModalProps {
   isOpen: boolean;
@@ -22,8 +23,11 @@ export default function ActivityLinkModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
-      <div className="p-5">
+      <div className="p-5 space-y-4">
         <ActivityLinker entityType={entityType} entityId={entityId} />
+        <div className="border-t border-gray-200 pt-4">
+          <LifeCategoryTagger entityType={entityType} entityId={entityId} />
+        </div>
       </div>
     </Modal>
   );
