@@ -14,6 +14,7 @@ function getDb() {
 }
 
 const VALID_CONDITIONS = new Set(['excellent', 'good', 'fair', 'poor']);
+const VALID_OWNERSHIP  = new Set(['own', 'access']);
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -103,6 +104,10 @@ export async function POST(request: NextRequest) {
     const condition = row.condition?.trim()?.toLowerCase();
     const resolvedCondition = condition && VALID_CONDITIONS.has(condition) ? condition : 'good';
 
+    // Validate ownership_type
+    const ownershipRaw = row.ownership_type?.trim()?.toLowerCase();
+    const resolvedOwnership = ownershipRaw && VALID_OWNERSHIP.has(ownershipRaw) ? ownershipRaw : 'own';
+
     payloads.push({
       user_id: user.id,
       name,
@@ -116,6 +121,7 @@ export async function POST(request: NextRequest) {
       warranty_expires: warrantyExpires,
       condition: resolvedCondition,
       notes: row.notes?.trim() || null,
+      ownership_type: resolvedOwnership,
     });
   }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Search } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
 
@@ -18,6 +18,15 @@ interface TransactionResult {
   type: string;
 }
 
+interface CatalogItem {
+  id: string;
+  name: string;
+  brand: string | null;
+  model: string | null;
+  category: string | null;
+  description: string | null;
+}
+
 export interface EquipmentFormData {
   name: string;
   category_id: string | null;
@@ -33,6 +42,8 @@ export interface EquipmentFormData {
   image_public_id: string;
   notes: string;
   transaction_id: string | null;
+  catalog_id: string | null;
+  ownership_type: string;
 }
 
 const EMPTY_FORM: EquipmentFormData = {
@@ -50,6 +61,8 @@ const EMPTY_FORM: EquipmentFormData = {
   image_public_id: '',
   notes: '',
   transaction_id: null,
+  catalog_id: null,
+  ownership_type: 'own',
 };
 
 const CONDITIONS = ['new', 'excellent', 'good', 'fair', 'poor'];
@@ -78,6 +91,13 @@ export default function EquipmentForm({
   const [txSearching, setTxSearching] = useState(false);
   const [linkedTxLabel, setLinkedTxLabel] = useState<string | null>(null);
 
+  // Catalog search
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [catalogResults, setCatalogResults] = useState<CatalogItem[]>([]);
+  const [catalogSearching, setCatalogSearching] = useState(false);
+  const [linkedCatalogLabel, setLinkedCatalogLabel] = useState<string | null>(null);
+  const catalogDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // If editing and has a transaction_id, resolve its label
   useEffect(() => {
     if (initial?.transaction_id) {
@@ -93,6 +113,21 @@ export default function EquipmentForm({
         .catch(() => {});
     }
   }, [initial?.transaction_id]);
+
+  // If editing with a catalog_id, resolve its label
+  useEffect(() => {
+    if (initial?.catalog_id) {
+      fetch(`/api/equipment/catalog`)
+        .then((r) => r.json())
+        .then((d) => {
+          const item = (d.catalog || []).find((c: CatalogItem) => c.id === initial.catalog_id);
+          if (item) {
+            setLinkedCatalogLabel(`${item.brand ? item.brand + ' ' : ''}${item.name}`);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [initial?.catalog_id]);
 
   const set = (key: keyof EquipmentFormData, value: string | null) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -141,8 +176,93 @@ export default function EquipmentForm({
     setLinkedTxLabel(null);
   };
 
+  const searchCatalog = async (q: string) => {
+    if (!q.trim()) { setCatalogResults([]); return; }
+    setCatalogSearching(true);
+    try {
+      const res = await fetch(`/api/equipment/catalog?search=${encodeURIComponent(q)}`);
+      if (res.ok) {
+        const d = await res.json();
+        setCatalogResults((d.catalog || []).slice(0, 8));
+      }
+    } finally {
+      setCatalogSearching(false);
+    }
+  };
+
+  const handleCatalogInput = (value: string) => {
+    setCatalogSearch(value);
+    if (catalogDebounce.current) clearTimeout(catalogDebounce.current);
+    catalogDebounce.current = setTimeout(() => searchCatalog(value), 300);
+  };
+
+  const selectCatalogItem = (item: CatalogItem) => {
+    set('catalog_id', item.id);
+    set('name', item.name);
+    set('brand', item.brand || '');
+    set('model', item.model || '');
+    setLinkedCatalogLabel(`${item.brand ? item.brand + ' ' : ''}${item.name}`);
+    setCatalogResults([]);
+    setCatalogSearch('');
+  };
+
+  const unlinkCatalog = () => {
+    set('catalog_id', null);
+    setLinkedCatalogLabel(null);
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Catalog Search */}
+      <div>
+        <label className="block text-xs font-medium text-gray-700 mb-1">
+          Search Equipment Catalog
+          <span className="text-gray-400 font-normal ml-1">— optional, pre-fills name, brand &amp; model</span>
+        </label>
+        {form.catalog_id && linkedCatalogLabel ? (
+          <div className="flex items-center gap-2 bg-sky-50 border border-sky-200 rounded-lg px-3 py-2 text-sm text-sky-700">
+            <span className="flex-1 truncate">From catalog: {linkedCatalogLabel}</span>
+            <button
+              type="button"
+              onClick={unlinkCatalog}
+              aria-label="Unlink catalog item"
+              className="shrink-0"
+            >
+              <X className="w-4 h-4 text-sky-400 hover:text-sky-600" />
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" aria-hidden="true" />
+              <input
+                type="text"
+                value={catalogSearch}
+                onChange={(e) => handleCatalogInput(e.target.value)}
+                placeholder="Search: treadmill, barbell, kettlebell..."
+                className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm"
+              />
+            </div>
+            {catalogSearching && <p className="text-xs text-gray-400">Searching...</p>}
+            {catalogResults.length > 0 && (
+              <div className="border border-gray-200 rounded-lg max-h-40 overflow-y-auto">
+                {catalogResults.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => selectCatalogItem(item)}
+                    className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                  >
+                    <span className="font-medium">{item.brand ? `${item.brand} ` : ''}{item.name}</span>
+                    {item.category && <span className="ml-2 text-gray-400">{item.category}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Name + Category row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
@@ -219,7 +339,7 @@ export default function EquipmentForm({
         </div>
       </div>
 
-      {/* Purchase date + price */}
+      {/* Purchase date + price + current value */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1">Purchase Date</label>
@@ -256,7 +376,7 @@ export default function EquipmentForm({
         </div>
       </div>
 
-      {/* Warranty */}
+      {/* Warranty + Ownership */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1">Warranty Expires</label>
@@ -266,6 +386,17 @@ export default function EquipmentForm({
             onChange={(e) => set('warranty_expires', e.target.value)}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
           />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Ownership</label>
+          <select
+            value={form.ownership_type}
+            onChange={(e) => set('ownership_type', e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+          >
+            <option value="own">I Own This</option>
+            <option value="access">I Have Access</option>
+          </select>
         </div>
       </div>
 

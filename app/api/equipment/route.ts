@@ -35,7 +35,8 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { name, category_id, brand, model, serial_number, purchase_date,
     purchase_price, current_value, warranty_expires, condition,
-    image_url, image_public_id, notes, transaction_id } = body;
+    image_url, image_public_id, notes, transaction_id,
+    catalog_id, ownership_type } = body;
 
   if (!name?.trim()) {
     return NextResponse.json({ error: 'name is required' }, { status: 400 });
@@ -59,6 +60,8 @@ export async function POST(request: NextRequest) {
       image_public_id: image_public_id || null,
       notes: notes || null,
       transaction_id: transaction_id || null,
+      catalog_id: catalog_id || null,
+      ownership_type: ownership_type || 'own',
     })
     .select('*, equipment_categories(id, name, icon, color)')
     .single();

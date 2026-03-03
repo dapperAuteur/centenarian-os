@@ -38,11 +38,12 @@ export async function GET(request: NextRequest) {
       r.warranty_expires || '',
       r.condition || '',
       r.notes || '',
+      r.ownership_type === 'access' ? 'access' : 'own',
     ];
   });
 
   return buildCsvResponse(
-    ['Name', 'Category', 'Brand', 'Model', 'Serial Number', 'Purchase Date', 'Purchase Price', 'Current Value', 'Warranty Expires', 'Condition', 'Notes'],
+    ['Name', 'Category', 'Brand', 'Model', 'Serial Number', 'Purchase Date', 'Purchase Price', 'Current Value', 'Warranty Expires', 'Condition', 'Notes', 'Ownership'],
     rows,
     'centenarianos-equipment-export.csv',
   );
