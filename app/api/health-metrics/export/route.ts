@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const from = params.get('from');
   const to = params.get('to');
+  const source = params.get('source');
 
   let query = supabase
     .from('user_health_metrics')
@@ -21,6 +22,7 @@ export async function GET(request: NextRequest) {
 
   if (from) query = query.gte('logged_date', from);
   if (to) query = query.lte('logged_date', to);
+  if (source) query = query.eq('source', source);
 
   const { data, error } = await query;
 
@@ -28,6 +30,7 @@ export async function GET(request: NextRequest) {
 
   const rows = (data || []).map((r) => [
     r.logged_date || '',
+    r.source || 'manual',
     String(r.resting_hr ?? ''),
     String(r.steps ?? ''),
     String(r.sleep_hours ?? ''),
@@ -46,7 +49,7 @@ export async function GET(request: NextRequest) {
   ]);
 
   return buildCsvResponse(
-    ['Date', 'Resting HR', 'Steps', 'Sleep Hours', 'Activity Min', 'Sleep Score', 'HRV ms', 'SpO2 %', 'Active Calories', 'Stress Score', 'Recovery Score', 'Weight lbs', 'Body Fat %', 'Muscle Mass lbs', 'BMI', 'Notes'],
+    ['Date', 'Source', 'Resting HR', 'Steps', 'Sleep Hours', 'Activity Min', 'Sleep Score', 'HRV ms', 'SpO2 %', 'Active Calories', 'Stress Score', 'Recovery Score', 'Weight lbs', 'Body Fat %', 'Muscle Mass lbs', 'BMI', 'Notes'],
     rows,
     'centenarianos-health-metrics-export.csv',
   );

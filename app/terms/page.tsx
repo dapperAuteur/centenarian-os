@@ -1,6 +1,8 @@
 // app/terms/page.tsx
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import SiteHeader from '@/components/SiteHeader';
+import SiteFooter from '@/components/ui/SiteFooter';
 
 export const metadata: Metadata = {
   title: 'Terms of Use | CentenarianOS',
@@ -9,8 +11,10 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <main className="min-h-screen bg-gray-950 text-gray-200">
-      <div className="max-w-3xl mx-auto px-6 py-16">
+    <>
+      <SiteHeader />
+      <main className="min-h-screen bg-gray-950 text-gray-200">
+        <div className="max-w-3xl mx-auto px-6 py-16">
         <h1 className="text-3xl font-bold text-white mb-2">Terms of Use</h1>
         <p className="text-gray-400 text-sm mb-10">
           Last updated: February 21, 2026 &nbsp;·&nbsp; Operated by B4C LLC / AwesomeWebStore.com
@@ -194,13 +198,10 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <div className="mt-12 pt-8 border-t border-gray-800 flex gap-4 text-sm text-gray-500">
-          <Link href="/privacy" className="hover:text-gray-300 transition">Privacy Policy</Link>
-          <Link href="/safety" className="hover:text-gray-300 transition">Safety & Resources</Link>
-          <Link href="/" className="hover:text-gray-300 transition">Home</Link>
         </div>
-      </div>
-    </main>
+      </main>
+      <SiteFooter />
+    </>
   );
 }
 

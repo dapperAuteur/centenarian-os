@@ -70,6 +70,10 @@ app/dashboard/fuel/meal-prep/ORIGINAL-app-dashboard-fuel-page.tsx
 
 docs/mobile-ui-refactor/
 
+docs/garmin-data
+docs/hume-health
+docs/BAM apple_health_export
+
 app/dashboard/engine/analytics/app-dashboard-engine-analytics-page.tsx
 
 app/dashboard/layout-old.tsx

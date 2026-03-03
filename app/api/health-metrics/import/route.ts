@@ -29,7 +29,7 @@ interface ImportRow {
  * POST /api/health-metrics/import
  * Body: { source: string, rows: ImportRow[] }
  * Each row must have logged_date (YYYY-MM-DD) and any metric columns.
- * Upserts by (user_id, logged_date) — existing values are overwritten.
+ * Upserts by (user_id, logged_date, source) — existing values are overwritten per source.
  */
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
     const payload: Record<string, unknown> = {
       user_id: user.id,
       logged_date: row.logged_date,
+      source: body.source || 'manual',
     };
 
     let hasMetric = false;
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
   const db = getDb();
   const { data, error } = await db
     .from('user_health_metrics')
-    .upsert(payloads, { onConflict: 'user_id,logged_date' })
+    .upsert(payloads, { onConflict: 'user_id,logged_date,source' })
     .select('logged_date');
 
   if (error) {

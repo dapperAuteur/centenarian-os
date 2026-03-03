@@ -2,6 +2,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Phone, MapPin, Clock, ExternalLink, AlertTriangle, Heart } from 'lucide-react';
+import SiteHeader from '@/components/SiteHeader';
+import SiteFooter from '@/components/ui/SiteFooter';
 
 export const metadata: Metadata = {
   title: 'Safety & Resources | CentenarianOS',
@@ -11,8 +13,10 @@ export const metadata: Metadata = {
 
 export default function SafetyPage() {
   return (
-    <main className="min-h-screen bg-gray-950 text-gray-200">
-      <div className="max-w-3xl mx-auto px-6 py-16">
+    <>
+      <SiteHeader />
+      <main className="min-h-screen bg-gray-950 text-gray-200">
+        <div className="max-w-3xl mx-auto px-6 py-16">
         <h1 className="text-3xl font-bold text-white mb-2">Safety &amp; Resources</h1>
         <p className="text-gray-400 text-sm mb-10">
           Your wellbeing matters. Please read this page before using health tools or course content.
@@ -92,7 +96,7 @@ export default function SafetyPage() {
         </div>
 
         {/* Rise Wellness */}
-        <section className="mb-10">
+        <section id="rise-wellness" className="mb-10 scroll-mt-20">
           <div className="flex items-center gap-2 mb-4">
             <Heart className="w-5 h-5 text-fuchsia-400" />
             <h2 className="text-xl font-semibold text-white">Mental Health Support</h2>
@@ -189,12 +193,9 @@ export default function SafetyPage() {
           </blockquote>
         </section>
 
-        <div className="mt-12 pt-8 border-t border-gray-800 flex gap-4 text-sm text-gray-500">
-          <Link href="/terms" className="hover:text-gray-300 transition">Terms of Use</Link>
-          <Link href="/privacy" className="hover:text-gray-300 transition">Privacy Policy</Link>
-          <Link href="/" className="hover:text-gray-300 transition">Home</Link>
         </div>
-      </div>
-    </main>
+      </main>
+      <SiteFooter />
+    </>
   );
 }

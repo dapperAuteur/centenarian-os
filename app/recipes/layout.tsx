@@ -4,6 +4,7 @@
 
 import Link from 'next/link';
 import SiteHeader from '@/components/SiteHeader';
+import SiteFooter from '@/components/ui/SiteFooter';
 
 export default function RecipesLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -39,6 +40,8 @@ export default function RecipesLayout({ children }: { children: React.ReactNode 
       <div className="bg-gray-50 text-gray-900 pb-16 lg:pb-0">
         {children}
       </div>
+
+      <SiteFooter theme="light" />
     </div>
   );
 }

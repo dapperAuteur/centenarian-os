@@ -5,7 +5,8 @@
 // Supports: Garmin, Apple Health, Oura, Whoop, Google Health, InBody, Hume Health, generic
 
 import { useState } from 'react';
-import { Upload, Plus, Trash2, Loader2, CheckCircle2, AlertCircle, FileSpreadsheet } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { Upload, Plus, Trash2, Loader2, CheckCircle2, AlertCircle, FileSpreadsheet, FileDown } from 'lucide-react';
 
 interface MetricRow {
   logged_date: string;
@@ -68,6 +69,15 @@ const SOURCE_LABELS: Record<Source, string> = {
   inbody: 'InBody',
   hume_health: 'Hume Health',
   csv: 'Generic CSV',
+};
+
+const SOURCE_TEMPLATES: Partial<Record<Source, string>> = {
+  garmin: '/templates/garmin-import-template.csv',
+  apple_health: '/templates/apple-health-import-template.csv',
+  hume_health: '/templates/hume-health-import-template.csv',
+  csv: '/templates/health-metrics-import-template.csv',
+  google_health: '/templates/health-metrics-import-template.csv',
+  inbody: '/templates/health-metrics-import-template.csv',
 };
 
 // CSV column name mappings per source
@@ -164,7 +174,9 @@ function parseCSV(text: string, source: Source): MetricRow[] {
 }
 
 export default function MetricsImportPage() {
-  const [source, setSource] = useState<Source>('manual');
+  const searchParams = useSearchParams();
+  const initialSource = (searchParams.get('source') as Source) || 'manual';
+  const [source, setSource] = useState<Source>(initialSource);
   const [rows, setRows] = useState<MetricRow[]>([{ ...EMPTY_ROW, logged_date: new Date().toISOString().split('T')[0] }]);
   const [csvText, setCsvText] = useState('');
   const [importing, setImporting] = useState(false);
@@ -297,6 +309,16 @@ export default function MetricsImportPage() {
               Upload CSV
               <input type="file" accept=".csv,.txt" onChange={handleFileUpload} className="hidden" />
             </label>
+            {SOURCE_TEMPLATES[source] && (
+              <a
+                href={SOURCE_TEMPLATES[source]}
+                download
+                className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition text-sm font-medium min-h-11"
+              >
+                <FileDown className="w-4 h-4" />
+                Download Template
+              </a>
+            )}
             <span className="text-sm text-gray-400 self-center">or</span>
           </div>
 

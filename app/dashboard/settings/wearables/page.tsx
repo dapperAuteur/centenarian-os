@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Watch, RefreshCw, Unlink, CheckCircle2, AlertCircle,
-  Upload, ExternalLink, Loader2,
+  Upload, ExternalLink, Loader2, Clock, FileDown,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -23,16 +23,16 @@ interface ProviderInfo {
   description: string;
   hasOAuth: boolean;
   color: string;
+  comingSoon?: boolean;
+  templateUrl?: string;
 }
 
 const PROVIDERS: ProviderInfo[] = [
-  { key: 'oura', name: 'Oura Ring', description: 'Sleep, activity, readiness scores', hasOAuth: true, color: 'bg-gray-900' },
-  { key: 'whoop', name: 'WHOOP', description: 'Recovery, strain, sleep performance', hasOAuth: true, color: 'bg-red-600' },
-  { key: 'garmin', name: 'Garmin', description: 'Steps, sleep, heart rate, stress', hasOAuth: true, color: 'bg-blue-600' },
-  { key: 'apple_health', name: 'Apple Health', description: 'Import via CSV export from iPhone', hasOAuth: false, color: 'bg-pink-500' },
-  { key: 'google_health', name: 'Google Health', description: 'Import via CSV export from Android', hasOAuth: false, color: 'bg-green-500' },
-  { key: 'inbody', name: 'InBody', description: 'Body composition scans — import via CSV', hasOAuth: false, color: 'bg-purple-600' },
-  { key: 'hume_health', name: 'Hume Health', description: 'Emotional wellness data — import via CSV', hasOAuth: false, color: 'bg-amber-600' },
+  { key: 'garmin', name: 'Garmin', description: 'Steps, sleep, heart rate, stress, workouts, body composition', hasOAuth: true, color: 'bg-blue-600', comingSoon: true, templateUrl: '/templates/garmin-import-template.csv' },
+  { key: 'apple_health', name: 'Apple Health', description: 'Import via CSV export from iPhone', hasOAuth: false, color: 'bg-pink-500', templateUrl: '/templates/apple-health-import-template.csv' },
+  { key: 'google_health', name: 'Google Health', description: 'Import via CSV export from Android', hasOAuth: false, color: 'bg-green-500', templateUrl: '/templates/health-metrics-import-template.csv' },
+  { key: 'inbody', name: 'InBody', description: 'Body composition scans — import via CSV', hasOAuth: false, color: 'bg-purple-600', templateUrl: '/templates/health-metrics-import-template.csv' },
+  { key: 'hume_health', name: 'Hume Health', description: 'Emotional wellness data — import via CSV', hasOAuth: false, color: 'bg-amber-600', templateUrl: '/templates/hume-health-import-template.csv' },
 ];
 
 export default function WearableSettingsPage() {
@@ -177,7 +177,25 @@ export default function WearableSettingsPage() {
 
                 <div className="flex items-center gap-2 shrink-0">
                   {provider.hasOAuth ? (
-                    conn ? (
+                    provider.comingSoon ? (
+                      <>
+                        <span className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg">
+                          <Clock className="w-4 h-4" />
+                          Coming Soon
+                        </span>
+                        {provider.templateUrl && (
+                          <a
+                            href={provider.templateUrl}
+                            download
+                            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-500 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
+                            title="Download CSV template"
+                          >
+                            <FileDown className="w-4 h-4" />
+                            <span className="hidden sm:inline">Template</span>
+                          </a>
+                        )}
+                      </>
+                    ) : conn ? (
                       <>
                         <button
                           onClick={() => handleSync(provider.key)}
@@ -209,13 +227,26 @@ export default function WearableSettingsPage() {
                       </button>
                     )
                   ) : (
-                    <Link
-                      href={`/dashboard/metrics/import?source=${provider.key}`}
-                      className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-fuchsia-700 bg-fuchsia-50 hover:bg-fuchsia-100 rounded-lg transition"
-                    >
-                      <Upload className="w-4 h-4" />
-                      Import CSV
-                    </Link>
+                    <>
+                      <Link
+                        href={`/dashboard/metrics/import?source=${provider.key}`}
+                        className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-fuchsia-700 bg-fuchsia-50 hover:bg-fuchsia-100 rounded-lg transition"
+                      >
+                        <Upload className="w-4 h-4" />
+                        Import CSV
+                      </Link>
+                      {provider.templateUrl && (
+                        <a
+                          href={provider.templateUrl}
+                          download
+                          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-500 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
+                          title="Download CSV template"
+                        >
+                          <FileDown className="w-4 h-4" />
+                          <span className="hidden sm:inline">Template</span>
+                        </a>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
