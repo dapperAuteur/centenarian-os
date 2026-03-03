@@ -225,6 +225,9 @@ export default function LandingPage() {
               <Link href="/recipes" className="text-gray-600 hover:text-gray-900 font-medium">
                 Recipes
               </Link>
+              <Link href="/coaching" className="text-gray-600 hover:text-gray-900 font-medium">
+                Coaching
+              </Link>
               <Link href="/tech-roadmap" className="text-gray-600 hover:text-gray-900 font-medium">
                 Tech Roadmap
               </Link>
@@ -279,6 +282,13 @@ export default function LandingPage() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Recipes
+              </Link>
+              <Link
+                href="/coaching"
+                className="block text-gray-600 hover:text-gray-900 font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Coaching
               </Link>
               <Link
                 href="/tech-roadmap"

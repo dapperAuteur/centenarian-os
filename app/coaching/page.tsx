@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Menu, X, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import SiteFooter from '@/components/ui/SiteFooter';
 
 const PRIORITIES = [
   { id: 'cardiovascular', label: 'Cardiovascular Health', description: 'Heart health, VO₂ max, endurance baseline' },
@@ -104,9 +105,13 @@ export default function CoachingPage() {
             </Link>
 
             <div className="hidden md:flex items-center space-x-6">
+              <Link href="/demo" className="text-gray-600 hover:text-gray-900 font-medium">Demo</Link>
+              <Link href="/academy" className="text-gray-600 hover:text-gray-900 font-medium">Academy</Link>
               <Link href="/blog" className="text-gray-600 hover:text-gray-900 font-medium">Blog</Link>
               <Link href="/recipes" className="text-gray-600 hover:text-gray-900 font-medium">Recipes</Link>
               <Link href="/coaching" className="text-fuchsia-700 font-semibold">Coaching</Link>
+              <Link href="/tech-roadmap" className="text-gray-600 hover:text-gray-900 font-medium">Tech Roadmap</Link>
+              <Link href="/contribute" className="text-gray-600 hover:text-gray-900 font-medium">Contribute</Link>
               <Link
                 href="/pricing"
                 className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-medium"
@@ -126,9 +131,13 @@ export default function CoachingPage() {
 
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 pb-4 space-y-4">
+              <Link href="/demo" className="block text-gray-600 hover:text-gray-900 font-medium" onClick={() => setMobileMenuOpen(false)}>Demo</Link>
+              <Link href="/academy" className="block text-gray-600 hover:text-gray-900 font-medium" onClick={() => setMobileMenuOpen(false)}>Academy</Link>
               <Link href="/blog" className="block text-gray-600 hover:text-gray-900 font-medium" onClick={() => setMobileMenuOpen(false)}>Blog</Link>
               <Link href="/recipes" className="block text-gray-600 hover:text-gray-900 font-medium" onClick={() => setMobileMenuOpen(false)}>Recipes</Link>
               <Link href="/coaching" className="block text-fuchsia-700 font-semibold" onClick={() => setMobileMenuOpen(false)}>Coaching</Link>
+              <Link href="/tech-roadmap" className="block text-gray-600 hover:text-gray-900 font-medium" onClick={() => setMobileMenuOpen(false)}>Tech Roadmap</Link>
+              <Link href="/contribute" className="block text-gray-600 hover:text-gray-900 font-medium" onClick={() => setMobileMenuOpen(false)}>Contribute</Link>
               <Link
                 href="/pricing"
                 className="block w-full text-center px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-medium"
@@ -433,23 +442,7 @@ export default function CoachingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-100 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="w-6 h-6 bg-linear-to-br from-fuchsia-500 to-sky-500 rounded-md shrink-0" />
-            <span className="text-sm font-semibold text-gray-700">CentenarianOS</span>
-          </Link>
-          <div className="flex items-center gap-6 text-sm text-gray-500">
-            <Link href="/academy" className="hover:text-gray-700">Academy</Link>
-            <Link href="/blog" className="hover:text-gray-700">Blog</Link>
-            <Link href="/recipes" className="hover:text-gray-700">Recipes</Link>
-            <Link href="/pricing" className="hover:text-gray-700">Pricing</Link>
-            <Link href="/coaching" className="hover:text-gray-700">Coaching</Link>
-          </div>
-          <p className="text-xs text-gray-400">&copy; {new Date().getFullYear()} CentenarianOS</p>
-        </div>
-      </footer>
+      <SiteFooter theme="light" />
     </div>
   );
 }
