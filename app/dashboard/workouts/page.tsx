@@ -8,11 +8,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Plus, Play, Trash2, Edit3, Clock, Dumbbell,
-  ChevronDown, ChevronUp, Upload, Download, Link2,
+  ChevronDown, ChevronUp, Upload, Download, Link2, Activity,
 } from 'lucide-react';
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
 import WorkoutTemplateForm from '@/components/workouts/WorkoutTemplateForm';
 import WorkoutLogForm from '@/components/workouts/WorkoutLogForm';
+import WorkoutFeedbackModal from '@/components/workouts/WorkoutFeedbackModal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Exercise {
@@ -111,6 +112,10 @@ export default function WorkoutsPage() {
   const [linkingLogId, setLinkingLogId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  // Post-workout feedback state
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackLogId, setFeedbackLogId] = useState<string | undefined>();
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -189,14 +194,18 @@ export default function WorkoutsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200">
+      <div role="tablist" className="flex border-b border-gray-200">
         <button
+          role="tab"
+          aria-selected={tab === 'templates'}
           onClick={() => setTab('templates')}
           className={`px-4 py-2.5 text-sm font-medium border-b-2 transition ${tab === 'templates' ? 'border-lime-600 text-lime-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
           Templates ({templates.length})
         </button>
         <button
+          role="tab"
+          aria-selected={tab === 'history'}
           onClick={() => setTab('history')}
           className={`px-4 py-2.5 text-sm font-medium border-b-2 transition ${tab === 'history' ? 'border-lime-600 text-lime-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
@@ -207,6 +216,21 @@ export default function WorkoutsPage() {
       {/* Templates tab */}
       {tab === 'templates' && (
         <div className="space-y-3">
+          {/* Nomad Longevity OS program card */}
+          <Link
+            href="/dashboard/workouts/nomad"
+            className="flex items-center gap-4 p-4 bg-linear-to-br from-gray-900 to-indigo-900 rounded-2xl text-white hover:opacity-95 transition group"
+          >
+            <div className="w-11 h-11 bg-indigo-600/40 rounded-xl flex items-center justify-center shrink-0">
+              <Activity className="w-6 h-6 text-indigo-300" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm">Nomad Longevity OS</p>
+              <p className="text-xs text-indigo-300 mt-0.5">Structured routines for travelers · AM · PM · Hotel · Gym</p>
+            </div>
+            <span className="text-xs font-bold bg-indigo-600 px-2 py-0.5 rounded-full shrink-0">v1.1</span>
+          </Link>
+
           {templates.length === 0 && (
             <div className="text-center py-12">
               <Dumbbell className="w-10 h-10 text-gray-300 mx-auto mb-3" />
@@ -367,6 +391,7 @@ export default function WorkoutsPage() {
         isOpen={!!logTemplate}
         onClose={() => setLogTemplate(null)}
         onSaved={() => { setTab('history'); load(); }}
+        onWorkoutLogged={(logId) => { setFeedbackLogId(logId); setFeedbackOpen(true); }}
         template={logTemplate}
       />
 
@@ -375,6 +400,7 @@ export default function WorkoutsPage() {
         isOpen={showQuickLog}
         onClose={() => setShowQuickLog(false)}
         onSaved={() => { setTab('history'); load(); }}
+        onWorkoutLogged={(logId) => { setFeedbackLogId(logId); setFeedbackOpen(true); }}
         title="Log Workout"
       />
 
@@ -384,6 +410,12 @@ export default function WorkoutsPage() {
         entityType="workout"
         entityId={linkingLogId || ''}
         title="Link Workout"
+      />
+
+      <WorkoutFeedbackModal
+        isOpen={feedbackOpen}
+        onClose={() => { setFeedbackOpen(false); setFeedbackLogId(undefined); }}
+        workoutLogId={feedbackLogId}
       />
     </div>
   );
