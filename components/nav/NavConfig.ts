@@ -24,6 +24,7 @@ import {
   Package,
   Database,
   Tags,
+  ChartLine,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -61,6 +62,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Fuel', href: '/dashboard/fuel', icon: Utensils, paid: true },
       { label: 'Metrics', href: '/dashboard/metrics', icon: HeartPulse, paid: true },
+      { label: 'Trends', href: '/dashboard/metrics/trends', icon: ChartLine, paid: true },
       { label: 'Wearables', href: '/dashboard/settings/wearables', icon: Watch, paid: true },
       { label: 'Workouts', href: '/dashboard/workouts', icon: Dumbbell, paid: true },
       { label: 'Correlations', href: '/dashboard/correlations', icon: TrendingUp, paid: true },

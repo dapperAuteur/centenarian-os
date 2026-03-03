@@ -8,6 +8,7 @@ const METRIC_COLUMNS = [
   'resting_hr', 'steps', 'sleep_hours', 'activity_min',
   'sleep_score', 'hrv_ms', 'spo2_pct', 'active_calories',
   'stress_score', 'recovery_score', 'weight_lbs',
+  'body_fat_pct', 'muscle_mass_lbs', 'bmi',
 ] as const;
 
 type MetricKey = typeof METRIC_COLUMNS[number];
@@ -43,6 +44,7 @@ export async function GET(request: NextRequest) {
     .from('user_health_metrics')
     .select(METRIC_COLUMNS.join(', ') + ', logged_date')
     .eq('user_id', user.id)
+    .eq('source', 'manual')
     .gte('logged_date', sinceStr)
     .order('logged_date', { ascending: false });
 

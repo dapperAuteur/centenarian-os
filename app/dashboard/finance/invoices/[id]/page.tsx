@@ -5,13 +5,15 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, FileText, Clock, CheckCircle2, AlertTriangle, X,
   ArrowDownLeft, ArrowUpRight, Calendar, DollarSign, Copy,
-  Bookmark, Trash2, Loader2, Send, CreditCard, Undo2,
+  Bookmark, Trash2, Loader2, Send, CreditCard, Undo2, Pencil, Plus,
 } from 'lucide-react';
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
 import InvoiceTemplateModal from '@/components/finance/InvoiceTemplateModal';
+import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
+import CategorySelect from '@/components/finance/CategorySelect';
 
 interface InvoiceItem {
   id: string;
@@ -54,6 +56,10 @@ interface LinkedTransaction {
   description: string;
 }
 
+interface Account { id: string; name: string; account_type: string; }
+interface Category { id: string; name: string; color: string; }
+interface Brand { id: string; name: string; }
+
 const STATUS_BADGE: Record<string, { bg: string; text: string; Icon: typeof Clock }> = {
   draft: { bg: 'bg-gray-100', text: 'text-gray-700', Icon: FileText },
   sent: { bg: 'bg-blue-100', text: 'text-blue-700', Icon: Clock },
@@ -80,6 +86,26 @@ export default function InvoiceDetailPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
 
+  // Edit mode
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [editForm, setEditForm] = useState({
+    direction: 'receivable' as 'receivable' | 'payable',
+    contact_name: '',
+    invoice_number: '',
+    invoice_date: '',
+    due_date: '',
+    tax_amount: '',
+    account_id: '',
+    brand_id: '',
+    category_id: '',
+    notes: '',
+  });
+  const [editItems, setEditItems] = useState<{ description: string; quantity: string; unit_price: string }[]>([]);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -94,6 +120,89 @@ export default function InvoiceDetailPage() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Load dropdowns when entering edit mode
+  const startEditing = async () => {
+    if (!invoice) return;
+    setEditForm({
+      direction: invoice.direction,
+      contact_name: invoice.contact_name,
+      invoice_number: invoice.invoice_number || '',
+      invoice_date: invoice.invoice_date,
+      due_date: invoice.due_date || '',
+      tax_amount: invoice.tax_amount > 0 ? String(invoice.tax_amount) : '',
+      account_id: invoice.account_id || '',
+      brand_id: invoice.brand_id || '',
+      category_id: invoice.category_id || '',
+      notes: invoice.notes || '',
+    });
+    setEditItems(
+      invoice.invoice_items.length > 0
+        ? invoice.invoice_items.map((item) => ({
+            description: item.description,
+            quantity: String(item.quantity),
+            unit_price: String(item.unit_price),
+          }))
+        : [{ description: '', quantity: '1', unit_price: '' }]
+    );
+    const [acctRes, catRes, brandRes] = await Promise.all([
+      offlineFetch('/api/finance/accounts'),
+      offlineFetch('/api/finance/categories'),
+      offlineFetch('/api/brands'),
+    ]);
+    const acctData = await acctRes.json();
+    const catData = await catRes.json();
+    const brandData = await brandRes.json();
+    setAccounts(Array.isArray(acctData) ? acctData.filter((a: Account & { is_active: boolean }) => a.is_active) : []);
+    setCategories(catData.categories || []);
+    setBrands(Array.isArray(brandData) ? brandData : []);
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const items = editItems
+        .filter((li) => li.description.trim())
+        .map((li, i) => ({
+          description: li.description,
+          quantity: Number(li.quantity) || 1,
+          unit_price: Number(li.unit_price) || 0,
+          sort_order: i,
+        }));
+
+      const taxAmount = Number(editForm.tax_amount) || 0;
+      const subtotal = items.reduce((s, i) => s + (i.quantity * i.unit_price), 0);
+      const total = Math.round((subtotal + taxAmount) * 100) / 100;
+
+      const res = await offlineFetch(`/api/finance/invoices/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          direction: editForm.direction,
+          contact_name: editForm.contact_name,
+          invoice_number: editForm.invoice_number || null,
+          invoice_date: editForm.invoice_date,
+          due_date: editForm.due_date || null,
+          tax_amount: taxAmount,
+          total,
+          account_id: editForm.account_id || null,
+          brand_id: editForm.brand_id || null,
+          category_id: editForm.category_id || null,
+          notes: editForm.notes || null,
+          items,
+        }),
+      });
+
+      if (res.ok) {
+        setEditing(false);
+        load();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Save failed');
+      }
+    } finally { setSaving(false); }
+  };
 
   const handleAction = async (action: string, body: Record<string, unknown> = {}) => {
     setActionLoading(action);
@@ -138,6 +247,18 @@ export default function InvoiceDetailPage() {
     } finally { setActionLoading(null); }
   };
 
+  // Line item helpers
+  const addLineItem = () => setEditItems([...editItems, { description: '', quantity: '1', unit_price: '' }]);
+  const removeLineItem = (i: number) => { if (editItems.length > 1) setEditItems(editItems.filter((_, idx) => idx !== i)); };
+  const updateLineItem = (i: number, field: string, value: string) => {
+    const updated = [...editItems];
+    updated[i] = { ...updated[i], [field]: value };
+    setEditItems(updated);
+  };
+  const editLineTotal = editItems.reduce((s, li) => s + (Number(li.quantity) || 1) * (Number(li.unit_price) || 0), 0);
+  const editTaxAmount = Number(editForm.tax_amount) || 0;
+  const editGrandTotal = Math.round((editLineTotal + editTaxAmount) * 100) / 100;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -160,6 +281,232 @@ export default function InvoiceDetailPage() {
   const balanceDue = invoice.total - invoice.amount_paid;
   const isReceivable = invoice.direction === 'receivable';
 
+  // ──── EDIT MODE ────
+  if (editing) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-10 space-y-6">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setEditing(false)} className="p-2 rounded-lg hover:bg-gray-100 transition">
+              <ArrowLeft className="w-4 h-4 text-gray-600" />
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900">Edit Invoice</h1>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setEditing(false)} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || !editForm.contact_name.trim()}
+              className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 disabled:opacity-50 transition flex items-center gap-2"
+            >
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              Save Changes
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-5">
+          {/* Direction */}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setEditForm({ ...editForm, direction: 'receivable' })}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium border transition ${
+                editForm.direction === 'receivable' ? 'bg-green-50 border-green-300 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-600'
+              }`}
+            >
+              <ArrowDownLeft className="w-4 h-4" /> Receivable
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditForm({ ...editForm, direction: 'payable' })}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium border transition ${
+                editForm.direction === 'payable' ? 'bg-red-50 border-red-300 text-red-700' : 'bg-gray-50 border-gray-200 text-gray-600'
+              }`}
+            >
+              <ArrowUpRight className="w-4 h-4" /> Payable
+            </button>
+          </div>
+
+          {/* Contact */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {editForm.direction === 'receivable' ? 'Client / Customer' : 'Vendor / Creditor'}
+            </label>
+            <ContactAutocomplete
+              value={editForm.contact_name}
+              onChange={(val) => setEditForm({ ...editForm, contact_name: val })}
+              contactType={editForm.direction === 'receivable' ? 'customer' : 'vendor'}
+            />
+          </div>
+
+          {/* Invoice number + dates */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Invoice #</label>
+              <input
+                type="text"
+                value={editForm.invoice_number}
+                onChange={(e) => setEditForm({ ...editForm, invoice_number: e.target.value })}
+                placeholder="INV-001"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Invoice Date</label>
+              <input
+                type="date"
+                value={editForm.invoice_date}
+                onChange={(e) => setEditForm({ ...editForm, invoice_date: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Due Date</label>
+              <input
+                type="date"
+                value={editForm.due_date}
+                onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+              />
+            </div>
+          </div>
+
+          {/* Line items */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Line Items</label>
+            <div className="space-y-2">
+              {editItems.map((li, i) => (
+                <div key={i} className="flex gap-2 items-start">
+                  <input
+                    type="text"
+                    placeholder="Description"
+                    value={li.description}
+                    onChange={(e) => updateLineItem(i, 'description', e.target.value)}
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Qty"
+                    value={li.quantity}
+                    onChange={(e) => updateLineItem(i, 'quantity', e.target.value)}
+                    className="w-16 border border-gray-300 rounded-lg px-2 py-2 text-sm text-center text-gray-900"
+                    min="1"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Price"
+                    value={li.unit_price}
+                    onChange={(e) => updateLineItem(i, 'unit_price', e.target.value)}
+                    className="w-24 border border-gray-300 rounded-lg px-2 py-2 text-sm text-right text-gray-900"
+                    step="0.01"
+                    min="0"
+                  />
+                  {editItems.length > 1 && (
+                    <button onClick={() => removeLineItem(i)} className="p-2 text-gray-400 hover:text-red-500">
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button onClick={addLineItem} className="mt-2 text-xs text-fuchsia-600 hover:underline font-medium flex items-center gap-1">
+              <Plus className="w-3 h-3" /> Add line item
+            </button>
+          </div>
+
+          {/* Tax + Totals */}
+          <div className="flex items-end gap-4 justify-end">
+            <div className="w-32">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Tax Amount</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={editForm.tax_amount}
+                onChange={(e) => setEditForm({ ...editForm, tax_amount: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-right text-gray-900"
+                placeholder="0.00"
+              />
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-500">Subtotal: {fmtCurrency(editLineTotal)}</p>
+              <p className="text-sm font-bold text-gray-900">Total: {fmtCurrency(editGrandTotal)}</p>
+            </div>
+          </div>
+
+          {/* Account, Category, Brand */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Account</label>
+              <select
+                value={editForm.account_id}
+                onChange={(e) => setEditForm({ ...editForm, account_id: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+              >
+                <option value="">None</option>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </select>
+            </div>
+            <CategorySelect
+              value={editForm.category_id}
+              onChange={(cid) => setEditForm({ ...editForm, category_id: cid })}
+              categories={categories}
+              onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
+            />
+          </div>
+
+          {brands.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Brand</label>
+              <select
+                value={editForm.brand_id}
+                onChange={(e) => setEditForm({ ...editForm, brand_id: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+              >
+                <option value="">None</option>
+                {brands.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Notes */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+            <textarea
+              value={editForm.notes}
+              onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+              rows={3}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+            />
+          </div>
+        </div>
+
+        {/* Bottom save bar */}
+        <div className="flex justify-end gap-2">
+          <button onClick={() => setEditing(false)} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || !editForm.contact_name.trim()}
+            className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 disabled:opacity-50 transition flex items-center gap-2"
+          >
+            {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+            Save Changes
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ──── READ MODE ────
   return (
     <div className="max-w-4xl mx-auto px-4 py-10 space-y-6">
       {/* Header */}
@@ -307,6 +654,15 @@ export default function InvoiceDetailPage() {
       <div className="bg-white border border-gray-200 rounded-2xl p-4">
         <h3 className="text-sm font-medium text-gray-700 mb-3">Actions</h3>
         <div className="flex flex-wrap gap-2">
+          {/* Edit */}
+          <button
+            onClick={startEditing}
+            disabled={!!actionLoading}
+            className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50 transition"
+          >
+            <Pencil className="w-3.5 h-3.5" /> Edit
+          </button>
+
           {/* Status actions */}
           {invoice.status === 'draft' && (
             <button
@@ -364,15 +720,13 @@ export default function InvoiceDetailPage() {
           </button>
 
           {/* Delete */}
-          {invoice.status !== 'paid' && (
-            <button
-              onClick={handleDelete}
-              disabled={!!actionLoading}
-              className="flex items-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 disabled:opacity-50 transition"
-            >
-              <Trash2 className="w-3.5 h-3.5" /> Delete
-            </button>
-          )}
+          <button
+            onClick={handleDelete}
+            disabled={!!actionLoading}
+            className="flex items-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 disabled:opacity-50 transition"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> Delete
+          </button>
 
           {actionLoading && <Loader2 className="w-4 h-4 animate-spin text-gray-400 self-center" />}
         </div>

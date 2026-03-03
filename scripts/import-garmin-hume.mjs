@@ -99,6 +99,48 @@ function parseGarminSleep(wellnessDir) {
   return dayMap;
 }
 
+// --- Garmin Activity Parser (UDS = User Daily Summary) ---
+
+function parseGarminActivity(aggregatorDir) {
+  const dayMap = new Map();
+  const udsFiles = readdirSync(aggregatorDir).filter(f => f.startsWith('UDSFile_'));
+
+  for (const file of udsFiles) {
+    const data = JSON.parse(readFileSync(join(aggregatorDir, file), 'utf8'));
+    for (const entry of data) {
+      const date = entry.calendarDate;
+      if (!date) continue;
+
+      const metrics = {};
+
+      if (entry.totalSteps > 0) metrics.steps = entry.totalSteps;
+      if (entry.activeKilocalories > 0) {
+        metrics.active_calories = Math.round(entry.activeKilocalories);
+      }
+
+      // Activity minutes = moderate + vigorous intensity
+      const mod = entry.moderateIntensityMinutes || 0;
+      const vig = entry.vigorousIntensityMinutes || 0;
+      if (mod + vig > 0) metrics.activity_min = mod + vig;
+
+      // Resting HR from daily summary (may complement sleep-derived RHR)
+      if (entry.restingHeartRate > 0) metrics.resting_hr = entry.restingHeartRate;
+
+      // Stress score (if available on this device)
+      if (entry.averageStressLevel != null && entry.averageStressLevel > 0) {
+        metrics.stress_score = Math.round(entry.averageStressLevel);
+      }
+
+      if (Object.keys(metrics).length > 0) {
+        mergeDayMetric(dayMap, date, metrics);
+      }
+    }
+  }
+
+  console.log(`  Garmin activity: ${dayMap.size} days parsed from ${udsFiles.length} UDS files`);
+  return dayMap;
+}
+
 // --- Garmin Weight Parser ---
 
 function parseGarminWeight(wellnessDir) {
@@ -160,9 +202,12 @@ function parseHumeHealth(csvPath) {
     }
     if (row.bmi) metrics.bmi = parseFloat(row.bmi);
     if (row.fatRate) metrics.body_fat_pct = parseFloat(row.fatRate);
-    // muscleMass in Hume Health is in kg, convert to lbs
+    // Hume Health "muscleMass" is lean soft tissue mass (FFM minus bone), not skeletal
+    // muscle mass. Apply 0.60 factor to estimate skeletal muscle mass, then convert kg→lbs.
     if (row.muscleMass) {
-      metrics.muscle_mass_lbs = Math.round(parseFloat(row.muscleMass) * 2.20462 * 100) / 100;
+      const leanSoftTissueKg = parseFloat(row.muscleMass);
+      const estimatedSmmKg = leanSoftTissueKg * 0.60;
+      metrics.muscle_mass_lbs = Math.round(estimatedSmmKg * 2.20462 * 100) / 100;
     }
 
     mergeDayMetric(dayMap, date, metrics);
@@ -187,40 +232,48 @@ async function main() {
 
   const BASE = 'docs/garmin-data/body/garmin-data-2026-02-24/DI_CONNECT';
   const wellnessDir = join(process.cwd(), BASE, 'DI-Connect-Wellness');
+  const aggregatorDir = join(process.cwd(), BASE, 'DI-Connect-Aggregator');
   const humeCsv = join(process.cwd(), 'docs/hume-health/hume_health_awews.com-2026-02-23T11_24_15.774Z.csv');
 
   // Parse all sources
   console.log('Parsing data sources...');
   const garminSleep = parseGarminSleep(wellnessDir);
   const garminWeight = parseGarminWeight(wellnessDir);
+  const garminActivity = parseGarminActivity(aggregatorDir);
   const humeHealth = parseHumeHealth(humeCsv);
 
-  // Merge all into single day map (Hume Health body comp takes priority for overlapping dates)
-  const merged = new Map();
-  for (const source of [garminSleep, garminWeight, humeHealth]) {
+  // Merge Garmin sources into one day map
+  const garminMerged = new Map();
+  for (const source of [garminSleep, garminWeight, garminActivity]) {
     for (const [date, metrics] of source) {
-      mergeDayMetric(merged, date, metrics);
+      mergeDayMetric(garminMerged, date, metrics);
     }
   }
 
-  console.log(`\nTotal unique days: ${merged.size}`);
-
-  // Build upsert payloads
+  // Build per-source payloads (separate rows for garmin vs hume_health)
   const payloads = [];
-  for (const [date, metrics] of merged) {
+
+  // Garmin rows
+  for (const [date, metrics] of garminMerged) {
     if (Object.keys(metrics).length === 0) continue;
-    payloads.push({
-      user_id: userId,
-      logged_date: date,
-      ...metrics,
-    });
+    payloads.push({ user_id: userId, logged_date: date, source: 'garmin', ...metrics });
+  }
+
+  // Hume Health rows
+  for (const [date, metrics] of humeHealth) {
+    if (Object.keys(metrics).length === 0) continue;
+    payloads.push({ user_id: userId, logged_date: date, source: 'hume_health', ...metrics });
   }
 
   // Sort by date
   payloads.sort((a, b) => a.logged_date.localeCompare(b.logged_date));
 
-  console.log(`Payloads to upsert: ${payloads.length}`);
-  console.log(`Date range: ${payloads[0]?.logged_date} → ${payloads[payloads.length - 1]?.logged_date}`);
+  const garminCount = payloads.filter(p => p.source === 'garmin').length;
+  const humeCount = payloads.filter(p => p.source === 'hume_health').length;
+  console.log(`\nPayloads: ${garminCount} garmin + ${humeCount} hume_health = ${payloads.length} total`);
+  if (payloads.length) {
+    console.log(`Date range: ${payloads[0].logged_date} → ${payloads[payloads.length - 1].logged_date}`);
+  }
 
   // Preview a few rows
   console.log('\nSample rows:');
@@ -229,14 +282,14 @@ async function main() {
     console.log(`  ${JSON.stringify(rest)}`);
   }
 
-  // Upsert in batches of 200
+  // Upsert in batches of 200 (conflict on user_id + logged_date + source)
   const BATCH = 200;
   let total = 0;
   for (let i = 0; i < payloads.length; i += BATCH) {
     const batch = payloads.slice(i, i + BATCH);
     const { data, error } = await db
       .from('user_health_metrics')
-      .upsert(batch, { onConflict: 'user_id,logged_date' })
+      .upsert(batch, { onConflict: 'user_id,logged_date,source' })
       .select('logged_date');
 
     if (error) {

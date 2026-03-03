@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Activity, Lock, CheckCircle2, TrendingUp, Calendar, Upload, Download } from 'lucide-react';
+import { Activity, Lock, CheckCircle2, TrendingUp, Calendar, Upload, Download, ChartLine } from 'lucide-react';
 import Link from 'next/link';
 import MetricUnlockModal from '@/components/metrics/MetricUnlockModal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -179,6 +179,13 @@ export default function MetricsDashboardPage() {
           >
             <Upload className="w-4 h-4" />
             Import
+          </Link>
+          <Link
+            href="/dashboard/metrics/trends"
+            className="flex items-center gap-1.5 px-3 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 transition min-h-10"
+          >
+            <ChartLine className="w-4 h-4" />
+            Trends
           </Link>
           <a
             href="/api/health-metrics/export"

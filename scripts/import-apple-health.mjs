@@ -175,7 +175,7 @@ async function main() {
   // Build payloads — only include non-null/non-zero fields
   const payloads = [];
   for (const [date, metrics] of dayMap) {
-    const row = { user_id: userId, logged_date: date };
+    const row = { user_id: userId, logged_date: date, source: 'apple_health' };
     let hasData = false;
 
     if (metrics.steps > 0) { row.steps = metrics.steps; hasData = true; }
@@ -208,7 +208,7 @@ async function main() {
     const batch = payloads.slice(i, i + BATCH);
     const { data, error } = await db
       .from('user_health_metrics')
-      .upsert(batch, { onConflict: 'user_id,logged_date' })
+      .upsert(batch, { onConflict: 'user_id,logged_date,source' })
       .select('logged_date');
 
     if (error) {

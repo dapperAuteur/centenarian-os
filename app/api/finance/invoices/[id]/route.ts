@@ -198,7 +198,7 @@ export async function PATCH(
 
   // Standard field updates
   const allowed = [
-    'contact_name', 'contact_id', 'status', 'invoice_date', 'due_date',
+    'direction', 'contact_name', 'contact_id', 'status', 'invoice_date', 'due_date',
     'invoice_number', 'account_id', 'brand_id', 'category_id', 'notes',
     'subtotal', 'tax_amount', 'total', 'amount_paid',
   ];
@@ -236,15 +236,16 @@ export async function DELETE(
 
   const { data: existing } = await db
     .from('invoices')
-    .select('status')
+    .select('id, transaction_id')
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  if (existing.status === 'paid') {
-    return NextResponse.json({ error: 'Cannot delete a paid invoice' }, { status: 400 });
+  // Clean up linked transaction if exists
+  if (existing.transaction_id) {
+    await db.from('financial_transactions').delete().eq('id', existing.transaction_id);
   }
 
   const { error } = await db.from('invoices').delete().eq('id', id);
