@@ -203,6 +203,9 @@ const PHASES = [
       { done: true, text: 'CSV import — Apple Health, Google Health, InBody, Hume Health' },
       { done: true, text: 'Admin metrics configuration page' },
       { done: true, text: '3-tier metrics — Core (RHR/steps/sleep/activity), Enrichment (per-metric unlock), Body Composition' },
+      { done: true, text: 'Exercise library — custom exercise CRUD with categories, muscle groups, and equipment tags' },
+      { done: true, text: 'Enhanced workout logging — link exercises to workout templates and logs with sets/reps/weight' },
+      { done: true, text: 'Exercises CSV import/export via Data Hub' },
       { done: false, text: 'HRV and recovery score tracking' },
       { done: false, text: 'Sleep quality deep-dive (stages, consistency, debt)' },
       { done: false, text: 'Recovery vs. performance correlation dashboard' },
@@ -224,7 +227,8 @@ const PHASES = [
       { done: true, text: 'Account balance tracking — opening balance + transaction history' },
       { done: true, text: 'Account deactivation — soft-delete preserves transaction history' },
       { done: true, text: 'Contact locations — sub-locations per vendor/customer' },
-      { done: true, text: 'Data Hub — centralized import/export for all 10 modules with CSV templates, date-range filtering, and Google Sheets support' },
+      { done: true, text: 'Data Hub — centralized import/export for all 12+ modules with CSV templates, date-range filtering, and Google Sheets support' },
+      { done: true, text: 'Invoice custom fields — define and attach arbitrary key/value fields per invoice template' },
     ],
   },
   {
@@ -255,6 +259,19 @@ const PHASES = [
       { done: true, text: 'Contact autocomplete with default category auto-fill' },
       { done: true, text: 'Task contacts and locations — assign vendors/places to planner tasks' },
       { done: true, text: 'ActivityLinker UI component — search + pill interface for any module' },
+    ],
+  },
+  {
+    id: 13,
+    title: 'Phase 13: User Experience & Personalization',
+    status: 'in-progress' as const,
+    quarter: 'Q2 2026',
+    description: 'Reduce friction and let users tailor CentenarianOS to how they actually work.',
+    items: [
+      { done: true, text: 'Dashboard home preference — choose which page you land on after login or clicking "Go to Dashboard"' },
+      { done: false, text: 'Notification preferences — control which in-app alerts you receive' },
+      { done: false, text: 'Custom dashboard widgets — pin your most-used modules to a personal home screen' },
+      { done: false, text: 'Theme support — light, dark, and system modes' },
     ],
   },
 ];
@@ -321,7 +338,7 @@ export default function RoadmapPage() {
         <p className="text-xl text-gray-600 mb-2">
           Our journey from MVP to a comprehensive personal longevity operating system.
         </p>
-        <p className="text-sm text-gray-400 mb-8">Updated February 2026</p>
+        <p className="text-sm text-gray-400 mb-8">Updated March 2026</p>
 
         {/* Overall progress bar */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">

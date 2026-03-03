@@ -23,6 +23,7 @@ const FREE_ROUTE_PREFIXES = [
   '/dashboard/messages',
   '/dashboard/feedback',
   '/dashboard/teaching',
+  '/dashboard/settings',
 ];
 
 function isFreeRoute(pathname: string) {

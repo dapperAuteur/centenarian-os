@@ -8,7 +8,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import {
   X, Lock, Bell, UserCircle, CreditCard,
-  MessageCircle, Presentation, Shield, LogOut,
+  MessageCircle, Presentation, Shield, LogOut, Settings,
 } from 'lucide-react';
 import { getVisibleGroups, isItemActive } from './NavConfig';
 
@@ -180,6 +180,13 @@ export default function MobileDrawer({
               My Profile
             </Link>
           )}
+          <Link
+            href="/dashboard/settings"
+            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition"
+          >
+            <Settings className="w-4 h-4 shrink-0" />
+            Settings
+          </Link>
           <Link
             href="/dashboard/billing"
             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition"

@@ -1,10 +1,64 @@
 # CentenarianOS — Remaining Roadmap Implementation Plan
 
-> Generated: February 2026
-> Branch: `feat/lms`
-> Highest migration applied: `046_course_interactions.sql`
+> Originally generated: February 2026
+> Last updated: March 2026
+> Branch: `main`
+> Highest migration applied: `084_dashboard_home_preference.sql`
 
 This plan covers every pending item from the Tech Roadmap page, organized by phase with exact files, migration numbers, and implementation notes. Items with existing API routes are marked **API ✅ / UI ❌** — those are UI-only builds.
+
+---
+
+## ✅ Completed Since Original Plan (Migrations 047–084)
+
+The following items from this plan have shipped and should be considered **DONE**:
+
+| Item | Migration(s) | Notes |
+|------|-------------|-------|
+| Stripe subscriptions, admin, billing | 033, 037 | Shipped Phase 1 |
+| Wearable integrations (Garmin, Oura, WHOOP, CSV import) | 050 | Shipped Phase 9 |
+| Financial accounts, transactions, budgets, brands | 051, 054, 057 | Shipped Phase 10 |
+| Travel & vehicles (fuel, trips, maintenance, OCR) | 052, 053, 059, 064, 065 | Shipped Phase 5 |
+| Equipment & asset tracking with valuations | 069 | Shipped Phase 11 |
+| Cross-module activity links, saved contacts, locations | 056, 064, 066 | Shipped Phase 12 |
+| Invoices + invoice templates | 058, 079 | Shipped |
+| Invoice custom fields | 081 | Shipped |
+| Exercise library (CRUD, categories, muscle groups) | 082 | Shipped |
+| Enhanced workout logging (sets/reps/weight, exercise links) | 083 | Shipped |
+| Dashboard home preference (per-user home page setting) | 084 | Shipped Phase 13 |
+| Academy Phase 4: CYOA crossroads, quiz, map, doc, audio chapters, discussions | 055, 070–075 | Shipped |
+| Sequential module locking | 073 | Shipped |
+| Bulk Course Importer | — | Shipped |
+| Life categories tagging system | 077 | Shipped |
+| AI coaching (Gems) with documents and flashcards | 054, 061, 068 | Shipped (admin only) |
+| Data Hub (centralized import/export for 12+ modules) | — | Shipped |
+| Short links (admin) | 049 | Shipped (admin backfill only) |
+
+## ⏳ Still Pending
+
+The following Phase 4 Academy items and later phases remain unimplemented. See sections below for implementation details.
+
+**Phase 4 remaining:**
+- 4-B: Threaded chat on assignment submissions (UI only — API exists)
+- 4-C: Course direct messages (no API or UI)
+- 4-D: Teacher promo codes (Stripe Coupons)
+- 4-E: Free trial periods for subscription courses
+- 4-F: Course reviews and star ratings
+- 4-G: Progressive metric slots + re-enrollment ("Take Again")
+- 4-H: AI-recommended learning paths for students (UI only — API exists)
+- 4-I: AI path suggestions for teachers
+
+**Phase 6:** Focus Engine correlation analysis (nutrition ↔ focus/energy)
+
+**Phase 8:** Switchy.io short link integration (auto-create on publish)
+
+**Phase 9:** HRV tracking, sleep deep-dive, recovery vs. performance dashboard
+
+**Phase 13:** Notification preferences, custom widgets, dark mode
+
+> **Note:** Migration numbers in the sections below are historical from when this plan was written. Actual migrations shipped may differ (e.g., migration 047 is now `shortlinks.sql`, 048 is `weekly_reviews.sql`, etc.). Always check `supabase/migrations/` for the latest applied migration number before adding new ones.
+
+---
 
 ---
 
