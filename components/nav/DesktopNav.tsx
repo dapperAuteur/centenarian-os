@@ -19,6 +19,7 @@ import {
   MessageCircle,
   LogOut,
   Menu,
+  Settings,
 } from 'lucide-react';
 import { getVisibleGroups, isGroupActive, isItemActive } from './NavConfig';
 import MobileDrawer from './MobileDrawer';
@@ -231,6 +232,15 @@ export default function DesktopNav({
                       My Profile
                     </Link>
                   )}
+                  <Link
+                    href="/dashboard/settings"
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+                    role="menuitem"
+                    onClick={() => setUserMenuOpen(false)}
+                  >
+                    <Settings className="w-4 h-4 shrink-0" />
+                    Settings
+                  </Link>
                   <Link
                     href="/dashboard/billing"
                     className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"

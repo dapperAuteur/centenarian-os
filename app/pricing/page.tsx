@@ -9,6 +9,7 @@ import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Check, Shirt, Zap, ArrowLeft } from 'lucide-react';
 import PurchaseModal from '@/components/PurchaseModal';
+import SiteFooter from '@/components/ui/SiteFooter';
 
 function FromSignupBanner() {
   const searchParams = useSearchParams();
@@ -78,7 +79,7 @@ export default function PricingPage() {
           <div className="flex items-center space-x-4">
             {user ? (
               <Link
-                href="/dashboard/billing"
+                href="/dashboard"
                 className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors text-sm font-medium"
               >
                 Go to Dashboard
@@ -241,6 +242,8 @@ export default function PricingPage() {
           </p>
         </div>
       </main>
+
+      <SiteFooter theme="light" />
 
       <PurchaseModal
         isOpen={showPurchaseModal}

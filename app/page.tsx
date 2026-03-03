@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Target, Utensils, Brain, Car, DollarSign, Heart, GraduationCap, BookOpen, TrendingUp, Zap, Shield, Menu, X } from 'lucide-react';
+import { ArrowRight, Target, Utensils, Brain, Car, DollarSign, Heart, GraduationCap, BookOpen, TrendingUp, Zap, Shield, Menu, X, Dumbbell, Package, Database, ChartNetwork } from 'lucide-react';
 import { useState } from 'react';
 import SiteFooter from '@/components/ui/SiteFooter';
+import { useAuth } from '@/lib/hooks/useAuth';
 
 const MODULES = [
   {
@@ -67,12 +68,12 @@ const MODULES = [
     iconColor: 'text-emerald-600',
     checkColor: 'text-emerald-600',
     Icon: DollarSign,
-    description: 'Full financial tracking — accounts, budgets, brands, and P&L reporting.',
+    description: 'Full financial tracking — accounts, budgets, brands, invoices, and P&L reporting.',
     features: [
       'Checking, savings, credit card, loan, cash',
       'Budget categories with spending charts',
       'Brand / business P&L tracking',
-      'CSV import & export',
+      'Invoices with custom fields & CSV import',
     ],
   },
   {
@@ -84,9 +85,37 @@ const MODULES = [
     description: 'Daily vitals logging and wearable integration for the full health picture.',
     features: [
       'RHR, steps, sleep, activity minutes',
-      'Garmin wearable sync',
+      'Garmin, Oura Ring & WHOOP sync',
       'Body composition tracking',
       'CSV import (Apple Health, InBody)',
+    ],
+  },
+  {
+    name: 'Workouts & Exercises',
+    color: 'border-cyan-500',
+    iconColor: 'text-cyan-600',
+    checkColor: 'text-cyan-600',
+    Icon: Dumbbell,
+    description: 'Build custom workout templates from a personal exercise library.',
+    features: [
+      'Exercise library with categories & muscle groups',
+      'Workout templates with sets/reps/weight',
+      'Workout log with effort & mood ratings',
+      'CSV import/export via Data Hub',
+    ],
+  },
+  {
+    name: 'Equipment & Assets',
+    color: 'border-stone-500',
+    iconColor: 'text-stone-600',
+    checkColor: 'text-stone-600',
+    Icon: Package,
+    description: 'Track tools, gear, and possessions — purchase price, current value, and cross-module links.',
+    features: [
+      'Equipment categories with auto-seeding',
+      'Valuation history with chart visualization',
+      'Link equipment to trips, workouts, finance',
+      'Total asset value dashboard',
     ],
   },
   {
@@ -97,10 +126,10 @@ const MODULES = [
     Icon: GraduationCap,
     description: 'A full LMS — create, publish, sell, and take courses.',
     features: [
-      'Video, text, audio & slide lessons',
+      'Video, text, audio, quiz & map lessons',
       'Choose Your Own Adventure navigation',
       'Assignments, certificates & badges',
-      '11 free tutorial course series',
+      '14 free tutorial course series',
     ],
   },
   {
@@ -117,10 +146,58 @@ const MODULES = [
       'Public author/cook profiles',
     ],
   },
+  {
+    name: 'Correlations & Analytics',
+    color: 'border-teal-500',
+    iconColor: 'text-teal-600',
+    checkColor: 'text-teal-600',
+    Icon: TrendingUp,
+    description: 'Find connections between habits, nutrition, and health outcomes.',
+    features: [
+      'Cross-module data correlation engine',
+      'Daily & weekly aggregate views',
+      'Trend charts across all tracked metrics',
+      'Actionable insight summaries',
+    ],
+  },
+  {
+    name: 'Data Hub',
+    color: 'border-indigo-500',
+    iconColor: 'text-indigo-600',
+    checkColor: 'text-indigo-600',
+    Icon: Database,
+    description: 'Centralized import and export for every module — your data, your way.',
+    features: [
+      'CSV import/export for all 12+ modules',
+      'Date-range filtering on exports',
+      'Google Sheets compatible templates',
+      'Bulk course importer for Academy',
+    ],
+  },
+  {
+    name: 'Cross-Module Connections',
+    color: 'border-pink-500',
+    iconColor: 'text-pink-600',
+    checkColor: 'text-pink-600',
+    Icon: ChartNetwork,
+    description: 'Link data across every module — activities, contacts, and locations.',
+    features: [
+      'Bidirectional activity links (task\u2194trip\u2194equipment)',
+      'Saved contacts with location sub-entries',
+      'Contact autocomplete with default category',
+      'Task contacts & location assignment',
+    ],
+  },
 ];
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+  const isLoggedIn = !authLoading && !!user;
+
+  const dashboardHref = '/dashboard';
+  const primaryLabel = isLoggedIn ? 'Go to Dashboard' : 'Get Started';
+  const primaryHref = isLoggedIn ? dashboardHref : '/pricing';
 
   return (
     <div className="min-h-screen bg-linear-to-b from-gray-50 to-white">
@@ -155,10 +232,10 @@ export default function LandingPage() {
                 Contribute
               </Link>
               <Link
-                href="/pricing"
+                href={primaryHref}
                 className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-medium"
               >
-                Get Started
+                {primaryLabel}
               </Link>
             </div>
 
@@ -218,11 +295,11 @@ export default function LandingPage() {
                 Contribute
               </Link>
               <Link
-                href="/pricing"
+                href={primaryHref}
                 className="block w-full text-center px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Get Started
+                {primaryLabel}
               </Link>
             </div>
           )}
@@ -242,10 +319,10 @@ export default function LandingPage() {
           {/* Buttons - Stack on mobile, wrap on tablet+ */}
           <div className="flex flex-col sm:flex-row sm:flex-wrap justify-center gap-3 sm:gap-4 px-4 sm:px-0">
             <Link
-              href="/pricing"
+              href={primaryHref}
               className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-semibold text-base sm:text-lg flex items-center justify-center"
             >
-              Start Your Journey
+              {isLoggedIn ? 'Go to Dashboard' : 'Start Your Journey'}
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
             <Link
@@ -367,10 +444,10 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
             <Link
-              href="/pricing"
+              href={primaryHref}
               className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-fuchsia-600 rounded-lg hover:bg-gray-100 transition-colors font-bold text-base sm:text-lg"
             >
-              View Plans & Get Started
+              {isLoggedIn ? 'Go to Dashboard' : 'View Plans & Get Started'}
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
             <Link

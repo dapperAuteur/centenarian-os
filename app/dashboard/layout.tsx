@@ -13,6 +13,7 @@ import DesktopNav from '@/components/nav/DesktopNav';
 import MobileBottomBar from '@/components/nav/MobileBottomBar';
 import FloatingActionsMenu from '@/components/ui/FloatingActionsMenu';
 import OfflineIndicator from '@/components/ui/OfflineIndicator';
+import SiteFooter from '@/components/ui/SiteFooter';
 import { SyncProvider } from '@/lib/contexts/SyncContext';
 
 // Routes freely accessible without a paid subscription
@@ -23,6 +24,7 @@ const FREE_ROUTE_PREFIXES = [
   '/dashboard/messages',
   '/dashboard/feedback',
   '/dashboard/teaching',
+  '/dashboard/settings',
 ];
 
 function isFreeRoute(pathname: string) {
@@ -107,6 +109,11 @@ export default function DashboardLayout({
         >
           {children}
         </main>
+
+        {/* Footer — pb-16 clears fixed MobileBottomBar on mobile */}
+        <div className="pb-16 lg:pb-0">
+          <SiteFooter theme="light" />
+        </div>
 
         {/* Mobile bottom tab bar — fixed, sits above safe area */}
         <MobileBottomBar {...navProps} />
