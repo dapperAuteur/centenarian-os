@@ -1,5 +1,5 @@
-date,name,duration_min,exercise_name,sets_completed,reps_completed,weight_lbs,duration_sec,notes
-2026-02-24,Upper Body Push,45,Bench Press,4,8,185,,Felt strong today
-2026-02-24,Upper Body Push,45,Overhead Press,3,10,95,,Strict form no leg drive
-2026-02-26,Lower Body,50,Barbell Back Squat,4,6,225,,Hit a new PR on last set
-2026-02-26,Lower Body,50,Romanian Deadlift,3,10,165,,Slow eccentric 3 seconds down
+date,name,duration_min,purpose,overall_feeling,exercise_name,sets_completed,reps_completed,weight_lbs,duration_sec,rest_sec,rpe,tempo,percent_of_max,distance_miles,hold_sec,phase,side,feeling,is_circuit,is_negative,is_isometric,to_failure,is_superset,superset_group,is_balance,is_unilateral,notes
+2026-02-24,Upper Body Push,45,strength;hypertrophy,4,Bench Press,4,8,185,,90,8,3-1-2-0,75,,,working,,,,,,,,,Felt strong today
+2026-02-24,Upper Body Push,45,strength;hypertrophy,4,Overhead Press,3,10,95,,90,7,,,,,,,,,,,,,,Strict form no leg drive
+2026-02-26,Lower Body,50,strength;power,5,Barbell Back Squat,4,6,225,,120,9,,85,,,working,,,,,,true,,,,Hit a new PR on last set
+2026-02-26,Lower Body,50,strength;power,5,Romanian Deadlift,3,10,165,,90,7,3-0-1-0,,,,,,,true,,,,,,Slow eccentric 3 seconds down

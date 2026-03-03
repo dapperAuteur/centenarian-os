@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/client';
 
 type EntityType =
   | 'task' | 'trip' | 'route' | 'transaction' | 'recipe'
-  | 'fuel_log' | 'maintenance' | 'invoice' | 'workout' | 'equipment' | 'focus_session';
+  | 'fuel_log' | 'maintenance' | 'invoice' | 'workout' | 'equipment' | 'focus_session' | 'exercise';
 
 interface ActivityLink {
   id: string;
@@ -42,6 +42,7 @@ const TYPE_LABELS: Record<EntityType, string> = {
   workout: 'Workout',
   equipment: 'Equipment',
   focus_session: 'Focus Session',
+  exercise: 'Exercise',
 };
 
 const TYPE_COLORS: Record<EntityType, string> = {
@@ -56,11 +57,12 @@ const TYPE_COLORS: Record<EntityType, string> = {
   workout: 'bg-rose-50 text-rose-700 border-rose-200',
   equipment: 'bg-teal-50 text-teal-700 border-teal-200',
   focus_session: 'bg-orange-50 text-orange-700 border-orange-200',
+  exercise: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
 };
 
 // Linkable types (exclude the current entity type)
 const LINKABLE_TYPES: EntityType[] = [
-  'task', 'trip', 'route', 'transaction', 'recipe', 'workout', 'equipment', 'focus_session',
+  'task', 'trip', 'route', 'transaction', 'recipe', 'workout', 'equipment', 'focus_session', 'exercise',
 ];
 
 export default function ActivityLinker({ entityType, entityId }: ActivityLinkerProps) {
@@ -183,6 +185,22 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
               .slice(0, 10)
               .map((e: Record<string, unknown>) => {
                 const cat = e.equipment_categories as { name: string } | null;
+                return {
+                  id: String(e.id),
+                  display_name: cat ? `${e.name} (${cat.name})` : String(e.name),
+                };
+              });
+          }
+          break;
+        }
+        case 'exercise': {
+          const res = await fetch(`/api/exercises?search=${encodeURIComponent(q)}`);
+          if (res.ok) {
+            const d = await res.json();
+            results = (Array.isArray(d) ? d : [])
+              .slice(0, 10)
+              .map((e: Record<string, unknown>) => {
+                const cat = e.exercise_categories as { name: string } | null;
                 return {
                   id: String(e.id),
                   display_name: cat ? `${e.name} (${cat.name})` : String(e.name),

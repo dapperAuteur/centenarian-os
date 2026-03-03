@@ -40,6 +40,10 @@ export async function POST(
       template_id: original.template_id,
       duration_min: original.duration_min,
       notes: original.notes,
+      purpose: original.purpose ?? [],
+      overall_feeling: original.overall_feeling ?? null,
+      warmup_notes: original.warmup_notes ?? null,
+      cooldown_notes: original.cooldown_notes ?? null,
     })
     .select('id')
     .single();
@@ -48,15 +52,35 @@ export async function POST(
 
   // Copy exercises
   if (original.workout_log_exercises?.length > 0) {
-    const exercises = original.workout_log_exercises.map((ex: { name: string; sets_completed: number | null; reps_completed: number | null; weight_lbs: number | null; duration_sec: number | null; notes: string | null; sort_order: number }) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const exercises = original.workout_log_exercises.map((ex: any) => ({
       log_id: newLog.id,
       name: ex.name,
+      exercise_id: ex.exercise_id ?? null,
       sets_completed: ex.sets_completed,
       reps_completed: ex.reps_completed,
       weight_lbs: ex.weight_lbs,
       duration_sec: ex.duration_sec,
+      rest_sec: ex.rest_sec ?? 60,
       notes: ex.notes,
       sort_order: ex.sort_order,
+      equipment_id: ex.equipment_id ?? null,
+      is_circuit: ex.is_circuit ?? false,
+      is_negative: ex.is_negative ?? false,
+      is_isometric: ex.is_isometric ?? false,
+      to_failure: ex.to_failure ?? false,
+      is_superset: ex.is_superset ?? false,
+      superset_group: ex.superset_group ?? null,
+      is_balance: ex.is_balance ?? false,
+      is_unilateral: ex.is_unilateral ?? false,
+      percent_of_max: ex.percent_of_max ?? null,
+      rpe: ex.rpe ?? null,
+      tempo: ex.tempo ?? null,
+      distance_miles: ex.distance_miles ?? null,
+      hold_sec: ex.hold_sec ?? null,
+      phase: ex.phase ?? null,
+      side: ex.side ?? null,
+      feeling: ex.feeling ?? null,
     }));
     await db.from('workout_log_exercises').insert(exercises);
   }

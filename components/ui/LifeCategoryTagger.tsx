@@ -6,7 +6,7 @@ import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 type EntityType =
   | 'task' | 'trip' | 'route' | 'transaction' | 'recipe'
-  | 'fuel_log' | 'maintenance' | 'invoice' | 'workout' | 'equipment' | 'focus_session';
+  | 'fuel_log' | 'maintenance' | 'invoice' | 'workout' | 'equipment' | 'focus_session' | 'exercise';
 
 interface LifeCategory {
   id: string;
