@@ -64,9 +64,11 @@ interface Props {
   existingLog?: LogData | null;
   /** Title override */
   title?: string;
+  /** Called after a successful save with the new/updated log id */
+  onWorkoutLogged?: (logId: string) => void;
 }
 
-export default function WorkoutLogForm({ isOpen, onClose, onSaved, template, existingLog, title }: Props) {
+export default function WorkoutLogForm({ isOpen, onClose, onSaved, template, existingLog, title, onWorkoutLogged }: Props) {
   const [form, setForm] = useState({ name: '', date: new Date().toISOString().split('T')[0], duration_min: '', notes: '' });
   const [purpose, setPurpose] = useState<string[]>([]);
   const [overallFeeling, setOverallFeeling] = useState<number | null>(null);
@@ -178,8 +180,12 @@ export default function WorkoutLogForm({ isOpen, onClose, onSaved, template, exi
         body: JSON.stringify(payload),
       });
       if (res.ok) {
+        const data = await res.json().catch(() => null);
         onSaved();
         onClose();
+        if (onWorkoutLogged && data?.id) {
+          onWorkoutLogged(data.id);
+        }
       }
     } finally {
       setSaving(false);
