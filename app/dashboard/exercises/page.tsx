@@ -22,6 +22,7 @@ interface Exercise {
   media_url: string | null;
   use_count: number;
   is_active: boolean;
+  equipment_needed: string | null;
 }
 
 interface SystemExercise {
@@ -47,6 +48,8 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   advanced:     'bg-red-50 text-red-700',
 };
 
+const SYS_CATEGORIES = ['Push', 'Pull', 'Legs', 'Core', 'Cardio', 'Flexibility', 'Full Body'];
+
 export default function ExerciseLibraryPage() {
   const [tab, setTab] = useState<'mine' | 'system'>('mine');
 
@@ -61,11 +64,15 @@ export default function ExerciseLibraryPage() {
   const [showCatManager, setShowCatManager] = useState(false);
   const [newCatName, setNewCatName] = useState('');
 
+  // My Library equipment filter
+  const [equipmentFilter, setEquipmentFilter] = useState<string>('all');
+
   // System Library state
   const [sysExercises, setSysExercises] = useState<SystemExercise[]>([]);
   const [sysLoading, setSysLoading] = useState(false);
   const [sysSearch, setSysSearch] = useState('');
   const [sysEquipment, setSysEquipment] = useState<string>('all');
+  const [sysCategory, setSysCategory] = useState<string>('all');
   const [sysCopying, setSysCopying] = useState<Set<string>>(new Set());
   const [sysCopied, setSysCopied] = useState<Set<string>>(new Set());
   const [sysLoaded, setSysLoaded] = useState(false);
@@ -115,11 +122,17 @@ export default function ExerciseLibraryPage() {
 
   const filtered = exercises.filter((ex) => {
     if (categoryFilter !== 'all' && ex.category_id !== categoryFilter) return false;
+    if (equipmentFilter !== 'all') {
+      // null equipment_needed is treated as 'none' (bodyweight / unspecified)
+      const eq = ex.equipment_needed ?? 'none';
+      if (eq !== equipmentFilter) return false;
+    }
     if (search && !ex.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
   const sysFiltered = sysExercises.filter((ex) => {
+    if (sysCategory !== 'all' && ex.category !== sysCategory) return false;
     if (sysEquipment !== 'all' && ex.equipment_needed !== sysEquipment) return false;
     if (sysSearch && !ex.name.toLowerCase().includes(sysSearch.toLowerCase())) return false;
     return true;
@@ -224,38 +237,55 @@ export default function ExerciseLibraryPage() {
 
       {tab === 'mine' && (
         <>
-          {/* Category filter + search */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex gap-1.5 flex-wrap flex-1">
+          {/* Category filter */}
+          <div className="flex gap-1.5 flex-wrap">
+            <button
+              onClick={() => setCategoryFilter('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition border ${
+                categoryFilter === 'all'
+                  ? 'bg-fuchsia-600 text-white border-fuchsia-600'
+                  : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              All
+            </button>
+            {categories.map((c) => (
               <button
-                onClick={() => setCategoryFilter('all')}
+                key={c.id}
+                onClick={() => setCategoryFilter(c.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition border ${
-                  categoryFilter === 'all'
+                  categoryFilter === c.id
                     ? 'bg-fuchsia-600 text-white border-fuchsia-600'
                     : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
                 }`}
               >
-                All
+                {c.name}
               </button>
-              {categories.map((c) => (
+            ))}
+            <button
+              onClick={() => setShowCatManager(!showCatManager)}
+              className="px-2 py-1.5 rounded-lg text-xs text-gray-500 border border-dashed border-gray-300 hover:border-gray-400"
+            >
+              + Manage
+            </button>
+          </div>
+
+          {/* Equipment filter + search */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex gap-1.5 flex-wrap flex-1">
+              {(['all', 'none', 'minimal', 'gym'] as const).map((eq) => (
                 <button
-                  key={c.id}
-                  onClick={() => setCategoryFilter(c.id)}
+                  key={eq}
+                  onClick={() => setEquipmentFilter(eq)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition border ${
-                    categoryFilter === c.id
-                      ? 'bg-fuchsia-600 text-white border-fuchsia-600'
+                    equipmentFilter === eq
+                      ? 'bg-indigo-600 text-white border-indigo-600'
                       : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
                   }`}
                 >
-                  {c.name}
+                  {eq === 'all' ? 'All Equipment' : EQUIPMENT_LABELS[eq]}
                 </button>
               ))}
-              <button
-                onClick={() => setShowCatManager(!showCatManager)}
-                className="px-2 py-1.5 rounded-lg text-xs text-gray-500 border border-dashed border-gray-300 hover:border-gray-400"
-              >
-                + Manage
-              </button>
             </div>
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" aria-hidden="true" />
@@ -372,6 +402,33 @@ export default function ExerciseLibraryPage() {
             Browse 100+ exercises for home (bodyweight and equipment) and gym use. Click <strong>Add to My Library</strong> to copy any exercise into your personal library.
           </div>
 
+          {/* Category filter */}
+          <div className="flex gap-1.5 flex-wrap">
+            <button
+              onClick={() => setSysCategory('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition border ${
+                sysCategory === 'all'
+                  ? 'bg-fuchsia-600 text-white border-fuchsia-600'
+                  : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              All
+            </button>
+            {SYS_CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSysCategory(cat)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition border ${
+                  sysCategory === cat
+                    ? 'bg-fuchsia-600 text-white border-fuchsia-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
           {/* Equipment filter + search */}
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex gap-1.5 flex-wrap flex-1">
@@ -381,11 +438,11 @@ export default function ExerciseLibraryPage() {
                   onClick={() => setSysEquipment(eq)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition border ${
                     sysEquipment === eq
-                      ? 'bg-fuchsia-600 text-white border-fuchsia-600'
+                      ? 'bg-indigo-600 text-white border-indigo-600'
                       : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
                   }`}
                 >
-                  {eq === 'all' ? 'All' : EQUIPMENT_LABELS[eq]}
+                  {eq === 'all' ? 'All Equipment' : EQUIPMENT_LABELS[eq]}
                 </button>
               ))}
             </div>

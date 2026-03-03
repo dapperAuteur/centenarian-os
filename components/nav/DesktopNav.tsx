@@ -30,6 +30,7 @@ export interface DesktopNavProps {
   isTeacher: boolean;
   username: string | null;
   unreadMessages: number;
+  adminUnread?: number;
   onLogout: () => void;
   subLoading: boolean;
 }
@@ -40,6 +41,7 @@ export default function DesktopNav({
   isTeacher,
   username,
   unreadMessages,
+  adminUnread = 0,
   onLogout,
   subLoading,
 }: DesktopNavProps) {
@@ -138,6 +140,11 @@ export default function DesktopNav({
                             {item.label}
                             {item.paid && !hasAccess && (
                               <Lock className="w-3 h-3 ml-auto shrink-0 text-amber-500" />
+                            )}
+                            {item.href === '/dashboard/admin/submissions' && adminUnread > 0 && (
+                              <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none">
+                                {adminUnread}
+                              </span>
                             )}
                           </Link>
                         );

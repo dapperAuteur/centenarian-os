@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
+
+function getServiceDb() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+}
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -67,5 +75,49 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Admin: auto-add custom equipment to catalog. Others: notify admin (custom items only).
+  try {
+    if (!catalog_id) {
+      const serviceDb = getServiceDb();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const catName: string | null = (data as any).equipment_categories?.name ?? null;
+
+      if (user.email === process.env.ADMIN_EMAIL) {
+        // Don't duplicate if catalog already has this item by name
+        const { data: existing } = await serviceDb
+          .from('equipment_catalog')
+          .select('id')
+          .ilike('name', data.name)
+          .maybeSingle();
+        if (!existing) {
+          await serviceDb.from('equipment_catalog').insert({
+            name: data.name,
+            brand: data.brand || null,
+            model: data.model || null,
+            category: catName || null,
+            is_active: true,
+          });
+        }
+      } else {
+        await serviceDb.from('admin_notifications').insert({
+          type: 'new_equipment',
+          user_id: user.id,
+          user_email: user.email,
+          entity_name: data.name,
+          entity_id: data.id,
+          entity_meta: {
+            category: catName,
+            brand: data.brand || null,
+            model: data.model || null,
+            condition: data.condition || null,
+          },
+        });
+      }
+    }
+  } catch {
+    // Non-fatal
+  }
+
   return NextResponse.json({ item: data }, { status: 201 });
 }

@@ -68,6 +68,7 @@ export async function POST(
       instructions: sysEx.instructions || null,
       form_cues: sysEx.form_cues || null,
       primary_muscles: sysEx.primary_muscles || null,
+      equipment_needed: sysEx.equipment_needed || null,
       is_active: true,
       use_count: 0,
     })

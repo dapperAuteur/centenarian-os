@@ -26,6 +26,7 @@ import {
   Database,
   Tags,
   ChartLine,
+  Inbox,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -101,6 +102,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Coach', href: '/dashboard/coach', icon: Bot, paid: true, adminOnly: true },
       { label: 'Gems', href: '/dashboard/gems', icon: Gem, paid: true, adminOnly: true },
+      { label: 'Submissions', href: '/dashboard/admin/submissions', icon: Inbox, paid: false, adminOnly: true },
     ],
   },
 ];

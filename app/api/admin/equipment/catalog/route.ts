@@ -54,13 +54,63 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { name, brand, model, category, description, image_url } = body;
+  const { name, brand, model, category, description, image_url, equipment_id, notification_id } = body;
 
+  const db = getServiceClient();
+
+  // If equipment_id is provided, promote that user equipment item to catalog
+  if (equipment_id) {
+    const { data: eq, error: fetchErr } = await db
+      .from('equipment')
+      .select('*, equipment_categories(name)')
+      .eq('id', equipment_id)
+      .maybeSingle();
+
+    if (fetchErr) return NextResponse.json({ error: fetchErr.message }, { status: 500 });
+    if (!eq) return NextResponse.json({ error: 'Equipment not found' }, { status: 404 });
+
+    // Check for duplicate by name
+    const { data: existing } = await db
+      .from('equipment_catalog')
+      .select('id, name')
+      .ilike('name', eq.name)
+      .maybeSingle();
+
+    if (existing) {
+      if (notification_id) {
+        await db.from('admin_notifications').update({ promoted: true, is_read: true }).eq('id', notification_id);
+      }
+      return NextResponse.json({ item: existing, already_exists: true });
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const catName: string | null = (eq as any).equipment_categories?.name ?? null;
+
+    const { data: created, error: insertErr } = await db
+      .from('equipment_catalog')
+      .insert({
+        name: eq.name,
+        brand: eq.brand || null,
+        model: eq.model || null,
+        category: catName || null,
+        is_active: true,
+      })
+      .select('*')
+      .single();
+
+    if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 });
+
+    if (notification_id) {
+      await db.from('admin_notifications').update({ promoted: true, is_read: true }).eq('id', notification_id);
+    }
+    return NextResponse.json({ item: created, already_exists: false }, { status: 201 });
+  }
+
+  // Manual create from body
   if (!name?.trim()) {
     return NextResponse.json({ error: 'name is required' }, { status: 400 });
   }
 
-  const db = getServiceClient();
   const { data, error } = await db
     .from('equipment_catalog')
     .insert({
