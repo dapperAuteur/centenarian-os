@@ -51,6 +51,8 @@ export async function POST(
       due_date: null,
       paid_date: null,
       invoice_number: null,
+      invoice_number_prefix: original.invoice_number_prefix,
+      custom_fields: original.custom_fields ?? {},
       account_id: original.account_id,
       brand_id: original.brand_id,
       category_id: original.category_id,
@@ -64,13 +66,14 @@ export async function POST(
 
   // Copy line items
   if (original.invoice_items?.length > 0) {
-    const items = original.invoice_items.map((item: { description: string; quantity: number; unit_price: number; amount: number; sort_order: number }) => ({
+    const items = original.invoice_items.map((item: { description: string; quantity: number; unit_price: number; amount: number; sort_order: number; item_type?: string }) => ({
       invoice_id: newInvoice.id,
       description: item.description,
       quantity: item.quantity,
       unit_price: item.unit_price,
       amount: item.amount,
       sort_order: item.sort_order,
+      item_type: item.item_type || 'line_item',
     }));
 
     const { error: itemsErr } = await db.from('invoice_items').insert(items);

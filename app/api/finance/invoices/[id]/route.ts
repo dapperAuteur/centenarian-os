@@ -172,7 +172,7 @@ export async function PATCH(
     // Delete existing items and re-insert
     await db.from('invoice_items').delete().eq('invoice_id', id);
 
-    const lineItems = body.items.map((item: { description: string; quantity?: number; unit_price?: number; sort_order?: number }) => {
+    const lineItems = body.items.map((item: { description: string; quantity?: number; unit_price?: number; sort_order?: number; item_type?: string }) => {
       const qty = Number(item.quantity ?? 1);
       const price = Number(item.unit_price ?? 0);
       return {
@@ -182,6 +182,7 @@ export async function PATCH(
         unit_price: price,
         amount: Math.round(qty * price * 100) / 100,
         sort_order: item.sort_order ?? 0,
+        item_type: item.item_type || 'line_item',
       };
     });
 
@@ -189,8 +190,9 @@ export async function PATCH(
       await db.from('invoice_items').insert(lineItems);
     }
 
-    // Recalculate totals
-    const subtotal = lineItems.reduce((s: number, i: { amount: number }) => s + i.amount, 0);
+    // Recalculate totals (only line_items, not benefits)
+    const earnings = lineItems.filter((i: { item_type: string }) => i.item_type === 'line_item');
+    const subtotal = earnings.reduce((s: number, i: { amount: number }) => s + i.amount, 0);
     body.subtotal = subtotal;
     body.total = Math.round(subtotal * 100) / 100;
     delete body.items;
@@ -199,8 +201,8 @@ export async function PATCH(
   // Standard field updates
   const allowed = [
     'direction', 'contact_name', 'contact_id', 'status', 'invoice_date', 'due_date',
-    'invoice_number', 'account_id', 'brand_id', 'category_id', 'notes',
-    'subtotal', 'tax_amount', 'total', 'amount_paid',
+    'invoice_number', 'invoice_number_prefix', 'account_id', 'brand_id', 'category_id', 'notes',
+    'subtotal', 'tax_amount', 'total', 'amount_paid', 'custom_fields',
   ];
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
   for (const key of allowed) {

@@ -57,6 +57,27 @@ export async function POST(request: NextRequest) {
     if (tErr) return NextResponse.json({ error: tErr.message }, { status: 500 });
     if (!template) return NextResponse.json({ error: 'Template not found' }, { status: 404 });
 
+    // Build invoice number from prefix if set
+    let invoiceNumber = null;
+    if (template.invoice_number_prefix) {
+      // Count existing invoices with this prefix to auto-increment
+      const { count } = await db
+        .from('invoices')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .like('invoice_number', `${template.invoice_number_prefix}-%`);
+      const nextNum = (count ?? 0) + 1;
+      invoiceNumber = `${template.invoice_number_prefix}-${String(nextNum).padStart(3, '0')}`;
+    }
+
+    // Build custom_fields values from template field definitions (empty values)
+    const customFieldValues: Record<string, string> = {};
+    if (Array.isArray(template.custom_fields)) {
+      for (const field of template.custom_fields) {
+        customFieldValues[field.key] = field.default_value || '';
+      }
+    }
+
     // Create invoice from template
     const { data: invoice, error: iErr } = await db
       .from('invoices')
@@ -71,6 +92,9 @@ export async function POST(request: NextRequest) {
         total: template.total,
         amount_paid: 0,
         invoice_date: new Date().toISOString().split('T')[0],
+        invoice_number: invoiceNumber,
+        invoice_number_prefix: template.invoice_number_prefix,
+        custom_fields: customFieldValues,
         account_id: template.account_id,
         brand_id: template.brand_id,
         category_id: template.category_id,
@@ -81,15 +105,16 @@ export async function POST(request: NextRequest) {
 
     if (iErr) return NextResponse.json({ error: iErr.message }, { status: 500 });
 
-    // Copy template items
+    // Copy template items (including item_type)
     if (template.invoice_template_items?.length > 0) {
-      const items = template.invoice_template_items.map((item: { description: string; quantity: number; unit_price: number; amount: number; sort_order: number }) => ({
+      const items = template.invoice_template_items.map((item: { description: string; quantity: number; unit_price: number; amount: number; sort_order: number; item_type?: string }) => ({
         invoice_id: invoice.id,
         description: item.description,
         quantity: item.quantity,
         unit_price: item.unit_price,
         amount: item.amount,
         sort_order: item.sort_order,
+        item_type: item.item_type || 'line_item',
       }));
       await db.from('invoice_items').insert(items);
     }
@@ -120,21 +145,24 @@ export async function POST(request: NextRequest) {
       brand_id: body.brand_id || null,
       category_id: body.category_id || null,
       notes: body.notes || null,
+      invoice_number_prefix: body.invoice_number_prefix || null,
+      custom_fields: body.custom_fields ?? [],
     })
     .select('id')
     .single();
 
   if (createErr) return NextResponse.json({ error: createErr.message }, { status: 500 });
 
-  // Insert template items
+  // Insert template items (including item_type)
   if (body.items?.length > 0) {
-    const items = body.items.map((item: { description: string; quantity?: number; unit_price?: number; amount?: number; sort_order?: number }, idx: number) => ({
+    const items = body.items.map((item: { description: string; quantity?: number; unit_price?: number; amount?: number; sort_order?: number; item_type?: string }, idx: number) => ({
       template_id: newTemplate.id,
       description: item.description || '',
       quantity: item.quantity ?? 1,
       unit_price: item.unit_price ?? 0,
       amount: item.amount ?? 0,
       sort_order: item.sort_order ?? idx,
+      item_type: item.item_type || 'line_item',
     }));
     await db.from('invoice_template_items').insert(items);
   }

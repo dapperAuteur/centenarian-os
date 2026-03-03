@@ -6,6 +6,7 @@ import {
   ArrowLeft, FileText, Clock, CheckCircle2, AlertTriangle, X,
   ArrowDownLeft, ArrowUpRight, Calendar, DollarSign, Copy,
   Bookmark, Trash2, Loader2, Send, CreditCard, Undo2, Pencil, Plus,
+  MapPin, User, Briefcase,
 } from 'lucide-react';
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -22,6 +23,7 @@ interface InvoiceItem {
   unit_price: number;
   amount: number;
   sort_order: number;
+  item_type?: string;
 }
 
 interface Invoice {
@@ -38,6 +40,8 @@ interface Invoice {
   due_date: string | null;
   paid_date: string | null;
   invoice_number: string | null;
+  invoice_number_prefix: string | null;
+  custom_fields: Record<string, string> | null;
   account_id: string | null;
   brand_id: string | null;
   category_id: string | null;
@@ -68,6 +72,14 @@ const STATUS_BADGE: Record<string, { bg: string; text: string; Icon: typeof Cloc
   cancelled: { bg: 'bg-gray-100', text: 'text-gray-500', Icon: X },
 };
 
+const CUSTOM_FIELD_ICONS: Record<string, typeof User> = {
+  poc_name: User,
+  location: MapPin,
+  job_reference: Briefcase,
+  crew_coordinator: User,
+  project_name: Briefcase,
+};
+
 function fmtDate(d: string | null) {
   if (!d) return '—';
   return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -96,6 +108,7 @@ export default function InvoiceDetailPage() {
     direction: 'receivable' as 'receivable' | 'payable',
     contact_name: '',
     invoice_number: '',
+    invoice_number_prefix: '',
     invoice_date: '',
     due_date: '',
     tax_amount: '',
@@ -103,8 +116,9 @@ export default function InvoiceDetailPage() {
     brand_id: '',
     category_id: '',
     notes: '',
+    custom_fields: {} as Record<string, string>,
   });
-  const [editItems, setEditItems] = useState<{ description: string; quantity: string; unit_price: string }[]>([]);
+  const [editItems, setEditItems] = useState<{ description: string; quantity: string; unit_price: string; item_type: string }[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -128,6 +142,7 @@ export default function InvoiceDetailPage() {
       direction: invoice.direction,
       contact_name: invoice.contact_name,
       invoice_number: invoice.invoice_number || '',
+      invoice_number_prefix: invoice.invoice_number_prefix || '',
       invoice_date: invoice.invoice_date,
       due_date: invoice.due_date || '',
       tax_amount: invoice.tax_amount > 0 ? String(invoice.tax_amount) : '',
@@ -135,6 +150,7 @@ export default function InvoiceDetailPage() {
       brand_id: invoice.brand_id || '',
       category_id: invoice.category_id || '',
       notes: invoice.notes || '',
+      custom_fields: invoice.custom_fields || {},
     });
     setEditItems(
       invoice.invoice_items.length > 0
@@ -142,8 +158,9 @@ export default function InvoiceDetailPage() {
             description: item.description,
             quantity: String(item.quantity),
             unit_price: String(item.unit_price),
+            item_type: item.item_type || 'line_item',
           }))
-        : [{ description: '', quantity: '1', unit_price: '' }]
+        : [{ description: '', quantity: '1', unit_price: '', item_type: 'line_item' }]
     );
     const [acctRes, catRes, brandRes] = await Promise.all([
       offlineFetch('/api/finance/accounts'),
@@ -169,10 +186,12 @@ export default function InvoiceDetailPage() {
           quantity: Number(li.quantity) || 1,
           unit_price: Number(li.unit_price) || 0,
           sort_order: i,
+          item_type: li.item_type,
         }));
 
       const taxAmount = Number(editForm.tax_amount) || 0;
-      const subtotal = items.reduce((s, i) => s + (i.quantity * i.unit_price), 0);
+      const earnings = items.filter((i) => i.item_type === 'line_item');
+      const subtotal = earnings.reduce((s, i) => s + (i.quantity * i.unit_price), 0);
       const total = Math.round((subtotal + taxAmount) * 100) / 100;
 
       const res = await offlineFetch(`/api/finance/invoices/${id}`, {
@@ -182,6 +201,7 @@ export default function InvoiceDetailPage() {
           direction: editForm.direction,
           contact_name: editForm.contact_name,
           invoice_number: editForm.invoice_number || null,
+          invoice_number_prefix: editForm.invoice_number_prefix || null,
           invoice_date: editForm.invoice_date,
           due_date: editForm.due_date || null,
           tax_amount: taxAmount,
@@ -190,6 +210,7 @@ export default function InvoiceDetailPage() {
           brand_id: editForm.brand_id || null,
           category_id: editForm.category_id || null,
           notes: editForm.notes || null,
+          custom_fields: editForm.custom_fields,
           items,
         }),
       });
@@ -248,14 +269,23 @@ export default function InvoiceDetailPage() {
   };
 
   // Line item helpers
-  const addLineItem = () => setEditItems([...editItems, { description: '', quantity: '1', unit_price: '' }]);
+  const addLineItem = (type: string = 'line_item') => setEditItems([...editItems, { description: '', quantity: '1', unit_price: '', item_type: type }]);
   const removeLineItem = (i: number) => { if (editItems.length > 1) setEditItems(editItems.filter((_, idx) => idx !== i)); };
   const updateLineItem = (i: number, field: string, value: string) => {
     const updated = [...editItems];
     updated[i] = { ...updated[i], [field]: value };
     setEditItems(updated);
   };
-  const editLineTotal = editItems.reduce((s, li) => s + (Number(li.quantity) || 1) * (Number(li.unit_price) || 0), 0);
+  const toggleItemType = (i: number) => {
+    const updated = [...editItems];
+    updated[i] = { ...updated[i], item_type: updated[i].item_type === 'line_item' ? 'benefit' : 'line_item' };
+    setEditItems(updated);
+  };
+
+  const editEarnings = editItems.filter((li) => li.item_type === 'line_item');
+  const editBenefits = editItems.filter((li) => li.item_type === 'benefit');
+  const editLineTotal = editEarnings.reduce((s, li) => s + (Number(li.quantity) || 1) * (Number(li.unit_price) || 0), 0);
+  const editBenefitTotal = editBenefits.reduce((s, li) => s + (Number(li.quantity) || 1) * (Number(li.unit_price) || 0), 0);
   const editTaxAmount = Number(editForm.tax_amount) || 0;
   const editGrandTotal = Math.round((editLineTotal + editTaxAmount) * 100) / 100;
 
@@ -280,6 +310,16 @@ export default function InvoiceDetailPage() {
   const StatusIcon = badge.Icon;
   const balanceDue = invoice.total - invoice.amount_paid;
   const isReceivable = invoice.direction === 'receivable';
+
+  // Separate earnings and benefits
+  const earningItems = invoice.invoice_items.filter((i) => (i.item_type || 'line_item') === 'line_item');
+  const benefitItems = invoice.invoice_items.filter((i) => i.item_type === 'benefit');
+  const benefitTotal = benefitItems.reduce((s, i) => s + Number(i.amount), 0);
+
+  // Custom fields with values
+  const customFieldEntries = invoice.custom_fields
+    ? Object.entries(invoice.custom_fields).filter(([, v]) => v && v.trim())
+    : [];
 
   // ──── EDIT MODE ────
   if (editing) {
@@ -342,8 +382,18 @@ export default function InvoiceDetailPage() {
             />
           </div>
 
-          {/* Invoice number + dates */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Invoice number + prefix + dates */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Invoice # Prefix</label>
+              <input
+                type="text"
+                value={editForm.invoice_number_prefix}
+                onChange={(e) => setEditForm({ ...editForm, invoice_number_prefix: e.target.value })}
+                placeholder="e.g. PPI-CBS-Sports"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+              />
+            </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Invoice #</label>
               <input
@@ -354,6 +404,9 @@ export default function InvoiceDetailPage() {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Invoice Date</label>
               <input
@@ -374,46 +427,126 @@ export default function InvoiceDetailPage() {
             </div>
           </div>
 
-          {/* Line items */}
+          {/* Custom fields */}
+          {Object.keys(editForm.custom_fields).length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Custom Fields</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {Object.entries(editForm.custom_fields).map(([key, value]) => (
+                  <div key={key}>
+                    <label className="block text-xs font-medium text-gray-600 mb-1 capitalize">
+                      {key.replace(/_/g, ' ')}
+                    </label>
+                    <input
+                      type={key.includes('time') ? 'time' : key.includes('date') ? 'date' : 'text'}
+                      value={value}
+                      onChange={(e) => setEditForm({
+                        ...editForm,
+                        custom_fields: { ...editForm.custom_fields, [key]: e.target.value },
+                      })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Earnings (line items) */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Line Items</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Earnings / Line Items</label>
             <div className="space-y-2">
-              {editItems.map((li, i) => (
-                <div key={i} className="flex gap-2 items-start">
-                  <input
-                    type="text"
-                    placeholder="Description"
-                    value={li.description}
-                    onChange={(e) => updateLineItem(i, 'description', e.target.value)}
-                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Qty"
-                    value={li.quantity}
-                    onChange={(e) => updateLineItem(i, 'quantity', e.target.value)}
-                    className="w-16 border border-gray-300 rounded-lg px-2 py-2 text-sm text-center text-gray-900"
-                    min="1"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Price"
-                    value={li.unit_price}
-                    onChange={(e) => updateLineItem(i, 'unit_price', e.target.value)}
-                    className="w-24 border border-gray-300 rounded-lg px-2 py-2 text-sm text-right text-gray-900"
-                    step="0.01"
-                    min="0"
-                  />
-                  {editItems.length > 1 && (
+              {editItems.map((li, i) => {
+                if (li.item_type === 'benefit') return null;
+                return (
+                  <div key={i} className="flex gap-2 items-start">
+                    <input
+                      type="text"
+                      placeholder="Description (e.g. ST, OT, Vacation)"
+                      value={li.description}
+                      onChange={(e) => updateLineItem(i, 'description', e.target.value)}
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Hrs"
+                      value={li.quantity}
+                      onChange={(e) => updateLineItem(i, 'quantity', e.target.value)}
+                      className="w-20 border border-gray-300 rounded-lg px-2 py-2 text-sm text-center text-gray-900"
+                      min="0"
+                      step="0.01"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Rate"
+                      value={li.unit_price}
+                      onChange={(e) => updateLineItem(i, 'unit_price', e.target.value)}
+                      className="w-24 border border-gray-300 rounded-lg px-2 py-2 text-sm text-right text-gray-900"
+                      step="0.01"
+                      min="0"
+                    />
+                    <button
+                      onClick={() => toggleItemType(i)}
+                      className="shrink-0 px-1.5 py-2 text-[10px] font-medium text-blue-600 hover:text-amber-600 transition"
+                      title="Move to benefits"
+                    >
+                      BEN
+                    </button>
+                    {editItems.length > 1 && (
+                      <button onClick={() => removeLineItem(i)} className="p-2 text-gray-400 hover:text-red-500">
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <button onClick={() => addLineItem('line_item')} className="mt-2 text-xs text-fuchsia-600 hover:underline font-medium flex items-center gap-1">
+              <Plus className="w-3 h-3" /> Add earning
+            </button>
+          </div>
+
+          {/* Benefits section */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Benefits</label>
+            <div className="space-y-2">
+              {editItems.map((li, i) => {
+                if (li.item_type !== 'benefit') return null;
+                return (
+                  <div key={i} className="flex gap-2 items-start">
+                    <span className="shrink-0 px-1.5 py-2 text-[10px] font-medium text-amber-700">BEN</span>
+                    <input
+                      type="text"
+                      placeholder="Benefit type (e.g. 401K, Health & Welfare)"
+                      value={li.description}
+                      onChange={(e) => updateLineItem(i, 'description', e.target.value)}
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Amount"
+                      value={li.unit_price}
+                      onChange={(e) => updateLineItem(i, 'unit_price', e.target.value)}
+                      className="w-24 border border-gray-300 rounded-lg px-2 py-2 text-sm text-right text-gray-900"
+                      step="0.01"
+                      min="0"
+                    />
+                    <button
+                      onClick={() => toggleItemType(i)}
+                      className="shrink-0 px-1.5 py-2 text-[10px] font-medium text-amber-600 hover:text-blue-600 transition"
+                      title="Move to earnings"
+                    >
+                      EARN
+                    </button>
                     <button onClick={() => removeLineItem(i)} className="p-2 text-gray-400 hover:text-red-500">
                       <X className="w-4 h-4" />
                     </button>
-                  )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
-            <button onClick={addLineItem} className="mt-2 text-xs text-fuchsia-600 hover:underline font-medium flex items-center gap-1">
-              <Plus className="w-3 h-3" /> Add line item
+            <button onClick={() => addLineItem('benefit')} className="mt-2 text-xs text-amber-600 hover:underline font-medium flex items-center gap-1">
+              <Plus className="w-3 h-3" /> Add benefit
             </button>
           </div>
 
@@ -431,8 +564,11 @@ export default function InvoiceDetailPage() {
                 placeholder="0.00"
               />
             </div>
-            <div className="text-right">
-              <p className="text-xs text-gray-500">Subtotal: {fmtCurrency(editLineTotal)}</p>
+            <div className="text-right space-y-0.5">
+              <p className="text-xs text-gray-500">Earnings: {fmtCurrency(editLineTotal)}</p>
+              {editBenefitTotal > 0 && (
+                <p className="text-xs text-amber-600">Benefits: {fmtCurrency(editBenefitTotal)}</p>
+              )}
               <p className="text-sm font-bold text-gray-900">Total: {fmtCurrency(editGrandTotal)}</p>
             </div>
           </div>
@@ -525,6 +661,11 @@ export default function InvoiceDetailPage() {
                 {isReceivable ? <ArrowDownLeft className="w-3 h-3" /> : <ArrowUpRight className="w-3 h-3" />}
                 {isReceivable ? 'Receivable' : 'Payable'}
               </span>
+              {invoice.invoice_number_prefix && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-fuchsia-50 text-fuchsia-700">
+                  {invoice.invoice_number_prefix}
+                </span>
+              )}
             </div>
             <h1 className="text-2xl font-bold text-gray-900">
               {invoice.invoice_number ? `Invoice ${invoice.invoice_number}` : 'Invoice'}
@@ -575,6 +716,24 @@ export default function InvoiceDetailPage() {
           </div>
         )}
 
+        {/* Custom fields display */}
+        {customFieldEntries.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+            {customFieldEntries.map(([key, value]) => {
+              const FieldIcon = CUSTOM_FIELD_ICONS[key] || FileText;
+              return (
+                <div key={key}>
+                  <span className="text-gray-400 text-xs block capitalize">{key.replace(/_/g, ' ')}</span>
+                  <span className="text-gray-900 font-medium flex items-center gap-1 text-sm">
+                    <FieldIcon className="w-3.5 h-3.5 text-gray-400" />
+                    {value}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {invoice.notes && (
           <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
             {invoice.notes}
@@ -582,22 +741,24 @@ export default function InvoiceDetailPage() {
         )}
       </div>
 
-      {/* Line Items */}
+      {/* Earnings / Line Items */}
       <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-900">Line Items</h2>
+          <h2 className="text-sm font-semibold text-gray-900">
+            {benefitItems.length > 0 ? 'Earnings' : 'Line Items'}
+          </h2>
         </div>
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
             <tr>
               <th className="px-6 py-3 text-left">Description</th>
-              <th className="px-6 py-3 text-right">Qty</th>
-              <th className="px-6 py-3 text-right">Unit Price</th>
+              <th className="px-6 py-3 text-right">Qty / Hrs</th>
+              <th className="px-6 py-3 text-right">Rate</th>
               <th className="px-6 py-3 text-right">Amount</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {invoice.invoice_items.map((item) => (
+            {earningItems.map((item) => (
               <tr key={item.id}>
                 <td className="px-6 py-3 text-gray-900">{item.description}</td>
                 <td className="px-6 py-3 text-right text-gray-600">{item.quantity}</td>
@@ -637,9 +798,43 @@ export default function InvoiceDetailPage() {
         </table>
       </div>
 
+      {/* Benefits */}
+      {benefitItems.length > 0 && (
+        <div className="bg-white border border-amber-200 rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-amber-100 bg-amber-50/50">
+            <h2 className="text-sm font-semibold text-amber-800">Benefits</h2>
+          </div>
+          <table className="w-full text-sm">
+            <thead className="bg-amber-50/30 text-gray-500 text-xs uppercase">
+              <tr>
+                <th className="px-6 py-3 text-left">Type</th>
+                <th className="px-6 py-3 text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {benefitItems.map((item) => (
+                <tr key={item.id}>
+                  <td className="px-6 py-3 text-gray-900">{item.description}</td>
+                  <td className="px-6 py-3 text-right font-medium text-gray-900">{fmtCurrency(item.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot className="border-t border-amber-200 bg-amber-50/50">
+              <tr>
+                <td className="px-6 py-2 text-right font-semibold text-amber-800">Est. Benefits</td>
+                <td className="px-6 py-2 text-right font-bold text-amber-800">{fmtCurrency(benefitTotal)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+
       {/* Linked Transaction */}
       {linkedTx && (
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
+        <Link
+          href={`/dashboard/finance/transactions/${linkedTx.id}`}
+          className="block bg-green-50 border border-green-200 rounded-2xl p-4 hover:bg-green-100 transition"
+        >
           <h3 className="text-sm font-medium text-green-800 mb-1 flex items-center gap-1.5">
             <DollarSign className="w-4 h-4" />
             Linked Transaction
@@ -647,7 +842,7 @@ export default function InvoiceDetailPage() {
           <p className="text-sm text-green-700">
             {linkedTx.description} &mdash; {fmtCurrency(linkedTx.amount)} on {fmtDate(linkedTx.transaction_date)}
           </p>
-        </div>
+        </Link>
       )}
 
       {/* Actions */}
