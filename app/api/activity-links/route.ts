@@ -9,7 +9,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 
 const VALID_TYPES = new Set([
   'task', 'trip', 'route', 'transaction', 'recipe',
-  'fuel_log', 'maintenance', 'invoice', 'workout', 'equipment', 'focus_session',
+  'fuel_log', 'maintenance', 'invoice', 'workout', 'equipment', 'focus_session', 'exercise',
 ]);
 
 function getDb() {
@@ -63,14 +63,22 @@ async function resolveDisplayName(
       return data?.contact_name ? `Invoice: ${data.contact_name}` : 'Invoice';
     }
     case 'workout': {
-      const { data } = await db.from('workout_logs').select('started_at').eq('id', entityId).maybeSingle();
-      return data?.started_at ? `Workout (${new Date(data.started_at).toLocaleDateString()})` : 'Workout';
+      const { data } = await db.from('workout_logs').select('name, date').eq('id', entityId).maybeSingle();
+      return data?.name ? `${data.name} (${data.date || '?'})` : 'Workout';
     }
     case 'equipment': {
       const { data } = await db.from('equipment').select('name, equipment_categories(name)').eq('id', entityId).maybeSingle();
       if (!data) return 'Equipment';
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const cat = data.equipment_categories as any;
+      const catName = cat?.name as string | undefined;
+      return catName ? `${data.name} (${catName})` : data.name;
+    }
+    case 'exercise': {
+      const { data } = await db.from('exercises').select('name, exercise_categories(name)').eq('id', entityId).maybeSingle();
+      if (!data) return 'Exercise';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cat = data.exercise_categories as any;
       const catName = cat?.name as string | undefined;
       return catName ? `${data.name} (${catName})` : data.name;
     }

@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { template_id, name, date, started_at, finished_at, duration_min, notes, exercises = [] } = body;
+  const { template_id, name, date, started_at, finished_at, duration_min, notes, purpose, overall_feeling, warmup_notes, cooldown_notes, exercises = [] } = body;
 
   const db = getDb();
 
@@ -77,6 +77,10 @@ export async function POST(request: NextRequest) {
       finished_at: finished_at ?? null,
       duration_min: duration_min ? Number(duration_min) : null,
       notes: notes ?? null,
+      purpose: Array.isArray(purpose) ? purpose : [],
+      overall_feeling: overall_feeling ? Number(overall_feeling) : null,
+      warmup_notes: warmup_notes ?? null,
+      cooldown_notes: cooldown_notes ?? null,
     })
     .select()
     .single();
@@ -85,18 +89,52 @@ export async function POST(request: NextRequest) {
 
   // Insert exercises
   if (exercises.length > 0) {
-    const rows = exercises.map((ex: { name: string; sets_completed?: number; reps_completed?: number; weight_lbs?: number; duration_sec?: number; notes?: string }, i: number) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows = exercises.map((ex: any, i: number) => ({
       log_id: log.id,
       name: ex.name,
+      exercise_id: ex.exercise_id || null,
       sets_completed: ex.sets_completed ?? null,
       reps_completed: ex.reps_completed ?? null,
       weight_lbs: ex.weight_lbs ? Number(ex.weight_lbs) : null,
       duration_sec: ex.duration_sec ? Number(ex.duration_sec) : null,
+      rest_sec: ex.rest_sec ?? 60,
       sort_order: i,
       notes: ex.notes ?? null,
+      equipment_id: ex.equipment_id || null,
+      is_circuit: ex.is_circuit ?? false,
+      is_negative: ex.is_negative ?? false,
+      is_isometric: ex.is_isometric ?? false,
+      to_failure: ex.to_failure ?? false,
+      is_superset: ex.is_superset ?? false,
+      superset_group: ex.superset_group ?? null,
+      is_balance: ex.is_balance ?? false,
+      is_unilateral: ex.is_unilateral ?? false,
+      percent_of_max: ex.percent_of_max ?? null,
+      rpe: ex.rpe ?? null,
+      tempo: ex.tempo || null,
+      distance_miles: ex.distance_miles ?? null,
+      hold_sec: ex.hold_sec ?? null,
+      phase: ex.phase || null,
+      side: ex.side || null,
+      feeling: ex.feeling ? Number(ex.feeling) : null,
     }));
 
     await db.from('workout_log_exercises').insert(rows);
+
+    // Increment use_count on referenced exercises
+    const exerciseIds = rows
+      .map((r: { exercise_id: string | null }) => r.exercise_id)
+      .filter(Boolean) as string[];
+    if (exerciseIds.length > 0) {
+      const uniqueIds = [...new Set(exerciseIds)];
+      for (const eid of uniqueIds) {
+        const { data: exRow } = await db.from('exercises').select('use_count').eq('id', eid).maybeSingle();
+        if (exRow) {
+          await db.from('exercises').update({ use_count: (exRow.use_count || 0) + 1 }).eq('id', eid);
+        }
+      }
+    }
   }
 
   const { data: full } = await db

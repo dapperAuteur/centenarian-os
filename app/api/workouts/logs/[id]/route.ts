@@ -41,6 +41,84 @@ export async function GET(
   return NextResponse.json({ workout: data });
 }
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const db = getDb();
+  const body = await request.json();
+
+  // Update log fields
+  const allowed = ['name', 'date', 'started_at', 'finished_at', 'duration_min', 'notes', 'purpose', 'overall_feeling', 'warmup_notes', 'cooldown_notes'];
+  const updates: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (key in body) updates[key] = body[key];
+  }
+
+  if (Object.keys(updates).length > 0) {
+    const { error } = await db
+      .from('workout_logs')
+      .update(updates)
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Replace exercises if provided
+  if (body.exercises) {
+    await db.from('workout_log_exercises').delete().eq('log_id', id);
+
+    if (body.exercises.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rows = body.exercises.map((ex: any, i: number) => ({
+        log_id: id,
+        name: ex.name,
+        exercise_id: ex.exercise_id || null,
+        sets_completed: ex.sets_completed ?? null,
+        reps_completed: ex.reps_completed ?? null,
+        weight_lbs: ex.weight_lbs ? Number(ex.weight_lbs) : null,
+        duration_sec: ex.duration_sec ? Number(ex.duration_sec) : null,
+        rest_sec: ex.rest_sec ?? 60,
+        sort_order: i,
+        notes: ex.notes ?? null,
+        equipment_id: ex.equipment_id || null,
+        is_circuit: ex.is_circuit ?? false,
+        is_negative: ex.is_negative ?? false,
+        is_isometric: ex.is_isometric ?? false,
+        to_failure: ex.to_failure ?? false,
+        is_superset: ex.is_superset ?? false,
+        superset_group: ex.superset_group ?? null,
+        is_balance: ex.is_balance ?? false,
+        is_unilateral: ex.is_unilateral ?? false,
+        percent_of_max: ex.percent_of_max ?? null,
+        rpe: ex.rpe ?? null,
+        tempo: ex.tempo || null,
+        distance_miles: ex.distance_miles ?? null,
+        hold_sec: ex.hold_sec ?? null,
+        phase: ex.phase || null,
+        side: ex.side || null,
+        feeling: ex.feeling ? Number(ex.feeling) : null,
+      }));
+
+      await db.from('workout_log_exercises').insert(rows);
+    }
+  }
+
+  const { data } = await db
+    .from('workout_logs')
+    .select('*, workout_log_exercises(*)')
+    .eq('id', id)
+    .single();
+
+  return NextResponse.json({ workout: data });
+}
+
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

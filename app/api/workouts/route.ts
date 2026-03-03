@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { name, description, category, estimated_duration_min, exercises = [] } = body;
+  const { name, description, category, estimated_duration_min, purpose, exercises = [] } = body;
 
   if (!name?.trim()) {
     return NextResponse.json({ error: 'name is required' }, { status: 400 });
@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
       description: description ?? null,
       category: category ?? null,
       estimated_duration_min: estimated_duration_min ? Number(estimated_duration_min) : null,
+      purpose: Array.isArray(purpose) ? purpose : [],
     })
     .select()
     .single();
@@ -67,9 +68,11 @@ export async function POST(request: NextRequest) {
 
   // Insert exercises
   if (exercises.length > 0) {
-    const rows = exercises.map((ex: { name: string; sets?: number; reps?: number; weight_lbs?: number; duration_sec?: number; rest_sec?: number; notes?: string }, i: number) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows = exercises.map((ex: any, i: number) => ({
       template_id: template.id,
       name: ex.name,
+      exercise_id: ex.exercise_id || null,
       sets: ex.sets ?? null,
       reps: ex.reps ?? null,
       weight_lbs: ex.weight_lbs ? Number(ex.weight_lbs) : null,
@@ -77,6 +80,21 @@ export async function POST(request: NextRequest) {
       rest_sec: ex.rest_sec ?? 60,
       sort_order: i,
       notes: ex.notes ?? null,
+      equipment_id: ex.equipment_id || null,
+      is_circuit: ex.is_circuit ?? false,
+      is_negative: ex.is_negative ?? false,
+      is_isometric: ex.is_isometric ?? false,
+      to_failure: ex.to_failure ?? false,
+      is_superset: ex.is_superset ?? false,
+      superset_group: ex.superset_group ?? null,
+      is_balance: ex.is_balance ?? false,
+      is_unilateral: ex.is_unilateral ?? false,
+      percent_of_max: ex.percent_of_max ?? null,
+      rpe: ex.rpe ?? null,
+      tempo: ex.tempo || null,
+      distance_miles: ex.distance_miles ?? null,
+      hold_sec: ex.hold_sec ?? null,
+      phase: ex.phase || null,
     }));
 
     await db.from('workout_template_exercises').insert(rows);

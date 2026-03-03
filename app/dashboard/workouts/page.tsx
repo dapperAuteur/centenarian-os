@@ -1,21 +1,24 @@
 'use client';
 
 // app/dashboard/workouts/page.tsx
-// Workout templates + log history
+// Workout templates + log history — refactored to use extracted form components
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Plus, Play, Trash2, Edit3, Clock, Dumbbell,
-  ChevronDown, ChevronUp, X, Upload, Download, Link2,
+  ChevronDown, ChevronUp, Upload, Download, Link2,
 } from 'lucide-react';
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
+import WorkoutTemplateForm from '@/components/workouts/WorkoutTemplateForm';
+import WorkoutLogForm from '@/components/workouts/WorkoutLogForm';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Exercise {
   id?: string;
   name: string;
+  exercise_id?: string | null;
   sets: number | null;
   reps: number | null;
   weight_lbs: number | null;
@@ -23,6 +26,21 @@ interface Exercise {
   rest_sec: number | null;
   notes: string | null;
   sort_order: number;
+  equipment_id?: string | null;
+  is_circuit?: boolean;
+  is_negative?: boolean;
+  is_isometric?: boolean;
+  to_failure?: boolean;
+  is_superset?: boolean;
+  superset_group?: number | null;
+  is_balance?: boolean;
+  is_unilateral?: boolean;
+  percent_of_max?: number | null;
+  rpe?: number | null;
+  tempo?: string;
+  distance_miles?: number | null;
+  hold_sec?: number | null;
+  phase?: string | null;
 }
 
 interface Template {
@@ -32,16 +50,35 @@ interface Template {
   category: string | null;
   estimated_duration_min: number | null;
   use_count: number;
+  purpose?: string[];
   workout_template_exercises: Exercise[];
 }
 
 interface LogExercise {
   name: string;
+  exercise_id?: string | null;
   sets_completed: number | null;
   reps_completed: number | null;
   weight_lbs: number | null;
   duration_sec: number | null;
+  rest_sec?: number | null;
   notes: string | null;
+  is_circuit?: boolean;
+  is_negative?: boolean;
+  is_isometric?: boolean;
+  to_failure?: boolean;
+  is_superset?: boolean;
+  superset_group?: number | null;
+  is_balance?: boolean;
+  is_unilateral?: boolean;
+  rpe?: number | null;
+  tempo?: string;
+  percent_of_max?: number | null;
+  distance_miles?: number | null;
+  hold_sec?: number | null;
+  phase?: string | null;
+  side?: string | null;
+  feeling?: number | null;
 }
 
 interface WorkoutLog {
@@ -51,52 +88,9 @@ interface WorkoutLog {
   duration_min: number | null;
   notes: string | null;
   template_id: string | null;
+  purpose?: string[];
+  overall_feeling?: number | null;
   workout_log_exercises: LogExercise[];
-}
-
-const CATEGORIES = ['Strength', 'Cardio', 'HIIT', 'Yoga', 'Flexibility', 'Cycling', 'Running', 'Swimming', 'Other'];
-
-function DraftExerciseRow({
-  ex, index, onChange, onRemove,
-}: {
-  ex: Exercise; index: number;
-  onChange: (i: number, field: string, val: string) => void;
-  onRemove: (i: number) => void;
-}) {
-  return (
-    <div className="flex items-start gap-2 bg-gray-50 rounded-lg p-2">
-      <div className="flex-1 grid grid-cols-2 sm:grid-cols-5 gap-2">
-        <input
-          placeholder="Exercise name *"
-          value={ex.name}
-          onChange={(e) => onChange(index, 'name', e.target.value)}
-          className="col-span-2 sm:col-span-2 border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
-          required
-        />
-        <input
-          type="number" placeholder="Sets"
-          value={ex.sets ?? ''}
-          onChange={(e) => onChange(index, 'sets', e.target.value)}
-          className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
-        />
-        <input
-          type="number" placeholder="Reps"
-          value={ex.reps ?? ''}
-          onChange={(e) => onChange(index, 'reps', e.target.value)}
-          className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
-        />
-        <input
-          type="number" step="0.5" placeholder="Weight (lbs)"
-          value={ex.weight_lbs ?? ''}
-          onChange={(e) => onChange(index, 'weight_lbs', e.target.value)}
-          className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
-        />
-      </div>
-      <button type="button" onClick={() => onRemove(index)} className="p-1 text-red-400 hover:text-red-600 mt-1">
-        <X className="w-4 h-4" />
-      </button>
-    </div>
-  );
 }
 
 export default function WorkoutsPage() {
@@ -106,22 +100,15 @@ export default function WorkoutsPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'templates' | 'history'>('templates');
 
-  // Template form
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', description: '', category: '', estimated_duration_min: '' });
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [saving, setSaving] = useState(false);
+  // Template form state
+  const [showTemplateForm, setShowTemplateForm] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
+
+  // Log form state
+  const [logTemplate, setLogTemplate] = useState<Template | null>(null);
+  const [showQuickLog, setShowQuickLog] = useState(false);
 
   const [linkingLogId, setLinkingLogId] = useState<string | null>(null);
-
-  // Log workout modal
-  const [logModal, setLogModal] = useState<Template | null>(null);
-  const [logForm, setLogForm] = useState({ date: new Date().toISOString().split('T')[0], duration_min: '', notes: '' });
-  const [logExercises, setLogExercises] = useState<{ name: string; sets_completed: string; reps_completed: string; weight_lbs: string; duration_sec: string; notes: string }[]>([]);
-  const [loggingSave, setLoggingSave] = useState(false);
-
-  // Expanded template
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -140,70 +127,6 @@ export default function WorkoutsPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const resetForm = () => {
-    setForm({ name: '', description: '', category: '', estimated_duration_min: '' });
-    setExercises([]);
-    setEditingId(null);
-    setShowForm(false);
-  };
-
-  const addExercise = () => {
-    setExercises((prev) => [...prev, {
-      name: '', sets: null, reps: null, weight_lbs: null,
-      duration_sec: null, rest_sec: 60, notes: null, sort_order: prev.length,
-    }]);
-  };
-
-  const updateExercise = (i: number, field: string, val: string) => {
-    setExercises((prev) => prev.map((ex, idx) => {
-      if (idx !== i) return ex;
-      if (field === 'name') return { ...ex, name: val };
-      return { ...ex, [field]: val ? Number(val) : null };
-    }));
-  };
-
-  const removeExercise = (i: number) => {
-    setExercises((prev) => prev.filter((_, idx) => idx !== i));
-  };
-
-  const handleSaveTemplate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const payload = {
-        name: form.name,
-        description: form.description || null,
-        category: form.category || null,
-        estimated_duration_min: form.estimated_duration_min ? Number(form.estimated_duration_min) : null,
-        exercises: exercises.filter((ex) => ex.name.trim()),
-      };
-
-      const url = editingId ? `/api/workouts/${editingId}` : '/api/workouts';
-      const res = await offlineFetch(url, {
-        method: editingId ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) { resetForm(); load(); }
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleEdit = (t: Template) => {
-    setEditingId(t.id);
-    setForm({
-      name: t.name,
-      description: t.description ?? '',
-      category: t.category ?? '',
-      estimated_duration_min: t.estimated_duration_min != null ? String(t.estimated_duration_min) : '',
-    });
-    setExercises(t.workout_template_exercises.map((ex) => ({
-      ...ex, sort_order: ex.sort_order ?? 0,
-    })));
-    setShowForm(true);
-  };
-
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this workout template?')) return;
     await offlineFetch(`/api/workouts/${id}`, { method: 'DELETE' });
@@ -214,92 +137,6 @@ export default function WorkoutsPage() {
     if (!confirm('Delete this workout log?')) return;
     await offlineFetch(`/api/workouts/logs/${id}`, { method: 'DELETE' });
     load();
-  };
-
-  // Open log modal from template
-  const openLogModal = (t: Template) => {
-    setLogModal(t);
-    setLogForm({ date: new Date().toISOString().split('T')[0], duration_min: t.estimated_duration_min ? String(t.estimated_duration_min) : '', notes: '' });
-    setLogExercises(t.workout_template_exercises.map((ex) => ({
-      name: ex.name,
-      sets_completed: ex.sets != null ? String(ex.sets) : '',
-      reps_completed: ex.reps != null ? String(ex.reps) : '',
-      weight_lbs: ex.weight_lbs != null ? String(ex.weight_lbs) : '',
-      duration_sec: ex.duration_sec != null ? String(ex.duration_sec) : '',
-      notes: '',
-    })));
-  };
-
-  const handleLogWorkout = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoggingSave(true);
-    try {
-      const res = await offlineFetch('/api/workouts/logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          template_id: logModal?.id,
-          name: logModal?.name,
-          date: logForm.date,
-          duration_min: logForm.duration_min ? Number(logForm.duration_min) : null,
-          notes: logForm.notes || null,
-          exercises: logExercises.filter((ex) => ex.name.trim()).map((ex) => ({
-            name: ex.name,
-            sets_completed: ex.sets_completed ? Number(ex.sets_completed) : null,
-            reps_completed: ex.reps_completed ? Number(ex.reps_completed) : null,
-            weight_lbs: ex.weight_lbs ? Number(ex.weight_lbs) : null,
-            duration_sec: ex.duration_sec ? Number(ex.duration_sec) : null,
-            notes: ex.notes || null,
-          })),
-        }),
-      });
-      if (res.ok) {
-        setLogModal(null);
-        setTab('history');
-        load();
-      }
-    } finally {
-      setLoggingSave(false);
-    }
-  };
-
-  // Quick log (no template)
-  const [showQuickLog, setShowQuickLog] = useState(false);
-  const [quickForm, setQuickForm] = useState({ name: '', date: new Date().toISOString().split('T')[0], duration_min: '', notes: '' });
-  const [quickExercises, setQuickExercises] = useState<{ name: string; sets_completed: string; reps_completed: string; weight_lbs: string; duration_sec: string; notes: string }[]>([]);
-
-  const handleQuickLog = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoggingSave(true);
-    try {
-      const res = await offlineFetch('/api/workouts/logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: quickForm.name,
-          date: quickForm.date,
-          duration_min: quickForm.duration_min ? Number(quickForm.duration_min) : null,
-          notes: quickForm.notes || null,
-          exercises: quickExercises.filter((ex) => ex.name.trim()).map((ex) => ({
-            name: ex.name,
-            sets_completed: ex.sets_completed ? Number(ex.sets_completed) : null,
-            reps_completed: ex.reps_completed ? Number(ex.reps_completed) : null,
-            weight_lbs: ex.weight_lbs ? Number(ex.weight_lbs) : null,
-            duration_sec: ex.duration_sec ? Number(ex.duration_sec) : null,
-            notes: ex.notes || null,
-          })),
-        }),
-      });
-      if (res.ok) {
-        setShowQuickLog(false);
-        setQuickForm({ name: '', date: new Date().toISOString().split('T')[0], duration_min: '', notes: '' });
-        setQuickExercises([]);
-        setTab('history');
-        load();
-      }
-    } finally {
-      setLoggingSave(false);
-    }
   };
 
   if (loading) {
@@ -320,17 +157,14 @@ export default function WorkoutsPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              setShowQuickLog(true);
-              setQuickExercises([{ name: '', sets_completed: '', reps_completed: '', weight_lbs: '', duration_sec: '', notes: '' }]);
-            }}
+            onClick={() => setShowQuickLog(true)}
             className="flex items-center gap-1.5 px-3 py-2 bg-lime-600 text-white rounded-xl text-sm font-medium hover:bg-lime-700 transition"
           >
             <Play className="w-4 h-4" />
             Quick Log
           </button>
           <button
-            onClick={() => { resetForm(); setShowForm(true); addExercise(); }}
+            onClick={() => { setEditingTemplate(null); setShowTemplateForm(true); }}
             className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition"
           >
             <Plus className="w-4 h-4" />
@@ -373,11 +207,12 @@ export default function WorkoutsPage() {
       {/* Templates tab */}
       {tab === 'templates' && (
         <div className="space-y-3">
-          {templates.length === 0 && !showForm && (
+          {templates.length === 0 && (
             <div className="text-center py-12">
               <Dumbbell className="w-10 h-10 text-gray-300 mx-auto mb-3" />
               <p className="text-sm text-gray-500">No workout templates yet.</p>
-              <button onClick={() => { resetForm(); setShowForm(true); addExercise(); }} className="mt-3 text-sm text-lime-600 font-medium hover:text-lime-700">
+              <button onClick={() => { setEditingTemplate(null); setShowTemplateForm(true); }}
+                className="mt-3 text-sm text-lime-600 font-medium hover:text-lime-700">
                 Create your first template
               </button>
             </div>
@@ -407,7 +242,7 @@ export default function WorkoutsPage() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <button
-                      onClick={(e) => { e.stopPropagation(); openLogModal(t); }}
+                      onClick={(e) => { e.stopPropagation(); setLogTemplate(t); }}
                       className="flex items-center gap-1 px-2.5 py-1.5 bg-lime-600 text-white rounded-lg text-xs font-medium hover:bg-lime-700 transition"
                     >
                       <Play className="w-3 h-3" /> Log
@@ -419,6 +254,13 @@ export default function WorkoutsPage() {
                 {isExpanded && (
                   <div className="border-t border-gray-100 p-4 bg-gray-50">
                     {t.description && <p className="text-sm text-gray-600 mb-3">{t.description}</p>}
+                    {t.purpose && t.purpose.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {t.purpose.map((p) => (
+                          <span key={p} className="text-xs px-2 py-0.5 bg-fuchsia-50 text-fuchsia-700 rounded-full">{p}</span>
+                        ))}
+                      </div>
+                    )}
                     <div className="space-y-1.5">
                       {t.workout_template_exercises.map((ex, i) => (
                         <div key={i} className="flex items-center justify-between text-sm bg-white rounded-lg px-3 py-2">
@@ -429,16 +271,19 @@ export default function WorkoutsPage() {
                               ex.reps != null ? `${ex.reps} reps` : null,
                               ex.weight_lbs != null ? `${ex.weight_lbs} lbs` : null,
                               ex.duration_sec != null ? `${ex.duration_sec}s` : null,
+                              ex.rpe != null ? `RPE ${ex.rpe}` : null,
                             ].filter(Boolean).join(' · ') || 'No details'}
                           </span>
                         </div>
                       ))}
                     </div>
                     <div className="flex gap-2 mt-3">
-                      <button onClick={() => handleEdit(t)} className="text-xs text-sky-600 hover:text-sky-700 flex items-center gap-1">
+                      <button onClick={() => { setEditingTemplate(t); setShowTemplateForm(true); }}
+                        className="text-xs text-sky-600 hover:text-sky-700 flex items-center gap-1">
                         <Edit3 className="w-3 h-3" /> Edit
                       </button>
-                      <button onClick={() => handleDelete(t.id)} className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1">
+                      <button onClick={() => handleDelete(t.id)}
+                        className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1">
                         <Trash2 className="w-3 h-3" /> Delete
                       </button>
                     </div>
@@ -467,6 +312,7 @@ export default function WorkoutsPage() {
                   <p className="text-xs text-gray-500">
                     {log.date}
                     {log.duration_min ? ` · ${log.duration_min} min` : ''}
+                    {log.overall_feeling ? ` · Feeling: ${log.overall_feeling}/5` : ''}
                   </p>
                 </div>
                 <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
@@ -478,6 +324,13 @@ export default function WorkoutsPage() {
                   </button>
                 </div>
               </div>
+              {log.purpose && log.purpose.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {log.purpose.map((p) => (
+                    <span key={p} className="text-xs px-1.5 py-0.5 bg-fuchsia-50 text-fuchsia-700 rounded-full">{p}</span>
+                  ))}
+                </div>
+              )}
               {log.notes && <p className="text-xs text-gray-500 mb-2">{log.notes}</p>}
               {log.workout_log_exercises.length > 0 && (
                 <div className="space-y-1">
@@ -489,6 +342,7 @@ export default function WorkoutsPage() {
                           ex.sets_completed != null ? `${ex.sets_completed}s` : null,
                           ex.reps_completed != null ? `${ex.reps_completed}r` : null,
                           ex.weight_lbs != null ? `${ex.weight_lbs}lb` : null,
+                          ex.rpe != null ? `RPE ${ex.rpe}` : null,
                         ].filter(Boolean).join(' × ') || '—'}
                       </span>
                     </div>
@@ -500,203 +354,29 @@ export default function WorkoutsPage() {
         </div>
       )}
 
-      {/* Create/Edit Template Modal */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
-          <form onSubmit={handleSaveTemplate} className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-4 shadow-xl my-8">
-            <h2 className="text-lg font-bold text-gray-900">{editingId ? 'Edit Template' : 'New Workout Template'}</h2>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Name *</label>
-              <input
-                value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="e.g. Push Day, Morning HIIT"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Category</label>
-                <select
-                  value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value="">Select…</option>
-                  {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Est. duration (min)</label>
-                <input
-                  type="number" value={form.estimated_duration_min}
-                  onChange={(e) => setForm((f) => ({ ...f, estimated_duration_min: e.target.value }))}
-                  placeholder="45" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
-              <input
-                value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                placeholder="Optional notes about this workout"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-              />
-            </div>
-
-            {/* Exercises */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-medium text-gray-600">Exercises</label>
-                <button type="button" onClick={addExercise} className="text-xs text-lime-600 font-medium hover:text-lime-700 flex items-center gap-1">
-                  <Plus className="w-3 h-3" /> Add exercise
-                </button>
-              </div>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {exercises.map((ex, i) => (
-                  <DraftExerciseRow key={i} ex={ex} index={i} onChange={updateExercise} onRemove={removeExercise} />
-                ))}
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <button type="button" onClick={resetForm}
-                className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">Cancel</button>
-              <button type="submit" disabled={saving}
-                className="flex-1 bg-gray-900 text-white rounded-xl py-2 text-sm font-medium hover:bg-gray-800 transition disabled:opacity-50">
-                {saving ? 'Saving…' : editingId ? 'Update' : 'Create Template'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      {/* Template Form Modal */}
+      <WorkoutTemplateForm
+        isOpen={showTemplateForm}
+        onClose={() => { setShowTemplateForm(false); setEditingTemplate(null); }}
+        onSaved={load}
+        initial={editingTemplate}
+      />
 
       {/* Log from Template Modal */}
-      {logModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
-          <form onSubmit={handleLogWorkout} className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-4 shadow-xl my-8">
-            <h2 className="text-lg font-bold text-gray-900">Log: {logModal.name}</h2>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
-                <input type="date" value={logForm.date}
-                  onChange={(e) => setLogForm((f) => ({ ...f, date: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" required />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Duration (min)</label>
-                <input type="number" value={logForm.duration_min}
-                  onChange={(e) => setLogForm((f) => ({ ...f, duration_min: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-gray-600 mb-2 block">Exercises — adjust as needed</label>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {logExercises.map((ex, i) => (
-                  <div key={i} className="bg-gray-50 rounded-lg p-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    <input value={ex.name} readOnly className="col-span-2 sm:col-span-4 border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-medium bg-white" />
-                    <input type="number" placeholder="Sets" value={ex.sets_completed}
-                      onChange={(e) => setLogExercises((prev) => prev.map((p, j) => j === i ? { ...p, sets_completed: e.target.value } : p))}
-                      className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
-                    <input type="number" placeholder="Reps" value={ex.reps_completed}
-                      onChange={(e) => setLogExercises((prev) => prev.map((p, j) => j === i ? { ...p, reps_completed: e.target.value } : p))}
-                      className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
-                    <input type="number" step="0.5" placeholder="Wt (lbs)" value={ex.weight_lbs}
-                      onChange={(e) => setLogExercises((prev) => prev.map((p, j) => j === i ? { ...p, weight_lbs: e.target.value } : p))}
-                      className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
-                    <input type="number" placeholder="Dur (sec)" value={ex.duration_sec}
-                      onChange={(e) => setLogExercises((prev) => prev.map((p, j) => j === i ? { ...p, duration_sec: e.target.value } : p))}
-                      className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-              <input value={logForm.notes} onChange={(e) => setLogForm((f) => ({ ...f, notes: e.target.value }))}
-                placeholder="How did it go?" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-            </div>
-            <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => setLogModal(null)}
-                className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">Cancel</button>
-              <button type="submit" disabled={loggingSave}
-                className="flex-1 bg-lime-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-lime-700 transition disabled:opacity-50">
-                {loggingSave ? 'Saving…' : 'Save Workout'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      <WorkoutLogForm
+        isOpen={!!logTemplate}
+        onClose={() => setLogTemplate(null)}
+        onSaved={() => { setTab('history'); load(); }}
+        template={logTemplate}
+      />
 
-      {/* Quick Log Modal (no template) */}
-      {showQuickLog && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
-          <form onSubmit={handleQuickLog} className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-4 shadow-xl my-8">
-            <h2 className="text-lg font-bold text-gray-900">Log Workout</h2>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Workout name *</label>
-              <input value={quickForm.name} onChange={(e) => setQuickForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="e.g. Morning Run, Gym Session"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" required />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
-                <input type="date" value={quickForm.date}
-                  onChange={(e) => setQuickForm((f) => ({ ...f, date: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" required />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Duration (min)</label>
-                <input type="number" value={quickForm.duration_min}
-                  onChange={(e) => setQuickForm((f) => ({ ...f, duration_min: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-medium text-gray-600">Exercises</label>
-                <button type="button" onClick={() => setQuickExercises((prev) => [...prev, { name: '', sets_completed: '', reps_completed: '', weight_lbs: '', duration_sec: '', notes: '' }])}
-                  className="text-xs text-lime-600 font-medium hover:text-lime-700 flex items-center gap-1">
-                  <Plus className="w-3 h-3" /> Add
-                </button>
-              </div>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {quickExercises.map((ex, i) => (
-                  <div key={i} className="flex items-start gap-2 bg-gray-50 rounded-lg p-2">
-                    <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      <input placeholder="Exercise *" value={ex.name}
-                        onChange={(e) => setQuickExercises((prev) => prev.map((p, j) => j === i ? { ...p, name: e.target.value } : p))}
-                        className="col-span-2 sm:col-span-2 border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
-                      <input type="number" placeholder="Sets" value={ex.sets_completed}
-                        onChange={(e) => setQuickExercises((prev) => prev.map((p, j) => j === i ? { ...p, sets_completed: e.target.value } : p))}
-                        className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
-                      <input type="number" placeholder="Reps" value={ex.reps_completed}
-                        onChange={(e) => setQuickExercises((prev) => prev.map((p, j) => j === i ? { ...p, reps_completed: e.target.value } : p))}
-                        className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
-                    </div>
-                    <button type="button" onClick={() => setQuickExercises((prev) => prev.filter((_, j) => j !== i))} className="p-1 text-red-400 hover:text-red-600 mt-1">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-              <input value={quickForm.notes} onChange={(e) => setQuickForm((f) => ({ ...f, notes: e.target.value }))}
-                placeholder="Optional" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-            </div>
-            <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => { setShowQuickLog(false); setQuickExercises([]); }}
-                className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">Cancel</button>
-              <button type="submit" disabled={loggingSave}
-                className="flex-1 bg-lime-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-lime-700 transition disabled:opacity-50">
-                {loggingSave ? 'Saving…' : 'Save Workout'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      {/* Quick Log Modal */}
+      <WorkoutLogForm
+        isOpen={showQuickLog}
+        onClose={() => setShowQuickLog(false)}
+        onSaved={() => { setTab('history'); load(); }}
+        title="Log Workout"
+      />
 
       <ActivityLinkModal
         isOpen={!!linkingLogId}

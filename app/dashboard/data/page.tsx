@@ -6,7 +6,7 @@
 import Link from 'next/link';
 import {
   DollarSign, HeartPulse, Navigation, Fuel, Wrench, Car, Package,
-  Users, CalendarClock, Dumbbell, Upload, Download, FileDown,
+  Users, CalendarClock, Dumbbell, ListChecks, Upload, Download, FileDown,
   Database,
 } from 'lucide-react';
 
@@ -121,6 +121,15 @@ const MODULES: ModuleCard[] = [
     templateUrl: '/templates/workouts-import-template.csv',
     description: 'Workout logs with exercises, sets, reps, weights',
     filters: '?from=YYYY-MM-DD&to=YYYY-MM-DD',
+  },
+  {
+    slug: 'exercises',
+    label: 'Exercises',
+    icon: <ListChecks className="w-5 h-5" />,
+    exportUrl: '/api/exercises/export',
+    importHref: '/dashboard/data/import/exercises',
+    templateUrl: '/templates/exercises-import-template.csv',
+    description: 'Exercise library — instructions, cues, muscles, defaults',
   },
 ];
 
