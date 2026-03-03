@@ -1,4 +1,5 @@
-name,category_name,brand,model,serial_number,purchase_date,purchase_price,current_value,warranty_expires,condition,notes
-MacBook Pro 16",Electronics,Apple,MacBook Pro M3 Max,C02X91234567,2025-06-15,3499.00,2800.00,2028-06-15,excellent,Primary work laptop with AppleCare+
-Rogue Echo Bike,Fitness,Rogue,Echo Bike V3,RG-4821-EC,2025-01-10,895.00,650.00,,good,Fan bike for garage gym HIIT sessions
-DeWalt Drill Kit,Tools,DeWalt,DCD999B,DW-20260112-445,2026-01-12,249.00,220.00,2029-01-12,excellent,20V MAX brushless hammer drill with 2 batteries
+name,category_name,brand,model,serial_number,purchase_date,purchase_price,current_value,warranty_expires,condition,notes,ownership_type
+MacBook Pro 16",Electronics,Apple,MacBook Pro M3 Max,C02X91234567,2025-06-15,3499.00,2800.00,2028-06-15,excellent,Primary work laptop with AppleCare+,own
+Rogue Echo Bike,Fitness,Rogue,Echo Bike V3,RG-4821-EC,2025-01-10,895.00,650.00,,good,Fan bike for garage gym HIIT sessions,own
+DeWalt Drill Kit,Tools,DeWalt,DCD999B,DW-20260112-445,2026-01-12,249.00,220.00,2029-01-12,excellent,20V MAX brushless hammer drill with 2 batteries,own
+Hotel Gym Cable Machine,Fitness,,,,,,,,good,Access at Marriott Bonvoy properties,access

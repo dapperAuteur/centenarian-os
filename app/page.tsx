@@ -351,6 +351,24 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Coaching CTA */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <Link
+          href="/coaching"
+          className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-linear-to-br from-fuchsia-950 to-indigo-950 text-white rounded-2xl px-6 py-5 hover:opacity-95 transition group"
+          aria-label="Learn about personal longevity coaching"
+        >
+          <div className="text-center sm:text-left">
+            <p className="text-xs font-semibold uppercase tracking-widest text-fuchsia-300 mb-1">1-on-1 Coaching</p>
+            <p className="text-lg sm:text-xl font-bold">Want expert guidance, not just tools?</p>
+            <p className="text-sm text-fuchsia-200 mt-0.5">Personalized longevity coaching for executives, founders, and creative professionals.</p>
+          </div>
+          <span className="shrink-0 px-5 py-2.5 bg-fuchsia-500 hover:bg-fuchsia-400 text-white text-sm font-semibold rounded-xl transition whitespace-nowrap">
+            Learn About Coaching
+          </span>
+        </Link>
+      </section>
+
       {/* All Modules */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
         <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-6 sm:mb-8 md:mb-12">

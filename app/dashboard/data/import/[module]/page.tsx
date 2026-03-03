@@ -125,7 +125,7 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
     apiEndpoint: '/api/equipment/import',
     templateUrl: '/templates/equipment-import-template.csv',
     instructions:
-      'Upload equipment and gear. Required: name. Categories are auto-created if they don\'t exist. If current_value is empty, it defaults to purchase_price.',
+      'Upload equipment and gear. Required: name. Categories are auto-created if they don\'t exist. If current_value is empty, it defaults to purchase_price. ownership_type: \'own\' (default) or \'access\'.',
     columns: [
       { key: 'name', label: 'Name', required: true },
       { key: 'category_name', label: 'Category' },
@@ -138,8 +138,9 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
       { key: 'warranty_expires', label: 'Warranty Expires' },
       { key: 'condition', label: 'Condition' },
       { key: 'notes', label: 'Notes' },
+      { key: 'ownership_type', label: 'Ownership Type' },
     ],
-    previewColumns: ['name', 'category_name', 'brand', 'purchase_price', 'condition'],
+    previewColumns: ['name', 'category_name', 'brand', 'purchase_price', 'condition', 'ownership_type'],
   },
   contacts: {
     moduleName: 'Contacts',

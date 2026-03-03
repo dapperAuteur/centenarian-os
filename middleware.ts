@@ -71,18 +71,14 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Coaching pages — admin only
-  const adminOnlyPaths = ['/coaching', '/dashboard/coach', '/dashboard/gems'];
+  // AI tools — admin only (public /coaching page is open to all)
+  const adminOnlyPaths = ['/dashboard/coach', '/dashboard/gems'];
   if (adminOnlyPaths.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
     if (user.email !== process.env.ADMIN_EMAIL) {
-      return NextResponse.redirect(
-        pathname.startsWith('/dashboard')
-          ? new URL('/dashboard/planner', request.url)
-          : new URL('/', request.url)
-      );
+      return NextResponse.redirect(new URL('/dashboard/planner', request.url));
     }
     return response;
   }
@@ -101,5 +97,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/dashboard/:path*', '/coaching', '/login', '/signup', '/blog/:path*', '/recipes', '/recipes/:path*'],
+  matcher: ['/admin/:path*', '/dashboard/:path*', '/login', '/signup', '/blog/:path*', '/recipes', '/recipes/:path*'],
 };

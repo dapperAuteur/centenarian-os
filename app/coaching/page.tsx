@@ -162,7 +162,7 @@ export default function CoachingPage() {
           </span>
         </h1>
         <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed mb-8">
-          Longevity coaching for executives, founders, and creative professionals who want to build a body and mind that compounds over decades — not just survives the week.
+          Longevity coaching for executives, founders, and creative professionals who want to build a body and mind that compounds over decades, not just survives the week.
         </p>
         <a
           href="#apply"
@@ -199,33 +199,33 @@ export default function CoachingPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 text-center mb-3">Built differently</h2>
           <p className="text-gray-500 text-center mb-10 max-w-xl mx-auto">
-            Four credentials that work together as a single integrated system — not four separate specialists.
+            Four credentials that work together as a single integrated system, not four separate specialists.
           </p>
           <div className="grid sm:grid-cols-2 gap-5 mb-10">
             {[
               {
                 abbr: 'MBA',
-                full: 'Master of Business Administration — Supply Chain Management',
+                full: 'Master of Business Administration, Supply Chain Management',
                 what: 'Graduate-level training in systems optimization, analytical frameworks, and operations management.',
-                how: 'The human body is a complex system with interdependencies, feedback loops, and optimization constraints — the same structure as a supply chain. This credential brings rigorous systems thinking to health coaching: identifying bottlenecks, sequencing interventions, and measuring what matters.',
+                how: 'The human body is a complex system with interdependencies, feedback loops, and optimization constraints. This credential brings rigorous systems thinking from supply chain management to health coaching: identifying bottlenecks, sequencing interventions, and measuring what matters.',
               },
               {
                 abbr: 'CPT',
                 full: 'Certified Personal Trainer',
                 what: 'Evidence-based exercise programming, movement principles, and training periodization.',
-                how: 'Designs training protocols that build cardiovascular fitness, muscular strength, and movement quality — calibrated to your current capacity, schedule, and goals. Not generic workouts: periodized programming with clear progression.',
+                how: 'Designs training protocols that build cardiovascular fitness, muscular strength, and movement quality. Each protocol is calibrated to your current capacity, schedule, and goals. Not generic workouts: periodized programming with clear progression.',
               },
               {
                 abbr: 'CNC',
                 full: 'Certified Nutrition Coach',
                 what: 'Precision nutrition coaching grounded in current research on longevity, metabolic health, and performance.',
-                how: 'Translates nutrition science into practical protocols: what to eat, when, and why — adjusted for your physiology, lifestyle, and travel demands. Eliminates guesswork and diet cycling in favor of sustainable, evidence-based eating patterns.',
+                how: 'Translates nutrition science into practical protocols: what to eat, when, and why. Each protocol is adjusted for your physiology, lifestyle, and travel demands. Eliminates guesswork and diet cycling in favor of sustainable, evidence-based eating patterns.',
               },
               {
                 abbr: 'CES',
                 full: 'Corrective Exercise Specialist',
                 what: 'Assessment and correction of movement dysfunctions, muscular imbalances, and injury risk patterns.',
-                how: 'Desk work, high-volume travel, and years of training without corrective work create compensations that limit performance and accelerate wear. CES identifies and addresses these patterns before they become chronic injuries — protecting your ability to train for decades.',
+                how: 'Desk work, high-volume travel, and years of training without corrective work create compensations that limit performance and accelerate wear. CES identifies and addresses these patterns before they become chronic injuries, protecting your ability to train for decades.',
               },
             ].map(({ abbr, full, what, how }) => (
               <div key={abbr} className="bg-white border border-gray-200 rounded-2xl p-6">
@@ -247,7 +247,7 @@ export default function CoachingPage() {
           <div className="bg-linear-to-r from-fuchsia-50 to-sky-50 border border-fuchsia-100 rounded-2xl p-6 sm:p-8">
             <h3 className="font-semibold text-gray-900 mb-2 text-base sm:text-lg">Why these four credentials together</h3>
             <p className="text-gray-700 text-sm sm:text-base leading-relaxed">
-              Most people work with a personal trainer, a separate nutritionist, and maybe a physical therapist — three conversations, three protocols, no integration. An MBA in Supply Chain Management means every intervention is designed as part of a system: training load, nutritional timing, movement quality, and recovery capacity are modeled together and adjusted as a unit. The CES credential identifies where compensation patterns would eventually derail the training plan. The CNC credential ensures the nutritional substrate supports the training stimulus. The result is a coaching engagement where exercise, nutrition, movement quality, and recovery are one integrated protocol — not four separate opinions.
+              Most people work with a personal trainer, a separate nutritionist, and maybe a physical therapist: three conversations, three protocols, no integration. An MBA in Supply Chain Management means every intervention is designed as part of a system. Training load, nutritional timing, movement quality, and recovery capacity are modeled together and adjusted as a unit. The CES credential identifies where compensation patterns would eventually derail the training plan. The CNC credential ensures the nutritional substrate supports the training stimulus. The result is a coaching engagement where exercise, nutrition, movement quality, and recovery are one integrated protocol, not four separate opinions.
             </p>
           </div>
         </div>
@@ -279,7 +279,7 @@ export default function CoachingPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 text-center mb-3">Engagement formats</h2>
           <p className="text-gray-500 text-center mb-10 max-w-xl mx-auto">
-            Three tiers of engagement — discuss which fits your goals and schedule during your application call.
+            Three tiers of engagement. Discuss which fits your goals and schedule during your application call.
           </p>
           <div className="space-y-3">
             {TIERS.map((tier, i) => (
@@ -314,7 +314,7 @@ export default function CoachingPage() {
             ))}
           </div>
           <p className="text-center text-sm text-gray-500 mt-6">
-            Pricing discussed directly. No public rate cards — every engagement is scoped to fit.
+            Pricing is discussed directly. No public rate cards; every engagement is scoped to fit.
           </p>
         </div>
       </section>

@@ -20,6 +20,7 @@ interface ExerciseData {
   id?: string;
   name: string;
   category_id: string | null;
+  equipment_needed: string | null;
   instructions: string;
   form_cues: string;
   video_url: string;
@@ -48,6 +49,7 @@ type ExerciseInitial = {
 const EMPTY: ExerciseData = {
   name: '',
   category_id: null,
+  equipment_needed: null,
   instructions: '',
   form_cues: '',
   video_url: '',
@@ -97,6 +99,7 @@ export default function ExerciseFormModal({ isOpen, onClose, onSaved, initial, c
           ...EMPTY,
           name: initial.name || '',
           category_id: initial.category_id ?? null,
+          equipment_needed: initial.equipment_needed ?? null,
           instructions: initial.instructions ?? '',
           form_cues: initial.form_cues ?? '',
           video_url: initial.video_url ?? '',
@@ -217,6 +220,35 @@ export default function ExerciseFormModal({ isOpen, onClose, onSaved, initial, c
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
+          </div>
+        </div>
+
+        {/* Equipment Level */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Equipment Level
+            <span className="text-gray-400 font-normal ml-1 text-xs">(used for filtering)</span>
+          </label>
+          <div className="flex gap-2 flex-wrap">
+            {([
+              [null,      'Unspecified'],
+              ['none',    'No Equipment'],
+              ['minimal', 'Minimal Equipment'],
+              ['gym',     'Gym'],
+            ] as [string | null, string][]).map(([val, label]) => (
+              <button
+                key={String(val)}
+                type="button"
+                onClick={() => set('equipment_needed', val)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+                  form.equipment_needed === val
+                    ? 'bg-fuchsia-600 text-white border-fuchsia-600'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 

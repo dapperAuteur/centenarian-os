@@ -47,6 +47,7 @@ export default function DashboardLayout({
   const [isTeacher, setIsTeacher] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
   const [adminLoading, setAdminLoading] = useState(true);
+  const [adminUnread, setAdminUnread] = useState(0);
   const hasAccess = isPaid || isAdmin;
   const unreadMessages = useUnreadCount();
 
@@ -58,6 +59,12 @@ export default function DashboardLayout({
         setIsTeacher(d.isTeacher ?? false);
         setUsername(d.username ?? null);
         setAdminLoading(false);
+        if (d.isAdmin) {
+          fetch('/api/admin/notifications?unread=true')
+            .then((r) => r.json())
+            .then((nd) => setAdminUnread(nd.unread ?? 0))
+            .catch(() => {});
+        }
       })
       .catch(() => setAdminLoading(false));
   }, []);
@@ -90,6 +97,7 @@ export default function DashboardLayout({
     isTeacher,
     username,
     unreadMessages,
+    adminUnread,
     onLogout: handleLogout,
     subLoading,
   };
