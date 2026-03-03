@@ -9,6 +9,7 @@ import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Check, Shirt, Zap, ArrowLeft } from 'lucide-react';
 import PurchaseModal from '@/components/PurchaseModal';
+import SiteFooter from '@/components/ui/SiteFooter';
 
 function FromSignupBanner() {
   const searchParams = useSearchParams();
@@ -241,6 +242,8 @@ export default function PricingPage() {
           </p>
         </div>
       </main>
+
+      <SiteFooter theme="light" />
 
       <PurchaseModal
         isOpen={showPurchaseModal}

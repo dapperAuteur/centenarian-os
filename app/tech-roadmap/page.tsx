@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, Circle, Clock } from 'lucide-react';
+import SiteFooter from '@/components/ui/SiteFooter';
 
 const PHASES = [
   {
@@ -490,18 +491,7 @@ export default function RoadmapPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex justify-between items-center">
-          <p className="text-gray-600 text-sm">© 2026 B4C LLC / AwesomeWebStore.com. MIT License.</p>
-          <div className="flex items-center gap-6 text-sm">
-            <Link href="/academy" className="text-gray-600 hover:text-gray-900">Academy</Link>
-            <Link href="/blog" className="text-gray-600 hover:text-gray-900">Blog</Link>
-            <Link href="/recipes" className="text-gray-600 hover:text-gray-900">Recipes</Link>
-            <Link href="/" className="text-gray-600 hover:text-gray-900">Home</Link>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter theme="light" />
     </div>
   );
 }

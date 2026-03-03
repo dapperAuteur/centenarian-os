@@ -1,6 +1,7 @@
 // File: app/contribute/page.tsx
 import Link from 'next/link';
 import { ArrowLeft, Code, FileText, Bug, Lightbulb, Heart, GitBranch } from 'lucide-react';
+import SiteFooter from '@/components/ui/SiteFooter';
 
 export default function ContributePage() {
   return (
@@ -330,24 +331,7 @@ export default function ContributePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex justify-between items-center">
-            <p className="text-gray-600 text-sm">
-              © 2025 CentenarianOS. MIT License.
-            </p>
-            <div className="flex space-x-6">
-              <Link href="/" className="text-gray-600 hover:text-gray-900 text-sm">
-                Home
-              </Link>
-              <Link href="/tech-roadmap" className="text-gray-600 hover:text-gray-900 text-sm">
-                Tech Roadmap
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter theme="light" />
     </div>
   );
 }

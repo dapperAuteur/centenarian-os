@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight, Play, DollarSign, Car, BookOpen, Users, Wrench, Shield } from 'lucide-react';
+import SiteFooter from '@/components/ui/SiteFooter';
 
 export default function DemoPage() {
   const router = useRouter();
@@ -167,22 +168,7 @@ export default function DemoPage() {
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t bg-white mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-gray-600 text-xs sm:text-sm">
-              &copy; 2026 B4C LLC / AwesomeWebStore.com. MIT License.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4 sm:gap-6 text-xs sm:text-sm">
-              <Link href="/" className="text-gray-600 hover:text-gray-900">Home</Link>
-              <Link href="/academy" className="text-gray-600 hover:text-gray-900">Academy</Link>
-              <Link href="/pricing" className="text-gray-600 hover:text-gray-900">Pricing</Link>
-              <Link href="/tech-roadmap" className="text-gray-600 hover:text-gray-900">Roadmap</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter theme="light" />
     </div>
   );
 }

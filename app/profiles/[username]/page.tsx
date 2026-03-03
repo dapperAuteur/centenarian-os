@@ -8,6 +8,7 @@ import {
   Leaf, MapPin, GraduationCap,
 } from 'lucide-react';
 import SiteFooter from '@/components/ui/SiteFooter';
+import SiteHeader from '@/components/SiteHeader';
 import { getPublicProfile } from '@/lib/profiles/getPublicProfile';
 
 type Params = { params: Promise<{ username: string }> };
@@ -76,18 +77,7 @@ export default async function PublicProfilePage({ params }: Params) {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="text-base font-bold text-gray-900 hover:text-fuchsia-700 transition">
-            CentenarianOS
-          </Link>
-          <nav className="flex items-center gap-3 text-sm">
-            <Link href="/academy" className="text-gray-500 hover:text-gray-900 transition">Academy</Link>
-            <Link href="/blog" className="text-gray-500 hover:text-gray-900 transition">Blog</Link>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader />
 
       <main className="flex-1">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 space-y-12">
