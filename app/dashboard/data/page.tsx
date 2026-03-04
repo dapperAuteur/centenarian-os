@@ -7,7 +7,7 @@ import Link from 'next/link';
 import {
   DollarSign, HeartPulse, Navigation, Fuel, Wrench, Car, Package,
   Users, CalendarClock, Dumbbell, ListChecks, Upload, Download, FileDown,
-  Database,
+  Database, Calendar,
 } from 'lucide-react';
 
 interface ModuleCard {
@@ -156,6 +156,36 @@ export default function DataHubPage() {
           <li><strong>Google Sheets</strong> — publish your Google Sheet as CSV, then paste the URL on any import page.</li>
           <li><strong>Max 1,000 rows</strong> per import (200 for vehicles, 500 for contacts).</li>
         </ul>
+      </div>
+
+      {/* Special Imports */}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">Special Imports</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-fuchsia-50 rounded-xl flex items-center justify-center text-fuchsia-600">
+                <Calendar className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Google Calendar</h3>
+                <p className="text-xs text-gray-500">Import .ics exports as planner tasks</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Link
+                href="/dashboard/data/import/google-calendar"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-fuchsia-50 text-fuchsia-700 rounded-lg text-xs font-semibold hover:bg-fuchsia-100 transition"
+              >
+                <Upload className="w-3 h-3" />
+                Import .ics
+              </Link>
+            </div>
+            <p className="text-[10px] text-gray-400">
+              &ldquo;Future money&rdquo; events also create draft invoices from your PPI CBS template.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Module Cards Grid */}

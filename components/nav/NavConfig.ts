@@ -27,6 +27,8 @@ import {
   Tags,
   ChartLine,
   Inbox,
+  RotateCcw,
+  UserPlus,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -54,6 +56,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Daily Tasks', href: '/dashboard/planner', icon: CalendarClock, paid: true },
       { label: 'Engine', href: '/dashboard/engine', icon: Briefcase, paid: true },
       { label: 'Weekly Review', href: '/dashboard/weekly-review', icon: FileText, paid: true },
+      { label: 'Retrospective', href: '/dashboard/retrospective', icon: RotateCcw, paid: true },
       { label: 'Roadmap', href: '/dashboard/roadmap', icon: Map, paid: true },
     ],
   },
@@ -103,15 +106,23 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Coach', href: '/dashboard/coach', icon: Bot, paid: true, adminOnly: true },
       { label: 'Gems', href: '/dashboard/gems', icon: Gem, paid: true, adminOnly: true },
       { label: 'Submissions', href: '/dashboard/admin/submissions', icon: Inbox, paid: false, adminOnly: true },
+      { label: 'Invites', href: '/dashboard/admin/invites', icon: UserPlus, paid: false, adminOnly: true },
     ],
   },
 ];
 
-export function getVisibleGroups(isAdmin: boolean): NavGroup[] {
+export function getVisibleGroups(isAdmin: boolean, allowedModules?: string[] | null): NavGroup[] {
   return NAV_GROUPS
     .map((g) => ({
       ...g,
-      items: g.items.filter((i) => !i.adminOnly || isAdmin),
+      items: g.items.filter((i) => {
+        if (i.adminOnly && !isAdmin) return false;
+        // Invited users with module restrictions: only show allowed paid items
+        if (allowedModules && i.paid) {
+          return allowedModules.some((m) => i.href === m || i.href.startsWith(m + '/'));
+        }
+        return true;
+      }),
     }))
     .filter((g) => g.items.length > 0);
 }

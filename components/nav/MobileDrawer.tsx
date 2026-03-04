@@ -21,6 +21,7 @@ interface Props {
   username: string | null;
   unreadMessages: number;
   onLogout: () => void;
+  allowedModules?: string[] | null;
 }
 
 export default function MobileDrawer({
@@ -32,6 +33,7 @@ export default function MobileDrawer({
   username,
   unreadMessages,
   onLogout,
+  allowedModules,
 }: Props) {
   const pathname = usePathname();
 
@@ -63,7 +65,7 @@ export default function MobileDrawer({
 
   if (!open) return null;
 
-  const groups = getVisibleGroups(isAdmin);
+  const groups = getVisibleGroups(isAdmin, allowedModules);
 
   return (
     <>
