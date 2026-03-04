@@ -10,6 +10,7 @@ import Link from 'next/link';
 import {
   ChevronLeft, ChevronRight, GitBranch, CheckCircle, Loader2,
   Play, FileText, Volume2, Presentation, ClipboardList, ArrowRight, HelpCircle,
+  BookMarked,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -19,38 +20,11 @@ import VideoPlayer from '@/components/academy/VideoPlayer';
 import LessonDiscussion from '@/components/academy/LessonDiscussion';
 import PodcastLinks from '@/components/academy/PodcastLinks';
 import DocumentViewer from '@/components/academy/DocumentViewer';
+import GlossaryTermRow from '@/components/academy/GlossaryTermRow';
+import type { GlossaryTerm } from '@/components/academy/GlossaryTermRow';
 
 const MapViewer = dynamic(() => import('@/components/academy/MapViewer'), { ssr: false });
-import { marked } from 'marked';
-import { generateHTML } from '@tiptap/html';
-import StarterKit from '@tiptap/starter-kit';
-import TiptapLink from '@tiptap/extension-link';
-import TiptapImage from '@tiptap/extension-image';
-import TiptapCodeBlock from '@tiptap/extension-code-block';
-import TiptapHeading from '@tiptap/extension-heading';
-import DOMPurify from 'dompurify';
-
-const TIPTAP_EXTENSIONS = [
-  StarterKit.configure({ codeBlock: false, heading: false }),
-  TiptapHeading.configure({ levels: [1, 2, 3] }),
-  TiptapCodeBlock,
-  TiptapLink.configure({ openOnClick: false }),
-  TiptapImage,
-];
-
-function renderTextContent(text_content: string | null, content_format?: string): string {
-  if (!text_content) return '';
-  if (content_format === 'tiptap') {
-    try {
-      const html = generateHTML(JSON.parse(text_content), TIPTAP_EXTENSIONS);
-      return DOMPurify.sanitize(html);
-    } catch {
-      return '';
-    }
-  }
-  const html = marked.parse(text_content, { async: false }) as string;
-  return DOMPurify.sanitize(html);
-}
+import { renderTextContent } from '@/lib/academy/renderTextContent';
 
 interface Lesson {
   id: string;
@@ -118,6 +92,7 @@ export default function LessonPlayerPage() {
   const [adjacentLessons, setAdjacentLessons] = useState<{ prev: string | null; next: string | null }>({ prev: null, next: null });
   const [lessonAssignments, setLessonAssignments] = useState<{ id: string; title: string; due_date: string | null }[]>([]);
   const [currentUser, setCurrentUser] = useState<{ userId: string | null; isTeacher: boolean }>({ userId: null, isTeacher: false });
+  const [lessonGlossary, setLessonGlossary] = useState<GlossaryTerm[]>([]);
 
   const progressSaved = useRef(false);
 
@@ -166,6 +141,13 @@ export default function LessonPlayerPage() {
       .then((d) => setCurrentUser({ userId: d.userId ?? null, isTeacher: !!d.isTeacher }))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    fetch(`/api/academy/courses/${courseId}/glossary?lesson_id=${lessonId}`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((d) => setLessonGlossary(Array.isArray(d) ? d : []))
+      .catch(() => {});
+  }, [courseId, lessonId]);
 
   async function markComplete() {
     if (progressSaved.current) return;
@@ -284,6 +266,22 @@ export default function LessonPlayerPage() {
 
         {lesson.documents && lesson.documents.length > 0 && (
           <DocumentViewer documents={lesson.documents} />
+        )}
+
+        {/* Lesson glossary terms */}
+        {lessonGlossary.length > 0 && (
+          <div className="mb-6 bg-gray-900 border border-gray-800 rounded-xl sm:rounded-2xl overflow-hidden">
+            <div className="px-4 sm:px-6 py-3 border-b border-gray-800 flex items-center gap-2">
+              <BookMarked className="w-4 h-4 text-fuchsia-400" />
+              <span className="text-sm font-semibold text-white">Key Terms in This Lesson</span>
+              <span className="text-xs text-gray-500 ml-1">({lessonGlossary.length})</span>
+            </div>
+            <div className="divide-y divide-gray-800">
+              {lessonGlossary.map((term) => (
+                <GlossaryTermRow key={term.id} term={term} />
+              ))}
+            </div>
+          </div>
         )}
 
         {/* Lesson-scoped assignments */}

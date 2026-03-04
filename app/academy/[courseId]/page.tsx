@@ -10,8 +10,11 @@ import Link from 'next/link';
 import {
   BookOpen, Play, Lock, CheckCircle, Clock, Loader2, ArrowRight, Share2,
   GitBranch, ClipboardList, Star, MessageCircle, Send, Shield, AlertTriangle,
+  BookMarked, ChevronDown, Search,
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import GlossaryTermRow from '@/components/academy/GlossaryTermRow';
+import type { GlossaryTerm } from '@/components/academy/GlossaryTermRow';
 
 interface Lesson {
   id: string;
@@ -150,6 +153,11 @@ function CourseDetailContent() {
   // AI recommendations state
   const [aiRecs, setAiRecs] = useState<{ before: Array<{ course_id: string; title: string; reason: string; cover_image_url: string | null }>; after: Array<{ course_id: string; title: string; reason: string; cover_image_url: string | null }> } | null>(null);
 
+  // Glossary state
+  const [glossaryTerms, setGlossaryTerms] = useState<GlossaryTerm[]>([]);
+  const [showGlossary, setShowGlossary] = useState(false);
+  const [glossarySearch, setGlossarySearch] = useState('');
+
   useEffect(() => {
     offlineFetch(`/api/academy/courses/${courseId}`)
       .then((r) => r.json())
@@ -183,6 +191,14 @@ function CourseDetailContent() {
       })
       .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId]);
+
+  // Fetch glossary
+  useEffect(() => {
+    fetch(`/api/academy/courses/${courseId}/glossary`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((d) => setGlossaryTerms(Array.isArray(d) ? d : []))
+      .catch(() => {});
   }, [courseId]);
 
   // Detect user's existing review
@@ -681,6 +697,48 @@ function CourseDetailContent() {
                 </div>
               )}
             </div>
+
+            {/* Glossary */}
+            {glossaryTerms.length > 0 && (
+              <div className="mt-8">
+                <button
+                  type="button"
+                  onClick={() => setShowGlossary((v) => !v)}
+                  className="w-full flex items-center gap-2 text-lg font-bold mb-2"
+                >
+                  <BookMarked className="w-5 h-5 text-fuchsia-400" />
+                  Glossary
+                  <span className="text-sm font-normal text-gray-500 ml-1">({glossaryTerms.length})</span>
+                  <ChevronDown className={`w-4 h-4 ml-auto text-gray-600 transition-transform ${showGlossary ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showGlossary && (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+                      <input
+                        type="text"
+                        value={glossarySearch}
+                        onChange={(e) => setGlossarySearch(e.target.value)}
+                        placeholder="Search terms..."
+                        className="w-full bg-gray-900 border border-gray-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+                      />
+                    </div>
+
+                    <div className="bg-gray-900 border border-gray-800 rounded-xl divide-y divide-gray-800 overflow-hidden">
+                      {glossaryTerms
+                        .filter((t) => !glossarySearch || t.term.toLowerCase().includes(glossarySearch.toLowerCase()))
+                        .map((t) => (
+                          <GlossaryTermRow key={t.id} term={t} />
+                        ))}
+                      {glossaryTerms.filter((t) => !glossarySearch || t.term.toLowerCase().includes(glossarySearch.toLowerCase())).length === 0 && (
+                        <p className="px-4 py-6 text-center text-gray-500 text-sm">No matching terms.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right: Enrollment card */}
