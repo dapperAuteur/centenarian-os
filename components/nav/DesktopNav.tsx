@@ -33,6 +33,7 @@ export interface DesktopNavProps {
   adminUnread?: number;
   onLogout: () => void;
   subLoading: boolean;
+  allowedModules?: string[] | null;
 }
 
 export default function DesktopNav({
@@ -44,13 +45,14 @@ export default function DesktopNav({
   adminUnread = 0,
   onLogout,
   subLoading,
+  allowedModules,
 }: DesktopNavProps) {
   const pathname = usePathname();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
-  const visibleGroups = getVisibleGroups(isAdmin);
+  const visibleGroups = getVisibleGroups(isAdmin, allowedModules);
 
   // Close all dropdowns on route change
   useEffect(() => {
@@ -79,7 +81,7 @@ export default function DesktopNav({
       {/* Skip to content — visually hidden, accessible on focus */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-3 focus:py-2 focus:bg-fuchsia-600 focus:text-white focus:rounded-lg focus:text-sm focus:font-medium"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-100 focus:px-3 focus:py-2 focus:bg-fuchsia-600 focus:text-white focus:rounded-lg focus:text-sm focus:font-medium"
       >
         Skip to content
       </a>
@@ -142,7 +144,7 @@ export default function DesktopNav({
                               <Lock className="w-3 h-3 ml-auto shrink-0 text-amber-500" />
                             )}
                             {item.href === '/dashboard/admin/submissions' && adminUnread > 0 && (
-                              <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none">
+                              <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-4.5 text-center leading-none">
                                 {adminUnread}
                               </span>
                             )}
@@ -334,6 +336,7 @@ export default function DesktopNav({
         username={username}
         unreadMessages={unreadMessages}
         onLogout={onLogout}
+        allowedModules={allowedModules}
       />
     </nav>
   );

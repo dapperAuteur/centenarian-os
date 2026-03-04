@@ -22,11 +22,12 @@ export default function MobileBottomBar({
   username,
   unreadMessages,
   onLogout,
+  allowedModules,
 }: Omit<DesktopNavProps, 'subLoading'>) {
   const pathname = usePathname();
   const router = useRouter();
   const [openSheet, setOpenSheet] = useState<string | null>(null); // group id | 'me' | null
-  const visibleGroups = getVisibleGroups(isAdmin);
+  const visibleGroups = getVisibleGroups(isAdmin, allowedModules);
 
   // Close sheet on route change
   useEffect(() => {

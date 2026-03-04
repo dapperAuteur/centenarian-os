@@ -334,7 +334,7 @@ export function ProtocolModal({ isOpen, onClose, protocol }: ProtocolModalProps)
                     <select
                       value={entry.ingredient_id}
                       onChange={(e) => updateIngredient(index, 'ingredient_id', e.target.value)}
-                      className="flex-grow px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 text-sm"
+                      className="grow px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 text-sm"
                     >
                       {ingredients.map(ing => (
                         <option key={ing.id} value={ing.id}>{ing.name}</option>

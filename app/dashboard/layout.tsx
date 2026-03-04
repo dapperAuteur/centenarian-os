@@ -48,7 +48,11 @@ export default function DashboardLayout({
   const [username, setUsername] = useState<string | null>(null);
   const [adminLoading, setAdminLoading] = useState(true);
   const [adminUnread, setAdminUnread] = useState(0);
-  const hasAccess = isPaid || isAdmin;
+  const [isInvited, setIsInvited] = useState(false);
+  const [inviteModules, setInviteModules] = useState<string[] | null>(null);
+  const hasAccess = isPaid || isAdmin || isInvited;
+  // Only apply module restrictions to invited users who aren't paying subscribers or admins
+  const allowedModules = isInvited && !isPaid && !isAdmin ? inviteModules : null;
   const unreadMessages = useUnreadCount();
 
   useEffect(() => {
@@ -58,6 +62,8 @@ export default function DashboardLayout({
         setIsAdmin(d.isAdmin ?? false);
         setIsTeacher(d.isTeacher ?? false);
         setUsername(d.username ?? null);
+        setIsInvited(d.isInvited ?? false);
+        setInviteModules(d.inviteModules ?? null);
         setAdminLoading(false);
         if (d.isAdmin) {
           fetch('/api/admin/notifications?unread=true')
@@ -74,8 +80,16 @@ export default function DashboardLayout({
     if (subLoading || loading || adminLoading) return;
     if (!hasAccess && !isFreeRoute(pathname)) {
       router.push('/pricing');
+      return;
     }
-  }, [hasAccess, pathname, subLoading, loading, adminLoading, router]);
+    // Redirect invited users away from modules they don't have access to
+    if (isInvited && !isPaid && !isAdmin && allowedModules && !isFreeRoute(pathname)) {
+      const allowed = allowedModules.some(
+        (m) => pathname === m || pathname.startsWith(m + '/'),
+      );
+      if (!allowed) router.push('/dashboard/planner');
+    }
+  }, [hasAccess, isInvited, isPaid, isAdmin, allowedModules, pathname, subLoading, loading, adminLoading, router]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -100,6 +114,7 @@ export default function DashboardLayout({
     adminUnread,
     onLogout: handleLogout,
     subLoading,
+    allowedModules,
   };
 
   return (

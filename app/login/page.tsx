@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // File: app/login/page.tsx
-// User authentication
+// User authentication — password login or email OTP (6-digit code).
 
 'use client';
 
@@ -11,34 +11,90 @@ import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import SiteFooter from '@/components/ui/SiteFooter';
 
+type LoginTab = 'password' | 'otp';
+type OtpStep = 'email' | 'code';
+
 export default function LoginPage() {
+  const [tab, setTab] = useState<LoginTab>('password');
+
+  // Password tab state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // OTP tab state
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpStep, setOtpStep] = useState<OtpStep>('email');
+  const [otpError, setOtpError] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
+  function switchTab(t: LoginTab) {
+    setTab(t);
+    setError('');
+    setOtpError('');
+    setOtpStep('email');
+  }
+
+  // ── Password login ──────────────────────────────────────────────────────
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-
       router.push('/dashboard/planner');
       router.refresh();
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ── OTP: send code ──────────────────────────────────────────────────────
+  const handleSendCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOtpError('');
+    setOtpLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: otpEmail,
+        options: { shouldCreateUser: false },
+      });
+      if (error) throw error;
+      setOtpStep('code');
+    } catch (err: any) {
+      setOtpError(err.message ?? 'Failed to send code');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  // ── OTP: verify code ────────────────────────────────────────────────────
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOtpError('');
+    setOtpLoading(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: otpEmail,
+        token: otpCode,
+        type: 'email',
+      });
+      if (error) throw error;
+      router.push('/dashboard/planner');
+      router.refresh();
+    } catch (err: any) {
+      setOtpError(err.message ?? 'Invalid code');
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -104,63 +160,173 @@ export default function LoginPage() {
       {/* Login Form */}
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
-          <header className="mb-8">
+          <header className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900">Welcome back</h1>
             <p className="text-gray-600 mt-2">Login to your journey</p>
           </header>
 
-          <form onSubmit={handleLogin} className="space-y-6">
-            {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm" role="alert">
-                {error}
-              </div>
-            )}
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
-                placeholder="you@example.com"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
-                placeholder="••••••••"
-              />
-            </div>
-
+          {/* Tabs */}
+          <div className="flex mb-6 border border-gray-200 rounded-lg overflow-hidden">
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-sky-600 text-white py-3 rounded-lg font-semibold hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+              type="button"
+              onClick={() => switchTab('password')}
+              className={`flex-1 py-2 text-sm font-medium transition ${
+                tab === 'password'
+                  ? 'bg-sky-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
             >
-              {loading ? 'Logging in...' : 'Login'}
+              Password
             </button>
+            <button
+              type="button"
+              onClick={() => switchTab('otp')}
+              className={`flex-1 py-2 text-sm font-medium transition ${
+                tab === 'otp'
+                  ? 'bg-sky-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              Email Code
+            </button>
+          </div>
 
-            <p className="text-center text-sm text-gray-600">
-              Don&apos;t have an account?{' '}
-              <Link href="/signup" className="text-sky-600 hover:underline font-medium">
-                Sign up
-              </Link>
-            </p>
-          </form>
+          {/* ── Password tab ──────────────────────────────────────────── */}
+          {tab === 'password' && (
+            <form onSubmit={handleLogin} className="space-y-6">
+              {error && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm" role="alert">
+                  {error}
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
+                  placeholder="you@example.com"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-sky-600 text-white py-3 rounded-lg font-semibold hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+              >
+                {loading ? 'Logging in...' : 'Login'}
+              </button>
+
+              <p className="text-center text-sm text-gray-600">
+                Don&apos;t have an account?{' '}
+                <Link href="/signup" className="text-sky-600 hover:underline font-medium">
+                  Sign up
+                </Link>
+              </p>
+            </form>
+          )}
+
+          {/* ── Email Code tab ──────────────────────────────────────── */}
+          {tab === 'otp' && (
+            <div className="space-y-6">
+              {otpError && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm" role="alert">
+                  {otpError}
+                </div>
+              )}
+
+              {otpStep === 'email' ? (
+                <form onSubmit={handleSendCode} className="space-y-6">
+                  <div>
+                    <label htmlFor="otp-email" className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <input
+                      id="otp-email"
+                      type="email"
+                      value={otpEmail}
+                      onChange={(e) => setOtpEmail(e.target.value)}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input"
+                      placeholder="you@example.com"
+                    />
+                    <p className="text-xs text-gray-400 mt-1.5">
+                      We&apos;ll send a 6-digit code to this address. Only existing accounts can use this method.
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={otpLoading}
+                    className="w-full bg-sky-600 text-white py-3 rounded-lg font-semibold hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+                  >
+                    {otpLoading ? 'Sending...' : 'Send Code'}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyCode} className="space-y-6">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-4">
+                      A 6-digit code was sent to <span className="font-medium text-gray-900">{otpEmail}</span>.
+                    </p>
+                    <label htmlFor="otp-code" className="block text-sm font-medium text-gray-700 mb-1">
+                      6-digit code
+                    </label>
+                    <input
+                      id="otp-code"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]{6}"
+                      maxLength={6}
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      required
+                      autoFocus
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent form-input text-center text-2xl tracking-widest font-mono"
+                      placeholder="000000"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={otpLoading || otpCode.length !== 6}
+                    className="w-full bg-sky-600 text-white py-3 rounded-lg font-semibold hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+                  >
+                    {otpLoading ? 'Verifying...' : 'Verify & Login'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setOtpStep('email'); setOtpCode(''); setOtpError(''); }}
+                    className="w-full text-sm text-gray-500 hover:text-gray-700 transition"
+                  >
+                    Use a different email
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
         </div>
       </main>
 
