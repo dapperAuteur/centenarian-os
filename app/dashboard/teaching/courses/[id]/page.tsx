@@ -10,10 +10,11 @@ import {
   ChevronLeft, Plus, Loader2, Save, Globe, EyeOff, Trash2, Upload,
   GitBranch, Sparkles, Play, FileText, Volume2, Presentation, GripVertical,
   CheckCircle, ClipboardList, HelpCircle, X, Map, ChevronDown, Paperclip,
-  Link2, Shield, Search,
+  Link2, Shield, Search, BookMarked,
 } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
 import DataImporter from '@/components/academy/DataImporter';
+import GlossaryEditor from '@/components/academy/GlossaryEditor';
 
 interface Lesson {
   id: string;
@@ -100,6 +101,8 @@ export default function CourseEditorPage() {
   const [bulkImportResult, setBulkImportResult] = useState<{ message: string; errors?: string[] } | null>(null);
   const [bulkImportMode, setBulkImportMode] = useState<'create' | 'upsert'>('create');
   const [feedback, setFeedback] = useState('');
+  // Glossary state
+  const [showGlossary, setShowGlossary] = useState(false);
 
   // Prerequisites state
   interface Prerequisite { id: string; prerequisite_course_id: string; enforcement: string; sort_order: number; title: string; cover_image_url: string | null; completed: boolean; }
@@ -1728,6 +1731,27 @@ export default function CourseEditorPage() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      {/* Glossary */}
+      <div className="mt-8 border border-gray-800 rounded-2xl overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowGlossary((v) => !v)}
+          className="w-full flex items-center gap-2 px-5 py-4 bg-gray-900 text-sm font-semibold text-gray-300 hover:bg-gray-800 transition"
+        >
+          <BookMarked className="w-4 h-4 text-fuchsia-400" />
+          Glossary &amp; Phonetic Spelling
+          <ChevronDown className={`w-4 h-4 ml-auto text-gray-600 transition-transform ${showGlossary ? 'rotate-180' : ''}`} />
+        </button>
+        {showGlossary && (
+          <div className="p-5">
+            <GlossaryEditor
+              courseId={courseId}
+              lessons={course?.course_modules?.flatMap((m) => m.lessons.map((l) => ({ id: l.id, title: l.title }))) ?? []}
+            />
           </div>
         )}
       </div>
