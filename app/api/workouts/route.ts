@@ -95,6 +95,9 @@ export async function POST(request: NextRequest) {
       distance_miles: ex.distance_miles ?? null,
       hold_sec: ex.hold_sec ?? null,
       phase: ex.phase || null,
+      is_bodyweight: ex.is_bodyweight ?? false,
+      is_timed: ex.is_timed ?? false,
+      per_side: ex.per_side ?? false,
     }));
 
     await db.from('workout_template_exercises').insert(rows);

@@ -48,7 +48,7 @@ export default function WorkoutTemplateForm({ isOpen, onClose, onSaved, initial 
       } else {
         setForm({ name: '', description: '', category: '', estimated_duration_min: '' });
         setPurpose([]);
-        setExercises([{ name: '', sets: null, reps: null, weight_lbs: null, duration_sec: null, rest_sec: 60, notes: '' }]);
+        setExercises([{ name: '', sets: null, reps: null, weight_lbs: null, duration_sec: null, rest_sec: 60, notes: '', is_bodyweight: false, is_timed: false, per_side: false }]);
       }
       // Load equipment
       offlineFetch('/api/equipment?active=true').then(async (r) => {
@@ -61,7 +61,7 @@ export default function WorkoutTemplateForm({ isOpen, onClose, onSaved, initial 
   }, [isOpen, initial]);
 
   const addExercise = () => {
-    setExercises((prev) => [...prev, { name: '', sets: null, reps: null, weight_lbs: null, duration_sec: null, rest_sec: 60, notes: '' }]);
+    setExercises((prev) => [...prev, { name: '', sets: null, reps: null, weight_lbs: null, duration_sec: null, rest_sec: 60, notes: '', is_bodyweight: false, is_timed: false, per_side: false }]);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -93,75 +93,85 @@ export default function WorkoutTemplateForm({ isOpen, onClose, onSaved, initial 
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editingId ? 'Edit Template' : 'New Workout Template'} size="lg">
-      <form onSubmit={handleSave} className="space-y-4">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Name *</label>
-          <input
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            placeholder="e.g. Push Day, Morning HIIT"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-            required
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
+      <form onSubmit={handleSave} className="flex flex-col">
+        {/* Scrollable content */}
+        <div className="space-y-4 flex-1 px-1 pt-1">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Category</label>
-            <select
-              value={form.category}
-              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
-            >
-              <option value="">Select...</option>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <label htmlFor="wt-name" className="block text-xs font-medium text-gray-600 mb-1">Name *</label>
+            <input
+              id="wt-name"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              placeholder="e.g. Push Day, Morning HIIT"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              required
+              aria-required="true"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="wt-category" className="block text-xs font-medium text-gray-600 mb-1">Category</label>
+              <select
+                id="wt-category"
+                value={form.category}
+                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+              >
+                <option value="">Select...</option>
+                {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="wt-duration" className="block text-xs font-medium text-gray-600 mb-1">Est. duration (min)</label>
+              <input
+                id="wt-duration"
+                type="number"
+                value={form.estimated_duration_min}
+                onChange={(e) => setForm((f) => ({ ...f, estimated_duration_min: e.target.value }))}
+                placeholder="45"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              />
+            </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Est. duration (min)</label>
+            <label htmlFor="wt-desc" className="block text-xs font-medium text-gray-600 mb-1">Description</label>
             <input
-              type="number"
-              value={form.estimated_duration_min}
-              onChange={(e) => setForm((f) => ({ ...f, estimated_duration_min: e.target.value }))}
-              placeholder="45"
+              id="wt-desc"
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              placeholder="Optional notes about this workout"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
             />
           </div>
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
-          <input
-            value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            placeholder="Optional notes about this workout"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-          />
-        </div>
 
-        <WorkoutPurposeSelect value={purpose} onChange={setPurpose} />
+          <WorkoutPurposeSelect value={purpose} onChange={setPurpose} />
 
-        {/* Exercises */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-medium text-gray-600">Exercises</label>
-            <button type="button" onClick={addExercise}
-              className="text-xs text-lime-600 font-medium hover:text-lime-700 flex items-center gap-1">
-              <Plus className="w-3 h-3" /> Add exercise
-            </button>
-          </div>
-          <div className="space-y-2 max-h-[45vh] overflow-y-auto">
-            {exercises.map((ex, i) => (
-              <TemplateExerciseRow
-                key={i}
-                exercise={ex}
-                equipment={equipment}
-                onChange={(updated) => setExercises((prev) => prev.map((p, j) => j === i ? updated : p))}
-                onRemove={() => setExercises((prev) => prev.filter((_, j) => j !== i))}
-              />
-            ))}
+          {/* Exercises */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-medium text-gray-600">Exercises</label>
+              <button type="button" onClick={addExercise}
+                className="text-xs text-lime-600 font-medium hover:text-lime-700 flex items-center gap-1">
+                <Plus className="w-3 h-3" /> Add exercise
+              </button>
+            </div>
+            <div className="space-y-2 max-h-[45vh] overflow-y-auto">
+              {exercises.map((ex, i) => (
+                <TemplateExerciseRow
+                  key={i}
+                  exercise={ex}
+                  equipment={equipment}
+                  onChange={(updated) => setExercises((prev) => prev.map((p, j) => j === i ? updated : p))}
+                  onRemove={() => setExercises((prev) => prev.filter((_, j) => j !== i))}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="flex gap-3 pt-2">
+        {/* Sticky button bar */}
+        <div className="sticky bottom-0 bg-white border-t border-gray-100 px-1 pt-3 pb-3 flex gap-3 mt-2"
+          style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
           <button type="button" onClick={onClose}
             className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
             Cancel

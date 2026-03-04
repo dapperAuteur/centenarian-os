@@ -37,6 +37,9 @@ interface TemplateData {
     distance_miles?: number | null;
     hold_sec?: number | null;
     phase?: string | null;
+    is_bodyweight?: boolean;
+    is_timed?: boolean;
+    per_side?: boolean;
   }[];
 }
 
@@ -132,6 +135,9 @@ export default function WorkoutLogForm({ isOpen, onClose, onSaved, template, exi
           distance_miles: ex.distance_miles,
           hold_sec: ex.hold_sec,
           phase: ex.phase,
+          is_bodyweight: ex.is_bodyweight,
+          is_timed: ex.is_timed,
+          per_side: ex.per_side,
         })),
       );
     } else {
@@ -141,7 +147,7 @@ export default function WorkoutLogForm({ isOpen, onClose, onSaved, template, exi
       setOverallFeeling(null);
       setWarmupNotes('');
       setCooldownNotes('');
-      setExercises([{ name: '', sets_completed: null, reps_completed: null, weight_lbs: null, duration_sec: null, rest_sec: 60 }]);
+      setExercises([{ name: '', sets_completed: null, reps_completed: null, weight_lbs: null, duration_sec: null, rest_sec: 60, is_bodyweight: false, is_timed: false, per_side: false }]);
     }
 
     offlineFetch('/api/equipment?active=true').then(async (r) => {
@@ -153,7 +159,7 @@ export default function WorkoutLogForm({ isOpen, onClose, onSaved, template, exi
   }, [isOpen, template, existingLog]);
 
   const addExercise = () => {
-    setExercises((prev) => [...prev, { name: '', sets_completed: null, reps_completed: null, weight_lbs: null, duration_sec: null, rest_sec: 60 }]);
+    setExercises((prev) => [...prev, { name: '', sets_completed: null, reps_completed: null, weight_lbs: null, duration_sec: null, rest_sec: 60, is_bodyweight: false, is_timed: false, per_side: false }]);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -196,107 +202,115 @@ export default function WorkoutLogForm({ isOpen, onClose, onSaved, template, exi
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={modalTitle} size="lg">
-      <form onSubmit={handleSave} className="space-y-4">
-        {/* Name (editable for quick log and edit, read-only for template) */}
-        {!template && (
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Workout name *</label>
-            <input
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="e.g. Morning Run, Gym Session"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              required
-            />
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
-            <input type="date" value={form.date}
-              onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Duration (min)</label>
-            <input type="number" value={form.duration_min}
-              onChange={(e) => setForm((f) => ({ ...f, duration_min: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-          </div>
-        </div>
-
-        <WorkoutPurposeSelect value={purpose} onChange={setPurpose} />
-
-        {/* Exercises */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-medium text-gray-600">Exercises</label>
-            <button type="button" onClick={addExercise}
-              className="text-xs text-lime-600 font-medium hover:text-lime-700 flex items-center gap-1">
-              <Plus className="w-3 h-3" /> Add
-            </button>
-          </div>
-          <div className="space-y-2 max-h-[35vh] overflow-y-auto">
-            {exercises.map((ex, i) => (
-              <LogExerciseRow
-                key={i}
-                exercise={ex}
-                equipment={equipment}
-                onChange={(updated) => setExercises((prev) => prev.map((p, j) => j === i ? updated : p))}
-                onRemove={() => setExercises((prev) => prev.filter((_, j) => j !== i))}
+      <form onSubmit={handleSave} className="flex flex-col">
+        {/* Scrollable content */}
+        <div className="space-y-4 flex-1 px-1 pt-1">
+          {/* Name (editable for quick log and edit, read-only for template) */}
+          {!template && (
+            <div>
+              <label htmlFor="wl-name" className="block text-xs font-medium text-gray-600 mb-1">Workout name *</label>
+              <input
+                id="wl-name"
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="e.g. Morning Run, Gym Session"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                required
+                aria-required="true"
               />
-            ))}
-          </div>
-        </div>
+            </div>
+          )}
 
-        {/* Overall feeling */}
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">How did the workout feel?</label>
-          <div className="flex gap-1.5">
-            {[1, 2, 3, 4, 5].map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => setOverallFeeling(overallFeeling === v ? null : v)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
-                  overallFeeling === v
-                    ? 'bg-fuchsia-600 text-white border-fuchsia-600'
-                    : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
-                }`}
-              >
-                {v} {FEELING_LABELS[v]}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="wl-date" className="block text-xs font-medium text-gray-600 mb-1">Date</label>
+              <input id="wl-date" type="date" value={form.date}
+                onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required aria-required="true" />
+            </div>
+            <div>
+              <label htmlFor="wl-duration" className="block text-xs font-medium text-gray-600 mb-1">Duration (min)</label>
+              <input id="wl-duration" type="number" value={form.duration_min}
+                onChange={(e) => setForm((f) => ({ ...f, duration_min: e.target.value }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+            </div>
+          </div>
+
+          <WorkoutPurposeSelect value={purpose} onChange={setPurpose} />
+
+          {/* Exercises */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-medium text-gray-600">Exercises</label>
+              <button type="button" onClick={addExercise}
+                className="text-xs text-lime-600 font-medium hover:text-lime-700 flex items-center gap-1">
+                <Plus className="w-3 h-3" /> Add
               </button>
-            ))}
+            </div>
+            <div className="space-y-2 max-h-[35vh] overflow-y-auto">
+              {exercises.map((ex, i) => (
+                <LogExerciseRow
+                  key={i}
+                  exercise={ex}
+                  equipment={equipment}
+                  onChange={(updated) => setExercises((prev) => prev.map((p, j) => j === i ? updated : p))}
+                  onRemove={() => setExercises((prev) => prev.filter((_, j) => j !== i))}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Overall feeling */}
+          <fieldset>
+            <legend className="text-xs font-medium text-gray-600 mb-1">How did the workout feel?</legend>
+            <div className="flex gap-1.5">
+              {[1, 2, 3, 4, 5].map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  aria-pressed={overallFeeling === v}
+                  onClick={() => setOverallFeeling(overallFeeling === v ? null : v)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+                    overallFeeling === v
+                      ? 'bg-fuchsia-600 text-white border-fuchsia-600'
+                      : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  {v} {FEELING_LABELS[v]}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          {/* Warmup / Cooldown / Notes */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="wl-warmup" className="block text-xs font-medium text-gray-600 mb-1">Warmup Notes</label>
+              <input id="wl-warmup" value={warmupNotes}
+                onChange={(e) => setWarmupNotes(e.target.value)}
+                placeholder="What did you do to warm up?"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label htmlFor="wl-cooldown" className="block text-xs font-medium text-gray-600 mb-1">Cooldown Notes</label>
+              <input id="wl-cooldown" value={cooldownNotes}
+                onChange={(e) => setCooldownNotes(e.target.value)}
+                placeholder="Stretching, foam rolling, etc."
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="wl-notes" className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+            <input id="wl-notes" value={form.notes}
+              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+              placeholder="How did it go?"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
           </div>
         </div>
 
-        {/* Warmup / Cooldown / Notes */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Warmup Notes</label>
-            <input value={warmupNotes}
-              onChange={(e) => setWarmupNotes(e.target.value)}
-              placeholder="What did you do to warm up?"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Cooldown Notes</label>
-            <input value={cooldownNotes}
-              onChange={(e) => setCooldownNotes(e.target.value)}
-              placeholder="Stretching, foam rolling, etc."
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-          </div>
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-          <input value={form.notes}
-            onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-            placeholder="How did it go?"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-        </div>
-
-        <div className="flex gap-3 pt-2">
+        {/* Sticky button bar */}
+        <div className="sticky bottom-0 bg-white border-t border-gray-100 px-1 pt-3 pb-3 flex gap-3 mt-2"
+          style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
           <button type="button" onClick={onClose}
             className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
             Cancel

@@ -234,9 +234,17 @@ export default function WorkoutDetailPage() {
                     </div>
                     <div className="text-right text-sm text-gray-600 space-x-4">
                       {ex.sets_completed != null && <span>{ex.sets_completed} sets</span>}
-                      {ex.reps_completed != null && <span>{ex.reps_completed} reps</span>}
-                      {ex.weight_lbs != null && <span>{ex.weight_lbs} lbs</span>}
-                      {ex.duration_sec != null && <span>{ex.duration_sec}s</span>}
+                      {ex.is_timed ? (
+                        ex.duration_sec != null && <span>{ex.duration_sec}s</span>
+                      ) : (
+                        ex.reps_completed != null && <span>{ex.reps_completed} reps{ex.per_side ? '/side' : ''}</span>
+                      )}
+                      {ex.is_bodyweight ? (
+                        <span className="text-fuchsia-600 font-medium">BW</span>
+                      ) : (
+                        ex.weight_lbs != null && <span>{ex.weight_lbs} lbs</span>
+                      )}
+                      {!ex.is_timed && ex.duration_sec != null && <span>{ex.duration_sec}s</span>}
                     </div>
                   </div>
 
@@ -256,6 +264,9 @@ export default function WorkoutDetailPage() {
                     {ex.is_superset && <span className="text-xs px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded-full">Superset {ex.superset_group != null ? `#${ex.superset_group}` : ''}</span>}
                     {ex.is_balance && <span className="text-xs px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-full">Balance</span>}
                     {ex.is_unilateral && <span className="text-xs px-1.5 py-0.5 bg-sky-50 text-sky-700 rounded-full">Unilateral{ex.side ? ` (${ex.side})` : ''}</span>}
+                    {ex.is_bodyweight && <span className="text-xs px-1.5 py-0.5 bg-lime-50 text-lime-700 rounded-full">Bodyweight</span>}
+                    {ex.is_timed && <span className="text-xs px-1.5 py-0.5 bg-violet-50 text-violet-700 rounded-full">Timed</span>}
+                    {ex.per_side && <span className="text-xs px-1.5 py-0.5 bg-teal-50 text-teal-700 rounded-full">Per Side</span>}
                     {ex.rpe != null && <span className="text-xs px-1.5 py-0.5 bg-orange-50 text-orange-700 rounded-full">RPE {ex.rpe}</span>}
                     {ex.tempo && <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded-full">Tempo {ex.tempo}</span>}
                     {ex.percent_of_max != null && <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded-full">{ex.percent_of_max}% max</span>}

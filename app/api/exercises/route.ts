@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     media_url, media_public_id, audio_url, audio_public_id,
     primary_muscles, default_sets, default_reps, default_weight_lbs,
     default_duration_sec, default_rest_sec, notes, equipment_ids,
-    equipment_needed } = body;
+    equipment_needed, is_bodyweight_default, is_timed_default, per_side_default } = body;
 
   if (!name?.trim()) {
     return NextResponse.json({ error: 'name is required' }, { status: 400 });
@@ -77,6 +77,9 @@ export async function POST(request: NextRequest) {
       default_rest_sec: default_rest_sec ?? 60,
       notes: notes || null,
       equipment_needed: equipment_needed || null,
+      is_bodyweight_default: is_bodyweight_default ?? false,
+      is_timed_default: is_timed_default ?? false,
+      per_side_default: per_side_default ?? false,
     })
     .select('*, exercise_categories(id, name, icon, color)')
     .single();

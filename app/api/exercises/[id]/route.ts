@@ -55,7 +55,7 @@ export async function PATCH(
     'media_url', 'media_public_id', 'audio_url', 'audio_public_id',
     'primary_muscles', 'default_sets', 'default_reps', 'default_weight_lbs',
     'default_duration_sec', 'default_rest_sec', 'notes', 'is_active',
-    'equipment_needed',
+    'equipment_needed', 'is_bodyweight_default', 'is_timed_default', 'per_side_default',
   ] as const;
 
   const updates: Record<string, unknown> = {};

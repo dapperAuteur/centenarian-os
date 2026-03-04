@@ -118,6 +118,9 @@ export async function POST(request: NextRequest) {
       phase: ex.phase || null,
       side: ex.side || null,
       feeling: ex.feeling ? Number(ex.feeling) : null,
+      is_bodyweight: ex.is_bodyweight ?? false,
+      is_timed: ex.is_timed ?? false,
+      per_side: ex.per_side ?? false,
     }));
 
     await db.from('workout_log_exercises').insert(rows);
