@@ -20,6 +20,7 @@ interface ExerciseData {
   id?: string;
   name: string;
   category_id: string | null;
+  difficulty: string | null;
   equipment_needed: string | null;
   instructions: string;
   form_cues: string;
@@ -52,6 +53,7 @@ type ExerciseInitial = {
 const EMPTY: ExerciseData = {
   name: '',
   category_id: null,
+  difficulty: null,
   equipment_needed: null,
   instructions: '',
   form_cues: '',
@@ -105,6 +107,7 @@ export default function ExerciseFormModal({ isOpen, onClose, onSaved, initial, c
           ...EMPTY,
           name: initial.name || '',
           category_id: initial.category_id ?? null,
+          difficulty: initial.difficulty ?? null,
           equipment_needed: initial.equipment_needed ?? null,
           instructions: initial.instructions ?? '',
           form_cues: initial.form_cues ?? '',
@@ -206,8 +209,8 @@ export default function ExerciseFormModal({ isOpen, onClose, onSaved, initial, c
       <div className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
         {error && <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p>}
 
-        {/* Name + Category */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Name + Category + Difficulty */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
             <input
@@ -228,6 +231,19 @@ export default function ExerciseFormModal({ isOpen, onClose, onSaved, initial, c
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
+            <select
+              value={form.difficulty || ''}
+              onChange={(e) => set('difficulty', e.target.value || null)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+            >
+              <option value="">Unspecified</option>
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
             </select>
           </div>
         </div>

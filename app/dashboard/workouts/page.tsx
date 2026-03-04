@@ -7,7 +7,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Plus, Play, Trash2, Edit3, Clock, Dumbbell,
+  Plus, Play, Trash2, Edit3, Clock, Dumbbell, Copy,
   ChevronDown, ChevronUp, Upload, Download, Link2, Activity,
 } from 'lucide-react';
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
@@ -142,6 +142,26 @@ export default function WorkoutsPage() {
     if (!confirm('Delete this workout log?')) return;
     await offlineFetch(`/api/workouts/logs/${id}`, { method: 'DELETE' });
     load();
+  };
+
+  const handleDuplicateTemplate = async (t: Template) => {
+    const res = await offlineFetch(`/api/workouts/${t.id}/duplicate`, { method: 'POST' });
+    if (res.ok) {
+      const data = await res.json();
+      await load();
+      if (data.template) {
+        setEditingTemplate(data.template);
+        setShowTemplateForm(true);
+      }
+    }
+  };
+
+  const handleDuplicateLog = async (logId: string) => {
+    const res = await offlineFetch(`/api/workouts/logs/${logId}/duplicate`, { method: 'POST' });
+    if (res.ok) {
+      const data = await res.json();
+      router.push(`/dashboard/workouts/${data.id}?edit=1`);
+    }
   };
 
   if (loading) {
@@ -303,11 +323,15 @@ export default function WorkoutsPage() {
                     </div>
                     <div className="flex gap-2 mt-3">
                       <button onClick={() => { setEditingTemplate(t); setShowTemplateForm(true); }}
-                        className="text-xs text-sky-600 hover:text-sky-700 flex items-center gap-1">
+                        className="text-xs text-sky-600 hover:text-sky-700 flex items-center gap-1" aria-label={`Edit ${t.name}`}>
                         <Edit3 className="w-3 h-3" /> Edit
                       </button>
+                      <button onClick={() => handleDuplicateTemplate(t)}
+                        className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center gap-1" aria-label={`Duplicate ${t.name}`}>
+                        <Copy className="w-3 h-3" /> Duplicate
+                      </button>
                       <button onClick={() => handleDelete(t.id)}
-                        className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1">
+                        className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1" aria-label={`Delete ${t.name}`}>
                         <Trash2 className="w-3 h-3" /> Delete
                       </button>
                     </div>
@@ -340,10 +364,13 @@ export default function WorkoutsPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                  <button onClick={() => setLinkingLogId(log.id)} className="text-xs text-gray-400 hover:text-sky-600" title="Link activities">
+                  <button onClick={() => handleDuplicateLog(log.id)} className="p-1 text-gray-400 hover:text-indigo-600" aria-label={`Duplicate ${log.name}`}>
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => setLinkingLogId(log.id)} className="p-1 text-gray-400 hover:text-sky-600" aria-label={`Link activities for ${log.name}`}>
                     <Link2 className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => handleDeleteLog(log.id)} className="text-xs text-red-400 hover:text-red-600" title="Delete">
+                  <button onClick={() => handleDeleteLog(log.id)} className="p-1 text-red-400 hover:text-red-600" aria-label={`Delete ${log.name}`}>
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>

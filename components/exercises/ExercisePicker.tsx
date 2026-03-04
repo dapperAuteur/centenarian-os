@@ -133,6 +133,7 @@ export default function ExercisePicker({ value, exerciseId, onChange, placeholde
                   key={ex.id}
                   type="button"
                   role="option"
+                  aria-selected={false}
                   onClick={() => selectExercise(ex)}
                   className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm"
                 >

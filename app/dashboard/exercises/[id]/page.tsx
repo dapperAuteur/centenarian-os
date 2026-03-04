@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft, Pencil, Copy, Trash2, Loader2,
   Volume2, Dumbbell, AlertTriangle, ExternalLink,
@@ -16,6 +16,8 @@ interface Exercise {
   id: string;
   name: string;
   category_id: string | null;
+  difficulty: string | null;
+  equipment_needed: string | null;
   exercise_categories: { id: string; name: string; icon: string | null; color: string | null } | null;
   exercise_equipment: { id: string; equipment_id: string; equipment: { id: string; name: string } }[];
   instructions: string | null;
@@ -36,6 +38,18 @@ interface Exercise {
   updated_at: string;
 }
 
+const DIFFICULTY_COLORS: Record<string, string> = {
+  beginner:     'bg-green-50 text-green-700',
+  intermediate: 'bg-amber-50 text-amber-700',
+  advanced:     'bg-red-50 text-red-700',
+};
+
+const EQUIPMENT_LABELS: Record<string, string> = {
+  none: 'No Equipment',
+  minimal: 'Minimal',
+  gym: 'Gym',
+};
+
 interface Category {
   id: string;
   name: string;
@@ -44,11 +58,20 @@ interface Category {
 export default function ExerciseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEdit, setShowEdit] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // Auto-open edit modal when ?edit=1 is in URL (e.g. after duplicate)
+  useEffect(() => {
+    if (searchParams.get('edit') === '1' && exercise && !loading) {
+      setShowEdit(true);
+      router.replace(`/dashboard/exercises/${id}`, { scroll: false });
+    }
+  }, [searchParams, exercise, loading, id, router]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -68,7 +91,7 @@ export default function ExerciseDetailPage() {
   const handleDuplicate = async () => {
     const res = await offlineFetch(`/api/exercises/${id}/duplicate`, { method: 'POST' });
     const data = await res.json();
-    if (data.exercise?.id) router.push(`/dashboard/exercises/${data.exercise.id}`);
+    if (data.exercise?.id) router.push(`/dashboard/exercises/${data.exercise.id}?edit=1`);
   };
 
   const handleDelete = async () => {
@@ -138,14 +161,26 @@ export default function ExerciseDetailPage() {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{exercise.name}</h1>
-            {exercise.exercise_categories && (
-              <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-fuchsia-50 text-fuchsia-700">
-                {exercise.exercise_categories.name}
-              </span>
-            )}
-            {!exercise.is_active && (
-              <span className="inline-block mt-1 ml-2 text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-600">Retired</span>
-            )}
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              {exercise.exercise_categories && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-fuchsia-50 text-fuchsia-700">
+                  {exercise.exercise_categories.name}
+                </span>
+              )}
+              {exercise.difficulty && (
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${DIFFICULTY_COLORS[exercise.difficulty] || 'bg-gray-100 text-gray-600'}`}>
+                  {exercise.difficulty}
+                </span>
+              )}
+              {exercise.equipment_needed && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600">
+                  {EQUIPMENT_LABELS[exercise.equipment_needed] || exercise.equipment_needed}
+                </span>
+              )}
+              {!exercise.is_active && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-600">Retired</span>
+              )}
+            </div>
           </div>
           <div className="text-right text-sm text-gray-500">
             <p>Used {exercise.use_count} time{exercise.use_count !== 1 ? 's' : ''}</p>

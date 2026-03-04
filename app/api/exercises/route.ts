@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { name, category_id, instructions, form_cues, video_url,
+  const { name, category_id, difficulty, instructions, form_cues, video_url,
     media_url, media_public_id, audio_url, audio_public_id,
     primary_muscles, default_sets, default_reps, default_weight_lbs,
     default_duration_sec, default_rest_sec, notes, equipment_ids,
@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
       user_id: user.id,
       name: name.trim(),
       category_id: category_id || null,
+      difficulty: difficulty || null,
       instructions: instructions || null,
       form_cues: form_cues || null,
       video_url: video_url || null,

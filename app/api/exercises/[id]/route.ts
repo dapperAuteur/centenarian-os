@@ -51,7 +51,7 @@ export async function PATCH(
   if (body.reactivate) body.is_active = true;
 
   const allowed = [
-    'name', 'category_id', 'instructions', 'form_cues', 'video_url',
+    'name', 'category_id', 'difficulty', 'instructions', 'form_cues', 'video_url',
     'media_url', 'media_public_id', 'audio_url', 'audio_public_id',
     'primary_muscles', 'default_sets', 'default_reps', 'default_weight_lbs',
     'default_duration_sec', 'default_rest_sec', 'notes', 'is_active',
