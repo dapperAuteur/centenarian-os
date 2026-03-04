@@ -26,13 +26,14 @@ export default function WorkoutPurposeSelect({ value, onChange }: Props) {
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1.5">Purpose</label>
-      <div className="flex flex-wrap gap-1.5">
+      <label className="block text-sm font-medium text-gray-700 mb-1.5" id="purpose-label">Purpose</label>
+      <div className="flex flex-wrap gap-1.5" role="group" aria-labelledby="purpose-label">
         {PURPOSE_OPTIONS.map((p) => (
           <button
             key={p}
             type="button"
             onClick={() => toggle(p)}
+            aria-pressed={value.includes(p)}
             className={`px-2.5 py-1 rounded-lg text-xs font-medium transition border ${
               value.includes(p)
                 ? 'bg-fuchsia-600 text-white border-fuchsia-600'

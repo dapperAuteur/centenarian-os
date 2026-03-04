@@ -14,6 +14,9 @@ interface Exercise {
   default_weight_lbs: number | null;
   default_duration_sec: number | null;
   default_rest_sec: number | null;
+  is_bodyweight_default?: boolean;
+  is_timed_default?: boolean;
+  per_side_default?: boolean;
 }
 
 interface Props {
@@ -25,6 +28,9 @@ interface Props {
     weight_lbs?: number | null;
     duration_sec?: number | null;
     rest_sec?: number | null;
+    is_bodyweight_default?: boolean | null;
+    is_timed_default?: boolean | null;
+    per_side_default?: boolean | null;
   }) => void;
   placeholder?: string;
 }
@@ -63,6 +69,9 @@ export default function ExercisePicker({ value, exerciseId, onChange, placeholde
       weight_lbs: ex.default_weight_lbs,
       duration_sec: ex.default_duration_sec,
       rest_sec: ex.default_rest_sec,
+      is_bodyweight_default: ex.is_bodyweight_default ?? null,
+      is_timed_default: ex.is_timed_default ?? null,
+      per_side_default: ex.per_side_default ?? null,
     });
     setOpen(false);
     setSearch('');
@@ -77,13 +86,15 @@ export default function ExercisePicker({ value, exerciseId, onChange, placeholde
           onFocus={() => exercises.length > 0 && setOpen(true)}
           className="flex-1 px-2 py-1.5 border border-gray-300 rounded text-sm min-w-0"
           placeholder={placeholder || 'Exercise name'}
+          aria-label="Exercise name"
         />
         {exercises.length > 0 && (
           <button
             type="button"
             onClick={() => setOpen(!open)}
             className="px-1.5 border border-gray-300 rounded hover:bg-gray-50"
-            title="Browse exercises"
+            aria-label="Browse exercise library"
+            aria-expanded={open}
           >
             <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
           </button>
@@ -93,21 +104,22 @@ export default function ExercisePicker({ value, exerciseId, onChange, placeholde
       {exerciseId && (
         <div className="mt-0.5">
           <span className="inline-flex items-center gap-1 text-[10px] text-fuchsia-600">
-            <Dumbbell className="w-2.5 h-2.5" /> From library
+            <Dumbbell className="w-2.5 h-2.5" aria-hidden="true" /> From library
           </span>
         </div>
       )}
 
       {open && (
-        <div className="absolute z-30 top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-hidden">
+        <div className="absolute z-30 top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-hidden" role="listbox">
           <div className="p-2 border-b border-gray-100">
             <div className="relative">
-              <Search className="absolute left-2 top-2 w-3.5 h-3.5 text-gray-400" />
+              <Search className="absolute left-2 top-2 w-3.5 h-3.5 text-gray-400" aria-hidden="true" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-7 pr-2 py-1.5 border border-gray-200 rounded text-sm"
                 placeholder="Search exercises..."
+                aria-label="Search exercises"
                 autoFocus
               />
             </div>
@@ -120,6 +132,7 @@ export default function ExercisePicker({ value, exerciseId, onChange, placeholde
                 <button
                   key={ex.id}
                   type="button"
+                  role="option"
                   onClick={() => selectExercise(ex)}
                   className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm"
                 >

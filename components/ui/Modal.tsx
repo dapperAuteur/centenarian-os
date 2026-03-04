@@ -157,8 +157,8 @@ export default function Modal({
           )}
         </div>
 
-        {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(100vh-200px)]">
+        {/* Content — mobile uses dvh to account for bottom nav + safe-area */}
+        <div className="overflow-y-auto max-h-[calc(100dvh-12rem)] lg:max-h-[calc(100vh-200px)]">
           {children}
         </div>
       </div>

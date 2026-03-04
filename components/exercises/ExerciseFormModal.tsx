@@ -36,6 +36,9 @@ interface ExerciseData {
   default_rest_sec: number | null;
   notes: string;
   equipment_ids: string[];
+  is_bodyweight_default: boolean;
+  is_timed_default: boolean;
+  per_side_default: boolean;
 }
 
 // Wider type that accepts null values from the database
@@ -65,6 +68,9 @@ const EMPTY: ExerciseData = {
   default_rest_sec: 60,
   notes: '',
   equipment_ids: [],
+  is_bodyweight_default: false,
+  is_timed_default: false,
+  per_side_default: false,
 };
 
 const MUSCLE_OPTIONS = [
@@ -115,6 +121,9 @@ export default function ExerciseFormModal({ isOpen, onClose, onSaved, initial, c
           default_rest_sec: initial.default_rest_sec ?? 60,
           notes: initial.notes ?? '',
           equipment_ids: initial.exercise_equipment?.map((e) => e.equipment_id) || initial.equipment_ids || [],
+          is_bodyweight_default: initial.is_bodyweight_default ?? false,
+          is_timed_default: initial.is_timed_default ?? false,
+          per_side_default: initial.per_side_default ?? false,
           id: initial.id,
         });
       } else {
@@ -358,6 +367,34 @@ export default function ExerciseFormModal({ isOpen, onClose, onSaved, initial, c
                 />
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Exercise Mode Defaults */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Exercise Mode Defaults</label>
+          <div className="flex flex-wrap gap-4">
+            <label className="inline-flex items-center gap-1.5 text-sm cursor-pointer">
+              <input type="checkbox"
+                checked={form.is_bodyweight_default}
+                onChange={() => set('is_bodyweight_default', !form.is_bodyweight_default)}
+                className="rounded border-gray-300 text-fuchsia-600 focus:ring-fuchsia-500" />
+              <span className="text-gray-700">Bodyweight</span>
+            </label>
+            <label className="inline-flex items-center gap-1.5 text-sm cursor-pointer">
+              <input type="checkbox"
+                checked={form.is_timed_default}
+                onChange={() => set('is_timed_default', !form.is_timed_default)}
+                className="rounded border-gray-300 text-fuchsia-600 focus:ring-fuchsia-500" />
+              <span className="text-gray-700">Timed (duration-based)</span>
+            </label>
+            <label className="inline-flex items-center gap-1.5 text-sm cursor-pointer">
+              <input type="checkbox"
+                checked={form.per_side_default}
+                onChange={() => set('per_side_default', !form.per_side_default)}
+                className="rounded border-gray-300 text-fuchsia-600 focus:ring-fuchsia-500" />
+              <span className="text-gray-700">Per Side</span>
+            </label>
           </div>
         </div>
 

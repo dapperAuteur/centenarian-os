@@ -117,7 +117,9 @@ export default function WorkoutFeedbackModal({
           </button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="flex flex-col">
+          {/* Scrollable content */}
+          <div className="space-y-5 flex-1 px-1 pt-1">
           {/* Activity + Duration — stack on mobile, side-by-side on sm+ */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -300,8 +302,11 @@ export default function WorkoutFeedbackModal({
               {error}
             </p>
           )}
+          </div>
 
-          <div className="flex gap-3 pt-1">
+          {/* Sticky button bar */}
+          <div className="sticky bottom-0 bg-white border-t border-gray-100 px-1 pt-3 pb-3 flex gap-3 mt-2"
+            style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
             <button
               type="button"
               onClick={handleClose}
