@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft, Calendar, Clock, Dumbbell, Copy, Trash2, Loader2, Pencil,
 } from 'lucide-react';
@@ -51,6 +51,7 @@ function fmtDuration(min: number | null) {
 export default function WorkoutDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [workout, setWorkout] = useState<WorkoutLog | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -70,13 +71,21 @@ export default function WorkoutDetailPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Auto-open edit modal when ?edit=1 is in URL (e.g. after duplicate)
+  useEffect(() => {
+    if (searchParams.get('edit') === '1' && workout && !loading) {
+      setShowEdit(true);
+      router.replace(`/dashboard/workouts/${id}`, { scroll: false });
+    }
+  }, [searchParams, workout, loading, id, router]);
+
   const handleDuplicate = async () => {
     setActionLoading('duplicate');
     try {
       const res = await offlineFetch(`/api/workouts/logs/${id}/duplicate`, { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
-        router.push(`/dashboard/workouts/${data.id}`);
+        router.push(`/dashboard/workouts/${data.id}?edit=1`);
       }
     } finally { setActionLoading(null); }
   };

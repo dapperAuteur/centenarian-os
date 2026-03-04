@@ -17,8 +17,10 @@ interface Exercise {
   id: string;
   name: string;
   category_id: string | null;
+  difficulty: string | null;
   exercise_categories: Category | null;
   primary_muscles: string[] | null;
+  instructions: string | null;
   media_url: string | null;
   use_count: number;
   is_active: boolean;
@@ -139,8 +141,15 @@ export default function ExerciseLibraryPage() {
   });
 
   const handleDuplicate = async (id: string) => {
-    await offlineFetch(`/api/exercises/${id}/duplicate`, { method: 'POST' });
-    load();
+    const res = await offlineFetch(`/api/exercises/${id}/duplicate`, { method: 'POST' });
+    if (res.ok) {
+      const data = await res.json();
+      await load();
+      if (data.exercise) {
+        setEditExercise(data.exercise);
+        setShowForm(true);
+      }
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -307,7 +316,7 @@ export default function ExerciseLibraryPage() {
                   <span key={c.id} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">
                     {c.name}
                     <button onClick={() => handleDeleteCategory(c.id)}
-                      className="text-gray-400 hover:text-red-500" title="Delete category">
+                      className="text-gray-400 hover:text-red-500" aria-label={`Delete ${c.name} category`}>
                       <Trash2 className="w-3 h-3" />
                     </button>
                   </span>
@@ -349,43 +358,58 @@ export default function ExerciseLibraryPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map((ex) => (
-                <div key={ex.id} className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-sm transition group">
-                  <Link href={`/dashboard/exercises/${ex.id}`} className="block">
-                    <div className="flex items-start justify-between mb-2">
+                <div key={ex.id} className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-sm transition group flex flex-col gap-3">
+                  <Link href={`/dashboard/exercises/${ex.id}`} className="block flex-1">
+                    <div className="flex items-start justify-between mb-1.5 gap-2">
                       <h3 className="font-semibold text-gray-900 text-sm group-hover:text-fuchsia-700 transition">
                         {ex.name}
                       </h3>
+                      {ex.difficulty && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 ${DIFFICULTY_COLORS[ex.difficulty] || 'bg-gray-100 text-gray-600'}`}>
+                          {ex.difficulty}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1 mb-2">
                       {ex.exercise_categories && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 shrink-0 ml-2">
+                        <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">
                           {ex.exercise_categories.name}
+                        </span>
+                      )}
+                      {ex.equipment_needed && (
+                        <span className="text-[10px] px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded">
+                          {EQUIPMENT_LABELS[ex.equipment_needed] || ex.equipment_needed}
                         </span>
                       )}
                     </div>
                     {ex.primary_muscles && ex.primary_muscles.length > 0 && (
                       <div className="flex flex-wrap gap-1 mb-2">
-                        {ex.primary_muscles.slice(0, 4).map((m) => (
+                        {ex.primary_muscles.slice(0, 3).map((m) => (
                           <span key={m} className="text-[10px] px-1.5 py-0.5 bg-fuchsia-50 text-fuchsia-700 rounded">
                             {m}
                           </span>
                         ))}
-                        {ex.primary_muscles.length > 4 && (
-                          <span className="text-[10px] text-gray-400">+{ex.primary_muscles.length - 4}</span>
+                        {ex.primary_muscles.length > 3 && (
+                          <span className="text-[10px] text-gray-400">+{ex.primary_muscles.length - 3}</span>
                         )}
                       </div>
                     )}
-                    <p className="text-xs text-gray-500">Used {ex.use_count} time{ex.use_count !== 1 ? 's' : ''}</p>
+                    {ex.instructions && (
+                      <p className="text-xs text-gray-500 line-clamp-2 mb-2">{ex.instructions}</p>
+                    )}
+                    <p className="text-xs text-gray-400">Used {ex.use_count} time{ex.use_count !== 1 ? 's' : ''}</p>
                   </Link>
-                  <div className="flex items-center gap-1 mt-3 pt-2 border-t border-gray-100">
+                  <div className="flex items-center gap-1 pt-2 border-t border-gray-100">
                     <button onClick={() => { setEditExercise(ex); setShowForm(true); }}
-                      className="p-1.5 rounded text-gray-400 hover:text-fuchsia-600 hover:bg-fuchsia-50" title="Edit">
+                      className="p-1.5 rounded text-gray-400 hover:text-fuchsia-600 hover:bg-fuchsia-50" aria-label={`Edit ${ex.name}`}>
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button onClick={() => handleDuplicate(ex.id)}
-                      className="p-1.5 rounded text-gray-400 hover:text-indigo-600 hover:bg-indigo-50" title="Duplicate">
+                      className="p-1.5 rounded text-gray-400 hover:text-indigo-600 hover:bg-indigo-50" aria-label={`Duplicate ${ex.name}`}>
                       <Copy className="w-3.5 h-3.5" />
                     </button>
                     <button onClick={() => handleDelete(ex.id)}
-                      className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50" title="Delete">
+                      className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50" aria-label={`Delete ${ex.name}`}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>

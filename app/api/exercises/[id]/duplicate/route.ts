@@ -27,6 +27,7 @@ export async function POST(
       user_id: user.id,
       name: `${original.name} (Copy)`,
       category_id: original.category_id,
+      difficulty: original.difficulty ?? null,
       instructions: original.instructions,
       form_cues: original.form_cues,
       video_url: original.video_url,
@@ -42,6 +43,9 @@ export async function POST(
       default_rest_sec: original.default_rest_sec,
       notes: original.notes,
       use_count: 0,
+      is_bodyweight_default: original.is_bodyweight_default ?? false,
+      is_timed_default: original.is_timed_default ?? false,
+      per_side_default: original.per_side_default ?? false,
     })
     .select()
     .single();
