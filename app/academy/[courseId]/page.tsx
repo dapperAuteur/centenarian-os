@@ -9,7 +9,7 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import {
   BookOpen, Play, Lock, CheckCircle, Clock, Loader2, ArrowRight, Share2,
-  GitBranch, ClipboardList, Star, MessageCircle, Send,
+  GitBranch, ClipboardList, Star, MessageCircle, Send, Shield, AlertTriangle,
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
@@ -40,6 +40,24 @@ interface Assignment {
   lesson_id: string | null;
 }
 
+interface PrerequisiteCourse {
+  id: string;
+  prerequisite_course_id: string;
+  enforcement: 'required' | 'recommended';
+  title: string;
+  cover_image_url: string | null;
+  completed: boolean;
+}
+
+interface RecommendedCourse {
+  id: string;
+  recommended_course_id: string;
+  direction: 'before' | 'after';
+  title: string;
+  cover_image_url: string | null;
+  notes: string | null;
+}
+
 interface Course {
   id: string;
   title: string;
@@ -57,6 +75,11 @@ interface Course {
   trial_period_days: number;
   profiles: { username: string; display_name: string | null; avatar_url: string | null } | null;
   course_modules: Module[];
+  prerequisites?: PrerequisiteCourse[];
+  recommendations?: RecommendedCourse[];
+  has_prerequisite_override?: boolean;
+  pending_override_request?: { id: string; status: string; created_at: string } | null;
+  override_questions?: Array<{ id: string; question: string; type: 'text' | 'rating' | 'select'; options?: string[]; required: boolean }>;
 }
 
 interface Review {
@@ -118,12 +141,29 @@ function CourseDetailContent() {
   const [reviewFeedback, setReviewFeedback] = useState('');
   const [myExistingReview, setMyExistingReview] = useState<Review | null>(null);
 
+  // Override request state
+  const [showOverrideForm, setShowOverrideForm] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
+  const [overrideAnswers, setOverrideAnswers] = useState<Record<string, string>>({});
+  const [submittingOverride, setSubmittingOverride] = useState(false);
+
+  // AI recommendations state
+  const [aiRecs, setAiRecs] = useState<{ before: Array<{ course_id: string; title: string; reason: string; cover_image_url: string | null }>; after: Array<{ course_id: string; title: string; reason: string; cover_image_url: string | null }> } | null>(null);
+
   useEffect(() => {
     offlineFetch(`/api/academy/courses/${courseId}`)
       .then((r) => r.json())
       .then((d) => { setCourse(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, [courseId, justEnrolled]);
+
+  // Fetch AI recommendations
+  useEffect(() => {
+    fetch(`/api/academy/courses/${courseId}/ai-recommendations`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d) setAiRecs(d); })
+      .catch(() => {});
+  }, [courseId]);
 
   useEffect(() => {
     offlineFetch(`/api/academy/courses/${courseId}/assignments`)
@@ -179,6 +219,28 @@ function CourseDetailContent() {
       setEnrollError(e instanceof Error ? e.message : 'Enrollment failed');
     } finally {
       setEnrolling(false);
+    }
+  }
+
+  async function handleRequestOverride() {
+    setSubmittingOverride(true);
+    try {
+      const r = await fetch(`/api/academy/courses/${courseId}/prerequisites/requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: overrideReason.trim() || null, answers: overrideAnswers }),
+      });
+      if (r.ok) {
+        setShowOverrideForm(false);
+        setCourse((c) => c ? { ...c, pending_override_request: { id: '', status: 'pending', created_at: new Date().toISOString() } } : c);
+      } else {
+        const d = await r.json();
+        setEnrollError(d.error || 'Failed to submit request');
+      }
+    } catch {
+      setEnrollError('Failed to submit request');
+    } finally {
+      setSubmittingOverride(false);
     }
   }
 
@@ -271,6 +333,74 @@ function CourseDetailContent() {
                 </span>
               )}
             </div>
+
+            {/* Prerequisites */}
+            {(course.prerequisites?.length ?? 0) > 0 && (
+              <div className="mb-6 bg-gray-900 border border-gray-800 rounded-xl p-4 sm:p-5">
+                <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-fuchsia-400" /> Prerequisites
+                </h3>
+                <div className="space-y-2">
+                  {course.prerequisites!.map((p) => (
+                    <div key={p.id} className="flex items-center gap-3">
+                      {p.completed ? (
+                        <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
+                      ) : p.enforcement === 'required' ? (
+                        <Lock className="w-4 h-4 text-red-400 shrink-0" />
+                      ) : (
+                        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                      )}
+                      <Link
+                        href={`/academy/${p.prerequisite_course_id}`}
+                        className="text-sm text-gray-300 hover:text-fuchsia-300 transition flex-1 truncate"
+                      >
+                        {p.title}
+                      </Link>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        p.enforcement === 'required'
+                          ? 'bg-red-900/30 text-red-400'
+                          : 'bg-amber-900/30 text-amber-400'
+                      }`}>
+                        {p.enforcement === 'required' ? 'Required' : 'Recommended'}
+                      </span>
+                      {p.completed && (
+                        <span className="text-xs text-green-400">Completed</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {course.has_prerequisite_override && (
+                  <p className="text-xs text-fuchsia-400 mt-2 flex items-center gap-1">
+                    <Shield className="w-3 h-3" /> Override granted by teacher
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Recommended before */}
+            {(course.recommendations?.filter((r) => r.direction === 'before').length ?? 0) > 0 && (
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold text-gray-400 mb-3">Recommended Before This Course</h3>
+                <div className="flex flex-wrap gap-2">
+                  {course.recommendations!.filter((r) => r.direction === 'before').map((r) => (
+                    <Link
+                      key={r.id}
+                      href={`/academy/${r.recommended_course_id}`}
+                      className="flex items-center gap-2 bg-gray-900 border border-gray-800 rounded-xl px-3 py-2.5 hover:border-fuchsia-700/50 transition"
+                    >
+                      {r.cover_image_url && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={r.cover_image_url} alt="" className="w-8 h-8 rounded object-cover" />
+                      )}
+                      <div>
+                        <span className="text-sm text-gray-200">{r.title}</span>
+                        {r.notes && <p className="text-xs text-gray-500">{r.notes}</p>}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Curriculum */}
             <h2 className="text-lg font-bold mb-4">Curriculum</h2>
@@ -377,6 +507,87 @@ function CourseDetailContent() {
                     );
                   })}
                 </div>
+              </div>
+            )}
+
+            {/* Recommended after */}
+            {(course.recommendations?.filter((r) => r.direction === 'after').length ?? 0) > 0 && (
+              <div className="mt-8">
+                <h3 className="text-lg font-bold mb-4">Up Next</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {course.recommendations!.filter((r) => r.direction === 'after').map((r) => (
+                    <Link
+                      key={r.id}
+                      href={`/academy/${r.recommended_course_id}`}
+                      className="flex items-center gap-3 bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 hover:border-fuchsia-700/50 transition group"
+                    >
+                      {r.cover_image_url && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={r.cover_image_url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm text-gray-200 group-hover:text-white">{r.title}</span>
+                        {r.notes && <p className="text-xs text-gray-500 mt-0.5">{r.notes}</p>}
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-fuchsia-400 transition shrink-0" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* AI Recommendations */}
+            {aiRecs && (aiRecs.before.length > 0 || aiRecs.after.length > 0) && (
+              <div className="mt-8">
+                <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <span className="text-fuchsia-400">✦</span> AI Suggested Courses
+                </h2>
+                {aiRecs.before.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Take Before</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {aiRecs.before.map((r) => (
+                        <Link
+                          key={r.course_id}
+                          href={`/academy/${r.course_id}`}
+                          className="flex items-center gap-3 bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 hover:border-fuchsia-700/50 transition group"
+                        >
+                          {r.cover_image_url && (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img src={r.cover_image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm text-gray-200 group-hover:text-white block truncate">{r.title}</span>
+                            <span className="text-xs text-gray-500 block truncate">{r.reason}</span>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {aiRecs.after.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Take After</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {aiRecs.after.map((r) => (
+                        <Link
+                          key={r.course_id}
+                          href={`/academy/${r.course_id}`}
+                          className="flex items-center gap-3 bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 hover:border-fuchsia-700/50 transition group"
+                        >
+                          {r.cover_image_url && (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img src={r.cover_image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm text-gray-200 group-hover:text-white block truncate">{r.title}</span>
+                            <span className="text-xs text-gray-500 block truncate">{r.reason}</span>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -496,27 +707,120 @@ function CourseDetailContent() {
                   )}
                 </div>
 
-                {course.enrolled ? (
-                  <Link
-                    href={`/academy/${courseId}/lessons/${allLessons[0]?.id ?? ''}`}
-                    className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-fuchsia-600 text-white rounded-xl font-semibold hover:bg-fuchsia-700 transition min-h-11"
-                  >
-                    <Play className="w-4 h-4" /> Continue Learning
-                  </Link>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={handleEnroll}
-                      disabled={enrolling}
-                      className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-fuchsia-600 text-white rounded-xl font-semibold hover:bg-fuchsia-700 transition disabled:opacity-50 mb-3 min-h-11"
-                    >
-                      {enrolling ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
-                      {enrolling ? 'Loading...' : course.price_type === 'free' ? 'Enroll Free' : 'Enroll Now'}
-                    </button>
-                    {enrollError && <p className="text-red-400 text-sm text-center">{enrollError}</p>}
-                  </>
-                )}
+                {(() => {
+                  const requiredPrereqs = (course.prerequisites ?? []).filter((p) => p.enforcement === 'required');
+                  const allRequiredMet = requiredPrereqs.every((p) => p.completed);
+                  const canEnroll = allRequiredMet || course.has_prerequisite_override;
+
+                  if (course.enrolled) {
+                    return (
+                      <Link
+                        href={`/academy/${courseId}/lessons/${allLessons[0]?.id ?? ''}`}
+                        className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-fuchsia-600 text-white rounded-xl font-semibold hover:bg-fuchsia-700 transition min-h-11"
+                      >
+                        <Play className="w-4 h-4" /> Continue Learning
+                      </Link>
+                    );
+                  }
+
+                  return (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleEnroll}
+                        disabled={enrolling || !canEnroll}
+                        className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-fuchsia-600 text-white rounded-xl font-semibold hover:bg-fuchsia-700 transition disabled:opacity-50 mb-3 min-h-11"
+                      >
+                        {enrolling ? <Loader2 className="w-4 h-4 animate-spin" /> : !canEnroll ? <Lock className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
+                        {enrolling ? 'Loading...' : !canEnroll ? 'Complete Prerequisites' : course.price_type === 'free' ? 'Enroll Free' : 'Enroll Now'}
+                      </button>
+                      {!canEnroll && requiredPrereqs.length > 0 && (
+                        <div className="mb-2 space-y-2">
+                          <p className="text-amber-400 text-xs text-center">
+                            Complete required prerequisites to enroll.
+                          </p>
+                          {course.pending_override_request ? (
+                            <div className="flex items-center justify-center gap-2 bg-amber-900/20 border border-amber-800/40 rounded-xl px-3 py-2.5">
+                              <Shield className="w-4 h-4 text-amber-400" />
+                              <span className="text-amber-300 text-xs font-medium">Override Requested — Pending</span>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setShowOverrideForm(!showOverrideForm)}
+                              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-800 text-gray-300 rounded-xl text-sm hover:bg-gray-700 transition min-h-11"
+                            >
+                              <Shield className="w-4 h-4" /> Request Override
+                            </button>
+                          )}
+                          {showOverrideForm && (
+                            <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 space-y-3">
+                              <p className="text-xs text-gray-400">Ask the teacher to let you skip prerequisites.</p>
+                              {(course.override_questions ?? []).map((q) => (
+                                <div key={q.id}>
+                                  <label className="text-xs font-medium text-gray-300 block mb-1">
+                                    {q.question}{q.required && <span className="text-red-400 ml-0.5">*</span>}
+                                  </label>
+                                  {q.type === 'select' && q.options ? (
+                                    <select
+                                      value={overrideAnswers[q.id] ?? ''}
+                                      onChange={(e) => setOverrideAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
+                                      className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                                    >
+                                      <option value="">Select...</option>
+                                      {q.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                                    </select>
+                                  ) : q.type === 'rating' ? (
+                                    <div className="flex items-center gap-1">
+                                      {[1, 2, 3, 4, 5].map((v) => (
+                                        <button
+                                          key={v}
+                                          type="button"
+                                          onClick={() => setOverrideAnswers((a) => ({ ...a, [q.id]: String(v) }))}
+                                          className={`w-8 h-8 rounded-lg text-sm font-medium transition ${
+                                            Number(overrideAnswers[q.id]) === v
+                                              ? 'bg-fuchsia-600 text-white'
+                                              : 'bg-gray-900 text-gray-400 hover:bg-gray-700'
+                                          }`}
+                                        >
+                                          {v}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <input
+                                      type="text"
+                                      value={overrideAnswers[q.id] ?? ''}
+                                      onChange={(e) => setOverrideAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
+                                      className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+                                    />
+                                  )}
+                                </div>
+                              ))}
+                              <textarea
+                                value={overrideReason}
+                                onChange={(e) => setOverrideReason(e.target.value)}
+                                placeholder="Additional reason (optional)..."
+                                rows={2}
+                                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500 resize-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleRequestOverride}
+                                disabled={submittingOverride}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-fuchsia-600 text-white rounded-xl text-sm font-semibold hover:bg-fuchsia-700 transition disabled:opacity-50 min-h-11"
+                              >
+                                {submittingOverride ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                Submit Request
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {enrollError && <p className="text-red-400 text-sm text-center">{enrollError}</p>}
+                    </>
+                  );
+                })()}
 
                 <button
                   type="button"

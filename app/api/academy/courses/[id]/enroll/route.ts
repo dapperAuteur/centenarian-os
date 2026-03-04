@@ -78,6 +78,71 @@ export async function POST(request: NextRequest, { params }: Params) {
     : latestEnrollment?.attempt_number ?? 1;
   const metricSlots = Math.min(attemptNumber, 3);
 
+  // ── Prerequisite check ──
+  const { data: prereqs } = await db
+    .from('course_prerequisites')
+    .select('prerequisite_course_id, enforcement, courses!course_prerequisites_prerequisite_course_id_fkey(title)')
+    .eq('course_id', courseId)
+    .eq('enforcement', 'required');
+
+  const requiredPrereqs = prereqs ?? [];
+
+  if (requiredPrereqs.length > 0) {
+    // Check for a teacher override first
+    const { data: override } = await db
+      .from('prerequisite_overrides')
+      .select('id')
+      .eq('course_id', courseId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!override) {
+      // Check completion of each required prerequisite
+      const missing: { id: string; title: string }[] = [];
+
+      for (const p of requiredPrereqs) {
+        const prereqId = p.prerequisite_course_id;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const prereqCourse = (p as any).courses as { title: string } | null;
+
+        // Get all lesson IDs in the prerequisite course
+        const { data: modules } = await db
+          .from('course_modules')
+          .select('id')
+          .eq('course_id', prereqId);
+        const moduleIds = (modules ?? []).map((m) => m.id);
+
+        if (moduleIds.length === 0) continue; // no modules = no prereq to satisfy
+
+        const { data: lessons } = await db
+          .from('lessons')
+          .select('id')
+          .in('module_id', moduleIds);
+        const lessonIds = (lessons ?? []).map((l) => l.id);
+
+        if (lessonIds.length === 0) continue;
+
+        const { count: done } = await db
+          .from('lesson_progress')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .in('lesson_id', lessonIds)
+          .not('completed_at', 'is', null);
+
+        if ((done ?? 0) < lessonIds.length) {
+          missing.push({ id: prereqId, title: prereqCourse?.title ?? 'Unknown Course' });
+        }
+      }
+
+      if (missing.length > 0) {
+        return NextResponse.json(
+          { error: 'Prerequisites not met', missing_prerequisites: missing },
+          { status: 403 },
+        );
+      }
+    }
+  }
+
   // Free course — enroll directly
   if (course.price_type === 'free' || Number(course.price) === 0) {
     await db.from('enrollments').insert({

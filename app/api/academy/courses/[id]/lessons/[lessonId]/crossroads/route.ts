@@ -57,7 +57,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .order('order', { ascending: true });
 
   const others = allLessons ?? [];
-  const options: { lesson_id: string; lesson_title: string; path_type: string; label: string }[] = [];
+  const options: { lesson_id: string; lesson_title: string; path_type: string; label: string; course_id?: string; course_title?: string }[] = [];
 
   // 1. Linear next
   const nextLesson = others.find((l) => l.order > lesson.order);
@@ -96,6 +96,47 @@ export async function GET(_req: NextRequest, { params }: Params) {
   if (available.length > 0) {
     const random = available[Math.floor(Math.random() * available.length)];
     options.push({ lesson_id: random.id, lesson_title: random.title, path_type: 'random', label: 'Unexpected Path' });
+  }
+
+  // 4. Cross-course suggestions (if teacher enabled it)
+  const { data: sourceCourse } = await db
+    .from('courses')
+    .select('allow_cross_course_cyoa')
+    .eq('id', courseId)
+    .single();
+
+  if (sourceCourse?.allow_cross_course_cyoa && embedding?.embedding) {
+    const { data: crossCourse } = await db.rpc('match_lessons_global', {
+      query_embedding: embedding.embedding,
+      exclude_lesson_id: lessonId,
+      exclude_course_id: courseId,
+      match_count: 2,
+    });
+
+    for (const cc of (crossCourse ?? []) as Array<{ id: string; title: string; course_id: string; course_title: string; is_free_preview: boolean }>) {
+      let accessible = cc.is_free_preview;
+      if (!accessible && user) {
+        const { data: enr } = await db
+          .from('enrollments')
+          .select('status')
+          .eq('user_id', user.id)
+          .eq('course_id', cc.course_id)
+          .eq('status', 'active')
+          .maybeSingle();
+        accessible = !!enr;
+      }
+      if (accessible && !usedIds.has(cc.id)) {
+        options.push({
+          lesson_id: cc.id,
+          lesson_title: cc.title,
+          path_type: 'cross_course',
+          label: `From: ${cc.course_title}`,
+          course_id: cc.course_id,
+          course_title: cc.course_title,
+        });
+        usedIds.add(cc.id);
+      }
+    }
   }
 
   return NextResponse.json(options);
