@@ -8,12 +8,14 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Layers, ArrowLeft, GripVertical, Plus, Trash2, Eye, EyeOff, Save, Loader2,
+  Search, ExternalLink,
 } from 'lucide-react';
 
 interface CourseStub {
   id: string;
   title: string;
   category?: string;
+  teacher_id?: string;
 }
 
 interface PathCourse {
@@ -28,6 +30,7 @@ interface LearningPath {
   title: string;
   description?: string;
   is_published: boolean;
+  teacher_id?: string;
   learning_path_courses?: PathCourse[];
 }
 
@@ -41,6 +44,7 @@ export default function EditLearningPathPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [courseSearch, setCourseSearch] = useState('');
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -50,7 +54,7 @@ export default function EditLearningPathPage() {
     setLoading(true);
     const [pathRes, coursesRes] = await Promise.all([
       fetch(`/api/academy/paths/${id}`),
-      fetch('/api/academy/courses?mine=true'),
+      fetch('/api/academy/courses'),
     ]);
     if (pathRes.ok) {
       const { data } = await pathRes.json() as { data: LearningPath };
@@ -302,21 +306,41 @@ export default function EditLearningPathPage() {
         )}
       </section>
 
-      {/* Add from your courses */}
+      {/* Add courses */}
       {coursesNotInPath.length > 0 && (
         <section>
           <h2 className="text-base font-semibold text-gray-700 mb-3">Add Courses</h2>
-          <div className="grid sm:grid-cols-2 gap-2">
-            {coursesNotInPath.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => addCourse(c)}
-                className="flex items-center gap-2 text-left px-4 py-3 bg-white border border-gray-200 hover:border-fuchsia-300 hover:bg-fuchsia-50 rounded-xl text-sm transition"
-              >
-                <Plus className="w-4 h-4 text-fuchsia-500 shrink-0" />
-                <span className="truncate font-medium text-gray-800">{c.title}</span>
-              </button>
-            ))}
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={courseSearch}
+              onChange={(e) => setCourseSearch(e.target.value)}
+              placeholder="Search all published courses..."
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
+            />
+          </div>
+          <div className="grid sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+            {coursesNotInPath
+              .filter((c) => !courseSearch.trim() || c.title.toLowerCase().includes(courseSearch.toLowerCase()))
+              .map((c) => {
+                const isExternal = path && c.teacher_id && c.teacher_id !== path.teacher_id;
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => addCourse(c)}
+                    className="flex items-center gap-2 text-left px-4 py-3 bg-white border border-gray-200 hover:border-fuchsia-300 hover:bg-fuchsia-50 rounded-xl text-sm transition"
+                  >
+                    <Plus className="w-4 h-4 text-fuchsia-500 shrink-0" />
+                    <span className="truncate font-medium text-gray-800 flex-1">{c.title}</span>
+                    {isExternal && (
+                      <span className="flex items-center gap-0.5 text-xs text-amber-600 shrink-0">
+                        <ExternalLink className="w-3 h-3" /> External
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
           </div>
         </section>
       )}

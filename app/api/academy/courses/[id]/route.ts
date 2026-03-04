@@ -30,6 +30,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       id, title, description, cover_image_url, category, tags,
       price, price_type, is_published, navigation_mode, like_count,
       avg_rating, review_count, trial_period_days, is_sequential,
+      override_questions, allow_cross_course_cyoa,
       created_at, teacher_id,
       profiles(username, display_name, avatar_url),
       course_modules(id, title, order,
@@ -61,7 +62,94 @@ export async function GET(_req: NextRequest, { params }: Params) {
     saved = !!saveRes.data;
   }
 
-  return NextResponse.json({ ...course, enrolled, liked, saved });
+  // Fetch prerequisites + recommendations
+  const [prereqRes, recRes] = await Promise.all([
+    db
+      .from('course_prerequisites')
+      .select('id, prerequisite_course_id, enforcement, sort_order, courses!course_prerequisites_prerequisite_course_id_fkey(title, cover_image_url)')
+      .eq('course_id', id)
+      .order('sort_order'),
+    db
+      .from('course_recommendations')
+      .select('id, recommended_course_id, direction, sort_order, notes, courses!course_recommendations_recommended_course_id_fkey(title, cover_image_url)')
+      .eq('course_id', id)
+      .order('sort_order'),
+  ]);
+
+  const prerequisites = await Promise.all(
+    (prereqRes.data ?? []).map(async (p) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const c = (p as any).courses as { title: string; cover_image_url: string | null } | null;
+      let completed = false;
+      if (user) {
+        const { data: mods } = await db.from('course_modules').select('id').eq('course_id', p.prerequisite_course_id);
+        const modIds = (mods ?? []).map((m) => m.id);
+        if (modIds.length > 0) {
+          const { data: lessons } = await db.from('lessons').select('id').in('module_id', modIds);
+          const lessonIds = (lessons ?? []).map((l) => l.id);
+          if (lessonIds.length > 0) {
+            const { count: done } = await db
+              .from('lesson_progress')
+              .select('id', { count: 'exact', head: true })
+              .eq('user_id', user.id)
+              .in('lesson_id', lessonIds)
+              .not('completed_at', 'is', null);
+            completed = (done ?? 0) >= lessonIds.length;
+          }
+        }
+      }
+      return {
+        id: p.id,
+        prerequisite_course_id: p.prerequisite_course_id,
+        enforcement: p.enforcement,
+        sort_order: p.sort_order,
+        title: c?.title ?? 'Unknown Course',
+        cover_image_url: c?.cover_image_url ?? null,
+        completed,
+      };
+    }),
+  );
+
+  const recommendations = (recRes.data ?? []).map((r) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const c = (r as any).courses as { title: string; cover_image_url: string | null } | null;
+    return {
+      id: r.id,
+      recommended_course_id: r.recommended_course_id,
+      direction: r.direction,
+      sort_order: r.sort_order,
+      notes: r.notes,
+      title: c?.title ?? 'Unknown Course',
+      cover_image_url: c?.cover_image_url ?? null,
+    };
+  });
+
+  // Check for prerequisite override
+  let has_prerequisite_override = false;
+  if (user) {
+    const { data: override } = await db
+      .from('prerequisite_overrides')
+      .select('id')
+      .eq('course_id', id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    has_prerequisite_override = !!override;
+  }
+
+  // Check for pending override request
+  let pending_override_request = null;
+  if (user && !enrolled) {
+    const { data: req } = await db
+      .from('prerequisite_override_requests')
+      .select('id, status, created_at')
+      .eq('course_id', id)
+      .eq('student_id', user.id)
+      .eq('status', 'pending')
+      .maybeSingle();
+    pending_override_request = req;
+  }
+
+  return NextResponse.json({ ...course, enrolled, liked, saved, prerequisites, recommendations, has_prerequisite_override, pending_override_request });
 }
 
 export async function PATCH(request: NextRequest, { params }: Params) {
@@ -79,7 +167,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   const body = await request.json();
-  const allowed = ['title', 'description', 'cover_image_url', 'category', 'tags', 'price', 'price_type', 'is_published', 'navigation_mode', 'visibility', 'published_at', 'trial_period_days', 'is_sequential'];
+  const allowed = ['title', 'description', 'cover_image_url', 'category', 'tags', 'price', 'price_type', 'is_published', 'navigation_mode', 'visibility', 'published_at', 'trial_period_days', 'is_sequential', 'override_questions', 'allow_cross_course_cyoa'];
   const updates = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
 
   if ('price_type' in updates && updates.price_type === 'free') updates.price = 0;

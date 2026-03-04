@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const mine = searchParams.get('mine') === 'true';
   const category = searchParams.get('category');
-  const q = searchParams.get('q');
+  const q = searchParams.get('q') || searchParams.get('search');
   const sort = searchParams.get('sort') ?? 'created';
   const dir = searchParams.get('dir') ?? 'desc';
 

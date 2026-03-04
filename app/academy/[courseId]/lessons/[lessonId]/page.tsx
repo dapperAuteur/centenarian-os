@@ -89,7 +89,9 @@ interface Lesson {
 interface CrossroadsOption {
   lesson_id: string;
   lesson_title: string;
-  path_type: 'linear' | 'semantic' | 'random';
+  path_type: 'linear' | 'semantic' | 'random' | 'cross_course';
+  course_id?: string;
+  course_title?: string;
   label: string;
 }
 
@@ -345,25 +347,35 @@ export default function LessonPlayerPage() {
                   <GitBranch className="w-5 h-5 text-fuchsia-400" /> Choose Your Next Path
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {crossroads.map((opt) => (
-                    <Link
-                      key={opt.lesson_id}
-                      href={`/academy/${courseId}/lessons/${opt.lesson_id}`}
-                      className={`p-4 rounded-xl border transition text-left min-h-[72px] flex flex-col justify-center ${
-                        opt.path_type === 'linear'
-                          ? 'bg-fuchsia-900/20 border-fuchsia-700/50 hover:bg-fuchsia-900/40'
-                          : opt.path_type === 'semantic'
-                          ? 'bg-indigo-900/20 border-indigo-700/50 hover:bg-indigo-900/40'
-                          : 'bg-gray-900 border-gray-700 hover:bg-gray-800'
-                      }`}
-                    >
-                      <p className="text-xs font-semibold uppercase tracking-wide mb-1 opacity-60">{opt.label}</p>
-                      <p className="font-semibold text-white text-sm">{opt.lesson_title}</p>
-                    </Link>
-                  ))}
+                  {crossroads.map((opt) => {
+                    const href = opt.path_type === 'cross_course' && opt.course_id
+                      ? `/academy/${opt.course_id}/lessons/${opt.lesson_id}`
+                      : `/academy/${courseId}/lessons/${opt.lesson_id}`;
+                    return (
+                      <Link
+                        key={opt.lesson_id}
+                        href={href}
+                        className={`p-4 rounded-xl border transition text-left min-h-18 flex flex-col justify-center ${
+                          opt.path_type === 'linear'
+                            ? 'bg-fuchsia-900/20 border-fuchsia-700/50 hover:bg-fuchsia-900/40'
+                            : opt.path_type === 'semantic'
+                            ? 'bg-indigo-900/20 border-indigo-700/50 hover:bg-indigo-900/40'
+                            : opt.path_type === 'cross_course'
+                            ? 'bg-emerald-900/20 border-emerald-700/50 hover:bg-emerald-900/40'
+                            : 'bg-gray-900 border-gray-700 hover:bg-gray-800'
+                        }`}
+                      >
+                        <p className="text-xs font-semibold uppercase tracking-wide mb-1 opacity-60">{opt.label}</p>
+                        <p className="font-semibold text-white text-sm">{opt.lesson_title}</p>
+                        {opt.path_type === 'cross_course' && opt.course_title && (
+                          <p className="text-xs text-emerald-400 mt-0.5">{opt.course_title}</p>
+                        )}
+                      </Link>
+                    );
+                  })}
                   <Link
                     href={`/academy/${courseId}`}
-                    className="p-4 rounded-xl border border-gray-800 bg-gray-900 hover:bg-gray-800 transition text-left min-h-[72px] flex flex-col justify-center"
+                    className="p-4 rounded-xl border border-gray-800 bg-gray-900 hover:bg-gray-800 transition text-left min-h-18 flex flex-col justify-center"
                   >
                     <p className="text-xs font-semibold uppercase tracking-wide mb-1 opacity-60">Course Map</p>
                     <p className="font-semibold text-white text-sm">View All Lessons</p>
