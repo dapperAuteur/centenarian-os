@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight, Play, DollarSign, Car, BookOpen, Users, Wrench, Shield } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Play, DollarSign, Car, BookOpen, Users, Wrench, Shield, Target, Brain, Heart, Dumbbell, Package, Camera, Tag, Database, TrendingUp, History } from 'lucide-react';
 import SiteFooter from '@/components/ui/SiteFooter';
 
 export default function DemoPage() {
@@ -110,6 +110,41 @@ export default function DemoPage() {
               </p>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <Target className="w-8 h-8 text-blue-600 mb-3" />
+              <h3 className="font-bold text-gray-900 mb-2">Planner & Roadmap</h3>
+              <p className="text-sm text-gray-600">
+                Goals, milestones, and daily tasks with week/3-day/daily views. See how the roadmap hierarchy keeps long-term objectives connected to daily action.
+              </p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <Brain className="w-8 h-8 text-indigo-600 mb-3" />
+              <h3 className="font-bold text-gray-900 mb-2">Focus Engine</h3>
+              <p className="text-sm text-gray-600">
+                Timer-driven focus sessions with debrief and pain logging. Track deep work streaks and see session analytics over time.
+              </p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <Heart className="w-8 h-8 text-rose-600 mb-3" />
+              <h3 className="font-bold text-gray-900 mb-2">Health Metrics</h3>
+              <p className="text-sm text-gray-600">
+                Resting heart rate, steps, sleep, and activity tracking. Sync from Garmin, Oura, or WHOOP — or log manually. View trends and correlations.
+              </p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <Dumbbell className="w-8 h-8 text-fuchsia-600 mb-3" />
+              <h3 className="font-bold text-gray-900 mb-2">Workouts & Nomad OS</h3>
+              <p className="text-sm text-gray-600">
+                Full exercise library with RPE, tempo, and supersets. Nomad Longevity OS protocol with AM priming, PM recovery, hotel and gym workouts.
+              </p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <Package className="w-8 h-8 text-teal-600 mb-3" />
+              <h3 className="font-bold text-gray-900 mb-2">Equipment Tracker</h3>
+              <p className="text-sm text-gray-600">
+                Track gear, assets, and equipment with purchase costs, current valuations, and category management. Link items to finance transactions.
+              </p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
               <Users className="w-8 h-8 text-violet-600 mb-3" />
               <h3 className="font-bold text-gray-900 mb-2">Saved Contacts</h3>
               <p className="text-sm text-gray-600">
@@ -121,6 +156,41 @@ export default function DemoPage() {
               <h3 className="font-bold text-gray-900 mb-2">Vehicle Maintenance</h3>
               <p className="text-sm text-gray-600">
                 5 service records with mileage-based reminders. Oil changes, tire rotations, inspections — all linked to the finance module for cost tracking.
+              </p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <Camera className="w-8 h-8 text-yellow-600 mb-3" />
+              <h3 className="font-bold text-gray-900 mb-2">Universal Scanner</h3>
+              <p className="text-sm text-gray-600">
+                OCR-powered receipt and label scanning. Snap a photo to extract data for fuel logs, transactions, nutrition labels, and more.
+              </p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <Tag className="w-8 h-8 text-purple-600 mb-3" />
+              <h3 className="font-bold text-gray-900 mb-2">Life Categories</h3>
+              <p className="text-sm text-gray-600">
+                Tag any activity across all modules with life-area labels (Health, Career, Finance, etc.). View analytics and find uncategorized items.
+              </p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <Database className="w-8 h-8 text-sky-600 mb-3" />
+              <h3 className="font-bold text-gray-900 mb-2">Data Hub</h3>
+              <p className="text-sm text-gray-600">
+                Bulk import and export data across 10+ modules with CSV templates and Google Sheets support. Migrate or back up your entire system.
+              </p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <TrendingUp className="w-8 h-8 text-lime-600 mb-3" />
+              <h3 className="font-bold text-gray-900 mb-2">Correlations & Analytics</h3>
+              <p className="text-sm text-gray-600">
+                Cross-module correlation engine — discover how sleep affects productivity, how exercise impacts mood, and more with AI-powered insights.
+              </p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <History className="w-8 h-8 text-slate-600 mb-3" />
+              <h3 className="font-bold text-gray-900 mb-2">Life Retrospective</h3>
+              <p className="text-sm text-gray-600">
+                AI-synthesized life review with Google Calendar import. Reflect on patterns, milestones, and growth across all your tracked data.
               </p>
             </div>
           </div>
@@ -136,7 +206,7 @@ export default function DemoPage() {
                   Learn with the Academy
                 </h2>
                 <p className="text-gray-600 mb-4">
-                  CentenarianOS includes 14 tutorial course series covering every module — Getting Started, Travel, Fuel, Finance, Planner, Engine, Health Metrics, Equipment, Data Hub, Coach, Correlations, Academy, Teaching, and Settings. All tutorial lessons are free with Choose Your Own Adventure navigation. The Data Hub lets you bulk import and export data across all 10 modules with CSV templates and Google Sheets support. Teachers can build courses with the Bulk Course Importer.
+                  CentenarianOS includes 16 tutorial course series covering every module — Getting Started, Travel, Fuel, Finance, Planner, Engine, Health Metrics, Equipment, Data Hub, Categories, Coach, Correlations, Academy, Teaching, Settings, and Workouts. All tutorial lessons are free with Choose Your Own Adventure navigation. Teachers can build courses with the Bulk Course Importer.
                 </p>
                 <Link
                   href="/academy"

@@ -100,6 +100,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                   <button
                     key={value}
                     type="button"
+                    aria-pressed={category === value}
                     onClick={() => setCategory(value)}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 text-center transition-colors ${
                       category === value
@@ -148,7 +149,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
             />
 
             {error && (
-              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2">{error}</p>
+              <p role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2">{error}</p>
             )}
 
             <div className="flex gap-3 justify-end pt-1">

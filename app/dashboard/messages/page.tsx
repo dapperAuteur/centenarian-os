@@ -5,6 +5,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Bell, CheckCircle, Send, Loader2 } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import MediaUploader from '@/components/ui/MediaUploader';
 import ImageLightbox from '@/components/ui/ImageLightbox';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -176,7 +177,7 @@ export default function MessagesPage() {
                     {m.body.startsWith('<') ? (
                       <div
                         className="prose prose-sm max-w-none text-gray-700"
-                        dangerouslySetInnerHTML={{ __html: m.body }}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(m.body) }}
                       />
                     ) : (
                       <div>
@@ -223,7 +224,9 @@ export default function MessagesPage() {
 
                     {/* Reply form */}
                     <div className="pt-3 border-t border-gray-100">
+                      <label htmlFor={`reply-${m.id}`} className="sr-only">Reply to message</label>
                       <textarea
+                        id={`reply-${m.id}`}
                         value={replyText[m.id] ?? ''}
                         onChange={(e) => setReplyText((prev) => ({ ...prev, [m.id]: e.target.value }))}
                         rows={3}
@@ -239,7 +242,7 @@ export default function MessagesPage() {
                         />
                         <div className="flex items-center gap-3">
                           {sendError[m.id] && (
-                            <p className="text-xs text-red-500">{sendError[m.id]}</p>
+                            <p role="alert" className="text-xs text-red-500">{sendError[m.id]}</p>
                           )}
                           <button
                             type="button"

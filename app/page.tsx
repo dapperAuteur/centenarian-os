@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Target, Utensils, Brain, Car, DollarSign, Heart, GraduationCap, BookOpen, TrendingUp, Zap, Shield, Menu, X, Dumbbell, Package, Database, ChartNetwork } from 'lucide-react';
+import { ArrowRight, Target, Utensils, Brain, Car, DollarSign, Heart, GraduationCap, BookOpen, TrendingUp, Zap, Shield, Menu, X, Dumbbell, Package, Database, ChartNetwork, Camera, Tag, Flame, History } from 'lucide-react';
 import { useState } from 'react';
 import SiteFooter from '@/components/ui/SiteFooter';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -99,9 +99,23 @@ const MODULES = [
     description: 'Build custom workout templates from a personal exercise library.',
     features: [
       'Exercise library with categories & muscle groups',
-      'Workout templates with sets/reps/weight',
-      'Workout log with effort & mood ratings',
+      'Workout templates with RPE, tempo & supersets',
+      'Post-workout mood & difficulty feedback',
       'CSV import/export via Data Hub',
+    ],
+  },
+  {
+    name: 'Nomad Longevity OS',
+    color: 'border-orange-600',
+    iconColor: 'text-orange-600',
+    checkColor: 'text-orange-600',
+    Icon: Flame,
+    description: 'A complete workout protocol for peak performance wherever you are.',
+    features: [
+      'AM Priming, PM Recovery, Hotel & Gym workouts',
+      'Friction Protocol for stress resilience',
+      '28 exercises from the Nomad Glossary',
+      'Post-workout mood & difficulty tracking',
     ],
   },
   {
@@ -186,6 +200,48 @@ const MODULES = [
       'Saved contacts with location sub-entries',
       'Contact autocomplete with default category',
       'Task contacts & location assignment',
+    ],
+  },
+  {
+    name: 'Universal Scanner',
+    color: 'border-yellow-500',
+    iconColor: 'text-yellow-600',
+    checkColor: 'text-yellow-600',
+    Icon: Camera,
+    description: 'Point your camera at any receipt, label, or document to extract data instantly.',
+    features: [
+      'OCR receipt scanning for fuel & finance',
+      'Ingredient label scanning for Fuel module',
+      'Multi-photo upload (up to 4 images)',
+      'Gemini Vision AI extraction',
+    ],
+  },
+  {
+    name: 'Life Categories',
+    color: 'border-purple-500',
+    iconColor: 'text-purple-600',
+    checkColor: 'text-purple-600',
+    Icon: Tag,
+    description: 'Tag every activity, expense, and goal with your personal life areas.',
+    features: [
+      'User-defined tags (Health, Career, Finance, etc.)',
+      'Works across all 11 module types',
+      'Spending & activity analytics by category',
+      'Batch tagging from the dashboard',
+    ],
+  },
+  {
+    name: 'Life Retrospective',
+    color: 'border-slate-500',
+    iconColor: 'text-slate-600',
+    checkColor: 'text-slate-600',
+    Icon: History,
+    description: 'AI-powered periodic reviews that surface insights across your entire data set.',
+    features: [
+      'Cross-module data synthesis',
+      'Google Calendar .ics import',
+      'Patterns across health, finance & productivity',
+      'Gemini AI narrative generation',
     ],
   },
 ];
