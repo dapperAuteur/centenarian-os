@@ -23,6 +23,8 @@ export default function DashboardSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scanAutoSave, setScanAutoSave] = useState(false);
+  const [scanAutoSaveSaving, setScanAutoSaveSaving] = useState(false);
 
   useEffect(() => {
     fetch('/api/user/preferences')
@@ -31,6 +33,7 @@ export default function DashboardSettingsPage() {
         const home = d.dashboard_home ?? '/dashboard/blog';
         setCurrent(home);
         setSelected(home);
+        setScanAutoSave(d.scan_auto_save_images ?? false);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -139,6 +142,49 @@ export default function DashboardSettingsPage() {
             </span>
           )}
         </div>
+      </div>
+
+      {/* Scan Preferences */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mt-6">
+        <h2 className="text-base font-semibold text-gray-800 mb-1">Smart Scan</h2>
+        <p className="text-sm text-gray-500 mb-5">
+          Configure how scanned documents are handled.
+        </p>
+
+        <label className="flex items-center justify-between cursor-pointer">
+          <div>
+            <p className="text-sm font-medium text-gray-700">Auto-save scanned images</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Automatically upload receipt/document images to your account when scanning
+            </p>
+          </div>
+          <button
+            onClick={async () => {
+              const newVal = !scanAutoSave;
+              setScanAutoSaveSaving(true);
+              try {
+                const res = await fetch('/api/user/preferences', {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ scan_auto_save_images: newVal }),
+                });
+                if (res.ok) setScanAutoSave(newVal);
+              } finally {
+                setScanAutoSaveSaving(false);
+              }
+            }}
+            disabled={scanAutoSaveSaving}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              scanAutoSave ? 'bg-fuchsia-600' : 'bg-gray-300'
+            } ${scanAutoSaveSaving ? 'opacity-50' : ''}`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                scanAutoSave ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </label>
       </div>
     </div>
   );
