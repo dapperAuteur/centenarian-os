@@ -103,10 +103,10 @@ export async function POST(request: NextRequest) {
     const base64 = buffer.toString('base64');
 
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GOOGLE_GEMINI_API_KEY}`,
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GOOGLE_GEMINI_API_KEY! },
         body: JSON.stringify({
           contents: [{
             parts: [

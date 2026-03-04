@@ -21,10 +21,10 @@ async function getEmbedding(text: string): Promise<number[]> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
   if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY not set');
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent`;
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify({
       content: { parts: [{ text }] },
       outputDimensionality: 768,
@@ -113,7 +113,8 @@ export async function GET(req: NextRequest) {
     const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
     if (!apiKey) return NextResponse.json({ error: 'GOOGLE_GEMINI_API_KEY not set' }, { status: 500 });
     const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+      'https://generativelanguage.googleapis.com/v1beta/models',
+      { headers: { 'x-goog-api-key': apiKey } },
     );
     const data = await r.json();
     // Extract just the names and supported methods for embedding

@@ -24,10 +24,10 @@ async function getEmbedding(text: string): Promise<number[]> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
   if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY not set');
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent`;
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify({
       content: { parts: [{ text }] },
       outputDimensionality: 768,
@@ -42,10 +42,10 @@ async function generateAnswer(systemPrompt: string, question: string): Promise<s
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
   if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY not set');
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${CHAT_MODEL}:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${CHAT_MODEL}:generateContent`;
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify({
       system_instruction: { parts: [{ text: systemPrompt }] },
       contents: [{ role: 'user', parts: [{ text: question }] }],
