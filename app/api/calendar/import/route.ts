@@ -335,12 +335,17 @@ export async function POST(request: NextRequest) {
       ? ' (PPI CBS template not found — invoices skipped)'
       : '';
 
+  // Compute date range from imported payloads
+  const dates = payloads.map(p => p.date as string).filter(Boolean).sort();
+  const dateRange = dates.length > 0 ? { from: dates[0], to: dates[dates.length - 1] } : null;
+
   return NextResponse.json({
     imported,
     skipped,
     invoices_created: invoicesCreated,
     milestone_id: milestoneId,
     calendar_name: resolvedName,
+    date_range: dateRange,
     message: `Imported ${imported} event${imported !== 1 ? 's' : ''} as tasks.${invoiceNote}${skipped > 0 ? ` ${skipped} skipped.` : ''}`,
   });
 }

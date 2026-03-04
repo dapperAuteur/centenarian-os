@@ -57,6 +57,7 @@ function SortTh({
     <button
       type="button"
       onClick={() => onSort(col)}
+      aria-label={`Sort by ${label}`}
       className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition"
     >
       {label}
@@ -359,6 +360,7 @@ function AdminMessagesPage() {
                 <button
                   type="button"
                   onClick={() => toggleExpand(m.id)}
+                  aria-expanded={isOpen}
                   className="w-full flex items-start gap-4 p-4 hover:bg-gray-800/60 transition text-left"
                 >
                   <div className="flex-1 min-w-0">
@@ -443,6 +445,7 @@ function AdminMessagesPage() {
                         onChange={(e) => setReplyText((prev) => ({ ...prev, [m.id]: e.target.value }))}
                         rows={3}
                         placeholder="Write your reply…"
+                        aria-label="Reply to message"
                         className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-fuchsia-500 resize-none"
                       />
                       <div className="flex items-center justify-between mt-3 gap-3">

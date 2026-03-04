@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   DollarSign, TrendingUp, TrendingDown, Plus, ArrowRight,
   Upload, Download, Settings, Loader2, CreditCard, Wallet, FileText, AlertTriangle,
@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
@@ -33,10 +33,34 @@ interface MonthlyTrend {
   net: number;
 }
 
+interface MonthlyProjection {
+  month: string;
+  label: string;
+  receivable: number;
+  payable: number;
+  count: number;
+}
+
+interface Projections {
+  currentMonth: { receivable: number; payable: number; net: number };
+  invoiceCount: { receivable: number; payable: number };
+  monthlyTimeline: MonthlyProjection[];
+}
+
+interface ProjectionToggles {
+  showCard: boolean;
+  showTimeline: boolean;
+  showChart: boolean;
+}
+
+const PROJECTIONS_KEY = 'centos_finance_projections';
+const DEFAULT_TOGGLES: ProjectionToggles = { showCard: true, showTimeline: true, showChart: true };
+
 interface Summary {
   currentMonth: { expenses: number; income: number; net: number };
   categoryBreakdown: CategoryBreakdown[];
   monthlyTrend: MonthlyTrend[];
+  projections?: Projections | null;
 }
 
 interface Category {
@@ -83,6 +107,24 @@ export default function FinanceDashboardPage() {
 
   // Transfer modal
   const [showTransfer, setShowTransfer] = useState(false);
+
+  // Projection toggles
+  const [projectionToggles, setProjectionToggles] = useState<ProjectionToggles>(DEFAULT_TOGGLES);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(PROJECTIONS_KEY);
+      if (saved) setProjectionToggles(JSON.parse(saved));
+    } catch { /* ignore */ }
+  }, []);
+
+  const updateToggle = (key: keyof ProjectionToggles) => {
+    setProjectionToggles(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      localStorage.setItem(PROJECTIONS_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
 
   // Add category modal
   const [showCatForm, setShowCatForm] = useState(false);
@@ -165,6 +207,26 @@ export default function FinanceDashboardPage() {
     }
   };
 
+  const chartData = useMemo(() => {
+    const base = summary?.monthlyTrend || [];
+    if (!projectionToggles.showChart || !summary?.projections?.monthlyTimeline) return base;
+    const projMap = new Map(summary.projections.monthlyTimeline.filter(m => m.month !== 'undated').map(m => [m.month, m]));
+    const allMonths = new Set([...base.map(b => b.month), ...Array.from(projMap.keys())]);
+    return Array.from(allMonths).sort().map(month => {
+      const existing = base.find(b => b.month === month);
+      const proj = projMap.get(month);
+      return {
+        month,
+        label: existing?.label || new Date(month + '-15').toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+        income: existing?.income || 0,
+        expenses: existing?.expenses || 0,
+        net: existing?.net || 0,
+        projectedIncome: proj?.receivable || 0,
+        projectedExpenses: proj?.payable || 0,
+      };
+    });
+  }, [summary, projectionToggles.showChart]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -175,6 +237,7 @@ export default function FinanceDashboardPage() {
 
   const cm = summary?.currentMonth || { expenses: 0, income: 0, net: 0 };
   const pieData = (summary?.categoryBreakdown || []).filter((c) => c.spent > 0);
+  const hasProjections = !!(summary?.projections && (summary.projections.invoiceCount.receivable > 0 || summary.projections.invoiceCount.payable > 0));
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10 space-y-8">
@@ -326,15 +389,105 @@ export default function FinanceDashboardPage() {
         </div>
       </div>
 
+      {/* Projection Toggle Bar + Cards + Timeline */}
+      {hasProjections && (
+        <>
+          <div className="flex items-center gap-3 flex-wrap" role="group" aria-label="Projection display options">
+            <span className="text-xs font-medium text-gray-500">Projections:</span>
+            {(['showCard', 'showTimeline', 'showChart'] as const).map((key) => {
+              const labels = { showCard: 'Summary Card', showTimeline: 'Timeline', showChart: 'Chart Overlay' };
+              return (
+                <button
+                  key={key}
+                  onClick={() => updateToggle(key)}
+                  role="switch"
+                  aria-checked={projectionToggles[key]}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition border ${
+                    projectionToggles[key]
+                      ? 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200'
+                      : 'bg-gray-50 text-gray-400 border-gray-200'
+                  }`}
+                >
+                  {labels[key]}
+                </button>
+              );
+            })}
+          </div>
+
+          {projectionToggles.showCard && summary?.projections && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {summary.projections.currentMonth.receivable > 0 && (
+                <div className="bg-white border border-dashed border-green-300 rounded-2xl p-5">
+                  <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                    <FileText className="w-4 h-4 text-green-500" aria-hidden="true" />
+                    Projected Income
+                    <span className="ml-auto text-xs bg-green-50 text-green-600 px-1.5 py-0.5 rounded-full">
+                      {summary.projections.invoiceCount.receivable} invoice{summary.projections.invoiceCount.receivable !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-green-600">
+                    +${summary.projections.currentMonth.receivable.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              )}
+              {summary.projections.currentMonth.payable > 0 && (
+                <div className="bg-white border border-dashed border-red-300 rounded-2xl p-5">
+                  <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                    <FileText className="w-4 h-4 text-red-500" aria-hidden="true" />
+                    Projected Expenses
+                    <span className="ml-auto text-xs bg-red-50 text-red-600 px-1.5 py-0.5 rounded-full">
+                      {summary.projections.invoiceCount.payable} invoice{summary.projections.invoiceCount.payable !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-red-600">
+                    -${summary.projections.currentMonth.payable.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {projectionToggles.showTimeline && summary?.projections?.monthlyTimeline && summary.projections.monthlyTimeline.length > 0 && (
+            <div className="bg-white border border-gray-200 rounded-2xl p-5">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Invoice Timeline</h2>
+              <div className="flex gap-3 overflow-x-auto pb-2" role="list" aria-label="Monthly projected invoice amounts">
+                {summary.projections.monthlyTimeline.map((m) => (
+                  <div
+                    key={m.month}
+                    className="min-w-[140px] border border-gray-100 rounded-xl p-3 shrink-0"
+                    role="listitem"
+                  >
+                    <p className="text-xs font-medium text-gray-500 mb-2">{m.label}</p>
+                    {m.receivable > 0 && (
+                      <p className="text-sm font-semibold text-green-600">
+                        +${m.receivable.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </p>
+                    )}
+                    {m.payable > 0 && (
+                      <p className="text-sm font-semibold text-red-600">
+                        -${m.payable.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-400 mt-1">
+                      {m.count} invoice{m.count !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Monthly Trend Bar Chart */}
         <div className="bg-white border border-gray-200 rounded-2xl p-5">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Monthly Trend</h2>
-          {(summary?.monthlyTrend || []).length > 0 ? (
+          {chartData.length > 0 ? (
             <div className="h-[250px] sm:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={summary?.monthlyTrend || []}>
+                <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="label" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
@@ -342,8 +495,15 @@ export default function FinanceDashboardPage() {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     formatter={(value: any) => `$${Number(value).toFixed(2)}`}
                   />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
                   <Bar dataKey="income" fill="#22c55e" name="Income" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="expenses" fill="#ef4444" name="Expenses" radius={[4, 4, 0, 0]} />
+                  {projectionToggles.showChart && hasProjections && (
+                    <>
+                      <Bar dataKey="projectedIncome" fill="#86efac" name="Projected Income" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="projectedExpenses" fill="#fca5a5" name="Projected Expenses" radius={[4, 4, 0, 0]} />
+                    </>
+                  )}
                 </BarChart>
               </ResponsiveContainer>
             </div>

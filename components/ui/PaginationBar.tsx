@@ -15,26 +15,28 @@ export default function PaginationBar({ page, totalPages, onPageChange }: Pagina
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex items-center justify-between px-5 py-3 border-t border-gray-800">
+    <nav className="flex items-center justify-between px-5 py-3 border-t border-gray-800" aria-label="Pagination">
       <button
         onClick={() => onPageChange(page - 1)}
         disabled={page === 1}
+        aria-label="Previous page"
         className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition"
       >
-        <ChevronLeft className="w-4 h-4" />
+        <ChevronLeft className="w-4 h-4" aria-hidden="true" />
         Prev
       </button>
-      <span className="text-sm text-gray-500">
+      <span className="text-sm text-gray-500" aria-live="polite">
         Page {page} of {totalPages}
       </span>
       <button
         onClick={() => onPageChange(page + 1)}
         disabled={page === totalPages}
+        aria-label="Next page"
         className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition"
       >
         Next
-        <ChevronRight className="w-4 h-4" />
+        <ChevronRight className="w-4 h-4" aria-hidden="true" />
       </button>
-    </div>
+    </nav>
   );
 }

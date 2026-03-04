@@ -32,6 +32,7 @@ interface ImportResult {
   calendar_name: string;
   message: string;
   error?: string;
+  date_range?: { from: string; to: string } | null;
 }
 
 function detectTagForCalendar(name: string): Tag {
@@ -141,6 +142,7 @@ export default function GoogleCalendarImportPage() {
           calendar_name: data.calendar_name ?? preview.calendarName,
           message: data.message ?? '',
           error: res.ok ? undefined : (data.error ?? 'Unknown error'),
+          date_range: data.date_range ?? null,
         });
       } catch {
         newResults.push({
@@ -343,7 +345,11 @@ export default function GoogleCalendarImportPage() {
 
           <div className="flex gap-3 pt-2">
             <Link
-              href="/dashboard/planner"
+              href={(() => {
+                const firstRange = results.find((r) => !r.error && r.date_range)?.date_range;
+                if (firstRange) return `/dashboard/planner?date=${firstRange.from}&view=month`;
+                return '/dashboard/planner';
+              })()}
               className="flex-1 py-2.5 bg-fuchsia-600 text-white rounded-xl text-sm font-semibold text-center hover:bg-fuchsia-700 transition"
             >
               View in Planner

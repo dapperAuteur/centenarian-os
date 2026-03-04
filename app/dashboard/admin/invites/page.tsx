@@ -213,15 +213,15 @@ export default function AdminInvitesPage() {
       ) : (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" aria-label="Invites table">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Email</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Access</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Expiry</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Modules</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Demo</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Access</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Expiry</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden lg:table-cell">Modules</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden lg:table-cell">Demo</th>
                   <th className="text-right px-4 py-3 font-semibold text-gray-600">Actions</th>
                 </tr>
               </thead>
@@ -242,15 +242,15 @@ export default function AdminInvitesPage() {
                           {chip.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-700 capitalize">{inv.access_type}</td>
-                      <td className="px-4 py-3 text-gray-600">{fmtDate(inv.expires_at)}</td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="px-4 py-3 text-gray-700 capitalize hidden sm:table-cell">{inv.access_type}</td>
+                      <td className="px-4 py-3 text-gray-600 hidden md:table-cell">{fmtDate(inv.expires_at)}</td>
+                      <td className="px-4 py-3 text-gray-600 hidden lg:table-cell">
                         {inv.allowed_modules === null
                           ? <span className="text-green-600 text-xs font-medium">All</span>
                           : <span className="text-xs">{inv.allowed_modules.length} module{inv.allowed_modules.length !== 1 ? 's' : ''}</span>
                         }
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 hidden lg:table-cell">
                         {inv.demo_profile ? (
                           <div className="flex items-center gap-1.5">
                             <span className={`text-xs font-medium ${inv.demo_seeded ? 'text-indigo-600' : 'text-gray-500'}`}>
@@ -268,44 +268,46 @@ export default function AdminInvitesPage() {
                             <button
                               onClick={() => handleSeedDemo(inv)}
                               disabled={actionLoading === `seed-${inv.id}`}
-                              title="Seed demo data"
+                              aria-label={`Seed demo data for ${inv.email}`}
                               className="p-1.5 text-indigo-500 hover:bg-indigo-50 rounded-lg transition disabled:opacity-50"
                             >
-                              {actionLoading === `seed-${inv.id}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
+                              {actionLoading === `seed-${inv.id}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" aria-hidden="true" />}
                             </button>
                           )}
                           {canClear && (
                             <button
                               onClick={() => handleClearDemo(inv)}
                               disabled={actionLoading === `clear-${inv.id}`}
-                              title="Clear demo data"
+                              aria-label={`Clear demo data for ${inv.email}`}
                               className="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg transition disabled:opacity-50"
                             >
-                              {actionLoading === `clear-${inv.id}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Eraser className="w-3.5 h-3.5" />}
+                              {actionLoading === `clear-${inv.id}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Eraser className="w-3.5 h-3.5" aria-hidden="true" />}
                             </button>
                           )}
                           <button
                             onClick={() => handleToggleActive(inv)}
                             disabled={actionLoading === `toggle-${inv.id}`}
-                            title={inv.is_active ? 'Revoke access' : 'Restore access'}
+                            aria-label={inv.is_active ? `Revoke access for ${inv.email}` : `Restore access for ${inv.email}`}
+                            role="switch"
+                            aria-checked={inv.is_active}
                             className={`p-1.5 rounded-lg transition disabled:opacity-50 ${inv.is_active ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-100'}`}
                           >
                             {actionLoading === `toggle-${inv.id}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : inv.is_active ? <ToggleRight className="w-3.5 h-3.5" /> : <ToggleLeft className="w-3.5 h-3.5" />}
                           </button>
                           <button
                             onClick={() => openEdit(inv)}
-                            title="Edit"
+                            aria-label={`Edit invite for ${inv.email}`}
                             className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition"
                           >
-                            <Edit2 className="w-3.5 h-3.5" />
+                            <Edit2 className="w-3.5 h-3.5" aria-hidden="true" />
                           </button>
                           <button
                             onClick={() => handleDelete(inv.id, inv.email)}
                             disabled={actionLoading === `delete-${inv.id}`}
-                            title="Delete"
+                            aria-label={`Delete invite for ${inv.email}`}
                             className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
                           >
-                            {actionLoading === `delete-${inv.id}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                            {actionLoading === `delete-${inv.id}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />}
                           </button>
                         </div>
                       </td>
