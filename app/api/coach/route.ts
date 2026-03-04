@@ -214,7 +214,7 @@ export async function POST(req: NextRequest) {
       console.error('GOOGLE_GEMINI_API_KEY is not set');
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
-    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
     // Fetch persona with new columns
     const { data: personaData, error: personaError } = await (await supabase)
@@ -338,7 +338,7 @@ export async function POST(req: NextRequest) {
 
     const apiResponse = await fetch(GEMINI_API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify(payload)
     });
 
