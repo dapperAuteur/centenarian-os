@@ -100,6 +100,58 @@ export async function GET(request: NextRequest) {
       : null,
   }));
 
+  // ── Projections from unpaid invoices ──────────────────────────────────────
+  const { data: unpaidInvoices } = await supabase
+    .from('invoices')
+    .select('id, direction, status, total, amount_paid, due_date')
+    .eq('user_id', user.id)
+    .in('status', ['sent', 'overdue']);
+
+  let projReceivable = 0;
+  let projPayable = 0;
+  let receivableCount = 0;
+  let payableCount = 0;
+  const projMonthlyMap: Record<string, { receivable: number; payable: number; count: number }> = {};
+
+  for (const inv of unpaidInvoices || []) {
+    const balance = parseFloat(inv.total) - parseFloat(inv.amount_paid || '0');
+    if (balance <= 0) continue;
+
+    if (inv.direction === 'receivable') {
+      projReceivable += balance;
+      receivableCount++;
+    } else {
+      projPayable += balance;
+      payableCount++;
+    }
+
+    const monthKey = inv.due_date ? inv.due_date.slice(0, 7) : 'undated';
+    if (!projMonthlyMap[monthKey]) projMonthlyMap[monthKey] = { receivable: 0, payable: 0, count: 0 };
+    projMonthlyMap[monthKey].count++;
+    if (inv.direction === 'receivable') projMonthlyMap[monthKey].receivable += balance;
+    else projMonthlyMap[monthKey].payable += balance;
+  }
+
+  const monthlyTimeline = Object.entries(projMonthlyMap)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, data]) => ({
+      month,
+      label: month === 'undated'
+        ? 'Undated'
+        : new Date(month + '-15').toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+      ...data,
+    }));
+
+  const projections = (receivableCount > 0 || payableCount > 0) ? {
+    currentMonth: {
+      receivable: Math.round(projReceivable * 100) / 100,
+      payable: Math.round(projPayable * 100) / 100,
+      net: Math.round((projReceivable - projPayable) * 100) / 100,
+    },
+    invoiceCount: { receivable: receivableCount, payable: payableCount },
+    monthlyTimeline,
+  } : null;
+
   return NextResponse.json({
     currentMonth: {
       expenses: Math.round(currentExpenses * 100) / 100,
@@ -108,5 +160,6 @@ export async function GET(request: NextRequest) {
     },
     categoryBreakdown,
     monthlyTrend,
+    projections,
   });
 }

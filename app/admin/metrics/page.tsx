@@ -148,14 +148,14 @@ export default function AdminMetricsPage() {
       {/* Global metric config table */}
       <section>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Global Metric Settings</h2>
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden overflow-x-auto">
+          <table className="w-full text-sm" aria-label="Global metric settings">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-5 py-3 font-medium text-gray-600">Metric</th>
                 <th className="text-center px-4 py-3 font-medium text-gray-600">Globally Enabled</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">Locked</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Unlock Type</th>
+                <th className="text-center px-4 py-3 font-medium text-gray-600 hidden sm:table-cell">Locked</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600 hidden sm:table-cell">Unlock Type</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -169,7 +169,9 @@ export default function AdminMetricsPage() {
                     <button
                       onClick={() => toggleMetric(c.metric_key, 'is_globally_enabled', c.is_globally_enabled)}
                       disabled={saving === c.metric_key + 'is_globally_enabled'}
-                      title={c.is_globally_enabled ? 'Disable globally' : 'Enable globally'}
+                      aria-label={c.is_globally_enabled ? `Disable ${c.label} globally` : `Enable ${c.label} globally`}
+                      role="switch"
+                      aria-checked={c.is_globally_enabled}
                       className="transition"
                     >
                       {c.is_globally_enabled
@@ -178,11 +180,13 @@ export default function AdminMetricsPage() {
                       }
                     </button>
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-4 py-3 text-center hidden sm:table-cell">
                     <button
                       onClick={() => toggleMetric(c.metric_key, 'is_locked', c.is_locked)}
                       disabled={saving === c.metric_key + 'is_locked'}
-                      title={c.is_locked ? 'Unlock this metric' : 'Lock this metric'}
+                      aria-label={c.is_locked ? `Unlock ${c.label}` : `Lock ${c.label}`}
+                      role="switch"
+                      aria-checked={c.is_locked}
                       className="transition"
                     >
                       {c.is_locked
@@ -191,7 +195,7 @@ export default function AdminMetricsPage() {
                       }
                     </button>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 hidden sm:table-cell">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                       c.unlock_type === 'admin_only'
                         ? 'bg-red-100 text-red-700'
@@ -227,6 +231,7 @@ export default function AdminMetricsPage() {
               <input
                 type="text"
                 placeholder="Search by username or email…"
+                aria-label="Search users by username or email"
                 value={userQuery}
                 onChange={(e) => setUserQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && searchUsers()}

@@ -80,16 +80,16 @@ export default function AdminContentPage() {
           <div className="animate-spin h-8 w-8 border-4 border-fuchsia-500 border-t-transparent rounded-full" />
         </div>
       ) : (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden overflow-x-auto">
+          <table className="w-full text-sm" aria-label={`${tab === 'recipe' ? 'Recipes' : 'Blog posts'} table`}>
             <thead>
               <tr className="border-b border-gray-800 text-gray-500 text-xs uppercase tracking-wide">
-                <th className="text-left px-5 py-3">Title</th>
-                <th className="text-left px-5 py-3">Author</th>
-                <th className="text-left px-5 py-3">Status</th>
-                <th className="text-left px-5 py-3">Stats</th>
-                <th className="text-left px-5 py-3">Published</th>
-                <th className="px-5 py-3" />
+                <th className="text-left px-4 py-3">Title</th>
+                <th className="text-left px-4 py-3 hidden sm:table-cell">Author</th>
+                <th className="text-left px-4 py-3">Status</th>
+                <th className="text-left px-4 py-3 hidden md:table-cell">Stats</th>
+                <th className="text-left px-4 py-3 hidden md:table-cell">Published</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody>
@@ -98,36 +98,37 @@ export default function AdminContentPage() {
               )}
               {items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((item) => (
                 <tr key={item.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition">
-                  <td className="px-5 py-3">
+                  <td className="px-4 py-3">
                     <p className="text-white font-medium truncate max-w-xs">{item.title}</p>
                     <p className="text-gray-600 text-xs">/{item.slug}</p>
                   </td>
-                  <td className="px-5 py-3 text-gray-400 text-xs">
+                  <td className="px-4 py-3 text-gray-400 text-xs hidden sm:table-cell">
                     @{item.profiles?.username ?? '—'}
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-xs font-semibold ${VIS_BADGE[item.visibility] ?? 'bg-gray-700 text-gray-400'}`}>
                       {item.visibility}
                     </span>
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-4 py-3 hidden md:table-cell">
                     <div className="flex items-center gap-3 text-gray-400 text-xs">
-                      <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{item.view_count}</span>
-                      {item.like_count !== undefined && <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3" />{item.like_count}</span>}
-                      {item.save_count !== undefined && <span className="flex items-center gap-1"><Bookmark className="w-3 h-3" />{item.save_count}</span>}
+                      <span className="flex items-center gap-1"><Eye className="w-3 h-3" aria-hidden="true" /><span className="sr-only">Views:</span>{item.view_count}</span>
+                      {item.like_count !== undefined && <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3" aria-hidden="true" /><span className="sr-only">Likes:</span>{item.like_count}</span>}
+                      {item.save_count !== undefined && <span className="flex items-center gap-1"><Bookmark className="w-3 h-3" aria-hidden="true" /><span className="sr-only">Saves:</span>{item.save_count}</span>}
                     </div>
                   </td>
-                  <td className="px-5 py-3 text-gray-500 text-xs">
+                  <td className="px-4 py-3 text-gray-500 text-xs hidden md:table-cell">
                     {item.published_at ? new Date(item.published_at).toLocaleDateString() : '—'}
                   </td>
-                  <td className="px-5 py-3 text-right">
+                  <td className="px-4 py-3 text-right">
                     {item.visibility === 'public' && (
                       <button
                         onClick={() => unpublish(item.id)}
                         disabled={unpublishing === item.id}
+                        aria-label={`Unpublish ${item.title}`}
                         className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-red-900/30 text-red-400 rounded-lg hover:bg-red-900/50 transition disabled:opacity-50"
                       >
-                        <EyeOff className="w-3 h-3" />
+                        <EyeOff className="w-3 h-3" aria-hidden="true" />
                         {unpublishing === item.id ? 'Unpublishing…' : 'Unpublish'}
                       </button>
                     )}

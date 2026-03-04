@@ -2,10 +2,11 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Task, RecurringTask } from '@/lib/types';
 import Link from 'next/link';
-import { Calendar, DollarSign, Plus, Repeat, Upload, Download } from 'lucide-react';
+import { Calendar, DollarSign, Plus, Repeat, Upload, Download, Filter } from 'lucide-react';
 import { EditTaskModal } from '@/components/EditTaskModal';
 import CreateRecurringTaskModal, { RecurringTaskData } from '@/components/planner/CreateRecurringTaskModal';
 import CreateTaskModal from '@/components/planner/CreateTaskModal';
@@ -14,6 +15,7 @@ import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { OfflineSyncManager } from '@/lib/offline/sync-manager';
 
 type ViewMode = 'day' | 'week' | 'month';
+type SourceFilter = 'all' | 'calendar' | 'manual' | 'recurring';
 
 interface TaskCardProps {
   task: Task;
@@ -104,12 +106,22 @@ function TaskCard({ task, onToggle, onEdit }: TaskCardProps) {
 }
 
 export default function PlannerPage() {
+  const searchParams = useSearchParams();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<ViewMode>('day');
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const v = searchParams.get('view');
+    if (v === 'day' || v === 'week' || v === 'month') return v;
+    return 'day';
+  });
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const d = searchParams.get('date');
+    if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+    return new Date().toISOString().split('T')[0];
+  });
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
+
   // Recurring task state
   const [showRecurringModal, setShowRecurringModal] = useState(false);
   const [, setRecurringTasks] = useState<RecurringTask[]>([]);
@@ -119,7 +131,7 @@ export default function PlannerPage() {
 
   // Completion actions state
   const [completedTask, setCompletedTask] = useState<Task | null>(null);
-  
+
   const supabase = createClient();
 
   const loadTasks = useCallback(async () => {
@@ -144,14 +156,14 @@ export default function PlannerPage() {
     try {
       const { data } = await supabase
         .from('tasks')
-        .select('*')
+        .select('*, milestones(name)')
         .gte('date', startDate)
         .lte('date', endDate)
         .order('date')
         .order('time');
 
       if (data) {
-        setTasks(data);
+        setTasks(data as Task[]);
         await manager.cacheResponse(cacheKey, data);
       }
     } catch {
@@ -240,14 +252,27 @@ export default function PlannerPage() {
     }), { estimatedCost: 0, actualCost: 0, revenue: 0, netProfit: 0 });
   }, [tasks]);
 
+  const filteredTasks = useMemo(() => {
+    if (sourceFilter === 'all') return tasks;
+    return tasks.filter((task) => {
+      const milestoneName = (task as Task & { milestones?: { name: string } | null }).milestones?.name ?? '';
+      const isCalendar = milestoneName.startsWith('Google Calendar:');
+      const isRecurring = milestoneName.toLowerCase().includes('recurring');
+      if (sourceFilter === 'calendar') return isCalendar;
+      if (sourceFilter === 'recurring') return isRecurring;
+      // 'manual' = everything else
+      return !isCalendar && !isRecurring;
+    });
+  }, [tasks, sourceFilter]);
+
   const tasksByDate = useMemo(() => {
     const grouped: Record<string, Task[]> = {};
-    tasks.forEach(task => {
+    filteredTasks.forEach(task => {
       if (!grouped[task.date]) grouped[task.date] = [];
       grouped[task.date].push(task);
     });
     return grouped;
-  }, [tasks]);
+  }, [filteredTasks]);
 
   const completionStats = useMemo(() => {
     const total = tasks.length;
@@ -264,20 +289,38 @@ export default function PlannerPage() {
 
       {/* View Controls */}
       <div className="bg-white rounded-xl shadow-lg p-4 mb-6 flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between">
-        <div className="flex gap-2">
-          {(['day', 'week', 'month'] as ViewMode[]).map(mode => (
-            <button
-              key={mode}
-              onClick={() => setViewMode(mode)}
-              className={`px-4 py-2 rounded-lg font-medium transition capitalize ${
-                viewMode === mode
-                  ? 'bg-sky-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {mode}
-            </button>
-          ))}
+        <div className="flex gap-4 flex-wrap">
+          <div className="flex gap-2">
+            {(['day', 'week', 'month'] as ViewMode[]).map(mode => (
+              <button
+                key={mode}
+                onClick={() => setViewMode(mode)}
+                className={`px-4 py-2 rounded-lg font-medium transition capitalize ${
+                  viewMode === mode
+                    ? 'bg-sky-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Filter className="w-4 h-4 text-gray-400" />
+            {([['all', 'All'], ['calendar', 'Calendar'], ['manual', 'Manual'], ['recurring', 'Recurring']] as [SourceFilter, string][]).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setSourceFilter(key)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                  sourceFilter === key
+                    ? 'bg-fuchsia-600 text-white'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -327,7 +370,7 @@ export default function PlannerPage() {
       </div>
 
       {/* Financial Summary */}
-      <div className="bg-gradient-to-r from-lime-500 to-emerald-600 rounded-2xl shadow-xl p-6 text-white mb-6">
+      <div className="bg-linear-to-r from-lime-500 to-emerald-600 rounded-2xl shadow-xl p-6 text-white mb-6">
         <h2 className="text-xl font-bold mb-4 flex items-center">
           <DollarSign className="w-6 h-6 mr-2" />
           Financial Summary ({viewMode})

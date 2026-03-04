@@ -26,7 +26,7 @@ function StatCard({ label, value, sub, icon: Icon, color = 'fuchsia' }: { label:
     <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
       <div className="flex items-center gap-3 mb-3">
         <div className={`p-2 rounded-lg ${colors[color]}`}>
-          <Icon className="w-4 h-4" />
+          <Icon className="w-4 h-4" aria-hidden="true" />
         </div>
         <span className="text-sm text-gray-400">{label}</span>
       </div>
@@ -67,7 +67,7 @@ export default function AdminOverviewPage() {
       {/* Promo code alert */}
       {stats.promoCodesPending > 0 && (
         <div className="mb-6 flex items-center gap-3 bg-amber-900/30 border border-amber-700 rounded-xl px-5 py-4">
-          <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+          <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" aria-hidden="true" />
           <p className="text-amber-300 text-sm">
             <strong>{stats.promoCodesPending}</strong> lifetime member{stats.promoCodesPending > 1 ? 's have' : ' has'} no promo code yet.{' '}
             <Link href="/admin/users?filter=promo_pending" className="underline font-semibold">View them →</Link>

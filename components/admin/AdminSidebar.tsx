@@ -22,7 +22,7 @@ const NAV_ITEMS = [
   { href: '/admin/metrics',    label: 'Metrics',     icon: Activity,        exact: false, badgeKey: null },
 ];
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const [unread, setUnread] = useState<UnreadCounts>({ feedback: 0, messages: 0 });
 
@@ -40,7 +40,7 @@ export default function AdminSidebar() {
   }, [fetchCounts]);
 
   return (
-    <nav className="flex-1 p-3 space-y-1">
+    <nav className="flex-1 p-3 space-y-1" aria-label="Admin sections">
       {NAV_ITEMS.map(({ href, label, icon: Icon, exact, badgeKey }) => {
         const active = exact ? pathname === href : pathname.startsWith(href);
         const badge = badgeKey ? unread[badgeKey] : 0;
@@ -48,14 +48,19 @@ export default function AdminSidebar() {
           <Link
             key={href}
             href={href}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
+            onClick={onNavigate}
+            aria-current={active ? 'page' : undefined}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-fuchsia-400 focus-visible:outline-none ${
               active ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'
             }`}
           >
-            <Icon className="w-4 h-4" />
+            <Icon className="w-4 h-4" aria-hidden="true" />
             <span className="flex-1">{label}</span>
             {badge > 0 && (
-              <span className="px-1.5 py-0.5 bg-fuchsia-600 text-white text-xs font-bold rounded-full min-w-[20px] text-center leading-tight">
+              <span
+                className="px-1.5 py-0.5 bg-fuchsia-600 text-white text-xs font-bold rounded-full min-w-5 text-center leading-tight"
+                aria-label={`${badge > 99 ? '99+' : badge} unread`}
+              >
                 {badge > 99 ? '99+' : badge}
               </span>
             )}

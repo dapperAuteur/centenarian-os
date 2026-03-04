@@ -91,7 +91,7 @@ function TopContentTable({
       {posts.length === 0 ? (
         <p className="px-5 py-8 text-center text-gray-600 text-sm">No data yet</p>
       ) : (
-        <table className="w-full text-sm">
+        <table className="w-full text-sm" aria-label={title}>
           <tbody>
             {posts.map((item, i) => {
               const name = 'name' in item ? item.name : item.title;
@@ -110,9 +110,10 @@ function TopContentTable({
                       href={urlBase(item)}
                       target="_blank"
                       rel="noopener noreferrer"
+                      aria-label={`Open ${name}`}
                       className="text-gray-600 hover:text-white transition"
                     >
-                      <ExternalLink className="w-3.5 h-3.5" />
+                      <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                     </a>
                   </td>
                 </tr>
@@ -239,33 +240,33 @@ export default function AdminEngagementPage() {
           {data.recentActivity.length === 0 ? (
             <p className="px-5 py-10 text-center text-gray-600 text-sm">No activity yet.</p>
           ) : (
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" aria-label="Recent activity">
               <thead>
                 <tr className="border-b border-gray-800 text-gray-500 text-xs uppercase tracking-wide">
-                  <th className="text-left px-5 py-3">Type</th>
-                  <th className="text-left px-5 py-3">User</th>
-                  <th className="text-left px-5 py-3">Content</th>
-                  <th className="text-right px-5 py-3">When</th>
+                  <th className="text-left px-4 py-3">Type</th>
+                  <th className="text-left px-4 py-3 hidden sm:table-cell">User</th>
+                  <th className="text-left px-4 py-3">Content</th>
+                  <th className="text-right px-4 py-3">When</th>
                 </tr>
               </thead>
               <tbody>
                 {data.recentActivity.map((entry, i) => (
                   <tr key={i} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition">
-                    <td className="px-5 py-3">
+                    <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded text-xs font-semibold ${TYPE_COLOR[entry.type]}`}>
                         {entry.type === 'blog_like' || entry.type === 'blog_save'
-                          ? <Heart className="w-3 h-3 inline mr-1" />
-                          : <Bookmark className="w-3 h-3 inline mr-1" />
+                          ? <Heart className="w-3 h-3 inline mr-1" aria-hidden="true" />
+                          : <Bookmark className="w-3 h-3 inline mr-1" aria-hidden="true" />
                         }
                         {TYPE_LABEL[entry.type]}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-gray-300">
+                    <td className="px-4 py-3 text-gray-300 hidden sm:table-cell">
                       <Link href={`/admin/users`} className="hover:text-white transition">
                         @{entry.actor_username}
                       </Link>
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-4 py-3">
                       <a
                         href={entry.content_url}
                         target="_blank"
@@ -273,10 +274,10 @@ export default function AdminEngagementPage() {
                         className="text-gray-300 hover:text-white flex items-center gap-1.5 transition"
                       >
                         <span className="truncate max-w-xs">{entry.content_title}</span>
-                        <ExternalLink className="w-3 h-3 shrink-0 text-gray-600" />
+                        <ExternalLink className="w-3 h-3 shrink-0 text-gray-600" aria-hidden="true" />
                       </a>
                     </td>
-                    <td className="px-5 py-3 text-right text-gray-500 text-xs whitespace-nowrap">
+                    <td className="px-4 py-3 text-right text-gray-500 text-xs whitespace-nowrap">
                       {timeAgo(entry.created_at)}
                     </td>
                   </tr>

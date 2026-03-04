@@ -136,7 +136,7 @@ export default function AdminFeedbackPage() {
       </p>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {Object.entries(CATEGORY_CONFIG).map(([key, cfg]) => {
           const Icon = cfg.icon;
           return (
@@ -191,6 +191,7 @@ export default function AdminFeedbackPage() {
                 <button
                   type="button"
                   onClick={() => toggleExpand(item.id)}
+                  aria-expanded={isOpen}
                   className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-800/60 transition text-left"
                 >
                   {/* Unread dot */}
@@ -286,6 +287,7 @@ export default function AdminFeedbackPage() {
                         onChange={(e) => setReplyText((prev) => ({ ...prev, [item.id]: e.target.value }))}
                         rows={3}
                         placeholder="Write your reply… (user will be notified by email)"
+                        aria-label="Reply to feedback"
                         className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-fuchsia-500 resize-none"
                       />
                       <div className="flex items-center justify-between mt-3 gap-3">
