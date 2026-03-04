@@ -37,38 +37,36 @@ export default function Modal({
     xl: 'max-w-6xl',
   };
 
-  // Handle Esc key
-  // useEffect(() => {
-  //   const handleEscape = (e: KeyboardEvent) => {
-  //     if (e.key === 'Escape' && isOpen) {
-  //       onClose();
-  //     }
-  //   };
+  // Focus trap — prevent Tab from leaving the modal
+  useEffect(() => {
+    if (!isOpen || !modalRef.current) return;
 
-  //   if (isOpen) {
-  //     // Store current focus
-  //     previousFocusRef.current = document.activeElement as HTMLElement;
-      
-  //     // Prevent body scroll
-  //     document.body.style.overflow = 'hidden';
-      
-  //     // Add escape listener
-  //     document.addEventListener('keydown', handleEscape);
-      
-  //     // Focus modal
-  //     setTimeout(() => modalRef.current?.focus(), 100);
-  //   }
+    const FOCUSABLE = [
+      'a[href]', 'button:not([disabled])', 'input:not([disabled])',
+      'select:not([disabled])', 'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(', ');
 
-  //   return () => {
-  //     document.removeEventListener('keydown', handleEscape);
-  //     document.body.style.overflow = 'unset';
-      
-  //     // Restore focus
-  //     if (previousFocusRef.current) {
-  //       previousFocusRef.current.focus();
-  //     }
-  //   };
-  // }, [isOpen, onClose]);
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !modalRef.current) return;
+      const focusable = Array.from(
+        modalRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)
+      ).filter((el) => el.offsetParent !== null);
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleTab);
+    return () => document.removeEventListener('keydown', handleTab);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;

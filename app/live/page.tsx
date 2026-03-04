@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import { Radio, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import DOMPurify from 'dompurify';
 
 interface LiveSession {
   id: string;
@@ -81,7 +82,10 @@ export default function LivePage() {
                     <div className="px-6 pb-6">
                       <div
                         className="w-full"
-                        dangerouslySetInnerHTML={{ __html: session.embed_code }}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(session.embed_code, {
+                          ALLOWED_TAGS: ['iframe', 'div', 'p', 'span'],
+                          ALLOWED_ATTR: ['src', 'width', 'height', 'frameborder', 'allowfullscreen', 'allow', 'class', 'style', 'title'],
+                        }) }}
                       />
                     </div>
                   )}
@@ -123,7 +127,10 @@ export default function LivePage() {
                       {session.description && <p className="text-gray-400 text-sm mb-4">{session.description}</p>}
                       <div
                         className="w-full"
-                        dangerouslySetInnerHTML={{ __html: session.embed_code }}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(session.embed_code, {
+                          ALLOWED_TAGS: ['iframe', 'div', 'p', 'span'],
+                          ALLOWED_ATTR: ['src', 'width', 'height', 'frameborder', 'allowfullscreen', 'allow', 'class', 'style', 'title'],
+                        }) }}
                       />
                     </div>
                   )}

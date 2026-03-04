@@ -19,8 +19,11 @@ export async function POST(request: NextRequest) {
 
   const secret = process.env.TURNSTILE_SECRET_KEY;
   if (!secret) {
-    // If the secret isn't configured, skip verification (dev fallback)
-    console.warn('[turnstile] TURNSTILE_SECRET_KEY not set — skipping verification');
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[turnstile] TURNSTILE_SECRET_KEY not set in production — rejecting');
+      return NextResponse.json({ success: false, error: 'Bot verification unavailable' }, { status: 503 });
+    }
+    console.warn('[turnstile] TURNSTILE_SECRET_KEY not set — skipping verification (dev only)');
     return NextResponse.json({ success: true });
   }
 

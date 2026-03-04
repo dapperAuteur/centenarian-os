@@ -28,6 +28,7 @@ import TiptapLink from '@tiptap/extension-link';
 import TiptapImage from '@tiptap/extension-image';
 import TiptapCodeBlock from '@tiptap/extension-code-block';
 import TiptapHeading from '@tiptap/extension-heading';
+import DOMPurify from 'dompurify';
 
 const TIPTAP_EXTENSIONS = [
   StarterKit.configure({ codeBlock: false, heading: false }),
@@ -41,12 +42,14 @@ function renderTextContent(text_content: string | null, content_format?: string)
   if (!text_content) return '';
   if (content_format === 'tiptap') {
     try {
-      return generateHTML(JSON.parse(text_content), TIPTAP_EXTENSIONS);
+      const html = generateHTML(JSON.parse(text_content), TIPTAP_EXTENSIONS);
+      return DOMPurify.sanitize(html);
     } catch {
       return '';
     }
   }
-  return marked.parse(text_content, { async: false }) as string;
+  const html = marked.parse(text_content, { async: false }) as string;
+  return DOMPurify.sanitize(html);
 }
 
 interface Lesson {

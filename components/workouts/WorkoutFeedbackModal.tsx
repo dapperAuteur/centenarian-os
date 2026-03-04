@@ -104,6 +104,13 @@ export default function WorkoutFeedbackModal({
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="How did it go?" size="md">
+      {/* Reassurance banner — workout is already saved at this point */}
+      {!submitted && (
+        <div className="mx-1 mt-1 mb-0 bg-lime-50 border border-lime-200 rounded-lg px-4 py-2 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-lime-600 shrink-0" aria-hidden="true" />
+          <p className="text-xs text-lime-800 font-medium">Workout saved! Feedback is optional.</p>
+        </div>
+      )}
       {submitted ? (
         <div className="flex flex-col items-center gap-4 py-8 text-center">
           <CheckCircle2 className="w-12 h-12 text-lime-500" aria-hidden="true" />
@@ -312,7 +319,7 @@ export default function WorkoutFeedbackModal({
               onClick={handleClose}
               className="flex-1 border border-gray-200 rounded-xl py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
             >
-              Skip
+              Skip Feedback
             </button>
             <button
               type="submit"

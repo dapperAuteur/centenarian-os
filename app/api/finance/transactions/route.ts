@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
   const accountId = params.get('account_id');
   const brandId = params.get('brand_id');
   const sourceModule = params.get('source_module');
-  const limit = parseInt(params.get('limit') || '100');
+  const limit = Math.min(parseInt(params.get('limit') || '100') || 100, 500);
   const offset = parseInt(params.get('offset') || '0');
 
   let query = supabase

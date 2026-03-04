@@ -89,7 +89,7 @@ export default function CreateTaskModal({ isOpen, onClose, defaultDate, onCreate
     <Modal isOpen={isOpen} onClose={onClose} title="Create Task" size="md">
       <form onSubmit={handleSubmit} className="p-6 space-y-4">
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          <div role="alert" className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
             {error}
           </div>
         )}
@@ -103,10 +103,11 @@ export default function CreateTaskModal({ isOpen, onClose, defaultDate, onCreate
 
         {/* Activity */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="task-activity" className="block text-sm font-medium text-gray-700 mb-1">
             Activity *
           </label>
           <input
+            id="task-activity"
             type="text"
             value={activity}
             onChange={e => setActivity(e.target.value)}
@@ -118,10 +119,11 @@ export default function CreateTaskModal({ isOpen, onClose, defaultDate, onCreate
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="task-description" className="block text-sm font-medium text-gray-700 mb-1">
             Description
           </label>
           <textarea
+            id="task-description"
             value={description}
             onChange={e => setDescription(e.target.value)}
             rows={2}
@@ -133,8 +135,9 @@ export default function CreateTaskModal({ isOpen, onClose, defaultDate, onCreate
         {/* Date & Time */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+            <label htmlFor="task-date" className="block text-sm font-medium text-gray-700 mb-1">Date</label>
             <input
+              id="task-date"
               type="date"
               value={date}
               onChange={e => setDate(e.target.value)}
@@ -143,8 +146,9 @@ export default function CreateTaskModal({ isOpen, onClose, defaultDate, onCreate
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+            <label htmlFor="task-time" className="block text-sm font-medium text-gray-700 mb-1">Time</label>
             <input
+              id="task-time"
               type="time"
               value={time}
               onChange={e => setTime(e.target.value)}
@@ -161,6 +165,7 @@ export default function CreateTaskModal({ isOpen, onClose, defaultDate, onCreate
               <button
                 key={t}
                 type="button"
+                aria-pressed={tag === t}
                 onClick={() => setTag(t)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
                   tag === t
@@ -182,6 +187,7 @@ export default function CreateTaskModal({ isOpen, onClose, defaultDate, onCreate
               <button
                 key={p}
                 type="button"
+                aria-pressed={priority === p}
                 onClick={() => setPriority(p)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
                   priority === p

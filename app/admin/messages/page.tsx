@@ -252,7 +252,7 @@ function AdminMessagesPage() {
 
         {/* Recipient scope */}
         <div className="mb-4">
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Recipients</label>
+          <p className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Recipients</p>
           <div className="flex flex-wrap gap-2">
             {SCOPE_OPTIONS.map((o) => (
               <button
@@ -270,7 +270,9 @@ function AdminMessagesPage() {
         {/* User lookup */}
         {scope === 'user' && (
           <div className="mb-4 flex gap-2">
+            <label htmlFor="admin-recipient-email" className="sr-only">Recipient email address</label>
             <input
+              id="admin-recipient-email"
               type="email"
               placeholder="user@example.com"
               value={targetEmail}
@@ -291,8 +293,9 @@ function AdminMessagesPage() {
 
         {/* Subject */}
         <div className="mb-3">
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Subject</label>
+          <label htmlFor="admin-msg-subject" className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Subject</label>
           <input
+            id="admin-msg-subject"
             type="text"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
@@ -315,7 +318,7 @@ function AdminMessagesPage() {
         </div>
 
         {result && (
-          <div className={`flex items-center gap-2 rounded-lg px-4 py-3 mb-4 text-sm ${result.type === 'ok' ? 'bg-green-900/30 text-green-300' : 'bg-red-900/30 text-red-300'}`}>
+          <div role="alert" className={`flex items-center gap-2 rounded-lg px-4 py-3 mb-4 text-sm ${result.type === 'ok' ? 'bg-green-900/30 text-green-300' : 'bg-red-900/30 text-red-300'}`}>
             {result.type === 'ok' ? <CheckCircle className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
             {result.text}
           </div>
@@ -458,7 +461,7 @@ function AdminMessagesPage() {
                         />
                         <div className="flex items-center gap-3">
                           {replyError[m.id] && (
-                            <p className="text-xs text-red-400">{replyError[m.id]}</p>
+                            <p role="alert" className="text-xs text-red-400">{replyError[m.id]}</p>
                           )}
                           <button
                             type="button"

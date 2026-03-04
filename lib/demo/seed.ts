@@ -9,8 +9,25 @@ export function daysAgo(n: number): string {
   return d.toISOString().split('T')[0];
 }
 
-// Deletion order respects FK constraints (all use ON DELETE SET NULL or CASCADE)
+// Deletion order respects FK constraints (children before parents)
 export const CLEAR_ORDER = [
+  'entity_life_categories',
+  'workout_log_exercises',
+  'workout_logs',
+  'workout_feedback',
+  'exercise_equipment',
+  'exercises',
+  'exercise_categories',
+  'equipment_valuations',
+  'equipment',
+  'equipment_categories',
+  'focus_sessions',
+  'tasks',
+  'milestones',
+  'goals',
+  'roadmaps',
+  'user_health_metrics',
+  'life_categories',
   'trips',
   'vehicle_maintenance',
   'fuel_logs',
@@ -123,6 +140,126 @@ export async function seedTutorial(supabase: SupabaseClient, userId: string): Pr
     { user_id: userId, date: daysAgo(30), mode: 'bike', origin: 'Home', destination: 'Farmers Market', distance_miles: 5.5, duration_min: 24, trip_category: 'travel', tax_category: 'personal', source: 'manual' },
   ]);
   if (tripErr) throw new Error(`Tutorial trips: ${tripErr.message}`);
+
+  // Planner: Roadmap → Goal → Milestone → Tasks
+  const { data: roadmapData, error: rmErr } = await supabase
+    .from('roadmaps')
+    .insert([{ user_id: userId, title: '2026 Personal Roadmap', description: 'Annual plan', start_date: daysAgo(90), end_date: daysAgo(-275) }])
+    .select('id');
+  if (rmErr) throw new Error(`Tutorial roadmap: ${rmErr.message}`);
+  const roadmapId = roadmapData?.[0]?.id;
+
+  if (roadmapId) {
+    const { data: goalData, error: goalErr } = await supabase
+      .from('goals')
+      .insert([{ roadmap_id: roadmapId, title: 'Get Healthier', category: 'FITNESS', target_year: 2026, status: 'active' }])
+      .select('id');
+    if (goalErr) throw new Error(`Tutorial goal: ${goalErr.message}`);
+    const goalId = goalData?.[0]?.id;
+
+    if (goalId) {
+      const { data: msData, error: msErr } = await supabase
+        .from('milestones')
+        .insert([{ goal_id: goalId, title: 'Establish workout routine', target_date: daysAgo(-30), status: 'in_progress' }])
+        .select('id');
+      if (msErr) throw new Error(`Tutorial milestone: ${msErr.message}`);
+      const milestoneId = msData?.[0]?.id;
+
+      if (milestoneId) {
+        const { error: taskErr } = await supabase.from('tasks').insert([
+          { milestone_id: milestoneId, date: daysAgo(0), time: '07:00', activity: 'Morning walk', description: '30 min around the neighborhood', tag: 'health', priority: 2 },
+          { milestone_id: milestoneId, date: daysAgo(0), time: '12:00', activity: 'Meal prep', description: 'Prep lunches for the week', tag: 'health', priority: 2 },
+          { milestone_id: milestoneId, date: daysAgo(1), time: '06:30', activity: 'Gym session', description: 'Upper body + core', tag: 'health', priority: 1, completed: true, completed_at: new Date(Date.now() - 86400000).toISOString() },
+          { milestone_id: milestoneId, date: daysAgo(2), time: '08:00', activity: 'Grocery run', description: 'Whole Foods weekly shop', tag: 'errands', priority: 3, completed: true, completed_at: new Date(Date.now() - 172800000).toISOString() },
+          { milestone_id: milestoneId, date: daysAgo(3), time: '07:00', activity: 'Yoga', description: '45 min flow', tag: 'health', priority: 2, completed: true, completed_at: new Date(Date.now() - 259200000).toISOString() },
+        ]);
+        if (taskErr) throw new Error(`Tutorial tasks: ${taskErr.message}`);
+      }
+    }
+  }
+
+  // Health Metrics (14 days)
+  const healthRows = Array.from({ length: 14 }, (_, i) => ({
+    user_id: userId,
+    logged_date: daysAgo(i),
+    resting_hr: 58 + Math.floor(Math.random() * 8),
+    steps: 6000 + Math.floor(Math.random() * 6000),
+    sleep_hours: +(6.5 + Math.random() * 2).toFixed(1),
+    activity_min: 20 + Math.floor(Math.random() * 50),
+    source: 'manual' as const,
+  }));
+  const { error: hmErr } = await supabase.from('user_health_metrics').insert(healthRows);
+  if (hmErr) throw new Error(`Tutorial health metrics: ${hmErr.message}`);
+
+  // Exercise Categories + Exercises
+  const { data: exCats, error: exCatErr } = await supabase
+    .from('exercise_categories')
+    .insert([
+      { user_id: userId, name: 'Push', sort_order: 1 },
+      { user_id: userId, name: 'Pull', sort_order: 2 },
+      { user_id: userId, name: 'Legs', sort_order: 3 },
+      { user_id: userId, name: 'Core', sort_order: 4 },
+      { user_id: userId, name: 'Cardio', sort_order: 5 },
+    ])
+    .select('id, name');
+  if (exCatErr) throw new Error(`Tutorial exercise categories: ${exCatErr.message}`);
+  const exCatId = (name: string) => exCats?.find(c => c.name === name)?.id ?? null;
+
+  const { data: exerciseData, error: exErr } = await supabase
+    .from('exercises')
+    .insert([
+      { user_id: userId, name: 'Push-ups', category_id: exCatId('Push'), default_sets: 3, default_reps: 15, primary_muscles: ['chest', 'triceps'] },
+      { user_id: userId, name: 'Pull-ups', category_id: exCatId('Pull'), default_sets: 3, default_reps: 8, primary_muscles: ['back', 'biceps'] },
+      { user_id: userId, name: 'Squats', category_id: exCatId('Legs'), default_sets: 3, default_reps: 12, primary_muscles: ['quads', 'glutes'] },
+      { user_id: userId, name: 'Plank', category_id: exCatId('Core'), default_sets: 3, default_duration_sec: 45, primary_muscles: ['core'] },
+      { user_id: userId, name: 'Treadmill Run', category_id: exCatId('Cardio'), default_duration_sec: 1200, primary_muscles: ['legs', 'cardio'] },
+    ])
+    .select('id, name');
+  if (exErr) throw new Error(`Tutorial exercises: ${exErr.message}`);
+
+  // Workout Log
+  const { data: logData, error: logErr } = await supabase
+    .from('workout_logs')
+    .insert([{ user_id: userId, name: 'Morning Strength', date: daysAgo(1), duration_min: 45, overall_feeling: 4, purpose: ['strength', 'health'] }])
+    .select('id');
+  if (logErr) throw new Error(`Tutorial workout log: ${logErr.message}`);
+  const logId = logData?.[0]?.id;
+
+  if (logId && exerciseData) {
+    const exId = (name: string) => exerciseData.find(e => e.name === name)?.id ?? null;
+    const { error: logExErr } = await supabase.from('workout_log_exercises').insert([
+      { log_id: logId, name: 'Push-ups', exercise_id: exId('Push-ups'), sets_completed: 3, reps_completed: 15, sort_order: 1, phase: 'working', rpe: 7 },
+      { log_id: logId, name: 'Squats', exercise_id: exId('Squats'), sets_completed: 3, reps_completed: 12, weight_lbs: 135, sort_order: 2, phase: 'working', rpe: 8 },
+      { log_id: logId, name: 'Plank', exercise_id: exId('Plank'), sets_completed: 3, duration_sec: 45, sort_order: 3, phase: 'cooldown' },
+    ]);
+    if (logExErr) throw new Error(`Tutorial workout log exercises: ${logExErr.message}`);
+  }
+
+  // Equipment
+  const { data: eqCats, error: eqCatErr } = await supabase
+    .from('equipment_categories')
+    .insert([
+      { user_id: userId, name: 'Electronics', sort_order: 1 },
+      { user_id: userId, name: 'Fitness', sort_order: 2 },
+    ])
+    .select('id, name');
+  if (eqCatErr) throw new Error(`Tutorial equipment categories: ${eqCatErr.message}`);
+  const eqCatIdFn = (name: string) => eqCats?.find(c => c.name === name)?.id ?? null;
+
+  const { error: eqErr } = await supabase.from('equipment').insert([
+    { user_id: userId, name: 'MacBook Pro 14"', category_id: eqCatIdFn('Electronics'), brand: 'Apple', purchase_date: daysAgo(180), purchase_price: 1999, current_value: 1600, condition: 'excellent' },
+    { user_id: userId, name: 'Resistance Bands Set', category_id: eqCatIdFn('Fitness'), brand: 'TheraBand', purchase_date: daysAgo(60), purchase_price: 35, current_value: 30, condition: 'good' },
+  ]);
+  if (eqErr) throw new Error(`Tutorial equipment: ${eqErr.message}`);
+
+  // Life Categories
+  const { error: lcErr } = await supabase.from('life_categories').insert([
+    { user_id: userId, name: 'Health', icon: 'heart', color: '#ef4444', sort_order: 1 },
+    { user_id: userId, name: 'Finance', icon: 'dollar-sign', color: '#10b981', sort_order: 2 },
+    { user_id: userId, name: 'Career', icon: 'briefcase', color: '#6366f1', sort_order: 3 },
+    { user_id: userId, name: 'Relationships', icon: 'users', color: '#f59e0b', sort_order: 4 },
+  ]);
+  if (lcErr) throw new Error(`Tutorial life categories: ${lcErr.message}`);
 }
 
 // ─── VISITOR ACCOUNT ────────────────────────────────────────────────────────
@@ -310,4 +447,199 @@ export async function seedVisitor(supabase: SupabaseClient, userId: string): Pro
     { user_id: userId, name: 'Honda Dealership', contact_type: 'vendor', use_count: 2 },
   ]);
   if (contactErr) throw new Error(`Visitor contacts: ${contactErr.message}`);
+
+  // ── Planner: Roadmap → Goals → Milestones → Tasks ──
+  const { data: rmData, error: rmErr } = await supabase
+    .from('roadmaps')
+    .insert([{ user_id: userId, title: '2026 Life Operating System', description: 'Health, finance, and career objectives', start_date: daysAgo(90), end_date: daysAgo(-275) }])
+    .select('id');
+  if (rmErr) throw new Error(`Visitor roadmap: ${rmErr.message}`);
+  const roadmapId = rmData?.[0]?.id;
+
+  if (roadmapId) {
+    const { data: goalsData, error: goalErr } = await supabase
+      .from('goals')
+      .insert([
+        { roadmap_id: roadmapId, title: 'Optimize Health & Fitness', category: 'FITNESS', target_year: 2026, status: 'active' },
+        { roadmap_id: roadmapId, title: 'Grow Consulting Revenue', category: 'OUTREACH', target_year: 2026, status: 'active' },
+        { roadmap_id: roadmapId, title: 'Build Creative Habit', category: 'CREATIVE', target_year: 2026, status: 'active' },
+      ])
+      .select('id, title');
+    if (goalErr) throw new Error(`Visitor goals: ${goalErr.message}`);
+
+    const goalId = (title: string) => goalsData?.find(g => g.title === title)?.id;
+
+    const { data: msData, error: msErr } = await supabase
+      .from('milestones')
+      .insert([
+        { goal_id: goalId('Optimize Health & Fitness'), title: 'Consistent 4x/week workouts', target_date: daysAgo(-60), status: 'in_progress' },
+        { goal_id: goalId('Optimize Health & Fitness'), title: 'Complete health baseline labs', target_date: daysAgo(-14), status: 'completed', completed_at: new Date(Date.now() - 604800000).toISOString() },
+        { goal_id: goalId('Grow Consulting Revenue'), title: 'Land 3 new clients Q1', target_date: daysAgo(-30), status: 'in_progress', estimated_cost: 500, revenue: 14400 },
+        { goal_id: goalId('Build Creative Habit'), title: 'Write 10 blog posts', target_date: daysAgo(-90), status: 'not_started' },
+      ])
+      .select('id, title');
+    if (msErr) throw new Error(`Visitor milestones: ${msErr.message}`);
+
+    const msId = (title: string) => msData?.find(m => m.title === title)?.id;
+
+    const { error: taskErr } = await supabase.from('tasks').insert([
+      // Fitness milestone
+      { milestone_id: msId('Consistent 4x/week workouts'), date: daysAgo(0), time: '06:30', activity: 'AM Priming routine', description: 'Nomad OS morning protocol', tag: 'health', priority: 1 },
+      { milestone_id: msId('Consistent 4x/week workouts'), date: daysAgo(0), time: '17:00', activity: 'PM Recovery stretching', description: '15 min mobility', tag: 'health', priority: 2 },
+      { milestone_id: msId('Consistent 4x/week workouts'), date: daysAgo(1), time: '06:30', activity: 'Gym — Push day', description: 'Chest, shoulders, triceps', tag: 'health', priority: 1, completed: true, completed_at: new Date(Date.now() - 86400000).toISOString() },
+      { milestone_id: msId('Consistent 4x/week workouts'), date: daysAgo(2), time: '06:30', activity: 'Gym — Pull day', description: 'Back, biceps, forearms', tag: 'health', priority: 1, completed: true, completed_at: new Date(Date.now() - 172800000).toISOString() },
+      { milestone_id: msId('Consistent 4x/week workouts'), date: daysAgo(3), time: '07:00', activity: 'Active recovery — bike ride', description: '45 min easy pace', tag: 'health', priority: 3, completed: true, completed_at: new Date(Date.now() - 259200000).toISOString() },
+      { milestone_id: msId('Consistent 4x/week workouts'), date: daysAgo(4), time: '06:30', activity: 'Gym — Legs day', description: 'Squats, lunges, calves', tag: 'health', priority: 1, completed: true, completed_at: new Date(Date.now() - 345600000).toISOString() },
+      // Business milestone
+      { milestone_id: msId('Land 3 new clients Q1'), date: daysAgo(0), time: '10:00', activity: 'Client proposal — DataCo', description: 'Finalize SOW and send', tag: 'work', priority: 1 },
+      { milestone_id: msId('Land 3 new clients Q1'), date: daysAgo(0), time: '14:00', activity: 'Follow up with MegaCorp', description: 'Email re: contract renewal', tag: 'work', priority: 2 },
+      { milestone_id: msId('Land 3 new clients Q1'), date: daysAgo(1), time: '09:00', activity: 'Networking event prep', description: 'Review attendee list', tag: 'work', priority: 2, completed: true, completed_at: new Date(Date.now() - 86400000).toISOString() },
+      { milestone_id: msId('Land 3 new clients Q1'), date: daysAgo(5), time: '11:00', activity: 'Invoice TechCorp', description: 'Send February invoice', tag: 'work', priority: 1, completed: true, completed_at: new Date(Date.now() - 432000000).toISOString() },
+      // Creative milestone
+      { milestone_id: msId('Write 10 blog posts'), date: daysAgo(0), time: '20:00', activity: 'Write blog draft', description: 'Topic: longevity habits for desk workers', tag: 'creative', priority: 3 },
+      { milestone_id: msId('Write 10 blog posts'), date: daysAgo(7), time: '20:00', activity: 'Publish blog post', description: 'Topic: fuel tracking basics', tag: 'creative', priority: 2, completed: true, completed_at: new Date(Date.now() - 604800000).toISOString() },
+    ]);
+    if (taskErr) throw new Error(`Visitor tasks: ${taskErr.message}`);
+  }
+
+  // ── Health Metrics (30 days) ──
+  const healthRows = Array.from({ length: 30 }, (_, i) => ({
+    user_id: userId,
+    logged_date: daysAgo(i),
+    resting_hr: 55 + Math.floor(Math.random() * 10),
+    steps: 7000 + Math.floor(Math.random() * 7000),
+    sleep_hours: +(6 + Math.random() * 2.5).toFixed(1),
+    activity_min: 25 + Math.floor(Math.random() * 60),
+    hrv_ms: 35 + Math.floor(Math.random() * 30),
+    recovery_score: 50 + Math.floor(Math.random() * 50),
+    source: 'manual' as const,
+  }));
+  const { error: hmErr } = await supabase.from('user_health_metrics').insert(healthRows);
+  if (hmErr) throw new Error(`Visitor health metrics: ${hmErr.message}`);
+
+  // ── Exercise Categories + Exercises ──
+  const { data: exCats, error: exCatErr } = await supabase
+    .from('exercise_categories')
+    .insert([
+      { user_id: userId, name: 'Push', sort_order: 1 },
+      { user_id: userId, name: 'Pull', sort_order: 2 },
+      { user_id: userId, name: 'Legs', sort_order: 3 },
+      { user_id: userId, name: 'Core', sort_order: 4 },
+      { user_id: userId, name: 'Cardio', sort_order: 5 },
+      { user_id: userId, name: 'Mobility', sort_order: 6 },
+    ])
+    .select('id, name');
+  if (exCatErr) throw new Error(`Visitor exercise categories: ${exCatErr.message}`);
+  const exCatId = (name: string) => exCats?.find(c => c.name === name)?.id ?? null;
+
+  const { data: exercises, error: exErr } = await supabase
+    .from('exercises')
+    .insert([
+      { user_id: userId, name: 'Bench Press', category_id: exCatId('Push'), default_sets: 4, default_reps: 8, default_weight_lbs: 155, primary_muscles: ['chest', 'triceps', 'shoulders'] },
+      { user_id: userId, name: 'Push-ups', category_id: exCatId('Push'), default_sets: 3, default_reps: 20, primary_muscles: ['chest', 'triceps'] },
+      { user_id: userId, name: 'Overhead Press', category_id: exCatId('Push'), default_sets: 3, default_reps: 10, default_weight_lbs: 95, primary_muscles: ['shoulders', 'triceps'] },
+      { user_id: userId, name: 'Pull-ups', category_id: exCatId('Pull'), default_sets: 4, default_reps: 8, primary_muscles: ['back', 'biceps'] },
+      { user_id: userId, name: 'Barbell Rows', category_id: exCatId('Pull'), default_sets: 4, default_reps: 10, default_weight_lbs: 135, primary_muscles: ['back', 'biceps'] },
+      { user_id: userId, name: 'Back Squat', category_id: exCatId('Legs'), default_sets: 4, default_reps: 8, default_weight_lbs: 185, primary_muscles: ['quads', 'glutes', 'hamstrings'] },
+      { user_id: userId, name: 'Romanian Deadlift', category_id: exCatId('Legs'), default_sets: 3, default_reps: 10, default_weight_lbs: 155, primary_muscles: ['hamstrings', 'glutes', 'lower back'] },
+      { user_id: userId, name: 'Lunges', category_id: exCatId('Legs'), default_sets: 3, default_reps: 12, default_weight_lbs: 40, primary_muscles: ['quads', 'glutes'] },
+      { user_id: userId, name: 'Plank', category_id: exCatId('Core'), default_sets: 3, default_duration_sec: 60, primary_muscles: ['core'] },
+      { user_id: userId, name: 'Dead Bug', category_id: exCatId('Core'), default_sets: 3, default_reps: 10, primary_muscles: ['core', 'hip flexors'] },
+      { user_id: userId, name: 'Treadmill Run', category_id: exCatId('Cardio'), default_duration_sec: 1800, primary_muscles: ['legs', 'cardio'] },
+      { user_id: userId, name: 'Hip 90/90 Stretch', category_id: exCatId('Mobility'), default_sets: 2, default_duration_sec: 30, primary_muscles: ['hips'] },
+    ])
+    .select('id, name');
+  if (exErr) throw new Error(`Visitor exercises: ${exErr.message}`);
+  const exId = (name: string) => exercises?.find(e => e.name === name)?.id ?? null;
+
+  // ── Workout Logs (3 recent workouts) ──
+  const { data: wLogs, error: wLogErr } = await supabase
+    .from('workout_logs')
+    .insert([
+      { user_id: userId, name: 'Push Day', date: daysAgo(1), duration_min: 55, overall_feeling: 4, purpose: ['strength', 'hypertrophy'], warmup_notes: '5 min treadmill + arm circles' },
+      { user_id: userId, name: 'Pull Day', date: daysAgo(2), duration_min: 50, overall_feeling: 5, purpose: ['strength'], warmup_notes: 'Band pull-aparts' },
+      { user_id: userId, name: 'Leg Day', date: daysAgo(4), duration_min: 60, overall_feeling: 3, purpose: ['strength', 'mobility'], cooldown_notes: 'Foam rolled quads and hamstrings' },
+    ])
+    .select('id, name');
+  if (wLogErr) throw new Error(`Visitor workout logs: ${wLogErr.message}`);
+  const wLogId = (name: string) => wLogs?.find(l => l.name === name)?.id;
+
+  const { error: wExErr } = await supabase.from('workout_log_exercises').insert([
+    // Push Day
+    { log_id: wLogId('Push Day'), name: 'Bench Press', exercise_id: exId('Bench Press'), sets_completed: 4, reps_completed: 8, weight_lbs: 155, sort_order: 1, phase: 'working', rpe: 8 },
+    { log_id: wLogId('Push Day'), name: 'Overhead Press', exercise_id: exId('Overhead Press'), sets_completed: 3, reps_completed: 10, weight_lbs: 95, sort_order: 2, phase: 'working', rpe: 7 },
+    { log_id: wLogId('Push Day'), name: 'Push-ups', exercise_id: exId('Push-ups'), sets_completed: 3, reps_completed: 20, sort_order: 3, phase: 'working', rpe: 6, to_failure: true },
+    { log_id: wLogId('Push Day'), name: 'Plank', exercise_id: exId('Plank'), sets_completed: 3, duration_sec: 60, sort_order: 4, phase: 'cooldown' },
+    // Pull Day
+    { log_id: wLogId('Pull Day'), name: 'Pull-ups', exercise_id: exId('Pull-ups'), sets_completed: 4, reps_completed: 8, sort_order: 1, phase: 'working', rpe: 8 },
+    { log_id: wLogId('Pull Day'), name: 'Barbell Rows', exercise_id: exId('Barbell Rows'), sets_completed: 4, reps_completed: 10, weight_lbs: 135, sort_order: 2, phase: 'working', rpe: 7 },
+    { log_id: wLogId('Pull Day'), name: 'Dead Bug', exercise_id: exId('Dead Bug'), sets_completed: 3, reps_completed: 10, sort_order: 3, phase: 'cooldown' },
+    // Leg Day
+    { log_id: wLogId('Leg Day'), name: 'Back Squat', exercise_id: exId('Back Squat'), sets_completed: 4, reps_completed: 8, weight_lbs: 185, sort_order: 1, phase: 'working', rpe: 9 },
+    { log_id: wLogId('Leg Day'), name: 'Romanian Deadlift', exercise_id: exId('Romanian Deadlift'), sets_completed: 3, reps_completed: 10, weight_lbs: 155, sort_order: 2, phase: 'working', rpe: 8 },
+    { log_id: wLogId('Leg Day'), name: 'Lunges', exercise_id: exId('Lunges'), sets_completed: 3, reps_completed: 12, weight_lbs: 40, sort_order: 3, phase: 'working', rpe: 7, is_unilateral: true },
+    { log_id: wLogId('Leg Day'), name: 'Hip 90/90 Stretch', exercise_id: exId('Hip 90/90 Stretch'), sets_completed: 2, duration_sec: 30, sort_order: 4, phase: 'cooldown' },
+  ]);
+  if (wExErr) throw new Error(`Visitor workout log exercises: ${wExErr.message}`);
+
+  // ── Equipment ──
+  const { data: eqCats, error: eqCatErr } = await supabase
+    .from('equipment_categories')
+    .insert([
+      { user_id: userId, name: 'Electronics', sort_order: 1 },
+      { user_id: userId, name: 'Fitness', sort_order: 2 },
+      { user_id: userId, name: 'Travel', sort_order: 3 },
+      { user_id: userId, name: 'Office', sort_order: 4 },
+    ])
+    .select('id, name');
+  if (eqCatErr) throw new Error(`Visitor equipment categories: ${eqCatErr.message}`);
+  const eqCatId = (name: string) => eqCats?.find(c => c.name === name)?.id ?? null;
+
+  const { error: eqErr } = await supabase.from('equipment').insert([
+    { user_id: userId, name: 'MacBook Pro 16"', category_id: eqCatId('Electronics'), brand: 'Apple', model: 'M3 Max', purchase_date: daysAgo(120), purchase_price: 3499, current_value: 3000, condition: 'excellent' },
+    { user_id: userId, name: 'AirPods Pro', category_id: eqCatId('Electronics'), brand: 'Apple', model: '2nd Gen', purchase_date: daysAgo(200), purchase_price: 249, current_value: 180, condition: 'good' },
+    { user_id: userId, name: 'Adjustable Dumbbells', category_id: eqCatId('Fitness'), brand: 'Bowflex', model: 'SelectTech 552', purchase_date: daysAgo(365), purchase_price: 349, current_value: 250, condition: 'good' },
+    { user_id: userId, name: 'Yoga Mat', category_id: eqCatId('Fitness'), brand: 'Manduka', model: 'PRO', purchase_date: daysAgo(180), purchase_price: 120, current_value: 90, condition: 'excellent' },
+    { user_id: userId, name: 'Travel Backpack', category_id: eqCatId('Travel'), brand: 'Peak Design', model: 'Travel 45L', purchase_date: daysAgo(300), purchase_price: 299, current_value: 220, condition: 'good' },
+    { user_id: userId, name: 'Standing Desk', category_id: eqCatId('Office'), brand: 'Uplift', model: 'V2 60"', purchase_date: daysAgo(400), purchase_price: 599, current_value: 400, condition: 'excellent' },
+  ]);
+  if (eqErr) throw new Error(`Visitor equipment: ${eqErr.message}`);
+
+  // ── Life Categories ──
+  const { data: lcData, error: lcErr } = await supabase
+    .from('life_categories')
+    .insert([
+      { user_id: userId, name: 'Health', icon: 'heart', color: '#ef4444', sort_order: 1 },
+      { user_id: userId, name: 'Finance', icon: 'dollar-sign', color: '#10b981', sort_order: 2 },
+      { user_id: userId, name: 'Career', icon: 'briefcase', color: '#6366f1', sort_order: 3 },
+      { user_id: userId, name: 'Relationships', icon: 'users', color: '#f59e0b', sort_order: 4 },
+      { user_id: userId, name: 'Fitness', icon: 'dumbbell', color: '#ec4899', sort_order: 5 },
+      { user_id: userId, name: 'Travel', icon: 'map-pin', color: '#14b8a6', sort_order: 6 },
+      { user_id: userId, name: 'Learning', icon: 'book-open', color: '#8b5cf6', sort_order: 7 },
+      { user_id: userId, name: 'Creativity', icon: 'palette', color: '#f97316', sort_order: 8 },
+    ])
+    .select('id, name');
+  if (lcErr) throw new Error(`Visitor life categories: ${lcErr.message}`);
+
+  // Tag some existing entities with life categories
+  const lcId = (name: string) => lcData?.find(c => c.name === name)?.id;
+  if (lcData && wLogs) {
+    const tagRows = [
+      ...(wLogs.map(l => ({ user_id: userId, life_category_id: lcId('Fitness'), entity_type: 'workout' as const, entity_id: l.id }))),
+    ];
+    if (tagRows.length > 0 && tagRows.every(r => r.life_category_id)) {
+      const { error: tagErr } = await supabase.from('entity_life_categories').insert(tagRows);
+      if (tagErr) throw new Error(`Visitor life category tags: ${tagErr.message}`);
+    }
+  }
+
+  // ── Focus Sessions (5 recent sessions) ──
+  const { error: fsErr } = await supabase.from('focus_sessions').insert([
+    { user_id: userId, start_time: new Date(Date.now() - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 40 * 60000).toISOString(), duration: 50, notes: 'Deep work on client proposal', session_type: 'focus', hourly_rate: 150, revenue: 125 },
+    { user_id: userId, start_time: new Date(Date.now() - 86400000 - 120 * 60000).toISOString(), end_time: new Date(Date.now() - 86400000 - 45 * 60000).toISOString(), duration: 75, notes: 'Code review and architecture planning', session_type: 'work' },
+    { user_id: userId, start_time: new Date(Date.now() - 172800000 - 60 * 60000).toISOString(), end_time: new Date(Date.now() - 172800000 - 15 * 60000).toISOString(), duration: 45, notes: 'Blog writing — fuel tracking post', session_type: 'focus' },
+    { user_id: userId, start_time: new Date(Date.now() - 259200000 - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 259200000 - 30 * 60000).toISOString(), duration: 60, notes: 'Financial reconciliation', session_type: 'work', hourly_rate: 150, revenue: 150 },
+    { user_id: userId, start_time: new Date(Date.now() - 345600000 - 50 * 60000).toISOString(), end_time: new Date(Date.now() - 345600000).toISOString(), duration: 50, notes: 'Client presentation prep', session_type: 'focus', hourly_rate: 150, revenue: 125 },
+  ]);
+  if (fsErr) throw new Error(`Visitor focus sessions: ${fsErr.message}`);
 }

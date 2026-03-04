@@ -161,12 +161,15 @@ export default function PricingPage() {
                 'Focus Engine (timer, debrief, pain log)',
                 'Travel & vehicle tracking with fuel OCR',
                 'Financial dashboard (accounts, budgets, brands)',
-                'Health metrics & wearable sync',
+                'Health metrics & wearable sync (Garmin, Oura, WHOOP)',
+                'Workouts, exercises & Nomad Longevity OS protocol',
                 'Equipment & asset tracking with valuations',
-                'Academy courses & 14 tutorial guides + Data Hub (bulk import/export)',
-                'Blog & recipe publishing',
-                'AI-powered weekly reviews',
-                'Cross-module activity linking',
+                'Universal OCR scanner for receipts & labels',
+                'Life Categories — tag activities across all modules',
+                'Life Retrospective with Google Calendar import',
+                'Academy courses & 14 tutorial guides',
+                'Data Hub — bulk import/export for 12+ modules',
+                'Cross-module linking, saved contacts & blog publishing',
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm text-gray-700">
                   <Check className="w-4 h-4 text-fuchsia-500 mt-0.5 shrink-0" />
