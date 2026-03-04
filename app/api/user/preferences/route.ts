@@ -19,11 +19,14 @@ export async function GET() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('dashboard_home')
+    .select('dashboard_home, scan_auto_save_images')
     .eq('id', user.id)
     .single();
 
-  return NextResponse.json({ dashboard_home: profile?.dashboard_home ?? '/dashboard/blog' });
+  return NextResponse.json({
+    dashboard_home: profile?.dashboard_home ?? '/dashboard/blog',
+    scan_auto_save_images: profile?.scan_auto_save_images ?? false,
+  });
 }
 
 export async function PATCH(request: Request) {
@@ -32,18 +35,31 @@ export async function PATCH(request: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { dashboard_home } = body;
+  const { dashboard_home, scan_auto_save_images } = body;
 
-  if (!dashboard_home || !ALLOWED_HOMES.includes(dashboard_home)) {
-    return NextResponse.json({ error: 'Invalid dashboard_home value' }, { status: 400 });
+  const updates: Record<string, unknown> = {};
+
+  if (dashboard_home !== undefined) {
+    if (!ALLOWED_HOMES.includes(dashboard_home)) {
+      return NextResponse.json({ error: 'Invalid dashboard_home value' }, { status: 400 });
+    }
+    updates.dashboard_home = dashboard_home;
+  }
+
+  if (scan_auto_save_images !== undefined) {
+    updates.scan_auto_save_images = !!scan_auto_save_images;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
   }
 
   const { error } = await supabase
     .from('profiles')
-    .update({ dashboard_home })
+    .update(updates)
     .eq('id', user.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ dashboard_home });
+  return NextResponse.json(updates);
 }
