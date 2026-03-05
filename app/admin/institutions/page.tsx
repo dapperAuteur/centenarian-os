@@ -189,7 +189,7 @@ export default function AdminInstitutionsPage() {
       )}
 
       {institutions.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">
+        <div className="text-center py-20 text-gray-400">
           <Building2 className="w-12 h-12 mx-auto mb-4 opacity-40" />
           <p>No institutions yet. Run aggregation to populate from user account data.</p>
         </div>
@@ -201,7 +201,7 @@ export default function AdminInstitutionsPage() {
                 <div className="flex items-center gap-3 min-w-0">
                   <div>
                     <h3 className="text-white font-medium">{inst.name}</h3>
-                    <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                    <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
                       <span>{inst.account_count} users</span>
                       <span>/institutions/{inst.slug}</span>
                       {inst.last_aggregated_at && (
@@ -249,7 +249,7 @@ export default function AdminInstitutionsPage() {
                   </div>
 
                   {(offers[inst.id] ?? []).length === 0 ? (
-                    <p className="text-xs text-gray-600">No offers yet.</p>
+                    <p className="text-xs text-gray-400">No offers yet.</p>
                   ) : (
                     <div className="space-y-2">
                       {(offers[inst.id] ?? []).map((offer) => (
@@ -261,7 +261,7 @@ export default function AdminInstitutionsPage() {
                                 {offer.is_published ? 'Published' : 'Draft'}
                               </span>
                             </div>
-                            <p className="text-xs text-gray-500 mt-0.5">
+                            <p className="text-xs text-gray-400 mt-0.5">
                               {OFFER_TYPES.find((t) => t.value === offer.offer_type)?.label}
                               {offer.expires_at && ` — Expires ${offer.expires_at}`}
                             </p>
@@ -275,16 +275,16 @@ export default function AdminInstitutionsPage() {
                             ) : (
                               <button onClick={() => handleCreateShortLink('offer', offer.id)}
                                 disabled={linkCreating === offer.id}
-                                className="p-1 text-gray-500 hover:text-fuchsia-400 transition disabled:opacity-50">
+                                className="p-1 text-gray-400 hover:text-fuchsia-400 transition disabled:opacity-50">
                                 {linkCreating === offer.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Link2 className="w-3 h-3" />}
                               </button>
                             )}
                             <button onClick={() => handleTogglePublish(inst.id, offer.id, offer.is_published)}
-                              className="p-1 text-gray-500 hover:text-white transition">
+                              className="p-1 text-gray-400 hover:text-white transition">
                               {offer.is_published ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                             </button>
                             <button onClick={() => handleDeleteOffer(inst.id, offer.id)}
-                              className="p-1 text-gray-500 hover:text-red-400 transition">
+                              className="p-1 text-gray-400 hover:text-red-400 transition">
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
@@ -303,35 +303,35 @@ export default function AdminInstitutionsPage() {
       <Modal isOpen={!!showAddOffer} onClose={() => setShowAddOffer(null)} title="Add Offer" size="sm">
         <div className="p-6 space-y-4">
           <div>
-            <label className="text-xs font-medium text-gray-600">Title *</label>
+            <label className="text-xs font-medium text-gray-300">Title *</label>
             <input value={offerForm.title} onChange={(e) => setOfferForm((f) => ({ ...f, title: e.target.value }))}
               className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 0% APR for 15 Months" />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600">Slug *</label>
+            <label className="text-xs font-medium text-gray-300">Slug *</label>
             <input value={offerForm.slug} onChange={(e) => setOfferForm((f) => ({ ...f, slug: e.target.value }))}
               className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. chase-0-apr-15mo" />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600">Type *</label>
+            <label className="text-xs font-medium text-gray-300">Type *</label>
             <select value={offerForm.offer_type} onChange={(e) => setOfferForm((f) => ({ ...f, offer_type: e.target.value }))}
               className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg">
               {OFFER_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600">Description</label>
+            <label className="text-xs font-medium text-gray-300">Description</label>
             <textarea rows={2} value={offerForm.description} onChange={(e) => setOfferForm((f) => ({ ...f, description: e.target.value }))}
               className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-gray-600">Expires</label>
+              <label className="text-xs font-medium text-gray-300">Expires</label>
               <input type="date" value={offerForm.expires_at} onChange={(e) => setOfferForm((f) => ({ ...f, expires_at: e.target.value }))}
                 className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">URL</label>
+              <label className="text-xs font-medium text-gray-300">URL</label>
               <input value={offerForm.url} onChange={(e) => setOfferForm((f) => ({ ...f, url: e.target.value }))}
                 className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="https://..." />
             </div>

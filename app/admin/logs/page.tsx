@@ -205,7 +205,7 @@ export default function AdminLogsPage() {
         <div className="flex items-center gap-3">
           {/* Search */}
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="Search messages..."
@@ -242,7 +242,7 @@ export default function AdminLogsPage() {
       </div>
 
       {/* Results info */}
-      <p className="text-xs text-gray-500">{total} log{total !== 1 ? 's' : ''} found</p>
+      <p className="text-xs text-gray-400">{total} log{total !== 1 ? 's' : ''} found</p>
 
       {/* Log Table */}
       <div className="space-y-1">
@@ -259,10 +259,10 @@ export default function AdminLogsPage() {
               >
                 <LevelIcon className={`w-4 h-4 shrink-0 ${style.text}`} />
                 <span className={`text-xs font-mono uppercase w-12 ${style.text}`}>{log.level}</span>
-                <span className="text-xs text-gray-500 w-16">{log.source}</span>
+                <span className="text-xs text-gray-400 w-16">{log.source}</span>
                 {log.module && <span className="text-xs text-fuchsia-400 w-24">{log.module}</span>}
                 <span className="text-sm text-gray-200 flex-1 truncate">{log.message}</span>
-                <span className="text-xs text-gray-500 shrink-0">{timeAgo(log.created_at)}</span>
+                <span className="text-xs text-gray-400 shrink-0">{timeAgo(log.created_at)}</span>
                 {!log.is_reviewed && log.level !== 'info' && (
                   <button
                     onClick={(e) => { e.stopPropagation(); markReviewed(log.id); }}
@@ -272,7 +272,7 @@ export default function AdminLogsPage() {
                     <CheckCircle className="w-4 h-4 text-green-500" />
                   </button>
                 )}
-                {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+                {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
               </div>
 
               {isExpanded && (
@@ -285,7 +285,7 @@ export default function AdminLogsPage() {
                   </div>
                   {Object.keys(log.metadata).length > 0 && (
                     <div className="mt-2">
-                      <p className="text-xs text-gray-500 mb-1">Metadata:</p>
+                      <p className="text-xs text-gray-400 mb-1">Metadata:</p>
                       <pre className="text-xs text-gray-300 bg-gray-950 rounded p-3 overflow-auto max-h-48">
                         {JSON.stringify(log.metadata, null, 2)}
                       </pre>
@@ -298,7 +298,7 @@ export default function AdminLogsPage() {
         })}
 
         {!loading && logs.length === 0 && (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-gray-400">
             <Info className="w-8 h-8 mx-auto mb-2" />
             <p>No logs found matching your filters</p>
           </div>

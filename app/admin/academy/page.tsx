@@ -158,10 +158,10 @@ export default function AdminAcademyPage() {
           <BookOpen className="w-5 h-5 text-fuchsia-400" />
           <div>
             <p className="font-semibold text-white text-sm">Manage Courses</p>
-            <p className="text-gray-500 text-xs">Unpublish, delete, or contact teachers about their courses</p>
+            <p className="text-gray-400 text-xs">Unpublish, delete, or contact teachers about their courses</p>
           </div>
         </div>
-        <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gray-400 transition" />
+        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-200 transition" />
       </Link>
 
       <div className="space-y-6 dark-input">
@@ -242,7 +242,7 @@ export default function AdminAcademyPage() {
                 <button
                   type="button"
                   onClick={() => handleDeleteCategory(cat.id)}
-                  className="p-1 text-gray-600 hover:text-red-400 transition"
+                  className="p-1 text-gray-400 hover:text-red-400 transition"
                   title="Delete category"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -250,7 +250,7 @@ export default function AdminAcademyPage() {
               </div>
             ))}
             {courseCategories.length === 0 && (
-              <p className="text-gray-600 text-xs">No categories yet.</p>
+              <p className="text-gray-400 text-xs">No categories yet.</p>
             )}
           </div>
           <div className="flex gap-2">

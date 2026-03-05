@@ -92,7 +92,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="p-8 max-w-2xl">
-      <Link href="/admin/users" className="flex items-center gap-2 text-gray-500 hover:text-white text-sm mb-6 transition">
+      <Link href="/admin/users" className="flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-6 transition">
         <ArrowLeft className="w-4 h-4" /> Back to Users
       </Link>
 
@@ -104,7 +104,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
         {[['Focus Sessions', stats.focusSessions], ['Recipes', stats.recipes], ['Blog Posts', stats.blogPosts]].map(([label, val]) => (
           <div key={label as string} className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
             <p className="text-2xl font-bold text-white">{val}</p>
-            <p className="text-gray-500 text-xs mt-1">{label}</p>
+            <p className="text-gray-400 text-xs mt-1">{label}</p>
           </div>
         ))}
       </div>
@@ -124,7 +124,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
           ))}
         </div>
         {profile.stripe_customer_id && (
-          <p className="mt-3 text-xs text-gray-600">Stripe customer: {profile.stripe_customer_id}</p>
+          <p className="mt-3 text-xs text-gray-400">Stripe customer: {profile.stripe_customer_id}</p>
         )}
       </div>
 
@@ -155,7 +155,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-6">
         <h2 className="font-semibold text-white mb-3">Shirt Promo Code</h2>
         {profile.subscription_status !== 'lifetime' && subStatus !== 'lifetime' && (
-          <p className="text-sm text-gray-500 mb-3">Only applies to lifetime members.</p>
+          <p className="text-sm text-gray-400 mb-3">Only applies to lifetime members.</p>
         )}
         <div className="flex gap-2">
           <input

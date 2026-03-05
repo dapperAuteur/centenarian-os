@@ -59,7 +59,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="p-3 border-t border-gray-800">
           <Link
             href="/dashboard/planner"
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-gray-300 transition"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-white transition"
           >
             <ArrowLeft className="w-4 h-4" aria-hidden="true" />
             Back to App

@@ -83,7 +83,7 @@ export default function AdminUsagePage() {
             onChange={(e) => setFromDate(e.target.value)}
             className="bg-gray-800 text-sm text-gray-200 rounded-lg px-2 py-1.5 border border-gray-700"
           />
-          <span className="text-gray-500 text-sm">to</span>
+          <span className="text-gray-400 text-sm">to</span>
           <input
             type="date"
             value={toDate}
@@ -226,7 +226,7 @@ export default function AdminUsagePage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-xs text-gray-500 uppercase border-b border-gray-800">
+                <tr className="text-xs text-gray-300 uppercase border-b border-gray-800">
                   <th className="text-left py-2 px-3">Module</th>
                   <th className="text-left py-2 px-3">Action</th>
                   <th className="text-left py-2 px-3">Detail</th>
@@ -238,7 +238,7 @@ export default function AdminUsagePage() {
                   <tr key={i} className="border-b border-gray-800/50 hover:bg-gray-800/30">
                     <td className="py-2 px-3 text-fuchsia-400">{f.module}</td>
                     <td className="py-2 px-3 text-gray-300">{f.action}</td>
-                    <td className="py-2 px-3 text-gray-500 truncate max-w-xs">{f.detail || '—'}</td>
+                    <td className="py-2 px-3 text-gray-400 truncate max-w-xs">{f.detail || '—'}</td>
                     <td className="py-2 px-3 text-right text-gray-200 font-medium">{f.count}</td>
                   </tr>
                 ))}

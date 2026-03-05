@@ -232,7 +232,7 @@ export default function AdminLivePage() {
       {sessions.length === 0 ? (
         <div className="bg-gray-900 border border-gray-800 border-dashed rounded-xl p-16 text-center">
           <Radio className="w-10 h-10 mx-auto mb-3 text-gray-700" />
-          <p className="text-gray-500">No live sessions yet.</p>
+          <p className="text-gray-400">No live sessions yet.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -255,8 +255,8 @@ export default function AdminLivePage() {
                       {VISIBILITY_LABELS[s.visibility] ?? s.visibility}
                     </span>
                   </div>
-                  {s.description && <p className="text-gray-500 text-sm mt-0.5">{s.description}</p>}
-                  <div className="flex items-center gap-4 mt-1 text-xs text-gray-600">
+                  {s.description && <p className="text-gray-400 text-sm mt-0.5">{s.description}</p>}
+                  <div className="flex items-center gap-4 mt-1 text-xs text-gray-400">
                     {s.scheduled_at && <span>Scheduled: {new Date(s.scheduled_at).toLocaleString()}</span>}
                     {s.visibility === 'scheduled' && s.published_at && (
                       <span>Publishes: {new Date(s.published_at).toLocaleString()}</span>

@@ -83,7 +83,7 @@ export default function AdminContentPage() {
         <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden overflow-x-auto">
           <table className="w-full text-sm" aria-label={`${tab === 'recipe' ? 'Recipes' : 'Blog posts'} table`}>
             <thead>
-              <tr className="border-b border-gray-800 text-gray-500 text-xs uppercase tracking-wide">
+              <tr className="border-b border-gray-800 text-gray-300 text-xs uppercase tracking-wide">
                 <th className="text-left px-4 py-3">Title</th>
                 <th className="text-left px-4 py-3 hidden sm:table-cell">Author</th>
                 <th className="text-left px-4 py-3">Status</th>
@@ -94,13 +94,13 @@ export default function AdminContentPage() {
             </thead>
             <tbody>
               {items.length === 0 && (
-                <tr><td colSpan={6} className="text-center py-12 text-gray-600">No content found</td></tr>
+                <tr><td colSpan={6} className="text-center py-12 text-gray-400">No content found</td></tr>
               )}
               {items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((item) => (
                 <tr key={item.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition">
                   <td className="px-4 py-3">
                     <p className="text-white font-medium truncate max-w-xs">{item.title}</p>
-                    <p className="text-gray-600 text-xs">/{item.slug}</p>
+                    <p className="text-gray-400 text-xs">/{item.slug}</p>
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs hidden sm:table-cell">
                     @{item.profiles?.username ?? '—'}
@@ -117,7 +117,7 @@ export default function AdminContentPage() {
                       {item.save_count !== undefined && <span className="flex items-center gap-1"><Bookmark className="w-3 h-3" aria-hidden="true" /><span className="sr-only">Saves:</span>{item.save_count}</span>}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs hidden md:table-cell">
+                  <td className="px-4 py-3 text-gray-400 text-xs hidden md:table-cell">
                     {item.published_at ? new Date(item.published_at).toLocaleDateString() : '—'}
                   </td>
                   <td className="px-4 py-3 text-right">
