@@ -1,250 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Target, Utensils, Brain, Car, DollarSign, Heart, GraduationCap, BookOpen, TrendingUp, Zap, Shield, Menu, X, Dumbbell, Package, Database, ChartNetwork, Camera, Tag, Flame, History } from 'lucide-react';
+import { ArrowRight, Zap, Shield, TrendingUp, Heart, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import SiteFooter from '@/components/ui/SiteFooter';
 import { useAuth } from '@/lib/hooks/useAuth';
-
-const MODULES = [
-  {
-    name: 'The Planner',
-    color: 'border-fuchsia-500',
-    iconColor: 'text-fuchsia-600',
-    checkColor: 'text-fuchsia-600',
-    Icon: Target,
-    description: 'Hierarchical goal tracking from multi-decade roadmaps down to daily tasks.',
-    features: [
-      'Roadmap \u2192 Goals \u2192 Milestones \u2192 Tasks',
-      'Week/3-day/daily views',
-      'Real-time progress tracking',
-    ],
-  },
-  {
-    name: 'The Fuel',
-    color: 'border-sky-500',
-    iconColor: 'text-sky-600',
-    checkColor: 'text-sky-600',
-    Icon: Utensils,
-    description: 'Nutrition tracking with the NCV framework. Optimize for performance and longevity.',
-    features: [
-      'Ingredient library with cost tracking',
-      'Green/Yellow/Red scoring',
-      'Recipe import from any URL',
-      'Auto inventory management',
-    ],
-  },
-  {
-    name: 'The Engine',
-    color: 'border-lime-500',
-    iconColor: 'text-lime-600',
-    checkColor: 'text-lime-600',
-    Icon: Brain,
-    description: 'Focus tracking, Pomodoro timers, and daily debriefs to maintain momentum.',
-    features: [
-      'Pomodoro focus sessions linked to tasks',
-      'Daily energy/focus ratings',
-      'Body check & pain tracking',
-      'Weekly AI-powered reviews',
-    ],
-  },
-  {
-    name: 'Travel & Vehicles',
-    color: 'border-amber-500',
-    iconColor: 'text-amber-600',
-    checkColor: 'text-amber-600',
-    Icon: Car,
-    description: 'Track every mile, fuel-up, and the real cost of getting around.',
-    features: [
-      'Vehicle profiles & fuel logging with OCR',
-      'Trip tracking (car, bike, walk, run)',
-      'Bike savings vs. car cost-per-mile',
-      'Garmin activity import',
-    ],
-  },
-  {
-    name: 'Financial Dashboard',
-    color: 'border-emerald-500',
-    iconColor: 'text-emerald-600',
-    checkColor: 'text-emerald-600',
-    Icon: DollarSign,
-    description: 'Full financial tracking — accounts, budgets, brands, invoices, and P&L reporting.',
-    features: [
-      'Checking, savings, credit card, loan, cash',
-      'Budget categories with spending charts',
-      'Brand / business P&L tracking',
-      'Invoices with custom fields & CSV import',
-    ],
-  },
-  {
-    name: 'Health Metrics',
-    color: 'border-rose-500',
-    iconColor: 'text-rose-600',
-    checkColor: 'text-rose-600',
-    Icon: Heart,
-    description: 'Daily vitals logging and wearable integration for the full health picture.',
-    features: [
-      'RHR, steps, sleep, activity minutes',
-      'Garmin, Oura Ring & WHOOP sync',
-      'Body composition tracking',
-      'CSV import (Apple Health, InBody)',
-    ],
-  },
-  {
-    name: 'Workouts & Exercises',
-    color: 'border-cyan-500',
-    iconColor: 'text-cyan-600',
-    checkColor: 'text-cyan-600',
-    Icon: Dumbbell,
-    description: 'Build custom workout templates from a personal exercise library.',
-    features: [
-      'Exercise library with categories & muscle groups',
-      'Workout templates with RPE, tempo & supersets',
-      'Post-workout mood & difficulty feedback',
-      'CSV import/export via Data Hub',
-    ],
-  },
-  {
-    name: 'Nomad Longevity OS',
-    color: 'border-orange-600',
-    iconColor: 'text-orange-600',
-    checkColor: 'text-orange-600',
-    Icon: Flame,
-    description: 'A complete workout protocol for peak performance wherever you are.',
-    features: [
-      'AM Priming, PM Recovery, Hotel & Gym workouts',
-      'Friction Protocol for stress resilience',
-      '28 exercises from the Nomad Glossary',
-      'Post-workout mood & difficulty tracking',
-    ],
-  },
-  {
-    name: 'Equipment & Assets',
-    color: 'border-stone-500',
-    iconColor: 'text-stone-600',
-    checkColor: 'text-stone-600',
-    Icon: Package,
-    description: 'Track tools, gear, and possessions — purchase price, current value, and cross-module links.',
-    features: [
-      'Equipment categories with auto-seeding',
-      'Valuation history with chart visualization',
-      'Link equipment to trips, workouts, finance',
-      'Total asset value dashboard',
-    ],
-  },
-  {
-    name: 'Academy',
-    color: 'border-violet-500',
-    iconColor: 'text-violet-600',
-    checkColor: 'text-violet-600',
-    Icon: GraduationCap,
-    description: 'A full LMS — create, publish, sell, and take courses.',
-    features: [
-      'Video, text, audio, quiz & map lessons',
-      'Choose Your Own Adventure navigation',
-      'Assignments, certificates & badges',
-      '14 free tutorial course series',
-    ],
-  },
-  {
-    name: 'Blog & Recipes',
-    color: 'border-orange-500',
-    iconColor: 'text-orange-600',
-    checkColor: 'text-orange-600',
-    Icon: BookOpen,
-    description: 'Community content publishing with rich text and recipe sharing.',
-    features: [
-      'Rich text editor with media upload',
-      'Public recipe pages with likes & saves',
-      'Recipe import from any URL',
-      'Public author/cook profiles',
-    ],
-  },
-  {
-    name: 'Correlations & Analytics',
-    color: 'border-teal-500',
-    iconColor: 'text-teal-600',
-    checkColor: 'text-teal-600',
-    Icon: TrendingUp,
-    description: 'Find connections between habits, nutrition, and health outcomes.',
-    features: [
-      'Cross-module data correlation engine',
-      'Daily & weekly aggregate views',
-      'Trend charts across all tracked metrics',
-      'Actionable insight summaries',
-    ],
-  },
-  {
-    name: 'Data Hub',
-    color: 'border-indigo-500',
-    iconColor: 'text-indigo-600',
-    checkColor: 'text-indigo-600',
-    Icon: Database,
-    description: 'Centralized import and export for every module — your data, your way.',
-    features: [
-      'CSV import/export for all 12+ modules',
-      'Date-range filtering on exports',
-      'Google Sheets compatible templates',
-      'Bulk course importer for Academy',
-    ],
-  },
-  {
-    name: 'Cross-Module Connections',
-    color: 'border-pink-500',
-    iconColor: 'text-pink-600',
-    checkColor: 'text-pink-600',
-    Icon: ChartNetwork,
-    description: 'Link data across every module — activities, contacts, and locations.',
-    features: [
-      'Bidirectional activity links (task\u2194trip\u2194equipment)',
-      'Saved contacts with location sub-entries',
-      'Contact autocomplete with default category',
-      'Task contacts & location assignment',
-    ],
-  },
-  {
-    name: 'Universal Scanner',
-    color: 'border-yellow-500',
-    iconColor: 'text-yellow-600',
-    checkColor: 'text-yellow-600',
-    Icon: Camera,
-    description: 'Point your camera at any receipt, label, or document to extract data instantly.',
-    features: [
-      'OCR receipt scanning for fuel & finance',
-      'Ingredient label scanning for Fuel module',
-      'Multi-photo upload (up to 4 images)',
-      'Gemini Vision AI extraction',
-    ],
-  },
-  {
-    name: 'Life Categories',
-    color: 'border-purple-500',
-    iconColor: 'text-purple-600',
-    checkColor: 'text-purple-600',
-    Icon: Tag,
-    description: 'Tag every activity, expense, and goal with your personal life areas.',
-    features: [
-      'User-defined tags (Health, Career, Finance, etc.)',
-      'Works across all 11 module types',
-      'Spending & activity analytics by category',
-      'Batch tagging from the dashboard',
-    ],
-  },
-  {
-    name: 'Life Retrospective',
-    color: 'border-slate-500',
-    iconColor: 'text-slate-600',
-    checkColor: 'text-slate-600',
-    Icon: History,
-    description: 'AI-powered periodic reviews that surface insights across your entire data set.',
-    features: [
-      'Cross-module data synthesis',
-      'Google Calendar .ics import',
-      'Patterns across health, finance & productivity',
-      'Gemini AI narrative generation',
-    ],
-  },
-];
+import { MODULES } from '@/lib/features/modules';
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -268,31 +29,34 @@ export default function LandingPage() {
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-6">
-              <Link href="/demo" className="text-gray-600 hover:text-gray-900 font-medium">
+            <div className="hidden lg:flex items-center space-x-4">
+              <Link href="/features" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
+                Features
+              </Link>
+              <Link href="/demo" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
                 Demo
               </Link>
-              <Link href="/academy" className="text-gray-600 hover:text-gray-900 font-medium">
+              <Link href="/academy" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
                 Academy
               </Link>
-              <Link href="/blog" className="text-gray-600 hover:text-gray-900 font-medium">
+              <Link href="/blog" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
                 Blog
               </Link>
-              <Link href="/recipes" className="text-gray-600 hover:text-gray-900 font-medium">
+              <Link href="/recipes" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
                 Recipes
               </Link>
-              <Link href="/coaching" className="text-gray-600 hover:text-gray-900 font-medium">
+              <Link href="/coaching" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
                 Coaching
               </Link>
-              <Link href="/tech-roadmap" className="text-gray-600 hover:text-gray-900 font-medium">
-                Tech Roadmap
+              <Link href="/tech-roadmap" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
+                Roadmap
               </Link>
-              <Link href="/contribute" className="text-gray-600 hover:text-gray-900 font-medium">
+              <Link href="/contribute" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
                 Contribute
               </Link>
               <Link
                 href={primaryHref}
-                className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-medium"
+                className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-medium text-sm"
               >
                 {primaryLabel}
               </Link>
@@ -301,7 +65,7 @@ export default function LandingPage() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-gray-600 hover:text-gray-900"
+              className="lg:hidden p-2 text-gray-600 hover:text-gray-900"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -310,7 +74,14 @@ export default function LandingPage() {
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-            <div className="md:hidden mt-4 pb-4 space-y-4">
+            <div className="lg:hidden mt-4 pb-4 space-y-4">
+              <Link
+                href="/features"
+                className="block text-gray-600 hover:text-gray-900 font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Features
+              </Link>
               <Link
                 href="/demo"
                 className="block text-gray-600 hover:text-gray-900 font-medium"
@@ -433,9 +204,13 @@ export default function LandingPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {MODULES.map((mod) => (
-            <div key={mod.name} className={`bg-white rounded-2xl shadow-lg p-6 border-t-4 ${mod.color}`}>
+            <Link
+              key={mod.slug}
+              href={`/features/${mod.slug}`}
+              className={`group bg-white rounded-2xl shadow-lg p-6 border-t-4 ${mod.color} hover:shadow-xl transition`}
+            >
               <mod.Icon className={`w-10 h-10 ${mod.iconColor} mb-3`} />
-              <h3 className="text-lg font-bold text-gray-900 mb-2">{mod.name}</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-fuchsia-600 transition">{mod.name}</h3>
               <p className="text-sm text-gray-600 mb-3">
                 {mod.description}
               </p>
@@ -447,7 +222,7 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
