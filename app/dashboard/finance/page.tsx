@@ -15,6 +15,7 @@ import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import CategorySelect from '@/components/finance/CategorySelect';
 import TransferModal from '@/components/finance/TransferModal';
+import Modal from '@/components/ui/Modal';
 import ScanButton from '@/components/scan/ScanButton';
 import type { ScanResult } from '@/components/scan/ScanButton';
 import type { ReceiptExtraction } from '@/lib/ocr/extractors';
@@ -630,214 +631,221 @@ export default function FinanceDashboardPage() {
       />
 
       {/* Add Transaction Modal */}
-      {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowAdd(false)}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-gray-900">Add Transaction</h3>
-            <form onSubmit={handleAddTransaction} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Type</label>
-                  <select
-                    value={addForm.type}
-                    onChange={(e) => setAddForm((p) => ({ ...p, type: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
-                  >
-                    <option value="expense">Expense</option>
-                    <option value="income">Income</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Amount ($)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    required
-                    value={addForm.amount}
-                    onChange={(e) => setAddForm((p) => ({ ...p, amount: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
-                    placeholder="0.00"
-                  />
-                </div>
+      <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add Transaction" size="sm">
+        <form onSubmit={handleAddTransaction} className="flex flex-col">
+          <div className="p-6 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="txn-type" className="text-xs font-medium text-gray-600">Type</label>
+                <select
+                  id="txn-type"
+                  value={addForm.type}
+                  onChange={(e) => setAddForm((p) => ({ ...p, type: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                >
+                  <option value="expense">Expense</option>
+                  <option value="income">Income</option>
+                </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Date</label>
+                <label htmlFor="txn-amount" className="text-xs font-medium text-gray-600">Amount ($)</label>
                 <input
-                  type="date"
+                  id="txn-amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
                   required
-                  value={addForm.transaction_date}
-                  onChange={(e) => setAddForm((p) => ({ ...p, transaction_date: e.target.value }))}
+                  aria-required="true"
+                  value={addForm.amount}
+                  onChange={(e) => setAddForm((p) => ({ ...p, amount: e.target.value }))}
                   className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                  placeholder="0.00"
                 />
               </div>
+            </div>
+            <div>
+              <label htmlFor="txn-date" className="text-xs font-medium text-gray-600">Date</label>
+              <input
+                id="txn-date"
+                type="date"
+                required
+                aria-required="true"
+                value={addForm.transaction_date}
+                onChange={(e) => setAddForm((p) => ({ ...p, transaction_date: e.target.value }))}
+                className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
+              />
+            </div>
+            <div>
+              <label htmlFor="txn-description" className="text-xs font-medium text-gray-600">Description</label>
+              <input
+                id="txn-description"
+                type="text"
+                value={addForm.description}
+                onChange={(e) => setAddForm((p) => ({ ...p, description: e.target.value }))}
+                className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                placeholder="What was this for?"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-600">Description</label>
-                <input
-                  type="text"
-                  value={addForm.description}
-                  onChange={(e) => setAddForm((p) => ({ ...p, description: e.target.value }))}
-                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
-                  placeholder="What was this for?"
+                <label htmlFor="txn-vendor" className="text-xs font-medium text-gray-600">
+                  {addForm.type === 'income' ? 'Source / Payer' : 'Vendor'}
+                </label>
+                <ContactAutocomplete
+                  value={addForm.vendor}
+                  contactType={addForm.type === 'income' ? 'customer' : 'vendor'}
+                  placeholder={addForm.type === 'income' ? 'Employer, client…' : 'Store/company'}
+                  onChange={(name, defaultCategoryId) => {
+                    setAddForm((p) => ({
+                      ...p,
+                      vendor: name,
+                      category_id: defaultCategoryId ?? p.category_id,
+                    }));
+                  }}
+                  inputClassName="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-gray-600">
-                    {addForm.type === 'income' ? 'Source / Payer' : 'Vendor'}
-                  </label>
-                  <ContactAutocomplete
-                    value={addForm.vendor}
-                    contactType={addForm.type === 'income' ? 'customer' : 'vendor'}
-                    placeholder={addForm.type === 'income' ? 'Employer, client…' : 'Store/company'}
-                    onChange={(name, defaultCategoryId) => {
-                      setAddForm((p) => ({
-                        ...p,
-                        vendor: name,
-                        category_id: defaultCategoryId ?? p.category_id,
-                      }));
-                    }}
-                    inputClassName="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
-                  />
-                </div>
-                <CategorySelect
-                  value={addForm.category_id}
-                  onChange={(id) => setAddForm((p) => ({ ...p, category_id: id }))}
-                  categories={categories}
-                  onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
-                />
-              </div>
-              {accounts.filter((a) => a.is_active).length > 0 && (
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Account</label>
-                  <select
-                    value={addForm.account_id}
-                    onChange={(e) => setAddForm((p) => ({ ...p, account_id: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
-                  >
-                    <option value="">No account</option>
-                    {accounts.filter((a) => a.is_active).map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name}{a.last_four ? ` ··${a.last_four}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              {brands.length > 0 && (
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Brand (optional)</label>
-                  <select
-                    value={addForm.brand_id}
-                    onChange={(e) => setAddForm((p) => ({ ...p, brand_id: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
-                  >
-                    <option value="">No brand</option>
-                    {brands.map((b) => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex-1 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 disabled:opacity-50 transition flex items-center justify-center gap-2"
-                >
-                  {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAdd(false)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Add Category Modal */}
-      {showCatForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCatForm(false)}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm space-y-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-gray-900">Add Budget Category</h3>
-            <form onSubmit={handleAddCategory} className="space-y-3">
+              <CategorySelect
+                value={addForm.category_id}
+                onChange={(id) => setAddForm((p) => ({ ...p, category_id: id }))}
+                categories={categories}
+                onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
+              />
+            </div>
+            {accounts.filter((a) => a.is_active).length > 0 && (
               <div>
-                <label className="text-xs font-medium text-gray-600">Name</label>
-                <input
-                  type="text"
-                  required
-                  value={catForm.name}
-                  onChange={(e) => setCatForm((p) => ({ ...p, name: e.target.value }))}
+                <label htmlFor="txn-account" className="text-xs font-medium text-gray-600">Account</label>
+                <select
+                  id="txn-account"
+                  value={addForm.account_id}
+                  onChange={(e) => setAddForm((p) => ({ ...p, account_id: e.target.value }))}
                   className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
-                  placeholder="e.g. Supplements, Gym, Food"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Monthly Budget ($)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={catForm.monthly_budget}
-                    onChange={(e) => setCatForm((p) => ({ ...p, monthly_budget: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
-                    placeholder="Optional"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Color</label>
-                  <input
-                    type="color"
-                    value={catForm.color}
-                    onChange={(e) => setCatForm((p) => ({ ...p, color: e.target.value }))}
-                    className="w-full mt-1 h-[38px] border border-gray-200 rounded-lg cursor-pointer"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 transition"
                 >
-                  Create
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowCatForm(false)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
-                >
-                  Cancel
-                </button>
+                  <option value="">No account</option>
+                  {accounts.filter((a) => a.is_active).map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}{a.last_four ? ` ··${a.last_four}` : ''}
+                    </option>
+                  ))}
+                </select>
               </div>
-            </form>
-
-            {/* Existing categories list */}
-            {categories.length > 0 && (
-              <div className="border-t pt-3 space-y-2">
-                <p className="text-xs font-medium text-gray-500">Existing Categories</p>
-                {categories.map((c) => (
-                  <div key={c.id} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.color }} />
-                      <span className="text-gray-700">{c.name}</span>
-                    </div>
-                    {c.monthly_budget && (
-                      <span className="text-xs text-gray-400">${c.monthly_budget}/mo</span>
-                    )}
-                  </div>
-                ))}
+            )}
+            {brands.length > 0 && (
+              <div>
+                <label htmlFor="txn-brand" className="text-xs font-medium text-gray-600">Brand (optional)</label>
+                <select
+                  id="txn-brand"
+                  value={addForm.brand_id}
+                  onChange={(e) => setAddForm((p) => ({ ...p, brand_id: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                >
+                  <option value="">No brand</option>
+                  {brands.map((b) => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
               </div>
             )}
           </div>
+          <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 pt-3 pb-3 flex gap-3"
+            style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 disabled:opacity-50 transition flex items-center justify-center gap-2"
+            >
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowAdd(false)}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Add Category Modal */}
+      <Modal isOpen={showCatForm} onClose={() => setShowCatForm(false)} title="Add Budget Category" size="sm">
+        <div className="p-6 space-y-4">
+          <form onSubmit={handleAddCategory} className="space-y-3">
+            <div>
+              <label htmlFor="cat-name" className="text-xs font-medium text-gray-600">Name</label>
+              <input
+                id="cat-name"
+                type="text"
+                required
+                aria-required="true"
+                value={catForm.name}
+                onChange={(e) => setCatForm((p) => ({ ...p, name: e.target.value }))}
+                className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                placeholder="e.g. Supplements, Gym, Food"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="cat-budget" className="text-xs font-medium text-gray-600">Monthly Budget ($)</label>
+                <input
+                  id="cat-budget"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={catForm.monthly_budget}
+                  onChange={(e) => setCatForm((p) => ({ ...p, monthly_budget: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                  placeholder="Optional"
+                />
+              </div>
+              <div>
+                <label htmlFor="cat-color" className="text-xs font-medium text-gray-600">Color</label>
+                <input
+                  id="cat-color"
+                  type="color"
+                  value={catForm.color}
+                  onChange={(e) => setCatForm((p) => ({ ...p, color: e.target.value }))}
+                  className="w-full mt-1 h-[38px] border border-gray-200 rounded-lg cursor-pointer"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                type="submit"
+                className="flex-1 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 transition"
+              >
+                Create
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCatForm(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+
+          {/* Existing categories list */}
+          {categories.length > 0 && (
+            <div className="border-t pt-3 space-y-2">
+              <p className="text-xs font-medium text-gray-500">Existing Categories</p>
+              {categories.map((c) => (
+                <div key={c.id} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.color }} aria-hidden="true" />
+                    <span className="text-gray-700">{c.name}</span>
+                  </div>
+                  {c.monthly_budget && (
+                    <span className="text-xs text-gray-400">${c.monthly_budget}/mo</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

@@ -4,7 +4,8 @@
 // Admin invite management: send invites, control access, seed/clear demo data.
 
 import { useState, useEffect, useCallback } from 'react';
-import { UserPlus, Loader2, Trash2, Edit2, X, Check, RefreshCw, Database, Eraser, ToggleLeft, ToggleRight } from 'lucide-react';
+import { UserPlus, Loader2, Trash2, Edit2, Check, RefreshCw, Database, Eraser, ToggleLeft, ToggleRight } from 'lucide-react';
+import Modal from '@/components/ui/Modal';
 import { NAV_GROUPS } from '@/components/nav/NavConfig';
 
 interface Invite {
@@ -321,168 +322,159 @@ export default function AdminInvitesPage() {
       )}
 
       {/* Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">
-                {editId ? 'Edit Invite' : 'Invite User'}
-              </h2>
-              <button onClick={() => setModalOpen(false)} className="p-1 text-gray-400 hover:text-gray-600 rounded-lg">
-                <X className="w-5 h-5" />
-              </button>
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editId ? 'Edit Invite' : 'Invite User'} size="md">
+        <form onSubmit={handleSubmit}>
+          <div className="p-6 space-y-5">
+            {formError && (
+              <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">{formError}</div>
+            )}
+
+            {/* Email -- only editable on create */}
+            <div>
+              <label htmlFor="invite-email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                id="invite-email"
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                required
+                aria-required="true"
+                disabled={!!editId}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:bg-gray-50 disabled:text-gray-400"
+                placeholder="tester@example.com"
+              />
             </div>
 
-            <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
-              {formError && (
-                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">{formError}</div>
-              )}
-
-              {/* Email — only editable on create */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                  required
-                  disabled={!!editId}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:bg-gray-50 disabled:text-gray-400"
-                  placeholder="tester@example.com"
-                />
-              </div>
-
-              {/* Access type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Access Type</label>
-                <div className="flex gap-2">
-                  {(['trial', 'lifetime'] as const).map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setForm((f) => ({ ...f, access_type: t }))}
-                      className={`flex-1 py-2 rounded-lg border text-sm font-medium transition capitalize ${
-                        form.access_type === t
-                          ? 'bg-indigo-600 text-white border-indigo-600'
-                          : 'border-gray-300 text-gray-700 hover:border-gray-400'
-                      }`}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Expiry — only for trial */}
-              {form.access_type === 'trial' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date <span className="text-gray-400 font-normal">(leave blank for no expiry)</span></label>
-                  <input
-                    type="date"
-                    value={form.expires_at}
-                    min={new Date().toISOString().split('T')[0]}
-                    onChange={(e) => setForm((f) => ({ ...f, expires_at: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                  />
-                </div>
-              )}
-
-              {/* Module access */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-gray-700">Module Access</label>
+            {/* Access type */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Access Type</label>
+              <div className="flex gap-2">
+                {(['trial', 'lifetime'] as const).map((t) => (
                   <button
+                    key={t}
                     type="button"
-                    onClick={() => setForm((f) => ({ ...f, all_modules: !f.all_modules, allowed_modules: [] }))}
-                    className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border transition ${
-                      form.all_modules
-                        ? 'bg-green-100 text-green-700 border-green-200'
-                        : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+                    onClick={() => setForm((f) => ({ ...f, access_type: t }))}
+                    className={`flex-1 py-2 rounded-lg border text-sm font-medium transition capitalize ${
+                      form.access_type === t
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'border-gray-300 text-gray-700 hover:border-gray-400'
                     }`}
                   >
-                    {form.all_modules ? <Check className="w-3 h-3" /> : null}
-                    All Modules
+                    {t}
                   </button>
-                </div>
-                {!form.all_modules && (
-                  <div className="grid grid-cols-2 gap-1.5 mt-2">
-                    {ALL_PAID_ITEMS.map((item) => {
-                      const checked = form.allowed_modules.includes(item.href);
-                      return (
-                        <button
-                          key={item.href}
-                          type="button"
-                          onClick={() => toggleModule(item.href)}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition text-left ${
-                            checked
-                              ? 'bg-indigo-50 text-indigo-700 border-indigo-300'
-                              : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                          }`}
-                        >
-                          {checked && <Check className="w-3 h-3 shrink-0" />}
-                          {item.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+                ))}
               </div>
+            </div>
 
-              {/* Demo profile */}
+            {/* Expiry -- only for trial */}
+            {form.access_type === 'trial' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Demo Data</label>
-                <div className="flex gap-2">
-                  {(['', 'visitor', 'tutorial'] as const).map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => setForm((f) => ({ ...f, demo_profile: p }))}
-                      className={`flex-1 py-2 rounded-lg border text-xs font-medium transition capitalize ${
-                        form.demo_profile === p
-                          ? 'bg-indigo-600 text-white border-indigo-600'
-                          : 'border-gray-300 text-gray-700 hover:border-gray-400'
-                      }`}
-                    >
-                      {p === '' ? 'None' : p}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes <span className="text-gray-400 font-normal">(optional)</span></label>
-                <textarea
-                  value={form.notes}
-                  onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                  rows={2}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
-                  placeholder="e.g. Friend testing finance module"
+                <label htmlFor="invite-expiry" className="block text-sm font-medium text-gray-700 mb-1">Expiry Date <span className="text-gray-400 font-normal">(leave blank for no expiry)</span></label>
+                <input
+                  id="invite-expiry"
+                  type="date"
+                  value={form.expires_at}
+                  min={new Date().toISOString().split('T')[0]}
+                  onChange={(e) => setForm((f) => ({ ...f, expires_at: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
+            )}
 
-              {/* Actions */}
-              <div className="flex gap-3 pt-2">
+            {/* Module access */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-gray-700">Module Access</label>
                 <button
                   type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="flex-1 py-2.5 border border-gray-300 text-gray-600 rounded-xl text-sm hover:bg-gray-50 transition"
+                  onClick={() => setForm((f) => ({ ...f, all_modules: !f.all_modules, allowed_modules: [] }))}
+                  className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border transition ${
+                    form.all_modules
+                      ? 'bg-green-100 text-green-700 border-green-200'
+                      : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+                  }`}
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={formLoading}
-                  className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition flex items-center justify-center gap-2"
-                >
-                  {formLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {editId ? 'Save Changes' : 'Send Invite'}
+                  {form.all_modules ? <Check className="w-3 h-3" /> : null}
+                  All Modules
                 </button>
               </div>
-            </form>
+              {!form.all_modules && (
+                <div className="grid grid-cols-2 gap-1.5 mt-2">
+                  {ALL_PAID_ITEMS.map((item) => {
+                    const checked = form.allowed_modules.includes(item.href);
+                    return (
+                      <button
+                        key={item.href}
+                        type="button"
+                        onClick={() => toggleModule(item.href)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition text-left ${
+                          checked
+                            ? 'bg-indigo-50 text-indigo-700 border-indigo-300'
+                            : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        {checked && <Check className="w-3 h-3 shrink-0" />}
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Demo profile */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Demo Data</label>
+              <div className="flex gap-2">
+                {(['', 'visitor', 'tutorial'] as const).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, demo_profile: p }))}
+                    className={`flex-1 py-2 rounded-lg border text-xs font-medium transition capitalize ${
+                      form.demo_profile === p
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                    }`}
+                  >
+                    {p === '' ? 'None' : p}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label htmlFor="invite-notes" className="block text-sm font-medium text-gray-700 mb-1">Notes <span className="text-gray-400 font-normal">(optional)</span></label>
+              <textarea
+                id="invite-notes"
+                value={form.notes}
+                onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                rows={2}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+                placeholder="e.g. Friend testing finance module"
+              />
+            </div>
           </div>
-        </div>
-      )}
+          <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 pt-3 pb-3 flex gap-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+            <button
+              type="button"
+              onClick={() => setModalOpen(false)}
+              className="flex-1 py-2.5 border border-gray-300 text-gray-600 rounded-xl text-sm hover:bg-gray-50 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={formLoading}
+              className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition flex items-center justify-center gap-2"
+            >
+              {formLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+              {editId ? 'Save Changes' : 'Send Invite'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

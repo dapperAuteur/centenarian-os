@@ -10,6 +10,7 @@ import Link from 'next/link';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
 import CategorySelect from '@/components/finance/CategorySelect';
+import Modal from '@/components/ui/Modal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface InvoiceTemplate {
@@ -440,194 +441,199 @@ export default function InvoicesPage() {
       </div>
 
       {/* Create Modal */}
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-900">New Invoice</h2>
-              <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
+      <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} title="New Invoice" size="lg">
+        <div className="p-6 space-y-4">
+          {/* Direction */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setForm({ ...form, direction: 'receivable' })}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium border transition ${
+                form.direction === 'receivable' ? 'bg-green-50 border-green-300 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-600'
+              }`}
+            >
+              <ArrowDownLeft className="w-4 h-4" />
+              Receivable
+            </button>
+            <button
+              onClick={() => setForm({ ...form, direction: 'payable' })}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium border transition ${
+                form.direction === 'payable' ? 'bg-red-50 border-red-300 text-red-700' : 'bg-gray-50 border-gray-200 text-gray-600'
+              }`}
+            >
+              <ArrowUpRight className="w-4 h-4" />
+              Payable
+            </button>
+          </div>
+
+          {/* Contact */}
+          <div>
+            <label htmlFor="inv-contact" className="block text-sm font-medium text-gray-700 mb-1">
+              {form.direction === 'receivable' ? 'Client / Customer' : 'Vendor / Creditor'}
+            </label>
+            <ContactAutocomplete
+              value={form.contact_name}
+              onChange={(val) => setForm({ ...form, contact_name: val })}
+              contactType={form.direction === 'receivable' ? 'customer' : 'vendor'}
+            />
+          </div>
+
+          {/* Invoice number + dates */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="inv-number" className="block text-xs font-medium text-gray-600 mb-1">Invoice #</label>
+              <input
+                id="inv-number"
+                type="text"
+                value={form.invoice_number}
+                onChange={(e) => setForm({ ...form, invoice_number: e.target.value })}
+                placeholder="INV-001"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+              />
             </div>
-
-            <div className="space-y-4">
-              {/* Direction */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setForm({ ...form, direction: 'receivable' })}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium border transition ${
-                    form.direction === 'receivable' ? 'bg-green-50 border-green-300 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-600'
-                  }`}
-                >
-                  <ArrowDownLeft className="w-4 h-4" />
-                  Receivable
-                </button>
-                <button
-                  onClick={() => setForm({ ...form, direction: 'payable' })}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium border transition ${
-                    form.direction === 'payable' ? 'bg-red-50 border-red-300 text-red-700' : 'bg-gray-50 border-gray-200 text-gray-600'
-                  }`}
-                >
-                  <ArrowUpRight className="w-4 h-4" />
-                  Payable
-                </button>
-              </div>
-
-              {/* Contact */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {form.direction === 'receivable' ? 'Client / Customer' : 'Vendor / Creditor'}
-                </label>
-                <ContactAutocomplete
-                  value={form.contact_name}
-                  onChange={(val) => setForm({ ...form, contact_name: val })}
-                  contactType={form.direction === 'receivable' ? 'customer' : 'vendor'}
-                />
-              </div>
-
-              {/* Invoice number + dates */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Invoice #</label>
-                  <input
-                    type="text"
-                    value={form.invoice_number}
-                    onChange={(e) => setForm({ ...form, invoice_number: e.target.value })}
-                    placeholder="INV-001"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
-                  <input
-                    type="date"
-                    value={form.invoice_date}
-                    onChange={(e) => setForm({ ...form, invoice_date: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Due Date</label>
-                <input
-                  type="date"
-                  value={form.due_date}
-                  onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
-                />
-              </div>
-
-              {/* Line items */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Line Items</label>
-                <div className="space-y-2">
-                  {lineItems.map((li, i) => (
-                    <div key={i} className="flex gap-2 items-start">
-                      <input
-                        type="text"
-                        placeholder="Description"
-                        value={li.description}
-                        onChange={(e) => updateLineItem(i, 'description', e.target.value)}
-                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Qty"
-                        value={li.quantity}
-                        onChange={(e) => updateLineItem(i, 'quantity', e.target.value)}
-                        className="w-16 border border-gray-300 rounded-lg px-2 py-2 text-sm text-center text-gray-900"
-                        min="1"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Price"
-                        value={li.unit_price}
-                        onChange={(e) => updateLineItem(i, 'unit_price', e.target.value)}
-                        className="w-24 border border-gray-300 rounded-lg px-2 py-2 text-sm text-right text-gray-900"
-                        step="0.01"
-                        min="0"
-                      />
-                      {lineItems.length > 1 && (
-                        <button onClick={() => removeLineItem(i)} className="p-2 text-gray-400 hover:text-red-500">
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <button
-                  onClick={addLineItem}
-                  className="mt-2 text-xs text-fuchsia-600 hover:underline font-medium"
-                >
-                  + Add line item
-                </button>
-                <p className="text-right text-sm font-bold text-gray-900 mt-2">
-                  Total: ${lineTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </p>
-              </div>
-
-              {/* Optional fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Account</label>
-                  <select
-                    value={form.account_id}
-                    onChange={(e) => setForm({ ...form, account_id: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
-                  >
-                    <option value="">None</option>
-                    {accounts.map((a) => (
-                      <option key={a.id} value={a.id}>{a.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <CategorySelect
-                  value={form.category_id}
-                  onChange={(id) => setForm({ ...form, category_id: id })}
-                  categories={categories}
-                  onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
-                />
-              </div>
-
-              {brands.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Brand</label>
-                  <select
-                    value={form.brand_id}
-                    onChange={(e) => setForm({ ...form, brand_id: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
-                  >
-                    <option value="">None</option>
-                    {brands.map((b) => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-                <textarea
-                  value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  rows={2}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
-                />
-              </div>
-
-              <button
-                onClick={handleCreate}
-                disabled={saving || !form.contact_name.trim() || lineTotal <= 0}
-                className="w-full py-2.5 bg-fuchsia-600 text-white rounded-lg font-medium text-sm hover:bg-fuchsia-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                Create Invoice
-              </button>
+            <div>
+              <label htmlFor="inv-date" className="block text-xs font-medium text-gray-600 mb-1">Date</label>
+              <input
+                id="inv-date"
+                type="date"
+                value={form.invoice_date}
+                onChange={(e) => setForm({ ...form, invoice_date: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+              />
             </div>
           </div>
+
+          <div>
+            <label htmlFor="inv-due-date" className="block text-xs font-medium text-gray-600 mb-1">Due Date</label>
+            <input
+              id="inv-due-date"
+              type="date"
+              value={form.due_date}
+              onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+            />
+          </div>
+
+          {/* Line items */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Line Items</label>
+            <div className="space-y-2">
+              {lineItems.map((li, i) => (
+                <div key={i} className="flex gap-2 items-start">
+                  <input
+                    type="text"
+                    placeholder="Description"
+                    value={li.description}
+                    onChange={(e) => updateLineItem(i, 'description', e.target.value)}
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+                    aria-label={`Line item ${i + 1} description`}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Qty"
+                    value={li.quantity}
+                    onChange={(e) => updateLineItem(i, 'quantity', e.target.value)}
+                    className="w-16 border border-gray-300 rounded-lg px-2 py-2 text-sm text-center text-gray-900"
+                    min="1"
+                    aria-label={`Line item ${i + 1} quantity`}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Price"
+                    value={li.unit_price}
+                    onChange={(e) => updateLineItem(i, 'unit_price', e.target.value)}
+                    className="w-24 border border-gray-300 rounded-lg px-2 py-2 text-sm text-right text-gray-900"
+                    step="0.01"
+                    min="0"
+                    aria-label={`Line item ${i + 1} unit price`}
+                  />
+                  {lineItems.length > 1 && (
+                    <button onClick={() => removeLineItem(i)} className="p-2 text-gray-400 hover:text-red-500" aria-label={`Remove line item ${i + 1}`}>
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={addLineItem}
+              className="mt-2 text-xs text-fuchsia-600 hover:underline font-medium"
+            >
+              + Add line item
+            </button>
+            <p className="text-right text-sm font-bold text-gray-900 mt-2">
+              Total: ${lineTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+
+          {/* Optional fields */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="inv-account" className="block text-xs font-medium text-gray-600 mb-1">Account</label>
+              <select
+                id="inv-account"
+                value={form.account_id}
+                onChange={(e) => setForm({ ...form, account_id: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+              >
+                <option value="">None</option>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </select>
+            </div>
+            <CategorySelect
+              value={form.category_id}
+              onChange={(id) => setForm({ ...form, category_id: id })}
+              categories={categories}
+              onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
+            />
+          </div>
+
+          {brands.length > 0 && (
+            <div>
+              <label htmlFor="inv-brand" className="block text-xs font-medium text-gray-600 mb-1">Brand</label>
+              <select
+                id="inv-brand"
+                value={form.brand_id}
+                onChange={(e) => setForm({ ...form, brand_id: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+              >
+                <option value="">None</option>
+                {brands.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div>
+            <label htmlFor="inv-notes" className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+            <textarea
+              id="inv-notes"
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              rows={2}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+            />
+          </div>
         </div>
-      )}
+        <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 pt-3 pb-3 flex gap-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+          <button
+            onClick={handleCreate}
+            disabled={saving || !form.contact_name.trim() || lineTotal <= 0}
+            className="flex-1 py-2.5 bg-fuchsia-600 text-white rounded-lg font-medium text-sm hover:bg-fuchsia-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+            Create Invoice
+          </button>
+          <button
+            onClick={() => setShowCreate(false)}
+            className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+          >
+            Cancel
+          </button>
+        </div>
+      </Modal>
 
       <ActivityLinkModal
         isOpen={!!linkingId}

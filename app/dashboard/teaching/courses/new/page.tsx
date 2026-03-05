@@ -60,7 +60,7 @@ export default function NewCoursePage() {
   }
 
   return (
-    <div className="p-8 max-w-2xl">
+    <div className="p-8 pb-24 lg:pb-8 max-w-2xl">
       <Link href="/dashboard/teaching" className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm mb-6 transition">
         <ChevronLeft className="w-4 h-4" /> Teaching Dashboard
       </Link>
@@ -70,9 +70,12 @@ export default function NewCoursePage() {
       <div className="space-y-6 dark-input">
         {/* Title */}
         <div>
-          <label className="block text-sm text-gray-300 mb-2">Course Title *</label>
+          <label htmlFor="course-title" className="block text-sm text-gray-300 mb-2">Course Title *</label>
           <input
+            id="course-title"
             type="text"
+            required
+            aria-required="true"
             value={form.title}
             onChange={(e) => set('title', e.target.value)}
             placeholder="e.g. Longevity Movement Fundamentals"
@@ -82,8 +85,9 @@ export default function NewCoursePage() {
 
         {/* Description */}
         <div>
-          <label className="block text-sm text-gray-300 mb-2">Description</label>
+          <label htmlFor="course-description" className="block text-sm text-gray-300 mb-2">Description</label>
           <textarea
+            id="course-description"
             value={form.description}
             onChange={(e) => set('description', e.target.value)}
             rows={4}
@@ -94,8 +98,9 @@ export default function NewCoursePage() {
 
         {/* Category */}
         <div>
-          <label className="block text-sm text-gray-300 mb-2">Category</label>
+          <label htmlFor="course-category" className="block text-sm text-gray-300 mb-2">Category</label>
           <select
+            id="course-category"
             value={form.category}
             onChange={(e) => set('category', e.target.value)}
             className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-fuchsia-500 text-sm"
@@ -106,13 +111,15 @@ export default function NewCoursePage() {
         </div>
 
         {/* Pricing */}
-        <div>
-          <label className="block text-sm text-gray-300 mb-2">Pricing</label>
-          <div className="grid grid-cols-3 gap-2 mb-3">
+        <fieldset>
+          <legend className="block text-sm text-gray-300 mb-2">Pricing</legend>
+          <div className="grid grid-cols-3 gap-2 mb-3" role="radiogroup" aria-label="Pricing type">
             {(['free', 'one_time', 'subscription'] as const).map((pt) => (
               <button
                 key={pt}
                 type="button"
+                role="radio"
+                aria-checked={form.price_type === pt}
                 onClick={() => set('price_type', pt)}
                 className={`px-3 py-2.5 rounded-xl border text-sm font-medium transition ${
                   form.price_type === pt
@@ -128,25 +135,29 @@ export default function NewCoursePage() {
             <div className="flex items-center gap-2">
               <span className="text-gray-500 text-sm">$</span>
               <input
+                id="course-price"
                 type="number"
                 min="0"
                 step="0.01"
                 value={form.price}
                 onChange={(e) => set('price', e.target.value)}
                 placeholder="0.00"
+                aria-label={`Price in dollars${form.price_type === 'subscription' ? ' per month' : ''}`}
                 className="w-32 bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-fuchsia-500 text-sm"
               />
               {form.price_type === 'subscription' && <span className="text-gray-500 text-sm">/ month</span>}
             </div>
           )}
-        </div>
+        </fieldset>
 
         {/* Navigation mode */}
-        <div>
-          <label className="block text-sm text-gray-300 mb-2">Learning Path Style</label>
-          <div className="grid grid-cols-2 gap-3">
+        <fieldset>
+          <legend className="block text-sm text-gray-300 mb-2">Learning Path Style</legend>
+          <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Navigation mode">
             <button
               type="button"
+              role="radio"
+              aria-checked={form.navigation_mode === 'linear'}
               onClick={() => set('navigation_mode', 'linear')}
               className={`p-4 rounded-xl border text-left transition ${
                 form.navigation_mode === 'linear'
@@ -154,12 +165,14 @@ export default function NewCoursePage() {
                   : 'bg-gray-900 border-gray-700 hover:border-gray-600'
               }`}
             >
-              <ArrowRight className="w-5 h-5 text-fuchsia-400 mb-2" />
+              <ArrowRight className="w-5 h-5 text-fuchsia-400 mb-2" aria-hidden="true" />
               <p className="font-semibold text-white text-sm">Linear</p>
               <p className="text-gray-400 text-xs mt-1">Students follow lessons in order, step by step.</p>
             </button>
             <button
               type="button"
+              role="radio"
+              aria-checked={form.navigation_mode === 'cyoa'}
               onClick={() => set('navigation_mode', 'cyoa')}
               className={`p-4 rounded-xl border text-left transition ${
                 form.navigation_mode === 'cyoa'
@@ -167,14 +180,14 @@ export default function NewCoursePage() {
                   : 'bg-gray-900 border-gray-700 hover:border-gray-600'
               }`}
             >
-              <GitBranch className="w-5 h-5 text-fuchsia-400 mb-2" />
+              <GitBranch className="w-5 h-5 text-fuchsia-400 mb-2" aria-hidden="true" />
               <p className="font-semibold text-white text-sm">Adventure (CYOA)</p>
               <p className="text-gray-400 text-xs mt-1">AI recommends branching paths after each lesson.</p>
             </button>
           </div>
-        </div>
+        </fieldset>
 
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        {error && <p role="alert" className="text-red-400 text-sm">{error}</p>}
 
         <div className="flex items-center gap-3 pt-2">
           <button

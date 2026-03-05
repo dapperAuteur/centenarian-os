@@ -11,6 +11,7 @@ import {
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import TransferModal from '@/components/finance/TransferModal';
+import Modal from '@/components/ui/Modal';
 
 interface Account {
   id: string;
@@ -388,93 +389,90 @@ export default function AccountsPage() {
       />
 
       {/* Add Account Modal */}
-      {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowAdd(false)}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-4 my-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-gray-900">Add Account</h3>
-            <form onSubmit={handleAdd} className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Name *</label>
-                  <input required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. Chase Checking" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Type *</label>
-                  <select required value={form.account_type} onChange={(e) => setForm((f) => ({ ...f, account_type: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg">
-                    {Object.entries(TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Institution</label>
-                  <input value={form.institution_name} onChange={(e) => setForm((f) => ({ ...f, institution_name: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="Bank or lender name" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Last 4 digits</label>
-                  <input maxLength={4} value={form.last_four} onChange={(e) => setForm((f) => ({ ...f, last_four: e.target.value.replace(/\D/g, '') }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="1234" />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Opening Balance ($)</label>
-                  <input type="number" step="0.01" value={form.opening_balance} onChange={(e) => setForm((f) => ({ ...f, opening_balance: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="0.00" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Interest Rate (%)</label>
-                  <input type="number" step="0.01" min="0" value={form.interest_rate} onChange={(e) => setForm((f) => ({ ...f, interest_rate: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 24.99" />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Credit Limit ($)</label>
-                  <input type="number" step="0.01" min="0" value={form.credit_limit} onChange={(e) => setForm((f) => ({ ...f, credit_limit: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="Credit cards / loans" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Monthly Fee ($)</label>
-                  <input type="number" step="0.01" min="0" value={form.monthly_fee} onChange={(e) => setForm((f) => ({ ...f, monthly_fee: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="Annual fee / 12" />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Payment Due Date (day of month)</label>
-                  <input type="number" min="1" max="28" value={form.due_date} onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 15" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Statement Date (day of month)</label>
-                  <input type="number" min="1" max="28" value={form.statement_date} onChange={(e) => setForm((f) => ({ ...f, statement_date: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 1" />
-                </div>
+      <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add Account" size="sm">
+        <form onSubmit={handleAdd}>
+          <div className="p-6 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="acct-name" className="text-xs font-medium text-gray-600">Name *</label>
+                <input id="acct-name" required aria-required="true" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. Chase Checking" />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Notes</label>
-                <input value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="Optional notes" />
+                <label htmlFor="acct-type" className="text-xs font-medium text-gray-600">Type *</label>
+                <select id="acct-type" required aria-required="true" value={form.account_type} onChange={(e) => setForm((f) => ({ ...f, account_type: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg">
+                  {Object.entries(TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
               </div>
-              <div className="flex gap-3 pt-2">
-                <button type="submit" disabled={saving}
-                  className="flex-1 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 disabled:opacity-50 transition flex items-center justify-center gap-2">
-                  {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Add Account
-                </button>
-                <button type="button" onClick={() => setShowAdd(false)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
-                  Cancel
-                </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="acct-institution" className="text-xs font-medium text-gray-600">Institution</label>
+                <input id="acct-institution" value={form.institution_name} onChange={(e) => setForm((f) => ({ ...f, institution_name: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="Bank or lender name" />
               </div>
-            </form>
+              <div>
+                <label htmlFor="acct-last-four" className="text-xs font-medium text-gray-600">Last 4 digits</label>
+                <input id="acct-last-four" maxLength={4} value={form.last_four} onChange={(e) => setForm((f) => ({ ...f, last_four: e.target.value.replace(/\D/g, '') }))}
+                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="1234" />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="acct-opening-balance" className="text-xs font-medium text-gray-600">Opening Balance ($)</label>
+                <input id="acct-opening-balance" type="number" step="0.01" value={form.opening_balance} onChange={(e) => setForm((f) => ({ ...f, opening_balance: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="0.00" />
+              </div>
+              <div>
+                <label htmlFor="acct-interest-rate" className="text-xs font-medium text-gray-600">Interest Rate (%)</label>
+                <input id="acct-interest-rate" type="number" step="0.01" min="0" value={form.interest_rate} onChange={(e) => setForm((f) => ({ ...f, interest_rate: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 24.99" />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="acct-credit-limit" className="text-xs font-medium text-gray-600">Credit Limit ($)</label>
+                <input id="acct-credit-limit" type="number" step="0.01" min="0" value={form.credit_limit} onChange={(e) => setForm((f) => ({ ...f, credit_limit: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="Credit cards / loans" />
+              </div>
+              <div>
+                <label htmlFor="acct-monthly-fee" className="text-xs font-medium text-gray-600">Monthly Fee ($)</label>
+                <input id="acct-monthly-fee" type="number" step="0.01" min="0" value={form.monthly_fee} onChange={(e) => setForm((f) => ({ ...f, monthly_fee: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="Annual fee / 12" />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="acct-due-date" className="text-xs font-medium text-gray-600">Payment Due Date (day of month)</label>
+                <input id="acct-due-date" type="number" min="1" max="28" value={form.due_date} onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 15" />
+              </div>
+              <div>
+                <label htmlFor="acct-statement-date" className="text-xs font-medium text-gray-600">Statement Date (day of month)</label>
+                <input id="acct-statement-date" type="number" min="1" max="28" value={form.statement_date} onChange={(e) => setForm((f) => ({ ...f, statement_date: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 1" />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="acct-notes" className="text-xs font-medium text-gray-600">Notes</label>
+              <input id="acct-notes" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="Optional notes" />
+            </div>
           </div>
-        </div>
-      )}
+          <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 pt-3 pb-3 flex gap-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+            <button type="submit" disabled={saving}
+              className="flex-1 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 disabled:opacity-50 transition flex items-center justify-center gap-2">
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              Add Account
+            </button>
+            <button type="button" onClick={() => setShowAdd(false)}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

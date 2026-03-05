@@ -152,6 +152,8 @@ export default function ContactAutocomplete({
         placeholder={placeholder}
         className={inputClassName}
         autoComplete="off"
+        aria-autocomplete="list"
+        aria-label={placeholder || `Search ${contactType}s`}
       />
       <datalist id={listIdRef.current}>
         {contacts.map((c) => (
@@ -182,6 +184,7 @@ export default function ContactAutocomplete({
           onChange={handleLocationChange}
           className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm mt-1 text-gray-600"
           defaultValue={locations.find((l) => l.is_default)?.id ?? ''}
+          aria-label="Select location"
         >
           <option value="">Select location...</option>
           {locations.map((l) => (

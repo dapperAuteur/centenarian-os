@@ -56,11 +56,14 @@ export default function CategorySelect<T extends { id: string; name: string }>({
     }
   }
 
+  const selectId = `catsel-${label.toLowerCase().replace(/\s+/g, '-')}`;
+
   return (
     <div className={className}>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <label htmlFor={selectId} className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
       <div className="flex items-center gap-1.5">
         <select
+          id={selectId}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
@@ -74,7 +77,7 @@ export default function CategorySelect<T extends { id: string; name: string }>({
           type="button"
           onClick={() => setShowForm((p) => !p)}
           className="shrink-0 p-2 rounded-lg border text-gray-500 hover:bg-gray-50 transition"
-          title="Add category"
+          aria-label={showForm ? 'Close new category form' : 'Add new category'}
         >
           {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
         </button>
@@ -85,6 +88,8 @@ export default function CategorySelect<T extends { id: string; name: string }>({
             <input
               type="text"
               required
+              aria-required="true"
+              aria-label="New category name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="flex-1 px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-900"
@@ -96,6 +101,7 @@ export default function CategorySelect<T extends { id: string; name: string }>({
               value={color}
               onChange={(e) => setColor(e.target.value)}
               className="w-8 h-8 border rounded-lg cursor-pointer shrink-0"
+              aria-label="Category color"
             />
             <button
               type="submit"

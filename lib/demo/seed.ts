@@ -11,10 +11,13 @@ export function daysAgo(n: number): string {
 
 // Deletion order respects FK constraints (children before parents)
 export const CLEAR_ORDER = [
+  'activity_links',
   'entity_life_categories',
   'workout_log_exercises',
   'workout_logs',
   'workout_feedback',
+  'weekly_reviews',
+  'daily_logs',
   'exercise_equipment',
   'exercises',
   'exercise_categories',
@@ -260,6 +263,50 @@ export async function seedTutorial(supabase: SupabaseClient, userId: string): Pr
     { user_id: userId, name: 'Relationships', icon: 'users', color: '#f59e0b', sort_order: 4 },
   ]);
   if (lcErr) throw new Error(`Tutorial life categories: ${lcErr.message}`);
+
+  // Focus Sessions (3 sessions)
+  const { error: tutFsErr } = await supabase.from('focus_sessions').insert([
+    { user_id: userId, start_time: new Date(Date.now() - 86400000 - 60 * 60000).toISOString(), end_time: new Date(Date.now() - 86400000 - 35 * 60000).toISOString(), duration: 25, notes: 'Reviewing monthly budget categories', session_type: 'work' },
+    { user_id: userId, start_time: new Date(Date.now() - 172800000 - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 172800000 - 40 * 60000).toISOString(), duration: 50, notes: 'Meal planning and recipe research for the week', session_type: 'focus' },
+    { user_id: userId, start_time: new Date(Date.now() - 259200000 - 45 * 60000).toISOString(), end_time: new Date(Date.now() - 259200000 - 15 * 60000).toISOString(), duration: 30, notes: 'Logging health metrics and daily reflection', session_type: 'focus' },
+  ]);
+  if (tutFsErr) throw new Error(`Tutorial focus sessions: ${tutFsErr.message}`);
+
+  // Daily Logs (7 days)
+  const tutorialWins = [
+    'Completed gym session — upper body + core',
+    'Hit 8,000 steps before lunch',
+    'Meal prepped lunches for the whole week',
+    'Logged all health metrics for the day',
+    'Morning walk — 30 minutes in sunshine',
+    'Reviewed budget and stayed under grocery limit',
+    'Completed yoga session — 45 min flow',
+  ];
+  const tutorialChallenges = [
+    'Only got 5.5 hours of sleep',
+    'Skipped afternoon walk due to rain',
+    'Overspent at grocery store',
+    null, null, null, null,
+  ];
+  const tutDailyRows = Array.from({ length: 7 }, (_, i) => ({
+    user_id: userId,
+    date: daysAgo(i),
+    energy_rating: Math.min(5, Math.max(1, 3 + Math.floor(Math.random() * 3) - 1)),
+    biggest_win: tutorialWins[i % tutorialWins.length],
+    biggest_challenge: tutorialChallenges[i % tutorialChallenges.length],
+    total_spent: +(15 + Math.random() * 80).toFixed(2),
+    total_earned: i === 3 ? 3200 : 0,
+  }));
+  const { error: tutDlErr } = await supabase.from('daily_logs').insert(tutDailyRows);
+  if (tutDlErr) throw new Error(`Tutorial daily logs: ${tutDlErr.message}`);
+
+  // Weekly Review (1 week)
+  const { error: tutWrErr } = await supabase.from('weekly_reviews').insert([{
+    user_id: userId,
+    week_start: daysAgo(7),
+    content: `## Health & Recovery\nResting heart rate averaged 61 bpm this week — consistent. Sleep averaged 7.2 hours with one rough night at 5.5 hours. Completed 3 out of 4 planned workouts including a push session and yoga flow.\n\n## Finance\nTotal spending this week: $412. Groceries accounted for the largest share at $225 between Trader Joes and Whole Foods. Stayed within the monthly gas budget.\n\n## Movement\nLogged 8 trips this week — 4 by car, 1 bike ride to the park (8.2 miles). Daily steps averaged around 8,500.\n\n## Focus for Next Week\nPrioritize sleep consistency — aim for 7+ hours every night. Complete all 4 planned workouts and start tracking active calories.`,
+  }]);
+  if (tutWrErr) throw new Error(`Tutorial weekly review: ${tutWrErr.message}`);
 }
 
 // ─── VISITOR ACCOUNT ────────────────────────────────────────────────────────
@@ -502,7 +549,7 @@ export async function seedVisitor(supabase: SupabaseClient, userId: string): Pro
     if (taskErr) throw new Error(`Visitor tasks: ${taskErr.message}`);
   }
 
-  // ── Health Metrics (30 days) ──
+  // ── Health Metrics (30 days — enriched with all available fields) ──
   const healthRows = Array.from({ length: 30 }, (_, i) => ({
     user_id: userId,
     logged_date: daysAgo(i),
@@ -512,6 +559,11 @@ export async function seedVisitor(supabase: SupabaseClient, userId: string): Pro
     activity_min: 25 + Math.floor(Math.random() * 60),
     hrv_ms: 35 + Math.floor(Math.random() * 30),
     recovery_score: 50 + Math.floor(Math.random() * 50),
+    sleep_score: 60 + Math.floor(Math.random() * 35),
+    stress_score: 20 + Math.floor(Math.random() * 50),
+    active_calories: 200 + Math.floor(Math.random() * 400),
+    spo2_pct: +(96 + Math.random() * 3).toFixed(1),
+    weight_lbs: +(174 + (Math.random() * 4 - 2)).toFixed(1),
     source: 'manual' as const,
   }));
   const { error: hmErr } = await supabase.from('user_health_metrics').insert(healthRows);
@@ -552,35 +604,85 @@ export async function seedVisitor(supabase: SupabaseClient, userId: string): Pro
   if (exErr) throw new Error(`Visitor exercises: ${exErr.message}`);
   const exId = (name: string) => exercises?.find(e => e.name === name)?.id ?? null;
 
-  // ── Workout Logs (3 recent workouts) ──
+  // ── Workout Logs (10 workouts over 30 days) ──
   const { data: wLogs, error: wLogErr } = await supabase
     .from('workout_logs')
     .insert([
       { user_id: userId, name: 'Push Day', date: daysAgo(1), duration_min: 55, overall_feeling: 4, purpose: ['strength', 'hypertrophy'], warmup_notes: '5 min treadmill + arm circles' },
       { user_id: userId, name: 'Pull Day', date: daysAgo(2), duration_min: 50, overall_feeling: 5, purpose: ['strength'], warmup_notes: 'Band pull-aparts' },
       { user_id: userId, name: 'Leg Day', date: daysAgo(4), duration_min: 60, overall_feeling: 3, purpose: ['strength', 'mobility'], cooldown_notes: 'Foam rolled quads and hamstrings' },
+      { user_id: userId, name: 'AM Priming', date: daysAgo(6), duration_min: 15, overall_feeling: 4, purpose: ['mobility', 'warmup'], warmup_notes: 'Cat-cow, hip flexor stretch' },
+      { user_id: userId, name: 'Full Body HIIT', date: daysAgo(8), duration_min: 30, overall_feeling: 4, purpose: ['conditioning', 'endurance'] },
+      { user_id: userId, name: 'Upper Body', date: daysAgo(10), duration_min: 50, overall_feeling: 4, purpose: ['strength'], warmup_notes: 'Shoulder circles + band work' },
+      { user_id: userId, name: 'Recovery & Mobility', date: daysAgo(14), duration_min: 25, overall_feeling: 5, purpose: ['mobility', 'recovery'], cooldown_notes: 'Full body stretch sequence' },
+      { user_id: userId, name: 'Push Day', date: daysAgo(17), duration_min: 55, overall_feeling: 3, purpose: ['strength', 'hypertrophy'], warmup_notes: 'Light bench warm-up sets' },
+      { user_id: userId, name: 'Leg Day', date: daysAgo(21), duration_min: 60, overall_feeling: 4, purpose: ['strength'], cooldown_notes: 'Foam rolled IT bands' },
+      { user_id: userId, name: 'AM Priming', date: daysAgo(25), duration_min: 15, overall_feeling: 4, purpose: ['mobility', 'warmup'] },
     ])
     .select('id, name');
   if (wLogErr) throw new Error(`Visitor workout logs: ${wLogErr.message}`);
   const wLogId = (name: string) => wLogs?.find(l => l.name === name)?.id;
 
+  // Helper to get first matching log ID (for duplicate names like "Push Day")
+  const wLogIds = (name: string) => wLogs?.filter(l => l.name === name).map(l => l.id) ?? [];
+
   const { error: wExErr } = await supabase.from('workout_log_exercises').insert([
-    // Push Day
+    // Push Day (day 1)
     { log_id: wLogId('Push Day'), name: 'Bench Press', exercise_id: exId('Bench Press'), sets_completed: 4, reps_completed: 8, weight_lbs: 155, sort_order: 1, phase: 'working', rpe: 8 },
     { log_id: wLogId('Push Day'), name: 'Overhead Press', exercise_id: exId('Overhead Press'), sets_completed: 3, reps_completed: 10, weight_lbs: 95, sort_order: 2, phase: 'working', rpe: 7 },
     { log_id: wLogId('Push Day'), name: 'Push-ups', exercise_id: exId('Push-ups'), sets_completed: 3, reps_completed: 20, sort_order: 3, phase: 'working', rpe: 6, to_failure: true },
     { log_id: wLogId('Push Day'), name: 'Plank', exercise_id: exId('Plank'), sets_completed: 3, duration_sec: 60, sort_order: 4, phase: 'cooldown' },
-    // Pull Day
+    // Pull Day (day 2)
     { log_id: wLogId('Pull Day'), name: 'Pull-ups', exercise_id: exId('Pull-ups'), sets_completed: 4, reps_completed: 8, sort_order: 1, phase: 'working', rpe: 8 },
     { log_id: wLogId('Pull Day'), name: 'Barbell Rows', exercise_id: exId('Barbell Rows'), sets_completed: 4, reps_completed: 10, weight_lbs: 135, sort_order: 2, phase: 'working', rpe: 7 },
     { log_id: wLogId('Pull Day'), name: 'Dead Bug', exercise_id: exId('Dead Bug'), sets_completed: 3, reps_completed: 10, sort_order: 3, phase: 'cooldown' },
-    // Leg Day
+    // Leg Day (day 4)
     { log_id: wLogId('Leg Day'), name: 'Back Squat', exercise_id: exId('Back Squat'), sets_completed: 4, reps_completed: 8, weight_lbs: 185, sort_order: 1, phase: 'working', rpe: 9 },
     { log_id: wLogId('Leg Day'), name: 'Romanian Deadlift', exercise_id: exId('Romanian Deadlift'), sets_completed: 3, reps_completed: 10, weight_lbs: 155, sort_order: 2, phase: 'working', rpe: 8 },
     { log_id: wLogId('Leg Day'), name: 'Lunges', exercise_id: exId('Lunges'), sets_completed: 3, reps_completed: 12, weight_lbs: 40, sort_order: 3, phase: 'working', rpe: 7, is_unilateral: true },
     { log_id: wLogId('Leg Day'), name: 'Hip 90/90 Stretch', exercise_id: exId('Hip 90/90 Stretch'), sets_completed: 2, duration_sec: 30, sort_order: 4, phase: 'cooldown' },
+    // AM Priming (day 6)
+    ...(wLogIds('AM Priming')[0] ? [
+      { log_id: wLogIds('AM Priming')[0], name: 'Hip 90/90 Stretch', exercise_id: exId('Hip 90/90 Stretch'), sets_completed: 2, duration_sec: 30, sort_order: 1, phase: 'warmup' },
+      { log_id: wLogIds('AM Priming')[0], name: 'Dead Bug', exercise_id: exId('Dead Bug'), sets_completed: 2, reps_completed: 8, sort_order: 2, phase: 'working' },
+      { log_id: wLogIds('AM Priming')[0], name: 'Plank', exercise_id: exId('Plank'), sets_completed: 2, duration_sec: 45, sort_order: 3, phase: 'working' },
+    ] : []),
+    // Full Body HIIT (day 8)
+    ...(wLogId('Full Body HIIT') ? [
+      { log_id: wLogId('Full Body HIIT'), name: 'Push-ups', exercise_id: exId('Push-ups'), sets_completed: 4, reps_completed: 15, sort_order: 1, phase: 'working', rpe: 7, is_circuit: true },
+      { log_id: wLogId('Full Body HIIT'), name: 'Back Squat', exercise_id: exId('Back Squat'), sets_completed: 4, reps_completed: 12, weight_lbs: 135, sort_order: 2, phase: 'working', rpe: 7, is_circuit: true },
+      { log_id: wLogId('Full Body HIIT'), name: 'Pull-ups', exercise_id: exId('Pull-ups'), sets_completed: 4, reps_completed: 6, sort_order: 3, phase: 'working', rpe: 8, is_circuit: true },
+      { log_id: wLogId('Full Body HIIT'), name: 'Treadmill Run', exercise_id: exId('Treadmill Run'), sets_completed: 1, duration_sec: 300, sort_order: 4, phase: 'cooldown' },
+    ] : []),
+    // Upper Body (day 10)
+    ...(wLogIds('Upper Body')[0] ? [
+      { log_id: wLogIds('Upper Body')[0], name: 'Bench Press', exercise_id: exId('Bench Press'), sets_completed: 4, reps_completed: 8, weight_lbs: 150, sort_order: 1, phase: 'working', rpe: 7 },
+      { log_id: wLogIds('Upper Body')[0], name: 'Barbell Rows', exercise_id: exId('Barbell Rows'), sets_completed: 4, reps_completed: 10, weight_lbs: 130, sort_order: 2, phase: 'working', rpe: 7 },
+      { log_id: wLogIds('Upper Body')[0], name: 'Overhead Press', exercise_id: exId('Overhead Press'), sets_completed: 3, reps_completed: 8, weight_lbs: 90, sort_order: 3, phase: 'working', rpe: 8 },
+    ] : []),
+    // Recovery & Mobility (day 14)
+    ...(wLogIds('Recovery & Mobility')[0] ? [
+      { log_id: wLogIds('Recovery & Mobility')[0], name: 'Hip 90/90 Stretch', exercise_id: exId('Hip 90/90 Stretch'), sets_completed: 3, duration_sec: 45, sort_order: 1, phase: 'working' },
+      { log_id: wLogIds('Recovery & Mobility')[0], name: 'Plank', exercise_id: exId('Plank'), sets_completed: 2, duration_sec: 60, sort_order: 2, phase: 'working' },
+      { log_id: wLogIds('Recovery & Mobility')[0], name: 'Dead Bug', exercise_id: exId('Dead Bug'), sets_completed: 3, reps_completed: 10, sort_order: 3, phase: 'working' },
+    ] : []),
   ]);
   if (wExErr) throw new Error(`Visitor workout log exercises: ${wExErr.message}`);
+
+  // ── Workout Feedback (for recent workouts) ──
+  const feedbackRows = [
+    { user_id: userId, workout_log_id: wLogId('Push Day'), activity_category: 'WORKOUT_GYM', activity_duration: '55', mood_before: 3, mood_after: 4, difficulty: 'just-right', feedback: 'Bench press felt solid. Shoulder warm-up really helped today.' },
+    { user_id: userId, workout_log_id: wLogId('Pull Day'), activity_category: 'WORKOUT_GYM', activity_duration: '50', mood_before: 4, mood_after: 5, difficulty: 'just-right', feedback: 'Best pull-up session in weeks. Back pump was great.' },
+    { user_id: userId, workout_log_id: wLogId('Leg Day'), activity_category: 'WORKOUT_GYM', activity_duration: '60', mood_before: 3, mood_after: 3, difficulty: 'harder', feedback: 'Squats were heavy today. Knee felt tight on the last set.' },
+    { user_id: userId, workout_log_id: wLogId('Full Body HIIT'), activity_category: 'WORKOUT_GYM', activity_duration: '30', mood_before: 3, mood_after: 5, difficulty: 'just-right', feedback: 'Circuit format kept the heart rate up. Great conditioning workout.' },
+    ...(wLogIds('Recovery & Mobility')[0] ? [
+      { user_id: userId, workout_log_id: wLogIds('Recovery & Mobility')[0], activity_category: 'PM' as const, activity_duration: '25', mood_before: 2, mood_after: 4, difficulty: 'easier' as const, feedback: 'Really needed this after a stressful week. Feel much looser now.' },
+    ] : []),
+  ].filter(r => r.workout_log_id);
+  if (feedbackRows.length > 0) {
+    const { error: wfErr } = await supabase.from('workout_feedback').insert(feedbackRows);
+    if (wfErr) throw new Error(`Visitor workout feedback: ${wfErr.message}`);
+  }
 
   // ── Equipment ──
   const { data: eqCats, error: eqCatErr } = await supabase
@@ -633,13 +735,121 @@ export async function seedVisitor(supabase: SupabaseClient, userId: string): Pro
     }
   }
 
-  // ── Focus Sessions (5 recent sessions) ──
+  // ── Focus Sessions (10 sessions over 30 days) ──
+  const DAY_MS = 86400000;
   const { error: fsErr } = await supabase.from('focus_sessions').insert([
-    { user_id: userId, start_time: new Date(Date.now() - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 40 * 60000).toISOString(), duration: 50, notes: 'Deep work on client proposal', session_type: 'focus', hourly_rate: 150, revenue: 125 },
-    { user_id: userId, start_time: new Date(Date.now() - 86400000 - 120 * 60000).toISOString(), end_time: new Date(Date.now() - 86400000 - 45 * 60000).toISOString(), duration: 75, notes: 'Code review and architecture planning', session_type: 'work' },
-    { user_id: userId, start_time: new Date(Date.now() - 172800000 - 60 * 60000).toISOString(), end_time: new Date(Date.now() - 172800000 - 15 * 60000).toISOString(), duration: 45, notes: 'Blog writing — fuel tracking post', session_type: 'focus' },
-    { user_id: userId, start_time: new Date(Date.now() - 259200000 - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 259200000 - 30 * 60000).toISOString(), duration: 60, notes: 'Financial reconciliation', session_type: 'work', hourly_rate: 150, revenue: 150 },
-    { user_id: userId, start_time: new Date(Date.now() - 345600000 - 50 * 60000).toISOString(), end_time: new Date(Date.now() - 345600000).toISOString(), duration: 50, notes: 'Client presentation prep', session_type: 'focus', hourly_rate: 150, revenue: 125 },
+    { user_id: userId, start_time: new Date(Date.now() - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 40 * 60000).toISOString(), duration: 50, notes: 'Deep work on client proposal — DataCo SOW', session_type: 'focus', hourly_rate: 150, revenue: 125 },
+    { user_id: userId, start_time: new Date(Date.now() - DAY_MS - 120 * 60000).toISOString(), end_time: new Date(Date.now() - DAY_MS - 45 * 60000).toISOString(), duration: 75, notes: 'Code review and architecture planning', session_type: 'work' },
+    { user_id: userId, start_time: new Date(Date.now() - 2 * DAY_MS - 60 * 60000).toISOString(), end_time: new Date(Date.now() - 2 * DAY_MS - 15 * 60000).toISOString(), duration: 45, notes: 'Blog writing — fuel tracking post', session_type: 'focus' },
+    { user_id: userId, start_time: new Date(Date.now() - 3 * DAY_MS - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 3 * DAY_MS - 30 * 60000).toISOString(), duration: 60, notes: 'Financial reconciliation and invoice review', session_type: 'work', hourly_rate: 150, revenue: 150 },
+    { user_id: userId, start_time: new Date(Date.now() - 4 * DAY_MS - 50 * 60000).toISOString(), end_time: new Date(Date.now() - 4 * DAY_MS).toISOString(), duration: 50, notes: 'Client presentation prep — TechCorp Q1 review', session_type: 'focus', hourly_rate: 150, revenue: 125 },
+    { user_id: userId, start_time: new Date(Date.now() - 7 * DAY_MS - 80 * 60000).toISOString(), end_time: new Date(Date.now() - 7 * DAY_MS - 20 * 60000).toISOString(), duration: 60, notes: 'Market research for consulting pitch', session_type: 'focus', hourly_rate: 150, revenue: 150 },
+    { user_id: userId, start_time: new Date(Date.now() - 10 * DAY_MS - 45 * 60000).toISOString(), end_time: new Date(Date.now() - 10 * DAY_MS).toISOString(), duration: 45, notes: 'Quarterly goal review and roadmap update', session_type: 'work' },
+    { user_id: userId, start_time: new Date(Date.now() - 14 * DAY_MS - 55 * 60000).toISOString(), end_time: new Date(Date.now() - 14 * DAY_MS - 10 * 60000).toISOString(), duration: 45, notes: 'Blog post outline — longevity habits for desk workers', session_type: 'focus' },
+    { user_id: userId, start_time: new Date(Date.now() - 18 * DAY_MS - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 18 * DAY_MS - 30 * 60000).toISOString(), duration: 60, notes: 'StartupXYZ project planning session', session_type: 'work', hourly_rate: 150, revenue: 150 },
+    { user_id: userId, start_time: new Date(Date.now() - 22 * DAY_MS - 40 * 60000).toISOString(), end_time: new Date(Date.now() - 22 * DAY_MS).toISOString(), duration: 40, notes: 'Equipment inventory and valuation updates', session_type: 'work' },
   ]);
   if (fsErr) throw new Error(`Visitor focus sessions: ${fsErr.message}`);
+
+  // ── Daily Logs (30 days — cross-module references) ──
+  const visitorWins = [
+    'Completed push day workout — new PR on bench press',
+    'Hit 10K steps before noon on a rest day',
+    'Closed $4,800 consulting invoice from TechCorp',
+    'Meal prepped for the whole week — saved ~$60 on dining',
+    'Morning bike ride to Embarcadero — 12.5 miles',
+    'Deep focus session on client proposal — 50 min unbroken',
+    'Got 8+ hours of sleep for the first time this week',
+    'Completed pull day and felt strongest in weeks',
+    'Finished blog post draft on fuel tracking',
+    'Negotiated lower internet bill — saved $20/month',
+    'Bike ride across Golden Gate Bridge — 15.3 miles',
+    'Completed full body HIIT circuit in 30 minutes',
+    'Health baseline labs all came back in optimal range',
+    'Road trip to Joshua Tree — incredible sunset',
+    'Recovery & mobility session — hip flexibility improving',
+    'Closed $3,600 invoice from BetaCo',
+    'Stayed under budget for groceries this week',
+    'AM priming routine felt great — energy lasted all morning',
+    'Completed 4 workouts this week on schedule',
+    'Focus session: finished quarterly roadmap update',
+    'Bike ride to Sausalito — personal best time',
+    'Logged all health metrics every day this week',
+    'Started new mobility routine with yoga mat',
+    'Client proposal accepted — new contract signed',
+    'Tracked all fuel stops — MPG trending up',
+    'Leg day PR: 185 lb back squat for 4x8',
+    'Cooked 3 new recipes from meal plan',
+    'Organized all equipment valuations',
+    'Morning walk + journaling before 7 AM',
+    'Net positive income month — $3.2K ahead of budget',
+  ];
+  const visitorChallenges = [
+    'Poor sleep — only 5.5 hours, stress from deadline',
+    'Skipped workout due to lower back tightness',
+    'Overspent on dining out this week — $85 over budget',
+    null,
+    'Client meeting ran 90 min over scheduled time',
+    null,
+    'Energy crashed hard after lunch — need better snacks',
+    null,
+    'Traffic made commute 45+ min each way',
+    'Knee felt stiff during leg day squats',
+    null,
+    'Forgot to log fuel stop — had to estimate',
+    null,
+    'Road trip fuel costs higher than expected',
+    null,
+    'Procrastinated on tax paperwork',
+    null,
+    null,
+    'Internet outage during focus session',
+    null,
+    null,
+    'Missed PM recovery stretch',
+    null,
+    null,
+    'Weather canceled planned bike ride',
+    null,
+    null,
+    'Equipment app crashed — lost some notes',
+    null,
+    null,
+  ];
+  const dailyLogRows = Array.from({ length: 30 }, (_, i) => ({
+    user_id: userId,
+    date: daysAgo(i),
+    energy_rating: Math.min(5, Math.max(1, 3 + Math.floor(Math.random() * 3) - 1)),
+    biggest_win: visitorWins[i % visitorWins.length],
+    biggest_challenge: visitorChallenges[i % visitorChallenges.length],
+    total_spent: +(Math.random() * 150 + 10).toFixed(2),
+    total_earned: i % 7 === 0 ? 5400 : i % 14 === 3 ? 4800 : 0,
+  }));
+  const { error: dlErr } = await supabase.from('daily_logs').insert(dailyLogRows);
+  if (dlErr) throw new Error(`Visitor daily logs: ${dlErr.message}`);
+
+  // ── Weekly Reviews (4 weeks — pre-written, cross-module) ──
+  const { error: wrErr } = await supabase.from('weekly_reviews').insert([
+    {
+      user_id: userId,
+      week_start: daysAgo(7),
+      content: `## Health & Recovery\nResting heart rate averaged 58 bpm — best week in a month. Sleep averaged 7.4 hours with one rough night at 5.5 hours. Completed 3 workouts: Push Day (bench PR at 155 lb), Pull Day, and a Full Body HIIT circuit. Recovery scores were consistently above 70.\n\n## Finance\nTotal income: $10,200 (salary + TechCorp invoice). Total spending: $684 across groceries ($290), gas ($72), dining ($128), and utilities ($168). Net positive for the month. Stayed within all budget categories.\n\n## Movement & Travel\nLogged 5 trips: 3 by car (office commute, grocery store, client site) and 2 bike rides (Embarcadero 12.5 mi, Golden Gate Park 15.3 mi). Bike savings: ~$8 vs driving.\n\n## Focus & Productivity\n4 focus sessions totaling 3.75 hours. Revenue-generating sessions: $400 billable. Finished the DataCo SOW and TechCorp Q1 review presentation.\n\n## Recommended Focus\nPrioritize sleep consistency — the one 5.5 hr night dragged recovery scores down for 2 days. Aim for 7+ hours every night.`,
+    },
+    {
+      user_id: userId,
+      week_start: daysAgo(14),
+      content: `## Health & Recovery\nMixed week for health. Only completed 2 workouts (Leg Day + Recovery/Mobility) due to lower back tightness. Recovery scores dipped to 55 mid-week. Sleep averaged 6.8 hours — below target. On the positive side, hip flexibility is noticeably improving from the 90/90 stretches.\n\n## Finance\nTotal income: $5,400 (salary only). Spending: $580. Overspent on dining out ($85 over the $400 budget) with the concert night and brunch. Transferred $500 to savings — on track for annual savings goal.\n\n## Movement & Travel\nQuieter travel week — 3 car trips (office, doctor, client meeting) and 1 bike ride (Ocean Beach 18 mi). Doctor visit confirmed: health baseline labs all optimal. No fuel stops needed.\n\n## Focus & Productivity\n2 focus sessions: quarterly goal review and blog outline for the longevity habits post. No billable hours this week — focused on internal planning.\n\n## Recommended Focus\nAddress the back tightness with daily AM priming. Return to 4x/week workout schedule. Tighten dining spending next week.`,
+    },
+    {
+      user_id: userId,
+      week_start: daysAgo(21),
+      content: `## Health & Recovery\nBest sleep week of the month — averaged 7.8 hours. Recovery scores stayed above 75 every day. Completed 4 workouts: Push Day, Leg Day, Upper Body, and AM Priming. Stress scores were low (avg 32). Weight stable at 174.5 lbs.\n\n## Finance\nStrong income week: $10,200 (salary + $4,800 StartupXYZ invoice). Total spending: $520. Stayed under every budget category. Coworking space was the biggest discretionary expense ($245).\n\n## Movement & Travel\nCompleted the CA road trip: SF → LA → San Diego → Joshua Tree → Las Vegas → SF. Total driving: 1,493 miles across 5 days. Fuel cost: ~$175. Trip category: personal/vacation. Also logged 1 bike ride (Crissy Field 10.5 mi).\n\n## Focus & Productivity\n3 sessions totaling 2.75 hours. Highlights: StartupXYZ project planning ($150 billable) and equipment inventory update. The road trip reset energy levels nicely.\n\n## Recommended Focus\nMaintain this sleep consistency. The road trip was a good mental reset — schedule another active recovery day this coming week.`,
+    },
+    {
+      user_id: userId,
+      week_start: daysAgo(28),
+      content: `## Health & Recovery\nDecent week — 3 workouts completed (Push Day, AM Priming, and a bike ride). Sleep averaged 7.1 hours. Recovery scores ranged 60-80. Started tracking active calories — averaging 420/day. Added yoga mat to equipment for the new mobility routine.\n\n## Finance\nTotal income: $8,600 (salary + $3,200 BetaCo invoice). Total spending: $610 across all categories. Notable: $85 for QuickBooks accounting software (business expense). Dentist visit: $180.\n\n## Movement & Travel\nModerate travel week: 4 car trips and 1 bike ride (Sausalito 22.4 mi — personal best!). Filed 2 business trips for tax deductions. Fuel economy staying consistent at ~29.2 MPG.\n\n## Focus & Productivity\n2 sessions totaling 1.75 hours. Blog post published on fuel tracking basics. Started financial reconciliation for the month.\n\n## Recommended Focus\nBlock out more focus session time — only 1.75 hours this week is below the 5-hour target. The Sausalito ride shows fitness is improving — consider increasing bike commute frequency.`,
+    },
+  ]);
+  if (wrErr) throw new Error(`Visitor weekly reviews: ${wrErr.message}`);
 }

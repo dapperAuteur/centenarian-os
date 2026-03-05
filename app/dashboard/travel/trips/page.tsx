@@ -9,6 +9,7 @@ import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import MultiStopForm from '@/components/travel/MultiStopForm';
 import RouteCard from '@/components/travel/RouteCard';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import Modal from '@/components/ui/Modal';
 
 interface Trip {
   id: string;
@@ -449,30 +450,27 @@ export default function TripsPage() {
       )}
 
       {/* Linked transaction confirmation dialog */}
-      {linkedTxDialog && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl space-y-4">
-            <h2 className="text-base font-bold text-gray-900">Delete linked transaction?</h2>
-            <p className="text-sm text-gray-600">
-              This trip had a linked finance expense. Do you also want to delete it?
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setLinkedTxDialog(null)}
-                className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
-              >
-                Keep transaction
-              </button>
-              <button
-                onClick={handleLinkedTxYes}
-                className="flex-1 bg-red-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-red-700 transition"
-              >
-                Delete it too
-              </button>
-            </div>
-          </div>
+      <Modal isOpen={!!linkedTxDialog} onClose={() => setLinkedTxDialog(null)} title="Delete linked transaction?" size="sm">
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-gray-600">
+            This trip had a linked finance expense. Do you also want to delete it?
+          </p>
         </div>
-      )}
+        <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 pt-3 pb-3 flex gap-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+          <button
+            onClick={() => setLinkedTxDialog(null)}
+            className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+          >
+            Keep transaction
+          </button>
+          <button
+            onClick={handleLinkedTxYes}
+            className="flex-1 bg-red-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-red-700 transition"
+          >
+            Delete it too
+          </button>
+        </div>
+      </Modal>
 
       {/* Multi-Stop Form Modal */}
       {showMultiStop && (
@@ -484,17 +482,14 @@ export default function TripsPage() {
       )}
 
       {/* Add / Edit Trip Modal */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <form
-            onSubmit={handleSave}
-            className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl max-h-[90vh] overflow-y-auto"
-          >
-            <h2 className="text-lg font-bold text-gray-900">{editingId ? 'Edit Trip' : 'Log Trip'}</h2>
+      <Modal isOpen={showForm} onClose={() => { setShowForm(false); setEditingId(null); setForm(BLANK_FORM); }} title={editingId ? 'Edit Trip' : 'Log Trip'} size="sm">
+        <form onSubmit={handleSave}>
+          <div className="p-6 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Mode</label>
+                <label htmlFor="trip-mode" className="block text-xs font-medium text-gray-600 mb-1">Mode</label>
                 <select
+                  id="trip-mode"
                   value={form.mode}
                   onChange={(e) => setForm((f) => ({ ...f, mode: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -505,18 +500,20 @@ export default function TripsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
+                <label htmlFor="trip-date" className="block text-xs font-medium text-gray-600 mb-1">Date</label>
                 <input
+                  id="trip-date"
                   type="date" value={form.date}
                   onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                   required
+                  aria-required="true"
                 />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
+                <label htmlFor="trip-origin" className="block text-xs font-medium text-gray-600 mb-1">From</label>
                 <ContactAutocomplete
                   value={form.origin}
                   contactType="location"
@@ -527,7 +524,7 @@ export default function TripsPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
+                <label htmlFor="trip-destination" className="block text-xs font-medium text-gray-600 mb-1">To</label>
                 <ContactAutocomplete
                   value={form.destination}
                   contactType="location"
@@ -549,24 +546,27 @@ export default function TripsPage() {
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Miles</label>
+                <label htmlFor="trip-miles" className="block text-xs font-medium text-gray-600 mb-1">Miles</label>
                 <input
+                  id="trip-miles"
                   type="number" step="0.01" value={form.distance_miles} placeholder="0.0"
                   onChange={(e) => setForm((f) => ({ ...f, distance_miles: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Duration (min)</label>
+                <label htmlFor="trip-duration" className="block text-xs font-medium text-gray-600 mb-1">Duration (min)</label>
                 <input
+                  id="trip-duration"
                   type="number" value={form.duration_min} placeholder="0"
                   onChange={(e) => setForm((f) => ({ ...f, duration_min: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Calories</label>
+                <label htmlFor="trip-calories" className="block text-xs font-medium text-gray-600 mb-1">Calories</label>
                 <input
+                  id="trip-calories"
                   type="number" value={form.calories_burned} placeholder="0"
                   onChange={(e) => setForm((f) => ({ ...f, calories_burned: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -574,8 +574,9 @@ export default function TripsPage() {
               </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Cost ($)</label>
+              <label htmlFor="trip-cost" className="block text-xs font-medium text-gray-600 mb-1">Cost ($)</label>
               <input
+                id="trip-cost"
                 type="number" step="0.01" value={form.cost} placeholder="0.00"
                 onChange={(e) => setForm((f) => ({ ...f, cost: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -583,8 +584,9 @@ export default function TripsPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Purpose</label>
+                <label htmlFor="trip-purpose" className="block text-xs font-medium text-gray-600 mb-1">Purpose</label>
                 <select
+                  id="trip-purpose"
                   value={form.purpose}
                   onChange={(e) => setForm((f) => ({ ...f, purpose: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -595,8 +597,9 @@ export default function TripsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Tax purpose</label>
+                <label htmlFor="trip-tax" className="block text-xs font-medium text-gray-600 mb-1">Tax purpose</label>
                 <select
+                  id="trip-tax"
                   value={form.tax_category}
                   onChange={(e) => setForm((f) => ({ ...f, tax_category: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -633,8 +636,9 @@ export default function TripsPage() {
             )}
             {vehicles.length > 0 && (
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Vehicle</label>
+                <label htmlFor="trip-vehicle" className="block text-xs font-medium text-gray-600 mb-1">Vehicle</label>
                 <select
+                  id="trip-vehicle"
                   value={form.vehicle_id}
                   onChange={(e) => {
                     const vid = e.target.value;
@@ -658,8 +662,9 @@ export default function TripsPage() {
               </div>
             )}
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+              <label htmlFor="trip-notes" className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
               <input
+                id="trip-notes"
                 type="text" value={form.notes} placeholder="Optional notes"
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -670,22 +675,22 @@ export default function TripsPage() {
                 <ActivityLinker entityType="trip" entityId={editingId} />
               </div>
             )}
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => { setShowForm(false); setEditingId(null); setForm(BLANK_FORM); }}
-                className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
-              >
-                Cancel
-              </button>
-              <button type="submit" disabled={saving}
-                className="flex-1 bg-sky-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-50">
-                {saving ? 'Saving…' : editingId ? 'Update Trip' : 'Save Trip'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+          </div>
+          <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 pt-3 pb-3 flex gap-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+            <button
+              type="button"
+              onClick={() => { setShowForm(false); setEditingId(null); setForm(BLANK_FORM); }}
+              className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+            >
+              Cancel
+            </button>
+            <button type="submit" disabled={saving}
+              className="flex-1 bg-sky-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-50">
+              {saving ? 'Saving...' : editingId ? 'Update Trip' : 'Save Trip'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
