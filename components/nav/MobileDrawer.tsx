@@ -82,7 +82,7 @@ export default function MobileDrawer({
         aria-modal="true"
         aria-label="Navigation"
         className="fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-xl overflow-y-auto lg:hidden"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 4rem)' }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">

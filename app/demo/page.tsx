@@ -15,7 +15,11 @@ export default function DemoPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/auth/demo-login', { method: 'POST' });
+      const res = await fetch('/api/auth/demo-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from: 'demo-page' }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Demo login failed');
       router.push(data.redirect);
