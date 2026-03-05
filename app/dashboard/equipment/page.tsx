@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Package, Plus, TrendingDown, DollarSign, Layers, Upload, Download } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import EquipmentCard, { type EquipmentItem } from '@/components/equipment/EquipmentCard';
 import CategoryFilter from '@/components/equipment/CategoryFilter';
 
@@ -25,6 +26,7 @@ interface Summary {
 }
 
 export default function EquipmentHubPage() {
+  useTrackPageView('equipment', '/dashboard/equipment');
   const router = useRouter();
   const [items, setItems] = useState<EquipmentItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);

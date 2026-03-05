@@ -8,6 +8,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { stripe } from '@/lib/stripe';
 import { createShopifyPromoCode } from '@/lib/shopify/createPromoCode';
+import { logInfo, logError } from '@/lib/logging';
 
 function getServiceClient() {
   return createServiceClient(
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
     session = await stripe.checkout.sessions.retrieve(session_id);
   } catch (err) {
     console.error('[sync] Failed to retrieve Stripe session:', err);
+    logError({ source: 'sync', module: 'stripe', message: 'Failed to retrieve Stripe session', metadata: { sessionId: session_id, error: err instanceof Error ? err.message : String(err) }, userId: user.id });
     return NextResponse.json({ error: 'Invalid session' }, { status: 400 });
   }
 
@@ -92,12 +94,14 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('[sync] DB update failed for monthly:', error);
+      logError({ source: 'sync', module: 'stripe', message: 'DB update failed for monthly', metadata: { error: error.message }, userId: user.id });
       return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
     }
     if (!updated || updated.length === 0) {
       console.error('[sync] No profile row for user:', user.id, '— run migration 036 to backfill profiles');
       return NextResponse.json({ error: 'Profile not found — account setup incomplete' }, { status: 404 });
     }
+    logInfo({ source: 'sync', module: 'stripe', message: 'Monthly subscription synced', metadata: { sessionId: session_id }, userId: user.id });
     return NextResponse.json({ status: 'monthly' });
   }
 
@@ -133,12 +137,14 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('[sync] DB update failed for lifetime:', error);
+      logError({ source: 'sync', module: 'stripe', message: 'DB update failed for lifetime', metadata: { error: error.message }, userId: user.id });
       return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
     }
     if (!updated || updated.length === 0) {
       console.error('[sync] No profile row for user:', user.id, '— run migration 036 to backfill profiles');
       return NextResponse.json({ error: 'Profile not found — account setup incomplete' }, { status: 404 });
     }
+    logInfo({ source: 'sync', module: 'stripe', message: 'Lifetime purchase synced', metadata: { sessionId: session_id }, userId: user.id });
     return NextResponse.json({ status: 'lifetime' });
   }
 

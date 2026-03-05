@@ -6,9 +6,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, MessageSquare, FileText, Heart, MessageCircle, GraduationCap, Radio, Activity, Building2 } from 'lucide-react';
+import { LayoutDashboard, Users, MessageSquare, FileText, Heart, MessageCircle, GraduationCap, Radio, Activity, Building2, ScrollText, BarChart3 } from 'lucide-react';
 
-interface UnreadCounts { feedback: number; messages: number; }
+interface UnreadCounts { feedback: number; messages: number; logs: number; }
 
 const NAV_ITEMS = [
   { href: '/admin',            label: 'Overview',    icon: LayoutDashboard, exact: true,  badgeKey: null },
@@ -21,16 +21,18 @@ const NAV_ITEMS = [
   { href: '/admin/live',       label: 'Live',        icon: Radio,           exact: false, badgeKey: null },
   { href: '/admin/metrics',    label: 'Metrics',     icon: Activity,        exact: false, badgeKey: null },
   { href: '/admin/institutions', label: 'Institutions', icon: Building2,    exact: false, badgeKey: null },
+  { href: '/admin/logs',         label: 'Logs',         icon: ScrollText,    exact: false, badgeKey: 'logs' as const },
+  { href: '/admin/usage',        label: 'Usage',        icon: BarChart3,     exact: false, badgeKey: null },
 ];
 
 export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const [unread, setUnread] = useState<UnreadCounts>({ feedback: 0, messages: 0 });
+  const [unread, setUnread] = useState<UnreadCounts>({ feedback: 0, messages: 0, logs: 0 });
 
   const fetchCounts = useCallback(() => {
     fetch('/api/admin/unread')
       .then((r) => r.json())
-      .then((d) => setUnread({ feedback: d.feedback ?? 0, messages: d.messages ?? 0 }))
+      .then((d) => setUnread({ feedback: d.feedback ?? 0, messages: d.messages ?? 0, logs: d.logs ?? 0 }))
       .catch(() => {});
   }, []);
 

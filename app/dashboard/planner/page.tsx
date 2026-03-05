@@ -5,6 +5,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Task, RecurringTask } from '@/lib/types';
+import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import Link from 'next/link';
 import { Calendar, DollarSign, Plus, Repeat, Upload, Download, Filter } from 'lucide-react';
 import { EditTaskModal } from '@/components/EditTaskModal';
@@ -106,6 +107,7 @@ function TaskCard({ task, onToggle, onEdit }: TaskCardProps) {
 }
 
 export default function PlannerPage() {
+  useTrackPageView('planner', '/dashboard/planner');
   const searchParams = useSearchParams();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);

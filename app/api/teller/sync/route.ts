@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { decryptToken, listTransactions, mapTellerTransaction } from '@/lib/teller';
+import { logInfo, logError } from '@/lib/logging';
 
 function getDb() {
   return createServiceClient(
@@ -178,6 +179,7 @@ export async function POST(request: NextRequest) {
           .update(updateData)
           .eq('id', acct.id);
       } catch (err) {
+        logError({ source: 'sync', module: 'finance', message: 'Teller sync failed for account', metadata: { accountId: acct.teller_account_id, error: err instanceof Error ? err.message : 'Unknown' } });
         errors.push(
           `Sync failed for account ${acct.teller_account_id}: ${err instanceof Error ? err.message : 'Unknown'}`,
         );
@@ -190,6 +192,8 @@ export async function POST(request: NextRequest) {
       .update({ last_synced_at: new Date().toISOString() })
       .eq('id', enrollment.id);
   }
+
+  logInfo({ source: 'sync', module: 'finance', message: 'Teller sync completed', metadata: { newTransactions: totalNew, matched: totalMatched, skipped: totalSkipped, errors: errors.length } });
 
   return NextResponse.json({
     new: totalNew,

@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createHmac, timingSafeEqual } from 'crypto';
+import { logInfo, logError } from '@/lib/logging';
 
 function getDb() {
   return createServiceClient(
@@ -52,6 +53,7 @@ export async function POST(request: NextRequest) {
   // Verify signature (skip in development if secret not set)
   if (process.env.TELLER_WEBHOOK_SECRET) {
     if (!verifySignature(rawBody, sigHeader)) {
+      logError({ source: 'webhook', module: 'finance', message: 'Teller webhook signature verification failed' });
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
   }
@@ -92,7 +94,7 @@ export async function POST(request: NextRequest) {
         metadata: { event_id: event.id, enrollment_id: enrollmentId, reason },
       }).then(() => {/* ignore errors */});
 
-      console.log(`[Teller Webhook] enrollment.disconnected: ${enrollmentId} — ${reason}`);
+      logInfo({ source: 'webhook', module: 'finance', message: 'Teller enrollment disconnected', metadata: { enrollmentId, reason } });
       break;
     }
 
@@ -103,7 +105,7 @@ export async function POST(request: NextRequest) {
         ? event.payload.transactions.length
         : 0;
 
-      console.log(`[Teller Webhook] transactions.processed: ${txnCount} transactions`);
+      logInfo({ source: 'webhook', module: 'finance', message: 'Teller transactions processed', metadata: { count: txnCount } });
       break;
     }
 
@@ -111,7 +113,7 @@ export async function POST(request: NextRequest) {
       const accountId = event.payload.account_id as string;
       const status = event.payload.status as string;
 
-      console.log(`[Teller Webhook] account.number_verification: ${accountId} — ${status}`);
+      logInfo({ source: 'webhook', module: 'finance', message: 'Teller account verification update', metadata: { accountId, status } });
 
       // Notify admin
       await db.from('admin_notifications').insert({
@@ -124,12 +126,12 @@ export async function POST(request: NextRequest) {
     }
 
     case 'webhook.test': {
-      console.log(`[Teller Webhook] Test event received: ${event.id}`);
+      logInfo({ source: 'webhook', module: 'finance', message: 'Teller webhook test event received', metadata: { eventId: event.id } });
       break;
     }
 
     default:
-      console.log(`[Teller Webhook] Unknown event type: ${event.type}`);
+      logInfo({ source: 'webhook', module: 'finance', message: `Teller webhook unknown event type: ${event.type}`, metadata: { eventId: event.id } });
   }
 
   return NextResponse.json({ received: true });

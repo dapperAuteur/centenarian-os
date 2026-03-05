@@ -11,6 +11,7 @@ import {
   mapAccountType,
   mapTellerTransaction,
 } from '@/lib/teller';
+import { logInfo, logError } from '@/lib/logging';
 
 function getDb() {
   return createServiceClient(
@@ -66,14 +67,18 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (enrollErr) {
+    logError({ source: 'api', module: 'finance', message: 'Teller enrollment upsert failed', metadata: { enrollmentId, error: enrollErr.message } });
     return NextResponse.json({ error: enrollErr.message }, { status: 500 });
   }
+
+  logInfo({ source: 'api', module: 'finance', message: 'Teller enrollment created', metadata: { enrollmentId, institution: institutionName } });
 
   // 2. Fetch accounts from Teller and upsert into financial_accounts
   let tellerAccounts;
   try {
     tellerAccounts = await listAccounts(accessToken);
   } catch (err) {
+    logError({ source: 'api', module: 'finance', message: 'Failed to fetch accounts from Teller', metadata: { enrollmentId, error: err instanceof Error ? err.message : 'Unknown' } });
     return NextResponse.json(
       { error: 'Failed to fetch accounts from Teller', enrollment: enrollmentRow },
       { status: 502 },
@@ -165,6 +170,8 @@ export async function POST(request: NextRequest) {
     .from('teller_enrollments')
     .update({ last_synced_at: new Date().toISOString() })
     .eq('id', enrollmentRow.id);
+
+  logInfo({ source: 'api', module: 'finance', message: 'Teller connect completed', metadata: { enrollmentId, accounts: upsertedAccounts.length, synced: totalSynced } });
 
   return NextResponse.json({
     enrollment: enrollmentRow,
