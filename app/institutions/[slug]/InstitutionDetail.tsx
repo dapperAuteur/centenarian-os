@@ -108,6 +108,7 @@ export default function InstitutionDetail() {
         </Link>
         <div className="flex items-center gap-4">
           {institution.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img src={institution.logo_url} alt={institution.name} className="w-14 h-14 rounded-xl object-contain" />
           ) : (
             <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center">

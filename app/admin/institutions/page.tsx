@@ -6,7 +6,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   Building2, RefreshCw, Plus, Loader2, Link2, ExternalLink,
-  ChevronDown, ChevronUp, Pencil, Trash2, Check, X, Eye, EyeOff,
+  ChevronDown, ChevronUp, Trash2, Eye, EyeOff,
 } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 

@@ -89,6 +89,7 @@ export default function InstitutionDirectory() {
             >
               <div className="flex items-center gap-3 mb-3">
                 {inst.logo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={inst.logo_url} alt={inst.name} className="w-10 h-10 rounded-lg object-contain" />
                 ) : (
                   <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">

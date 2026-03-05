@@ -5,7 +5,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Camera, ScanLine, History, ExternalLink } from 'lucide-react';
+import { Camera, ScanLine, ExternalLink } from 'lucide-react';
 import ScanButton from '@/components/scan/ScanButton';
 import ScanResultRouter from '@/components/scan/ScanResultRouter';
 import type { ScanResult } from '@/components/scan/ScanButton';

@@ -65,7 +65,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     if (enrolled && course.course_modules) {
       const seenAtRaw = enrollmentRes.data?.last_content_seen_at;
       const seenAt = seenAtRaw ? new Date(seenAtRaw) : null;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      /* eslint-disable @typescript-eslint/no-explicit-any */
       course.course_modules = (course.course_modules as any[]).map((mod: any) => ({
         ...mod,
         lessons: (mod.lessons ?? []).map((lesson: any) => {
@@ -76,6 +76,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
           return { ...lesson, is_new, is_updated };
         }),
       }));
+      /* eslint-enable @typescript-eslint/no-explicit-any */
     }
   }
 

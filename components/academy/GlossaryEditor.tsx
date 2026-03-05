@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Plus, Trash2, Pencil, X, Loader2, Upload, ChevronDown, HelpCircle } from 'lucide-react';
+import { Plus, Trash2, Pencil, Loader2, Upload, HelpCircle } from 'lucide-react';
 import DataImporter from '@/components/academy/DataImporter';
 import LessonTextEditor from '@/components/academy/LessonTextEditor';
 import PhoneticGuideModal from '@/components/academy/PhoneticGuideModal';
