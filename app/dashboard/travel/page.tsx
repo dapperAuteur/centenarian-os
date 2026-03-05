@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Modal from '@/components/ui/Modal';
+import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 
 interface Summary {
   currentMonth: {
@@ -103,6 +104,7 @@ function fmtMoney(n: number | null | undefined) {
 }
 
 export default function TravelPage() {
+  useTrackPageView('travel', '/dashboard/travel');
   const [summary, setSummary] = useState<Summary | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [recentTrips, setRecentTrips] = useState<Trip[]>([]);

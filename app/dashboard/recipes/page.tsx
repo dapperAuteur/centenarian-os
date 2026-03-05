@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/hooks/useAuth';
 import RecipeList from '@/components/recipes/RecipeList';
 import LikedSavedRecipes from '@/components/recipes/LikedSavedRecipes';
+import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import UsernameSetupModal from '@/components/blog/UsernameSetupModal';
 import { PenLine, BarChart2, List, Eye, Heart, Bookmark } from 'lucide-react';
 import type { Profile } from '@/lib/types';
@@ -13,6 +14,7 @@ import type { Profile } from '@/lib/types';
 type Tab = 'recipes' | 'analytics' | 'liked' | 'saved';
 
 export default function RecipeDashboardPage() {
+  useTrackPageView('recipes', '/dashboard/recipes');
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);

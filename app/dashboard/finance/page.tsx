@@ -14,6 +14,7 @@ import {
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import CategorySelect from '@/components/finance/CategorySelect';
+import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import TransferModal from '@/components/finance/TransferModal';
 import Modal from '@/components/ui/Modal';
 import ScanButton from '@/components/scan/ScanButton';
@@ -93,6 +94,7 @@ const ACCOUNT_TYPE_LABEL: Record<string, string> = {
 };
 
 export default function FinanceDashboardPage() {
+  useTrackPageView('finance', '/dashboard/finance');
   const [summary, setSummary] = useState<Summary | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);

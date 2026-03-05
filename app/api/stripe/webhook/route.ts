@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import { stripe } from '@/lib/stripe';
 import Stripe from 'stripe';
 import { createShopifyPromoCode } from '@/lib/shopify/createPromoCode';
+import { logInfo, logError } from '@/lib/logging';
 
 // Service-role client bypasses RLS — only used server-side in this webhook
 function getServiceClient() {
@@ -28,6 +29,7 @@ export async function POST(request: NextRequest) {
     event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Webhook signature verification failed';
+    logError({ source: 'webhook', module: 'stripe', message: 'Signature verification failed', metadata: { error: message } });
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
@@ -41,13 +43,18 @@ export async function POST(request: NextRequest) {
 
       if (!userId) break;
 
+      logInfo({ source: 'webhook', module: 'stripe', message: 'Checkout completed', metadata: { sessionId: session.id, plan, mode: session.mode }, userId });
+
       if (session.mode === 'subscription' && plan === 'teacher') {
         // Activate teacher role and upsert teacher_profiles
         const { error: roleErr } = await supabase
           .from('profiles')
           .update({ role: 'teacher' })
           .eq('id', userId);
-        if (roleErr) console.error('[webhook] Failed to set teacher role for user', userId, roleErr);
+        if (roleErr) {
+          console.error('[webhook] Failed to set teacher role for user', userId, roleErr);
+          logError({ source: 'webhook', module: 'stripe', message: 'Failed to set teacher role', metadata: { error: roleErr.message }, userId });
+        }
 
         const { error: tpErr } = await supabase
           .from('teacher_profiles')
@@ -81,7 +88,10 @@ export async function POST(request: NextRequest) {
             cancel_at: null,
           })
           .eq('id', userId);
-        if (error) console.error('[webhook] Failed to update monthly status for user', userId, error);
+        if (error) {
+          console.error('[webhook] Failed to update monthly status for user', userId, error);
+          logError({ source: 'webhook', module: 'stripe', message: 'Failed to update monthly status', metadata: { error: error.message }, userId });
+        }
       } else if (session.mode === 'payment' && plan === 'lifetime') {
         let promoCode: string | null = null;
         try {
@@ -100,7 +110,10 @@ export async function POST(request: NextRequest) {
             subscription_expires_at: null,
           })
           .eq('id', userId);
-        if (error) console.error('[webhook] Failed to update lifetime status for user', userId, error);
+        if (error) {
+          console.error('[webhook] Failed to update lifetime status for user', userId, error);
+          logError({ source: 'webhook', module: 'stripe', message: 'Failed to update lifetime status', metadata: { error: error.message }, userId });
+        }
       }
       break;
     }
@@ -108,6 +121,8 @@ export async function POST(request: NextRequest) {
     case 'customer.subscription.deleted': {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = subscription.customer as string;
+
+      logInfo({ source: 'webhook', module: 'stripe', message: 'Subscription deleted', metadata: { subscriptionId: subscription.id, customerId } });
 
       // Check if this is a teacher subscription cancellation
       const isTeacherSub = await supabase
@@ -141,7 +156,10 @@ export async function POST(request: NextRequest) {
             subscription_expires_at: null,
           })
           .eq('stripe_customer_id', customerId);
-        if (error) console.error('[webhook] Failed to downgrade subscription for customer', customerId, error);
+        if (error) {
+          console.error('[webhook] Failed to downgrade subscription for customer', customerId, error);
+          logError({ source: 'webhook', module: 'stripe', message: 'Failed to downgrade subscription', metadata: { error: error.message, customerId } });
+        }
       }
       break;
     }
@@ -151,6 +169,8 @@ export async function POST(request: NextRequest) {
       const sub = event.data.object as any;
       const userId = sub.metadata?.supabase_user_id;
       if (!userId) break;
+
+      logInfo({ source: 'webhook', module: 'stripe', message: 'Subscription updated', metadata: { subscriptionId: sub.id, cancelAtPeriodEnd: sub.cancel_at_period_end }, userId });
 
       // current_period_end moved to SubscriptionItem in Stripe API 2024-09-30+
       const rawEnd: number | undefined = sub.items?.data?.[0]?.current_period_end ?? sub.current_period_end;
@@ -165,7 +185,10 @@ export async function POST(request: NextRequest) {
           subscription_expires_at: (rawEnd && typeof rawEnd === 'number') ? new Date(rawEnd * 1000).toISOString() : null,
         })
         .eq('id', userId);
-      if (error) console.error('[webhook] subscription.updated DB update failed for user', userId, error);
+      if (error) {
+        console.error('[webhook] subscription.updated DB update failed for user', userId, error);
+        logError({ source: 'webhook', module: 'stripe', message: 'Subscription update DB write failed', metadata: { error: error.message }, userId });
+      }
       break;
     }
 

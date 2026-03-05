@@ -35,17 +35,19 @@ async function getAdminUser() {
 export async function GET() {
   const admin = await getAdminUser();
   if (!admin || admin.email !== process.env.ADMIN_EMAIL) {
-    return NextResponse.json({ feedback: 0, messages: 0 });
+    return NextResponse.json({ feedback: 0, messages: 0, logs: 0 });
   }
 
   const db = getDb();
-  const [{ count: feedbackCount }, { count: messagesCount }] = await Promise.all([
+  const [{ count: feedbackCount }, { count: messagesCount }, { count: logsCount }] = await Promise.all([
     db.from('user_feedback').select('*', { count: 'exact', head: true }).eq('is_read_by_admin', false),
     db.from('message_replies').select('*', { count: 'exact', head: true }).eq('is_admin', false).eq('is_read_by_admin', false),
+    db.from('app_logs').select('*', { count: 'exact', head: true }).eq('is_reviewed', false).in('level', ['warn', 'error']),
   ]);
 
   return NextResponse.json({
     feedback: feedbackCount ?? 0,
     messages: messagesCount ?? 0,
+    logs: logsCount ?? 0,
   });
 }

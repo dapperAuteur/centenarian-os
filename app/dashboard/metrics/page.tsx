@@ -5,6 +5,7 @@ import { Activity, Lock, CheckCircle2, TrendingUp, Calendar, Upload, Download, C
 import Link from 'next/link';
 import MetricUnlockModal from '@/components/metrics/MetricUnlockModal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 
 interface MetricConfig {
   metric_key: string;
@@ -56,6 +57,7 @@ const BODY_COMP_KEYS = ['weight_lbs', 'body_fat_pct', 'muscle_mass_lbs', 'bmi'];
 const DECIMAL_STEP_KEYS = ['sleep_hours', 'spo2_pct', 'weight_lbs', 'body_fat_pct', 'muscle_mass_lbs', 'bmi'];
 
 export default function MetricsDashboardPage() {
+  useTrackPageView('health_metrics', '/dashboard/metrics');
   const [configs, setConfigs] = useState<MetricConfig[]>([]);
   const [permissions, setPermissions] = useState<Map<string, UserPermission>>(new Map());
   const [todayLog, setTodayLog] = useState<Partial<DailyLog>>({});

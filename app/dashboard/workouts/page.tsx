@@ -13,6 +13,7 @@ import {
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
 import WorkoutTemplateForm from '@/components/workouts/WorkoutTemplateForm';
 import WorkoutLogForm from '@/components/workouts/WorkoutLogForm';
+import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import WorkoutFeedbackModal from '@/components/workouts/WorkoutFeedbackModal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
@@ -95,6 +96,7 @@ interface WorkoutLog {
 }
 
 export default function WorkoutsPage() {
+  useTrackPageView('workouts', '/dashboard/workouts');
   const router = useRouter();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [logs, setLogs] = useState<WorkoutLog[]>([]);
