@@ -26,8 +26,9 @@ export default function AdminAcademyPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
-  const [ingestStatus, setIngestStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
-  const [ingestResult, setIngestResult] = useState('');
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [syncResult, setSyncResult] = useState('');
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
 
   // Course categories
   const [courseCategories, setCourseCategories] = useState<{ id: string; name: string; sort_order: number }[]>([]);
@@ -50,24 +51,26 @@ export default function AdminAcademyPage() {
       })
       .catch(() => setLoading(false));
     loadCategories();
+    fetch('/api/admin/knowledge/status')
+      .then((r) => r.json())
+      .then((d) => setLastSyncedAt(d.lastSyncedAt ?? null))
+      .catch(() => {});
   }, []);
 
-  async function handleIngest() {
-    setIngestStatus('loading');
-    setIngestResult('');
+  async function handleSyncAll() {
+    setSyncStatus('loading');
+    setSyncResult('');
     try {
-      const r = await fetch('/api/admin/help/ingest', { method: 'POST' });
+      const r = await fetch('/api/admin/knowledge/refresh', { method: 'POST' });
       const d = await r.json();
-      if (!r.ok) throw new Error(d.error ?? 'Ingest failed');
-      const firstErr = d.failed?.[0]?.error ?? '';
-      const msg = d.succeeded === 0 && d.failed?.length
-        ? `All ${d.failed.length} articles failed. First error: ${firstErr}`
-        : `Ingested ${d.succeeded} article${d.succeeded !== 1 ? 's' : ''}${d.failed ? ` (${d.failed.length} failed — first: ${firstErr})` : ''}.`;
-      setIngestResult(msg);
-      setIngestStatus(d.succeeded === 0 ? 'error' : 'done');
+      if (!r.ok) throw new Error(d.error ?? 'Sync failed');
+      const msg = `Help: ${d.helpArticles?.succeeded ?? 0} articles · Courses: ${d.courses?.processed ?? 0} lessons embedded`;
+      setSyncResult(msg);
+      setSyncStatus('done');
+      setLastSyncedAt(d.timestamp ?? new Date().toISOString());
     } catch (e) {
-      setIngestResult(e instanceof Error ? e.message : 'Ingest failed');
-      setIngestStatus('error');
+      setSyncResult(e instanceof Error ? e.message : 'Sync failed');
+      setSyncStatus('error');
     }
   }
 
@@ -274,33 +277,38 @@ export default function AdminAcademyPage() {
           </div>
         </div>
 
-        {/* Help RAG — ingest articles */}
+        {/* Knowledge Sync — help articles + course embeddings */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
           <div className="flex items-center gap-2 mb-3">
-            <BookOpen className="w-4 h-4 text-fuchsia-400" />
-            <h2 className="font-semibold text-white">In-App Help Articles</h2>
+            <RefreshCw className="w-4 h-4 text-fuchsia-400" />
+            <h2 className="font-semibold text-white">Knowledge Sync</h2>
           </div>
-          <p className="text-gray-400 text-xs mb-4">
-            Embed tutorial content into the RAG help system. Run this once after initial setup and
-            after any tutorial doc updates. Requires <code className="bg-gray-700 px-1 rounded text-gray-200">GOOGLE_GEMINI_API_KEY</code>.
+          <p className="text-gray-400 text-xs mb-2">
+            Re-embeds all help articles and regenerates CYOA course embeddings.
+            Runs automatically at midnight UTC via cron. Use the button below for on-demand refresh.
           </p>
+          {lastSyncedAt && (
+            <p className="text-gray-400 text-xs mb-4">
+              Last synced: <span className="text-gray-200">{new Date(lastSyncedAt).toLocaleString()}</span>
+            </p>
+          )}
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={handleIngest}
-              disabled={ingestStatus === 'loading'}
+              onClick={handleSyncAll}
+              disabled={syncStatus === 'loading'}
               className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-600 transition disabled:opacity-50"
             >
-              {ingestStatus === 'loading'
+              {syncStatus === 'loading'
                 ? <Loader2 className="w-4 h-4 animate-spin" />
-                : ingestStatus === 'done'
+                : syncStatus === 'done'
                 ? <CheckCircle className="w-4 h-4 text-green-400" />
                 : <RefreshCw className="w-4 h-4" />}
-              {ingestStatus === 'loading' ? 'Ingesting…' : 'Ingest Help Articles'}
+              {syncStatus === 'loading' ? 'Syncing…' : 'Refresh All Knowledge'}
             </button>
-            {ingestResult && (
-              <p className={`text-xs ${ingestStatus === 'error' ? 'text-red-400' : 'text-green-400'}`}>
-                {ingestResult}
+            {syncResult && (
+              <p className={`text-xs ${syncStatus === 'error' ? 'text-red-400' : 'text-green-400'}`}>
+                {syncResult}
               </p>
             )}
           </div>

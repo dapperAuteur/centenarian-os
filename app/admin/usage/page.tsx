@@ -81,20 +81,20 @@ export default function AdminUsagePage() {
             type="date"
             value={fromDate}
             onChange={(e) => setFromDate(e.target.value)}
-            className="bg-gray-800 text-sm text-gray-200 rounded-lg px-2 py-1.5 border border-gray-700"
+            className="bg-gray-800 text-sm text-white rounded-lg px-2 py-1.5 border border-gray-700 scheme-dark"
           />
           <span className="text-gray-400 text-sm">to</span>
           <input
             type="date"
             value={toDate}
             onChange={(e) => setToDate(e.target.value)}
-            className="bg-gray-800 text-sm text-gray-200 rounded-lg px-2 py-1.5 border border-gray-700"
+            className="bg-gray-800 text-sm text-white rounded-lg px-2 py-1.5 border border-gray-700 scheme-dark"
           />
 
           <select
             value={moduleFilter}
             onChange={(e) => setModuleFilter(e.target.value)}
-            className="bg-gray-800 text-sm text-gray-200 rounded-lg px-3 py-1.5 border border-gray-700"
+            className="bg-gray-800 text-sm text-white rounded-lg px-3 py-1.5 border border-gray-700 scheme-dark"
           >
             {MODULE_OPTIONS.map((m) => (
               <option key={m} value={m}>{m === 'all' ? 'All Modules' : m.replace(/_/g, ' ')}</option>
@@ -104,7 +104,7 @@ export default function AdminUsagePage() {
           <select
             value={subFilter}
             onChange={(e) => setSubFilter(e.target.value)}
-            className="bg-gray-800 text-sm text-gray-200 rounded-lg px-3 py-1.5 border border-gray-700"
+            className="bg-gray-800 text-sm text-white rounded-lg px-3 py-1.5 border border-gray-700 scheme-dark"
           >
             {SUB_OPTIONS.map((s) => (
               <option key={s} value={s}>{s === 'all' ? 'All Plans' : s.charAt(0).toUpperCase() + s.slice(1)}</option>

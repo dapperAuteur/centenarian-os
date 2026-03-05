@@ -171,7 +171,7 @@ export default function AdminLogsPage() {
           <select
             value={source}
             onChange={(e) => { setSource(e.target.value); setPage(1); }}
-            className="bg-gray-800 text-sm text-gray-200 rounded-lg px-3 py-1.5 border border-gray-700"
+            className="bg-gray-800 text-sm text-white rounded-lg px-3 py-1.5 border border-gray-700 scheme-dark"
           >
             {SOURCES.map((s) => (
               <option key={s} value={s}>{s === 'all' ? 'All Sources' : s}</option>
@@ -184,7 +184,7 @@ export default function AdminLogsPage() {
             placeholder="Module..."
             value={module}
             onChange={(e) => { setModule(e.target.value); setPage(1); }}
-            className="bg-gray-800 text-sm text-gray-200 rounded-lg px-3 py-1.5 border border-gray-700 w-28"
+            className="bg-gray-800 text-sm text-white rounded-lg px-3 py-1.5 border border-gray-700 w-28 scheme-dark placeholder-gray-400"
           />
 
           {/* Date range */}
@@ -192,13 +192,13 @@ export default function AdminLogsPage() {
             type="date"
             value={fromDate}
             onChange={(e) => { setFromDate(e.target.value); setPage(1); }}
-            className="bg-gray-800 text-sm text-gray-200 rounded-lg px-2 py-1.5 border border-gray-700"
+            className="bg-gray-800 text-sm text-white rounded-lg px-2 py-1.5 border border-gray-700 scheme-dark"
           />
           <input
             type="date"
             value={toDate}
             onChange={(e) => { setToDate(e.target.value); setPage(1); }}
-            className="bg-gray-800 text-sm text-gray-200 rounded-lg px-2 py-1.5 border border-gray-700"
+            className="bg-gray-800 text-sm text-white rounded-lg px-2 py-1.5 border border-gray-700 scheme-dark"
           />
         </div>
 
@@ -211,7 +211,7 @@ export default function AdminLogsPage() {
               placeholder="Search messages..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="w-full bg-gray-800 text-sm text-gray-200 rounded-lg pl-9 pr-3 py-2 border border-gray-700"
+              className="w-full bg-gray-800 text-sm text-white rounded-lg pl-9 pr-3 py-2 border border-gray-700 scheme-dark placeholder-gray-400"
             />
           </div>
 

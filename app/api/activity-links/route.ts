@@ -9,7 +9,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 
 const VALID_TYPES = new Set([
   'task', 'trip', 'route', 'transaction', 'recipe',
-  'fuel_log', 'maintenance', 'invoice', 'workout', 'equipment', 'focus_session', 'exercise',
+  'fuel_log', 'maintenance', 'invoice', 'workout', 'equipment', 'focus_session', 'exercise', 'daily_log',
 ]);
 
 function getDb() {
@@ -89,6 +89,11 @@ async function resolveDisplayName(
       const dateStr = data.start_time ? new Date(data.start_time).toLocaleDateString() : '?';
       const label = data.session_type === 'work' ? 'Work' : 'Focus';
       return `${label}: ${mins}min (${dateStr})`;
+    }
+    case 'daily_log': {
+      const { data } = await db.from('daily_logs').select('date, energy_rating').eq('id', entityId).maybeSingle();
+      if (!data) return 'Daily Log';
+      return `Daily Log (${data.date})${data.energy_rating ? ` — energy ${data.energy_rating}/5` : ''}`;
     }
     default:
       return entityType;

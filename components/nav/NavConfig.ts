@@ -30,6 +30,7 @@ import {
   Inbox,
   RotateCcw,
   UserPlus,
+  History,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -56,6 +57,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Daily Tasks', href: '/dashboard/planner', icon: CalendarClock, paid: true },
       { label: 'Engine', href: '/dashboard/engine', icon: Briefcase, paid: true },
+      { label: 'History', href: '/dashboard/engine/history', icon: History, paid: true },
       { label: 'Weekly Review', href: '/dashboard/weekly-review', icon: FileText, paid: true },
       { label: 'Retrospective', href: '/dashboard/retrospective', icon: RotateCcw, paid: true },
       { label: 'Roadmap', href: '/dashboard/roadmap', icon: Map, paid: true },

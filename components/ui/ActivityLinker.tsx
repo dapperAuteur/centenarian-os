@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/client';
 
 type EntityType =
   | 'task' | 'trip' | 'route' | 'transaction' | 'recipe'
-  | 'fuel_log' | 'maintenance' | 'invoice' | 'workout' | 'equipment' | 'focus_session' | 'exercise';
+  | 'fuel_log' | 'maintenance' | 'invoice' | 'workout' | 'equipment' | 'focus_session' | 'exercise' | 'daily_log';
 
 interface ActivityLink {
   id: string;
@@ -43,6 +43,7 @@ const TYPE_LABELS: Record<EntityType, string> = {
   equipment: 'Equipment',
   focus_session: 'Focus Session',
   exercise: 'Exercise',
+  daily_log: 'Daily Log',
 };
 
 const TYPE_COLORS: Record<EntityType, string> = {
@@ -58,11 +59,12 @@ const TYPE_COLORS: Record<EntityType, string> = {
   equipment: 'bg-teal-50 text-teal-700 border-teal-200',
   focus_session: 'bg-orange-50 text-orange-700 border-orange-200',
   exercise: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
+  daily_log: 'bg-indigo-50 text-indigo-700 border-indigo-200',
 };
 
 // Linkable types (exclude the current entity type)
 const LINKABLE_TYPES: EntityType[] = [
-  'task', 'trip', 'route', 'transaction', 'recipe', 'workout', 'equipment', 'focus_session', 'exercise',
+  'task', 'trip', 'route', 'transaction', 'recipe', 'workout', 'equipment', 'focus_session', 'exercise', 'daily_log',
 ];
 
 export default function ActivityLinker({ entityType, entityId }: ActivityLinkerProps) {
@@ -232,6 +234,27 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
                   display_name: `${label}: ${mins}min (${dateStr})`,
                 };
               });
+          }
+          break;
+        }
+        case 'daily_log': {
+          const supabase = createClient();
+          const { data: logs } = await supabase
+            .from('daily_logs')
+            .select('id, date, energy_rating, biggest_win, pain_intensity')
+            .order('date', { ascending: false })
+            .limit(30);
+          if (logs) {
+            results = logs
+              .filter((l) => {
+                const search = `${l.date || ''} ${l.biggest_win || ''}`.toLowerCase();
+                return search.includes(q);
+              })
+              .slice(0, 10)
+              .map((l) => ({
+                id: l.id,
+                display_name: `Daily Log (${l.date})${l.energy_rating ? ` — energy ${l.energy_rating}/5` : ''}`,
+              }));
           }
           break;
         }

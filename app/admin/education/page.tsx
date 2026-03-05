@@ -60,16 +60,33 @@ marked.setOptions({ breaks: true, gfm: true });
 
 const MAX_HISTORY = 30;
 
+function staleBadge(iso: string | null) {
+  if (!iso) return { text: 'Never synced', color: 'text-red-400' };
+  const hours = (Date.now() - new Date(iso).getTime()) / 3600000;
+  if (hours < 24) return { text: `Updated ${Math.round(hours)}h ago`, color: 'text-green-400' };
+  const days = Math.round(hours / 24);
+  if (days <= 7) return { text: `Updated ${days}d ago`, color: 'text-amber-400' };
+  return { text: `Updated ${days}d ago`, color: 'text-red-400' };
+}
+
 export default function AdminEducationPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<Mode>('general');
+  const [lastSynced, setLastSynced] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
+
+  useEffect(() => {
+    fetch('/api/admin/knowledge/status')
+      .then((r) => r.json())
+      .then((d) => setLastSynced(d.lastSyncedAt ?? null))
+      .catch(() => {});
+  }, []);
 
   async function sendMessage(text: string) {
     const question = text.trim();
@@ -125,6 +142,7 @@ export default function AdminEducationPage() {
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-6 h-6 text-fuchsia-400" />
           <h1 className="text-xl font-bold text-white">Education Prep</h1>
+          {(() => { const b = staleBadge(lastSynced); return <span className={`text-xs ${b.color}`}>{b.text}</span>; })()}
         </div>
         <div className="flex gap-1.5 flex-wrap">
           {MODES.map((m) => (
