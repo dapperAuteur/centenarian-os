@@ -20,6 +20,8 @@ export async function GET(request: NextRequest) {
   const accountId = params.get('account_id');
   const brandId = params.get('brand_id');
   const sourceModule = params.get('source_module');
+  const source = params.get('source');
+  const disputeStatus = params.get('dispute_status');
   const limit = Math.min(parseInt(params.get('limit') || '100') || 100, 500);
   const offset = parseInt(params.get('offset') || '0');
 
@@ -37,6 +39,8 @@ export async function GET(request: NextRequest) {
   if (accountId) query = query.eq('account_id', accountId);
   if (brandId) query = query.eq('brand_id', brandId);
   if (sourceModule) query = query.eq('source_module', sourceModule);
+  if (source) query = query.eq('source', source);
+  if (disputeStatus) query = query.eq('dispute_status', disputeStatus);
 
   const { data, error, count } = await query;
 
@@ -88,7 +92,12 @@ export async function PATCH(request: NextRequest) {
   const { id, ...updates } = body;
   if (!id) return NextResponse.json({ error: 'Transaction ID required' }, { status: 400 });
 
-  const allowed = ['amount', 'type', 'description', 'vendor', 'transaction_date', 'category_id', 'account_id', 'brand_id', 'transaction_id', 'source_module', 'source_module_id', 'tags', 'notes'];
+  const allowed = [
+    'amount', 'type', 'description', 'vendor', 'transaction_date', 'category_id',
+    'account_id', 'brand_id', 'transaction_id', 'source_module', 'source_module_id', 'tags', 'notes',
+    'dispute_status', 'dispute_date', 'dispute_notes',
+    'return_deadline', 'return_policy_days', 'return_status',
+  ];
   const payload: Record<string, unknown> = {};
   for (const key of allowed) {
     if (updates[key] !== undefined) payload[key] = updates[key];

@@ -98,7 +98,7 @@ export async function updateShortLink(params: UpdateParams): Promise<boolean> {
 }
 
 /** Slugifies a title for use as a Switchy link id with a content-type prefix. */
-export function toSwitchySlug(prefix: 'b' | 'r' | 'c', text: string): string {
+export function toSwitchySlug(prefix: 'b' | 'r' | 'c' | 'i' | 'o', text: string): string {
   const slug = text
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')

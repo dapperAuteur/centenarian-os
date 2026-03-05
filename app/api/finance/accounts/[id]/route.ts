@@ -37,6 +37,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     'name', 'account_type', 'institution_name', 'last_four',
     'interest_rate', 'credit_limit', 'opening_balance',
     'monthly_fee', 'due_date', 'statement_date', 'is_active', 'notes',
+    // Institution policy fields
+    'dispute_window_days', 'default_return_days',
+    'promo_apr', 'promo_apr_expires', 'promo_description',
+    'bt_apr', 'bt_fee_percent', 'bt_expires', 'bt_description',
+    'rewards_type', 'rewards_rate', 'annual_fee',
   ];
   const updates = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
 
