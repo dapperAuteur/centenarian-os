@@ -8,6 +8,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Plus, Pencil, Trash2, BarChart2, Download, X } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import Modal from '@/components/ui/Modal';
 
 interface Brand {
   id: string;
@@ -326,23 +327,14 @@ export default function BrandsPage() {
       )}
 
       {/* Add / Edit Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <form
-            onSubmit={handleSave}
-            className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl max-h-[90vh] overflow-y-auto"
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900">{editingId ? 'Edit Brand' : 'Add Brand'}</h2>
-              <button type="button" onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
+      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title={editingId ? 'Edit Brand' : 'Add Brand'} size="sm">
+        <form onSubmit={handleSave}>
+          <div className="p-6 space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Business Name *</label>
+              <label htmlFor="brand-name" className="block text-xs font-medium text-gray-600 mb-1">Business Name *</label>
               <input
-                type="text" value={form.name} required
+                id="brand-name"
+                type="text" value={form.name} required aria-required="true"
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                 placeholder="Acme LLC"
@@ -351,8 +343,9 @@ export default function BrandsPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">DBA Name</label>
+                <label htmlFor="brand-dba" className="block text-xs font-medium text-gray-600 mb-1">DBA Name</label>
                 <input
+                  id="brand-dba"
                   type="text" value={form.dba_name}
                   onChange={(e) => setForm((f) => ({ ...f, dba_name: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -360,8 +353,9 @@ export default function BrandsPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">EIN</label>
+                <label htmlFor="brand-ein" className="block text-xs font-medium text-gray-600 mb-1">EIN</label>
                 <input
+                  id="brand-ein"
                   type="text" value={form.ein}
                   onChange={(e) => setForm((f) => ({ ...f, ein: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -371,8 +365,9 @@ export default function BrandsPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Address</label>
+              <label htmlFor="brand-address" className="block text-xs font-medium text-gray-600 mb-1">Address</label>
               <input
+                id="brand-address"
                 type="text" value={form.address}
                 onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -381,8 +376,9 @@ export default function BrandsPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Website</label>
+              <label htmlFor="brand-website" className="block text-xs font-medium text-gray-600 mb-1">Website</label>
               <input
+                id="brand-website"
                 type="text" value={form.website}
                 onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -391,8 +387,9 @@ export default function BrandsPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+              <label htmlFor="brand-description" className="block text-xs font-medium text-gray-600 mb-1">Description</label>
               <input
+                id="brand-description"
                 type="text" value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -410,54 +407,47 @@ export default function BrandsPage() {
                     onClick={() => setForm((f) => ({ ...f, color: c }))}
                     className={`w-7 h-7 rounded-full transition ${form.color === c ? 'ring-2 ring-offset-2 ring-gray-600' : ''}`}
                     style={{ backgroundColor: c }}
+                    aria-label={`Select color ${c}`}
                   />
                 ))}
                 <input
                   type="color" value={form.color}
                   onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
                   className="w-7 h-7 rounded cursor-pointer border border-gray-200"
-                  title="Custom color"
+                  aria-label="Custom color"
                 />
               </div>
             </div>
-
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="flex-1 bg-indigo-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-50"
-              >
-                {saving ? 'Saving…' : editingId ? 'Update Brand' : 'Create Brand'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+          </div>
+          <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 pt-3 pb-3 flex gap-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 bg-indigo-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : editingId ? 'Update Brand' : 'Create Brand'}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* P&L Modal */}
-      {plBrand && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl max-h-[90vh] flex flex-col">
-            {/* P&L Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <div className="flex items-center gap-3">
+      <Modal isOpen={!!plBrand} onClose={() => { setPlBrand(null); setPlData(null); }} title={plBrand ? `${plBrand.name} — P&L` : 'P&L'} size="md">
+        {plBrand && (
+          <>
+            {plBrand.ein && (
+              <div className="px-6 pt-2 flex items-center gap-2">
                 <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: plBrand.color }} />
-                <div>
-                  <h2 className="text-base font-bold text-gray-900">{plBrand.name} — P&L</h2>
-                  {plBrand.ein && <p className="text-xs text-gray-600">EIN: {plBrand.ein}</p>}
-                </div>
+                <p className="text-xs text-gray-600">EIN: {plBrand.ein}</p>
               </div>
-              <button onClick={() => { setPlBrand(null); setPlData(null); }} className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+            )}
 
             {/* Date range filter */}
             <div className="flex items-center gap-3 px-6 py-3 border-b border-gray-100 bg-gray-50">
@@ -465,12 +455,14 @@ export default function BrandsPage() {
                 type="date" value={plFrom}
                 onChange={(e) => setPlFrom(e.target.value)}
                 className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm"
+                aria-label="Period start date"
               />
               <span className="text-gray-400 text-sm">to</span>
               <input
                 type="date" value={plTo}
                 onChange={(e) => setPlTo(e.target.value)}
                 className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm"
+                aria-label="Period end date"
               />
               <button
                 onClick={handlePLFilter}
@@ -482,6 +474,7 @@ export default function BrandsPage() {
                 <button
                   onClick={handleExportPDF}
                   className="ml-auto flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-sm text-gray-600 rounded-lg hover:bg-gray-50 transition"
+                  aria-label="Export PDF"
                 >
                   <Download className="w-4 h-4" />
                   PDF
@@ -490,7 +483,7 @@ export default function BrandsPage() {
             </div>
 
             {/* P&L Content */}
-            <div className="overflow-y-auto flex-1 px-6 py-4 space-y-5">
+            <div className="px-6 py-4 space-y-5">
               {plLoading ? (
                 <div className="flex items-center justify-center h-32">
                   <div className="animate-spin h-6 w-6 border-4 border-indigo-600 border-t-transparent rounded-full" />
@@ -551,9 +544,9 @@ export default function BrandsPage() {
                 </>
               ) : null}
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
     </div>
   );
 }

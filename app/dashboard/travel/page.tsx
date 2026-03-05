@@ -12,6 +12,7 @@ import {
   Repeat, Wrench, Play, Download,
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import Modal from '@/components/ui/Modal';
 
 interface Summary {
   currentMonth: {
@@ -724,17 +725,14 @@ export default function TravelPage() {
       </div>
 
       {/* Add Trip Modal */}
-      {showAddTrip && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <form
-            onSubmit={handleSaveTrip}
-            className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl"
-          >
-            <h2 className="text-lg font-bold text-gray-900">Log Trip</h2>
+      <Modal isOpen={showAddTrip} onClose={() => setShowAddTrip(false)} title="Log Trip" size="sm">
+        <form onSubmit={handleSaveTrip}>
+          <div className="p-6 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Mode</label>
+                <label htmlFor="qtrip-mode" className="block text-xs font-medium text-gray-600 mb-1">Mode</label>
                 <select
+                  id="qtrip-mode"
                   value={tripForm.mode}
                   onChange={(e) => setTripForm((f) => ({ ...f, mode: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -745,27 +743,31 @@ export default function TravelPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
+                <label htmlFor="qtrip-date" className="block text-xs font-medium text-gray-600 mb-1">Date</label>
                 <input
+                  id="qtrip-date"
                   type="date" value={tripForm.date}
                   onChange={(e) => setTripForm((f) => ({ ...f, date: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                   required
+                  aria-required="true"
                 />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
+                <label htmlFor="qtrip-origin" className="block text-xs font-medium text-gray-600 mb-1">From</label>
                 <input
+                  id="qtrip-origin"
                   type="text" value={tripForm.origin} placeholder="Origin"
                   onChange={(e) => setTripForm((f) => ({ ...f, origin: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
+                <label htmlFor="qtrip-destination" className="block text-xs font-medium text-gray-600 mb-1">To</label>
                 <input
+                  id="qtrip-destination"
                   type="text" value={tripForm.destination} placeholder="Destination"
                   onChange={(e) => setTripForm((f) => ({ ...f, destination: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -774,24 +776,27 @@ export default function TravelPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Miles</label>
+                <label htmlFor="qtrip-miles" className="block text-xs font-medium text-gray-600 mb-1">Miles</label>
                 <input
+                  id="qtrip-miles"
                   type="number" step="0.01" value={tripForm.distance_miles} placeholder="0.0"
                   onChange={(e) => setTripForm((f) => ({ ...f, distance_miles: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Duration (min)</label>
+                <label htmlFor="qtrip-duration" className="block text-xs font-medium text-gray-600 mb-1">Duration (min)</label>
                 <input
+                  id="qtrip-duration"
                   type="number" value={tripForm.duration_min} placeholder="0"
                   onChange={(e) => setTripForm((f) => ({ ...f, duration_min: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Calories</label>
+                <label htmlFor="qtrip-calories" className="block text-xs font-medium text-gray-600 mb-1">Calories</label>
                 <input
+                  id="qtrip-calories"
                   type="number" value={tripForm.calories_burned} placeholder="0"
                   onChange={(e) => setTripForm((f) => ({ ...f, calories_burned: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -800,8 +805,9 @@ export default function TravelPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Purpose</label>
+                <label htmlFor="qtrip-purpose" className="block text-xs font-medium text-gray-600 mb-1">Purpose</label>
                 <select
+                  id="qtrip-purpose"
                   value={tripForm.purpose}
                   onChange={(e) => setTripForm((f) => ({ ...f, purpose: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -812,8 +818,9 @@ export default function TravelPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Tax purpose</label>
+                <label htmlFor="qtrip-tax" className="block text-xs font-medium text-gray-600 mb-1">Tax purpose</label>
                 <select
+                  id="qtrip-tax"
                   value={tripForm.tax_category}
                   onChange={(e) => setTripForm((f) => ({ ...f, tax_category: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -850,8 +857,9 @@ export default function TravelPage() {
             )}
             {vehicles.filter((v) => v.active).length > 0 && (
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Vehicle</label>
+                <label htmlFor="qtrip-vehicle" className="block text-xs font-medium text-gray-600 mb-1">Vehicle</label>
                 <select
+                  id="qtrip-vehicle"
                   value={tripForm.vehicle_id}
                   onChange={(e) => {
                     const vid = e.target.value;
@@ -875,8 +883,9 @@ export default function TravelPage() {
               </div>
             )}
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+              <label htmlFor="qtrip-notes" className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
               <input
+                id="qtrip-notes"
                 type="text" value={tripForm.notes} placeholder="Optional notes"
                 onChange={(e) => setTripForm((f) => ({ ...f, notes: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -895,41 +904,40 @@ export default function TravelPage() {
               </label>
               {tripForm.save_as_template && (
                 <input
+                  id="qtrip-template-name"
                   type="text"
                   value={tripForm.template_name}
                   onChange={(e) => setTripForm((f) => ({ ...f, template_name: e.target.value }))}
                   placeholder="Template name (e.g. Morning Commute)"
                   className="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                   required={tripForm.save_as_template}
+                  aria-required={tripForm.save_as_template}
                 />
               )}
             </div>
-            <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => setShowAddTrip(false)}
-                className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
-                Cancel
-              </button>
-              <button type="submit" disabled={savingTrip}
-                className="flex-1 bg-sky-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-50">
-                {savingTrip ? 'Saving…' : 'Save Trip'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+          </div>
+          <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 pt-3 pb-3 flex gap-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+            <button type="button" onClick={() => setShowAddTrip(false)}
+              className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+              Cancel
+            </button>
+            <button type="submit" disabled={savingTrip}
+              className="flex-1 bg-sky-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-50">
+              {savingTrip ? 'Saving...' : 'Save Trip'}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Add / Edit Vehicle Modal */}
-      {showAddVehicle && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <form
-            onSubmit={handleSaveVehicle}
-            className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl"
-          >
-            <h2 className="text-lg font-bold text-gray-900">{editingVehicle ? 'Edit Vehicle' : 'Add Vehicle'}</h2>
+      <Modal isOpen={showAddVehicle} onClose={() => { setShowAddVehicle(false); setEditingVehicle(null); setVehicleForm({ type: 'car', nickname: '', make: '', model: '', year: '', color: '', ownership_type: 'owned', trip_mode: '' }); }} title={editingVehicle ? 'Edit Vehicle' : 'Add Vehicle'} size="sm">
+        <form onSubmit={handleSaveVehicle}>
+          <div className="p-6 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Type</label>
+                <label htmlFor="veh-type" className="block text-xs font-medium text-gray-600 mb-1">Type</label>
                 <select
+                  id="veh-type"
                   value={vehicleForm.type}
                   onChange={(e) => setVehicleForm((f) => ({ ...f, type: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -940,8 +948,9 @@ export default function TravelPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Ownership</label>
+                <label htmlFor="veh-ownership" className="block text-xs font-medium text-gray-600 mb-1">Ownership</label>
                 <select
+                  id="veh-ownership"
                   value={vehicleForm.ownership_type}
                   onChange={(e) => setVehicleForm((f) => ({ ...f, ownership_type: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -953,8 +962,9 @@ export default function TravelPage() {
               </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Trip Mode</label>
+              <label htmlFor="veh-trip-mode" className="block text-xs font-medium text-gray-600 mb-1">Trip Mode</label>
               <select
+                id="veh-trip-mode"
                 value={vehicleForm.trip_mode}
                 onChange={(e) => setVehicleForm((f) => ({ ...f, trip_mode: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -967,53 +977,58 @@ export default function TravelPage() {
               <p className="text-xs text-gray-400 mt-0.5">Auto-fills trip mode when logging trips</p>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Nickname *</label>
+              <label htmlFor="veh-nickname" className="block text-xs font-medium text-gray-600 mb-1">Nickname *</label>
               <input
+                id="veh-nickname"
                 type="text" value={vehicleForm.nickname} placeholder="My Camry"
                 onChange={(e) => setVehicleForm((f) => ({ ...f, nickname: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                 required
+                aria-required="true"
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Year</label>
+                <label htmlFor="veh-year" className="block text-xs font-medium text-gray-600 mb-1">Year</label>
                 <input
+                  id="veh-year"
                   type="number" value={vehicleForm.year} placeholder="2020"
                   onChange={(e) => setVehicleForm((f) => ({ ...f, year: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Make</label>
+                <label htmlFor="veh-make" className="block text-xs font-medium text-gray-600 mb-1">Make</label>
                 <input
+                  id="veh-make"
                   type="text" value={vehicleForm.make} placeholder="Toyota"
                   onChange={(e) => setVehicleForm((f) => ({ ...f, make: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Model</label>
+                <label htmlFor="veh-model" className="block text-xs font-medium text-gray-600 mb-1">Model</label>
                 <input
+                  id="veh-model"
                   type="text" value={vehicleForm.model} placeholder="Camry"
                   onChange={(e) => setVehicleForm((f) => ({ ...f, model: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
             </div>
-            <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => { setShowAddVehicle(false); setEditingVehicle(null); setVehicleForm({ type: 'car', nickname: '', make: '', model: '', year: '', color: '', ownership_type: 'owned', trip_mode: '' }); }}
-                className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
-                Cancel
-              </button>
-              <button type="submit" disabled={savingVehicle}
-                className="flex-1 bg-sky-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-50">
-                {savingVehicle ? 'Saving…' : editingVehicle ? 'Update Vehicle' : 'Add Vehicle'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+          </div>
+          <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 pt-3 pb-3 flex gap-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+            <button type="button" onClick={() => { setShowAddVehicle(false); setEditingVehicle(null); setVehicleForm({ type: 'car', nickname: '', make: '', model: '', year: '', color: '', ownership_type: 'owned', trip_mode: '' }); }}
+              className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+              Cancel
+            </button>
+            <button type="submit" disabled={savingVehicle}
+              className="flex-1 bg-sky-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-50">
+              {savingVehicle ? 'Saving...' : editingVehicle ? 'Update Vehicle' : 'Add Vehicle'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

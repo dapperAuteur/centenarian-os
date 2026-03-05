@@ -12,6 +12,7 @@ import {
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import CategorySelect from '@/components/finance/CategorySelect';
+import Modal from '@/components/ui/Modal';
 
 interface Account {
   id: string;
@@ -328,69 +329,66 @@ export default function RecurringPage() {
       )}
 
       {/* Add Recurring Modal */}
-      {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto" onClick={() => setShowAdd(false)}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-4 my-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-gray-900">Add Recurring Payment</h3>
-            <form onSubmit={handleAdd} className="space-y-3">
+      <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add Recurring Payment" size="sm">
+        <form onSubmit={handleAdd}>
+          <div className="p-6 space-y-4">
+            <div>
+              <label htmlFor="rec-description" className="text-xs font-medium text-gray-600">Description *</label>
+              <input id="rec-description" required aria-required="true" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. Car payment" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-600">Description *</label>
-                <input required value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. Car payment" />
+                <label htmlFor="rec-account" className="text-xs font-medium text-gray-600">Account *</label>
+                <select id="rec-account" required aria-required="true" value={form.account_id} onChange={(e) => setForm((f) => ({ ...f, account_id: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg">
+                  <option value="">Select…</option>
+                  {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Account *</label>
-                  <select required value={form.account_id} onChange={(e) => setForm((f) => ({ ...f, account_id: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg">
-                    <option value="">Select…</option>
-                    {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Amount ($) *</label>
-                  <input required type="number" step="0.01" min="0.01" value={form.amount}
-                    onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="0.00" />
-                </div>
+              <div>
+                <label htmlFor="rec-amount" className="text-xs font-medium text-gray-600">Amount ($) *</label>
+                <input id="rec-amount" required aria-required="true" type="number" step="0.01" min="0.01" value={form.amount}
+                  onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="0.00" />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Type</label>
-                  <select value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg">
-                    <option value="expense">Expense</option>
-                    <option value="income">Income</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-600">Day of Month (1–28) *</label>
-                  <input required type="number" min="1" max="28" value={form.day_of_month}
-                    onChange={(e) => setForm((f) => ({ ...f, day_of_month: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 15" />
-                </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="rec-type" className="text-xs font-medium text-gray-600">Type</label>
+                <select id="rec-type" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg">
+                  <option value="expense">Expense</option>
+                  <option value="income">Income</option>
+                </select>
               </div>
-              <CategorySelect
-                value={form.category_id}
-                onChange={(id) => setForm((f) => ({ ...f, category_id: id }))}
-                categories={categories}
-                onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
-              />
-              <div className="flex gap-3 pt-2">
-                <button type="submit" disabled={saving}
-                  className="flex-1 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 disabled:opacity-50 transition flex items-center justify-center gap-2">
-                  {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Add Recurring
-                </button>
-                <button type="button" onClick={() => setShowAdd(false)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
-                  Cancel
-                </button>
+              <div>
+                <label htmlFor="rec-day" className="text-xs font-medium text-gray-600">Day of Month (1-28) *</label>
+                <input id="rec-day" required aria-required="true" type="number" min="1" max="28" value={form.day_of_month}
+                  onChange={(e) => setForm((f) => ({ ...f, day_of_month: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 15" />
               </div>
-            </form>
+            </div>
+            <CategorySelect
+              value={form.category_id}
+              onChange={(id) => setForm((f) => ({ ...f, category_id: id }))}
+              categories={categories}
+              onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
+            />
           </div>
-        </div>
-      )}
+          <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 pt-3 pb-3 flex gap-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+            <button type="submit" disabled={saving}
+              className="flex-1 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 disabled:opacity-50 transition flex items-center justify-center gap-2">
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              Add Recurring
+            </button>
+            <button type="button" onClick={() => setShowAdd(false)}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

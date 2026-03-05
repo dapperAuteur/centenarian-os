@@ -12,6 +12,7 @@ import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import CategorySelect from '@/components/finance/CategorySelect';
+import Modal from '@/components/ui/Modal';
 
 interface FuelLog {
   id: string;
@@ -403,40 +404,32 @@ export default function FuelLogPage() {
       </div>
 
       {/* Linked transaction confirmation dialog */}
-      {linkedTxDialog && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl space-y-4">
-            <h2 className="text-base font-bold text-gray-900">Delete linked transaction?</h2>
-            <p className="text-sm text-gray-600">
-              This fuel log had a linked finance expense. Do you also want to delete it?
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setLinkedTxDialog(null)}
-                className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
-              >
-                Keep transaction
-              </button>
-              <button
-                onClick={handleLinkedTxYes}
-                className="flex-1 bg-red-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-red-700 transition"
-              >
-                Delete it too
-              </button>
-            </div>
-          </div>
+      <Modal isOpen={!!linkedTxDialog} onClose={() => setLinkedTxDialog(null)} title="Delete linked transaction?" size="sm">
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-gray-600">
+            This fuel log had a linked finance expense. Do you also want to delete it?
+          </p>
         </div>
-      )}
+        <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 pt-3 pb-3 flex gap-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+          <button
+            onClick={() => setLinkedTxDialog(null)}
+            className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+          >
+            Keep transaction
+          </button>
+          <button
+            onClick={handleLinkedTxYes}
+            className="flex-1 bg-red-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-red-700 transition"
+          >
+            Delete it too
+          </button>
+        </div>
+      </Modal>
 
       {/* Add / Edit Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <form
-            onSubmit={handleSave}
-            className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-4 shadow-xl max-h-[90vh] overflow-y-auto"
-          >
-            <h2 className="text-lg font-bold text-gray-900">{editingId ? 'Edit Fuel Entry' : 'Add Fuel Entry'}</h2>
-
+      <Modal isOpen={showForm} onClose={() => { setShowForm(false); setOcrNotes(''); setEditingId(null); }} title={editingId ? 'Edit Fuel Entry' : 'Add Fuel Entry'} size="md">
+        <form onSubmit={handleSave}>
+          <div className="p-6 space-y-4">
             {ocrNotes && (
               <div className="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 text-xs text-purple-800 flex items-start gap-2">
                 <ExternalLink className="w-4 h-4 mt-0.5 shrink-0" />
@@ -446,17 +439,20 @@ export default function FuelLogPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Date *</label>
+                <label htmlFor="fuel-date" className="block text-xs font-medium text-gray-600 mb-1">Date *</label>
                 <input
+                  id="fuel-date"
                   type="date" value={form.date} required
+                  aria-required="true"
                   onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
               {vehicles.length > 0 && (
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Vehicle</label>
+                  <label htmlFor="fuel-vehicle" className="block text-xs font-medium text-gray-600 mb-1">Vehicle</label>
                   <select
+                    id="fuel-vehicle"
                     value={form.vehicle_id}
                     onChange={(e) => setForm((f) => ({ ...f, vehicle_id: e.target.value }))}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -470,20 +466,20 @@ export default function FuelLogPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Odometer</label>
-                <input type="number" step="0.1" value={form.odometer_miles} placeholder="98832"
+                <label htmlFor="fuel-odometer" className="block text-xs font-medium text-gray-600 mb-1">Odometer</label>
+                <input id="fuel-odometer" type="number" step="0.1" value={form.odometer_miles} placeholder="98832"
                   onChange={(e) => setForm((f) => ({ ...f, odometer_miles: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Trip A (since fill)</label>
-                <input type="number" step="0.1" value={form.miles_since_last_fill} placeholder="270.8"
+                <label htmlFor="fuel-trip-a" className="block text-xs font-medium text-gray-600 mb-1">Trip A (since fill)</label>
+                <input id="fuel-trip-a" type="number" step="0.1" value={form.miles_since_last_fill} placeholder="270.8"
                   onChange={(e) => setForm((f) => ({ ...f, miles_since_last_fill: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Trip B (this month)</label>
-                <input type="number" step="0.1" value={form.miles_this_month} placeholder="270.8"
+                <label htmlFor="fuel-trip-b" className="block text-xs font-medium text-gray-600 mb-1">Trip B (this month)</label>
+                <input id="fuel-trip-b" type="number" step="0.1" value={form.miles_this_month} placeholder="270.8"
                   onChange={(e) => setForm((f) => ({ ...f, miles_this_month: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
               </div>
@@ -491,14 +487,14 @@ export default function FuelLogPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">MPG (display)</label>
-                <input type="number" step="0.1" value={form.mpg_display} placeholder="29.8"
+                <label htmlFor="fuel-mpg" className="block text-xs font-medium text-gray-600 mb-1">MPG (display)</label>
+                <input id="fuel-mpg" type="number" step="0.1" value={form.mpg_display} placeholder="29.8"
                   onChange={(e) => setForm((f) => ({ ...f, mpg_display: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Fuel Grade</label>
-                <select value={form.fuel_grade}
+                <label htmlFor="fuel-grade" className="block text-xs font-medium text-gray-600 mb-1">Fuel Grade</label>
+                <select id="fuel-grade" value={form.fuel_grade}
                   onChange={(e) => setForm((f) => ({ ...f, fuel_grade: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
                   {['regular','midgrade','premium','diesel','e85'].map((g) => (
@@ -510,27 +506,27 @@ export default function FuelLogPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Gallons</label>
-                <input type="number" step="0.001" value={form.gallons} placeholder="9.352"
+                <label htmlFor="fuel-gallons" className="block text-xs font-medium text-gray-600 mb-1">Gallons</label>
+                <input id="fuel-gallons" type="number" step="0.001" value={form.gallons} placeholder="9.352"
                   onChange={(e) => setForm((f) => ({ ...f, gallons: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Total Cost ($)</label>
-                <input type="number" step="0.01" value={form.total_cost} placeholder="21.50"
+                <label htmlFor="fuel-total-cost" className="block text-xs font-medium text-gray-600 mb-1">Total Cost ($)</label>
+                <input id="fuel-total-cost" type="number" step="0.01" value={form.total_cost} placeholder="21.50"
                   onChange={(e) => setForm((f) => ({ ...f, total_cost: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">$/gal</label>
-                <input type="number" step="0.001" value={form.cost_per_gallon} placeholder="2.299"
+                <label htmlFor="fuel-cpg" className="block text-xs font-medium text-gray-600 mb-1">$/gal</label>
+                <input id="fuel-cpg" type="number" step="0.001" value={form.cost_per_gallon} placeholder="2.299"
                   onChange={(e) => setForm((f) => ({ ...f, cost_per_gallon: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Station</label>
+              <label htmlFor="fuel-station" className="block text-xs font-medium text-gray-600 mb-1">Station</label>
               <ContactAutocomplete
                 value={form.station}
                 contactType="vendor"
@@ -553,20 +549,19 @@ export default function FuelLogPage() {
                 <ActivityLinker entityType="fuel_log" entityId={editingId} />
               </div>
             )}
-
-            <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => { setShowForm(false); setOcrNotes(''); setEditingId(null); }}
-                className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
-                Cancel
-              </button>
-              <button type="submit" disabled={saving}
-                className="flex-1 bg-sky-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-50">
-                {saving ? 'Saving…' : 'Save Entry'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+          </div>
+          <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 pt-3 pb-3 flex gap-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+            <button type="button" onClick={() => { setShowForm(false); setOcrNotes(''); setEditingId(null); }}
+              className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+              Cancel
+            </button>
+            <button type="submit" disabled={saving}
+              className="flex-1 bg-sky-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-50">
+              {saving ? 'Saving...' : 'Save Entry'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

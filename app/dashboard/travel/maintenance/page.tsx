@@ -8,6 +8,7 @@ import ActivityLinker from '@/components/ui/ActivityLinker';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import CategorySelect from '@/components/finance/CategorySelect';
+import Modal from '@/components/ui/Modal';
 
 interface MaintenanceRecord {
   id: string;
@@ -283,44 +284,37 @@ export default function MaintenancePage() {
       )}
 
       {/* Linked transaction confirmation dialog */}
-      {linkedTxDialog && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl space-y-4">
-            <h2 className="text-base font-bold text-gray-900">Delete linked transaction?</h2>
-            <p className="text-sm text-gray-600">
-              This service record had a linked finance expense. Do you also want to delete it?
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setLinkedTxDialog(null)}
-                className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
-              >
-                Keep transaction
-              </button>
-              <button
-                onClick={handleLinkedTxYes}
-                className="flex-1 bg-red-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-red-700 transition"
-              >
-                Delete it too
-              </button>
-            </div>
-          </div>
+      <Modal isOpen={!!linkedTxDialog} onClose={() => setLinkedTxDialog(null)} title="Delete linked transaction?" size="sm">
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-gray-600">
+            This service record had a linked finance expense. Do you also want to delete it?
+          </p>
         </div>
-      )}
+        <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 pt-3 pb-3 flex gap-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+          <button
+            onClick={() => setLinkedTxDialog(null)}
+            className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+          >
+            Keep transaction
+          </button>
+          <button
+            onClick={handleLinkedTxYes}
+            className="flex-1 bg-red-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-red-700 transition"
+          >
+            Delete it too
+          </button>
+        </div>
+      </Modal>
 
       {/* Add Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <form
-            onSubmit={handleSave}
-            className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl max-h-[90vh] overflow-y-auto"
-          >
-            <h2 className="text-lg font-bold text-gray-900">{editingId ? 'Edit Service Record' : 'Log Service'}</h2>
-
+      <Modal isOpen={showForm} onClose={() => { setShowForm(false); setEditingId(null); }} title={editingId ? 'Edit Service Record' : 'Log Service'} size="sm">
+        <form onSubmit={handleSave}>
+          <div className="p-6 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Service Type *</label>
-                <select value={form.service_type}
+                <label htmlFor="maint-service-type" className="block text-xs font-medium text-gray-600 mb-1">Service Type *</label>
+                <select id="maint-service-type" value={form.service_type}
+                  aria-required="true"
                   onChange={(e) => setForm((f) => ({ ...f, service_type: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
                   {Object.entries(SERVICE_LABELS).map(([k, v]) => (
@@ -329,8 +323,9 @@ export default function MaintenancePage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Date *</label>
-                <input type="date" value={form.date} required
+                <label htmlFor="maint-date" className="block text-xs font-medium text-gray-600 mb-1">Date *</label>
+                <input id="maint-date" type="date" value={form.date} required
+                  aria-required="true"
                   onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
               </div>
@@ -338,8 +333,8 @@ export default function MaintenancePage() {
 
             {vehicles.length > 0 && (
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Vehicle</label>
-                <select value={form.vehicle_id}
+                <label htmlFor="maint-vehicle" className="block text-xs font-medium text-gray-600 mb-1">Vehicle</label>
+                <select id="maint-vehicle" value={form.vehicle_id}
                   onChange={(e) => setForm((f) => ({ ...f, vehicle_id: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
                   <option value="">Select vehicle</option>
@@ -350,21 +345,21 @@ export default function MaintenancePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Odometer</label>
-                <input type="number" step="0.1" value={form.odometer_at_service} placeholder="98832"
+                <label htmlFor="maint-odometer" className="block text-xs font-medium text-gray-600 mb-1">Odometer</label>
+                <input id="maint-odometer" type="number" step="0.1" value={form.odometer_at_service} placeholder="98832"
                   onChange={(e) => setForm((f) => ({ ...f, odometer_at_service: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Cost ($)</label>
-                <input type="number" step="0.01" value={form.cost} placeholder="0.00"
+                <label htmlFor="maint-cost" className="block text-xs font-medium text-gray-600 mb-1">Cost ($)</label>
+                <input id="maint-cost" type="number" step="0.01" value={form.cost} placeholder="0.00"
                   onChange={(e) => setForm((f) => ({ ...f, cost: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Shop / Vendor</label>
+              <label htmlFor="maint-vendor" className="block text-xs font-medium text-gray-600 mb-1">Shop / Vendor</label>
               <ContactAutocomplete
                 value={form.vendor}
                 contactType="vendor"
@@ -384,22 +379,22 @@ export default function MaintenancePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Next service (miles)</label>
-                <input type="number" value={form.next_service_miles} placeholder="103000"
+                <label htmlFor="maint-next-miles" className="block text-xs font-medium text-gray-600 mb-1">Next service (miles)</label>
+                <input id="maint-next-miles" type="number" value={form.next_service_miles} placeholder="103000"
                   onChange={(e) => setForm((f) => ({ ...f, next_service_miles: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Next service date</label>
-                <input type="date" value={form.next_service_date}
+                <label htmlFor="maint-next-date" className="block text-xs font-medium text-gray-600 mb-1">Next service date</label>
+                <input id="maint-next-date" type="date" value={form.next_service_date}
                   onChange={(e) => setForm((f) => ({ ...f, next_service_date: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-              <input type="text" value={form.notes} placeholder="Optional notes"
+              <label htmlFor="maint-notes" className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+              <input id="maint-notes" type="text" value={form.notes} placeholder="Optional notes"
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
             </div>
@@ -409,20 +404,19 @@ export default function MaintenancePage() {
                 <ActivityLinker entityType="maintenance" entityId={editingId} />
               </div>
             )}
-
-            <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => { setShowForm(false); setEditingId(null); }}
-                className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
-                Cancel
-              </button>
-              <button type="submit" disabled={saving}
-                className="flex-1 bg-sky-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-50">
-                {saving ? 'Saving…' : editingId ? 'Update Record' : 'Save Record'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+          </div>
+          <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 pt-3 pb-3 flex gap-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+            <button type="button" onClick={() => { setShowForm(false); setEditingId(null); }}
+              className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+              Cancel
+            </button>
+            <button type="submit" disabled={saving}
+              className="flex-1 bg-sky-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-50">
+              {saving ? 'Saving...' : editingId ? 'Update Record' : 'Save Record'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
