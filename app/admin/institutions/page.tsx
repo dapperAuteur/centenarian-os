@@ -303,41 +303,41 @@ export default function AdminInstitutionsPage() {
       <Modal isOpen={!!showAddOffer} onClose={() => setShowAddOffer(null)} title="Add Offer" size="sm">
         <div className="p-6 space-y-4">
           <div>
-            <label className="text-xs font-medium text-gray-300">Title *</label>
+            <label className="text-xs font-medium text-gray-600">Title *</label>
             <input value={offerForm.title} onChange={(e) => setOfferForm((f) => ({ ...f, title: e.target.value }))}
-              className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 0% APR for 15 Months" />
+              className="w-full mt-1 px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fuchsia-500 placeholder-gray-400" placeholder="e.g. 0% APR for 15 Months" />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-300">Slug *</label>
+            <label className="text-xs font-medium text-gray-600">Slug *</label>
             <input value={offerForm.slug} onChange={(e) => setOfferForm((f) => ({ ...f, slug: e.target.value }))}
-              className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. chase-0-apr-15mo" />
+              className="w-full mt-1 px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fuchsia-500 placeholder-gray-400" placeholder="e.g. chase-0-apr-15mo" />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-300">Type *</label>
+            <label className="text-xs font-medium text-gray-600">Type *</label>
             <select value={offerForm.offer_type} onChange={(e) => setOfferForm((f) => ({ ...f, offer_type: e.target.value }))}
-              className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg">
+              className="w-full mt-1 px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fuchsia-500">
               {OFFER_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-300">Description</label>
+            <label className="text-xs font-medium text-gray-600">Description</label>
             <textarea rows={2} value={offerForm.description} onChange={(e) => setOfferForm((f) => ({ ...f, description: e.target.value }))}
-              className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+              className="w-full mt-1 px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fuchsia-500" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-gray-300">Expires</label>
+              <label className="text-xs font-medium text-gray-600">Expires</label>
               <input type="date" value={offerForm.expires_at} onChange={(e) => setOfferForm((f) => ({ ...f, expires_at: e.target.value }))}
-                className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+                className="w-full mt-1 px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fuchsia-500" />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-300">URL</label>
+              <label className="text-xs font-medium text-gray-600">URL</label>
               <input value={offerForm.url} onChange={(e) => setOfferForm((f) => ({ ...f, url: e.target.value }))}
-                className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="https://..." />
+                className="w-full mt-1 px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fuchsia-500 placeholder-gray-400" placeholder="https://..." />
             </div>
           </div>
         </div>
-        <div className="sticky bottom-0 bg-white border-t px-6 py-3 flex gap-3">
+        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-3 flex gap-3">
           <button
             onClick={() => showAddOffer && handleAddOffer(showAddOffer)}
             disabled={saving}
@@ -347,7 +347,7 @@ export default function AdminInstitutionsPage() {
             Add Offer
           </button>
           <button onClick={() => setShowAddOffer(null)}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-300 transition">
             Cancel
           </button>
         </div>
