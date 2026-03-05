@@ -25,10 +25,23 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { accessToken, enrollment } = body;
+  console.log('[Teller Connect] received body:', JSON.stringify(body, null, 2));
 
-  if (!accessToken || !enrollment?.id || !enrollment?.institution?.name) {
-    return NextResponse.json({ error: 'Missing Teller Connect data' }, { status: 400 });
+  // Teller Connect callback shape varies — extract flexibly:
+  //   { accessToken, enrollment: { id, institution: { name } } }  (wrapped)
+  //   { accessToken, enrollment_id, institution: { name } }       (flat)
+  //   { access_token, enrollment_id, institution: { name } }      (snake_case)
+  const accessToken = body.accessToken || body.access_token;
+  const enrollmentId = body.enrollment?.id || body.enrollment_id;
+  const institution = body.enrollment?.institution || body.institution || {};
+  const institutionName = institution.name || institution.institution_name || 'Unknown';
+  const institutionId = institution.id || institution.institution_id || null;
+
+  if (!accessToken || !enrollmentId) {
+    return NextResponse.json(
+      { error: 'Missing Teller Connect data', detail: 'Need accessToken and enrollment_id', receivedKeys: Object.keys(body) },
+      { status: 400 },
+    );
   }
 
   const db = getDb();
@@ -41,10 +54,10 @@ export async function POST(request: NextRequest) {
     .upsert(
       {
         user_id: user.id,
-        enrollment_id: enrollment.id,
+        enrollment_id: enrollmentId,
         access_token: encrypted,
-        institution_name: enrollment.institution.name,
-        institution_id: enrollment.institution.id ?? null,
+        institution_name: institutionName,
+        institution_id: institutionId,
         status: 'connected',
       },
       { onConflict: 'user_id,enrollment_id' },

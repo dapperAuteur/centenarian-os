@@ -60,7 +60,9 @@ export default function TellerConnectButton({ onSuccess }: TellerConnectButtonPr
     }
 
     const appId = process.env.NEXT_PUBLIC_TELLER_APP_ID;
-    const env = process.env.NEXT_PUBLIC_TELLER_ENVIRONMENT ?? 'sandbox';
+    const env = process.env.NODE_ENV === 'production'
+      ? (process.env.NEXT_PUBLIC_TELLER_PROD_ENVIRONMENT ?? 'production')
+      : (process.env.NEXT_PUBLIC_TELLER_DEV_ENVIRONMENT ?? 'sandbox');
 
     if (!appId) {
       setError('Teller application ID not configured');
@@ -74,19 +76,16 @@ export default function TellerConnectButton({ onSuccess }: TellerConnectButtonPr
       environment: env,
       onSuccess: async (enrollment: unknown) => {
         const enr = enrollment as Record<string, unknown>;
+        console.log('[TellerConnect] onSuccess payload:', JSON.stringify(enr, null, 2));
         setLoading(true);
         setError('');
         try {
+          // Teller Connect returns a flat object — forward it directly
+          // and let the server extract what it needs
           const res = await offlineFetch('/api/teller/connect', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              accessToken: enr.accessToken,
-              enrollment: {
-                id: enr.enrollment_id ?? (enr.enrollment as Record<string, unknown>)?.id,
-                institution: enr.institution,
-              },
-            }),
+            body: JSON.stringify(enr),
           });
 
           if (!res.ok) {
