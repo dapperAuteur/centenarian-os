@@ -63,6 +63,11 @@ export async function POST(request: NextRequest) {
     name, account_type, institution_name, last_four,
     interest_rate, credit_limit, opening_balance = 0,
     monthly_fee, due_date, statement_date, notes,
+    // Institution policy fields
+    dispute_window_days, default_return_days,
+    promo_apr, promo_apr_expires, promo_description,
+    bt_apr, bt_fee_percent, bt_expires, bt_description,
+    rewards_type, rewards_rate, annual_fee,
   } = body;
 
   if (!name?.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -84,6 +89,18 @@ export async function POST(request: NextRequest) {
       due_date: due_date != null ? Number(due_date) : null,
       statement_date: statement_date != null ? Number(statement_date) : null,
       notes: notes ?? null,
+      dispute_window_days: dispute_window_days != null ? Number(dispute_window_days) : null,
+      default_return_days: default_return_days != null ? Number(default_return_days) : null,
+      promo_apr: promo_apr != null ? Number(promo_apr) : null,
+      promo_apr_expires: promo_apr_expires ?? null,
+      promo_description: promo_description ?? null,
+      bt_apr: bt_apr != null ? Number(bt_apr) : null,
+      bt_fee_percent: bt_fee_percent != null ? Number(bt_fee_percent) : null,
+      bt_expires: bt_expires ?? null,
+      bt_description: bt_description ?? null,
+      rewards_type: rewards_type ?? null,
+      rewards_rate: rewards_rate ?? null,
+      annual_fee: annual_fee != null ? Number(annual_fee) : null,
     })
     .select()
     .single();

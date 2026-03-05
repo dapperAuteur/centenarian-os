@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, MessageSquare, FileText, Heart, MessageCircle, GraduationCap, Radio, Activity } from 'lucide-react';
+import { LayoutDashboard, Users, MessageSquare, FileText, Heart, MessageCircle, GraduationCap, Radio, Activity, Building2 } from 'lucide-react';
 
 interface UnreadCounts { feedback: number; messages: number; }
 
@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { href: '/admin/academy',    label: 'Academy',     icon: GraduationCap,   exact: false, badgeKey: null },
   { href: '/admin/live',       label: 'Live',        icon: Radio,           exact: false, badgeKey: null },
   { href: '/admin/metrics',    label: 'Metrics',     icon: Activity,        exact: false, badgeKey: null },
+  { href: '/admin/institutions', label: 'Institutions', icon: Building2,    exact: false, badgeKey: null },
 ];
 
 export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   DollarSign, TrendingUp, TrendingDown, Plus, ArrowRight,
   Upload, Download, Settings, Loader2, CreditCard, Wallet, FileText, AlertTriangle,
-  ArrowRightLeft, RefreshCw,
+  ArrowRightLeft, RefreshCw, Building2,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -324,6 +324,13 @@ export default function FinanceDashboardPage() {
           >
             <Wallet className="w-4 h-4" />
             Brands
+          </Link>
+          <Link
+            href="/institutions"
+            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-100 transition"
+          >
+            <Building2 className="w-4 h-4" />
+            Institutions
           </Link>
           <a
             href="/api/finance/export"

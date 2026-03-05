@@ -7,10 +7,12 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   ArrowLeft, Plus, Pencil, Trash2, Loader2, CreditCard,
   Building2, Check, X, ArrowRightLeft, Percent,
+  RefreshCw, ChevronDown, ChevronUp, Landmark, Info,
 } from 'lucide-react';
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import TransferModal from '@/components/finance/TransferModal';
+import TellerConnectButton from '@/components/finance/TellerConnectButton';
 import Modal from '@/components/ui/Modal';
 
 interface Account {
@@ -28,6 +30,24 @@ interface Account {
   is_active: boolean;
   notes: string | null;
   balance: number;
+  // Teller fields
+  teller_account_id: string | null;
+  teller_enrollment_id: string | null;
+  last_synced_at: string | null;
+  oldest_transaction_date: string | null;
+  // Institution policy fields
+  dispute_window_days: number | null;
+  default_return_days: number | null;
+  promo_apr: number | null;
+  promo_apr_expires: string | null;
+  promo_description: string | null;
+  bt_apr: number | null;
+  bt_fee_percent: number | null;
+  bt_expires: string | null;
+  bt_description: string | null;
+  rewards_type: string | null;
+  rewards_rate: string | null;
+  annual_fee: number | null;
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -62,6 +82,9 @@ export default function AccountsPage() {
   const [editForm, setEditForm] = useState<Record<string, string>>({});
   const [showTransfer, setShowTransfer] = useState(false);
   const [applyingInterest, setApplyingInterest] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState<string | null>(null);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
+  const [expandedPolicies, setExpandedPolicies] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -104,9 +127,13 @@ export default function AccountsPage() {
   };
 
   const handleSaveEdit = async (id: string) => {
+    const numericFields = [
+      'interest_rate', 'credit_limit', 'opening_balance', 'monthly_fee', 'due_date', 'statement_date',
+      'dispute_window_days', 'default_return_days', 'promo_apr', 'bt_apr', 'bt_fee_percent', 'annual_fee',
+    ];
     const body: Record<string, string | number | null> = {};
     for (const [k, v] of Object.entries(editForm)) {
-      if (['interest_rate', 'credit_limit', 'opening_balance', 'monthly_fee', 'due_date', 'statement_date'].includes(k)) {
+      if (numericFields.includes(k)) {
         body[k] = v !== '' ? Number(v) : null;
       } else {
         body[k] = v || null;
@@ -156,6 +183,41 @@ export default function AccountsPage() {
     load();
   };
 
+  const handleSync = async (enrollmentId: string) => {
+    setSyncing(enrollmentId);
+    setSyncResult(null);
+    try {
+      const res = await offlineFetch('/api/teller/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enrollment_id: enrollmentId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSyncResult(`Synced: ${data.new} new, ${data.matched} matched, ${data.skipped} unchanged`);
+        load();
+      } else {
+        setSyncResult(data.error || 'Sync failed');
+      }
+    } catch {
+      setSyncResult('Sync failed');
+    } finally {
+      setSyncing(null);
+    }
+  };
+
+  const togglePolicies = (id: string) => {
+    setExpandedPolicies((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const connectedAccounts = accounts.filter((a) => a.teller_account_id);
+  const hasConnectedAccounts = connectedAccounts.length > 0;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -179,7 +241,13 @@ export default function AccountsPage() {
             <p className="text-gray-500 text-sm mt-0.5">Manage your bank accounts, credit cards, and loans</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <TellerConnectButton
+            onSuccess={(result) => {
+              setSyncResult(`Connected! ${result.synced} transactions imported${result.oldestTransactionDate ? ` (history back to ${result.oldestTransactionDate})` : ''}`);
+              load();
+            }}
+          />
           <button
             onClick={() => setShowTransfer(true)}
             className="flex items-center gap-1.5 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
@@ -196,6 +264,66 @@ export default function AccountsPage() {
           </button>
         </div>
       </div>
+
+      {/* Sync result banner */}
+      {syncResult && (
+        <div className="flex items-center justify-between gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-800">
+          <span>{syncResult}</span>
+          <button onClick={() => setSyncResult(null)} className="text-emerald-600 hover:text-emerald-800">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Connected accounts sync controls */}
+      {hasConnectedAccounts && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <div className="flex items-center gap-2 text-sm font-medium text-blue-800">
+              <Landmark className="w-4 h-4" />
+              Bank-Connected Accounts
+            </div>
+          </div>
+          <div className="space-y-2">
+            {connectedAccounts.map((acct) => (
+              <div key={acct.id} className="flex items-center justify-between gap-3 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-blue-700 font-medium">{acct.name}</span>
+                  {acct.last_synced_at && (
+                    <span className="text-blue-500 text-xs">
+                      Last synced {new Date(acct.last_synced_at).toLocaleDateString()}
+                    </span>
+                  )}
+                  {acct.oldest_transaction_date && (
+                    <span className="text-blue-400 text-xs flex items-center gap-1" title="How far back your bank provides transaction history">
+                      <Info className="w-3 h-3" />
+                      History from {acct.oldest_transaction_date}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleSync(acct.teller_enrollment_id!)}
+                  disabled={syncing === acct.teller_enrollment_id}
+                  className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50 transition"
+                >
+                  <RefreshCw className={`w-3 h-3 ${syncing === acct.teller_enrollment_id ? 'animate-spin' : ''}`} />
+                  Sync
+                </button>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-blue-400 mt-2">
+            Transaction history depth varies by institution — typically 90 days to 2+ years.
+          </p>
+        </div>
+      )}
+
+      {/* Transparency notice */}
+      {hasConnectedAccounts && (
+        <p className="text-xs text-gray-400 px-1">
+          Your institution details (rates, fees, policies) are anonymized and aggregated to help educate the community about financial products. No personal information is ever shared.
+        </p>
+      )}
 
       {accounts.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
@@ -273,6 +401,76 @@ export default function AccountsPage() {
                     <input value={editForm.notes ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
                       className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" />
                   </div>
+                  {/* Institution Policies */}
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide pt-2">Policies & Offers</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-500">Dispute Window (days)</label>
+                      <input type="number" min="0" value={editForm.dispute_window_days ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, dispute_window_days: e.target.value }))}
+                        className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 60" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">Return Window (days)</label>
+                      <input type="number" min="0" value={editForm.default_return_days ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, default_return_days: e.target.value }))}
+                        className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 30" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">Annual Fee ($)</label>
+                      <input type="number" step="0.01" min="0" value={editForm.annual_fee ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, annual_fee: e.target.value }))}
+                        className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 95" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-500">Rewards Type</label>
+                      <input value={editForm.rewards_type ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, rewards_type: e.target.value }))}
+                        className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. Cash Back, Points" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">Rewards Rate</label>
+                      <input value={editForm.rewards_rate ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, rewards_rate: e.target.value }))}
+                        className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 2% dining, 1% all" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-500">Promo APR (%)</label>
+                      <input type="number" step="0.01" min="0" value={editForm.promo_apr ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, promo_apr: e.target.value }))}
+                        className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 0" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">Promo Expires</label>
+                      <input type="date" value={editForm.promo_apr_expires ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, promo_apr_expires: e.target.value }))}
+                        className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">Promo Description</label>
+                      <input value={editForm.promo_description ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, promo_description: e.target.value }))}
+                        className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 0% APR for 15 months" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-500">BT APR (%)</label>
+                      <input type="number" step="0.01" min="0" value={editForm.bt_apr ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, bt_apr: e.target.value }))}
+                        className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 0" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">BT Fee (%)</label>
+                      <input type="number" step="0.01" min="0" value={editForm.bt_fee_percent ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, bt_fee_percent: e.target.value }))}
+                        className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 3" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">BT Expires</label>
+                      <input type="date" value={editForm.bt_expires ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, bt_expires: e.target.value }))}
+                        className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">BT Description</label>
+                      <input value={editForm.bt_description ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, bt_description: e.target.value }))}
+                        className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="Balance transfer details" />
+                    </div>
+                  </div>
                   <div className="flex gap-2 pt-1">
                     <button onClick={() => handleSaveEdit(acct.id)}
                       className="flex items-center gap-1 px-3 py-1.5 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 transition">
@@ -342,6 +540,18 @@ export default function AccountsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
+                    {acct.teller_account_id && (
+                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full mr-1" title="Connected via Teller">
+                        Linked
+                      </span>
+                    )}
+                    <button
+                      onClick={() => togglePolicies(acct.id)}
+                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                      title="Policies & Offers"
+                    >
+                      {expandedPolicies.has(acct.id) ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
                     {(acct.account_type === 'credit_card' || acct.account_type === 'loan') && acct.interest_rate != null && acct.statement_date != null && (
                       <button
                         onClick={() => handleApplyInterest(acct)}
@@ -353,7 +563,7 @@ export default function AccountsPage() {
                       </button>
                     )}
                     <button
-                      onClick={() => { setEditId(acct.id); setEditForm({ name: acct.name, account_type: acct.account_type, institution_name: acct.institution_name ?? '', last_four: acct.last_four ?? '', interest_rate: acct.interest_rate?.toString() ?? '', credit_limit: acct.credit_limit?.toString() ?? '', opening_balance: String(acct.opening_balance ?? 0), monthly_fee: acct.monthly_fee?.toString() ?? '', due_date: acct.due_date?.toString() ?? '', statement_date: acct.statement_date?.toString() ?? '', notes: acct.notes ?? '' }); }}
+                      onClick={() => { setEditId(acct.id); setEditForm({ name: acct.name, account_type: acct.account_type, institution_name: acct.institution_name ?? '', last_four: acct.last_four ?? '', interest_rate: acct.interest_rate?.toString() ?? '', credit_limit: acct.credit_limit?.toString() ?? '', opening_balance: String(acct.opening_balance ?? 0), monthly_fee: acct.monthly_fee?.toString() ?? '', due_date: acct.due_date?.toString() ?? '', statement_date: acct.statement_date?.toString() ?? '', notes: acct.notes ?? '', dispute_window_days: acct.dispute_window_days?.toString() ?? '', default_return_days: acct.default_return_days?.toString() ?? '', promo_apr: acct.promo_apr?.toString() ?? '', promo_apr_expires: acct.promo_apr_expires ?? '', promo_description: acct.promo_description ?? '', bt_apr: acct.bt_apr?.toString() ?? '', bt_fee_percent: acct.bt_fee_percent?.toString() ?? '', bt_expires: acct.bt_expires ?? '', bt_description: acct.bt_description ?? '', rewards_type: acct.rewards_type ?? '', rewards_rate: acct.rewards_rate ?? '', annual_fee: acct.annual_fee?.toString() ?? '' }); }}
                       className="p-1.5 text-gray-400 hover:text-fuchsia-600 hover:bg-fuchsia-50 rounded-lg transition"
                       title="Edit"
                     >
@@ -374,6 +584,62 @@ export default function AccountsPage() {
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Collapsible Policies & Offers section */}
+              {expandedPolicies.has(acct.id) && (
+                <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Institution Policies & Offers</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                    <div>
+                      <span className="text-gray-400 text-xs">Dispute Window</span>
+                      <p className="text-gray-700">{acct.dispute_window_days ? `${acct.dispute_window_days} days` : '—'}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 text-xs">Return Window</span>
+                      <p className="text-gray-700">{acct.default_return_days ? `${acct.default_return_days} days` : '—'}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 text-xs">Rewards</span>
+                      <p className="text-gray-700">{acct.rewards_type ?? '—'}{acct.rewards_rate ? ` (${acct.rewards_rate})` : ''}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 text-xs">Annual Fee</span>
+                      <p className="text-gray-700">{acct.annual_fee != null ? `$${Number(acct.annual_fee).toFixed(2)}` : '—'}</p>
+                    </div>
+                  </div>
+                  {(acct.promo_apr != null || acct.bt_apr != null) && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                      {acct.promo_apr != null && (
+                        <div className="bg-amber-50 border border-amber-100 rounded-lg p-3">
+                          <span className="text-xs font-medium text-amber-700">Promo APR</span>
+                          <p className="text-amber-900 font-semibold">{acct.promo_apr}%</p>
+                          {acct.promo_apr_expires && (
+                            <p className="text-xs text-amber-600">Expires {acct.promo_apr_expires}</p>
+                          )}
+                          {acct.promo_description && (
+                            <p className="text-xs text-amber-600 mt-1">{acct.promo_description}</p>
+                          )}
+                        </div>
+                      )}
+                      {acct.bt_apr != null && (
+                        <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
+                          <span className="text-xs font-medium text-blue-700">Balance Transfer</span>
+                          <p className="text-blue-900 font-semibold">{acct.bt_apr}% APR</p>
+                          {acct.bt_fee_percent != null && (
+                            <p className="text-xs text-blue-600">Fee: {acct.bt_fee_percent}%</p>
+                          )}
+                          {acct.bt_expires && (
+                            <p className="text-xs text-blue-600">Expires {acct.bt_expires}</p>
+                          )}
+                          {acct.bt_description && (
+                            <p className="text-xs text-blue-600 mt-1">{acct.bt_description}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

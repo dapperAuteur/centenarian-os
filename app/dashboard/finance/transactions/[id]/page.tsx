@@ -10,6 +10,8 @@ import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
+import DisputeSection from '@/components/finance/DisputeSection';
+import ReturnDeadlineSection from '@/components/finance/ReturnDeadlineSection';
 
 interface Transaction {
   id: string;
@@ -29,8 +31,15 @@ interface Transaction {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  teller_transaction_id: string | null;
+  dispute_status: string | null;
+  dispute_date: string | null;
+  dispute_notes: string | null;
+  return_deadline: string | null;
+  return_policy_days: number | null;
+  return_status: string | null;
   budget_categories: { id: string; name: string; color: string } | null;
-  financial_accounts: { id: string; name: string; account_type: string } | null;
+  financial_accounts: { id: string; name: string; account_type: string; default_return_days: number | null } | null;
   user_brands: { id: string; name: string } | null;
 }
 
@@ -61,6 +70,8 @@ const SOURCE_LABELS: Record<string, string> = {
   transfer: 'Transfer',
   interest: 'Interest',
   recurring: 'Recurring',
+  scan: 'Scan',
+  bank_sync: 'Bank Sync',
 };
 
 export default function TransactionDetailPage() {
@@ -244,6 +255,28 @@ export default function TransactionDetailPage() {
           <p className="text-sm text-blue-700">
             Created from {SOURCE_LABELS[transaction.source_module] || transaction.source_module}
           </p>
+        </div>
+      )}
+
+      {/* Dispute & Return */}
+      {transaction.type === 'expense' && (
+        <div className="space-y-3">
+          <DisputeSection
+            transactionId={transaction.id}
+            disputeStatus={transaction.dispute_status}
+            disputeDate={transaction.dispute_date}
+            disputeNotes={transaction.dispute_notes}
+            onUpdate={load}
+          />
+          <ReturnDeadlineSection
+            transactionId={transaction.id}
+            returnDeadline={transaction.return_deadline}
+            returnPolicyDays={transaction.return_policy_days}
+            returnStatus={transaction.return_status}
+            transactionDate={transaction.transaction_date}
+            accountDefaultReturnDays={transaction.financial_accounts?.default_return_days ?? null}
+            onUpdate={load}
+          />
         </div>
       )}
 

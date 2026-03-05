@@ -24,7 +24,7 @@ export async function GET(
   const db = getDb();
   const { data, error } = await db
     .from('financial_transactions')
-    .select('*, budget_categories(id, name, color), financial_accounts(id, name, account_type), user_brands(id, name)')
+    .select('*, budget_categories(id, name, color), financial_accounts(id, name, account_type, default_return_days), user_brands(id, name)')
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle();
