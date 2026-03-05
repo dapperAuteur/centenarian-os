@@ -25,6 +25,8 @@ interface Lesson {
   is_free_preview: boolean;
   locked: boolean;
   module_locked?: boolean;
+  is_new?: boolean;
+  is_updated?: boolean;
 }
 
 interface Module {
@@ -200,6 +202,18 @@ function CourseDetailContent() {
       .then((d) => setGlossaryTerms(Array.isArray(d) ? d : []))
       .catch(() => {});
   }, [courseId]);
+
+  // Dismiss course updates on load (fire-and-forget)
+  const hasUpdates = course?.enrolled && course.course_modules?.some((m) =>
+    m.lessons.some((l) => l.is_new || l.is_updated),
+  );
+  const [updatesDismissed, setUpdatesDismissed] = useState(false);
+
+  useEffect(() => {
+    if (hasUpdates && !updatesDismissed) {
+      fetch(`/api/academy/courses/${courseId}/dismiss-updates`, { method: 'POST' }).catch(() => {});
+    }
+  }, [hasUpdates, updatesDismissed, courseId]);
 
   // Detect user's existing review
   useEffect(() => {
@@ -418,6 +432,22 @@ function CourseDetailContent() {
               </div>
             )}
 
+            {/* Course update banner */}
+            {hasUpdates && !updatesDismissed && (
+              <div className="mb-6 bg-fuchsia-900/20 border border-fuchsia-700/30 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                <p className="text-fuchsia-300 text-sm">
+                  This course has been updated since your last visit.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setUpdatesDismissed(true)}
+                  className="text-xs text-gray-400 hover:text-white transition shrink-0"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
             {/* Curriculum */}
             <h2 className="text-lg font-bold mb-4">Curriculum</h2>
             <div className="space-y-3">
@@ -454,6 +484,12 @@ function CourseDetailContent() {
                               {lesson.title}
                               {lesson.is_free_preview && !course.enrolled && (
                                 <span className="ml-2 text-xs text-fuchsia-400">Free preview</span>
+                              )}
+                              {lesson.is_new && (
+                                <span className="ml-2 text-xs font-semibold text-fuchsia-400 bg-fuchsia-900/20 px-1.5 py-0.5 rounded">New</span>
+                              )}
+                              {lesson.is_updated && (
+                                <span className="ml-2 text-xs font-semibold text-amber-400 bg-amber-900/20 px-1.5 py-0.5 rounded">Updated</span>
                               )}
                             </Link>
                           ) : (
