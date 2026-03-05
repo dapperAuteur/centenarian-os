@@ -58,7 +58,7 @@ function SortTh({
       type="button"
       onClick={() => onSort(col)}
       aria-label={`Sort by ${label}`}
-      className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition"
+      className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-200 transition"
     >
       {label}
       {active
@@ -308,7 +308,7 @@ function AdminMessagesPage() {
         <div className="mb-5">
           <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
             Message{' '}
-            <span className="normal-case text-gray-600 font-normal">(bold, italic, links, images supported)</span>
+            <span className="normal-case text-gray-400 font-normal">(bold, italic, links, images supported)</span>
           </label>
           <RichTextEditor
             value={body}
@@ -340,7 +340,7 @@ function AdminMessagesPage() {
         <h2 className="font-semibold text-white">Sent Messages</h2>
         {sent.length > 1 && (
           <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-600">Sort:</span>
+            <span className="text-xs text-gray-400">Sort:</span>
             <SortTh label="Date" col="created_at" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
             <SortTh label="Subject" col="subject" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
             <SortTh label="Scope" col="recipient_scope" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
@@ -350,7 +350,7 @@ function AdminMessagesPage() {
       </div>
 
       {sortedSent.length === 0 ? (
-        <p className="text-gray-600 text-sm">No messages sent yet.</p>
+        <p className="text-gray-400 text-sm">No messages sent yet.</p>
       ) : (
         <div className="space-y-3">
           {sortedSent.map((m) => {
@@ -375,16 +375,16 @@ function AdminMessagesPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-gray-500 text-xs mt-0.5">
-                      To: <span className="text-gray-400">{m.recipient_scope}</span> · {new Date(m.created_at).toLocaleString()}
+                    <p className="text-gray-400 text-xs mt-0.5">
+                      To: <span className="text-gray-300">{m.recipient_scope}</span> · {new Date(m.created_at).toLocaleString()}
                     </p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <div className="flex items-center gap-1 text-xs text-gray-400">
                       <Users className="w-3 h-3" />
                       {m.message_reads?.[0]?.count ?? 0} read
                     </div>
-                    {isOpen ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+                    {isOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
                   </div>
                 </button>
 
@@ -393,7 +393,7 @@ function AdminMessagesPage() {
                   <div className="border-t border-gray-800 px-5 py-4 space-y-4">
                     {/* Original body */}
                     <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-2">Original Message</p>
+                      <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-2">Original Message</p>
                       {m.body.startsWith('<') ? (
                         <div
                           className="prose prose-sm prose-invert max-w-none text-gray-300"
@@ -407,13 +407,13 @@ function AdminMessagesPage() {
                     {/* Reply thread */}
                     {!thread?.loaded && (
                       <div className="flex justify-center py-4">
-                        <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+                        <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                       </div>
                     )}
 
                     {thread?.loaded && thread.replies.length > 0 && (
                       <div className="space-y-3">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Replies</p>
+                        <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold">Replies</p>
                         {thread.replies.map((reply) => (
                           <div
                             key={reply.id}
@@ -440,7 +440,7 @@ function AdminMessagesPage() {
 
                     {/* Reply form */}
                     <div className="pt-2 border-t border-gray-800 dark-input">
-                      <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-3">
+                      <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-3">
                         Reply{m.recipient_scope !== 'user' ? ' (only works for direct messages to specific users)' : ''}
                       </p>
                       <textarea

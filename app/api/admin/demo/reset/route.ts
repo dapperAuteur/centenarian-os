@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { clearUserData, seedTutorial, seedVisitor } from '@/lib/demo/seed';
+import { syncAllKnowledge } from '@/lib/admin/syncKnowledge';
 
 function db() {
   return createClient(
@@ -37,6 +38,10 @@ export async function GET(request: NextRequest) {
   try {
     await resetUser(supabase, tutorialUserId, 'tutorial');
     await resetUser(supabase, visitorUserId, 'visitor');
+
+    // Fire-and-forget: sync help articles + course embeddings + timestamp
+    syncAllKnowledge().catch((e) => console.error('[cron] syncAllKnowledge failed:', e));
+
     return NextResponse.json({ ok: true, reset: ['tutorial', 'visitor'], at: new Date().toISOString() });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { DollarSign } from 'lucide-react';
+import { DollarSign, History } from 'lucide-react';
 
 export default function EnginePage() {
   const [stats, setStats] = useState({
@@ -113,6 +113,22 @@ export default function EnginePage() {
             <p className="text-sm">Week revenue</p>
           </div>
         </div>
+      </div>
+
+      {/* Quick links */}
+      <div className="flex gap-3 mb-8">
+        <Link
+          href="/dashboard/engine/history"
+          className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow text-sm font-medium text-gray-700 hover:shadow-md transition"
+        >
+          <History className="w-4 h-4" /> View History
+        </Link>
+        <Link
+          href="/dashboard/engine/sessions"
+          className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow text-sm font-medium text-gray-700 hover:shadow-md transition"
+        >
+          Manage Sessions
+        </Link>
       </div>
 
       {loading ? (

@@ -115,7 +115,7 @@ function AdminUsersContent() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">
         <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" aria-hidden="true" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
           <input
             type="text"
             placeholder="Search email or username…"
@@ -144,7 +144,7 @@ function AdminUsersContent() {
         <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden overflow-x-auto">
           <table className="w-full text-sm" aria-label="Users table">
             <thead>
-              <tr className="border-b border-gray-800 text-gray-500 text-xs uppercase tracking-wide">
+              <tr className="border-b border-gray-800 text-gray-300 text-xs uppercase tracking-wide">
                 <Th label="Email / Username" col="email" />
                 <Th label="Plan" col="subscription_status" />
                 <th className="text-left px-4 py-3 hidden md:table-cell">Promo Code</th>
@@ -156,14 +156,14 @@ function AdminUsersContent() {
             <tbody>
               {sorted.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-gray-600">No users found</td>
+                  <td colSpan={6} className="text-center py-12 text-gray-400">No users found</td>
                 </tr>
               )}
               {paginated.map((u) => (
                 <tr key={u.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition">
                   <td className="px-4 py-3">
                     <p className="text-white font-medium">{u.email ?? '—'}</p>
-                    <p className="text-gray-500 text-xs">@{u.username}</p>
+                    <p className="text-gray-400 text-xs">@{u.username}</p>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-xs font-semibold ${STATUS_BADGE[u.subscription_status]}`}>
@@ -180,13 +180,13 @@ function AdminUsersContent() {
                         </span>
                       )
                     ) : (
-                      <span className="text-gray-600 text-xs">N/A</span>
+                      <span className="text-gray-400 text-xs">N/A</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">
                     {u.subscription_status === 'monthly' && u.subscription_expires_at
                       ? new Date(u.subscription_expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                      : <span className="text-gray-600">—</span>
+                      : <span className="text-gray-400">—</span>
                     }
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">
@@ -196,7 +196,7 @@ function AdminUsersContent() {
                     <Link
                       href={`/admin/users/${u.id}`}
                       aria-label={`View ${u.email ?? u.username}`}
-                      className="text-gray-500 hover:text-white transition"
+                      className="text-gray-400 hover:text-white transition"
                     >
                       <ChevronRight className="w-4 h-4" aria-hidden="true" />
                     </Link>

@@ -90,7 +90,7 @@ export default function AdminCoursesPage() {
       {courses.length === 0 ? (
         <div className="bg-gray-900 border border-gray-800 border-dashed rounded-xl p-16 text-center">
           <BookOpen className="w-10 h-10 mx-auto mb-3 text-gray-700" />
-          <p className="text-gray-500">No courses yet.</p>
+          <p className="text-gray-400">No courses yet.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -104,7 +104,7 @@ export default function AdminCoursesPage() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-white font-medium truncate">{course.title}</p>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      course.is_published ? 'bg-green-900/30 text-green-400' : 'bg-gray-800 text-gray-500'
+                      course.is_published ? 'bg-green-900/30 text-green-400' : 'bg-gray-800 text-gray-400'
                     }`}>
                       {course.is_published ? 'Published' : 'Draft'}
                     </span>
@@ -117,10 +117,10 @@ export default function AdminCoursesPage() {
                   <p className="text-gray-400 text-sm mt-1">
                     by <span className="text-gray-300">{course.teacher_name}</span>
                     {course.teacher_email && (
-                      <span className="text-gray-600"> ({course.teacher_email})</span>
+                      <span className="text-gray-400"> ({course.teacher_email})</span>
                     )}
                   </p>
-                  <p className="text-gray-600 text-xs mt-1">
+                  <p className="text-gray-400 text-xs mt-1">
                     {course.price_type === 'free'
                       ? 'Free'
                       : `$${course.price} · ${course.price_type === 'one_time' ? 'one-time' : 'subscription'}`}
@@ -141,7 +141,7 @@ export default function AdminCoursesPage() {
                     className={`w-9 h-9 flex items-center justify-center rounded-lg transition disabled:opacity-50 ${
                       course.is_published
                         ? 'bg-green-900/30 text-green-400 hover:bg-green-900/50'
-                        : 'bg-gray-800 text-gray-500 hover:bg-gray-700'
+                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                     }`}
                   >
                     {actionId === course.id
@@ -155,7 +155,7 @@ export default function AdminCoursesPage() {
                     href={`/academy/${course.id}`}
                     target="_blank"
                     title="Preview course"
-                    className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-800 text-gray-500 hover:bg-gray-700 hover:text-white transition"
+                    className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white transition"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                   </Link>

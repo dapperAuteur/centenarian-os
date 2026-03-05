@@ -143,7 +143,7 @@ export default function AdminFeedbackPage() {
             <div key={key} className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
               <Icon className="w-5 h-5 mx-auto mb-2" style={{ color: cfg.color }} />
               <p className="text-2xl font-bold text-white">{counts[key as keyof typeof counts]}</p>
-              <p className="text-gray-500 text-xs mt-1">{cfg.label}</p>
+              <p className="text-gray-400 text-xs mt-1">{cfg.label}</p>
             </div>
           );
         })}
@@ -175,7 +175,7 @@ export default function AdminFeedbackPage() {
 
       {/* Feedback list */}
       {items.length === 0 ? (
-        <div className="text-center py-16 text-gray-600">
+        <div className="text-center py-16 text-gray-400">
           <MessageSquare className="w-10 h-10 mx-auto mb-3 opacity-40" />
           <p>No feedback submitted yet.</p>
         </div>
@@ -209,13 +209,13 @@ export default function AdminFeedbackPage() {
 
                   <div className="flex-1 min-w-0">
                     <p className="text-gray-300 text-sm truncate">{item.message}</p>
-                    <p className="text-gray-600 text-xs mt-0.5 truncate">
+                    <p className="text-gray-400 text-xs mt-0.5 truncate">
                       {item.profiles?.username ? `@${item.profiles.username}` : 'Unknown user'}
                       {item.email && ` · ${item.email}`}
                     </p>
                   </div>
 
-                  <span className="text-gray-600 text-xs whitespace-nowrap shrink-0">
+                  <span className="text-gray-400 text-xs whitespace-nowrap shrink-0">
                     {new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
 
@@ -224,8 +224,8 @@ export default function AdminFeedbackPage() {
                   )}
 
                   {isOpen
-                    ? <ChevronUp className="w-4 h-4 text-gray-500 shrink-0" />
-                    : <ChevronDown className="w-4 h-4 text-gray-500 shrink-0" />
+                    ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" />
+                    : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
                   }
                 </button>
 
@@ -235,8 +235,8 @@ export default function AdminFeedbackPage() {
                     {/* Original message */}
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Original Submission</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold">Original Submission</p>
+                        <p className="text-xs text-gray-400">
                           {item.profiles?.username ? `@${item.profiles.username}` : 'Unknown'}
                           {item.email && ` (${item.email})`}
                         </p>
@@ -248,13 +248,13 @@ export default function AdminFeedbackPage() {
                     {/* Thread */}
                     {!thread?.loaded && (
                       <div className="flex justify-center py-4">
-                        <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+                        <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                       </div>
                     )}
 
                     {thread?.loaded && thread.replies.length > 0 && (
                       <div className="space-y-3">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Conversation</p>
+                        <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold">Conversation</p>
                         {thread.replies.map((reply) => (
                           <div
                             key={reply.id}
@@ -281,7 +281,7 @@ export default function AdminFeedbackPage() {
 
                     {/* Admin reply form */}
                     <div className="pt-2 border-t border-gray-800 dark-input">
-                      <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-3">Reply to User</p>
+                      <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-3">Reply to User</p>
                       <textarea
                         value={replyText[item.id] ?? ''}
                         onChange={(e) => setReplyText((prev) => ({ ...prev, [item.id]: e.target.value }))}

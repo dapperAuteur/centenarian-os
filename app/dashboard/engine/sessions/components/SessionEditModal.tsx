@@ -14,6 +14,7 @@ import {
   formatDuration,
 } from '@/lib/utils/sessionValidation';
 import TagSelector from '@/components/ui/TagSelector';
+import ActivityLinker from '@/components/ui/ActivityLinker';
 import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
 
 interface SessionEditModalProps {
@@ -327,9 +328,10 @@ export default function SessionEditModal({
           />
         </div>
 
-        {/* Life Categories */}
+        {/* Cross-module linking */}
         {session?.id && (
-          <div className="pt-4 border-t border-gray-200">
+          <div className="pt-4 border-t border-gray-200 space-y-3">
+            <ActivityLinker entityType="focus_session" entityId={session.id} />
             <LifeCategoryTagger entityType="focus_session" entityId={session.id} />
           </div>
         )}

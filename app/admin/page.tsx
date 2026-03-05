@@ -31,7 +31,7 @@ function StatCard({ label, value, sub, icon: Icon, color = 'fuchsia' }: { label:
         <span className="text-sm text-gray-400">{label}</span>
       </div>
       <p className="text-3xl font-bold text-white">{value}</p>
-      {sub && <p className="text-xs text-gray-500 mt-1">{sub}</p>}
+      {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
     </div>
   );
 }
@@ -76,7 +76,7 @@ export default function AdminOverviewPage() {
       )}
 
       {/* Users */}
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3">Users</h2>
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-300 mb-3">Users</h2>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard label="Total Users" value={stats.users.total} icon={Users} />
         <StatCard label="Free" value={stats.users.free} sub={`${Math.round(stats.users.free / Math.max(stats.users.total, 1) * 100)}% of users`} icon={Users} color="sky" />
@@ -85,7 +85,7 @@ export default function AdminOverviewPage() {
       </div>
 
       {/* Content */}
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3">Content</h2>
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-300 mb-3">Content</h2>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard label="Recipes" value={stats.content.recipes} sub={`${stats.content.publicRecipes} public`} icon={ChefHat} color="lime" />
         <StatCard label="New Recipes" value={stats.content.newRecipesThisWeek} sub="this week" icon={ChefHat} color="sky" />
@@ -94,7 +94,7 @@ export default function AdminOverviewPage() {
       </div>
 
       {/* Feature usage */}
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3">Feature Usage (all-time)</h2>
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-300 mb-3">Feature Usage (all-time)</h2>
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <StatCard label="Focus Sessions" value={stats.featureUsage.focusSessions} icon={Timer} color="fuchsia" />
         <StatCard label="Meal Logs" value={stats.featureUsage.mealLogs} icon={Utensils} color="sky" />
