@@ -8,6 +8,7 @@ import {
   ArrowLeft, Plus, Pencil, Trash2, Loader2, CreditCard,
   Building2, Check, X, ArrowRightLeft, Percent,
   RefreshCw, ChevronDown, ChevronUp, Landmark, Info,
+  Link2, Unlink,
 } from 'lucide-react';
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -85,6 +86,9 @@ export default function AccountsPage() {
   const [syncing, setSyncing] = useState<string | null>(null);
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [expandedPolicies, setExpandedPolicies] = useState<Set<string>>(new Set());
+  const [linkTarget, setLinkTarget] = useState<Account | null>(null);
+  const [linking, setLinking] = useState(false);
+  const [unlinking, setUnlinking] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -215,8 +219,62 @@ export default function AccountsPage() {
     });
   };
 
+  const handleLinkTeller = async (tellerAcctId: string) => {
+    if (!linkTarget) return;
+    const tellerAcct = accounts.find((a) => a.id === tellerAcctId);
+    if (!tellerAcct) return;
+    if (!confirm(
+      `Link "${tellerAcct.name}" to "${linkTarget.name}"?\n\n` +
+      `All transactions from "${tellerAcct.name}" will be merged into "${linkTarget.name}". ` +
+      `Duplicate transactions will be automatically removed. ` +
+      `The bank-connected account "${tellerAcct.name}" will be deleted after merging.\n\n` +
+      `Your manual account "${linkTarget.name}" will be preserved with bank sync enabled.`
+    )) return;
+    setLinking(true);
+    try {
+      const res = await offlineFetch(`/api/finance/accounts/${linkTarget.id}/link-teller`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tellerAccountId: tellerAcctId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSyncResult(`Linked! ${data.migrated} transactions merged, ${data.deduped} duplicates removed.`);
+        setLinkTarget(null);
+        load();
+      } else {
+        alert(data.error || 'Link failed');
+      }
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  const handleUnlinkTeller = async (acct: Account) => {
+    if (!confirm(
+      `Stop syncing "${acct.name}" with your bank?\n\n` +
+      `All existing transactions will be kept. Only the live bank connection will be removed. ` +
+      `You can re-link later.`
+    )) return;
+    setUnlinking(acct.id);
+    try {
+      const res = await offlineFetch(`/api/finance/accounts/${acct.id}/unlink-teller`, { method: 'POST' });
+      if (res.ok) {
+        setSyncResult('Account unlinked from bank sync. Transactions preserved.');
+        load();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Unlink failed');
+      }
+    } finally {
+      setUnlinking(null);
+    }
+  };
+
   const connectedAccounts = accounts.filter((a) => a.teller_account_id);
   const hasConnectedAccounts = connectedAccounts.length > 0;
+  // Teller accounts available for linking (not already merged into a manual account)
+  const linkableTellerAccounts = connectedAccounts;
 
   if (loading) {
     return (
@@ -243,9 +301,27 @@ export default function AccountsPage() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <TellerConnectButton
-            onSuccess={(result) => {
+            onSuccess={async (result) => {
               setSyncResult(`Connected! ${result.synced} transactions imported${result.oldestTransactionDate ? ` (history back to ${result.oldestTransactionDate})` : ''}`);
-              load();
+              // Reload accounts, then check for potential matches between new Teller accounts and existing manual ones
+              const res = await offlineFetch('/api/finance/accounts');
+              if (res.ok) {
+                const fresh: Account[] = await res.json();
+                setAccounts(fresh);
+                setLoading(false);
+                const manual = fresh.filter((a) => !a.teller_account_id);
+                const teller = fresh.filter((a) => a.teller_account_id);
+                const hasMatch = teller.some((t) =>
+                  manual.some((m) =>
+                    m.institution_name && t.institution_name &&
+                    m.institution_name.toLowerCase() === t.institution_name.toLowerCase() &&
+                    m.account_type === t.account_type
+                  )
+                );
+                if (hasMatch) {
+                  setSyncResult((prev) => (prev ?? '') + ' We found accounts that may match your existing ones — use the link button (🔗) on any manual account to merge them.');
+                }
+              }
             }}
           />
           <button
@@ -540,11 +616,29 @@ export default function AccountsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    {acct.teller_account_id && (
-                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full mr-1" title="Connected via Teller">
-                        Linked
-                      </span>
-                    )}
+                    {acct.teller_account_id ? (
+                      <>
+                        <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full mr-1" title="Connected via Teller">
+                          Linked
+                        </span>
+                        <button
+                          onClick={() => handleUnlinkTeller(acct)}
+                          disabled={unlinking === acct.id}
+                          className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition disabled:opacity-50"
+                          title="Unlink from bank sync"
+                        >
+                          {unlinking === acct.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlink className="w-4 h-4" />}
+                        </button>
+                      </>
+                    ) : linkableTellerAccounts.length > 0 ? (
+                      <button
+                        onClick={() => setLinkTarget(acct)}
+                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                        title="Link to bank account"
+                      >
+                        <Link2 className="w-4 h-4" />
+                      </button>
+                    ) : null}
                     <button
                       onClick={() => togglePolicies(acct.id)}
                       className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
@@ -653,6 +747,44 @@ export default function AccountsPage() {
         accounts={accounts}
         onSuccess={load}
       />
+
+      {/* Link Teller Modal */}
+      <Modal isOpen={!!linkTarget} onClose={() => setLinkTarget(null)} title="Link to Bank Account" size="sm">
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-gray-600">
+            Select a bank-connected account to link with <strong>{linkTarget?.name}</strong>.
+            Transactions will be merged and duplicates removed. The bank-connected account will be
+            deleted after merging — your manual account is preserved.
+          </p>
+          {linkableTellerAccounts.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-4">No bank-connected accounts available to link.</p>
+          ) : (
+            <div className="space-y-2">
+              {linkableTellerAccounts.map((ta) => (
+                <button
+                  key={ta.id}
+                  onClick={() => handleLinkTeller(ta.id)}
+                  disabled={linking}
+                  className="w-full flex items-center justify-between gap-3 p-3 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition text-left disabled:opacity-50"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{ta.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {ta.institution_name}{ta.last_four ? ` ··${ta.last_four}` : ''} · {TYPE_LABELS[ta.account_type] ?? ta.account_type}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-semibold text-gray-700">
+                      ${Math.abs(ta.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </p>
+                    {linking && <Loader2 className="w-3 h-3 animate-spin text-blue-600 ml-auto" />}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </Modal>
 
       {/* Add Account Modal */}
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add Account" size="sm">
