@@ -34,7 +34,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       created_at, teacher_id,
       profiles(username, display_name, avatar_url),
       course_modules(id, title, order,
-        lessons(id, title, lesson_type, duration_seconds, order, is_free_preview, content_url, text_content)
+        lessons(id, title, lesson_type, duration_seconds, order, is_free_preview, content_url, text_content, created_at, updated_at)
       )
     `)
     .eq('id', id)
@@ -53,13 +53,31 @@ export async function GET(_req: NextRequest, { params }: Params) {
   let saved = false;
   if (user) {
     const [enrollmentRes, likeRes, saveRes] = await Promise.all([
-      db.from('enrollments').select('status').eq('user_id', user.id).eq('course_id', id).maybeSingle(),
+      db.from('enrollments').select('status, last_content_seen_at').eq('user_id', user.id).eq('course_id', id).maybeSingle(),
       db.from('course_likes').select('user_id').eq('user_id', user.id).eq('course_id', id).maybeSingle(),
       db.from('course_saves').select('user_id').eq('user_id', user.id).eq('course_id', id).maybeSingle(),
     ]);
     enrolled = enrollmentRes.data?.status === 'active';
     liked = !!likeRes.data;
     saved = !!saveRes.data;
+
+    // Annotate lessons with new/updated flags for enrolled users
+    if (enrolled && course.course_modules) {
+      const seenAtRaw = enrollmentRes.data?.last_content_seen_at;
+      const seenAt = seenAtRaw ? new Date(seenAtRaw) : null;
+      /* eslint-disable @typescript-eslint/no-explicit-any */
+      course.course_modules = (course.course_modules as any[]).map((mod: any) => ({
+        ...mod,
+        lessons: (mod.lessons ?? []).map((lesson: any) => {
+          const created = new Date(lesson.created_at);
+          const updated = new Date(lesson.updated_at);
+          const is_new = !seenAt || created > seenAt;
+          const is_updated = !is_new && !!seenAt && updated > seenAt;
+          return { ...lesson, is_new, is_updated };
+        }),
+      }));
+      /* eslint-enable @typescript-eslint/no-explicit-any */
+    }
   }
 
   // Fetch prerequisites + recommendations

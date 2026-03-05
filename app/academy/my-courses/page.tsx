@@ -20,6 +20,8 @@ interface EnrolledCourse {
   lesson_count: number;
   completed_count: number;
   progress_pct: number;
+  new_lesson_count: number;
+  updated_lesson_count: number;
   profiles: { username: string; display_name: string | null } | null;
 }
 
@@ -122,6 +124,16 @@ export default function MyCoursesPage() {
                       </Link>
                     </div>
                     <div className="shrink-0 flex items-center gap-2">
+                      {(course.new_lesson_count > 0 || course.updated_lesson_count > 0) && (
+                        <span className="flex items-center gap-1 text-xs font-semibold bg-fuchsia-900/30 text-fuchsia-300 px-2 py-1 rounded-full">
+                          <span className="w-1.5 h-1.5 rounded-full bg-fuchsia-400 shrink-0" />
+                          {course.new_lesson_count > 0 && course.updated_lesson_count > 0
+                            ? `${course.new_lesson_count} new · ${course.updated_lesson_count} updated`
+                            : course.new_lesson_count > 0
+                            ? `${course.new_lesson_count} new`
+                            : `${course.updated_lesson_count} updated`}
+                        </span>
+                      )}
                       {course.attempt_number > 1 && (
                         <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded-full">
                           Attempt {course.attempt_number}

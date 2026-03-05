@@ -1,6 +1,5 @@
 // app/privacy/page.tsx
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/ui/SiteFooter';
 

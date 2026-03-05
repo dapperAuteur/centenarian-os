@@ -28,6 +28,7 @@ export async function GET() {
       enrolled_at,
       attempt_number,
       metric_slots,
+      last_content_seen_at,
       courses (
         id, title, description, cover_image_url, category,
         navigation_mode, is_published,
@@ -45,7 +46,7 @@ export async function GET() {
   // 2. Get total lesson counts per course
   const { data: lessons } = await db
     .from('lessons')
-    .select('id, course_id')
+    .select('id, course_id, created_at, updated_at')
     .in('course_id', courseIds);
 
   // 3. Get completed lessons for this user across those courses
@@ -70,6 +71,47 @@ export async function GET() {
     }
   }
 
+  // 5. Compute new/updated lesson counts per enrollment
+  const newByCourse: Record<string, number> = {};
+  const updatedByCourse: Record<string, number> = {};
+  const seenAtMap: Record<string, Date | null> = {};
+
+  for (const enrollment of enrollments ?? []) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const seenAtRaw = (enrollment as any).last_content_seen_at;
+    const enrolledAt = new Date(enrollment.enrolled_at);
+    const daysSinceEnroll = (Date.now() - enrolledAt.getTime()) / (1000 * 60 * 60 * 24);
+
+    // Grace period: skip counting for enrollments < 24h old
+    if (!seenAtRaw && daysSinceEnroll < 1) {
+      seenAtMap[enrollment.course_id] = new Date(); // treat as "just seen"
+    } else {
+      seenAtMap[enrollment.course_id] = seenAtRaw ? new Date(seenAtRaw) : null;
+    }
+    newByCourse[enrollment.course_id] = 0;
+    updatedByCourse[enrollment.course_id] = 0;
+  }
+
+  for (const lesson of lessons ?? []) {
+    const seenAt = seenAtMap[lesson.course_id];
+    if (seenAt === undefined) continue;
+
+    if (!seenAt) {
+      // null = never visited; count all as new
+      newByCourse[lesson.course_id] = (newByCourse[lesson.course_id] ?? 0) + 1;
+      continue;
+    }
+
+    const created = new Date(lesson.created_at);
+    const updated = new Date(lesson.updated_at);
+
+    if (created > seenAt) {
+      newByCourse[lesson.course_id] = (newByCourse[lesson.course_id] ?? 0) + 1;
+    } else if (updated > seenAt) {
+      updatedByCourse[lesson.course_id] = (updatedByCourse[lesson.course_id] ?? 0) + 1;
+    }
+  }
+
   const result = enrollments.map((e) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const course = e.courses as any;
@@ -85,6 +127,8 @@ export async function GET() {
       lesson_count: total,
       completed_count: completed,
       progress_pct: total > 0 ? Math.round((completed / total) * 100) : 0,
+      new_lesson_count: newByCourse[e.course_id] ?? 0,
+      updated_lesson_count: updatedByCourse[e.course_id] ?? 0,
     };
   });
 

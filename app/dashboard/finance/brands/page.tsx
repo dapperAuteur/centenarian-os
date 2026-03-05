@@ -6,7 +6,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Plus, Pencil, Trash2, BarChart2, Download, X } from 'lucide-react';
+import { ChevronLeft, Plus, Pencil, Trash2, BarChart2, Download } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Modal from '@/components/ui/Modal';
 

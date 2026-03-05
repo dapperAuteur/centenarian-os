@@ -76,11 +76,11 @@ export default function ScanResultRouter({
   onDismiss,
 }: ScanResultRouterProps) {
   const [documentType, setDocumentType] = useState<DocumentType>(result.documentType);
-  const [extracted, setExtracted] = useState<Record<string, unknown>>(result.extracted);
+  const [extracted] = useState<Record<string, unknown>>(result.extracted);
   const [showOverride, setShowOverride] = useState(false);
   const [reExtracting, setReExtracting] = useState(false);
   const [contactName, setContactName] = useState('');
-  const [contactId, setContactId] = useState<string | undefined>();
+  const [contactId] = useState<string | undefined>();
   const [itemMatches, setItemMatches] = useState<ItemMatch[]>([]);
   const [matchLoading, setMatchLoading] = useState(false);
 
