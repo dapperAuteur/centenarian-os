@@ -31,7 +31,8 @@ export async function GET(request: NextRequest) {
 
   const db = getDb();
 
-  // page_views table not yet in generated types — cast to any
+  // page_views table not yet in generated types
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query = (db.from('page_views') as any)
     .select('path, referrer, utm_source, utm_medium, utm_campaign, user_type, created_at')
     .gte('created_at', `${from}T00:00:00Z`)

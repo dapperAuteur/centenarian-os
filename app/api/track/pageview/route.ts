@@ -40,7 +40,8 @@ export async function POST(request: NextRequest) {
     // No session — stays anonymous
   }
 
-  // page_views table not yet in generated types — cast to any
+  // page_views table not yet in generated types
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (getDb().from('page_views') as any)
     .insert({
       path: body.path,
