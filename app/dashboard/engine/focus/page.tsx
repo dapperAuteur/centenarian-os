@@ -38,7 +38,11 @@ export default function FocusTimerPage() {
   const [customPresets, setCustomPresets] = useState<Array<{ id: string; name: string; duration: number; description: string; }>>([]);
   const [showPresetModal, setShowPresetModal] = useState(false);
   const [presetDuration, setPresetDuration] = useState<number | null>(null);
+  const [targetDuration, setTargetDuration] = useState<number>(0); // countdown target in seconds (0 = count up)
   const [tags, setTags] = useState<string[]>([]);
+
+  // Scratchpad
+  const [scratchpad, setScratchpad] = useState('');
 
   // Timer modes
   const [timerMode, setTimerMode] = useState<TimerMode>('simple');
@@ -83,6 +87,9 @@ export default function FocusTimerPage() {
         setIsRunning(true);
         const elapsed = Math.floor((Date.now() - new Date(active.start_time).getTime()) / 1000);
         setElapsedSeconds(elapsed);
+        // Restore scratchpad from localStorage
+        const savedScratchpad = localStorage.getItem(`scratchpad_${active.id}`);
+        if (savedScratchpad) setScratchpad(savedScratchpad);
         
         if (active.pomodoro_mode) {
           setTimerMode('pomodoro');
@@ -188,12 +195,24 @@ export default function FocusTimerPage() {
             handleCompleteCurrentInterval();
           }
         } else {
-          setElapsedSeconds(prev => prev + 1);
+          setElapsedSeconds(prev => {
+            const next = prev + 1;
+            // Auto-stop when countdown target reached
+            if (targetDuration > 0 && next >= targetDuration) {
+              if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('Timer Complete!', { body: `Your ${Math.round(targetDuration / 60)}-minute session is done.` });
+              }
+              // Schedule stop for next tick to avoid state update during render
+              setTimeout(() => stopSession(), 0);
+              return targetDuration;
+            }
+            return next;
+          });
         }
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isRunning, timerMode, pomodoroPhase, currentPhaseSeconds, pomodoroSettings, handleCompleteCurrentInterval]);
+  }, [isRunning, timerMode, pomodoroPhase, currentPhaseSeconds, pomodoroSettings, handleCompleteCurrentInterval, targetDuration]);
 
   const startSession = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -244,11 +263,14 @@ export default function FocusTimerPage() {
     const duration = timerMode === 'pomodoro' ? calculateNetWorkDuration(workIntervals, []) : elapsedSeconds;
     const revenue = hourlyRate > 0 ? (hourlyRate / 3600) * duration : 0;
 
+    // Combine notes and scratchpad
+    const combinedNotes = [notes, scratchpad].filter(Boolean).join('\n\n---\n\n') || null;
+
     const updateData: any = {
       end_time: endTime,
       duration,
       revenue,
-      notes: notes || null,
+      notes: combinedNotes,
     };
 
     if (timerMode === 'pomodoro') {
@@ -262,8 +284,13 @@ export default function FocusTimerPage() {
       return;
     }
 
+    // Clean up scratchpad from localStorage
+    if (currentSessionId) {
+      localStorage.removeItem(`scratchpad_${currentSessionId}`);
+    }
+
     if (sessionType === 'focus') {
-      setPendingSessionEnd({ sessionId: currentSessionId, elapsedSeconds: duration, revenue, notes });
+      setPendingSessionEnd({ sessionId: currentSessionId, elapsedSeconds: duration, revenue, notes: combinedNotes || '' });
       setShowQualityModal(true);
     } else {
       resetSession();
@@ -276,9 +303,12 @@ export default function FocusTimerPage() {
     setCurrentSessionId(null);
     setElapsedSeconds(0);
     setCurrentPhaseSeconds(0);
+    setTargetDuration(0);
+    setPresetDuration(null);
     setNotes('');
     setSelectedTaskId('');
     setTags([]);
+    setScratchpad('');
   };
 
   const handleSaveQuality = async (rating: number) => {
@@ -344,6 +374,39 @@ export default function FocusTimerPage() {
     } else {
       setDeleteTemplateModal({ isOpen: false, template: null });
       await loadTemplates();
+    }
+  };
+
+  const handleSelectPreset = async (minutes: number) => {
+    setPresetDuration(minutes);
+    setTargetDuration(minutes * 60);
+    // Auto-start the session with this preset
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const startTime = new Date().toISOString();
+    const { data, error } = await supabase.from('focus_sessions').insert([{
+      user_id: user.id,
+      task_id: selectedTaskId || null,
+      start_time: startTime,
+      hourly_rate: hourlyRate,
+      revenue: 0,
+      session_type: sessionType,
+      pomodoro_mode: false,
+      tags: tags.length > 0 ? tags : null,
+    }]).select().single();
+
+    if (error) {
+      console.error('Failed to start session:', error);
+      return;
+    }
+
+    setCurrentSessionId(data.id);
+    setIsRunning(true);
+    setElapsedSeconds(0);
+
+    if ('Notification' in window && Notification.permission !== 'granted') {
+      Notification.requestPermission();
     }
   };
 
@@ -417,8 +480,8 @@ export default function FocusTimerPage() {
             </div>
 
             {timerMode === 'simple' && (
-              <PomodoroPresets 
-                onSelectPreset={(minutes) => setPresetDuration(minutes)} 
+              <PomodoroPresets
+                onSelectPreset={handleSelectPreset}
                 onOpenCustom={() => setShowPresetModal(true)}
               />
             )}
@@ -427,8 +490,17 @@ export default function FocusTimerPage() {
 
         <div className="text-center mb-6">
           <div className="text-6xl font-bold text-gray-900 mb-4">
-            {timerMode === 'pomodoro' ? formatTime(currentPhaseSeconds) : formatTime(elapsedSeconds)}
+            {timerMode === 'pomodoro'
+              ? formatTime(currentPhaseSeconds)
+              : targetDuration > 0
+                ? formatTime(Math.max(0, targetDuration - elapsedSeconds))
+                : formatTime(elapsedSeconds)}
           </div>
+          {timerMode === 'simple' && targetDuration > 0 && isRunning && (
+            <p className="text-sm text-gray-500 mb-2">
+              {Math.round(targetDuration / 60)}-minute session ({formatTime(elapsedSeconds)} elapsed)
+            </p>
+          )}
           
           {timerMode === 'pomodoro' && isRunning && (
             <PomodoroTimer 
@@ -442,6 +514,46 @@ export default function FocusTimerPage() {
             />
           )}
         </div>
+
+        {/* Scratchpad - visible during running session */}
+        {isRunning && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-semibold text-gray-700">Scratchpad</label>
+              <span className="text-xs text-gray-400">Auto-saved locally</span>
+            </div>
+            <textarea
+              value={scratchpad}
+              onChange={(e) => {
+                setScratchpad(e.target.value);
+                if (currentSessionId) {
+                  localStorage.setItem(`scratchpad_${currentSessionId}`, e.target.value);
+                }
+              }}
+              rows={6}
+              placeholder="Write notes, ideas, drafts... Transfer to blog or recipe when ready."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-800 font-mono text-sm"
+            />
+            <div className="flex gap-2 mt-2">
+              <a
+                href={`/dashboard/blog/create?draft=${encodeURIComponent(scratchpad)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition"
+              >
+                Transfer to Blog Draft
+              </a>
+              <a
+                href={`/dashboard/recipes/create?notes=${encodeURIComponent(scratchpad)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition"
+              >
+                Transfer to Recipe
+              </a>
+            </div>
+          </div>
+        )}
 
         <div className="flex justify-center gap-4 mb-6">
           {!isRunning ? (

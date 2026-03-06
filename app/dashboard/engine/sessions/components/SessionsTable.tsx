@@ -134,7 +134,7 @@ export default function SessionsTable({
                 </div>
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                Notes
+                Tags
               </th>
               <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Actions
@@ -195,12 +195,19 @@ export default function SessionsTable({
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      {session.notes ? (
-                        <div className="text-sm text-gray-600 max-w-xs truncate">
-                          {session.notes}
+                      {session.tags && session.tags.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {session.tags.slice(0, 3).map((tag) => (
+                            <span key={tag} className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
+                              {tag}
+                            </span>
+                          ))}
+                          {session.tags.length > 3 && (
+                            <span className="text-xs text-gray-400">+{session.tags.length - 3}</span>
+                          )}
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-400 italic">No notes</span>
+                        <span className="text-sm text-gray-400 italic">No tags</span>
                       )}
                     </td>
                     <td 

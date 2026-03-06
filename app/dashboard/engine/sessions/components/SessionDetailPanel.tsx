@@ -239,6 +239,44 @@ export default function SessionDetailPanel({
             </div>
           </div>
 
+          {/* Tags */}
+          {session.tags && session.tags.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2 text-gray-700">
+                <Tag className="w-5 h-5 text-indigo-600" />
+                <h3 className="font-semibold">Tags</h3>
+              </div>
+              <div className="pl-7 flex flex-wrap gap-1.5">
+                {session.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Transfer scratchpad content */}
+          {session.notes && session.notes.length > 100 && (
+            <div className="flex gap-2">
+              <a
+                href={`/dashboard/blog/create?draft=${encodeURIComponent(session.notes)}`}
+                className="text-xs px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition"
+              >
+                Transfer to Blog Draft
+              </a>
+              <a
+                href={`/dashboard/recipes/create?notes=${encodeURIComponent(session.notes)}`}
+                className="text-xs px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition"
+              >
+                Transfer to Recipe
+              </a>
+            </div>
+          )}
+
           {/* Metadata */}
           <div className="pt-4 border-t border-gray-200">
             <p className="text-xs text-gray-500">
