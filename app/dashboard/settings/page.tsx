@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { NAV_GROUPS } from '@/components/nav/NavConfig';
 import { Settings, Check, Loader2 } from 'lucide-react';
 import MfaSetupSection from '@/components/settings/MfaSetupSection';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 // All non-admin nav items as choosable home pages
 const HOME_OPTIONS = NAV_GROUPS
@@ -28,7 +29,7 @@ export default function DashboardSettingsPage() {
   const [scanAutoSaveSaving, setScanAutoSaveSaving] = useState(false);
 
   useEffect(() => {
-    fetch('/api/user/preferences')
+    offlineFetch('/api/user/preferences')
       .then((r) => r.json())
       .then((d) => {
         const home = d.dashboard_home ?? '/dashboard/blog';
@@ -45,7 +46,7 @@ export default function DashboardSettingsPage() {
     setError(null);
     setSaved(false);
     try {
-      const res = await fetch('/api/user/preferences', {
+      const res = await offlineFetch('/api/user/preferences', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ dashboard_home: selected }),
@@ -164,7 +165,7 @@ export default function DashboardSettingsPage() {
               const newVal = !scanAutoSave;
               setScanAutoSaveSaving(true);
               try {
-                const res = await fetch('/api/user/preferences', {
+                const res = await offlineFetch('/api/user/preferences', {
                   method: 'PATCH',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ scan_auto_save_images: newVal }),

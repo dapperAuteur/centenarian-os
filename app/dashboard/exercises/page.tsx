@@ -97,7 +97,7 @@ export default function ExerciseLibraryPage() {
   const loadSystemLibrary = useCallback(async () => {
     if (sysLoaded) return;
     setSysLoading(true);
-    const res = await fetch('/api/exercises/system');
+    const res = await offlineFetch('/api/exercises/system');
     if (res.ok) {
       const d = await res.json();
       setSysExercises(d.exercises || []);

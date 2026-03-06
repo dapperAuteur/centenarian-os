@@ -7,6 +7,7 @@ import LessonTextEditor from '@/components/academy/LessonTextEditor';
 import PhoneticGuideModal from '@/components/academy/PhoneticGuideModal';
 import { renderTextContent } from '@/lib/academy/renderTextContent';
 import type { GlossaryTerm } from '@/components/academy/GlossaryTermRow';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Props {
   courseId: string;
@@ -40,7 +41,7 @@ export default function GlossaryEditor({ courseId, lessons }: Props) {
   });
 
   const fetchTerms = useCallback(async () => {
-    const res = await fetch(`/api/academy/courses/${courseId}/glossary`);
+    const res = await offlineFetch(`/api/academy/courses/${courseId}/glossary`);
     if (res.ok) {
       const data = await res.json();
       setTerms(data);
@@ -93,7 +94,7 @@ export default function GlossaryEditor({ courseId, lessons }: Props) {
     };
 
     if (addingNew) {
-      const res = await fetch(`/api/academy/courses/${courseId}/glossary`, {
+      const res = await offlineFetch(`/api/academy/courses/${courseId}/glossary`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -106,7 +107,7 @@ export default function GlossaryEditor({ courseId, lessons }: Props) {
         alert(err.error || 'Failed to add term');
       }
     } else if (editingId) {
-      const res = await fetch(`/api/academy/courses/${courseId}/glossary/${editingId}`, {
+      const res = await offlineFetch(`/api/academy/courses/${courseId}/glossary/${editingId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -125,14 +126,14 @@ export default function GlossaryEditor({ courseId, lessons }: Props) {
 
   async function deleteTerm(id: string) {
     if (!confirm('Delete this glossary term?')) return;
-    await fetch(`/api/academy/courses/${courseId}/glossary/${id}`, { method: 'DELETE' });
+    await offlineFetch(`/api/academy/courses/${courseId}/glossary/${id}`, { method: 'DELETE' });
     setTerms((prev) => prev.filter((t) => t.id !== id));
     if (editingId === id) setEditingId(null);
   }
 
   async function handleImport(rows: Record<string, string>[]) {
     setImportResult(null);
-    const res = await fetch(`/api/academy/courses/${courseId}/glossary/import`, {
+    const res = await offlineFetch(`/api/academy/courses/${courseId}/glossary/import`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ rows }),

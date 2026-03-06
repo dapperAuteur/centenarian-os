@@ -4,6 +4,7 @@
 // User feedback modal with optional media attachment (Cloudinary).
 
 import { useState } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Link from 'next/link';
 import Modal from '@/components/ui/Modal';
 import MediaUploader from '@/components/ui/MediaUploader';
@@ -49,7 +50,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
     setError(null);
 
     try {
-      const res = await fetch('/api/feedback', {
+      const res = await offlineFetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category, message: message.trim(), media_url: mediaUrl }),

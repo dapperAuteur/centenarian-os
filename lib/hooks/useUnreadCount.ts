@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 export function useUnreadCount(): number {
   const [unread, setUnread] = useState(0);
   const fetch_ = useCallback(() => {
-    fetch('/api/messages?count=true')
+    offlineFetch('/api/messages?count=true')
       .then((r) => r.json())
       .then((d) => setUnread(d.unread ?? 0))
       .catch(() => {});

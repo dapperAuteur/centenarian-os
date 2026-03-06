@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { UserPlus, Loader2, Trash2, Edit2, Check, RefreshCw, Database, Eraser, ToggleLeft, ToggleRight } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { NAV_GROUPS } from '@/components/nav/NavConfig';
 
 interface Invite {
@@ -65,7 +66,7 @@ export default function AdminInvitesPage() {
 
   const fetchInvites = useCallback(async () => {
     setLoading(true);
-    const res = await fetch('/api/admin/invites');
+    const res = await offlineFetch('/api/admin/invites');
     const data = await res.json();
     setInvites(Array.isArray(data) ? data : []);
     setLoading(false);
@@ -111,8 +112,8 @@ export default function AdminInvitesPage() {
 
     try {
       const res = editId
-        ? await fetch(`/api/admin/invites/${editId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-        : await fetch('/api/admin/invites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        ? await offlineFetch(`/api/admin/invites/${editId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        : await offlineFetch('/api/admin/invites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
 
       const data = await res.json();
       if (!res.ok) {
@@ -134,14 +135,14 @@ export default function AdminInvitesPage() {
   async function handleDelete(id: string, email: string) {
     if (!confirm(`Delete invite for ${email}? This revokes their access immediately.`)) return;
     setActionLoading(`delete-${id}`);
-    await fetch(`/api/admin/invites/${id}`, { method: 'DELETE' });
+    await offlineFetch(`/api/admin/invites/${id}`, { method: 'DELETE' });
     await fetchInvites();
     setActionLoading(null);
   }
 
   async function handleToggleActive(invite: Invite) {
     setActionLoading(`toggle-${invite.id}`);
-    await fetch(`/api/admin/invites/${invite.id}`, {
+    await offlineFetch(`/api/admin/invites/${invite.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_active: !invite.is_active }),
@@ -153,7 +154,7 @@ export default function AdminInvitesPage() {
   async function handleSeedDemo(invite: Invite) {
     if (!confirm(`Seed ${invite.demo_profile} demo data for ${invite.email}?`)) return;
     setActionLoading(`seed-${invite.id}`);
-    const res = await fetch(`/api/admin/invites/${invite.id}/seed-demo`, { method: 'POST' });
+    const res = await offlineFetch(`/api/admin/invites/${invite.id}/seed-demo`, { method: 'POST' });
     const data = await res.json();
     if (!res.ok) alert(data.error);
     await fetchInvites();
@@ -163,7 +164,7 @@ export default function AdminInvitesPage() {
   async function handleClearDemo(invite: Invite) {
     if (!confirm(`Clear all demo data for ${invite.email}? This cannot be undone.`)) return;
     setActionLoading(`clear-${invite.id}`);
-    const res = await fetch(`/api/admin/invites/${invite.id}/clear-demo`, { method: 'POST' });
+    const res = await offlineFetch(`/api/admin/invites/${invite.id}/clear-demo`, { method: 'POST' });
     const data = await res.json();
     if (!res.ok) alert(data.error);
     await fetchInvites();

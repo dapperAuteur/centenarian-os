@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface ReadDepthTrackerProps {
   postId: string;
@@ -18,7 +19,7 @@ function getSessionId(): string {
 
 async function logEvent(postId: string, eventType: string) {
   try {
-    await fetch('/api/blog/events', {
+    await offlineFetch('/api/blog/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

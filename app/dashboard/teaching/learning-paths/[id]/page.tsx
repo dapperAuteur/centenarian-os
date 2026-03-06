@@ -4,6 +4,7 @@
 // Edit a learning path: metadata, course order, publish/unpublish.
 
 import { useEffect, useState, useCallback } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -53,8 +54,8 @@ export default function EditLearningPathPage() {
     if (!id) return;
     setLoading(true);
     const [pathRes, coursesRes] = await Promise.all([
-      fetch(`/api/academy/paths/${id}`),
-      fetch('/api/academy/courses'),
+      offlineFetch(`/api/academy/paths/${id}`),
+      offlineFetch('/api/academy/courses'),
     ]);
     if (pathRes.ok) {
       const { data } = await pathRes.json() as { data: LearningPath };
@@ -78,7 +79,7 @@ export default function EditLearningPathPage() {
   const handleSave = async () => {
     if (!path) return;
     setSaving(true);
-    const res = await fetch(`/api/academy/paths/${path.id}`, {
+    const res = await offlineFetch(`/api/academy/paths/${path.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -97,7 +98,7 @@ export default function EditLearningPathPage() {
 
   const togglePublish = async () => {
     if (!path) return;
-    const res = await fetch(`/api/academy/paths/${path.id}`, {
+    const res = await offlineFetch(`/api/academy/paths/${path.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_published: !path.is_published }),

@@ -7,6 +7,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Search, Building2, Loader2, Users, CreditCard, PiggyBank } from 'lucide-react';
 import Link from 'next/link';
 import InstitutionDisclosure from '@/components/finance/InstitutionDisclosure';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Institution {
   id: string;
@@ -34,7 +35,7 @@ export default function InstitutionDirectory() {
     setLoading(true);
     try {
       const qs = query ? `?q=${encodeURIComponent(query)}` : '';
-      const res = await fetch(`/api/institutions${qs}`);
+      const res = await offlineFetch(`/api/institutions${qs}`);
       if (res.ok) setInstitutions(await res.json());
     } finally {
       setLoading(false);

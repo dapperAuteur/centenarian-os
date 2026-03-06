@@ -170,7 +170,7 @@ function CourseDetailContent() {
 
   // Fetch AI recommendations
   useEffect(() => {
-    fetch(`/api/academy/courses/${courseId}/ai-recommendations`)
+    offlineFetch(`/api/academy/courses/${courseId}/ai-recommendations`)
       .then((r) => r.ok ? r.json() : null)
       .then((d) => { if (d) setAiRecs(d); })
       .catch(() => {});
@@ -198,7 +198,7 @@ function CourseDetailContent() {
 
   // Fetch glossary
   useEffect(() => {
-    fetch(`/api/academy/courses/${courseId}/glossary`)
+    offlineFetch(`/api/academy/courses/${courseId}/glossary`)
       .then((r) => r.ok ? r.json() : [])
       .then((d) => setGlossaryTerms(Array.isArray(d) ? d : []))
       .catch(() => {});
@@ -212,13 +212,13 @@ function CourseDetailContent() {
 
   useEffect(() => {
     if (hasUpdates && !updatesDismissed) {
-      fetch(`/api/academy/courses/${courseId}/dismiss-updates`, { method: 'POST' }).catch(() => {});
+      offlineFetch(`/api/academy/courses/${courseId}/dismiss-updates`, { method: 'POST' }).catch(() => {});
     }
   }, [hasUpdates, updatesDismissed, courseId]);
 
   // Detect user's existing review
   useEffect(() => {
-    fetch('/api/auth/me')
+    offlineFetch('/api/auth/me')
       .then((r) => r.json())
       .then((me) => {
         if (me?.id) {
@@ -238,7 +238,7 @@ function CourseDetailContent() {
     setEnrolling(true);
     setEnrollError('');
     try {
-      const r = await fetch(`/api/academy/courses/${courseId}/enroll`, { method: 'POST' });
+      const r = await offlineFetch(`/api/academy/courses/${courseId}/enroll`, { method: 'POST' });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error ?? 'Failed to enroll');
       if (d.url) {
@@ -256,7 +256,7 @@ function CourseDetailContent() {
   async function handleRequestOverride() {
     setSubmittingOverride(true);
     try {
-      const r = await fetch(`/api/academy/courses/${courseId}/prerequisites/requests`, {
+      const r = await offlineFetch(`/api/academy/courses/${courseId}/prerequisites/requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: overrideReason.trim() || null, answers: overrideAnswers }),
@@ -289,7 +289,7 @@ function CourseDetailContent() {
     setSubmittingReview(true);
     setReviewFeedback('');
     try {
-      const r = await fetch(`/api/academy/courses/${courseId}/reviews`, {
+      const r = await offlineFetch(`/api/academy/courses/${courseId}/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rating: reviewRating, body: reviewBody }),
@@ -299,7 +299,7 @@ function CourseDetailContent() {
       setCourse((c) => c ? { ...c, avg_rating: d.avg_rating, review_count: d.review_count } : c);
       setReviewFeedback(myExistingReview ? 'Review updated!' : 'Review submitted!');
       // Refresh reviews
-      const refreshRes = await fetch(`/api/academy/courses/${courseId}/reviews`);
+      const refreshRes = await offlineFetch(`/api/academy/courses/${courseId}/reviews`);
       const refreshData = await refreshRes.json();
       setReviews(refreshData.reviews ?? []);
     } catch (e) {

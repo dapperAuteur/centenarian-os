@@ -5,11 +5,12 @@
 // Usage: useTrackPageView('finance', '/dashboard/finance')
 
 import { useEffect } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 export function useTrackPageView(module: string, detail?: string) {
   useEffect(() => {
     // Usage event (module-level analytics)
-    fetch('/api/track', {
+    offlineFetch('/api/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ module, action: 'page_view', detail }),
@@ -17,7 +18,7 @@ export function useTrackPageView(module: string, detail?: string) {
 
     // Page view (traffic analytics with referrer + UTM)
     const params = new URLSearchParams(window.location.search);
-    fetch('/api/track/pageview', {
+    offlineFetch('/api/track/pageview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

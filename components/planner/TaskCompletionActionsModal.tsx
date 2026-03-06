@@ -5,6 +5,7 @@ import { DollarSign, MapPin, Dumbbell, Heart, FileText, Check, ChevronDown, Cloc
 import { Task } from '@/lib/types';
 import Modal from '@/components/ui/Modal';
 import { createClient } from '@/lib/supabase/client';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface TaskCompletionActionsModalProps {
   isOpen: boolean;
@@ -89,7 +90,7 @@ const ACTIONS: ActionConfig[] = [
 ];
 
 async function createActivityLink(taskId: string, targetType: string, targetId: string) {
-  await fetch('/api/activity-links', {
+  await offlineFetch('/api/activity-links', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -113,7 +114,7 @@ function TransactionForm({ task, onDone }: { task: Task; onDone: () => void }) {
     if (!amount || Number(amount) <= 0) return;
     setSaving(true);
     try {
-      const res = await fetch('/api/finance/transactions', {
+      const res = await offlineFetch('/api/finance/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -194,7 +195,7 @@ function TripForm({ task, onDone }: { task: Task; onDone: () => void }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch('/api/travel/trips', {
+      const res = await offlineFetch('/api/travel/trips', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -261,7 +262,7 @@ function WorkoutForm({ task, onDone }: { task: Task; onDone: () => void }) {
     if (!name.trim()) return;
     setSaving(true);
     try {
-      const res = await fetch('/api/workouts/logs', {
+      const res = await offlineFetch('/api/workouts/logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -325,7 +326,7 @@ function HealthForm({ task, onDone }: { task: Task; onDone: () => void }) {
       if (restingHr) body.resting_hr = Number(restingHr);
       if (activityMin) body.activity_min = Number(activityMin);
 
-      const res = await fetch('/api/health-metrics', {
+      const res = await offlineFetch('/api/health-metrics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -398,7 +399,7 @@ function InvoiceForm({ task, onDone }: { task: Task; onDone: () => void }) {
     if (!contactName.trim()) return;
     setSaving(true);
     try {
-      const res = await fetch('/api/finance/invoices', {
+      const res = await offlineFetch('/api/finance/invoices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -487,7 +488,7 @@ function FocusForm({ task, onDone }: { task: Task; onDone: () => void }) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch('/api/equipment').then(r => r.ok ? r.json() : { equipment: [] }).then(d => {
+    offlineFetch('/api/equipment').then(r => r.ok ? r.json() : { equipment: [] }).then(d => {
       setEquipmentItems((d.equipment || []).map((e: Record<string, unknown>) => {
         const cat = e.equipment_categories as { name: string } | null;
         return { id: String(e.id), name: String(e.name), category: cat?.name || '' };
@@ -545,7 +546,7 @@ function FocusForm({ task, onDone }: { task: Task; onDone: () => void }) {
 
       // Link selected equipment to the focus session
       for (const equipId of selectedEquipment) {
-        await fetch('/api/activity-links', {
+        await offlineFetch('/api/activity-links', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -663,7 +664,7 @@ function EquipmentForm({ task, onDone }: { task: Task; onDone: () => void }) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch('/api/equipment').then(r => r.ok ? r.json() : { equipment: [] }).then(d => {
+    offlineFetch('/api/equipment').then(r => r.ok ? r.json() : { equipment: [] }).then(d => {
       setItems((d.equipment || []).map((e: Record<string, unknown>) => {
         const cat = e.equipment_categories as { name: string } | null;
         return { id: String(e.id), name: String(e.name), category: cat?.name || '' };
@@ -735,7 +736,7 @@ function FuelForm({ task, onDone }: { task: Task; onDone: () => void }) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch('/api/travel/vehicles').then(r => r.ok ? r.json() : { vehicles: [] }).then(d => {
+    offlineFetch('/api/travel/vehicles').then(r => r.ok ? r.json() : { vehicles: [] }).then(d => {
       const v = (d.vehicles || []).map((v: Record<string, string>) => ({ id: v.id, nickname: v.nickname || v.make || 'Vehicle' }));
       setVehicles(v);
       if (v.length === 1) setVehicleId(v[0].id);
@@ -745,7 +746,7 @@ function FuelForm({ task, onDone }: { task: Task; onDone: () => void }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch('/api/travel/fuel', {
+      const res = await offlineFetch('/api/travel/fuel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -843,7 +844,7 @@ function MaintenanceForm({ task, onDone }: { task: Task; onDone: () => void }) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch('/api/travel/vehicles').then(r => r.ok ? r.json() : { vehicles: [] }).then(d => {
+    offlineFetch('/api/travel/vehicles').then(r => r.ok ? r.json() : { vehicles: [] }).then(d => {
       const v = (d.vehicles || []).map((v: Record<string, string>) => ({ id: v.id, nickname: v.nickname || v.make || 'Vehicle' }));
       setVehicles(v);
       if (v.length === 1) setVehicleId(v[0].id);
@@ -854,7 +855,7 @@ function MaintenanceForm({ task, onDone }: { task: Task; onDone: () => void }) {
     if (!serviceType) return;
     setSaving(true);
     try {
-      const res = await fetch('/api/travel/maintenance', {
+      const res = await offlineFetch('/api/travel/maintenance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { FileText, Upload, Trash2, Loader2, ChevronDown, ChevronRight, BookOpen } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface GemDocument {
   id: string;
@@ -31,7 +32,7 @@ export default function GemKnowledgeBase({ gemId }: Props) {
   const loadDocs = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/coach/documents?gem_persona_id=${gemId}`);
+      const res = await offlineFetch(`/api/coach/documents?gem_persona_id=${gemId}`);
       if (res.ok) setDocs(await res.json());
     } finally {
       setLoading(false);

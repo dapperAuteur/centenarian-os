@@ -13,6 +13,7 @@ import { useUnreadCount } from '@/lib/hooks/useUnreadCount';
 import { createClient } from '@/lib/supabase/client';
 import { GraduationCap, Radio, LogIn, BookOpen, ChefHat, Zap } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import DesktopNav from '@/components/nav/DesktopNav';
 import MobileBottomBar from '@/components/nav/MobileBottomBar';
 
@@ -86,7 +87,7 @@ function AuthenticatedHeader() {
   const hasAccess = isPaid || isAdmin;
 
   useEffect(() => {
-    fetch('/api/auth/me')
+    offlineFetch('/api/auth/me')
       .then((r) => r.json())
       .then((d) => {
         setIsAdmin(d.isAdmin ?? false);

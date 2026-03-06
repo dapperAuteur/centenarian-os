@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import { Radio, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import DOMPurify from 'dompurify';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface LiveSession {
   id: string;
@@ -22,7 +23,7 @@ export default function LivePage() {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/live?host_type=centos_team')
+    offlineFetch('/api/live?host_type=centos_team')
       .then((r) => r.json())
       .then((d) => { setSessions(Array.isArray(d) ? d : []); setLoading(false); })
       .catch(() => setLoading(false));

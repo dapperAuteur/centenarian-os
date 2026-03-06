@@ -4,6 +4,7 @@
 // Course editor: full CRUD for settings, modules, lessons; publish toggle; CYOA embeddings.
 
 import { useEffect, useState, useCallback } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -72,7 +73,7 @@ export default function CourseEditorPage() {
   const [courseCategories, setCourseCategories] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch('/api/academy/course-categories')
+    offlineFetch('/api/academy/course-categories')
       .then((r) => r.json())
       .then((d) => setCourseCategories((d.categories || []).map((c: { name: string }) => c.name)))
       .catch(() => {});
@@ -87,7 +88,7 @@ export default function CourseEditorPage() {
   const [editingLesson, setEditingLesson] = useState<Partial<Lesson>>({});
 
   const fetchCourse = useCallback(() => {
-    fetch(`/api/academy/courses/${courseId}`)
+    offlineFetch(`/api/academy/courses/${courseId}`)
       .then((r) => r.json())
       .then((d) => { setCourse(d); setLoading(false); })
       .catch(() => setLoading(false));
@@ -99,7 +100,7 @@ export default function CourseEditorPage() {
     if (!course) return;
     setSaving(true);
     try {
-      const r = await fetch(`/api/academy/courses/${courseId}`, {
+      const r = await offlineFetch(`/api/academy/courses/${courseId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
@@ -114,7 +115,7 @@ export default function CourseEditorPage() {
         if (nonFree.length > 0) {
           await Promise.all(
             nonFree.map((l) =>
-              fetch(`/api/academy/courses/${courseId}/lessons/${l.id}`, {
+              offlineFetch(`/api/academy/courses/${courseId}/lessons/${l.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ is_free_preview: true }),
@@ -145,7 +146,7 @@ export default function CourseEditorPage() {
 
   async function addModule() {
     if (!newModuleTitle.trim()) return;
-    const r = await fetch(`/api/academy/courses/${courseId}/modules`, {
+    const r = await offlineFetch(`/api/academy/courses/${courseId}/modules`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: newModuleTitle.trim(), order: (course?.course_modules.length ?? 0) }),
@@ -155,7 +156,7 @@ export default function CourseEditorPage() {
 
   async function saveModuleTitle(moduleId: string) {
     if (!editingModuleTitle.trim()) return;
-    await fetch(`/api/academy/courses/${courseId}/modules/${moduleId}`, {
+    await offlineFetch(`/api/academy/courses/${courseId}/modules/${moduleId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: editingModuleTitle.trim() }),
@@ -166,7 +167,7 @@ export default function CourseEditorPage() {
 
   async function deleteModule(moduleId: string) {
     if (!confirm('Delete this module and all its lessons? This cannot be undone.')) return;
-    await fetch(`/api/academy/courses/${courseId}/modules/${moduleId}`, { method: 'DELETE' });
+    await offlineFetch(`/api/academy/courses/${courseId}/modules/${moduleId}`, { method: 'DELETE' });
     fetchCourse();
   }
 
@@ -177,11 +178,11 @@ export default function CourseEditorPage() {
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= mods.length) return;
     await Promise.all([
-      fetch(`/api/academy/courses/${courseId}/modules/${mods[idx].id}`, {
+      offlineFetch(`/api/academy/courses/${courseId}/modules/${mods[idx].id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ order: mods[swapIdx].order }),
       }),
-      fetch(`/api/academy/courses/${courseId}/modules/${mods[swapIdx].id}`, {
+      offlineFetch(`/api/academy/courses/${courseId}/modules/${mods[swapIdx].id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ order: mods[idx].order }),
       }),
@@ -193,7 +194,7 @@ export default function CourseEditorPage() {
 
   async function addLesson(moduleId: string) {
     if (!newLesson.title.trim()) return;
-    const r = await fetch(`/api/academy/courses/${courseId}/lessons`, {
+    const r = await offlineFetch(`/api/academy/courses/${courseId}/lessons`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -210,7 +211,7 @@ export default function CourseEditorPage() {
   }
 
   async function saveLesson(lessonId: string) {
-    const r = await fetch(`/api/academy/courses/${courseId}/lessons/${lessonId}`, {
+    const r = await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(editingLesson),
@@ -219,7 +220,7 @@ export default function CourseEditorPage() {
   }
 
   async function deleteLesson(lessonId: string) {
-    await fetch(`/api/academy/courses/${courseId}/lessons/${lessonId}`, { method: 'DELETE' });
+    await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}`, { method: 'DELETE' });
     fetchCourse();
   }
 
@@ -232,11 +233,11 @@ export default function CourseEditorPage() {
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= lessons.length) return;
     await Promise.all([
-      fetch(`/api/academy/courses/${courseId}/lessons/${lessons[idx].id}`, {
+      offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessons[idx].id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ order: lessons[swapIdx].order }),
       }),
-      fetch(`/api/academy/courses/${courseId}/lessons/${lessons[swapIdx].id}`, {
+      offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessons[swapIdx].id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ order: lessons[idx].order }),
       }),
@@ -250,7 +251,7 @@ export default function CourseEditorPage() {
     if (!mod || mod.lessons.length === 0) return;
     await Promise.all(
       mod.lessons.map((l) =>
-        fetch(`/api/academy/courses/${courseId}/lessons/${l.id}`, {
+        offlineFetch(`/api/academy/courses/${courseId}/lessons/${l.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ is_free_preview: value }),
@@ -264,7 +265,7 @@ export default function CourseEditorPage() {
     setGeneratingEmbeddings(true);
     setEmbeddingResult('');
     try {
-      const r = await fetch(`/api/academy/courses/${courseId}/generate-embeddings`, { method: 'POST' });
+      const r = await offlineFetch(`/api/academy/courses/${courseId}/generate-embeddings`, { method: 'POST' });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       setEmbeddingResult(`Generated embeddings for ${d.processed} lessons.`);
@@ -279,7 +280,7 @@ export default function CourseEditorPage() {
     if (!confirm('Delete this course and all its lessons, enrollments, and student data? This cannot be undone.')) return;
     setDeleting(true);
     try {
-      const r = await fetch(`/api/academy/courses/${courseId}`, { method: 'DELETE' });
+      const r = await offlineFetch(`/api/academy/courses/${courseId}`, { method: 'DELETE' });
       if (r.ok) router.push('/dashboard/teaching/courses');
     } finally {
       setDeleting(false);

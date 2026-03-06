@@ -9,6 +9,7 @@ import {
   Inbox, CheckCheck, Trash2, Loader2, Dumbbell, Package,
   ArrowUpRight, Check, ChevronDown,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Notification {
   id: string;
@@ -43,7 +44,7 @@ export default function AdminSubmissionsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch('/api/admin/notifications');
+    const res = await offlineFetch('/api/admin/notifications');
     if (res.ok) {
       const d = await res.json();
       setNotifications(d.notifications || []);
@@ -54,7 +55,7 @@ export default function AdminSubmissionsPage() {
   useEffect(() => { load(); }, [load]);
 
   const markAllRead = async () => {
-    await fetch('/api/admin/notifications', { method: 'PATCH' });
+    await offlineFetch('/api/admin/notifications', { method: 'PATCH' });
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
   };
 
@@ -71,7 +72,7 @@ export default function AdminSubmissionsPage() {
           ? { exercise_id: n.entity_id, notification_id: n.id, difficulty: difficulty[n.id] || 'intermediate' }
           : { equipment_id: n.entity_id, notification_id: n.id };
 
-      const res = await fetch(endpoint, {
+      const res = await offlineFetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -88,7 +89,7 @@ export default function AdminSubmissionsPage() {
   const handleDismiss = async (id: string) => {
     setDismissing((prev) => ({ ...prev, [id]: true }));
     try {
-      const res = await fetch(`/api/admin/notifications/${id}`, { method: 'DELETE' });
+      const res = await offlineFetch(`/api/admin/notifications/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setDismissed((prev) => new Set(prev).add(id));
       }

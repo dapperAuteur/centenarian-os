@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Search, BookOpen, Play, Lock, Layers } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Course {
   id: string;
@@ -57,7 +58,7 @@ export default function AcademyPage() {
       params.set('dir', dir);
     }
     setLoading(true);
-    fetch(`/api/academy/courses?${params}`)
+    offlineFetch(`/api/academy/courses?${params}`)
       .then((r) => r.json())
       .then((d) => { setCourses(Array.isArray(d) ? d : []); setLoading(false); })
       .catch(() => setLoading(false));

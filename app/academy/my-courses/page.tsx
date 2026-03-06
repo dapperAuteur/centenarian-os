@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { BookOpen, Play, CheckCircle, Clock, GraduationCap, RotateCcw, Loader2 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface EnrolledCourse {
   id: string;
@@ -31,7 +32,7 @@ export default function MyCoursesPage() {
   const [reattempting, setReattempting] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/academy/my-courses')
+    offlineFetch('/api/academy/my-courses')
       .then((r) => r.json())
       .then((d) => { setCourses(Array.isArray(d) ? d : []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -40,7 +41,7 @@ export default function MyCoursesPage() {
   async function handleReattempt(courseId: string) {
     setReattempting(courseId);
     try {
-      const r = await fetch(`/api/academy/courses/${courseId}/enroll`, {
+      const r = await offlineFetch(`/api/academy/courses/${courseId}/enroll`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reattempt: true }),

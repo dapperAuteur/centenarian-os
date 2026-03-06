@@ -4,6 +4,7 @@
 // Teacher's full course list with create and edit links.
 
 import { useEffect, useState } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Link from 'next/link';
 import { BookOpen, Plus, Pencil, Eye, EyeOff, Trash2, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -28,8 +29,8 @@ export default function TeachingCoursesPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/academy/courses?mine=true').then((r) => r.json()),
-      fetch('/api/auth/me').then((r) => r.json()),
+      offlineFetch('/api/academy/courses?mine=true').then((r) => r.json()),
+      offlineFetch('/api/auth/me').then((r) => r.json()),
     ]).then(([coursesData, meData]) => {
       setCourses(Array.isArray(coursesData) ? coursesData : []);
       setUsername(meData.username ?? null);
@@ -41,7 +42,7 @@ export default function TeachingCoursesPage() {
     if (!confirm('Delete this course and all its lessons, enrollments, and student data? This cannot be undone.')) return;
     setDeletingId(courseId);
     try {
-      const r = await fetch(`/api/academy/courses/${courseId}`, { method: 'DELETE' });
+      const r = await offlineFetch(`/api/academy/courses/${courseId}`, { method: 'DELETE' });
       if (r.ok) {
         setCourses((prev) => prev.filter((c) => c.id !== courseId));
       }
@@ -51,7 +52,7 @@ export default function TeachingCoursesPage() {
   }
 
   async function togglePublish(course: Course) {
-    await fetch(`/api/academy/courses/${course.id}`, {
+    await offlineFetch(`/api/academy/courses/${course.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_published: !course.is_published }),

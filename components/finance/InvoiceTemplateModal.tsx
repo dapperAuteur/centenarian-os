@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Plus, X, GripVertical } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface InvoiceItemData {
   description: string;
@@ -121,7 +122,7 @@ export default function InvoiceTemplateModal({ isOpen, onClose, invoice, onSaved
     setSaving(true);
     setError('');
     try {
-      const res = await fetch('/api/finance/invoice-templates', {
+      const res = await offlineFetch('/api/finance/invoice-templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

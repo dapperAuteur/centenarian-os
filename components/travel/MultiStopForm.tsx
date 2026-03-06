@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Plus, Trash2, ArrowDown } from 'lucide-react';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Vehicle {
   id: string;
@@ -100,7 +101,7 @@ export default function MultiStopForm({ vehicles, onClose, onSaved }: MultiStopF
         });
       }
 
-      const res = await fetch('/api/travel/routes', {
+      const res = await offlineFetch('/api/travel/routes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Modal from '@/components/ui/Modal';
 import { Loader2, Trash2 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface DeleteRecipeModalProps {
   isOpen: boolean;
@@ -27,7 +28,7 @@ export default function DeleteRecipeModal({
     setDeleting(true);
     setError('');
 
-    const res = await fetch(`/api/recipes/${recipeId}`, { method: 'DELETE' });
+    const res = await offlineFetch(`/api/recipes/${recipeId}`, { method: 'DELETE' });
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));

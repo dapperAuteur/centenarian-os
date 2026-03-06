@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import dynamic from 'next/dynamic';
 import {
   parseFrontmatter,
@@ -76,7 +77,7 @@ export default function MarkdownImporter() {
     setSaving(true);
     setSaveError('');
 
-    const res = await fetch('/api/blog', {
+    const res = await offlineFetch('/api/blog', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

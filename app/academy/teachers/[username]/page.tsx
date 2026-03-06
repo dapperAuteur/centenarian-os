@@ -11,6 +11,7 @@ import {
   BookOpen, Heart, Bookmark, Loader2, ChevronLeft,
   GitBranch, Star,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface TeacherProfile {
   id: string;
@@ -50,7 +51,7 @@ export default function TeacherCoursesPage() {
   const [togglingSave, setTogglingSave] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`/api/academy/teachers/${username}`)
+    offlineFetch(`/api/academy/teachers/${username}`)
       .then((r) => {
         if (r.status === 404) { setNotFound(true); setLoading(false); return null; }
         return r.json();
@@ -66,7 +67,7 @@ export default function TeacherCoursesPage() {
 
   async function toggleLike(courseId: string) {
     setTogglingLike(courseId);
-    const r = await fetch(`/api/academy/courses/${courseId}/like`, { method: 'POST' });
+    const r = await offlineFetch(`/api/academy/courses/${courseId}/like`, { method: 'POST' });
     if (r.ok) {
       const { liked, like_count } = await r.json();
       setCourses((prev) => prev.map((c) => c.id === courseId ? { ...c, liked, like_count } : c));
@@ -76,7 +77,7 @@ export default function TeacherCoursesPage() {
 
   async function toggleSave(courseId: string) {
     setTogglingSave(courseId);
-    const r = await fetch(`/api/academy/courses/${courseId}/save`, { method: 'POST' });
+    const r = await offlineFetch(`/api/academy/courses/${courseId}/save`, { method: 'POST' });
     if (r.ok) {
       const { saved } = await r.json();
       setCourses((prev) => prev.map((c) => c.id === courseId ? { ...c, saved } : c));

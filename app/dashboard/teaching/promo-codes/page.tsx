@@ -4,6 +4,7 @@
 // Teacher: create and manage discount promo codes (Stripe coupons).
 
 import { useEffect, useState } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { Tag, Plus, Trash2 } from 'lucide-react';
 
 interface PromoCode {
@@ -27,7 +28,7 @@ export default function PromoCodesPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch('/api/teacher/promo-codes')
+    offlineFetch('/api/teacher/promo-codes')
       .then((r) => r.json())
       .then((data) => { setCodes(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -37,7 +38,7 @@ export default function PromoCodesPage() {
     e.preventDefault();
     setSaving(true);
     setError('');
-    const res = await fetch('/api/teacher/promo-codes', {
+    const res = await offlineFetch('/api/teacher/promo-codes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -57,7 +58,7 @@ export default function PromoCodesPage() {
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this promo code? It will also be removed from Stripe.')) return;
-    await fetch(`/api/teacher/promo-codes?id=${id}`, { method: 'DELETE' });
+    await offlineFetch(`/api/teacher/promo-codes?id=${id}`, { method: 'DELETE' });
     setCodes((prev) => prev.filter((c) => c.id !== id));
   }
 

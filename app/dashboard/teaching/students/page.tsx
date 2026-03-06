@@ -4,6 +4,7 @@
 // Teacher view of enrolled students across all courses.
 
 import { useEffect, useState } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { Users, Mail } from 'lucide-react';
 
 interface Student {
@@ -22,7 +23,7 @@ export default function TeachingStudentsPage() {
   const [filter, setFilter] = useState('');
 
   useEffect(() => {
-    fetch('/api/teacher/students')
+    offlineFetch('/api/teacher/students')
       .then((r) => r.json())
       .then((data) => {
         setStudents(Array.isArray(data) ? data : []);

@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useSubscription } from '@/lib/hooks/useSubscription';
 import { CheckCircle, Shirt, CreditCard, Zap, ArrowRight, Copy, Check, Shield } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 const POLICIES = 'No Refunds. Cancel Anytime. Monthly fees are not transferable to lifetime membership.';
 
@@ -24,7 +25,7 @@ export default function BillingPage() {
   const [syncError, setSyncError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/auth/me')
+    offlineFetch('/api/auth/me')
       .then((r) => r.json())
       .then((d) => setIsAdmin(d.isAdmin ?? false))
       .catch(() => {});

@@ -16,6 +16,7 @@ import OfflineIndicator from '@/components/ui/OfflineIndicator';
 import MfaBanner from '@/components/ui/MfaBanner';
 import SiteFooter from '@/components/ui/SiteFooter';
 import { SyncProvider } from '@/lib/contexts/SyncContext';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 // Routes freely accessible without a paid subscription
 const FREE_ROUTE_PREFIXES = [
@@ -57,7 +58,7 @@ export default function DashboardLayout({
   const unreadMessages = useUnreadCount();
 
   useEffect(() => {
-    fetch('/api/auth/me')
+    offlineFetch('/api/auth/me')
       .then((r) => r.json())
       .then((d) => {
         setIsAdmin(d.isAdmin ?? false);
@@ -67,7 +68,7 @@ export default function DashboardLayout({
         setInviteModules(d.inviteModules ?? null);
         setAdminLoading(false);
         if (d.isAdmin) {
-          fetch('/api/admin/notifications?unread=true')
+          offlineFetch('/api/admin/notifications?unread=true')
             .then((r) => r.json())
             .then((nd) => setAdminUnread(nd.unread ?? 0))
             .catch(() => {});

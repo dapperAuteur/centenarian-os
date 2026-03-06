@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { CheckCircle, XCircle, RotateCcw, ChevronRight, Award, BookOpen } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface QuizOption {
   id: string;
@@ -94,7 +95,7 @@ export default function QuizPlayer({ quizContent, courseId, lessonId, onComplete
     }
 
     try {
-      const r = await fetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/progress`, {
+      const r = await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/progress`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quiz_answers: finalAnswers }),

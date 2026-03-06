@@ -7,6 +7,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link2, X, Plus, Search } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 type EntityType =
   | 'task' | 'trip' | 'route' | 'transaction' | 'recipe'
@@ -79,7 +80,7 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
   const loadLinks = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(
+      const res = await offlineFetch(
         `/api/activity-links?entity_type=${entityType}&entity_id=${entityId}`,
       );
       if (res.ok) {
@@ -93,7 +94,7 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
   useEffect(() => { loadLinks(); }, [loadLinks]);
 
   const handleRemove = async (linkId: string) => {
-    const res = await fetch('/api/activity-links', {
+    const res = await offlineFetch('/api/activity-links', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: linkId }),
@@ -113,7 +114,7 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
 
       switch (addType) {
         case 'trip': {
-          const res = await fetch('/api/travel/trips?limit=20');
+          const res = await offlineFetch('/api/travel/trips?limit=20');
           if (res.ok) {
             const d = await res.json();
             results = (d.trips || [])
@@ -129,7 +130,7 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
           break;
         }
         case 'route': {
-          const res = await fetch('/api/travel/routes?limit=20');
+          const res = await offlineFetch('/api/travel/routes?limit=20');
           if (res.ok) {
             const d = await res.json();
             results = (d.routes || [])
@@ -145,7 +146,7 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
           break;
         }
         case 'transaction': {
-          const res = await fetch('/api/finance/transactions?limit=20');
+          const res = await offlineFetch('/api/finance/transactions?limit=20');
           if (res.ok) {
             const d = await res.json();
             const txs = d.transactions || d || [];
@@ -163,7 +164,7 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
           break;
         }
         case 'recipe': {
-          const res = await fetch(`/api/recipes?search=${encodeURIComponent(q)}&limit=10`);
+          const res = await offlineFetch(`/api/recipes?search=${encodeURIComponent(q)}&limit=10`);
           if (res.ok) {
             const d = await res.json();
             const recipes = d.recipes || d || [];
@@ -176,7 +177,7 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
           break;
         }
         case 'equipment': {
-          const res = await fetch('/api/equipment');
+          const res = await offlineFetch('/api/equipment');
           if (res.ok) {
             const d = await res.json();
             results = (d.equipment || [])
@@ -196,7 +197,7 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
           break;
         }
         case 'exercise': {
-          const res = await fetch(`/api/exercises?search=${encodeURIComponent(q)}`);
+          const res = await offlineFetch(`/api/exercises?search=${encodeURIComponent(q)}`);
           if (res.ok) {
             const d = await res.json();
             results = (Array.isArray(d) ? d : [])
@@ -312,7 +313,7 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
 
   const handleAdd = async (targetId: string) => {
     if (!addType) return;
-    const res = await fetch('/api/activity-links', {
+    const res = await offlineFetch('/api/activity-links', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

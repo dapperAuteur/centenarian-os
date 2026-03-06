@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Modal from '@/components/ui/Modal';
 import { AtSign, Loader2 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface UsernameSetupModalProps {
   isOpen: boolean;
@@ -37,7 +38,7 @@ export default function UsernameSetupModal({ isOpen, onComplete }: UsernameSetup
     setSaving(true);
     setError('');
 
-    const res = await fetch('/api/profiles', {
+    const res = await offlineFetch('/api/profiles', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, display_name: displayName || null, bio: bio || null }),
