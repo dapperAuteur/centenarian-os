@@ -11,10 +11,14 @@ export function daysAgo(n: number): string {
 
 // Deletion order respects FK constraints (children before parents)
 export const CLEAR_ORDER = [
+  'admin_chat_messages',
+  'admin_chats',
   'activity_links',
   'entity_life_categories',
   'workout_log_exercises',
+  'workout_template_exercises',
   'workout_logs',
+  'workout_templates',
   'workout_feedback',
   'weekly_reviews',
   'daily_logs',
@@ -31,15 +35,30 @@ export const CLEAR_ORDER = [
   'roadmaps',
   'user_health_metrics',
   'life_categories',
+  'receipt_line_items',
+  'item_prices',
+  'scan_images',
+  'trip_routes',
   'trips',
+  'trip_template_stops',
+  'trip_templates',
   'vehicle_maintenance',
   'fuel_logs',
+  'recipe_ingredients',
+  'recipe_likes',
+  'recipe_saves',
+  'recipes',
+  'blog_posts',
   'financial_transactions',
   'user_brands',
+  'contact_locations',
   'user_contacts',
   'budget_categories',
+  'teller_enrollments',
   'financial_accounts',
   'vehicles',
+  'usage_events',
+  'app_logs',
 ];
 
 export async function clearUserData(supabase: SupabaseClient, userId: string): Promise<void> {
@@ -852,4 +871,93 @@ export async function seedVisitor(supabase: SupabaseClient, userId: string): Pro
     },
   ]);
   if (wrErr) throw new Error(`Visitor weekly reviews: ${wrErr.message}`);
+
+  // ── Recipes ──
+  const { error: recipeErr } = await supabase.from('recipes').insert([
+    {
+      user_id: userId, title: 'Mediterranean Quinoa Bowl', slug: 'mediterranean-quinoa-bowl',
+      description: 'A nutrient-dense bowl packed with protein and healthy fats — perfect for meal prep.',
+      content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Cook quinoa according to package directions. Top with chickpeas, cucumber, cherry tomatoes, kalamata olives, feta cheese, and a drizzle of olive oil and lemon juice. Season with oregano and salt.' }] }] },
+      visibility: 'public', tags: ['meal-prep', 'high-protein', 'mediterranean'],
+      total_calories: 485, total_protein_g: 22, total_carbs_g: 58, total_fat_g: 20, total_fiber_g: 9,
+      ncv_score: 'Green', servings: 2, prep_time_minutes: 10, cook_time_minutes: 20,
+      published_at: new Date(Date.now() - 7 * 86400000).toISOString(),
+    },
+    {
+      user_id: userId, title: 'Post-Workout Protein Smoothie', slug: 'post-workout-protein-smoothie',
+      description: 'Quick recovery shake with banana, protein powder, and almond butter.',
+      content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Blend 1 frozen banana, 1 scoop whey protein, 1 tbsp almond butter, 1 cup almond milk, and a handful of spinach until smooth. Add ice if desired.' }] }] },
+      visibility: 'public', tags: ['smoothie', 'post-workout', 'quick'],
+      total_calories: 340, total_protein_g: 32, total_carbs_g: 38, total_fat_g: 10, total_fiber_g: 5,
+      ncv_score: 'Green', servings: 1, prep_time_minutes: 5, cook_time_minutes: 0,
+      published_at: new Date(Date.now() - 14 * 86400000).toISOString(),
+    },
+    {
+      user_id: userId, title: 'Sheet Pan Salmon with Roasted Vegetables', slug: 'sheet-pan-salmon-vegetables',
+      description: 'Omega-3 rich dinner that requires minimal cleanup — a weeknight staple.',
+      content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Place salmon fillets and chopped broccoli, sweet potato, and bell peppers on a sheet pan. Season with olive oil, garlic, lemon, salt, and pepper. Roast at 400°F for 20 minutes.' }] }] },
+      visibility: 'public', tags: ['dinner', 'omega-3', 'easy'],
+      total_calories: 520, total_protein_g: 38, total_carbs_g: 42, total_fat_g: 18, total_fiber_g: 7,
+      ncv_score: 'Green', servings: 2, prep_time_minutes: 10, cook_time_minutes: 20,
+      published_at: new Date(Date.now() - 21 * 86400000).toISOString(),
+    },
+    {
+      user_id: userId, title: 'Overnight Oats with Berries', slug: 'overnight-oats-berries',
+      description: 'Prep the night before for a grab-and-go breakfast packed with fiber.',
+      content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Combine 1/2 cup rolled oats, 1/2 cup Greek yogurt, 1/2 cup milk, 1 tbsp chia seeds, and 1 tsp honey in a jar. Top with mixed berries. Refrigerate overnight.' }] }] },
+      visibility: 'public', tags: ['breakfast', 'meal-prep', 'fiber'],
+      total_calories: 380, total_protein_g: 18, total_carbs_g: 52, total_fat_g: 12, total_fiber_g: 8,
+      ncv_score: 'Green', servings: 1, prep_time_minutes: 5, cook_time_minutes: 0,
+      published_at: new Date(Date.now() - 28 * 86400000).toISOString(),
+    },
+  ]);
+  if (recipeErr) throw new Error(`Visitor recipes: ${recipeErr.message}`);
+
+  // ── Blog Posts ──
+  const { error: blogErr } = await supabase.from('blog_posts').insert([
+    {
+      user_id: userId, title: 'Why I Track Everything: My Centenarian OS Journey',
+      slug: 'why-i-track-everything',
+      excerpt: 'How combining financial, health, and productivity tracking into one system changed my approach to longevity.',
+      content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Six months ago I started tracking my resting heart rate, daily spending, workout volume, and sleep in a single dashboard. The correlations were eye-opening. On weeks where I slept 7+ hours consistently, my spending dropped 15% (fewer impulse purchases), my workout performance improved, and my focus sessions were 20% longer. The data tells a clear story: health, wealth, and productivity are deeply connected. CentenarianOS makes these connections visible.' }] }] },
+      visibility: 'public', tags: ['longevity', 'tracking', 'personal'],
+      published_at: new Date(Date.now() - 10 * 86400000).toISOString(),
+    },
+    {
+      user_id: userId, title: 'Fuel Tracking 101: Know What You Put In Your Body',
+      slug: 'fuel-tracking-101',
+      excerpt: 'A practical guide to the NCV framework and how nutrition tracking connects to your broader health picture.',
+      content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'The Nutrition-Calorie-Volume (NCV) framework simplifies meal tracking into three categories: Green (nutrient-dense, go-to meals), Yellow (moderate — fine in rotation), and Red (occasional treats). Instead of counting every calorie, you rate each meal and watch the ratio shift over time. Combined with health metrics like resting heart rate and recovery scores, you can actually see how your food choices affect your body within days, not months.' }] }] },
+      visibility: 'public', tags: ['nutrition', 'fuel', 'guide'],
+      published_at: new Date(Date.now() - 20 * 86400000).toISOString(),
+    },
+    {
+      user_id: userId, title: 'The Road Trip That Changed My Perspective on Travel Tracking',
+      slug: 'road-trip-travel-tracking',
+      excerpt: 'SF to Vegas and back — what 1,493 miles of logged data taught me about intentional travel.',
+      content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'When I drove from San Francisco to Las Vegas via LA, San Diego, and Joshua Tree, I logged every mile, every fuel stop, and every dollar spent. Total distance: 1,493 miles. Total fuel cost: $175. Average MPG: 29.2. But the real insight came from linking travel data to my other modules. My sleep scores dropped 12% during the trip, my spending spiked by 40%, and my workout streak broke at day 14. The data helped me plan better for my next road trip — scheduling rest days, pre-booking meals, and setting fuel budget alerts.' }] }] },
+      visibility: 'public', tags: ['travel', 'road-trip', 'data'],
+      published_at: new Date(Date.now() - 35 * 86400000).toISOString(),
+    },
+  ]);
+  if (blogErr) throw new Error(`Visitor blog posts: ${blogErr.message}`);
+
+  // ── Contact Locations (sub-locations for existing contacts) ──
+  const { data: contactData } = await supabase
+    .from('user_contacts')
+    .select('id, name')
+    .eq('user_id', userId);
+  const contactId = (name: string) => contactData?.find(c => c.name === name)?.id;
+  if (contactData) {
+    const locRows = [
+      contactId('Costco Gas') && { contact_id: contactId('Costco Gas'), label: 'SOMA', address: '450 10th St, San Francisco, CA', is_default: true, sort_order: 1 },
+      contactId('Costco Gas') && { contact_id: contactId('Costco Gas'), label: 'South SF', address: '451 S Airport Blvd, South San Francisco, CA', is_default: false, sort_order: 2 },
+      contactId('Whole Foods') && { contact_id: contactId('Whole Foods'), label: 'SoMa', address: '399 4th St, San Francisco, CA', is_default: true, sort_order: 1 },
+      contactId('Honda Dealership') && { contact_id: contactId('Honda Dealership'), label: 'Serramonte', address: '700 Serramonte Blvd, Colma, CA', is_default: true, sort_order: 1 },
+    ].filter(Boolean);
+    if (locRows.length > 0) {
+      const { error: locErr } = await supabase.from('contact_locations').insert(locRows);
+      if (locErr) throw new Error(`Visitor contact locations: ${locErr.message}`);
+    }
+  }
 }

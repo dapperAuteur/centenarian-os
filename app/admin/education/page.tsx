@@ -114,8 +114,9 @@ export default function AdminEducationPage() {
   const [filterTag, setFilterTag] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Edit state for tags/notes
+  // Edit state for title/tags/notes
   const [editingMeta, setEditingMeta] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
   const [editTags, setEditTags] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [tagInput, setTagInput] = useState('');
@@ -175,6 +176,7 @@ export default function AdminEducationPage() {
 
   function openMetaEditor() {
     if (!activeChat) return;
+    setEditTitle(activeChat.title);
     setEditTags(activeChat.tags.join(', '));
     setEditNotes(activeChat.notes);
     setTagInput('');
@@ -190,7 +192,7 @@ export default function AdminEducationPage() {
     const res = await fetch(`/api/admin/education/chats/${activeChat.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tags, notes: editNotes }),
+      body: JSON.stringify({ title: editTitle.trim() || activeChat.title, tags, notes: editNotes }),
     });
     if (res.ok) {
       const { chat } = await res.json();
@@ -551,10 +553,21 @@ export default function AdminEducationPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-white">Tags & Notes</h2>
+              <h2 className="text-sm font-bold text-white">Edit Chat</h2>
               <button onClick={() => setEditingMeta(false)} className="text-gray-400 hover:text-white">
                 <X className="w-4 h-4" />
               </button>
+            </div>
+
+            {/* Title */}
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Title</label>
+              <input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Chat title..."
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-fuchsia-500"
+              />
             </div>
 
             {/* Tags */}

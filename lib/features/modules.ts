@@ -193,8 +193,8 @@ export const MODULES: ModuleData[] = [
     Icon: DollarSign,
     features: [
       'Checking, savings, credit card, loan, cash',
+      'Bank linking via Teller for auto-sync',
       'Budget categories with spending charts',
-      'Brand / business P&L tracking',
       'Invoices with custom fields & CSV import',
     ],
     highlights: [
@@ -400,7 +400,7 @@ export const MODULES: ModuleData[] = [
       },
       {
         title: 'Free Tutorial Library',
-        description: '14+ tutorial series teach every CentenarianOS module. Free for all users — the best way to learn the platform.',
+        description: '15+ tutorial series teach every CentenarianOS module. Free for all users — the best way to learn the platform.',
       },
     ],
     dashboardPath: '/academy',
