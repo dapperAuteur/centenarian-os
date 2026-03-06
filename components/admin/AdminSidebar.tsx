@@ -4,6 +4,7 @@
 // Admin navigation sidebar with live unread badges for Messages and Feedback.
 
 import { useState, useEffect, useCallback } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Users, MessageSquare, FileText, Heart, MessageCircle, GraduationCap, Radio, Activity, Building2, ScrollText, BarChart3, Link2, Sparkles } from 'lucide-react';
@@ -32,7 +33,7 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
   const [unread, setUnread] = useState<UnreadCounts>({ feedback: 0, messages: 0, logs: 0 });
 
   const fetchCounts = useCallback(() => {
-    fetch('/api/admin/unread')
+    offlineFetch('/api/admin/unread')
       .then((r) => r.json())
       .then((d) => setUnread({ feedback: d.feedback ?? 0, messages: d.messages ?? 0, logs: d.logs ?? 0 }))
       .catch(() => {});

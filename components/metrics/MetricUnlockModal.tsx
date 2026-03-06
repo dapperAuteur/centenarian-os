@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Lock, X } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface MetricUnlockModalProps {
   metricKey: string;
@@ -28,7 +29,7 @@ export default function MetricUnlockModal({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/health-metrics/unlock', {
+      const res = await offlineFetch('/api/health-metrics/unlock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ metricKey, acknowledged: true }),

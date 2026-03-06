@@ -5,11 +5,12 @@
 // Fires once on mount with path, referrer, and UTM params.
 
 import { useEffect } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 export default function PageViewTracker({ path }: { path: string }) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    fetch('/api/track/pageview', {
+    offlineFetch('/api/track/pageview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

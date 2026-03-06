@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import InstitutionDisclosure from '@/components/finance/InstitutionDisclosure';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Institution {
   id: string;
@@ -69,7 +70,7 @@ export default function InstitutionDetail() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/institutions/${slug}`);
+      const res = await offlineFetch(`/api/institutions/${slug}`);
       if (res.ok) {
         const data = await res.json();
         setInstitution(data.institution);

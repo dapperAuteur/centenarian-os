@@ -4,6 +4,7 @@
 // Create a new course — multi-field form.
 
 import { useState, useEffect } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Loader2, Save, GitBranch, ArrowRight } from 'lucide-react';
@@ -24,7 +25,7 @@ export default function NewCoursePage() {
   const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch('/api/academy/course-categories')
+    offlineFetch('/api/academy/course-categories')
       .then((r) => r.json())
       .then((d) => setCategories((d.categories || []).map((c: { name: string }) => c.name)))
       .catch(() => {});
@@ -37,7 +38,7 @@ export default function NewCoursePage() {
     setSaving(true);
     setError('');
     try {
-      const r = await fetch('/api/academy/courses', {
+      const r = await offlineFetch('/api/academy/courses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -10,6 +10,7 @@ import {
   ChevronLeft, Send, CheckCircle, Loader2, ClipboardList, MessageCircle, Clock, FileEdit, Activity,
 } from 'lucide-react';
 import SubmissionUploader, { SubmissionFile } from '@/components/ui/SubmissionUploader';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Assignment {
   id: string;
@@ -67,7 +68,7 @@ export default function AssignmentPage() {
 
   // Fetch enrollment metric_slots
   useEffect(() => {
-    fetch(`/api/academy/my-courses`)
+    offlineFetch(`/api/academy/my-courses`)
       .then((r) => r.json())
       .then((courses) => {
         if (Array.isArray(courses)) {
@@ -88,8 +89,8 @@ export default function AssignmentPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`/api/academy/courses/${courseId}/assignments`).then((r) => r.json()),
-      fetch(`/api/academy/assignments/${assignmentId}/submissions`).then((r) => r.json()),
+      offlineFetch(`/api/academy/courses/${courseId}/assignments`).then((r) => r.json()),
+      offlineFetch(`/api/academy/assignments/${assignmentId}/submissions`).then((r) => r.json()),
     ]).then(([assignments, submissions]) => {
       const found = (Array.isArray(assignments) ? assignments : []).find(
         (a: Assignment) => a.id === assignmentId,
@@ -108,7 +109,7 @@ export default function AssignmentPage() {
 
   useEffect(() => {
     if (!submission?.id) return;
-    fetch(`/api/academy/assignments/${assignmentId}/submissions/${submission.id}/messages`)
+    offlineFetch(`/api/academy/assignments/${assignmentId}/submissions/${submission.id}/messages`)
       .then((r) => r.json())
       .then((d) => setMessages(Array.isArray(d) ? d : []))
       .catch(() => {});
@@ -122,7 +123,7 @@ export default function AssignmentPage() {
     setSaving(true);
     setSaveError('');
     try {
-      const r = await fetch(`/api/academy/assignments/${assignmentId}/submissions`, {
+      const r = await offlineFetch(`/api/academy/assignments/${assignmentId}/submissions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: content.trim() || null, media_urls: mediaFiles, status }),
@@ -140,7 +141,7 @@ export default function AssignmentPage() {
   async function handleSendMessage() {
     if (!newMessage.trim() || !submission?.id) return;
     setSending(true);
-    const r = await fetch(
+    const r = await offlineFetch(
       `/api/academy/assignments/${assignmentId}/submissions/${submission.id}/messages`,
       {
         method: 'POST',

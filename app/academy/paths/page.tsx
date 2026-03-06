@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Layers, BookOpen, Sparkles, Lock, ChevronRight } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface CourseStub {
   id: string;
@@ -115,8 +116,8 @@ export default function LearningPathsPage() {
     const load = async () => {
       setLoading(true);
       const [pathsRes, meRes] = await Promise.all([
-        fetch('/api/academy/paths'),
-        fetch('/api/auth/me'),
+        offlineFetch('/api/academy/paths'),
+        offlineFetch('/api/auth/me'),
       ]);
       if (pathsRes.ok) {
         const { data } = await pathsRes.json() as { data: LearningPath[] };
@@ -134,7 +135,7 @@ export default function LearningPathsPage() {
 
     const loadRecommendations = async () => {
       setRecLoading(true);
-      const res = await fetch('/api/academy/paths/recommend');
+      const res = await offlineFetch('/api/academy/paths/recommend');
       if (res.ok) {
         const { recommendations } = await res.json() as { recommendations: LearningPath[] };
         setRecommended(recommendations || []);

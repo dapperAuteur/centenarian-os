@@ -4,6 +4,7 @@
 // Teacher: create assignments, view submissions, grade student work.
 
 import { useEffect, useState } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -60,8 +61,8 @@ export default function CourseAssignmentsPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`/api/academy/courses/${courseId}/assignments`).then((r) => r.json()),
-      fetch(`/api/academy/courses/${courseId}`).then((r) => r.json()),
+      offlineFetch(`/api/academy/courses/${courseId}/assignments`).then((r) => r.json()),
+      offlineFetch(`/api/academy/courses/${courseId}`).then((r) => r.json()),
     ]).then(([assignData, courseData]) => {
       setAssignments(Array.isArray(assignData) ? assignData : []);
       if (courseData.course_modules) {
@@ -75,7 +76,7 @@ export default function CourseAssignmentsPage() {
 
   async function loadSubmissions(assignmentId: string) {
     if (submissions[assignmentId]) return;
-    const r = await fetch(`/api/academy/assignments/${assignmentId}/submissions`);
+    const r = await offlineFetch(`/api/academy/assignments/${assignmentId}/submissions`);
     if (r.ok) {
       const d = await r.json();
       setSubmissions((prev) => ({ ...prev, [assignmentId]: Array.isArray(d) ? d : [] }));
@@ -95,7 +96,7 @@ export default function CourseAssignmentsPage() {
     if (!newForm.title.trim()) { setCreateError('Title required.'); return; }
     setSaving(true);
     setCreateError('');
-    const r = await fetch(`/api/academy/courses/${courseId}/assignments`, {
+    const r = await offlineFetch(`/api/academy/courses/${courseId}/assignments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -116,7 +117,7 @@ export default function CourseAssignmentsPage() {
   }
 
   async function handleGrade(assignmentId: string, submissionId: string) {
-    const r = await fetch(`/api/academy/assignments/${assignmentId}/submissions`, {
+    const r = await offlineFetch(`/api/academy/assignments/${assignmentId}/submissions`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

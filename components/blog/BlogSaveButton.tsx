@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Bookmark } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface BlogSaveButtonProps {
   postId: string;
@@ -31,7 +32,7 @@ export default function BlogSaveButton({
     setCount((prev) => (saved ? prev - 1 : prev + 1));
 
     try {
-      const res = await fetch(`/api/blog/${postId}/save`, { method: 'POST' });
+      const res = await offlineFetch(`/api/blog/${postId}/save`, { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         setSaved(data.saved);

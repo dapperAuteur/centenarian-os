@@ -4,6 +4,7 @@
 // Create a new learning path, then redirect to the edit page to add courses.
 
 import { useState } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Layers, ArrowLeft } from 'lucide-react';
@@ -20,7 +21,7 @@ export default function NewLearningPathPage() {
     if (!title.trim()) return;
     setSaving(true);
     setError(null);
-    const res = await fetch('/api/academy/paths', {
+    const res = await offlineFetch('/api/academy/paths', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: title.trim(), description: description.trim() || null }),

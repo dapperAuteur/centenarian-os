@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { ShieldAlert, X } from 'lucide-react';
 import Link from 'next/link';
 
@@ -22,7 +23,7 @@ export default function MfaBanner() {
 
       // Check if user has sensitive data
       try {
-        const res = await fetch('/api/auth/mfa-status');
+        const res = await offlineFetch('/api/auth/mfa-status');
         if (!res.ok) return;
         const data = await res.json();
         if (data.mfaRequired) setShow(true);

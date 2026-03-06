@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Link2, Mail, Linkedin } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface ShareBarProps {
   postUrl: string;
@@ -14,7 +15,7 @@ interface ShareBarProps {
 
 async function logShareEvent(postId: string, eventType: string) {
   try {
-    await fetch('/api/blog/events', {
+    await offlineFetch('/api/blog/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ postId, eventType, sessionId: getSessionId() }),

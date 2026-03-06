@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Modal from '@/components/ui/Modal';
 import { Loader2, Trash2 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface DeletePostModalProps {
   isOpen: boolean;
@@ -27,7 +28,7 @@ export default function DeletePostModal({
     setDeleting(true);
     setError('');
 
-    const res = await fetch(`/api/blog/${postId}`, { method: 'DELETE' });
+    const res = await offlineFetch(`/api/blog/${postId}`, { method: 'DELETE' });
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));

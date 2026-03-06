@@ -143,7 +143,7 @@ export default function LessonPlayerPage() {
   }, []);
 
   useEffect(() => {
-    fetch(`/api/academy/courses/${courseId}/glossary?lesson_id=${lessonId}`)
+    offlineFetch(`/api/academy/courses/${courseId}/glossary?lesson_id=${lessonId}`)
       .then((r) => r.ok ? r.json() : [])
       .then((d) => setLessonGlossary(Array.isArray(d) ? d : []))
       .catch(() => {});

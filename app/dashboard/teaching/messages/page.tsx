@@ -4,6 +4,7 @@
 // Teacher DM inbox: conversation list + message thread for all courses.
 
 import { useEffect, useState, useRef } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Image from 'next/image';
 import {
   MessageCircle, Send, Loader2, ChevronLeft,
@@ -43,14 +44,14 @@ export default function TeacherMessagesPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch('/api/auth/me')
+    offlineFetch('/api/auth/me')
       .then((r) => r.json())
       .then((d) => setUserId(d?.id ?? null))
       .catch(() => {});
   }, []);
 
   useEffect(() => {
-    fetch('/api/academy/messages')
+    offlineFetch('/api/academy/messages')
       .then((r) => r.json())
       .then((d) => { setConversations(Array.isArray(d) ? d : []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -59,7 +60,7 @@ export default function TeacherMessagesPage() {
   useEffect(() => {
     if (!activeConv) return;
     setLoadingMessages(true);
-    fetch(`/api/academy/courses/${activeConv.courseId}/messages?partner_id=${activeConv.partnerId}`)
+    offlineFetch(`/api/academy/courses/${activeConv.courseId}/messages?partner_id=${activeConv.partnerId}`)
       .then((r) => r.json())
       .then((d) => {
         setMessages(Array.isArray(d) ? d : []);
@@ -73,7 +74,7 @@ export default function TeacherMessagesPage() {
     if (!newMessage.trim() || !activeConv || sending) return;
     setSending(true);
     try {
-      const r = await fetch(`/api/academy/courses/${activeConv.courseId}/messages`, {
+      const r = await offlineFetch(`/api/academy/courses/${activeConv.courseId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ recipient_id: activeConv.partnerId, body: newMessage.trim() }),

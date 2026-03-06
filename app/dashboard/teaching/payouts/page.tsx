@@ -4,6 +4,7 @@
 // Stripe Connect onboarding + payout status for teachers.
 
 import { useEffect, useState } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { CreditCard, CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
@@ -19,7 +20,7 @@ function PayoutsContent() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch('/api/teacher/connect')
+    offlineFetch('/api/teacher/connect')
       .then((r) => r.json())
       .then((d) => { setStatus(d); setLoading(false); })
       .catch(() => setLoading(false));
@@ -29,7 +30,7 @@ function PayoutsContent() {
     setRedirecting(true);
     setError('');
     try {
-      const r = await fetch('/api/teacher/connect', { method: 'POST' });
+      const r = await offlineFetch('/api/teacher/connect', { method: 'POST' });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error ?? 'Failed');
       window.location.href = d.url;

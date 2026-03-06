@@ -4,6 +4,7 @@
 // Teacher: manage learning paths + AI-suggest new ones from existing courses.
 
 import { useEffect, useState, useCallback } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Link from 'next/link';
 import {
   Layers, Plus, Pencil, Eye, EyeOff, Sparkles, Loader2, CheckCircle2, X,
@@ -46,7 +47,7 @@ export default function TeachingLearningPathsPage() {
 
   const loadPaths = useCallback(async () => {
     setLoading(true);
-    const res = await fetch('/api/academy/paths?mine=true');
+    const res = await offlineFetch('/api/academy/paths?mine=true');
     if (res.ok) {
       const { data } = await res.json() as { data: LearningPath[] };
       setPaths(data || []);
@@ -57,7 +58,7 @@ export default function TeachingLearningPathsPage() {
   useEffect(() => { loadPaths(); }, [loadPaths]);
 
   const togglePublish = async (path: LearningPath) => {
-    await fetch(`/api/academy/paths/${path.id}`, {
+    await offlineFetch(`/api/academy/paths/${path.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_published: !path.is_published }),
@@ -71,7 +72,7 @@ export default function TeachingLearningPathsPage() {
     setSuggesting(true);
     setSuggestError(null);
     setSuggestions([]);
-    const res = await fetch('/api/teaching/learning-paths/suggest', { method: 'POST' });
+    const res = await offlineFetch('/api/teaching/learning-paths/suggest', { method: 'POST' });
     const json = await res.json() as { suggestions?: AISuggestion[]; error?: string };
     if (!res.ok) {
       setSuggestError(json.error || 'Failed to generate suggestions');
@@ -84,7 +85,7 @@ export default function TeachingLearningPathsPage() {
   const acceptSuggestion = async (s: AISuggestion) => {
     setCreating(s.title);
     // Create the path
-    const createRes = await fetch('/api/academy/paths', {
+    const createRes = await offlineFetch('/api/academy/paths', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: s.title, description: s.description }),
@@ -94,7 +95,7 @@ export default function TeachingLearningPathsPage() {
 
     // Add courses
     if (s.course_ids.length > 0) {
-      await fetch(`/api/academy/paths/${newPath.id}`, {
+      await offlineFetch(`/api/academy/paths/${newPath.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

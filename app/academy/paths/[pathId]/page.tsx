@@ -10,6 +10,7 @@ import Image from 'next/image';
 import {
   Layers, BookOpen, CheckCircle2, ChevronRight, Trophy, ArrowRight,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface CourseStub {
   id: string;
@@ -51,7 +52,7 @@ export default function LearningPathDetailPage() {
     if (!pathId) return;
     const load = async () => {
       setLoading(true);
-      const res = await fetch(`/api/academy/paths/${pathId}`);
+      const res = await offlineFetch(`/api/academy/paths/${pathId}`);
       if (!res.ok) { setNotFound(true); setLoading(false); return; }
       const { data, completedCourseIds: done, pathCompleted: pc } = await res.json() as {
         data: LearningPath;

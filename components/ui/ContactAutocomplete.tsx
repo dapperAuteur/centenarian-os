@@ -9,6 +9,7 @@
 // - Optional showLocations mode: after selecting a contact, shows location sub-select
 
 import { useEffect, useRef, useState } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Contact {
   id: string;
@@ -55,7 +56,7 @@ export default function ContactAutocomplete({
   const listIdRef = useRef(listId);
 
   useEffect(() => {
-    fetch(`/api/contacts?type=${contactType}`)
+    offlineFetch(`/api/contacts?type=${contactType}`)
       .then((r) => r.json())
       .then((d) => setContacts(Array.isArray(d) ? d : []))
       .catch(() => {});
@@ -68,7 +69,7 @@ export default function ContactAutocomplete({
       return;
     }
     setLoadingLocations(true);
-    fetch(`/api/contacts/${selectedContactId}/locations`)
+    offlineFetch(`/api/contacts/${selectedContactId}/locations`)
       .then((r) => r.json())
       .then((d) => {
         const locs = Array.isArray(d) ? d : [];
@@ -99,7 +100,7 @@ export default function ContactAutocomplete({
     const match = contacts.find((c) => c.name.toLowerCase() === val.toLowerCase());
     if (match) {
       // Known contact — increment use_count and pass default_category_id
-      fetch(`/api/contacts`, {
+      offlineFetch(`/api/contacts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: match.name, contact_type: contactType }),
@@ -116,7 +117,7 @@ export default function ContactAutocomplete({
 
   const handleSave = async () => {
     if (!value.trim()) return;
-    const res = await fetch('/api/contacts', {
+    const res = await offlineFetch('/api/contacts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: value.trim(), contact_type: contactType }),

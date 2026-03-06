@@ -4,6 +4,7 @@
 // Teacher dashboard overview.
 
 import { useEffect, useState } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Link from 'next/link';
 import { BookOpen, Users, DollarSign, Plus, ArrowRight, CreditCard, Layers } from 'lucide-react';
 
@@ -28,8 +29,8 @@ export default function TeachingDashboard() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/academy/courses?mine=true').then((r) => r.json()),
-      fetch('/api/teacher/connect').then((r) => r.json()),
+      offlineFetch('/api/academy/courses?mine=true').then((r) => r.json()),
+      offlineFetch('/api/teacher/connect').then((r) => r.json()),
     ]).then(([coursesData, connectData]) => {
       setStats({
         courses: Array.isArray(coursesData) ? coursesData : [],

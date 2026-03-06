@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { X, Search } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
 
@@ -101,7 +102,7 @@ export default function EquipmentForm({
   // If editing and has a transaction_id, resolve its label
   useEffect(() => {
     if (initial?.transaction_id) {
-      fetch(`/api/finance/transactions?limit=1`)
+      offlineFetch(`/api/finance/transactions?limit=1`)
         .then((r) => r.json())
         .then((d) => {
           const txs = d.transactions || [];
@@ -117,7 +118,7 @@ export default function EquipmentForm({
   // If editing with a catalog_id, resolve its label
   useEffect(() => {
     if (initial?.catalog_id) {
-      fetch(`/api/equipment/catalog`)
+      offlineFetch(`/api/equipment/catalog`)
         .then((r) => r.json())
         .then((d) => {
           const item = (d.catalog || []).find((c: CatalogItem) => c.id === initial.catalog_id);
@@ -147,7 +148,7 @@ export default function EquipmentForm({
     if (!txSearch.trim()) return;
     setTxSearching(true);
     try {
-      const res = await fetch('/api/finance/transactions?limit=20');
+      const res = await offlineFetch('/api/finance/transactions?limit=20');
       if (res.ok) {
         const d = await res.json();
         const q = txSearch.trim().toLowerCase();
@@ -180,7 +181,7 @@ export default function EquipmentForm({
     if (!q.trim()) { setCatalogResults([]); return; }
     setCatalogSearching(true);
     try {
-      const res = await fetch(`/api/equipment/catalog?search=${encodeURIComponent(q)}`);
+      const res = await offlineFetch(`/api/equipment/catalog?search=${encodeURIComponent(q)}`);
       if (res.ok) {
         const d = await res.json();
         setCatalogResults((d.catalog || []).slice(0, 8));

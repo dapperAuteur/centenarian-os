@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { X, ChefHat, Check, AlertCircle, ExternalLink } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import type { Recipe } from '@/lib/types';
 
 interface AddToFuelModalProps {
@@ -30,7 +31,7 @@ export default function AddToFuelModal({ recipe, isOpen, onClose }: AddToFuelMod
     setErrorMsg('');
 
     try {
-      const res = await fetch(`/api/recipes/${recipe.id}/clone`, { method: 'POST' });
+      const res = await offlineFetch(`/api/recipes/${recipe.id}/clone`, { method: 'POST' });
 
       if (!res.ok) {
         const err = await res.json();

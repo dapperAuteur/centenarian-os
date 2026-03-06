@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Heart } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface RecipeLikeButtonProps {
   recipeId: string;
@@ -32,7 +33,7 @@ export default function RecipeLikeButton({
     setCount((prev) => (liked ? prev - 1 : prev + 1));
 
     try {
-      const res = await fetch(`/api/recipes/${recipeId}/like`, { method: 'POST' });
+      const res = await offlineFetch(`/api/recipes/${recipeId}/like`, { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         setLiked(data.liked);

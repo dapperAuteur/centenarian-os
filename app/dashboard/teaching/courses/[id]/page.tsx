@@ -4,6 +4,7 @@
 // Course editor: settings, modules, lessons, publish toggle, CYOA embed generation.
 
 import { useEffect, useState, useCallback } from 'react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -127,7 +128,7 @@ export default function CourseEditorPage() {
   const [aiRecs, setAiRecs] = useState<{ before: Array<{ course_id: string; title: string; reason: string }>; after: Array<{ course_id: string; title: string; reason: string }> } | null>(null);
 
   const fetchCourse = useCallback(() => {
-    fetch(`/api/academy/courses/${courseId}`)
+    offlineFetch(`/api/academy/courses/${courseId}`)
       .then((r) => r.json())
       .then((d) => { setCourse(d); setLoading(false); })
       .catch(() => setLoading(false));
@@ -137,15 +138,15 @@ export default function CourseEditorPage() {
 
   // Load prerequisites, recommendations, overrides, and requests
   const fetchPrereqs = useCallback(() => {
-    fetch(`/api/academy/courses/${courseId}/prerequisites`)
+    offlineFetch(`/api/academy/courses/${courseId}/prerequisites`)
       .then((r) => r.json())
       .then((d) => { setPrereqs(d.prerequisites ?? []); setRecs(d.recommendations ?? []); })
       .catch(() => {});
-    fetch(`/api/academy/courses/${courseId}/prerequisites/overrides`)
+    offlineFetch(`/api/academy/courses/${courseId}/prerequisites/overrides`)
       .then((r) => r.json())
       .then((d) => { if (Array.isArray(d)) setOverrides(d); })
       .catch(() => {});
-    fetch(`/api/academy/courses/${courseId}/prerequisites/requests`)
+    offlineFetch(`/api/academy/courses/${courseId}/prerequisites/requests`)
       .then((r) => r.json())
       .then((d) => { if (Array.isArray(d)) setOverrideRequests(d.filter((r: OverrideRequest) => r.status === 'pending')); })
       .catch(() => {});
@@ -166,7 +167,7 @@ export default function CourseEditorPage() {
     if (!prereqSearch.trim()) return;
     setPrereqSearching(true);
     try {
-      const r = await fetch(`/api/academy/courses?search=${encodeURIComponent(prereqSearch.trim())}&limit=10`);
+      const r = await offlineFetch(`/api/academy/courses?search=${encodeURIComponent(prereqSearch.trim())}&limit=10`);
       if (r.ok) {
         const d = await r.json();
         const courses = (d.courses ?? d ?? [])
@@ -184,7 +185,7 @@ export default function CourseEditorPage() {
     if (prereqAddType === 'prerequisite') body.enforcement = 'recommended';
     if (prereqAddType === 'recommendation') body.direction = 'after';
 
-    const r = await fetch(`/api/academy/courses/${courseId}/prerequisites`, {
+    const r = await offlineFetch(`/api/academy/courses/${courseId}/prerequisites`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -197,7 +198,7 @@ export default function CourseEditorPage() {
   }
 
   async function removePrereqOrRec(id: string, type: 'prerequisite' | 'recommendation') {
-    await fetch(`/api/academy/courses/${courseId}/prerequisites`, {
+    await offlineFetch(`/api/academy/courses/${courseId}/prerequisites`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type, id }),
@@ -210,12 +211,12 @@ export default function CourseEditorPage() {
     // Delete and re-add with new enforcement
     const prereq = prereqs.find((p) => p.id === prereqId);
     if (!prereq) return;
-    await fetch(`/api/academy/courses/${courseId}/prerequisites`, {
+    await offlineFetch(`/api/academy/courses/${courseId}/prerequisites`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type: 'prerequisite', id: prereqId }),
     });
-    await fetch(`/api/academy/courses/${courseId}/prerequisites`, {
+    await offlineFetch(`/api/academy/courses/${courseId}/prerequisites`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type: 'prerequisite', target_course_id: prereq.prerequisite_course_id, enforcement: newEnforcement }),
@@ -226,14 +227,14 @@ export default function CourseEditorPage() {
   async function grantOverride() {
     if (!overrideEmail.trim()) return;
     // Look up user by email
-    const r = await fetch(`/api/admin/users?search=${encodeURIComponent(overrideEmail.trim())}&limit=1`);
+    const r = await offlineFetch(`/api/admin/users?search=${encodeURIComponent(overrideEmail.trim())}&limit=1`);
     if (!r.ok) return;
     const d = await r.json();
     const users = d.users ?? [];
     if (users.length === 0) { setFeedback('User not found'); setTimeout(() => setFeedback(''), 2000); return; }
     const userId = users[0].id;
 
-    const res = await fetch(`/api/academy/courses/${courseId}/prerequisites/overrides`, {
+    const res = await offlineFetch(`/api/academy/courses/${courseId}/prerequisites/overrides`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: userId, notes: overrideNotes.trim() || null }),
@@ -250,7 +251,7 @@ export default function CourseEditorPage() {
   }
 
   async function revokeOverride(overrideId: string) {
-    await fetch(`/api/academy/courses/${courseId}/prerequisites/overrides`, {
+    await offlineFetch(`/api/academy/courses/${courseId}/prerequisites/overrides`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: overrideId }),
@@ -259,7 +260,7 @@ export default function CourseEditorPage() {
   }
 
   async function handleOverrideRequest(requestId: string, action: 'approve' | 'reject') {
-    await fetch(`/api/academy/courses/${courseId}/prerequisites/requests`, {
+    await offlineFetch(`/api/academy/courses/${courseId}/prerequisites/requests`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ request_id: requestId, action }),
@@ -292,7 +293,7 @@ export default function CourseEditorPage() {
   async function fetchAiRecommendations() {
     setAiRecsLoading(true);
     try {
-      const r = await fetch(`/api/academy/courses/${courseId}/ai-recommendations`, { method: 'POST' });
+      const r = await offlineFetch(`/api/academy/courses/${courseId}/ai-recommendations`, { method: 'POST' });
       if (r.ok) {
         const d = await r.json();
         setAiRecs(d);
@@ -306,7 +307,7 @@ export default function CourseEditorPage() {
     const body: Record<string, string> = { type, target_course_id: targetCourseId };
     if (type === 'prerequisite') body.enforcement = 'recommended';
     if (type === 'recommendation') body.direction = direction || 'after';
-    await fetch(`/api/academy/courses/${courseId}/prerequisites`, {
+    await offlineFetch(`/api/academy/courses/${courseId}/prerequisites`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -319,7 +320,7 @@ export default function CourseEditorPage() {
     if (!course) return;
     setSaving(true);
     try {
-      const r = await fetch(`/api/academy/courses/${courseId}`, {
+      const r = await offlineFetch(`/api/academy/courses/${courseId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
@@ -344,7 +345,7 @@ export default function CourseEditorPage() {
 
   async function addModule() {
     if (!newModuleTitle.trim()) return;
-    const r = await fetch(`/api/academy/courses/${courseId}/modules`, {
+    const r = await offlineFetch(`/api/academy/courses/${courseId}/modules`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: newModuleTitle.trim(), order: (course?.course_modules.length ?? 0) }),
@@ -389,7 +390,7 @@ export default function CourseEditorPage() {
     if (lessonDocuments.length > 0) {
       payload.documents = lessonDocuments.filter((d) => d.url.trim());
     }
-    const r = await fetch(`/api/academy/courses/${courseId}/lessons`, {
+    const r = await offlineFetch(`/api/academy/courses/${courseId}/lessons`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -567,7 +568,7 @@ export default function CourseEditorPage() {
     setBulkImporting(true);
     setBulkImportResult(null);
     try {
-      const r = await fetch(`/api/academy/courses/${courseId}/import`, {
+      const r = await offlineFetch(`/api/academy/courses/${courseId}/import`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rows, mode: bulkImportMode }),
@@ -584,7 +585,7 @@ export default function CourseEditorPage() {
   }
 
   async function deleteLesson(lessonId: string) {
-    await fetch(`/api/academy/courses/${courseId}/lessons/${lessonId}`, { method: 'DELETE' });
+    await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}`, { method: 'DELETE' });
     fetchCourse();
   }
 
@@ -592,7 +593,7 @@ export default function CourseEditorPage() {
     setGeneratingEmbeddings(true);
     setEmbeddingResult('');
     try {
-      const r = await fetch(`/api/academy/courses/${courseId}/generate-embeddings`, { method: 'POST' });
+      const r = await offlineFetch(`/api/academy/courses/${courseId}/generate-embeddings`, { method: 'POST' });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       setEmbeddingResult(`Generated embeddings for ${d.processed} lessons.`);
