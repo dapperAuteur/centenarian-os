@@ -7,6 +7,7 @@ import { ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { MODULES, getModuleBySlug, getRelatedModules } from '@/lib/features/modules';
 import SiteFooter from '@/components/ui/SiteFooter';
 import DemoLoginButton from '@/components/ui/DemoLoginButton';
+import PageViewTracker from '@/components/ui/PageViewTracker';
 import type { Metadata } from 'next';
 
 type Params = { params: Promise<{ slug: string }> };
@@ -34,6 +35,7 @@ export default async function ModuleLandingPage({ params }: Params) {
 
   return (
     <div className="min-h-screen bg-white">
+      <PageViewTracker path={`/features/${slug}`} />
       {/* Minimal Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <nav className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">

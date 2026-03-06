@@ -13,6 +13,7 @@ import {
   BookMarked, ChevronDown, Search,
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import PageViewTracker from '@/components/ui/PageViewTracker';
 import GlossaryTermRow from '@/components/academy/GlossaryTermRow';
 import type { GlossaryTerm } from '@/components/academy/GlossaryTermRow';
 
@@ -327,6 +328,7 @@ function CourseDetailContent() {
 
   return (
     <div className="text-white">
+      <PageViewTracker path={`/academy/${courseId}`} />
       {justEnrolled && (
         <div className="bg-green-900/20 border-b border-green-700/40 px-4 sm:px-6 py-3 text-center text-green-300 text-sm">
           <CheckCircle className="inline w-4 h-4 mr-1.5" />

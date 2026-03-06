@@ -18,6 +18,7 @@ import RecipeNutritionPanel from '@/components/recipes/RecipeNutritionPanel';
 import RecipeMediaGallery from '@/components/recipes/RecipeMediaGallery';
 import { buildRecipeShareUrls } from '@/lib/recipes/share';
 import AddToFuelButton from './AddToFuelButton';
+import PageViewTracker from '@/components/ui/PageViewTracker';
 import type { Recipe, RecipeIngredient, RecipeMedia, Profile } from '@/lib/types';
 
 type Props = { params: Promise<{ username: string; slug: string }> };
@@ -89,6 +90,7 @@ export default async function PublicRecipePage({ params }: Props) {
 
     return (
       <main className="max-w-3xl mx-auto px-4 py-12">
+        <PageViewTracker path={`/recipes/cooks/${username}/${slug}`} />
         {/* Cover image */}
         {r.cover_image_url && (
           <div className="mb-8 rounded-2xl overflow-hidden aspect-video">

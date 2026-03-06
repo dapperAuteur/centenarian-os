@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { createShortLink, toSwitchySlug } from '@/lib/switchy';
+import { MODULES } from '@/lib/features/modules';
 
 function getDb() {
   return createServiceClient(
@@ -124,6 +125,25 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Feature pages (static — no DB tracking, uses Switchy 409 as idempotency guard)
+  if (type === 'all' || type === 'feature') {
+    for (const mod of MODULES) {
+      const link = await createShortLink({
+        url: `${siteUrl}/features/${mod.slug}`,
+        slug: toSwitchySlug('f', mod.slug),
+        title: `${mod.name} — CentenarianOS`,
+        description: mod.tagline,
+        tags: ['feature'],
+      });
+
+      if (link) {
+        created++;
+      }
+      // 409/422 = already exists (not a failure)
+      await delay(100);
+    }
+  }
+
   return NextResponse.json({ created, failed });
 }
 
@@ -146,9 +166,14 @@ export async function GET() {
     db.from('courses').select('id', { count: 'exact', head: true }).eq('is_published', true).is('short_link_id', null),
   ]);
 
+  // Feature pages don't have DB rows — report total count
+  // (actual "with" tracking would need a Switchy list API; approximate with total)
+  const featureTotal = MODULES.length;
+
   return NextResponse.json({
     blog: { with: blogWith.count || 0, without: blogWithout.count || 0 },
     recipe: { with: recipeWith.count || 0, without: recipeWithout.count || 0 },
     course: { with: courseWith.count || 0, without: courseWithout.count || 0 },
+    feature: { total: featureTotal },
   });
 }
