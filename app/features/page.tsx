@@ -6,6 +6,7 @@ import { ArrowRight } from 'lucide-react';
 import { MODULES } from '@/lib/features/modules';
 import SiteFooter from '@/components/ui/SiteFooter';
 import DemoLoginButton from '@/components/ui/DemoLoginButton';
+import PageViewTracker from '@/components/ui/PageViewTracker';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -16,6 +17,7 @@ export const metadata: Metadata = {
 export default function FeaturesIndexPage() {
   return (
     <div className="min-h-screen bg-linear-to-b from-gray-50 to-white">
+      <PageViewTracker path="/features" />
       {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">

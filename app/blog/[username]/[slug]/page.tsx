@@ -11,6 +11,7 @@ import BlogSaveButton from '@/components/blog/BlogSaveButton';
 import ReadDepthTracker from '@/components/blog/ReadDepthTracker';
 import { buildShareUrls } from '@/lib/blog/share';
 import { Lock } from 'lucide-react';
+import PageViewTracker from '@/components/ui/PageViewTracker';
 import type { BlogPost, Profile } from '@/lib/types';
 
 type Props = { params: Promise<{ username: string; slug: string }> };
@@ -55,6 +56,7 @@ export default async function PublicPostPage({ params }: Props) {
 
     return (
       <main className="max-w-3xl mx-auto px-4 py-12">
+        <PageViewTracker path={`/blog/${username}/${slug}`} />
         <ReadDepthTracker postId={bp.id} />
 
         {/* Cover image */}

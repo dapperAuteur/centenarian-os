@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { Check, Shirt, Zap, ArrowLeft } from 'lucide-react';
 import PurchaseModal from '@/components/PurchaseModal';
 import SiteFooter from '@/components/ui/SiteFooter';
+import PageViewTracker from '@/components/ui/PageViewTracker';
 
 function FromSignupBanner() {
   const searchParams = useSearchParams();
@@ -69,6 +70,7 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-linear-to-b from-gray-50 to-white">
+      <PageViewTracker path="/pricing" />
       {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
