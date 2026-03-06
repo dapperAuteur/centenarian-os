@@ -214,4 +214,65 @@ export const HELP_ARTICLES: HelpArticle[] = [
     title: 'How to submit platform feedback',
     content: `Click the floating action button (fuchsia circle in the bottom-right corner) and select the Feedback (message) option. Choose a category: Bug Report (something is broken), Feature Request (suggest an improvement), or General. Write your message and optionally attach a screenshot or video. Click Send Feedback. You can view your submitted feedback at /dashboard/feedback. The team reviews every submission and will reply in the feedback thread.`,
   },
+
+  // ─── SMART SCAN ─────────────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to use Smart Scan for receipts and documents',
+    content: `Go to Dashboard → Scan. Take a photo or upload an image of a receipt, fuel receipt, maintenance invoice, recipe, or medical document. The AI automatically detects the document type, extracts key data (line items, totals, dates, vendors), and lets you save the results to the appropriate module. For receipts, individual line items are tracked with price history per vendor — you can see how prices change over time. Scanned documents can be linked to contacts and financial transactions.`,
+  },
+
+  // ─── DATA HUB ───────────────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to import and export data with the Data Hub',
+    content: `Go to Dashboard → Data Hub. You will see cards for all modules: Finance, Health Metrics, Trips, Fuel, Maintenance, Vehicles, Equipment, Contacts, Tasks, and Workouts. Each card has Import, Export, and Template buttons. Click Template to download a CSV template with example rows. Fill in your data and use Import to upload it. You can also paste directly from Google Sheets. Exports support date range filtering. All imports use the service role client and bypass RLS for efficient bulk operations.`,
+  },
+
+  // ─── LIFE CATEGORIES ───────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to tag activities with Life Categories',
+    content: `Life Categories let you tag any activity across all modules with life-area labels like Health, Finance, Career, Relationships, etc. Go to Dashboard → Categories to manage your categories, view analytics (spending by category, activity distribution), and find uncategorized items for batch tagging. You can also tag items directly from the Activity Linker modal when editing tasks, workouts, transactions, or any other entity. Each category has a custom icon and color. Default categories are auto-created on first use.`,
+  },
+
+  // ─── EQUIPMENT TRACKER ─────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to track equipment and asset valuations',
+    content: `Go to Dashboard → Equipment. You can add gear, electronics, fitness equipment, and other assets with purchase price, brand, model, condition, and category. Track current valuations over time — add a new valuation entry whenever the value changes, and the detail page shows a chart of value history. Equipment can be linked to financial transactions (the purchase transaction) and to other modules via Activity Links. Categories are auto-seeded with defaults (Electronics, Fitness, Travel, etc.) and you can add your own.`,
+  },
+
+  // ─── COURSE PREREQUISITES ──────────────────────────────────────────────────
+
+  {
+    role: 'student',
+    title: 'What are course prerequisites and how do override requests work',
+    content: `Some courses have prerequisites — required or recommended courses you should complete first. When you try to enroll in a course with prerequisites, you will see which ones are met and which are not. If you have not completed a required prerequisite, you can submit an Override Request to the teacher. Fill out the teacher's questionnaire explaining your background, and the teacher will approve or deny your request. Recommended prerequisites are informational and do not block enrollment.`,
+  },
+  {
+    role: 'teacher',
+    title: 'How to set up course prerequisites and handle override requests',
+    content: `When editing a course, go to the Prerequisites section. You can add required or recommended prerequisites from other published courses. Optionally, add override questions — a questionnaire students must fill out if they request to skip a prerequisite. Override requests appear in your Teaching Dashboard under the Overrides tab. Review the student's answers and approve or deny the request. Approved students can enroll immediately.`,
+  },
+
+  // ─── CROSS-COURSE CYOA ─────────────────────────────────────────────────────
+
+  {
+    role: 'teacher',
+    title: 'How to enable cross-course CYOA navigation',
+    content: `When editing a course, toggle the Allow Cross-Course CYOA option. When enabled, students in CYOA mode will see lesson suggestions from other courses (in addition to your own) at Crossroads screens. This uses semantic similarity matching across all published lessons with embeddings. It is a great way to connect related content across the Academy catalog and help students discover new courses organically.`,
+  },
+
+  // ─── CORRELATIONS ──────────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to use correlations and analytics',
+    content: `Go to Dashboard → Correlations. This module analyzes relationships between your health metrics, financial data, sleep, activity, and other tracked data using Pearson correlation analysis. Select two metrics to compare and see how strongly they are related. For example, you might discover that sleep hours correlate with lower spending, or that workout frequency correlates with higher recovery scores. The analytics view shows multi-metric trend lines over time.`,
+  },
 ];
