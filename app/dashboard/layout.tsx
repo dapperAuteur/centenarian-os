@@ -13,6 +13,7 @@ import DesktopNav from '@/components/nav/DesktopNav';
 import MobileBottomBar from '@/components/nav/MobileBottomBar';
 import FloatingActionsMenu from '@/components/ui/FloatingActionsMenu';
 import OfflineIndicator from '@/components/ui/OfflineIndicator';
+import MfaBanner from '@/components/ui/MfaBanner';
 import SiteFooter from '@/components/ui/SiteFooter';
 import { SyncProvider } from '@/lib/contexts/SyncContext';
 
@@ -121,6 +122,7 @@ export default function DashboardLayout({
     <SyncProvider>
       <div className="min-h-screen bg-gray-50">
         <DesktopNav {...navProps} />
+        <MfaBanner />
         <OfflineIndicator />
 
         {/* Teaching routes get zero padding so their dark layout fills edge-to-edge */}
