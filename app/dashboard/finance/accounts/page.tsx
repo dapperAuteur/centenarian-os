@@ -8,7 +8,7 @@ import {
   ArrowLeft, Plus, Pencil, Trash2, Loader2, CreditCard,
   Building2, Check, X, ArrowRightLeft, Percent,
   RefreshCw, ChevronDown, ChevronUp, Landmark, Info,
-  Link2, Unlink,
+  Link2, Unlink, RotateCcw,
 } from 'lucide-react';
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -89,6 +89,9 @@ export default function AccountsPage() {
   const [linkTarget, setLinkTarget] = useState<Account | null>(null);
   const [linking, setLinking] = useState(false);
   const [unlinking, setUnlinking] = useState<string | null>(null);
+  const [syncingAll, setSyncingAll] = useState(false);
+  const [fullResyncing, setFullResyncing] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -101,6 +104,10 @@ export default function AccountsPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    offlineFetch('/api/auth/me').then((r) => r.json()).then((d) => setIsAdmin(!!d.isAdmin)).catch(() => {});
+  }, []);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,6 +192,53 @@ export default function AccountsPage() {
       body: JSON.stringify({ is_active: !acct.is_active }),
     });
     load();
+  };
+
+  const handleSyncAll = async () => {
+    setSyncingAll(true);
+    setSyncResult(null);
+    try {
+      const res = await offlineFetch('/api/teller/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSyncResult(`All accounts synced: ${data.new} new, ${data.matched} matched, ${data.skipped} unchanged`);
+        load();
+      } else {
+        setSyncResult(data.error || 'Sync failed');
+      }
+    } catch {
+      setSyncResult('Sync failed');
+    } finally {
+      setSyncingAll(false);
+    }
+  };
+
+  const handleFullResync = async () => {
+    if (!confirm('Full re-sync will pull ALL available transaction history from your bank (may take a while). Continue?')) return;
+    setFullResyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await offlineFetch('/api/teller/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full_resync: true }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSyncResult(`Full re-sync complete: ${data.new} new, ${data.matched} matched, ${data.skipped} unchanged${data.oldestTransactionDate ? ` (history back to ${data.oldestTransactionDate})` : ''}`);
+        load();
+      } else {
+        setSyncResult(data.error || 'Full re-sync failed');
+      }
+    } catch {
+      setSyncResult('Full re-sync failed');
+    } finally {
+      setFullResyncing(false);
+    }
   };
 
   const handleSync = async (enrollmentId: string) => {
@@ -358,6 +412,27 @@ export default function AccountsPage() {
             <div className="flex items-center gap-2 text-sm font-medium text-blue-800">
               <Landmark className="w-4 h-4" />
               Bank-Connected Accounts
+            </div>
+            <div className="flex items-center gap-2">
+              {isAdmin && (
+                <button
+                  onClick={handleFullResync}
+                  disabled={fullResyncing || syncingAll}
+                  className="flex items-center gap-1 px-2.5 py-1 text-xs bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 disabled:opacity-50 transition"
+                  title="Pull all available transaction history (admin only)"
+                >
+                  <RotateCcw className={`w-3 h-3 ${fullResyncing ? 'animate-spin' : ''}`} />
+                  Full Re-sync
+                </button>
+              )}
+              <button
+                onClick={handleSyncAll}
+                disabled={syncingAll || fullResyncing}
+                className="flex items-center gap-1 px-2.5 py-1 text-xs bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50 transition"
+              >
+                <RefreshCw className={`w-3 h-3 ${syncingAll ? 'animate-spin' : ''}`} />
+                Sync All
+              </button>
             </div>
           </div>
           <div className="space-y-2">
@@ -569,10 +644,13 @@ export default function AccountsPage() {
                         <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Inactive</span>
                       )}
                     </div>
-                    <p className="font-semibold text-gray-900">
+                    <Link
+                      href={`/dashboard/finance/transactions?account_id=${acct.id}&account_name=${encodeURIComponent(acct.name)}`}
+                      className="font-semibold text-gray-900 hover:text-fuchsia-600 transition"
+                    >
                       {acct.name}
                       {acct.last_four && <span className="text-gray-400 font-normal ml-2 text-sm">··{acct.last_four}</span>}
-                    </p>
+                    </Link>
                     {acct.institution_name && (
                       <p className="text-sm text-gray-500 mt-0.5">{acct.institution_name}</p>
                     )}

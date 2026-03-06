@@ -26,7 +26,6 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  console.log('[Teller Connect] received body:', JSON.stringify(body, null, 2));
 
   // Teller Connect callback shape varies — extract flexibly:
   //   { accessToken, enrollment: { id, institution: { name } } }  (wrapped)

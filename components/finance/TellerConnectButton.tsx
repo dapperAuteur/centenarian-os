@@ -76,7 +76,6 @@ export default function TellerConnectButton({ onSuccess }: TellerConnectButtonPr
       environment: env,
       onSuccess: async (enrollment: unknown) => {
         const enr = enrollment as Record<string, unknown>;
-        console.log('[TellerConnect] onSuccess payload:', JSON.stringify(enr, null, 2));
         setLoading(true);
         setError('');
         try {

@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => ({}));
   const enrollmentFilter = body.enrollment_id ?? null;
+  const fullResync = body.full_resync === true;
 
   const db = getDb();
 
@@ -83,11 +84,13 @@ export async function POST(request: NextRequest) {
     for (const acct of accounts) {
       try {
         // Determine sync window
-        // Initial sync: no startDate → fetch all available history
+        // full_resync or initial sync: no startDate → fetch all available history
         // Subsequent: last_synced date minus 10 days (catch pending→posted drift)
-        const startDate = acct.last_synced_at
-          ? subtractDays(new Date(acct.last_synced_at).toISOString().slice(0, 10), 10)
-          : undefined;
+        const startDate = fullResync
+          ? undefined
+          : acct.last_synced_at
+            ? subtractDays(new Date(acct.last_synced_at).toISOString().slice(0, 10), 10)
+            : undefined;
 
         const txns = await listTransactions(accessToken, acct.teller_account_id!, {
           startDate,

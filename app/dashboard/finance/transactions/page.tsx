@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight, Link2 } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight, Link2, X } from 'lucide-react';
 import Link from 'next/link';
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -51,6 +51,9 @@ const PAGE_SIZE = 25;
 
 export default function TransactionsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlAccountId = searchParams.get('account_id') || '';
+  const urlAccountName = searchParams.get('account_name') || '';
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -64,6 +67,7 @@ export default function TransactionsPage() {
   const [filterBrand, setFilterBrand] = useState<string>('');
   const [filterFrom, setFilterFrom] = useState<string>('');
   const [filterTo, setFilterTo] = useState<string>('');
+  const [filterAccount, setFilterAccount] = useState<string>(urlAccountId);
 
   // Edit inline
   const [editId, setEditId] = useState<string | null>(null);
@@ -78,6 +82,7 @@ export default function TransactionsPage() {
     if (filterType) params.set('type', filterType);
     if (filterCategory) params.set('category_id', filterCategory);
     if (filterBrand) params.set('brand_id', filterBrand);
+    if (filterAccount) params.set('account_id', filterAccount);
     if (filterFrom) params.set('from', filterFrom);
     if (filterTo) params.set('to', filterTo);
 
@@ -91,7 +96,7 @@ export default function TransactionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, filterType, filterCategory, filterBrand, filterFrom, filterTo]);
+  }, [page, filterType, filterCategory, filterBrand, filterAccount, filterFrom, filterTo]);
 
   useEffect(() => {
     Promise.all([
@@ -147,6 +152,19 @@ export default function TransactionsPage() {
           <p className="text-sm text-gray-500">{total} total transactions</p>
         </div>
       </div>
+
+      {/* Account filter banner */}
+      {filterAccount && (
+        <div className="flex items-center justify-between gap-2 bg-fuchsia-50 border border-fuchsia-200 rounded-xl px-4 py-3 text-sm text-fuchsia-800">
+          <span>Showing transactions for <strong>{urlAccountName || 'selected account'}</strong></span>
+          <button
+            onClick={() => { setFilterAccount(''); router.replace('/dashboard/finance/transactions'); }}
+            className="flex items-center gap-1 text-fuchsia-600 hover:text-fuchsia-800"
+          >
+            <X className="w-4 h-4" /> Clear
+          </button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-white border border-gray-200 rounded-xl p-4">
