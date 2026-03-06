@@ -7,6 +7,7 @@ import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Send, Users, CheckCircle, AlertTriangle, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import DOMPurify from 'dompurify';
 import MediaUploader from '@/components/ui/MediaUploader';
 import ImageLightbox from '@/components/ui/ImageLightbox';
 
@@ -397,7 +398,7 @@ function AdminMessagesPage() {
                       {m.body.startsWith('<') ? (
                         <div
                           className="prose prose-sm prose-invert max-w-none text-gray-300"
-                          dangerouslySetInnerHTML={{ __html: m.body }}
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(m.body) }}
                         />
                       ) : (
                         <p className="text-gray-300 text-sm whitespace-pre-wrap">{m.body}</p>

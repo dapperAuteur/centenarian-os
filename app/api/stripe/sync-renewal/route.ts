@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { stripe } from '@/lib/stripe';
+import { logError } from '@/lib/logging';
 
 function getServiceClient() {
   return createServiceClient(
@@ -47,12 +48,12 @@ export async function POST() {
     const s = sub as any;
     const rawEnd: number | undefined = s.items?.data?.[0]?.current_period_end ?? s.current_period_end;
     if (!rawEnd || typeof rawEnd !== 'number') {
-      console.error('[sync-renewal] current_period_end not found on subscription:', JSON.stringify(Object.keys(s)));
+      logError({ source: 'sync', module: 'stripe', message: 'current_period_end not found on subscription', userId: user.id });
       return NextResponse.json({ error: 'Subscription period end not available' }, { status: 502 });
     }
     subscriptionExpiresAt = new Date(rawEnd * 1000).toISOString();
   } catch (err) {
-    console.error('[sync-renewal] Failed to retrieve Stripe subscription:', err);
+    logError({ source: 'sync', module: 'stripe', message: 'Failed to retrieve Stripe subscription', metadata: { error: err instanceof Error ? err.message : String(err) }, userId: user.id });
     return NextResponse.json({ error: 'Could not fetch subscription from Stripe' }, { status: 502 });
   }
 
@@ -63,7 +64,7 @@ export async function POST() {
     .eq('id', user.id);
 
   if (updateError) {
-    console.error('[sync-renewal] DB update failed:', updateError);
+    logError({ source: 'sync', module: 'stripe', message: 'Sync-renewal DB update failed', metadata: { error: updateError.message }, userId: user.id });
     return NextResponse.json({ error: 'DB update failed' }, { status: 500 });
   }
 

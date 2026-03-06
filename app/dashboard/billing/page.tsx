@@ -42,17 +42,14 @@ export default function BillingPage() {
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) {
-          console.error('[billing] Sync failed:', data);
           setSyncError(data.error ?? 'Subscription sync failed. Please contact support.');
           setSyncLoading(false);
         } else {
-          console.log('[billing] Sync result:', data);
           // Hard reload without session_id — ensures fresh subscription state from DB
           window.location.replace('/dashboard/billing?success=true');
         }
       })
-      .catch((err) => {
-        console.error('[billing] Sync network error:', err);
+      .catch(() => {
         setSyncError('Could not connect to sync service. Please refresh the page.');
         setSyncLoading(false);
       });

@@ -52,7 +52,6 @@ export async function POST(request: NextRequest) {
           .update({ role: 'teacher' })
           .eq('id', userId);
         if (roleErr) {
-          console.error('[webhook] Failed to set teacher role for user', userId, roleErr);
           logError({ source: 'webhook', module: 'stripe', message: 'Failed to set teacher role', metadata: { error: roleErr.message }, userId });
         }
 
@@ -62,7 +61,7 @@ export async function POST(request: NextRequest) {
             user_id: userId,
             stripe_subscription_id: session.subscription as string,
           }, { onConflict: 'user_id' });
-        if (tpErr) console.error('[webhook] Failed to upsert teacher_profile for user', userId, tpErr);
+        if (tpErr) logError({ source: 'webhook', module: 'stripe', message: 'Failed to upsert teacher_profile', metadata: { error: tpErr.message }, userId });
       } else if (session.mode === 'subscription' && plan === 'monthly') {
         // Expand subscription to get current_period_end for renewal date.
         // In Stripe API 2024-09-30+ (acacia/clover), this field moved to SubscriptionItem.
@@ -76,7 +75,7 @@ export async function POST(request: NextRequest) {
             subscriptionExpiresAt = new Date(rawEnd * 1000).toISOString();
           }
         } catch (err) {
-          console.error('[webhook] Failed to retrieve subscription for period_end:', err);
+          logError({ source: 'webhook', module: 'stripe', message: 'Failed to retrieve subscription for period_end', metadata: { error: err instanceof Error ? err.message : String(err) }, userId });
         }
         const { error } = await supabase
           .from('profiles')
@@ -89,7 +88,6 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', userId);
         if (error) {
-          console.error('[webhook] Failed to update monthly status for user', userId, error);
           logError({ source: 'webhook', module: 'stripe', message: 'Failed to update monthly status', metadata: { error: error.message }, userId });
         }
       } else if (session.mode === 'payment' && plan === 'lifetime') {
@@ -97,7 +95,7 @@ export async function POST(request: NextRequest) {
         try {
           promoCode = await createShopifyPromoCode();
         } catch (err) {
-          console.error('[webhook] Failed to create Shopify promo code for user', userId, err);
+          logError({ source: 'webhook', module: 'stripe', message: 'Failed to create Shopify promo code', metadata: { error: err instanceof Error ? err.message : String(err) }, userId });
           // Do not throw — purchase is complete; code will show as pending on billing page
         }
 
@@ -111,7 +109,6 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', userId);
         if (error) {
-          console.error('[webhook] Failed to update lifetime status for user', userId, error);
           logError({ source: 'webhook', module: 'stripe', message: 'Failed to update lifetime status', metadata: { error: error.message }, userId });
         }
       }
@@ -145,7 +142,7 @@ export async function POST(request: NextRequest) {
         .from('profiles')
         .select('subscription_status')
         .eq('stripe_customer_id', customerId)
-        .single();
+        .maybeSingle();
 
       if (profile && profile.subscription_status !== 'lifetime') {
         const { error } = await supabase
@@ -157,8 +154,7 @@ export async function POST(request: NextRequest) {
           })
           .eq('stripe_customer_id', customerId);
         if (error) {
-          console.error('[webhook] Failed to downgrade subscription for customer', customerId, error);
-          logError({ source: 'webhook', module: 'stripe', message: 'Failed to downgrade subscription', metadata: { error: error.message, customerId } });
+          logError({ source: 'webhook', module: 'stripe', message: 'Failed to downgrade subscription', metadata: { error: error.message } });
         }
       }
       break;
@@ -186,7 +182,6 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', userId);
       if (error) {
-        console.error('[webhook] subscription.updated DB update failed for user', userId, error);
         logError({ source: 'webhook', module: 'stripe', message: 'Subscription update DB write failed', metadata: { error: error.message }, userId });
       }
       break;

@@ -4,7 +4,7 @@
 // Auth: mTLS (client certificate) + Basic Auth (access token per enrollment).
 
 import { randomBytes, createCipheriv, createDecipheriv } from 'crypto';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, chmodSync } from 'fs';
 import https from 'https';
 
 const API_BASE = 'https://api.teller.io';
@@ -36,12 +36,14 @@ function getTlsAgent(): https.Agent | undefined {
     certPath = '/tmp/teller-cert.pem';
     if (!existsSync(certPath)) {
       writeFileSync(certPath, Buffer.from(process.env.TELLER_CERT, 'base64'));
+      chmodSync(certPath, 0o600);
     }
   }
   if (!keyPath && process.env.TELLER_KEY) {
     keyPath = '/tmp/teller-key.pem';
     if (!existsSync(keyPath)) {
       writeFileSync(keyPath, Buffer.from(process.env.TELLER_KEY, 'base64'));
+      chmodSync(keyPath, 0o600);
     }
   }
 
