@@ -4,17 +4,27 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import SiteFooter from '@/components/ui/SiteFooter';
+import MfaVerifyStep from '@/components/login/MfaVerifyStep';
+import { getAalAndFactors, needsMfaVerification } from '@/lib/mfa/helpers';
 
 type LoginTab = 'password' | 'otp';
 type OtpStep = 'email' | 'code';
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
   const [tab, setTab] = useState<LoginTab>('password');
 
   // Password tab state
@@ -30,9 +40,24 @@ export default function LoginPage() {
   const [otpError, setOtpError] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
 
+  const [mfaRequired, setMfaRequired] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  // Handle middleware redirect with ?mfa=pending
+  useEffect(() => {
+    if (searchParams.get('mfa') !== 'pending') return;
+    async function checkMfa() {
+      const { currentLevel, nextLevel, hasMfaEnabled } = await getAalAndFactors(supabase);
+      if (hasMfaEnabled && needsMfaVerification(currentLevel, nextLevel)) {
+        setMfaRequired(true);
+      }
+    }
+    checkMfa();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   function switchTab(t: LoginTab) {
     setTab(t);
@@ -49,6 +74,12 @@ export default function LoginPage() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      // Check if MFA verification is needed
+      const { currentLevel, nextLevel } = await getAalAndFactors(supabase);
+      if (needsMfaVerification(currentLevel, nextLevel)) {
+        setMfaRequired(true);
+        return;
+      }
       router.push('/dashboard/planner');
       router.refresh();
     } catch (err: any) {
@@ -89,6 +120,12 @@ export default function LoginPage() {
         type: 'email',
       });
       if (error) throw error;
+      // Check if MFA verification is needed
+      const { currentLevel, nextLevel } = await getAalAndFactors(supabase);
+      if (needsMfaVerification(currentLevel, nextLevel)) {
+        setMfaRequired(true);
+        return;
+      }
       router.push('/dashboard/planner');
       router.refresh();
     } catch (err: any) {
@@ -160,6 +197,25 @@ export default function LoginPage() {
       {/* Login Form */}
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+          {mfaRequired ? (
+            <>
+              <header className="mb-6">
+                <h1 className="text-3xl font-bold text-gray-900">Welcome back</h1>
+                <p className="text-gray-600 mt-2">Verify your identity to continue</p>
+              </header>
+              <MfaVerifyStep
+                onVerified={() => {
+                  router.push('/dashboard/planner');
+                  router.refresh();
+                }}
+                onCancel={async () => {
+                  await supabase.auth.signOut();
+                  setMfaRequired(false);
+                }}
+              />
+            </>
+          ) : (
+          <>
           <header className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900">Welcome back</h1>
             <p className="text-gray-600 mt-2">Login to your journey</p>
@@ -326,6 +382,8 @@ export default function LoginPage() {
                 </form>
               )}
             </div>
+          )}
+          </>
           )}
         </div>
       </main>
