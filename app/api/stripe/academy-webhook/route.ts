@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { stripe } from '@/lib/stripe';
 import Stripe from 'stripe';
+import { logError } from '@/lib/logging';
 
 function getDb() {
   return createClient(
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
           status: 'active',
         }, { onConflict: 'user_id,course_id,attempt_number' });
 
-      if (error) console.error('[academy-webhook] Enrollment upsert failed:', error);
+      if (error) logError({ source: 'webhook', module: 'academy', message: 'Enrollment upsert failed', metadata: { error: error.message, courseId } });
       break;
     }
 

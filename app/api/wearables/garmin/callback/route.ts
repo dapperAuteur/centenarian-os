@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { verifyOAuthState } from '@/lib/oauth-state';
 
 function getDb() {
   return createServiceClient(
@@ -13,11 +14,16 @@ function getDb() {
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code');
-  const state = request.nextUrl.searchParams.get('state'); // user_id
+  const rawState = request.nextUrl.searchParams.get('state');
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
 
-  if (!code || !state) {
+  if (!code || !rawState) {
     return NextResponse.redirect(`${appUrl}/dashboard/settings/wearables?error=missing_code`);
+  }
+
+  const userId = verifyOAuthState(rawState);
+  if (!userId) {
+    return NextResponse.redirect(`${appUrl}/dashboard/settings/wearables?error=invalid_state`);
   }
 
   const clientId = process.env.GARMIN_CLIENT_ID!;
@@ -44,7 +50,7 @@ export async function GET(request: NextRequest) {
   const db = getDb();
 
   await db.from('wearable_connections').upsert({
-    user_id: state,
+    user_id: userId,
     provider: 'garmin',
     access_token: tokens.access_token,
     refresh_token: tokens.refresh_token,

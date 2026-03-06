@@ -3,6 +3,7 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { signOAuthState } from '@/lib/oauth-state';
 
 export async function GET() {
   const supabase = await createClient();
@@ -13,7 +14,7 @@ export async function GET() {
   if (!clientId) return NextResponse.json({ error: 'Garmin not configured' }, { status: 500 });
 
   const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/wearables/garmin/callback`;
-  const state = user.id;
+  const state = signOAuthState(user.id);
 
   const url = new URL('https://connect.garmin.com/oauthConfirm');
   url.searchParams.set('client_id', clientId);

@@ -37,32 +37,25 @@ export async function POST(request: NextRequest) {
   try {
     session = await stripe.checkout.sessions.retrieve(session_id);
   } catch (err) {
-    console.error('[sync] Failed to retrieve Stripe session:', err);
     logError({ source: 'sync', module: 'stripe', message: 'Failed to retrieve Stripe session', metadata: { sessionId: session_id, error: err instanceof Error ? err.message : String(err) }, userId: user.id });
     return NextResponse.json({ error: 'Invalid session' }, { status: 400 });
   }
 
   // Security: ensure this session belongs to the authenticated user
   if (session.metadata?.supabase_user_id !== user.id) {
-    console.error('[sync] User ID mismatch — metadata:', session.metadata?.supabase_user_id, 'auth:', user.id);
+    logError({ source: 'sync', module: 'stripe', message: 'User ID mismatch on session', metadata: { sessionId: session_id }, userId: user.id });
     return NextResponse.json({ error: 'Session does not belong to this user' }, { status: 403 });
   }
 
   // Use session.status === 'complete' as the primary check.
   // payment_status can be 'paid' or 'no_payment_required' depending on plan config.
   if (session.status !== 'complete') {
-    console.log('[sync] Session not yet complete — status:', session.status, 'payment_status:', session.payment_status);
+    logInfo({ source: 'sync', module: 'stripe', message: 'Session not yet complete', metadata: { sessionId: session_id, status: session.status }, userId: user.id });
     return NextResponse.json({ status: 'pending' });
   }
 
-  console.log('[sync] Processing session:', {
-    mode: session.mode,
-    plan: session.metadata?.plan,
-    payment_status: session.payment_status,
-    userId: user.id,
-  });
-
   const plan = session.metadata?.plan;
+  logInfo({ source: 'sync', module: 'stripe', message: 'Processing session', metadata: { sessionId: session_id, mode: session.mode, plan }, userId: user.id });
   const db = getServiceClient();
 
   if (session.mode === 'subscription' && plan === 'monthly') {
@@ -77,7 +70,7 @@ export async function POST(request: NextRequest) {
         subscriptionExpiresAt = new Date(rawEnd * 1000).toISOString();
       }
     } catch (err) {
-      console.error('[sync] Failed to retrieve subscription for period_end:', err);
+      logError({ source: 'sync', module: 'stripe', message: 'Failed to retrieve subscription for period_end', metadata: { error: err instanceof Error ? err.message : String(err) }, userId: user.id });
     }
 
     const { data: updated, error } = await db
@@ -93,12 +86,11 @@ export async function POST(request: NextRequest) {
       .select('id');
 
     if (error) {
-      console.error('[sync] DB update failed for monthly:', error);
       logError({ source: 'sync', module: 'stripe', message: 'DB update failed for monthly', metadata: { error: error.message }, userId: user.id });
       return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
     }
     if (!updated || updated.length === 0) {
-      console.error('[sync] No profile row for user:', user.id, '— run migration 036 to backfill profiles');
+      logError({ source: 'sync', module: 'stripe', message: 'No profile row found', metadata: { hint: 'run migration 036 to backfill profiles' }, userId: user.id });
       return NextResponse.json({ error: 'Profile not found — account setup incomplete' }, { status: 404 });
     }
     logInfo({ source: 'sync', module: 'stripe', message: 'Monthly subscription synced', metadata: { sessionId: session_id }, userId: user.id });
@@ -120,7 +112,7 @@ export async function POST(request: NextRequest) {
       try {
         promoCode = await createShopifyPromoCode();
       } catch (err) {
-        console.error('[sync] Failed to create Shopify promo code:', err);
+        logError({ source: 'sync', module: 'stripe', message: 'Failed to create Shopify promo code', metadata: { error: err instanceof Error ? err.message : String(err) }, userId: user.id });
       }
     }
 
@@ -136,18 +128,17 @@ export async function POST(request: NextRequest) {
       .select('id');
 
     if (error) {
-      console.error('[sync] DB update failed for lifetime:', error);
       logError({ source: 'sync', module: 'stripe', message: 'DB update failed for lifetime', metadata: { error: error.message }, userId: user.id });
       return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
     }
     if (!updated || updated.length === 0) {
-      console.error('[sync] No profile row for user:', user.id, '— run migration 036 to backfill profiles');
+      logError({ source: 'sync', module: 'stripe', message: 'No profile row found', metadata: { hint: 'run migration 036 to backfill profiles' }, userId: user.id });
       return NextResponse.json({ error: 'Profile not found — account setup incomplete' }, { status: 404 });
     }
     logInfo({ source: 'sync', module: 'stripe', message: 'Lifetime purchase synced', metadata: { sessionId: session_id }, userId: user.id });
     return NextResponse.json({ status: 'lifetime' });
   }
 
-  console.log('[sync] No matching plan/mode handler — mode:', session.mode, 'plan:', plan);
+  logInfo({ source: 'sync', module: 'stripe', message: 'No matching plan/mode handler', metadata: { mode: session.mode, plan }, userId: user.id });
   return NextResponse.json({ status: 'free' });
 }
