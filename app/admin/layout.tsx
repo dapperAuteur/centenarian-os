@@ -12,7 +12,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex">
+    <div className="min-h-screen bg-gray-950 text-white flex dark-input">
       {/* Mobile header */}
       <div className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 bg-gray-950 border-b border-gray-800 px-4 py-3 lg:hidden">
         <button

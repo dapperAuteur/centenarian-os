@@ -2,9 +2,15 @@
 // Admin-only: AI chat for codebase education (interview/pitch/onboarding prep).
 
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { CODEBASE_CONTEXT } from '@/lib/admin/codebase-context';
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+);
 
 const GEMINI_MODEL = 'gemini-2.5-flash';
 
@@ -48,10 +54,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { message, history, mode } = await req.json() as {
+  const { message, history, mode, chatId } = await req.json() as {
     message: string;
     history: ChatMessage[];
     mode?: string;
+    chatId?: string;
   };
 
   if (!message?.trim()) {
@@ -106,7 +113,28 @@ ${CODEBASE_CONTEXT}
       return NextResponse.json({ error: 'No response from AI model' }, { status: 500 });
     }
 
-    return NextResponse.json({ message: reply });
+    // Persist messages to DB if chatId provided
+    if (chatId) {
+      // Check if this is the first message (for auto-titling)
+      const { count: existingCount } = await supabaseAdmin
+        .from('admin_chat_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('chat_id', chatId);
+
+      await supabaseAdmin.from('admin_chat_messages').insert([
+        { chat_id: chatId, role: 'user', text: message },
+        { chat_id: chatId, role: 'model', text: reply },
+      ]);
+
+      const updates: Record<string, string> = { updated_at: new Date().toISOString() };
+      if (!existingCount) {
+        // First exchange — auto-title from user message
+        updates.title = message.length > 80 ? message.slice(0, 77) + '...' : message;
+      }
+      await supabaseAdmin.from('admin_chats').update(updates).eq('id', chatId);
+    }
+
+    return NextResponse.json({ message: reply, chatId });
   } catch (err) {
     console.error('[admin/education/chat] Error:', err);
     return NextResponse.json({ error: 'Failed to reach AI service' }, { status: 500 });
