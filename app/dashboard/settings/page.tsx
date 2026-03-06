@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { NAV_GROUPS } from '@/components/nav/NavConfig';
 import { Settings, Check, Loader2 } from 'lucide-react';
+import MfaSetupSection from '@/components/settings/MfaSetupSection';
 
 // All non-admin nav items as choosable home pages
 const HOME_OPTIONS = NAV_GROUPS
@@ -186,6 +187,9 @@ export default function DashboardSettingsPage() {
           </button>
         </label>
       </div>
+
+      {/* Two-Factor Authentication */}
+      <MfaSetupSection />
     </div>
   );
 }
