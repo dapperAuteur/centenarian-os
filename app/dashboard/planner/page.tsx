@@ -124,6 +124,10 @@ export default function PlannerPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
 
+  // Backlog tasks (outside current date window, not completed)
+  const [backlogTasks, setBacklogTasks] = useState<Task[]>([]);
+  const [showBacklog, setShowBacklog] = useState(true);
+
   // Recurring task state
   const [showRecurringModal, setShowRecurringModal] = useState(false);
   const [, setRecurringTasks] = useState<RecurringTask[]>([]);
@@ -156,18 +160,34 @@ export default function PlannerPage() {
     const manager = OfflineSyncManager.getInstance();
 
     try {
-      const { data } = await supabase
-        .from('tasks')
-        .select('*, milestones(name)')
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date')
-        .order('time');
+      const [mainRes, backlogRes] = await Promise.all([
+        supabase
+          .from('tasks')
+          .select('*')
+          .gte('date', startDate)
+          .lte('date', endDate)
+          .order('date')
+          .order('time'),
+        // Backlog: all active, incomplete tasks outside the current date window
+        supabase
+          .from('tasks')
+          .select('*')
+          .eq('completed', false)
+          .neq('status', 'archived')
+          .or(`date.gt.${endDate},date.lt.${startDate}`)
+          .order('date', { ascending: true })
+          .limit(100),
+      ]);
 
-      if (data) {
-        setTasks(data as Task[]);
-        await manager.cacheResponse(cacheKey, data);
+      if (mainRes.data) {
+        setTasks(mainRes.data as Task[]);
+        await manager.cacheResponse(cacheKey, mainRes.data);
       }
+      if (backlogRes.error) {
+        console.error('[Planner] Backlog query error:', backlogRes.error);
+      }
+      setBacklogTasks((backlogRes.data || []) as Task[]);
+      console.log('[Planner] Backlog tasks loaded:', backlogRes.data?.length ?? 0, 'startDate:', startDate, 'endDate:', endDate);
     } catch {
       // Offline or error — fall back to cache
       const cached = await manager.getCached<Task[]>(cacheKey);
@@ -254,10 +274,25 @@ export default function PlannerPage() {
     }), { estimatedCost: 0, actualCost: 0, revenue: 0, netProfit: 0 });
   }, [tasks]);
 
+  // Milestone name lookup for source filtering
+  const [milestoneNames, setMilestoneNames] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const ids = [...new Set([...tasks, ...backlogTasks].map(t => t.milestone_id).filter(Boolean))];
+    if (ids.length === 0) return;
+    supabase.from('milestones').select('id, name').in('id', ids).then(({ data }) => {
+      if (data) {
+        const map: Record<string, string> = {};
+        data.forEach(m => { map[m.id] = m.name; });
+        setMilestoneNames(map);
+      }
+    });
+  }, [tasks, backlogTasks, supabase]);
+
   const filteredTasks = useMemo(() => {
     if (sourceFilter === 'all') return tasks;
     return tasks.filter((task) => {
-      const milestoneName = (task as Task & { milestones?: { name: string } | null }).milestones?.name ?? '';
+      const milestoneName = milestoneNames[task.milestone_id] ?? '';
       const isCalendar = milestoneName.startsWith('Google Calendar:');
       const isRecurring = milestoneName.toLowerCase().includes('recurring');
       if (sourceFilter === 'calendar') return isCalendar;
@@ -265,7 +300,7 @@ export default function PlannerPage() {
       // 'manual' = everything else
       return !isCalendar && !isRecurring;
     });
-  }, [tasks, sourceFilter]);
+  }, [tasks, sourceFilter, milestoneNames]);
 
   const tasksByDate = useMemo(() => {
     const grouped: Record<string, Task[]> = {};
@@ -286,7 +321,14 @@ export default function PlannerPage() {
     <div className="max-w-7xl mx-auto p-6">
       <header className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900">Task Planner</h1>
-        <p className="text-gray-600">Manage your daily execution</p>
+        <p className="text-gray-600">
+          Manage your daily execution
+          {backlogTasks.length > 0 && (
+            <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+              {backlogTasks.length} in backlog
+            </span>
+          )}
+        </p>
       </header>
 
       {/* View Controls */}
@@ -457,6 +499,54 @@ export default function PlannerPage() {
           ))}
         </div>
       )}
+
+      {/* Backlog / Upcoming */}
+      <div className="mt-6">
+        <button
+          onClick={() => setShowBacklog(!showBacklog)}
+          className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-gray-900 transition mb-3"
+        >
+          <svg className={`w-4 h-4 transition-transform ${showBacklog ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+          </svg>
+          Backlog / Upcoming ({backlogTasks.length} tasks)
+        </button>
+        {showBacklog && (
+          <div className="bg-white rounded-xl shadow-lg p-6 space-y-3">
+            {backlogTasks.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-4">No tasks outside the current date window.</p>
+            ) : backlogTasks.map(task => {
+              const milestoneName = milestoneNames[task.milestone_id] ?? '';
+              return (
+                <div key={task.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className={`text-xs font-semibold uppercase px-2 py-1 rounded-full bg-sky-500 text-white shrink-0`}>
+                      {task.tag}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{task.activity}</p>
+                      <p className="text-xs text-gray-500">
+                        {task.date || 'No date'} {milestoneName && `· ${milestoneName}`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => setEditingTask(task)}
+                      className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition"
+                      title="Edit / schedule"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+      </div>
 
       <EditTaskModal
         task={editingTask}

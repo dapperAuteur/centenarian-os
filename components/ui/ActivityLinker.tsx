@@ -259,9 +259,45 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
           break;
         }
         case 'task': {
-          // Tasks are queried via supabase client on the planner, not a dedicated API
-          // Show a simplified message
-          results = [];
+          const supabase = createClient();
+          const { data: taskData } = await supabase
+            .from('tasks')
+            .select('id, activity, date, tag')
+            .order('date', { ascending: false })
+            .limit(30);
+          if (taskData) {
+            results = taskData
+              .filter((t) => {
+                const search = `${t.activity || ''} ${t.date || ''} ${t.tag || ''}`.toLowerCase();
+                return search.includes(q);
+              })
+              .slice(0, 10)
+              .map((t) => ({
+                id: t.id,
+                display_name: `${t.activity} (${t.date})`,
+              }));
+          }
+          break;
+        }
+        case 'workout': {
+          const supabase = createClient();
+          const { data: workoutData } = await supabase
+            .from('workout_logs')
+            .select('id, name, date, duration_minutes')
+            .order('date', { ascending: false })
+            .limit(20);
+          if (workoutData) {
+            results = workoutData
+              .filter((w) => {
+                const search = `${w.name || ''} ${w.date || ''}`.toLowerCase();
+                return search.includes(q);
+              })
+              .slice(0, 10)
+              .map((w) => ({
+                id: w.id,
+                display_name: `${w.name || 'Workout'} (${w.date})${w.duration_minutes ? ` ${w.duration_minutes}min` : ''}`,
+              }));
+          }
           break;
         }
         default:
