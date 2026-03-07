@@ -13,9 +13,10 @@ interface IngredientModalProps {
   ingredient: Ingredient | null;
   isOpen: boolean;
   onClose: () => void;
+  onSaved?: () => void;
 }
 
-export function IngredientModal({ ingredient, isOpen, onClose }: IngredientModalProps) {
+export function IngredientModal({ ingredient, isOpen, onClose, onSaved }: IngredientModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     ncv_score: 'Yellow' as NCVScore,
@@ -103,6 +104,7 @@ export function IngredientModal({ ingredient, isOpen, onClose }: IngredientModal
     }
 
     setSaving(false);
+    onSaved?.();
     onClose();
   };
 

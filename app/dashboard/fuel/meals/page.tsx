@@ -5,7 +5,9 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { MealLog, Protocol, MealType } from '@/lib/types';
-import { Plus } from 'lucide-react';
+import { Plus, FlaskConical } from 'lucide-react';
+import { Ingredient } from '@/lib/types';
+import { IngredientModal } from '@/components/IngredientModal';
 
 export default function MealLoggingPage() {
   const [mealLogs, setMealLogs] = useState<MealLog[]>([]);
@@ -23,10 +25,12 @@ export default function MealLoggingPage() {
   const [restaurantState, setRestaurantState] = useState('');
   const [restaurantCountry, setRestaurantCountry] = useState('USA');
   const [restaurantWebsite, setRestaurantWebsite] = useState('');
+  const [ingredientModalOpen, setIngredientModalOpen] = useState(false);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const supabase = createClient();
 
   const loadData = useCallback(async () => {
-    const [mealsRes, protocolsRes] = await Promise.all([
+    const [mealsRes, protocolsRes, ingredientsRes] = await Promise.all([
       supabase
         .from('meal_logs')
         .select('*')
@@ -36,11 +40,16 @@ export default function MealLoggingPage() {
       supabase
         .from('protocols')
         .select('*')
+        .order('name'),
+      supabase
+        .from('ingredients')
+        .select('*')
         .order('name')
     ]);
 
     if (mealsRes.data) setMealLogs(mealsRes.data);
     if (protocolsRes.data) setProtocols(protocolsRes.data);
+    if (ingredientsRes.data) setIngredients(ingredientsRes.data);
     setLoading(false);
   }, [supabase]);
   
@@ -235,9 +244,19 @@ export default function MealLoggingPage() {
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-lime-600 mt-1 font-medium">
-                    ✓ Inventory will auto-update
-                  </p>
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs text-lime-600 font-medium">
+                      ✓ Inventory will auto-update
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIngredientModalOpen(true)}
+                      className="text-xs text-sky-600 hover:text-sky-700 font-medium flex items-center gap-1"
+                    >
+                      <FlaskConical className="w-3 h-3" />
+                      New Ingredient
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -413,6 +432,13 @@ export default function MealLoggingPage() {
           </div>
         </div>
       </div>
+
+      <IngredientModal
+        ingredient={null}
+        isOpen={ingredientModalOpen}
+        onClose={() => setIngredientModalOpen(false)}
+        onSaved={loadData}
+      />
     </div>
   );
 }
