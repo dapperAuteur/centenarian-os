@@ -38,8 +38,9 @@ export default function RootLayout({
         <Analytics />
         {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
           <Script
-            src={process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL || 'https://cloud.umami.is/script.js'}
+            src={process.env.UMAMI_HOST_URL ? '/a/script.js' : (process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL || 'https://cloud.umami.is/script.js')}
             data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+            {...(process.env.UMAMI_HOST_URL ? { 'data-host-url': '/a' } : {})}
             strategy="afterInteractive"
           />
         )}

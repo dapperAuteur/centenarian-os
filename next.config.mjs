@@ -33,6 +33,15 @@ const nextConfig = {
     ];
   },
 
+  async rewrites() {
+    const umamiHost = process.env.UMAMI_HOST_URL;
+    if (!umamiHost) return [];
+    return [
+      { source: '/a/script.js', destination: `${umamiHost}/script.js` },
+      { source: '/a/api/send', destination: `${umamiHost}/api/send` },
+    ];
+  },
+
   webpack: (config, { isServer }) => {
     // Add path alias
     config.resolve.alias = {
