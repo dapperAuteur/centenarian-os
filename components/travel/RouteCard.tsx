@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Route, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Route, Trash2, Pencil, Copy } from 'lucide-react';
 
 interface RouteLeg {
   id: string;
@@ -40,10 +40,12 @@ function fmt(n: number | null | undefined, d = 1) {
 interface RouteCardProps {
   route: RouteData;
   onDelete?: (id: string) => void;
+  onEdit?: (id: string) => void;
+  onDuplicate?: (id: string) => void;
   onExpand?: (id: string) => Promise<RouteLeg[]>;
 }
 
-export default function RouteCard({ route, onDelete, onExpand }: RouteCardProps) {
+export default function RouteCard({ route, onDelete, onEdit, onDuplicate, onExpand }: RouteCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [legs, setLegs] = useState<RouteLeg[]>([]);
   const [loading, setLoading] = useState(false);
@@ -99,15 +101,35 @@ export default function RouteCard({ route, onDelete, onExpand }: RouteCardProps)
             )}
           </div>
         </div>
-        {onDelete && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onDelete(route.id); }}
-            className="text-red-400 hover:text-red-600 transition p-1"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        )}
+        <div className="flex items-center gap-1 shrink-0">
+          {onEdit && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onEdit(route.id); }}
+              className="text-gray-400 hover:text-sky-600 transition p-1"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {onDuplicate && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onDuplicate(route.id); }}
+              className="text-gray-400 hover:text-sky-600 transition p-1"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onDelete(route.id); }}
+              className="text-red-400 hover:text-red-600 transition p-1"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </button>
 
       {/* Expanded legs */}

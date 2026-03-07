@@ -44,22 +44,82 @@ const BLANK_STOP: Stop = {
   vehicle_id: '',
 };
 
+interface LegData {
+  mode: string;
+  origin: string | null;
+  destination: string | null;
+  distance_miles: number | null;
+  duration_min: number | null;
+  cost: number | null;
+  purpose: string | null;
+  vehicle_id: string | null;
+}
+
 interface MultiStopFormProps {
   vehicles: Vehicle[];
   onClose: () => void;
   onSaved: () => void;
+  editRouteId?: string;
+  initialRoute?: {
+    name: string | null;
+    date: string;
+    notes: string | null;
+    is_round_trip: boolean;
+  };
+  initialLegs?: LegData[];
 }
 
-export default function MultiStopForm({ vehicles, onClose, onSaved }: MultiStopFormProps) {
-  const [name, setName] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [stops, setStops] = useState<Stop[]>([
-    { ...BLANK_STOP, mode: '' },  // First stop (origin) — no mode
-    { ...BLANK_STOP },             // Second stop (first leg destination)
-  ]);
-  const [isRoundTrip, setIsRoundTrip] = useState(false);
+function legsToStops(legs: LegData[], isRoundTrip: boolean): Stop[] {
+  if (!legs.length) return [{ ...BLANK_STOP, mode: '' }, { ...BLANK_STOP }];
+
+  // If round trip and last leg destination === first leg origin, strip the return leg
+  let effectiveLegs = legs;
+  if (isRoundTrip && legs.length >= 2) {
+    const lastLeg = legs[legs.length - 1];
+    const firstLeg = legs[0];
+    if (lastLeg.destination && firstLeg.origin && lastLeg.destination === firstLeg.origin) {
+      effectiveLegs = legs.slice(0, -1);
+    }
+  }
+
+  const stops: Stop[] = [];
+  // Stop 0: origin of first leg (no transport info)
+  stops.push({
+    location: effectiveLegs[0].origin || '',
+    mode: '',
+    distance_miles: '',
+    duration_min: '',
+    cost: '',
+    purpose: 'errand',
+    vehicle_id: '',
+  });
+  // Stop i (1..N): destination of leg i-1, with leg i-1's transport info
+  for (const leg of effectiveLegs) {
+    stops.push({
+      location: leg.destination || '',
+      mode: leg.mode || 'car',
+      distance_miles: leg.distance_miles != null ? String(leg.distance_miles) : '',
+      duration_min: leg.duration_min != null ? String(leg.duration_min) : '',
+      cost: leg.cost != null ? String(leg.cost) : '',
+      purpose: leg.purpose || 'errand',
+      vehicle_id: leg.vehicle_id || '',
+    });
+  }
+  return stops;
+}
+
+export default function MultiStopForm({ vehicles, onClose, onSaved, editRouteId, initialRoute, initialLegs }: MultiStopFormProps) {
+  const isEdit = !!editRouteId;
+  const [name, setName] = useState(initialRoute?.name || '');
+  const [date, setDate] = useState(initialRoute?.date || new Date().toISOString().split('T')[0]);
+  const [stops, setStops] = useState<Stop[]>(() =>
+    initialLegs?.length
+      ? legsToStops(initialLegs, initialRoute?.is_round_trip ?? false)
+      : [{ ...BLANK_STOP, mode: '' }, { ...BLANK_STOP }]
+  );
+  const [isRoundTrip, setIsRoundTrip] = useState(initialRoute?.is_round_trip ?? false);
   const [saveTemplate, setSaveTemplate] = useState(false);
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState(initialRoute?.notes || '');
   const [saving, setSaving] = useState(false);
 
   const addStop = () => {
@@ -101,17 +161,23 @@ export default function MultiStopForm({ vehicles, onClose, onSaved }: MultiStopF
         });
       }
 
-      const res = await offlineFetch('/api/travel/routes', {
-        method: 'POST',
+      const url = isEdit ? `/api/travel/routes/${editRouteId}` : '/api/travel/routes';
+      const method = isEdit ? 'PATCH' : 'POST';
+      const payload: Record<string, unknown> = {
+        name: name.trim() || null,
+        date,
+        legs,
+        notes: notes.trim() || null,
+        is_round_trip: isRoundTrip,
+      };
+      if (!isEdit) {
+        payload.save_as_template = saveTemplate && name.trim();
+      }
+
+      const res = await offlineFetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim() || null,
-          date,
-          legs,
-          notes: notes.trim() || null,
-          is_round_trip: isRoundTrip,
-          save_as_template: saveTemplate && name.trim(),
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -127,9 +193,9 @@ export default function MultiStopForm({ vehicles, onClose, onSaved }: MultiStopF
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-4 shadow-xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-2xl p-6 pb-0 w-full max-w-lg space-y-4 shadow-xl max-h-[90vh] overflow-y-auto"
       >
-        <h2 className="text-lg font-bold text-gray-900">Multi-Stop Route</h2>
+        <h2 className="text-lg font-bold text-gray-900">{isEdit ? 'Edit Multi-Stop Route' : 'Multi-Stop Route'}</h2>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -268,15 +334,17 @@ export default function MultiStopForm({ vehicles, onClose, onSaved }: MultiStopF
             />
             <span className="text-xs font-medium text-gray-600">Round trip (return to start)</span>
           </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={saveTemplate}
-              onChange={(e) => setSaveTemplate(e.target.checked)}
-              className="rounded border-gray-300 text-sky-600 focus:ring-sky-500"
-            />
-            <span className="text-xs font-medium text-gray-600">Save as reusable template</span>
-          </label>
+          {!isEdit && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={saveTemplate}
+                onChange={(e) => setSaveTemplate(e.target.checked)}
+                className="rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+              />
+              <span className="text-xs font-medium text-gray-600">Save as reusable template</span>
+            </label>
+          )}
         </div>
 
         <div>
@@ -290,20 +358,20 @@ export default function MultiStopForm({ vehicles, onClose, onSaved }: MultiStopF
           />
         </div>
 
-        <div className="flex gap-3 pt-2">
+        <div className="sticky bottom-0 bg-white pt-3 pb-3 -mx-6 px-6 border-t border-gray-100 flex gap-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+            className="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="flex-1 bg-sky-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-50"
+            className="flex-1 bg-sky-600 text-white rounded-xl py-2.5 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-50"
           >
-            {saving ? 'Saving...' : 'Save Route'}
+            {saving ? 'Saving...' : isEdit ? 'Update Route' : 'Save Route'}
           </button>
         </div>
       </form>

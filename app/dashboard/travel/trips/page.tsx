@@ -91,6 +91,11 @@ export default function TripsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [linkedTxDialog, setLinkedTxDialog] = useState<{ transactionId: string } | null>(null);
   const [showMultiStop, setShowMultiStop] = useState(false);
+  const [editingRoute, setEditingRoute] = useState<{
+    id: string;
+    route: { name: string | null; date: string; notes: string | null; is_round_trip: boolean };
+    legs: Array<{ mode: string; origin: string | null; destination: string | null; distance_miles: number | null; duration_min: number | null; cost: number | null; purpose: string | null; vehicle_id: string | null }>;
+  } | null>(null);
   const [routes, setRoutes] = useState<Array<{
     id: string; name: string | null; date: string;
     total_distance: number | null; total_duration: number | null;
@@ -216,6 +221,26 @@ export default function TripsPage() {
     }
   };
 
+  const handleRouteEdit = async (id: string) => {
+    const res = await offlineFetch(`/api/travel/routes/${id}`);
+    if (!res.ok) return;
+    const d = await res.json();
+    setEditingRoute({
+      id,
+      route: { name: d.route.name, date: d.route.date, notes: d.route.notes, is_round_trip: d.route.is_round_trip },
+      legs: (d.legs || []).map((l: Record<string, unknown>) => ({
+        mode: l.mode, origin: l.origin, destination: l.destination,
+        distance_miles: l.distance_miles, duration_min: l.duration_min,
+        cost: l.cost, purpose: l.purpose, vehicle_id: l.vehicle_id,
+      })),
+    });
+  };
+
+  const handleRouteDuplicate = async (id: string) => {
+    const res = await offlineFetch(`/api/travel/routes/${id}/duplicate`, { method: 'POST' });
+    if (res.ok) load();
+  };
+
   const clearFilters = () => { setModeFilter(''); setTaxFilter(''); setCategoryFilter(''); setPage(0); };
   const hasFilter = modeFilter || taxFilter || categoryFilter;
   const totalPages = Math.ceil(total / limit);
@@ -322,6 +347,8 @@ export default function TripsPage() {
             <RouteCard
               key={r.id}
               route={r}
+              onEdit={handleRouteEdit}
+              onDuplicate={handleRouteDuplicate}
               onDelete={async (id) => {
                 if (!confirm('Delete this route and all its trips?')) return;
                 const res = await offlineFetch(`/api/travel/routes/${id}`, { method: 'DELETE' });
@@ -472,11 +499,23 @@ export default function TripsPage() {
         </div>
       </Modal>
 
-      {/* Multi-Stop Form Modal */}
+      {/* Multi-Stop Form Modal (create) */}
       {showMultiStop && (
         <MultiStopForm
           vehicles={vehicles}
           onClose={() => setShowMultiStop(false)}
+          onSaved={load}
+        />
+      )}
+
+      {/* Multi-Stop Form Modal (edit) */}
+      {editingRoute && (
+        <MultiStopForm
+          vehicles={vehicles}
+          editRouteId={editingRoute.id}
+          initialRoute={editingRoute.route}
+          initialLegs={editingRoute.legs}
+          onClose={() => setEditingRoute(null)}
           onSaved={load}
         />
       )}
