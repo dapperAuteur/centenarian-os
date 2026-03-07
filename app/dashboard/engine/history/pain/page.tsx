@@ -34,10 +34,10 @@ interface PainLog {
 }
 
 function intensityColor(n: number): string {
-  if (n <= 2) return 'bg-lime-900/40 text-lime-400';
-  if (n <= 4) return 'bg-amber-900/40 text-amber-400';
-  if (n <= 6) return 'bg-orange-900/40 text-orange-400';
-  return 'bg-red-900/40 text-red-400';
+  if (n <= 2) return 'bg-lime-100 text-lime-700';
+  if (n <= 4) return 'bg-amber-100 text-amber-700';
+  if (n <= 6) return 'bg-orange-100 text-orange-700';
+  return 'bg-red-100 text-red-700';
 }
 
 export default function PainHistoryPage() {
@@ -163,17 +163,17 @@ export default function PainHistoryPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <Link href="/dashboard/engine/history" className="flex items-center gap-1 text-gray-400 hover:text-white text-sm mb-4 transition">
+      <Link href="/dashboard/engine/history" className="flex items-center gap-1 text-gray-500 hover:text-gray-900 text-sm mb-4 transition">
         <ChevronLeft className="w-4 h-4" /> Engine History
       </Link>
 
-      <h1 className="text-2xl font-bold text-white mb-1">Pain History</h1>
-      <p className="text-gray-400 text-sm mb-6">Browse, edit, and analyse past pain tracking entries.</p>
+      <h1 className="text-2xl font-bold text-gray-900 mb-1">Pain History</h1>
+      <p className="text-gray-500 text-sm mb-6">Browse, edit, and analyse past pain tracking entries.</p>
 
       {/* Trend Chart */}
       {chartData.length > 1 && (
-        <div className="bg-gray-900 rounded-xl p-4 mb-6">
-          <h2 className="text-sm font-medium text-gray-400 mb-3">Intensity Trend</h2>
+        <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
+          <h2 className="text-sm font-medium text-gray-600 mb-3">Intensity Trend</h2>
           <ResponsiveContainer width="100%" height={140}>
             <AreaChart data={chartData}>
               <defs>
@@ -182,10 +182,10 @@ export default function PainHistoryPage() {
                   <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis dataKey="date" tick={{ fill: '#9ca3af', fontSize: 11 }} />
-              <YAxis domain={[0, 10]} tick={{ fill: '#9ca3af', fontSize: 11 }} />
-              <Tooltip contentStyle={{ background: '#1f2937', border: 'none', borderRadius: 8, color: '#f9fafb' }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 11 }} />
+              <YAxis domain={[0, 10]} tick={{ fill: '#6b7280', fontSize: 11 }} />
+              <Tooltip contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, color: '#111827' }} />
               <Area type="monotone" dataKey="intensity" stroke="#f43f5e" fill="url(#painGrad)" />
             </AreaChart>
           </ResponsiveContainer>
@@ -193,25 +193,25 @@ export default function PainHistoryPage() {
       )}
 
       {/* Filters */}
-      <div className="bg-gray-900 rounded-xl p-4 mb-6 flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px]">
+      <div className="bg-white rounded-xl shadow-lg p-4 mb-6 flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-50">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
             placeholder="Search notes / activities..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-gray-800 text-sm text-white rounded-lg pl-9 pr-3 py-2 border border-gray-700 scheme-dark placeholder-gray-400"
+            className="w-full bg-white text-sm text-gray-900 rounded-lg pl-9 pr-3 py-2 border border-gray-300 placeholder-gray-400 focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent"
           />
         </div>
         <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)}
-          className="bg-gray-800 text-sm text-white rounded-lg px-2 py-2 border border-gray-700 scheme-dark" />
+          className="bg-white text-sm text-gray-900 rounded-lg px-2 py-2 border border-gray-300 focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent" />
         <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)}
-          className="bg-gray-800 text-sm text-white rounded-lg px-2 py-2 border border-gray-700 scheme-dark" />
+          className="bg-white text-sm text-gray-900 rounded-lg px-2 py-2 border border-gray-300 focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent" />
         <select
           value={minIntensity ?? ''}
           onChange={(e) => setMinIntensity(e.target.value ? Number(e.target.value) : null)}
-          className="bg-gray-800 text-sm text-white rounded-lg px-3 py-2 border border-gray-700 scheme-dark"
+          className="bg-white text-sm text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent"
         >
           <option value="">All Intensity</option>
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => <option key={n} value={n}>{n}+ / 10</option>)}
@@ -219,7 +219,7 @@ export default function PainHistoryPage() {
         <select
           value={locationFilter}
           onChange={(e) => setLocationFilter(e.target.value)}
-          className="bg-gray-800 text-sm text-white rounded-lg px-3 py-2 border border-gray-700 scheme-dark"
+          className="bg-white text-sm text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent"
         >
           <option value="">All Locations</option>
           {BODY_LOCATIONS.map((loc) => <option key={loc} value={loc}>{loc}</option>)}
@@ -232,7 +232,7 @@ export default function PainHistoryPage() {
           <Loader2 className="w-6 h-6 animate-spin text-fuchsia-500" />
         </div>
       ) : logs.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-gray-500">
           <p>No pain entries found.</p>
         </div>
       ) : (
@@ -240,32 +240,32 @@ export default function PainHistoryPage() {
           {logs.map((log) => {
             const isExpanded = expandedId === log.id;
             return (
-              <div key={log.id} className="bg-gray-900 border border-gray-800 rounded-xl">
+              <div key={log.id} className="bg-white border border-gray-200 rounded-xl shadow-sm">
                 {/* Summary row */}
                 <button
                   onClick={() => setExpandedId(isExpanded ? null : log.id)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-800/50 transition rounded-xl"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition rounded-xl"
                 >
-                  <span className="text-sm text-gray-300 w-24 shrink-0">{new Date(log.date + 'T00:00').toLocaleDateString()}</span>
+                  <span className="text-sm text-gray-600 w-24 shrink-0">{new Date(log.date + 'T00:00').toLocaleDateString()}</span>
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${intensityColor(log.pain_intensity ?? 0)}`}>
                     {log.pain_intensity}/10
                   </span>
-                  <span className="text-sm text-gray-200 flex-1 truncate">
+                  <span className="text-sm text-gray-900 flex-1 truncate">
                     {log.pain_locations?.join(', ') || '—'}
                   </span>
-                  {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                  {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
                 </button>
 
                 {/* Expanded detail */}
                 {isExpanded && (
-                  <div className="border-t border-gray-800 px-4 py-4 space-y-3">
+                  <div className="border-t border-gray-200 px-4 py-4 space-y-3">
                     {/* Locations */}
                     {log.pain_locations && log.pain_locations.length > 0 && (
                       <div>
-                        <p className="text-xs text-gray-400 mb-1">Locations</p>
+                        <p className="text-xs text-gray-500 mb-1">Locations</p>
                         <div className="flex flex-wrap gap-1">
                           {log.pain_locations.map((loc) => (
-                            <span key={loc} className="px-2 py-0.5 bg-fuchsia-900/30 text-fuchsia-300 rounded-full text-xs">{loc}</span>
+                            <span key={loc} className="px-2 py-0.5 bg-fuchsia-100 text-fuchsia-700 rounded-full text-xs">{loc}</span>
                           ))}
                         </div>
                       </div>
@@ -273,10 +273,10 @@ export default function PainHistoryPage() {
                     {/* Sensations */}
                     {log.pain_sensations && log.pain_sensations.length > 0 && (
                       <div>
-                        <p className="text-xs text-gray-400 mb-1">Sensations</p>
+                        <p className="text-xs text-gray-500 mb-1">Sensations</p>
                         <div className="flex flex-wrap gap-1">
                           {log.pain_sensations.map((s) => (
-                            <span key={s} className="px-2 py-0.5 bg-sky-900/30 text-sky-300 rounded-full text-xs">{s}</span>
+                            <span key={s} className="px-2 py-0.5 bg-sky-100 text-sky-700 rounded-full text-xs">{s}</span>
                           ))}
                         </div>
                       </div>
@@ -284,8 +284,8 @@ export default function PainHistoryPage() {
                     {/* Activities */}
                     {log.pain_activities && log.pain_activities.length > 0 && (
                       <div>
-                        <p className="text-xs text-gray-400 mb-1">Aggravating Activities</p>
-                        <ul className="text-sm text-gray-200 list-disc list-inside">
+                        <p className="text-xs text-gray-500 mb-1">Aggravating Activities</p>
+                        <ul className="text-sm text-gray-800 list-disc list-inside">
                           {log.pain_activities.map((a, i) => <li key={i}>{a}</li>)}
                         </ul>
                       </div>
@@ -293,8 +293,8 @@ export default function PainHistoryPage() {
                     {/* Notes */}
                     {log.pain_notes && (
                       <div>
-                        <p className="text-xs text-gray-400 mb-1">Notes</p>
-                        <p className="text-sm text-gray-200 whitespace-pre-wrap">{log.pain_notes}</p>
+                        <p className="text-xs text-gray-500 mb-1">Notes</p>
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap">{log.pain_notes}</p>
                       </div>
                     )}
 
@@ -307,11 +307,11 @@ export default function PainHistoryPage() {
                     {/* Actions */}
                     <div className="flex gap-2 pt-2">
                       <button onClick={() => openEdit(log)}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition">
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
                         <Pencil className="w-3 h-3" /> Edit
                       </button>
                       <button onClick={() => handleDelete(log.id)}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-800 text-gray-300 rounded-lg hover:bg-red-900/30 hover:text-red-400 transition">
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-red-50 hover:text-red-600 transition">
                         <Trash2 className="w-3 h-3" /> Clear Pain Data
                       </button>
                     </div>
