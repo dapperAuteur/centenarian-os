@@ -23,7 +23,7 @@ interface DailyLog {
   total_earned: number | null;
 }
 
-const ENERGY_COLORS = ['', 'bg-red-900/40 text-red-400', 'bg-orange-900/40 text-orange-400', 'bg-amber-900/40 text-amber-400', 'bg-lime-900/40 text-lime-400', 'bg-green-900/40 text-green-400'];
+const ENERGY_COLORS = ['', 'bg-red-100 text-red-700', 'bg-orange-100 text-orange-700', 'bg-amber-100 text-amber-700', 'bg-lime-100 text-lime-700', 'bg-green-100 text-green-700'];
 
 export default function DebriefHistoryPage() {
   const [logs, setLogs] = useState<DailyLog[]>([]);
@@ -103,33 +103,33 @@ export default function DebriefHistoryPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <Link href="/dashboard/engine/history" className="flex items-center gap-1 text-gray-400 hover:text-white text-sm mb-4 transition">
+      <Link href="/dashboard/engine/history" className="flex items-center gap-1 text-gray-500 hover:text-gray-900 text-sm mb-4 transition">
         <ChevronLeft className="w-4 h-4" /> Engine History
       </Link>
 
-      <h1 className="text-2xl font-bold text-white mb-1">Debrief History</h1>
-      <p className="text-gray-400 text-sm mb-6">Browse, edit, and connect past daily debrief entries.</p>
+      <h1 className="text-2xl font-bold text-gray-900 mb-1">Debrief History</h1>
+      <p className="text-gray-500 text-sm mb-6">Browse, edit, and connect past daily debrief entries.</p>
 
       {/* Filters */}
-      <div className="bg-gray-900 rounded-xl p-4 mb-6 flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px]">
+      <div className="bg-white rounded-xl shadow-lg p-4 mb-6 flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-50">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
             placeholder="Search wins / challenges..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-gray-800 text-sm text-white rounded-lg pl-9 pr-3 py-2 border border-gray-700 scheme-dark placeholder-gray-400"
+            className="w-full bg-white text-sm text-gray-900 rounded-lg pl-9 pr-3 py-2 border border-gray-300 placeholder-gray-400 focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent"
           />
         </div>
         <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)}
-          className="bg-gray-800 text-sm text-white rounded-lg px-2 py-2 border border-gray-700 scheme-dark" />
+          className="bg-white text-sm text-gray-900 rounded-lg px-2 py-2 border border-gray-300 focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent" />
         <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)}
-          className="bg-gray-800 text-sm text-white rounded-lg px-2 py-2 border border-gray-700 scheme-dark" />
+          className="bg-white text-sm text-gray-900 rounded-lg px-2 py-2 border border-gray-300 focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent" />
         <select
           value={energyFilter ?? ''}
           onChange={(e) => setEnergyFilter(e.target.value ? Number(e.target.value) : null)}
-          className="bg-gray-800 text-sm text-white rounded-lg px-3 py-2 border border-gray-700 scheme-dark"
+          className="bg-white text-sm text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent"
         >
           <option value="">All Energy</option>
           {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}/5</option>)}
@@ -142,7 +142,7 @@ export default function DebriefHistoryPage() {
           <Loader2 className="w-6 h-6 animate-spin text-fuchsia-500" />
         </div>
       ) : logs.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-gray-500">
           <p>No debrief entries found.</p>
         </div>
       ) : (
@@ -151,35 +151,35 @@ export default function DebriefHistoryPage() {
             const isExpanded = expandedId === log.id;
             const eColor = ENERGY_COLORS[log.energy_rating ?? 0] || '';
             return (
-              <div key={log.id} className="bg-gray-900 border border-gray-800 rounded-xl">
+              <div key={log.id} className="bg-white border border-gray-200 rounded-xl shadow-sm">
                 {/* Summary row */}
                 <button
                   onClick={() => setExpandedId(isExpanded ? null : log.id)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-800/50 transition rounded-xl"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition rounded-xl"
                 >
-                  <span className="text-sm text-gray-300 w-24 shrink-0">{new Date(log.date + 'T00:00').toLocaleDateString()}</span>
+                  <span className="text-sm text-gray-600 w-24 shrink-0">{new Date(log.date + 'T00:00').toLocaleDateString()}</span>
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${eColor}`}>
                     <Star className="w-3 h-3 inline mr-0.5" />{log.energy_rating}/5
                   </span>
-                  <span className="text-sm text-gray-200 flex-1 truncate">{log.biggest_win || '—'}</span>
-                  {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                  <span className="text-sm text-gray-900 flex-1 truncate">{log.biggest_win || '—'}</span>
+                  {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
                 </button>
 
                 {/* Expanded detail */}
                 {isExpanded && (
-                  <div className="border-t border-gray-800 px-4 py-4 space-y-3">
+                  <div className="border-t border-gray-200 px-4 py-4 space-y-3">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                       <div>
-                        <p className="text-xs text-gray-400 mb-1">Biggest Win</p>
-                        <p className="text-gray-200 whitespace-pre-wrap">{log.biggest_win || '—'}</p>
+                        <p className="text-xs text-gray-500 mb-1">Biggest Win</p>
+                        <p className="text-gray-800 whitespace-pre-wrap">{log.biggest_win || '—'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400 mb-1">Biggest Challenge</p>
-                        <p className="text-gray-200 whitespace-pre-wrap">{log.biggest_challenge || '—'}</p>
+                        <p className="text-xs text-gray-500 mb-1">Biggest Challenge</p>
+                        <p className="text-gray-800 whitespace-pre-wrap">{log.biggest_challenge || '—'}</p>
                       </div>
                     </div>
                     {(log.total_spent != null || log.total_earned != null) && (
-                      <div className="flex gap-4 text-xs text-gray-400">
+                      <div className="flex gap-4 text-xs text-gray-500">
                         {log.total_spent != null && <span>Spent: ${log.total_spent.toFixed(2)}</span>}
                         {log.total_earned != null && <span>Earned: ${log.total_earned.toFixed(2)}</span>}
                       </div>
@@ -194,11 +194,11 @@ export default function DebriefHistoryPage() {
                     {/* Actions */}
                     <div className="flex gap-2 pt-2">
                       <button onClick={() => openEdit(log)}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition">
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
                         <Pencil className="w-3 h-3" /> Edit
                       </button>
                       <button onClick={() => handleDelete(log.id)}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-800 text-gray-300 rounded-lg hover:bg-red-900/30 hover:text-red-400 transition">
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-red-50 hover:text-red-600 transition">
                         <Trash2 className="w-3 h-3" /> Delete
                       </button>
                     </div>

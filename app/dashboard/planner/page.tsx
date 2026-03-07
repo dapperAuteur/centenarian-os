@@ -11,6 +11,7 @@ import { Calendar, DollarSign, Plus, Repeat, Upload, Download, Filter } from 'lu
 import { EditTaskModal } from '@/components/EditTaskModal';
 import CreateRecurringTaskModal, { RecurringTaskData } from '@/components/planner/CreateRecurringTaskModal';
 import CreateTaskModal from '@/components/planner/CreateTaskModal';
+import BacklogSection from '@/components/planner/BacklogSection';
 import TaskCompletionActionsModal from '@/components/planner/TaskCompletionActionsModal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { OfflineSyncManager } from '@/lib/offline/sync-manager';
@@ -126,7 +127,6 @@ export default function PlannerPage() {
 
   // Backlog tasks (outside current date window, not completed)
   const [backlogTasks, setBacklogTasks] = useState<Task[]>([]);
-  const [showBacklog, setShowBacklog] = useState(true);
 
   // Recurring task state
   const [showRecurringModal, setShowRecurringModal] = useState(false);
@@ -175,8 +175,7 @@ export default function PlannerPage() {
           .eq('completed', false)
           .neq('status', 'archived')
           .or(`date.gt.${endDate},date.lt.${startDate}`)
-          .order('date', { ascending: true })
-          .limit(100),
+          .order('date', { ascending: true }),
       ]);
 
       if (mainRes.data) {
@@ -500,53 +499,12 @@ export default function PlannerPage() {
         </div>
       )}
 
-      {/* Backlog / Upcoming */}
-      <div className="mt-6">
-        <button
-          onClick={() => setShowBacklog(!showBacklog)}
-          className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-gray-900 transition mb-3"
-        >
-          <svg className={`w-4 h-4 transition-transform ${showBacklog ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-          </svg>
-          Backlog / Upcoming ({backlogTasks.length} tasks)
-        </button>
-        {showBacklog && (
-          <div className="bg-white rounded-xl shadow-lg p-6 space-y-3">
-            {backlogTasks.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">No tasks outside the current date window.</p>
-            ) : backlogTasks.map(task => {
-              const milestoneName = milestoneNames[task.milestone_id] ?? '';
-              return (
-                <div key={task.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className={`text-xs font-semibold uppercase px-2 py-1 rounded-full bg-sky-500 text-white shrink-0`}>
-                      {task.tag}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{task.activity}</p>
-                      <p className="text-xs text-gray-500">
-                        {task.date || 'No date'} {milestoneName && `· ${milestoneName}`}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      onClick={() => setEditingTask(task)}
-                      className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition"
-                      title="Edit / schedule"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-      </div>
+      <BacklogSection
+        tasks={backlogTasks}
+        milestoneNames={milestoneNames}
+        onToggle={handleToggle}
+        onEditTask={setEditingTask}
+      />
 
       <EditTaskModal
         task={editingTask}
