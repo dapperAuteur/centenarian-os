@@ -91,6 +91,11 @@ export default function TripsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [linkedTxDialog, setLinkedTxDialog] = useState<{ transactionId: string } | null>(null);
   const [showMultiStop, setShowMultiStop] = useState(false);
+  const [editingRoute, setEditingRoute] = useState<{
+    id: string;
+    route: { name: string | null; date: string; notes: string | null; is_round_trip: boolean };
+    legs: Array<{ mode: string; origin: string | null; destination: string | null; distance_miles: number | null; duration_min: number | null; cost: number | null; purpose: string | null; vehicle_id: string | null }>;
+  } | null>(null);
   const [routes, setRoutes] = useState<Array<{
     id: string; name: string | null; date: string;
     total_distance: number | null; total_duration: number | null;
@@ -216,6 +221,26 @@ export default function TripsPage() {
     }
   };
 
+  const handleRouteEdit = async (id: string) => {
+    const res = await offlineFetch(`/api/travel/routes/${id}`);
+    if (!res.ok) return;
+    const d = await res.json();
+    setEditingRoute({
+      id,
+      route: { name: d.route.name, date: d.route.date, notes: d.route.notes, is_round_trip: d.route.is_round_trip },
+      legs: (d.legs || []).map((l: Record<string, unknown>) => ({
+        mode: l.mode, origin: l.origin, destination: l.destination,
+        distance_miles: l.distance_miles, duration_min: l.duration_min,
+        cost: l.cost, purpose: l.purpose, vehicle_id: l.vehicle_id,
+      })),
+    });
+  };
+
+  const handleRouteDuplicate = async (id: string) => {
+    const res = await offlineFetch(`/api/travel/routes/${id}/duplicate`, { method: 'POST' });
+    if (res.ok) load();
+  };
+
   const clearFilters = () => { setModeFilter(''); setTaxFilter(''); setCategoryFilter(''); setPage(0); };
   const hasFilter = modeFilter || taxFilter || categoryFilter;
   const totalPages = Math.ceil(total / limit);
@@ -322,6 +347,8 @@ export default function TripsPage() {
             <RouteCard
               key={r.id}
               route={r}
+              onEdit={handleRouteEdit}
+              onDuplicate={handleRouteDuplicate}
               onDelete={async (id) => {
                 if (!confirm('Delete this route and all its trips?')) return;
                 const res = await offlineFetch(`/api/travel/routes/${id}`, { method: 'DELETE' });
@@ -472,11 +499,23 @@ export default function TripsPage() {
         </div>
       </Modal>
 
-      {/* Multi-Stop Form Modal */}
+      {/* Multi-Stop Form Modal (create) */}
       {showMultiStop && (
         <MultiStopForm
           vehicles={vehicles}
           onClose={() => setShowMultiStop(false)}
+          onSaved={load}
+        />
+      )}
+
+      {/* Multi-Stop Form Modal (edit) */}
+      {editingRoute && (
+        <MultiStopForm
+          vehicles={vehicles}
+          editRouteId={editingRoute.id}
+          initialRoute={editingRoute.route}
+          initialLegs={editingRoute.legs}
+          onClose={() => setEditingRoute(null)}
           onSaved={load}
         />
       )}
@@ -535,15 +574,27 @@ export default function TripsPage() {
                 />
               </div>
             </div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.is_round_trip}
-                onChange={(e) => setForm((f) => ({ ...f, is_round_trip: e.target.checked }))}
-                className="rounded border-gray-300 text-sky-600 focus:ring-sky-500"
-              />
-              <span className="text-xs font-medium text-gray-600">Round trip (distance counted both ways)</span>
-            </label>
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.is_round_trip}
+                  onChange={(e) => setForm((f) => ({ ...f, is_round_trip: e.target.checked }))}
+                  className="rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                />
+                <span className="text-xs font-medium text-gray-600">Round trip (distance counted both ways)</span>
+              </label>
+              {form.is_round_trip && (form.distance_miles || form.duration_min || form.cost) && (
+                <p className="text-xs text-sky-600 mt-1 ml-6">
+                  Effective total:{' '}
+                  {form.distance_miles && <span>{(parseFloat(form.distance_miles) * 2).toFixed(1)} mi</span>}
+                  {form.distance_miles && form.duration_min && <span> &middot; </span>}
+                  {form.duration_min && <span>{parseInt(form.duration_min) * 2} min</span>}
+                  {(form.distance_miles || form.duration_min) && form.cost && <span> &middot; </span>}
+                  {form.cost && <span>${(parseFloat(form.cost) * 2).toFixed(2)}</span>}
+                </p>
+              )}
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label htmlFor="trip-miles" className="block text-xs font-medium text-gray-600 mb-1">Miles</label>
