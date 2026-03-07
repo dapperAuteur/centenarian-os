@@ -574,15 +574,27 @@ export default function TripsPage() {
                 />
               </div>
             </div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.is_round_trip}
-                onChange={(e) => setForm((f) => ({ ...f, is_round_trip: e.target.checked }))}
-                className="rounded border-gray-300 text-sky-600 focus:ring-sky-500"
-              />
-              <span className="text-xs font-medium text-gray-600">Round trip (distance counted both ways)</span>
-            </label>
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.is_round_trip}
+                  onChange={(e) => setForm((f) => ({ ...f, is_round_trip: e.target.checked }))}
+                  className="rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                />
+                <span className="text-xs font-medium text-gray-600">Round trip (distance counted both ways)</span>
+              </label>
+              {form.is_round_trip && (form.distance_miles || form.duration_min || form.cost) && (
+                <p className="text-xs text-sky-600 mt-1 ml-6">
+                  Effective total:{' '}
+                  {form.distance_miles && <span>{(parseFloat(form.distance_miles) * 2).toFixed(1)} mi</span>}
+                  {form.distance_miles && form.duration_min && <span> &middot; </span>}
+                  {form.duration_min && <span>{parseInt(form.duration_min) * 2} min</span>}
+                  {(form.distance_miles || form.duration_min) && form.cost && <span> &middot; </span>}
+                  {form.cost && <span>${(parseFloat(form.cost) * 2).toFixed(2)}</span>}
+                </p>
+              )}
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label htmlFor="trip-miles" className="block text-xs font-medium text-gray-600 mb-1">Miles</label>

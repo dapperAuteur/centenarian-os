@@ -142,9 +142,27 @@ export default function MultiStopForm({ vehicles, onClose, onSaved, editRouteId,
     try {
       // Build legs from consecutive stops
       const legs = [];
-      const effectiveStops = isRoundTrip && stops.length >= 2 && stops[stops.length - 1].location !== stops[0].location
-        ? [...stops, { ...stops[stops.length - 1], location: stops[0].location }]
-        : stops;
+      let effectiveStops = stops;
+      if (isRoundTrip && stops.length >= 2 && stops[stops.length - 1].location !== stops[0].location) {
+        // Sum outbound legs for the return leg estimate
+        let totalDist = 0;
+        let totalDur = 0;
+        let totalCost = 0;
+        for (let i = 1; i < stops.length; i++) {
+          if (stops[i].distance_miles) totalDist += parseFloat(stops[i].distance_miles);
+          if (stops[i].duration_min) totalDur += parseInt(stops[i].duration_min);
+          if (stops[i].cost) totalCost += parseFloat(stops[i].cost);
+        }
+        effectiveStops = [...stops, {
+          location: stops[0].location,
+          mode: stops[stops.length - 1].mode || 'car',
+          distance_miles: totalDist > 0 ? String(totalDist) : '',
+          duration_min: totalDur > 0 ? String(totalDur) : '',
+          cost: totalCost > 0 ? String(totalCost) : '',
+          purpose: stops[stops.length - 1].purpose,
+          vehicle_id: stops[stops.length - 1].vehicle_id,
+        }];
+      }
 
       for (let i = 0; i < effectiveStops.length - 1; i++) {
         const from = effectiveStops[i];
@@ -325,15 +343,36 @@ export default function MultiStopForm({ vehicles, onClose, onSaved, editRouteId,
         </div>
 
         <div className="space-y-2">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isRoundTrip}
-              onChange={(e) => setIsRoundTrip(e.target.checked)}
-              className="rounded border-gray-300 text-sky-600 focus:ring-sky-500"
-            />
-            <span className="text-xs font-medium text-gray-600">Round trip (return to start)</span>
-          </label>
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isRoundTrip}
+                onChange={(e) => setIsRoundTrip(e.target.checked)}
+                className="rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+              />
+              <span className="text-xs font-medium text-gray-600">Round trip (return to start)</span>
+            </label>
+            {isRoundTrip && stops.length >= 2 && (() => {
+              let d = 0, t = 0, c = 0;
+              for (let i = 1; i < stops.length; i++) {
+                if (stops[i].distance_miles) d += parseFloat(stops[i].distance_miles);
+                if (stops[i].duration_min) t += parseInt(stops[i].duration_min);
+                if (stops[i].cost) c += parseFloat(stops[i].cost);
+              }
+              if (!d && !t && !c) return null;
+              return (
+                <p className="text-xs text-sky-600 mt-1 ml-6">
+                  Return leg auto-added:{' '}
+                  {d > 0 && <span>{d.toFixed(1)} mi</span>}
+                  {d > 0 && t > 0 && <span> &middot; </span>}
+                  {t > 0 && <span>{t} min</span>}
+                  {(d > 0 || t > 0) && c > 0 && <span> &middot; </span>}
+                  {c > 0 && <span>${c.toFixed(2)}</span>}
+                </p>
+              );
+            })()}
+          </div>
           {!isEdit && (
             <label className="flex items-center gap-2 cursor-pointer">
               <input
