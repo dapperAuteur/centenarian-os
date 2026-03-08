@@ -6,6 +6,8 @@ import {
   Briefcase,
   FileText,
   Map,
+  MapPin,
+  Building2,
   Utensils,
   HeartPulse,
   Watch,
@@ -93,6 +95,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Reports', href: '/dashboard/contractor/reports', icon: BarChart3, paid: true },
       { label: 'Compare', href: '/dashboard/contractor/compare', icon: ArrowUpDown, paid: true },
       { label: 'Board', href: '/dashboard/contractor/board', icon: Users, paid: true },
+      { label: 'Venues', href: '/dashboard/contractor/venues', icon: Building2, paid: true },
+      { label: 'Cities', href: '/dashboard/contractor/cities', icon: MapPin, paid: true },
     ],
   },
   {
