@@ -74,12 +74,45 @@ export interface FuelReceiptExtraction {
   confidence_notes: string;
 }
 
+// ── Pay Stub / Estimated Pay ────────────────────────────────────
+export interface PayStubLineItem {
+  type: string;       // e.g. "ST", "OT", "DT", "MM2", "Vacation"
+  rate: number | null;
+  hours: number | null;
+  amount: number;
+}
+
+export interface PayStubBenefit {
+  name: string;       // e.g. "IBEW 1220 CBS 401K", "IATSE 317 Indiana Pension"
+  amount: number;
+}
+
+export interface PayStubExtraction {
+  client_name: string | null;
+  job_number: string | null;
+  event_name: string | null;
+  work_date: string | null;      // YYYY-MM-DD
+  est_pay_date: string | null;   // YYYY-MM-DD
+  time_in: string | null;        // HH:MM AM/PM
+  time_out: string | null;       // HH:MM AM/PM
+  total_hours: number | null;
+  earnings: PayStubLineItem[];
+  est_earnings: number | null;
+  benefits: PayStubBenefit[];
+  est_benefits: number | null;
+  poc_name: string | null;
+  crew_coordinator: string | null;
+  location_name: string | null;
+  confidence_notes: string;
+}
+
 // ── Union type ──────────────────────────────────────────────────
 export type ExtractionResult =
   | { type: 'receipt'; data: ReceiptExtraction }
   | { type: 'recipe'; data: RecipeExtraction }
   | { type: 'maintenance_invoice'; data: MaintenanceExtraction }
   | { type: 'fuel_receipt'; data: FuelReceiptExtraction }
+  | { type: 'pay_stub'; data: PayStubExtraction }
   | { type: 'medical'; data: Record<string, unknown> }
   | { type: 'unknown'; data: Record<string, unknown> };
 
@@ -184,11 +217,52 @@ Extract all available data and return ONLY valid JSON matching this schema exact
 
 Return only the JSON object, no markdown, no explanation.`;
 
+const PAY_STUB_PROMPT = `You are extracting data from a contractor pay stub, estimated pay screen, or work invoice screenshot.
+
+This is commonly from broadcast/production staffing apps (e.g., ProCrewz, MasterMind) showing pay details for a work day.
+
+Extract all visible information and return ONLY valid JSON matching this schema:
+{
+  "client_name": "<company/org name, e.g. 'CBS Sports' or null>",
+  "job_number": "<job ID like 'J-223680' or null>",
+  "event_name": "<event name like '2026 BIG10 Women\\'s Championship' or null>",
+  "work_date": "<YYYY-MM-DD or null>",
+  "est_pay_date": "<YYYY-MM-DD or null>",
+  "time_in": "<HH:MM AM/PM — prefer adjusted time over punch time, or null>",
+  "time_out": "<HH:MM AM/PM — prefer adjusted time over punch time, or null>",
+  "total_hours": <number or null>,
+  "earnings": [
+    {
+      "type": "<pay type code: ST, OT, DT, MM2, Vacation, etc.>",
+      "rate": <hourly rate as number or null>,
+      "hours": <hours as number or null>,
+      "amount": <dollar amount as number>
+    }
+  ],
+  "est_earnings": <total estimated earnings as number or null>,
+  "benefits": [
+    {
+      "name": "<benefit name, e.g. 'IBEW 1220 CBS 401K', 'IATSE 317 Indiana Pension'>",
+      "amount": <dollar amount as number>
+    }
+  ],
+  "est_benefits": <total estimated benefits as number or null>,
+  "poc_name": "<point of contact name or null>",
+  "crew_coordinator": "<crew coordinator name or null>",
+  "location_name": "<venue name or null>",
+  "confidence_notes": "<brief note about extraction quality>"
+}
+
+Be precise with numbers and rates. Capture ALL earning line items and ALL benefit line items separately.
+If "Punch" and "Adjusted" times are shown, prefer the "Adjusted" values.
+Return only the JSON object, no markdown, no explanation.`;
+
 const EXTRACTION_PROMPTS: Record<string, string> = {
   receipt: RECEIPT_PROMPT,
   recipe: RECIPE_PROMPT,
   maintenance_invoice: MAINTENANCE_PROMPT,
   fuel_receipt: FUEL_RECEIPT_PROMPT,
+  pay_stub: PAY_STUB_PROMPT,
 };
 
 export async function extractDocument(

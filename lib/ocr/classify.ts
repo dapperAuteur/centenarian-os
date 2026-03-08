@@ -7,6 +7,7 @@ export type DocumentType =
   | 'recipe'
   | 'fuel_receipt'
   | 'maintenance_invoice'
+  | 'pay_stub'
   | 'medical'
   | 'unknown';
 
@@ -23,6 +24,7 @@ Classify as ONE of these types:
 - "recipe" — a recipe card, cookbook page, handwritten recipe, or printed recipe
 - "fuel_receipt" — a gas station pump receipt or a car dashboard showing fuel/odometer displays
 - "maintenance_invoice" — a mechanic, auto shop, or vehicle service invoice
+- "pay_stub" — a pay stub, estimated pay screen, work invoice, or contractor payment summary showing hours worked, rates, and earnings
 - "medical" — a medical bill, lab result, prescription, or health-related document
 - "unknown" — cannot determine the document type
 

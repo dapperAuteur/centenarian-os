@@ -4,7 +4,35 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+// Contractor subdomain: allowed route prefixes (everything else redirects to hub)
+const CONTRACTOR_ALLOWED = [
+  '/dashboard/contractor',
+  '/dashboard/finance/invoices',
+  '/dashboard/finance/transactions',
+  '/dashboard/finance/accounts',
+  '/dashboard/travel',
+  '/dashboard/equipment',
+  '/dashboard/contacts',
+  '/dashboard/settings',
+  '/dashboard/billing',
+  '/dashboard/messages',
+  '/dashboard/feedback',
+  '/dashboard/scan',
+  '/dashboard/data',
+  '/api/',
+  '/login',
+  '/signup',
+];
+
+function isContractorAllowed(pathname: string): boolean {
+  if (pathname === '/dashboard' || pathname === '/') return true;
+  return CONTRACTOR_ALLOWED.some((p) => pathname === p || pathname.startsWith(p + '/') || (p.endsWith('/') && pathname.startsWith(p)));
+}
+
 export async function middleware(request: NextRequest) {
+  const hostname = request.headers.get('host') ?? '';
+  const isContractorMode = hostname.startsWith('contractor.');
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -59,6 +87,24 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
+
+  // ── Contractor subdomain handling ──────────────────────────────────
+  if (isContractorMode) {
+    // Set header so client components can detect contractor mode
+    response.headers.set('x-app-mode', 'contractor');
+
+    // Rewrite root and /dashboard to contractor hub
+    if (pathname === '/' || pathname === '/dashboard') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/dashboard/contractor';
+      return NextResponse.rewrite(url, { headers: response.headers });
+    }
+
+    // Block non-contractor routes (redirect to hub)
+    if (pathname.startsWith('/dashboard') && !isContractorAllowed(pathname)) {
+      return NextResponse.redirect(new URL('/dashboard/contractor', request.url));
+    }
+  }
 
   // MFA enforcement — if user has MFA enrolled but hasn't verified yet, redirect to login
   if (user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin'))) {

@@ -6,11 +6,13 @@
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useSubscription } from '@/lib/hooks/useSubscription';
 import { useUnreadCount } from '@/lib/hooks/useUnreadCount';
+import { useAppMode } from '@/lib/hooks/useAppMode';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import DesktopNav from '@/components/nav/DesktopNav';
 import MobileBottomBar from '@/components/nav/MobileBottomBar';
+import ContractorLayout from '@/components/nav/ContractorLayout';
 import FloatingActionsMenu from '@/components/ui/FloatingActionsMenu';
 import OfflineIndicator from '@/components/ui/OfflineIndicator';
 import MfaBanner from '@/components/ui/MfaBanner';
@@ -40,6 +42,7 @@ export default function DashboardLayout({
 }) {
   const { loading } = useAuth();
   const { status: subStatus, loading: subLoading } = useSubscription();
+  const appMode = useAppMode();
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
@@ -101,9 +104,24 @@ export default function DashboardLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-sky-600 border-t-transparent rounded-full" />
+      <div className={`min-h-screen ${appMode === 'contractor' ? 'bg-neutral-950' : 'bg-gray-50'} flex items-center justify-center`}>
+        <div className={`animate-spin h-8 w-8 border-4 ${appMode === 'contractor' ? 'border-amber-500' : 'border-sky-600'} border-t-transparent rounded-full`} />
       </div>
+    );
+  }
+
+  // Contractor subdomain — render stripped-down dark layout
+  if (appMode === 'contractor') {
+    return (
+      <SyncProvider>
+        <ContractorLayout
+          username={username}
+          unreadMessages={unreadMessages}
+          onLogout={handleLogout}
+        >
+          {children}
+        </ContractorLayout>
+      </SyncProvider>
     );
   }
 

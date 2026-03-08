@@ -1,0 +1,3 @@
+job_number,client_name,event_name,location_name,status,start_date,end_date,pay_rate,ot_rate,dt_rate,rate_type,union_local,department,benefits_eligible,distance_from_home_miles,poc_name,crew_coordinator_name,notes
+J-100001,CBS Sports,2026 BIG10 Championship,Lucas Oil Stadium,assigned,2026-03-15,2026-03-17,55.00,82.50,110.00,hourly,IATSE 317,Camera,true,125,John Smith,Jane Doe,Multi-day event
+J-100002,ESPN,Monday Night Football,MetLife Stadium,completed,2026-01-10,2026-01-10,60.00,90.00,120.00,hourly,IBEW 1212,Audio,false,,Mike Johnson,,Single day call

@@ -64,6 +64,8 @@ export async function GET(request: NextRequest) {
   if (purpose) query = query.eq('purpose', purpose);
   if (tax_category) query = query.eq('tax_category', tax_category);
   if (trip_category) query = query.eq('trip_category', trip_category);
+  const jobId = params.get('job_id');
+  if (jobId) query = query.eq('job_id', jobId);
 
   const { data, error, count } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -82,7 +84,7 @@ export async function POST(request: NextRequest) {
     purpose, calories_burned, cost,
     garmin_activity_id, health_metric_date, notes, source,
     tax_category, trip_category, finance_category_id,
-    is_round_trip,
+    is_round_trip, job_id,
   } = body;
 
   if (!mode || !date) {
@@ -121,6 +123,7 @@ export async function POST(request: NextRequest) {
       tax_category: tax_category || 'personal',
       trip_category: resolvedTripCategory,
       is_round_trip: roundTrip,
+      job_id: job_id || null,
     })
     .select()
     .single();

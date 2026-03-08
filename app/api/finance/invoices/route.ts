@@ -32,8 +32,11 @@ export async function GET(request: NextRequest) {
     .order('invoice_date', { ascending: false })
     .range(offset, offset + limit - 1);
 
+  const jobId = url.searchParams.get('job_id');
+
   if (direction) query = query.eq('direction', direction);
   if (status) query = query.eq('status', status);
+  if (jobId) query = query.eq('job_id', jobId);
 
   const { data, error, count } = await query;
 
@@ -50,7 +53,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const {
     direction, contact_name, contact_id, invoice_date, due_date,
-    invoice_number, account_id, brand_id, category_id, notes,
+    invoice_number, account_id, brand_id, category_id, notes, job_id,
     items = [],
   } = body;
 
@@ -93,6 +96,7 @@ export async function POST(request: NextRequest) {
       brand_id: brand_id ?? null,
       category_id: category_id ?? null,
       notes: notes ?? null,
+      job_id: job_id ?? null,
     })
     .select()
     .single();
