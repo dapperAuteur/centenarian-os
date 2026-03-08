@@ -13,7 +13,11 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }>
 export default function JobStatusBadge({ status }: { status: string }) {
   const s = STATUS_STYLES[status] ?? STATUS_STYLES.assigned;
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${s.bg} ${s.text}`}>
+    <span
+      role="status"
+      aria-label={`Job status: ${s.label}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${s.bg} ${s.text}`}
+    >
       {s.label}
     </span>
   );

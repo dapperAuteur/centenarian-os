@@ -112,7 +112,7 @@ export default function UnionDocumentsPage() {
           onClick={() => setShowUpload(true)}
           className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
         >
-          <Upload size={14} /> Upload
+          <Upload size={14} aria-hidden="true" /> Upload
         </button>
       </div>
 
@@ -145,10 +145,10 @@ export default function UnionDocumentsPage() {
             <h2 className="text-lg font-semibold text-neutral-100">Upload Document</h2>
             <button
               onClick={() => setShowUpload(false)}
-              className="rounded p-1 text-neutral-500 hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="min-h-11 min-w-11 flex items-center justify-center rounded text-neutral-500 hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
               aria-label="Close upload form"
             >
-              <X size={18} />
+              <X size={18} aria-hidden="true" />
             </button>
           </div>
 
@@ -219,7 +219,7 @@ export default function UnionDocumentsPage() {
               disabled={uploading || !form.name.trim() || !selectedFile}
               className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
             >
-              {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+              {uploading ? <Loader2 size={14} className="animate-spin" aria-label="Loading..." /> : <Upload size={14} aria-hidden="true" />}
               {uploading ? 'Processing...' : 'Upload & Process'}
             </button>
             <button
@@ -241,7 +241,7 @@ export default function UnionDocumentsPage() {
       {/* Document list */}
       {loading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading" />
+          <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading..." />
         </div>
       ) : list.length === 0 ? (
         <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-8 text-center text-neutral-500">
@@ -280,11 +280,11 @@ export default function UnionDocumentsPage() {
                       <span>· {new Date(doc.created_at).toLocaleDateString()}</span>
                       {doc.is_shared ? (
                         <span className="flex items-center gap-0.5 text-green-400">
-                          <Globe size={10} /> Shared
+                          <Globe size={10} aria-hidden="true" /> Shared
                         </span>
                       ) : (
                         <span className="flex items-center gap-0.5">
-                          <Lock size={10} /> Private
+                          <Lock size={10} aria-hidden="true" /> Private
                         </span>
                       )}
                       {doc.author && <span>· by {doc.author}</span>}
@@ -298,13 +298,13 @@ export default function UnionDocumentsPage() {
                     <button
                       onClick={() => deleteDoc(doc.id)}
                       disabled={deletingId === doc.id}
-                      className="rounded p-1.5 text-neutral-500 hover:text-red-400 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className="min-h-11 min-w-11 flex items-center justify-center rounded text-neutral-500 hover:text-red-400 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500"
                       aria-label={`Delete ${doc.name}`}
                     >
                       {deletingId === doc.id ? (
-                        <Loader2 size={14} className="animate-spin" />
+                        <Loader2 size={14} className="animate-spin" aria-label="Loading..." />
                       ) : (
-                        <Trash2 size={14} />
+                        <Trash2 size={14} aria-hidden="true" />
                       )}
                     </button>
                   )}

@@ -132,7 +132,7 @@ export default function VenuesPage() {
 
       {loading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading" />
+          <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading..." />
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-8 text-center text-neutral-500">
@@ -180,9 +180,9 @@ export default function VenuesPage() {
                     )}
                   </div>
                   {isExpanded ? (
-                    <ChevronUp size={16} className="text-neutral-500 shrink-0" />
+                    <ChevronUp size={16} className="text-neutral-500 shrink-0" aria-hidden="true" />
                   ) : (
-                    <ChevronDown size={16} className="text-neutral-500 shrink-0" />
+                    <ChevronDown size={16} className="text-neutral-500 shrink-0" aria-hidden="true" />
                   )}
                 </button>
 
@@ -252,10 +252,10 @@ export default function VenuesPage() {
                               />
                               <button
                                 onClick={() => removeCustomField(i)}
-                                className="rounded-lg border border-neutral-700 p-2 text-neutral-500 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                className="min-h-11 min-w-11 flex items-center justify-center rounded-lg border border-neutral-700 text-neutral-500 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
                                 aria-label={`Remove custom field ${i + 1}`}
                               >
-                                <X size={14} />
+                                <X size={14} aria-hidden="true" />
                               </button>
                             </div>
                           ))}
@@ -271,14 +271,14 @@ export default function VenuesPage() {
                           <button
                             onClick={() => saveKb(venue.id)}
                             disabled={saving}
-                            className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
+                            className="flex min-h-11 items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
                           >
-                            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                            {saving ? <Loader2 size={14} className="animate-spin" aria-label="Loading..." /> : <Save size={14} aria-hidden="true" />}
                             Save
                           </button>
                           <button
                             onClick={() => setEditingId(null)}
-                            className="rounded-lg border border-neutral-700 px-4 py-2.5 text-sm text-neutral-400 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            className="min-h-11 rounded-lg border border-neutral-700 px-4 py-2.5 text-sm text-neutral-400 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
                           >
                             Cancel
                           </button>
@@ -313,7 +313,7 @@ export default function VenuesPage() {
 
                         <button
                           onClick={() => startEdit(venue)}
-                          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-neutral-700 px-4 py-2.5 text-sm font-medium text-neutral-300 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500 sm:w-auto"
+                          className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-neutral-700 px-4 py-2.5 text-sm font-medium text-neutral-300 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500 sm:w-auto"
                         >
                           Edit Knowledge Base
                         </button>

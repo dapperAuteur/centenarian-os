@@ -153,10 +153,10 @@ export default function CompareJobsPage() {
                     {job?.job_number ?? id}
                     <button
                       onClick={() => toggleJob(id)}
-                      className="rounded-full p-0.5 hover:bg-amber-500/30 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className="min-h-11 min-w-11 flex items-center justify-center rounded-full hover:bg-amber-500/30 focus:outline-none focus:ring-2 focus:ring-amber-500"
                       aria-label={`Remove ${job?.job_number ?? 'job'}`}
                     >
-                      <X size={14} />
+                      <X size={14} aria-hidden="true" />
                     </button>
                   </span>
                 );
@@ -179,7 +179,7 @@ export default function CompareJobsPage() {
 
           {jobsLoading ? (
             <div className="flex justify-center py-6">
-              <Loader2 className="animate-spin text-neutral-500" size={20} aria-label="Loading jobs" />
+              <Loader2 className="animate-spin text-neutral-500" size={20} aria-label="Loading..." />
             </div>
           ) : (
             <div className="max-h-48 overflow-y-auto rounded-xl border border-neutral-800 bg-neutral-900" role="listbox" aria-label="Available jobs" aria-multiselectable="true">
@@ -228,10 +228,10 @@ export default function CompareJobsPage() {
           <button
             onClick={compare}
             disabled={selectedIds.length < 2 || loading}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg bg-amber-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-950 transition"
+            className="w-full sm:w-auto flex min-h-11 items-center justify-center gap-2 rounded-lg bg-amber-600 px-6 py-2.5 text-base font-medium text-white hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-950 transition"
             aria-label={`Compare ${selectedIds.length} selected jobs`}
           >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowUpDown size={16} />}
+            {loading ? <Loader2 size={16} className="animate-spin" aria-label="Loading..." /> : <ArrowUpDown size={16} aria-hidden="true" />}
             Compare {selectedIds.length} Job{selectedIds.length !== 1 ? 's' : ''}
           </button>
         </div>

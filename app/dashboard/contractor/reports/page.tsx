@@ -89,7 +89,7 @@ export default function ContractorReportsPage() {
         <div className="flex items-center gap-2" role="group" aria-label="Year selector">
           <button
             onClick={() => setYear((y) => y - 1)}
-            className="rounded-lg border border-neutral-700 bg-neutral-900 p-2 text-neutral-300 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="rounded-lg border border-neutral-700 bg-neutral-900 p-2.5 text-neutral-300 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500 min-h-11 min-w-11 flex items-center justify-center"
             aria-label={`Previous year, ${year - 1}`}
           >
             <ChevronLeft size={18} />
@@ -99,7 +99,7 @@ export default function ContractorReportsPage() {
           </span>
           <button
             onClick={() => setYear((y) => y + 1)}
-            className="rounded-lg border border-neutral-700 bg-neutral-900 p-2 text-neutral-300 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="rounded-lg border border-neutral-700 bg-neutral-900 p-2.5 text-neutral-300 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500 min-h-11 min-w-11 flex items-center justify-center"
             aria-label={`Next year, ${year + 1}`}
           >
             <ChevronRight size={18} />

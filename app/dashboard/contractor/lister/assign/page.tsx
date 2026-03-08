@@ -109,7 +109,7 @@ export default function ListerAssignPage() {
           onClick={() => setShowAssign(true)}
           className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
         >
-          <UserPlus size={14} /> Assign Contractor
+          <UserPlus size={14} aria-hidden="true" /> Assign Contractor
         </button>
       </div>
 
@@ -135,14 +135,14 @@ export default function ListerAssignPage() {
         <div className="rounded-xl border border-neutral-700 bg-neutral-900 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-neutral-100">Assign Contractor to Job</h2>
-            <button onClick={() => setShowAssign(false)} className="rounded p-1 text-neutral-500 hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Close">
-              <XIcon size={18} />
+            <button onClick={() => setShowAssign(false)} className="min-h-11 min-w-11 flex items-center justify-center rounded text-neutral-500 hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Close">
+              <XIcon size={18} aria-hidden="true" />
             </button>
           </div>
 
           {assignableContacts.length === 0 && (
             <div className="rounded-lg border border-yellow-700/50 bg-yellow-900/20 p-3 flex gap-2" role="alert">
-              <AlertTriangle size={14} className="text-yellow-400 shrink-0 mt-0.5" />
+              <AlertTriangle size={14} className="text-yellow-400 shrink-0 mt-0.5" aria-hidden="true" />
               <p className="text-xs text-yellow-300">No assignable contractors. Add contractors with linked accounts to your roster first.</p>
             </div>
           )}
@@ -161,7 +161,7 @@ export default function ListerAssignPage() {
                     <option key={j.id} value={j.id}>{j.job_number} — {j.event_name || j.client_name}</option>
                   ))}
                 </select>
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" aria-hidden="true" />
               </div>
             </label>
 
@@ -178,7 +178,7 @@ export default function ListerAssignPage() {
                     <option key={c.id} value={c.linked_user_id!}>{c.name}{c.username ? ` (@${c.username})` : ''}</option>
                   ))}
                 </select>
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" aria-hidden="true" />
               </div>
             </label>
           </div>
@@ -197,7 +197,7 @@ export default function ListerAssignPage() {
           <div className="flex gap-2 pt-1">
             <button onClick={createAssignment} disabled={assigning || !form.job_id || !form.assigned_to}
               className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-neutral-900">
-              {assigning ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
+              {assigning ? <Loader2 size={14} className="animate-spin" aria-label="Loading..." /> : <UserPlus size={14} aria-hidden="true" />}
               {assigning ? 'Assigning...' : 'Assign'}
             </button>
             <button onClick={() => setShowAssign(false)}
@@ -211,7 +211,7 @@ export default function ListerAssignPage() {
       {/* Assignments list */}
       {loading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading" />
+          <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading..." />
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-8 text-center text-neutral-500">
@@ -252,10 +252,10 @@ export default function ListerAssignPage() {
                     <button
                       onClick={() => removeAssignment(a.id)}
                       disabled={removingId === a.id}
-                      className="rounded p-1.5 text-neutral-500 hover:text-red-400 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="min-h-11 min-w-11 flex items-center justify-center rounded text-neutral-500 hover:text-red-400 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       aria-label={`Remove assignment for ${a.assigned_to_username}`}
                     >
-                      {removingId === a.id ? <Loader2 size={14} className="animate-spin" /> : <XIcon size={14} />}
+                      {removingId === a.id ? <Loader2 size={14} className="animate-spin" aria-label="Loading..." /> : <XIcon size={14} aria-hidden="true" />}
                     </button>
                   )}
                 </div>

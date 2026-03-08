@@ -40,7 +40,7 @@ export default function RateCardSelect({ onSelect }: RateCardSelectProps) {
   return (
     <div>
       <label className="block text-sm font-medium text-neutral-300 mb-1">
-        <CreditCard size={14} className="inline mr-1" />
+        <CreditCard size={14} className="inline mr-1" aria-hidden="true" />
         Apply Rate Card
       </label>
       <select

@@ -92,7 +92,7 @@ export default function WorkerAssignmentsPage() {
 
       {loading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading" />
+          <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading..." />
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-8 text-center text-neutral-500">
@@ -146,6 +146,7 @@ export default function WorkerAssignmentsPage() {
                           value={responseNote}
                           onChange={(e) => setResponseNote(e.target.value)}
                           placeholder="Add a note (optional)..."
+                          aria-label="Response note"
                           className="flex-1 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-neutral-100 placeholder-neutral-500 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
                         />
                       </div>
@@ -156,7 +157,7 @@ export default function WorkerAssignmentsPage() {
                         disabled={respondingId === a.id}
                         className="flex items-center gap-1.5 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
                       >
-                        {respondingId === a.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                        {respondingId === a.id ? <Loader2 size={14} className="animate-spin" aria-label="Loading..." /> : <Check size={14} aria-hidden="true" />}
                         Accept
                       </button>
                       <button
@@ -164,14 +165,14 @@ export default function WorkerAssignmentsPage() {
                         disabled={respondingId === a.id}
                         className="flex items-center gap-1.5 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
                       >
-                        <XIcon size={14} />
+                        <XIcon size={14} aria-hidden="true" />
                         Decline
                       </button>
                       <button
                         onClick={() => setShowNoteId(showNoteId === a.id ? null : a.id)}
                         className="flex items-center gap-1.5 rounded-lg border border-neutral-700 px-3 py-2.5 text-sm text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
                       >
-                        <MessageCircle size={14} />
+                        <MessageCircle size={14} aria-hidden="true" />
                         {showNoteId === a.id ? 'Hide Note' : 'Add Note'}
                       </button>
                     </div>
