@@ -54,15 +54,17 @@ export async function seedLister(db: SupabaseClient, userId: string): Promise<vo
   if (cErr) throw new Error(`Roster contacts: ${cErr.message}`);
 
   // 2. Create lister jobs
+  const today = new Date().toISOString().split('T')[0];
   const jobInserts = LISTER_EVENTS.map((e, i) => ({
     user_id: userId,
+    lister_id: userId,
     job_number: `L-${100000 + i}`,
     client_name: e.client,
     event_name: e.event,
     location_name: e.venue,
-    status: e.start < new Date().toISOString().split('T')[0] ? 'completed' : 'confirmed',
+    status: e.start < today ? 'completed' : 'confirmed',
     start_date: e.start,
-    end_date: e.start, // single day for simplicity
+    end_date: e.start,
     is_lister_job: true,
     pay_rate: 60,
     ot_rate: 90,
@@ -70,8 +72,43 @@ export async function seedLister(db: SupabaseClient, userId: string): Promise<vo
     department: 'Camera',
     notes: `${e.positions} positions to fill`,
   }));
-  const { data: jobs, error: jErr } = await db.from('contractor_jobs').insert(jobInserts).select('id, job_number');
+  const { data: jobs, error: jErr } = await db.from('contractor_jobs').insert(jobInserts).select('id, job_number, status');
   if (jErr) throw new Error(`Lister jobs: ${jErr.message}`);
+
+  // 2b. Create job assignments (lister assigns roster members to jobs)
+  const assignmentInserts = [];
+  const statuses = ['accepted', 'accepted', 'offered', 'declined'] as const;
+  for (let i = 0; i < Math.min((jobs ?? []).length, 8); i++) {
+    const job = jobs![i];
+    const positions = LISTER_EVENTS[i]?.positions ?? 2;
+    for (let p = 0; p < Math.min(positions, (contacts ?? []).length); p++) {
+      const contactIdx = (i * 2 + p) % (contacts ?? []).length;
+      const s = statuses[(i + p) % statuses.length];
+      assignmentInserts.push({
+        job_id: job.id,
+        assigned_by: userId,
+        assigned_to: userId, // self-reference since no real contractor accounts exist
+        status: s,
+        message: `${LISTER_EVENTS[i].event} — Position ${p + 1}. Contact: ${contacts![contactIdx].name}`,
+        response_note: s === 'accepted' ? 'Confirmed, see you there.' : s === 'declined' ? 'Sorry, already booked.' : null,
+        responded_at: s !== 'offered' ? new Date().toISOString() : null,
+      });
+    }
+  }
+  if (assignmentInserts.length > 0) {
+    // Insert one per job to avoid unique constraint (job_id, assigned_to)
+    const uniqueAssignments = [];
+    const seen = new Set<string>();
+    for (const a of assignmentInserts) {
+      const key = `${a.job_id}-${a.assigned_to}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueAssignments.push(a);
+      }
+    }
+    const { error: aErr } = await db.from('contractor_job_assignments').insert(uniqueAssignments);
+    if (aErr) throw new Error(`Assignments: ${aErr.message}`);
+  }
 
   // 3. Create message groups
   const groups = [
@@ -82,20 +119,44 @@ export async function seedLister(db: SupabaseClient, userId: string): Promise<vo
   const { data: createdGroups, error: gErr } = await db.from('lister_message_groups').insert(groups).select('id, name');
   if (gErr) throw new Error(`Groups: ${gErr.message}`);
 
-  // 4. Create messages
-  const messages = [
+  // 4. Add members to groups (use lister's own ID since no real contractor accounts)
+  // In a real scenario these would be actual contractor user IDs
+  if (createdGroups && createdGroups.length > 0) {
+    // Add self to all groups as a placeholder member
+    const memberInserts = createdGroups.map((g) => ({
+      group_id: g.id,
+      user_id: userId,
+    }));
+    const { error: gmErr } = await db.from('lister_message_group_members').insert(memberInserts);
+    if (gmErr) throw new Error(`Group members: ${gmErr.message}`);
+  }
+
+  // 5. Create messages — group messages
+  const groupMessages = [
     { sender_id: userId, subject: 'NFL Combine 2026 — Crew Call', body: 'Looking for 6 camera ops for the NFL Combine at Lucas Oil, Feb 23 - Mar 2. IATSE 317 rates. Long days but great gig. Reply if interested.' },
     { sender_id: userId, subject: 'B1G Tournament Crew', body: 'Need 4 camera ops for the B1G Women\'s Basketball Tournament at Gainbridge, Mar 4-8. CBS Sports rate card applies.' },
     { sender_id: userId, subject: 'Territorial Cup — AZ crew needed', body: 'ASU vs Arizona at Mountain America Stadium, Nov 28. Need 2 camera ops. Fox Sports rates. Who\'s available?' },
+    { sender_id: userId, subject: 'Holiday Schedule Reminder', body: 'Heads up — Colts vs 49ers on Dec 22 and Suns vs Lakers on Dec 23. Both need full crews. Let me know availability ASAP so I can get assignments out.' },
+    { sender_id: userId, subject: 'Rate Update — CBS Sports', body: 'CBS has updated their rate card for 2026 season. Camera ops now at $65/hr ST, $97.50 OT. Will apply to all CBS bookings going forward.' },
   ];
 
-  // Send to groups
   if (createdGroups && createdGroups.length > 0) {
-    const msgInserts = messages.map((m, i) => ({
+    const groupMsgInserts = groupMessages.map((m, i) => ({
       ...m,
       group_id: createdGroups[i % createdGroups.length].id,
     }));
-    const { error: mErr } = await db.from('lister_messages').insert(msgInserts);
-    if (mErr) throw new Error(`Messages: ${mErr.message}`);
+    const { error: mErr } = await db.from('lister_messages').insert(groupMsgInserts);
+    if (mErr) throw new Error(`Group messages: ${mErr.message}`);
   }
+
+  // 6. Create individual messages (lister to self as placeholder)
+  const individualMessages = [
+    { sender_id: userId, recipient_id: userId, subject: 'Colts vs Dolphins — Confirmed', body: 'You\'re confirmed for Camera 3 at Lucas Oil, Sep 7. Call time 8:00 AM. Park in Lot 1, badge at Gate 1.' },
+    { sender_id: userId, recipient_id: userId, subject: 'IU vs Purdue — Call Sheet Attached', body: 'Call sheet for IU vs Purdue at Assembly Hall, Jan 27. Camera positions assigned. Check your email for the PDF.' },
+    { sender_id: userId, recipient_id: userId, subject: 'Availability Check — March', body: 'Checking your availability for the full B1G Tournament run, Mar 4-8. Five consecutive days at Gainbridge. Let me know.' },
+    { sender_id: userId, recipient_id: userId, subject: 'W9 Reminder', body: 'Hey, CBS is asking for updated W9s before they\'ll process January invoices. Can you get yours in this week?' },
+    { sender_id: userId, recipient_id: userId, subject: 'Great job last weekend', body: 'Client feedback from the Pacers game was excellent. You\'re on the shortlist for playoff games if they make the run.' },
+  ];
+  const { error: imErr } = await db.from('lister_messages').insert(individualMessages);
+  if (imErr) throw new Error(`Individual messages: ${imErr.message}`);
 }
