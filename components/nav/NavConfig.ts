@@ -32,6 +32,7 @@ import {
   UserPlus,
   History,
   HardHat,
+  CreditCard,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -85,6 +86,7 @@ export const NAV_GROUPS: NavGroup[] = [
     icon: HardHat,
     items: [
       { label: 'Jobs', href: '/dashboard/contractor', icon: HardHat, paid: true },
+      { label: 'Rate Cards', href: '/dashboard/contractor/rate-cards', icon: CreditCard, paid: true },
     ],
   },
   {

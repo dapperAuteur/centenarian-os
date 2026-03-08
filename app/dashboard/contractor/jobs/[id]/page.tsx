@@ -6,10 +6,11 @@ import Link from 'next/link';
 import {
   ArrowLeft, Loader2, Clock, FileText, DollarSign, Car,
   FolderOpen, Phone, MessageSquare, Camera, Receipt,
-  Trash2, Edit2, Check, X,
+  Trash2, Edit2, Check, X, Zap,
 } from 'lucide-react';
 import JobStatusBadge from '@/components/contractor/JobStatusBadge';
 import JobSummaryCards from '@/components/contractor/JobSummaryCards';
+import QuickLogModal from '@/components/contractor/QuickLogModal';
 
 /* ─── Types ─────────────────────────────────────────────── */
 interface Job {
@@ -112,6 +113,7 @@ export default function JobDetailPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('time');
   const [generating, setGenerating] = useState(false);
+  const [quickLogOpen, setQuickLogOpen] = useState(false);
   const [statusEditing, setStatusEditing] = useState(false);
   const [newStatus, setNewStatus] = useState('');
 
@@ -254,6 +256,12 @@ export default function JobDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => setQuickLogOpen(true)}
+            className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-500"
+          >
+            <Zap size={14} /> Quick Log
+          </button>
           <Link
             href={`/dashboard/contractor/jobs/${id}/edit`}
             className="flex items-center gap-1.5 rounded-lg border border-neutral-700 px-3 py-2 text-sm text-neutral-300 hover:bg-neutral-800"
@@ -498,6 +506,15 @@ export default function JobDetailPage() {
           <Camera size={16} /> Scan Pay Stub
         </button>
       </div>
+
+      {/* Quick Log Modal */}
+      <QuickLogModal
+        isOpen={quickLogOpen}
+        onClose={() => setQuickLogOpen(false)}
+        jobId={id}
+        jobNumber={job.job_number}
+        onLogged={loadJob}
+      />
     </div>
   );
 }

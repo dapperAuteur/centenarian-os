@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import Link from 'next/link';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
+import RateCardSelect from '@/components/contractor/RateCardSelect';
 
 const RATE_TYPES = ['hourly', 'daily', 'flat'];
 const STATUSES = ['assigned', 'confirmed', 'in_progress', 'completed'];
@@ -117,6 +118,26 @@ export default function NewJobPage() {
             {error}
           </div>
         )}
+
+        {/* Rate Card Pre-fill */}
+        <RateCardSelect
+          onSelect={(card) => {
+            setForm((prev) => ({
+              ...prev,
+              pay_rate: card.st_rate?.toString() ?? prev.pay_rate,
+              ot_rate: card.ot_rate?.toString() ?? prev.ot_rate,
+              dt_rate: card.dt_rate?.toString() ?? prev.dt_rate,
+              rate_type: card.rate_type ?? prev.rate_type,
+              union_local: card.union_local ?? prev.union_local,
+              department: card.department ?? prev.department,
+              benefits_eligible: (card.benefits?.length ?? 0) > 0,
+              meal_allowance: card.travel_benefits?.meal_allowance?.toString() ?? prev.meal_allowance,
+              per_diem: card.travel_benefits?.per_diem?.toString() ?? prev.per_diem,
+              mileage_rate: card.travel_benefits?.mileage_rate?.toString() ?? prev.mileage_rate,
+              extra_pay: card.travel_benefits?.extra_pay?.toString() ?? prev.extra_pay,
+            }));
+          }}
+        />
 
         {/* Job Info */}
         <fieldset className="space-y-4 rounded-xl border border-neutral-800 bg-neutral-900 p-4">
