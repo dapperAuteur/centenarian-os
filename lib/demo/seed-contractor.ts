@@ -127,6 +127,12 @@ const CONTACTS = [
 
 // ─── Seed Function ────────────────────────────────────────────────────────
 export async function seedContractor(db: SupabaseClient, userId: string): Promise<void> {
+  // 0. Set contractor profile
+  await db.from('profiles').update({
+    contractor_role: 'worker',
+    products: ['contractor'],
+  }).eq('id', userId);
+
   // 1. Create contacts
   const contactInserts = CONTACTS.map((c) => ({
     user_id: userId,
@@ -269,6 +275,108 @@ export async function seedContractor(db: SupabaseClient, userId: string): Promis
     if (validEntries.length > 0) {
       const { error: eErr } = await db.from('city_guide_entries').insert(validEntries);
       if (eErr) throw new Error(`City entries: ${eErr.message}`);
+    }
+  }
+
+  // 7. Union memberships
+  const membershipInserts = [
+    {
+      user_id: userId,
+      union_name: 'IATSE',
+      local_number: '317',
+      member_id: 'IA317-04892',
+      status: 'active',
+      join_date: '2018-06-15',
+      dues_amount: 125.00,
+      dues_frequency: 'quarterly',
+      next_dues_date: '2026-04-01',
+      initiation_fee: 500.00,
+      initiation_paid: true,
+      notes: 'Primary local — Indiana. Camera department.',
+    },
+    {
+      user_id: userId,
+      union_name: 'IBEW',
+      local_number: '1220',
+      member_id: 'IBEW1220-7831',
+      status: 'active',
+      join_date: '2021-03-01',
+      dues_amount: 95.00,
+      dues_frequency: 'quarterly',
+      next_dues_date: '2026-03-15',
+      initiation_fee: 350.00,
+      initiation_paid: true,
+      notes: 'Secondary local. Audio/electrical work.',
+    },
+  ];
+  const { data: memberships, error: mErr } = await db.from('union_memberships').insert(membershipInserts).select('id, union_name, local_number');
+  if (mErr) throw new Error(`Memberships: ${mErr.message}`);
+
+  // 8. Dues payments for memberships
+  const membershipMap: Record<string, string> = {};
+  for (const m of memberships ?? []) membershipMap[`${m.union_name}-${m.local_number}`] = m.id;
+
+  const duesInserts = [
+    // IATSE 317 — last 3 quarters paid
+    { membership_id: membershipMap['IATSE-317'], user_id: userId, amount: 125.00, payment_date: '2025-07-01', period_start: '2025-07-01', period_end: '2025-09-30', payment_method: 'check', confirmation_number: 'IA-2025-Q3' },
+    { membership_id: membershipMap['IATSE-317'], user_id: userId, amount: 125.00, payment_date: '2025-10-01', period_start: '2025-10-01', period_end: '2025-12-31', payment_method: 'check', confirmation_number: 'IA-2025-Q4' },
+    { membership_id: membershipMap['IATSE-317'], user_id: userId, amount: 125.00, payment_date: '2026-01-05', period_start: '2026-01-01', period_end: '2026-03-31', payment_method: 'online', confirmation_number: 'IA-2026-Q1' },
+    // IBEW 1220 — last 2 quarters paid
+    { membership_id: membershipMap['IBEW-1220'], user_id: userId, amount: 95.00, payment_date: '2025-09-15', period_start: '2025-10-01', period_end: '2025-12-31', payment_method: 'online', confirmation_number: 'IB-2025-Q4' },
+    { membership_id: membershipMap['IBEW-1220'], user_id: userId, amount: 95.00, payment_date: '2025-12-28', period_start: '2026-01-01', period_end: '2026-03-31', payment_method: 'online', confirmation_number: 'IB-2026-Q1' },
+  ];
+  const validDues = duesInserts.filter((d) => d.membership_id);
+  if (validDues.length > 0) {
+    const { error: dErr } = await db.from('union_dues_payments').insert(validDues);
+    if (dErr) throw new Error(`Dues payments: ${dErr.message}`);
+  }
+
+  // 9. Create invoices for paid/invoiced jobs with time entries
+  const invoicedJobs = (jobs ?? []).filter((j) => ['invoiced', 'paid'].includes(j.status));
+  for (const job of invoicedJobs.slice(0, 6)) {
+    const event = EVENTS.find((e) => `J-${230000 + EVENTS.indexOf(e)}` === job.job_number);
+    if (!event) continue;
+
+    const stRate = event.rate;
+    const otRate = event.ot_rate;
+    const jobStart = new Date(job.start_date + 'T00:00:00');
+    const jobEnd = new Date(job.end_date + 'T00:00:00');
+    const numDays = Math.max(1, Math.ceil((jobEnd.getTime() - jobStart.getTime()) / 86400000) + 1);
+    const workDays = Math.min(numDays, 5);
+    const totalSt = workDays * 8;
+    const totalOt = Math.ceil(workDays / 2) * 2; // every other day has 2h OT
+    const totalAmount = (totalSt * stRate) + (totalOt * otRate);
+
+    const dueDate = new Date(new Date(job.end_date + 'T00:00:00').getTime() + 30 * 86400000).toISOString().split('T')[0];
+    const { data: inv, error: invErr } = await db.from('invoices').insert({
+      user_id: userId,
+      direction: 'receivable',
+      invoice_number: `INV-${job.job_number}`,
+      contact_name: event.client,
+      contact_id: contactMap[event.client] ?? null,
+      status: job.status === 'paid' ? 'paid' : 'sent',
+      invoice_date: job.end_date,
+      due_date: dueDate,
+      subtotal: totalAmount,
+      total: totalAmount,
+      amount_paid: job.status === 'paid' ? totalAmount : 0,
+      paid_date: job.status === 'paid' ? dueDate : null,
+      job_id: job.id,
+      notes: `${event.event} — ${workDays} work days`,
+    }).select('id').maybeSingle();
+
+    if (invErr) throw new Error(`Invoice: ${invErr.message}`);
+
+    // Invoice line items
+    if (inv) {
+      const lineItems = [
+        { invoice_id: inv.id, description: `Standard Time (${totalSt}h × $${stRate})`, quantity: totalSt, unit_price: stRate, amount: totalSt * stRate, sort_order: 0 },
+      ];
+      if (totalOt > 0) {
+        lineItems.push({ invoice_id: inv.id, description: `Overtime (${totalOt}h × $${otRate})`, quantity: totalOt, unit_price: otRate, amount: totalOt * otRate, sort_order: 1 });
+      }
+      const { error: liErr } = await db.from('invoice_items').insert(lineItems);
+      if (liErr) throw new Error(`Invoice line items: ${liErr.message}`);
     }
   }
 }

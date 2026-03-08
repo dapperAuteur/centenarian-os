@@ -16,7 +16,7 @@ interface Invite {
   expires_at: string | null;
   is_active: boolean;
   allowed_modules: string[] | null;
-  demo_profile: 'visitor' | 'tutorial' | null;
+  demo_profile: 'visitor' | 'tutorial' | 'contractor_demo' | 'lister_demo' | null;
   demo_seeded: boolean;
   demo_seeded_at: string | null;
   invite_token: string;
@@ -48,7 +48,7 @@ const EMPTY_FORM = {
   expires_at: '',
   all_modules: true,
   allowed_modules: [] as string[],
-  demo_profile: '' as '' | 'visitor' | 'tutorial',
+  demo_profile: '' as '' | 'visitor' | 'tutorial' | 'contractor_demo' | 'lister_demo',
   notes: '',
 };
 
@@ -256,7 +256,7 @@ export default function AdminInvitesPage() {
                         {inv.demo_profile ? (
                           <div className="flex items-center gap-1.5">
                             <span className={`text-xs font-medium ${inv.demo_seeded ? 'text-indigo-600' : 'text-gray-500'}`}>
-                              {inv.demo_profile}
+                              {inv.demo_profile.replace('_', ' ')}
                               {inv.demo_seeded && <span className="ml-1 text-green-600">✓</span>}
                             </span>
                           </div>
@@ -427,7 +427,7 @@ export default function AdminInvitesPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Demo Data</label>
               <div className="flex gap-2">
-                {(['', 'visitor', 'tutorial'] as const).map((p) => (
+                {(['', 'visitor', 'tutorial', 'contractor_demo', 'lister_demo'] as const).map((p) => (
                   <button
                     key={p}
                     type="button"
@@ -438,7 +438,7 @@ export default function AdminInvitesPage() {
                         : 'border-gray-300 text-gray-700 hover:border-gray-400'
                     }`}
                   >
-                    {p === '' ? 'None' : p}
+                    {p === '' ? 'None' : p.replace('_', ' ')}
                   </button>
                 ))}
               </div>
