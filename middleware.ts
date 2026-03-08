@@ -24,9 +24,25 @@ const CONTRACTOR_ALLOWED = [
   '/signup',
 ];
 
-function isContractorAllowed(pathname: string): boolean {
+// Lister subdomain: allowed route prefixes
+const LISTER_ALLOWED = [
+  '/dashboard/contractor/lister',
+  '/dashboard/contractor/jobs',
+  '/dashboard/contractor/reports',
+  '/dashboard/contractor/venues',
+  '/dashboard/contractor/cities',
+  '/dashboard/settings',
+  '/dashboard/billing',
+  '/dashboard/messages',
+  '/dashboard/feedback',
+  '/api/',
+  '/login',
+  '/signup',
+];
+
+function isSubdomainAllowed(pathname: string, allowed: string[]): boolean {
   if (pathname === '/dashboard' || pathname === '/') return true;
-  return CONTRACTOR_ALLOWED.some((p) => pathname === p || pathname.startsWith(p + '/') || (p.endsWith('/') && pathname.startsWith(p)));
+  return allowed.some((p) => pathname === p || pathname.startsWith(p + '/') || (p.endsWith('/') && pathname.startsWith(p)));
 }
 
 export async function middleware(request: NextRequest) {
@@ -88,21 +104,34 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
 
-  // ── Contractor subdomain handling ──────────────────────────────────
+  // ── Subdomain handling ────────────────────────────────────────────
+  const isListerMode = hostname.startsWith('lister.');
+
   if (isContractorMode) {
-    // Set header so client components can detect contractor mode
     response.headers.set('x-app-mode', 'contractor');
 
-    // Rewrite root and /dashboard to contractor hub
     if (pathname === '/' || pathname === '/dashboard') {
       const url = request.nextUrl.clone();
       url.pathname = '/dashboard/contractor';
       return NextResponse.rewrite(url, { headers: response.headers });
     }
 
-    // Block non-contractor routes (redirect to hub)
-    if (pathname.startsWith('/dashboard') && !isContractorAllowed(pathname)) {
+    if (pathname.startsWith('/dashboard') && !isSubdomainAllowed(pathname, CONTRACTOR_ALLOWED)) {
       return NextResponse.redirect(new URL('/dashboard/contractor', request.url));
+    }
+  }
+
+  if (isListerMode) {
+    response.headers.set('x-app-mode', 'lister');
+
+    if (pathname === '/' || pathname === '/dashboard') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/dashboard/contractor/lister';
+      return NextResponse.rewrite(url, { headers: response.headers });
+    }
+
+    if (pathname.startsWith('/dashboard') && !isSubdomainAllowed(pathname, LISTER_ALLOWED)) {
+      return NextResponse.redirect(new URL('/dashboard/contractor/lister', request.url));
     }
   }
 
