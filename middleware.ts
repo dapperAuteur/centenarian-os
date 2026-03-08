@@ -110,6 +110,25 @@ export async function middleware(request: NextRequest) {
   if (isContractorMode) {
     response.headers.set('x-app-mode', 'contractor');
 
+    // Unauthenticated: serve landing/pricing pages
+    if (!user) {
+      if (pathname === '/') {
+        const url = request.nextUrl.clone();
+        url.pathname = '/contractor-landing';
+        return NextResponse.rewrite(url, { headers: response.headers });
+      }
+      if (pathname === '/pricing') {
+        const url = request.nextUrl.clone();
+        url.pathname = '/contractor-pricing';
+        return NextResponse.rewrite(url, { headers: response.headers });
+      }
+    }
+
+    // Allow landing/pricing routes through (even if authenticated, for direct access)
+    if (pathname === '/contractor-landing' || pathname === '/contractor-pricing') {
+      return response;
+    }
+
     if (pathname === '/' || pathname === '/dashboard') {
       const url = request.nextUrl.clone();
       url.pathname = '/dashboard/contractor';
@@ -123,6 +142,25 @@ export async function middleware(request: NextRequest) {
 
   if (isListerMode) {
     response.headers.set('x-app-mode', 'lister');
+
+    // Unauthenticated: serve landing/pricing pages
+    if (!user) {
+      if (pathname === '/') {
+        const url = request.nextUrl.clone();
+        url.pathname = '/lister-landing';
+        return NextResponse.rewrite(url, { headers: response.headers });
+      }
+      if (pathname === '/pricing') {
+        const url = request.nextUrl.clone();
+        url.pathname = '/lister-pricing';
+        return NextResponse.rewrite(url, { headers: response.headers });
+      }
+    }
+
+    // Allow landing/pricing routes through
+    if (pathname === '/lister-landing' || pathname === '/lister-pricing') {
+      return response;
+    }
 
     if (pathname === '/' || pathname === '/dashboard') {
       const url = request.nextUrl.clone();
