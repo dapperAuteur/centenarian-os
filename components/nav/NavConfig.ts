@@ -8,6 +8,7 @@ import {
   Map,
   MapPin,
   Building2,
+  Scale,
   Utensils,
   HeartPulse,
   Watch,
@@ -97,6 +98,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Board', href: '/dashboard/contractor/board', icon: Users, paid: true },
       { label: 'Venues', href: '/dashboard/contractor/venues', icon: Building2, paid: true },
       { label: 'Cities', href: '/dashboard/contractor/cities', icon: MapPin, paid: true },
+      { label: 'Union', href: '/dashboard/contractor/union', icon: Scale, paid: true },
     ],
   },
   {
