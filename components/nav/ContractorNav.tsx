@@ -11,7 +11,7 @@ import {
   HardHat, CreditCard, FileText, DollarSign, Car,
   Package, ScanLine, Database, Settings, Bell, LogOut,
   UserCircle, ChevronDown, Menu, X, MessageCircle,
-  BarChart3, ArrowUpDown, Users, Building2, MapPin, Scale, Inbox,
+  BarChart3, ArrowUpDown, Users, Building2, MapPin, Scale, Inbox, IdCard,
 } from 'lucide-react';
 
 interface ContractorNavItem {
@@ -30,7 +30,8 @@ const NAV_ITEMS: ContractorNavItem[] = [
   { label: 'Board', href: '/dashboard/contractor/board', icon: Users },
   { label: 'Venues', href: '/dashboard/contractor/venues', icon: Building2 },
   { label: 'Cities', href: '/dashboard/contractor/cities', icon: MapPin },
-  { label: 'Union', href: '/dashboard/contractor/union', icon: Scale },
+  { label: 'Union Docs', href: '/dashboard/contractor/union', icon: Scale },
+  { label: 'Memberships', href: '/dashboard/contractor/union/memberships', icon: IdCard },
   { label: 'Invoices', href: '/dashboard/finance/invoices', icon: FileText },
   { label: 'Finance', href: '/dashboard/finance/transactions', icon: DollarSign },
   { label: 'Travel', href: '/dashboard/travel', icon: Car },
