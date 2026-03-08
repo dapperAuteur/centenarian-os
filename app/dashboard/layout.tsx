@@ -13,6 +13,7 @@ import { useState, useEffect } from 'react';
 import DesktopNav from '@/components/nav/DesktopNav';
 import MobileBottomBar from '@/components/nav/MobileBottomBar';
 import ContractorLayout from '@/components/nav/ContractorLayout';
+import ListerLayout from '@/components/nav/ListerLayout';
 import FloatingActionsMenu from '@/components/ui/FloatingActionsMenu';
 import OfflineIndicator from '@/components/ui/OfflineIndicator';
 import MfaBanner from '@/components/ui/MfaBanner';
@@ -103,9 +104,11 @@ export default function DashboardLayout({
   };
 
   if (loading) {
+    const isDark = appMode === 'contractor' || appMode === 'lister';
+    const accent = appMode === 'lister' ? 'border-indigo-500' : appMode === 'contractor' ? 'border-amber-500' : 'border-sky-600';
     return (
-      <div className={`min-h-screen ${appMode === 'contractor' ? 'bg-neutral-950' : 'bg-gray-50'} flex items-center justify-center`}>
-        <div className={`animate-spin h-8 w-8 border-4 ${appMode === 'contractor' ? 'border-amber-500' : 'border-sky-600'} border-t-transparent rounded-full`} />
+      <div className={`min-h-screen ${isDark ? 'bg-neutral-950' : 'bg-gray-50'} flex items-center justify-center`}>
+        <div className={`animate-spin h-8 w-8 border-4 ${accent} border-t-transparent rounded-full`} />
       </div>
     );
   }
@@ -121,6 +124,21 @@ export default function DashboardLayout({
         >
           {children}
         </ContractorLayout>
+      </SyncProvider>
+    );
+  }
+
+  // Lister subdomain — render lister dark layout
+  if (appMode === 'lister') {
+    return (
+      <SyncProvider>
+        <ListerLayout
+          username={username}
+          unreadMessages={unreadMessages}
+          onLogout={handleLogout}
+        >
+          {children}
+        </ListerLayout>
       </SyncProvider>
     );
   }

@@ -1,56 +1,47 @@
 'use client';
 
-// components/nav/ContractorNav.tsx
-// Stripped-down navigation for the contractor subdomain.
-// Shows only contractor-relevant routes with an amber accent.
+// components/nav/ListerNav.tsx
+// Stripped-down navigation for the lister subdomain.
+// Shows lister-relevant routes with an indigo accent.
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import {
-  HardHat, CreditCard, FileText, DollarSign, Car,
-  Package, ScanLine, Database, Settings, Bell, LogOut,
-  UserCircle, ChevronDown, Menu, X, MessageCircle,
-  BarChart3, ArrowUpDown, Users, Building2, MapPin, Scale, Inbox,
+  ClipboardList, Briefcase, Users, Send, MessageCircle,
+  BarChart3, CalendarCheck, UserPlus, Settings, Bell, LogOut,
+  UserCircle, ChevronDown, Menu, X, CreditCard, UsersRound,
 } from 'lucide-react';
 
-interface ContractorNavItem {
+interface ListerNavItem {
   label: string;
   href: string;
-  icon: typeof HardHat;
+  icon: typeof Briefcase;
 }
 
-const NAV_ITEMS: ContractorNavItem[] = [
-  { label: 'Job Hub', href: '/dashboard/contractor', icon: HardHat },
-  { label: 'Jobs', href: '/dashboard/contractor/jobs', icon: HardHat },
-  { label: 'Rate Cards', href: '/dashboard/contractor/rate-cards', icon: CreditCard },
+const NAV_ITEMS: ListerNavItem[] = [
+  { label: 'Dashboard', href: '/dashboard/contractor/lister', icon: ClipboardList },
+  { label: 'Jobs', href: '/dashboard/contractor/jobs', icon: Briefcase },
+  { label: 'Roster', href: '/dashboard/contractor/lister/roster', icon: Users },
+  { label: 'Assign', href: '/dashboard/contractor/lister/assign', icon: UserPlus },
+  { label: 'Availability', href: '/dashboard/contractor/lister/availability', icon: CalendarCheck },
+  { label: 'Messages', href: '/dashboard/contractor/lister/messages', icon: Send },
+  { label: 'Groups', href: '/dashboard/contractor/lister/groups', icon: UsersRound },
   { label: 'Reports', href: '/dashboard/contractor/reports', icon: BarChart3 },
-  { label: 'Compare', href: '/dashboard/contractor/compare', icon: ArrowUpDown },
-  { label: 'Offers', href: '/dashboard/contractor/assignments', icon: Inbox },
-  { label: 'Board', href: '/dashboard/contractor/board', icon: Users },
-  { label: 'Venues', href: '/dashboard/contractor/venues', icon: Building2 },
-  { label: 'Cities', href: '/dashboard/contractor/cities', icon: MapPin },
-  { label: 'Union', href: '/dashboard/contractor/union', icon: Scale },
-  { label: 'Invoices', href: '/dashboard/finance/invoices', icon: FileText },
-  { label: 'Finance', href: '/dashboard/finance/transactions', icon: DollarSign },
-  { label: 'Travel', href: '/dashboard/travel', icon: Car },
-  { label: 'Equipment', href: '/dashboard/equipment', icon: Package },
-  { label: 'Scan', href: '/dashboard/scan', icon: ScanLine },
-  { label: 'Data Hub', href: '/dashboard/data', icon: Database },
 ];
 
 function isActive(href: string, pathname: string): boolean {
-  if (href === '/dashboard/contractor') return pathname === href;
+  if (href === '/dashboard/contractor/lister') return pathname === href;
   return pathname === href || pathname.startsWith(href + '/');
 }
 
-export interface ContractorNavProps {
+export interface ListerNavProps {
   username: string | null;
   unreadMessages: number;
   onLogout: () => void;
 }
 
-export default function ContractorNav({ username, unreadMessages, onLogout }: ContractorNavProps) {
+export default function ListerNav({ username, unreadMessages, onLogout }: ListerNavProps) {
   const pathname = usePathname();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -71,7 +62,6 @@ export default function ContractorNav({ username, unreadMessages, onLogout }: Co
     return () => document.removeEventListener('mousedown', handleMouseDown);
   }, []);
 
-  // Lock body scroll when drawer open
   useEffect(() => {
     document.body.style.overflow = drawerOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
@@ -82,11 +72,11 @@ export default function ContractorNav({ username, unreadMessages, onLogout }: Co
       <nav
         ref={navRef}
         className="bg-neutral-950 border-b border-neutral-800 sticky top-0 z-50"
-        aria-label="Contractor navigation"
+        aria-label="Lister navigation"
       >
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-100 focus:px-3 focus:py-2 focus:bg-amber-600 focus:text-white focus:rounded-lg focus:text-sm focus:font-medium"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-100 focus:px-3 focus:py-2 focus:bg-indigo-600 focus:text-white focus:rounded-lg focus:text-sm focus:font-medium"
         >
           Skip to content
         </a>
@@ -94,9 +84,9 @@ export default function ContractorNav({ username, unreadMessages, onLogout }: Co
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Desktop (lg+) */}
           <div className="hidden lg:flex items-center justify-between h-14">
-            <Link href="/dashboard/contractor" className="flex items-center gap-2 text-lg font-bold text-amber-400 shrink-0 mr-6">
-              <HardHat className="w-5 h-5" />
-              JobHub
+            <Link href="/dashboard/contractor/lister" className="flex items-center gap-2 text-lg font-bold text-indigo-400 shrink-0 mr-6">
+              <ClipboardList className="w-5 h-5" />
+              CrewOps
             </Link>
 
             <div className="flex items-center gap-0.5 overflow-x-auto">
@@ -109,7 +99,7 @@ export default function ContractorNav({ username, unreadMessages, onLogout }: Co
                     href={item.href}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition ${
                       active
-                        ? 'text-amber-400 bg-amber-400/10'
+                        ? 'text-indigo-400 bg-indigo-400/10'
                         : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800'
                     }`}
                     aria-current={active ? 'page' : undefined}
@@ -130,7 +120,7 @@ export default function ContractorNav({ username, unreadMessages, onLogout }: Co
               >
                 <Bell className="w-5 h-5" />
                 {unreadMessages > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-amber-500 text-neutral-950 text-xs font-bold rounded-full flex items-center justify-center leading-none">
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-indigo-500 text-white text-xs font-bold rounded-full flex items-center justify-center leading-none">
                     {unreadMessages > 9 ? '9+' : unreadMessages}
                   </span>
                 )}
@@ -213,9 +203,9 @@ export default function ContractorNav({ username, unreadMessages, onLogout }: Co
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <Link href="/dashboard/contractor" className="flex items-center gap-2 text-lg font-bold text-amber-400">
-                <HardHat className="w-5 h-5" />
-                JobHub
+              <Link href="/dashboard/contractor/lister" className="flex items-center gap-2 text-lg font-bold text-indigo-400">
+                <ClipboardList className="w-5 h-5" />
+                CrewOps
               </Link>
             </div>
             <Link
@@ -225,7 +215,7 @@ export default function ContractorNav({ username, unreadMessages, onLogout }: Co
             >
               <Bell className="w-5 h-5" />
               {unreadMessages > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-amber-500 text-neutral-950 text-xs font-bold rounded-full flex items-center justify-center leading-none">
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-indigo-500 text-white text-xs font-bold rounded-full flex items-center justify-center leading-none">
                   {unreadMessages > 9 ? '9+' : unreadMessages}
                 </span>
               )}
@@ -246,8 +236,8 @@ export default function ContractorNav({ username, unreadMessages, onLogout }: Co
             style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 4rem)' }}
           >
             <div className="flex items-center justify-between px-4 py-4 border-b border-neutral-800">
-              <span className="text-lg font-bold text-amber-400 flex items-center gap-2">
-                <HardHat className="w-5 h-5" /> JobHub
+              <span className="text-lg font-bold text-indigo-400 flex items-center gap-2">
+                <ClipboardList className="w-5 h-5" /> CrewOps
               </span>
               <button onClick={() => setDrawerOpen(false)} className="p-1.5 rounded-lg hover:bg-neutral-800 transition" aria-label="Close menu">
                 <X className="w-5 h-5 text-neutral-500" />
@@ -263,7 +253,7 @@ export default function ContractorNav({ username, unreadMessages, onLogout }: Co
                     key={item.href}
                     href={item.href}
                     className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition ${
-                      active ? 'text-amber-400 bg-amber-400/10' : 'text-neutral-300 hover:bg-neutral-800'
+                      active ? 'text-indigo-400 bg-indigo-400/10' : 'text-neutral-300 hover:bg-neutral-800'
                     }`}
                     aria-current={active ? 'page' : undefined}
                   >
@@ -291,7 +281,7 @@ export default function ContractorNav({ username, unreadMessages, onLogout }: Co
               <Link href="/dashboard/messages" className="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-300 hover:bg-neutral-800 transition">
                 <Bell className="w-4 h-4 shrink-0" /> Messages
                 {unreadMessages > 0 && (
-                  <span className="ml-auto w-5 h-5 bg-amber-500 text-neutral-950 text-xs font-bold rounded-full flex items-center justify-center leading-none">
+                  <span className="ml-auto w-5 h-5 bg-indigo-500 text-white text-xs font-bold rounded-full flex items-center justify-center leading-none">
                     {unreadMessages > 9 ? '9+' : unreadMessages}
                   </span>
                 )}
@@ -318,16 +308,16 @@ export default function ContractorNav({ username, unreadMessages, onLogout }: Co
       <div
         className="fixed bottom-0 left-0 right-0 z-50 bg-neutral-950 border-t border-neutral-800 lg:hidden"
         role="tablist"
-        aria-label="Contractor navigation"
+        aria-label="Lister navigation"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex h-14">
           {[
-            { label: 'Hub', href: '/dashboard/contractor', icon: HardHat },
-            { label: 'Jobs', href: '/dashboard/contractor/jobs', icon: HardHat },
-            { label: 'Invoices', href: '/dashboard/finance/invoices', icon: FileText },
-            { label: 'Travel', href: '/dashboard/travel', icon: Car },
-            { label: 'Scan', href: '/dashboard/scan', icon: ScanLine },
+            { label: 'Dashboard', href: '/dashboard/contractor/lister', icon: ClipboardList },
+            { label: 'Jobs', href: '/dashboard/contractor/jobs', icon: Briefcase },
+            { label: 'Roster', href: '/dashboard/contractor/lister/roster', icon: Users },
+            { label: 'Messages', href: '/dashboard/contractor/lister/messages', icon: Send },
+            { label: 'Assign', href: '/dashboard/contractor/lister/assign', icon: UserPlus },
           ].map(({ label, href, icon: Icon }) => {
             const active = isActive(href, pathname);
             return (
@@ -337,7 +327,7 @@ export default function ContractorNav({ username, unreadMessages, onLogout }: Co
                 role="tab"
                 aria-selected={active}
                 className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
-                  active ? 'text-amber-400' : 'text-neutral-500 hover:text-neutral-300'
+                  active ? 'text-indigo-400' : 'text-neutral-500 hover:text-neutral-300'
                 }`}
               >
                 <Icon className="w-5 h-5" />

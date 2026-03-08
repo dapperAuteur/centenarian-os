@@ -1,16 +1,18 @@
 // lib/hooks/useAppMode.ts
-// Detects whether the app is running in contractor subdomain mode.
+// Detects whether the app is running in contractor or lister subdomain mode.
 
 'use client';
 
 import { useMemo } from 'react';
 
-export type AppMode = 'main' | 'contractor';
+export type AppMode = 'main' | 'contractor' | 'lister';
 
 export function useAppMode(): AppMode {
   return useMemo(() => {
     if (typeof window === 'undefined') return 'main';
     const hostname = window.location.hostname;
-    return hostname.startsWith('contractor.') ? 'contractor' : 'main';
+    if (hostname.startsWith('lister.')) return 'lister';
+    if (hostname.startsWith('contractor.')) return 'contractor';
+    return 'main';
   }, []);
 }
