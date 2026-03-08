@@ -41,6 +41,8 @@ export async function GET(request: NextRequest) {
   if (sourceModule) query = query.eq('source_module', sourceModule);
   if (source) query = query.eq('source', source);
   if (disputeStatus) query = query.eq('dispute_status', disputeStatus);
+  const jobId = params.get('job_id');
+  if (jobId) query = query.eq('job_id', jobId);
 
   const { data, error, count } = await query;
 

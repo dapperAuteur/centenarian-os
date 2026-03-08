@@ -202,7 +202,7 @@ export async function PATCH(
   const allowed = [
     'direction', 'contact_name', 'contact_id', 'status', 'invoice_date', 'due_date',
     'invoice_number', 'invoice_number_prefix', 'account_id', 'brand_id', 'category_id', 'notes',
-    'subtotal', 'tax_amount', 'total', 'amount_paid', 'custom_fields',
+    'subtotal', 'tax_amount', 'total', 'amount_paid', 'custom_fields', 'job_id',
   ];
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
   for (const key of allowed) {

@@ -1,0 +1,503 @@
+'use client';
+
+import { useEffect, useState, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import {
+  ArrowLeft, Loader2, Clock, FileText, DollarSign, Car,
+  FolderOpen, Phone, MessageSquare, Camera, Receipt,
+  Trash2, Edit2, Check, X,
+} from 'lucide-react';
+import JobStatusBadge from '@/components/contractor/JobStatusBadge';
+import JobSummaryCards from '@/components/contractor/JobSummaryCards';
+
+/* ─── Types ─────────────────────────────────────────────── */
+interface Job {
+  id: string;
+  job_number: string;
+  client_name: string;
+  event_name: string | null;
+  location_name: string | null;
+  poc_name: string | null;
+  poc_phone: string | null;
+  crew_coordinator_name: string | null;
+  crew_coordinator_phone: string | null;
+  status: string;
+  start_date: string | null;
+  end_date: string | null;
+  pay_rate: number | null;
+  ot_rate: number | null;
+  dt_rate: number | null;
+  rate_type: string;
+  union_local: string | null;
+  department: string | null;
+  benefits_eligible: boolean;
+  travel_benefits: Record<string, number>;
+  est_pay_date: string | null;
+  distance_from_home_miles: number | null;
+  notes: string | null;
+  _counts: {
+    time_entries: number;
+    invoices: number;
+    trips: number;
+    expenses: number;
+    documents: number;
+  };
+}
+
+interface TimeEntry {
+  id: string;
+  work_date: string;
+  time_in: string | null;
+  time_out: string | null;
+  adjusted_in: string | null;
+  adjusted_out: string | null;
+  total_hours: number | null;
+  st_hours: number | null;
+  ot_hours: number | null;
+  dt_hours: number | null;
+  meal_provided: boolean;
+  invoice_id: string | null;
+  notes: string | null;
+}
+
+interface Invoice {
+  id: string;
+  invoice_number: string | null;
+  status: string;
+  total: number;
+  invoice_date: string;
+  custom_fields: Record<string, string>;
+}
+
+interface Summary {
+  days_worked: number;
+  total_hours: number;
+  total_invoiced: number;
+  total_paid: number;
+  pending_invoices: number;
+  total_miles: number;
+  total_expenses: number;
+  net_earnings: number;
+}
+
+interface Document {
+  id: string;
+  name: string;
+  url: string;
+  doc_type: string;
+  created_at: string;
+}
+
+/* ─── Tabs ──────────────────────────────────────────────── */
+const TABS = [
+  { id: 'time', label: 'Time', icon: Clock },
+  { id: 'invoices', label: 'Invoices', icon: Receipt },
+  { id: 'expenses', label: 'Expenses', icon: DollarSign },
+  { id: 'mileage', label: 'Mileage', icon: Car },
+  { id: 'documents', label: 'Docs', icon: FolderOpen },
+  { id: 'contacts', label: 'Contacts', icon: Phone },
+];
+
+const STATUS_ORDER = ['assigned', 'confirmed', 'in_progress', 'completed', 'invoiced', 'paid', 'cancelled'];
+
+export default function JobDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const [job, setJob] = useState<Job | null>(null);
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('time');
+  const [generating, setGenerating] = useState(false);
+  const [statusEditing, setStatusEditing] = useState(false);
+  const [newStatus, setNewStatus] = useState('');
+
+  const loadJob = useCallback(async () => {
+    const [jobRes, summaryRes, timeRes, invoiceRes, docRes] = await Promise.all([
+      fetch(`/api/contractor/jobs/${id}`),
+      fetch(`/api/contractor/jobs/${id}/summary`),
+      fetch(`/api/contractor/jobs/${id}/time-entries`),
+      fetch(`/api/finance/invoices?job_id=${id}`),
+      fetch(`/api/contractor/jobs/${id}/documents`),
+    ]);
+    const [jobData, summaryData, timeData, invoiceData, docData] = await Promise.all([
+      jobRes.json(), summaryRes.json(), timeRes.json(), invoiceRes.json(), docRes.json(),
+    ]);
+    setJob(jobData);
+    setSummary(summaryData);
+    setTimeEntries(timeData.time_entries ?? []);
+    setInvoices(invoiceData.invoices ?? []);
+    setDocuments(docData.documents ?? []);
+    setLoading(false);
+  }, [id]);
+
+  useEffect(() => { loadJob(); }, [loadJob]);
+
+  /* ─── Time Entry Form ───────────────────────────────── */
+  const [teForm, setTeForm] = useState({ work_date: '', time_in: '', time_out: '', total_hours: '', st_hours: '', ot_hours: '', notes: '' });
+  const [teSaving, setTeSaving] = useState(false);
+
+  async function addTimeEntry(e: React.FormEvent) {
+    e.preventDefault();
+    setTeSaving(true);
+    const res = await fetch(`/api/contractor/jobs/${id}/time-entries`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        work_date: teForm.work_date,
+        total_hours: teForm.total_hours ? parseFloat(teForm.total_hours) : null,
+        st_hours: teForm.st_hours ? parseFloat(teForm.st_hours) : null,
+        ot_hours: teForm.ot_hours ? parseFloat(teForm.ot_hours) : null,
+        notes: teForm.notes || null,
+      }),
+    });
+    setTeSaving(false);
+    if (res.ok) {
+      setTeForm({ work_date: '', time_in: '', time_out: '', total_hours: '', st_hours: '', ot_hours: '', notes: '' });
+      loadJob();
+    }
+  }
+
+  async function deleteTimeEntry(entryId: string) {
+    await fetch(`/api/contractor/jobs/${id}/time-entries/${entryId}`, { method: 'DELETE' });
+    loadJob();
+  }
+
+  /* ─── Generate Invoice ──────────────────────────────── */
+  async function generateInvoice(entryId?: string) {
+    setGenerating(true);
+    await fetch(`/api/contractor/jobs/${id}/generate-invoice`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entryId ? { entry_id: entryId } : {}),
+    });
+    setGenerating(false);
+    loadJob();
+  }
+
+  /* ─── Status Update ─────────────────────────────────── */
+  async function updateStatus() {
+    await fetch(`/api/contractor/jobs/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    setStatusEditing(false);
+    loadJob();
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-24">
+        <Loader2 className="animate-spin text-neutral-500" size={32} />
+      </div>
+    );
+  }
+
+  if (!job) {
+    return (
+      <div className="p-8 text-center text-neutral-500">
+        Job not found. <Link href="/dashboard/contractor" className="text-amber-400">Go back</Link>
+      </div>
+    );
+  }
+
+  const inputClass = 'w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 placeholder-neutral-500 focus:border-amber-500 focus:outline-none';
+  const fmt = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const fmtTime = (ts: string | null) => ts ? new Date(ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '—';
+
+  return (
+    <div className="mx-auto max-w-5xl space-y-6 p-4">
+      {/* Header */}
+      <Link href="/dashboard/contractor" className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-neutral-200">
+        <ArrowLeft size={14} /> Jobs
+      </Link>
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-lg text-amber-400">{job.job_number}</span>
+            {statusEditing ? (
+              <div className="flex items-center gap-1">
+                <select
+                  className="rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-100"
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(e.target.value)}
+                >
+                  {STATUS_ORDER.map((s) => (
+                    <option key={s} value={s}>{s.replace('_', ' ')}</option>
+                  ))}
+                </select>
+                <button onClick={updateStatus} className="p-1 text-green-400 hover:text-green-300"><Check size={14} /></button>
+                <button onClick={() => setStatusEditing(false)} className="p-1 text-neutral-500 hover:text-neutral-300"><X size={14} /></button>
+              </div>
+            ) : (
+              <button onClick={() => { setNewStatus(job.status); setStatusEditing(true); }}>
+                <JobStatusBadge status={job.status} />
+              </button>
+            )}
+          </div>
+          <h1 className="text-xl font-bold text-neutral-100 mt-1">
+            {job.client_name}
+            {job.event_name && <span className="text-neutral-400 font-normal"> — {job.event_name}</span>}
+          </h1>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-neutral-500 mt-1">
+            {job.location_name && <span>{job.location_name}</span>}
+            {job.union_local && <span>{job.union_local}</span>}
+            {job.department && <span>{job.department}</span>}
+            {job.start_date && <span>{new Date(job.start_date + 'T00:00').toLocaleDateString()}{job.end_date && job.end_date !== job.start_date ? ` – ${new Date(job.end_date + 'T00:00').toLocaleDateString()}` : ''}</span>}
+            {job.pay_rate && <span>{fmt(job.pay_rate)}/hr</span>}
+            {job.est_pay_date && <span>Est. pay: {new Date(job.est_pay_date + 'T00:00').toLocaleDateString()}</span>}
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Link
+            href={`/dashboard/contractor/jobs/${id}/edit`}
+            className="flex items-center gap-1.5 rounded-lg border border-neutral-700 px-3 py-2 text-sm text-neutral-300 hover:bg-neutral-800"
+          >
+            <Edit2 size={14} /> Edit
+          </Link>
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      {summary && <JobSummaryCards summary={summary} />}
+
+      {/* Tabs */}
+      <div className="flex gap-1 overflow-x-auto border-b border-neutral-800 pb-0">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm transition-colors ${
+              tab === t.id
+                ? 'border-amber-500 text-amber-400'
+                : 'border-transparent text-neutral-500 hover:text-neutral-300'
+            }`}
+          >
+            <t.icon size={14} /> {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      {tab === 'time' && (
+        <div className="space-y-4">
+          {/* Add Time Entry Form */}
+          <form onSubmit={addTimeEntry} className="flex flex-wrap items-end gap-3 rounded-xl border border-neutral-800 bg-neutral-900 p-4">
+            <div>
+              <label className="block text-xs text-neutral-500 mb-1">Date *</label>
+              <input type="date" className={inputClass} value={teForm.work_date} onChange={(e) => setTeForm(p => ({ ...p, work_date: e.target.value }))} required />
+            </div>
+            <div className="w-20">
+              <label className="block text-xs text-neutral-500 mb-1">Total Hrs</label>
+              <input type="number" step="0.25" className={inputClass} value={teForm.total_hours} onChange={(e) => setTeForm(p => ({ ...p, total_hours: e.target.value }))} />
+            </div>
+            <div className="w-20">
+              <label className="block text-xs text-neutral-500 mb-1">ST Hrs</label>
+              <input type="number" step="0.25" className={inputClass} value={teForm.st_hours} onChange={(e) => setTeForm(p => ({ ...p, st_hours: e.target.value }))} />
+            </div>
+            <div className="w-20">
+              <label className="block text-xs text-neutral-500 mb-1">OT Hrs</label>
+              <input type="number" step="0.25" className={inputClass} value={teForm.ot_hours} onChange={(e) => setTeForm(p => ({ ...p, ot_hours: e.target.value }))} />
+            </div>
+            <div className="flex-1 min-w-[120px]">
+              <label className="block text-xs text-neutral-500 mb-1">Notes</label>
+              <input className={inputClass} placeholder="Optional" value={teForm.notes} onChange={(e) => setTeForm(p => ({ ...p, notes: e.target.value }))} />
+            </div>
+            <button type="submit" disabled={teSaving} className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-50">
+              {teSaving ? <Loader2 size={14} className="animate-spin" /> : 'Add'}
+            </button>
+          </form>
+
+          {/* Time Entries List */}
+          {timeEntries.length === 0 ? (
+            <p className="text-sm text-neutral-500 text-center py-6">No time entries yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-neutral-500 text-xs border-b border-neutral-800">
+                  <tr>
+                    <th className="px-3 py-2 text-left">Date</th>
+                    <th className="px-3 py-2 text-right">In</th>
+                    <th className="px-3 py-2 text-right">Out</th>
+                    <th className="px-3 py-2 text-right">Total</th>
+                    <th className="px-3 py-2 text-right">ST</th>
+                    <th className="px-3 py-2 text-right">OT</th>
+                    <th className="px-3 py-2 text-center">Invoice</th>
+                    <th className="px-3 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {timeEntries.map((te) => (
+                    <tr key={te.id} className="border-b border-neutral-800/50 hover:bg-neutral-800/30">
+                      <td className="px-3 py-2 text-neutral-100">{new Date(te.work_date + 'T00:00').toLocaleDateString()}</td>
+                      <td className="px-3 py-2 text-right text-neutral-400">{fmtTime(te.adjusted_in || te.time_in)}</td>
+                      <td className="px-3 py-2 text-right text-neutral-400">{fmtTime(te.adjusted_out || te.time_out)}</td>
+                      <td className="px-3 py-2 text-right text-neutral-100 font-medium">{te.total_hours ?? '—'}</td>
+                      <td className="px-3 py-2 text-right text-neutral-400">{te.st_hours ?? '—'}</td>
+                      <td className="px-3 py-2 text-right text-neutral-400">{te.ot_hours ?? '—'}</td>
+                      <td className="px-3 py-2 text-center">
+                        {te.invoice_id ? (
+                          <Link href={`/dashboard/finance/invoices/${te.invoice_id}`} className="text-xs text-green-400 hover:underline">View</Link>
+                        ) : (
+                          <button
+                            onClick={() => generateInvoice(te.id)}
+                            disabled={generating}
+                            className="text-xs text-amber-400 hover:underline disabled:opacity-50"
+                          >
+                            Generate
+                          </button>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        <button onClick={() => deleteTimeEntry(te.id)} className="text-neutral-600 hover:text-red-400">
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Bulk Generate */}
+          {timeEntries.some((te) => !te.invoice_id) && (
+            <button
+              onClick={() => generateInvoice()}
+              disabled={generating}
+              className="flex items-center gap-1.5 rounded-lg border border-amber-600/50 px-4 py-2 text-sm text-amber-400 hover:bg-amber-600/10 disabled:opacity-50"
+            >
+              <Receipt size={14} />
+              {generating ? 'Generating...' : 'Generate All Invoices'}
+            </button>
+          )}
+        </div>
+      )}
+
+      {tab === 'invoices' && (
+        <div className="space-y-2">
+          {invoices.length === 0 ? (
+            <p className="text-sm text-neutral-500 text-center py-6">No invoices linked to this job.</p>
+          ) : (
+            invoices.map((inv) => (
+              <Link
+                key={inv.id}
+                href={`/dashboard/finance/invoices/${inv.id}`}
+                className="flex items-center justify-between rounded-xl border border-neutral-800 bg-neutral-900 p-4 hover:border-neutral-700"
+              >
+                <div>
+                  <span className="font-mono text-sm text-neutral-100">{inv.invoice_number || inv.id.slice(0, 8)}</span>
+                  <span className={`ml-2 text-xs ${inv.status === 'paid' ? 'text-green-400' : inv.status === 'draft' ? 'text-neutral-500' : 'text-yellow-400'}`}>
+                    {inv.status}
+                  </span>
+                  {inv.custom_fields?.work_date && (
+                    <span className="ml-2 text-xs text-neutral-500">{inv.custom_fields.work_date}</span>
+                  )}
+                </div>
+                <span className="text-neutral-100 font-medium">{fmt(inv.total)}</span>
+              </Link>
+            ))
+          )}
+        </div>
+      )}
+
+      {tab === 'expenses' && (
+        <div className="text-center py-6">
+          <p className="text-sm text-neutral-500 mb-2">View expenses linked to this job in the Finance module.</p>
+          <Link href={`/dashboard/finance?job_id=${id}`} className="text-sm text-amber-400 hover:underline">
+            Open Finance <DollarSign size={12} className="inline" />
+          </Link>
+        </div>
+      )}
+
+      {tab === 'mileage' && (
+        <div className="text-center py-6">
+          <p className="text-sm text-neutral-500 mb-2">View trips linked to this job in the Travel module.</p>
+          <Link href={`/dashboard/travel?job_id=${id}`} className="text-sm text-amber-400 hover:underline">
+            Open Travel <Car size={12} className="inline" />
+          </Link>
+        </div>
+      )}
+
+      {tab === 'documents' && (
+        <div className="space-y-3">
+          {documents.length === 0 ? (
+            <p className="text-sm text-neutral-500 text-center py-6">No documents uploaded yet.</p>
+          ) : (
+            documents.map((doc) => (
+              <div key={doc.id} className="flex items-center justify-between rounded-xl border border-neutral-800 bg-neutral-900 p-3">
+                <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-sm text-amber-400 hover:underline truncate">
+                  {doc.name}
+                </a>
+                <span className="text-xs text-neutral-500 ml-2">{doc.doc_type}</span>
+              </div>
+            ))
+          )}
+          {/* Upload placeholder — Cloudinary upload widget would go here */}
+          <p className="text-xs text-neutral-600 text-center">
+            Document upload via Cloudinary widget coming soon.
+          </p>
+        </div>
+      )}
+
+      {tab === 'contacts' && (
+        <div className="space-y-3">
+          {job.poc_name && (
+            <div className="flex items-center justify-between rounded-xl border border-neutral-800 bg-neutral-900 p-4">
+              <div>
+                <div className="text-xs text-neutral-500">Point of Contact</div>
+                <div className="text-neutral-100 font-medium">{job.poc_name}</div>
+              </div>
+              {job.poc_phone && (
+                <div className="flex gap-2">
+                  <a href={`tel:${job.poc_phone}`} className="rounded-full bg-neutral-800 p-2 text-neutral-400 hover:text-green-400">
+                    <Phone size={16} />
+                  </a>
+                  <a href={`sms:${job.poc_phone}`} className="rounded-full bg-neutral-800 p-2 text-neutral-400 hover:text-blue-400">
+                    <MessageSquare size={16} />
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+          {job.crew_coordinator_name && (
+            <div className="flex items-center justify-between rounded-xl border border-neutral-800 bg-neutral-900 p-4">
+              <div>
+                <div className="text-xs text-neutral-500">Crew Coordinator</div>
+                <div className="text-neutral-100 font-medium">{job.crew_coordinator_name}</div>
+              </div>
+              {job.crew_coordinator_phone && (
+                <div className="flex gap-2">
+                  <a href={`tel:${job.crew_coordinator_phone}`} className="rounded-full bg-neutral-800 p-2 text-neutral-400 hover:text-green-400">
+                    <Phone size={16} />
+                  </a>
+                  <a href={`sms:${job.crew_coordinator_phone}`} className="rounded-full bg-neutral-800 p-2 text-neutral-400 hover:text-blue-400">
+                    <MessageSquare size={16} />
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+          {!job.poc_name && !job.crew_coordinator_name && (
+            <p className="text-sm text-neutral-500 text-center py-6">No contacts set for this job.</p>
+          )}
+        </div>
+      )}
+
+      {/* Scan Pay Stub Button */}
+      <div className="flex justify-center pt-4 border-t border-neutral-800">
+        <button
+          onClick={() => {/* TODO: Open scan modal */}}
+          className="flex items-center gap-2 rounded-lg border border-neutral-700 px-4 py-2.5 text-sm text-neutral-300 hover:bg-neutral-800"
+        >
+          <Camera size={16} /> Scan Pay Stub
+        </button>
+      </div>
+    </div>
+  );
+}

@@ -31,6 +31,7 @@ import {
   RotateCcw,
   UserPlus,
   History,
+  HardHat,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -76,6 +77,14 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Exercises', href: '/dashboard/exercises', icon: ListChecks, paid: true },
       { label: 'Correlations', href: '/dashboard/correlations', icon: TrendingUp, paid: true },
       { label: 'Analytics', href: '/dashboard/analytics', icon: ChartNetwork, paid: true },
+    ],
+  },
+  {
+    id: 'work',
+    label: 'Work',
+    icon: HardHat,
+    items: [
+      { label: 'Jobs', href: '/dashboard/contractor', icon: HardHat, paid: true },
     ],
   },
   {

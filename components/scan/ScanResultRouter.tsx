@@ -51,6 +51,7 @@ const DOC_TYPE_LABELS: Record<DocumentType, string> = {
   recipe: 'Recipe',
   fuel_receipt: 'Fuel Receipt',
   maintenance_invoice: 'Maintenance Invoice',
+  pay_stub: 'Pay Stub / Estimated Pay',
   medical: 'Medical Document',
   unknown: 'Unknown Document',
 };
@@ -60,12 +61,13 @@ const DOC_TYPE_ICONS: Record<DocumentType, typeof DollarSign> = {
   recipe: ChefHat,
   fuel_receipt: Fuel,
   maintenance_invoice: Wrench,
+  pay_stub: DollarSign,
   medical: AlertCircle,
   unknown: AlertCircle,
 };
 
 const OVERRIDE_OPTIONS: DocumentType[] = [
-  'receipt', 'recipe', 'fuel_receipt', 'maintenance_invoice', 'medical',
+  'receipt', 'recipe', 'fuel_receipt', 'maintenance_invoice', 'pay_stub', 'medical',
 ];
 
 export default function ScanResultRouter({

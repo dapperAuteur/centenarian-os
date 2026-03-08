@@ -8,5 +8,8 @@ export {
   type RecipeIngredientExtraction,
   type MaintenanceExtraction,
   type FuelReceiptExtraction,
+  type PayStubExtraction,
+  type PayStubLineItem,
+  type PayStubBenefit,
   type ExtractionResult,
 } from './extractors';
