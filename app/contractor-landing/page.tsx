@@ -89,16 +89,32 @@ export default function ContractorLandingPage() {
         </div>
       </section>
 
+      {/* Academy Link */}
+      <section className="border-t border-neutral-800 py-12 text-center">
+        <p className="text-sm text-neutral-400">New to JobHub?</p>
+        <p className="mt-1 text-lg font-semibold text-neutral-200">Take the free Contractor Job Hub Guide</p>
+        <p className="mt-2 text-sm text-neutral-500">15 lessons covering everything from job creation to 1099 tracking. No account required.</p>
+        <Link href="/academy" className="mt-3 inline-block text-sm font-medium text-amber-400 hover:text-amber-300">
+          Browse Academy courses &rarr;
+        </Link>
+      </section>
+
       {/* CTA */}
       <section className="border-t border-neutral-800 py-16 text-center">
         <h2 className="text-2xl font-bold">Ready to get organized?</h2>
         <p className="mt-2 text-neutral-400">$10/month or $100/year. No free tier — just the tools you need.</p>
-        <div className="mt-6">
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
             href="/signup"
             className="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-6 py-3 text-base font-medium text-white hover:bg-amber-500"
           >
             Start Free Trial <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 rounded-lg border border-neutral-700 px-6 py-3 text-sm text-neutral-300 hover:border-neutral-500"
+          >
+            Already have an account? Log in
           </Link>
         </div>
       </section>
