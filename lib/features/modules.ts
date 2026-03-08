@@ -669,8 +669,6 @@ export const MODULES: ModuleData[] = [
     dashboardPath: '/dashboard/retrospective',
     relatedSlugs: ['correlations', 'engine', 'health-metrics'],
   },
-];
-
   {
     slug: 'contractor',
     name: 'Contractor Hub (JobHub)',
