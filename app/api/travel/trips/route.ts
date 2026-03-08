@@ -5,6 +5,7 @@ import {
   updateLinkedTransaction,
   deleteLinkedTransaction,
 } from '@/lib/finance/linked-transaction';
+import { getRoute } from '@/lib/geo/route';
 
 // CO2 emission factors in kg per mile
 const CO2_PER_MILE: Record<string, number> = {
@@ -85,14 +86,35 @@ export async function POST(request: NextRequest) {
     garmin_activity_id, health_metric_date, notes, source,
     tax_category, trip_category, finance_category_id,
     is_round_trip, job_id,
+    origin_lat, origin_lng, dest_lat, dest_lng,
   } = body;
 
   if (!mode || !date) {
     return NextResponse.json({ error: 'mode and date are required' }, { status: 400 });
   }
 
+  // Auto-calculate distance via OSRM if coordinates provided and no manual distance
+  let resolvedDistance = distance_miles;
+  let resolvedDuration = duration_min;
+  let distanceSource: string = 'manual';
+  let routeGeometry: string | null = null;
+
+  const hasCoords = typeof origin_lat === 'number' && typeof origin_lng === 'number'
+    && typeof dest_lat === 'number' && typeof dest_lng === 'number';
+
+  if (hasCoords && !distance_miles) {
+    const routeResult = await getRoute(
+      { lat: origin_lat, lng: origin_lng },
+      { lat: dest_lat, lng: dest_lng },
+    );
+    resolvedDistance = routeResult.distance_miles;
+    resolvedDuration = resolvedDuration ?? routeResult.duration_min;
+    distanceSource = routeResult.source;
+    routeGeometry = routeResult.geometry;
+  }
+
   const roundTrip = is_round_trip === true;
-  const co2_kg = calcCo2(mode, distance_miles, roundTrip);
+  const co2_kg = calcCo2(mode, resolvedDistance, roundTrip);
 
   const resolvedTripCategory = HUMAN_POWERED_MODES.has(mode)
     ? (trip_category || 'travel')
@@ -109,8 +131,10 @@ export async function POST(request: NextRequest) {
       arrived_at: arrived_at || null,
       origin,
       destination,
-      distance_miles,
-      duration_min,
+      distance_miles: resolvedDistance,
+      duration_min: resolvedDuration,
+      distance_source: distanceSource,
+      route_geometry: routeGeometry,
       purpose,
       calories_burned,
       co2_kg,
@@ -160,8 +184,22 @@ export async function PATCH(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { id, ...updates } = body;
+  const { id, origin_lat, origin_lng, dest_lat, dest_lng, ...updates } = body;
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+  // Auto-calculate distance via OSRM if coordinates provided and no manual distance override
+  const hasCoords = typeof origin_lat === 'number' && typeof origin_lng === 'number'
+    && typeof dest_lat === 'number' && typeof dest_lng === 'number';
+  if (hasCoords && updates.distance_miles === undefined) {
+    const routeResult = await getRoute(
+      { lat: origin_lat, lng: origin_lng },
+      { lat: dest_lat, lng: dest_lng },
+    );
+    updates.distance_miles = routeResult.distance_miles;
+    if (updates.duration_min === undefined) updates.duration_min = routeResult.duration_min;
+    updates.distance_source = routeResult.source;
+    updates.route_geometry = routeResult.geometry;
+  }
 
   // Fetch existing record for CO2 recalc and transaction sync
   const { data: existing } = await supabase
