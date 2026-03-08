@@ -275,4 +275,120 @@ export const HELP_ARTICLES: HelpArticle[] = [
     title: 'How to use correlations and analytics',
     content: `Go to Dashboard → Correlations. This module analyzes relationships between your health metrics, financial data, sleep, activity, and other tracked data using Pearson correlation analysis. Select two metrics to compare and see how strongly they are related. For example, you might discover that sleep hours correlate with lower spending, or that workout frequency correlates with higher recovery scores. The analytics view shows multi-metric trend lines over time.`,
   },
+
+  // ─── CONTRACTOR HUB ──────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'What is the Contractor Hub (JobHub)?',
+    content: `The Contractor Hub (branded as JobHub) is a dedicated module for independent contractors in broadcast, production, and live events. It provides job tracking, time entry logging, invoice generation, rate cards, venue knowledge bases, city guides, union contract chat, and union membership/dues tracking. Access it at /dashboard/contractor or via the contractor subdomain (contractor.centenarianos.com). The Contractor Hub is a separate paid product from CentenarianOS — you need a Contractor subscription ($10/month or $100/year).`,
+  },
+  {
+    role: 'all',
+    title: 'How to create and manage contractor jobs',
+    content: `Go to Dashboard → Jobs → New Job. Fill in the client, event name, venue/location, dates, pay rates (ST/OT/DT), department, and union local. You can link a saved contact as the client and a contact location as the venue. Jobs have statuses: assigned, confirmed, in_progress, completed, invoiced, paid, cancelled. Multi-day jobs can specify non-consecutive scheduled dates. Once a job is created, you can log time entries, upload documents, generate invoices, and link trips and expenses from the job detail page.`,
+  },
+  {
+    role: 'all',
+    title: 'How to log time entries and track hours',
+    content: `From a job detail page, go to the Time Entries tab. Click Add Entry to log a work day — enter the work date, time in/out, break minutes. The system auto-calculates total hours and splits them into standard time (ST), overtime (OT), and double time (DT) based on the 8-hour threshold. Each work date can only have one entry per job (unique constraint). Time entries are the basis for invoice generation.`,
+  },
+  {
+    role: 'all',
+    title: 'How to generate invoices from time entries',
+    content: `From a job detail page, click Generate Invoice. The system looks up the job's pay rates (ST, OT, DT) and creates an invoice with line items for each hour type (e.g., "Standard Time 40h × $65"). If the job has travel benefits (meal allowance, per diem, mileage), those are added as additional line items. The invoice is created as a receivable with status "draft" and linked to the job via job_id. You can then send it, mark it paid, or edit it from the Invoices module.`,
+  },
+  {
+    role: 'all',
+    title: 'How to use rate cards',
+    content: `Go to Dashboard → Rate Cards. Rate cards are reusable presets that save your pay rates by client, union, and department (e.g., "CBS Camera Op — IATSE 317"). When creating a new job, select a rate card to auto-fill the ST, OT, DT rates and travel benefits. You can create, edit, and delete rate cards. The use_count tracks how often each card is applied.`,
+  },
+  {
+    role: 'all',
+    title: 'How to use the venue knowledge base',
+    content: `Go to Dashboard → Venues to see all venues you've worked at. Each venue (contact location) can store a knowledge base with structured info: parking directions, load-in details, WiFi credentials, power distribution, catering locations, and security check-in procedures. You can also upload venue schematics (floor plans, rigging plots) via Cloudinary. Venues with is_shared=true are visible to other contractors who've worked there.`,
+  },
+  {
+    role: 'all',
+    title: 'How to use city guides',
+    content: `Go to Dashboard → Cities. City guides are community-contributed directories of restaurants, hotels, coffee shops, gyms, and other recommendations for cities you travel to for work. Create a guide for any city, then add entries with name, address, rating (1-5), price range (1-4), and notes. Shared guides (is_shared=true) are visible to all users. Great for building a travel resource for your crew.`,
+  },
+  {
+    role: 'all',
+    title: 'How to use union contract chat (RAG)',
+    content: `Go to Dashboard → Union. You can upload union contracts, bylaws, rate sheets, and work rules (PDF or text). The system extracts text, chunks it, and generates embeddings for semantic search. Then use the Chat tab to ask questions like "What's the OT threshold for IATSE 317?" or "What are meal penalty rights?" The AI retrieves relevant contract sections and answers based on your uploaded documents. IMPORTANT: Every response includes a disclaimer — this is AI-generated reference only, not legal advice. Always consult your union representative.`,
+  },
+  {
+    role: 'all',
+    title: 'How to submit union documents to the community',
+    content: `On the Union page, click Submit to Community. Upload a union contract or document (PDF), fill in the union local, document type, description, and coverage dates. Your submission goes to the admin for review. Once approved, the document is processed into the shared RAG knowledge base — all platform users can search against it. You can track your submission status (pending, approved, rejected, processing, live) in the My Submissions tab.`,
+  },
+  {
+    role: 'all',
+    title: 'How to track union memberships and dues',
+    content: `Go to Dashboard → Memberships. Add each union you belong to (e.g., IATSE 317, IBEW 1220) with your member ID, join date, dues amount, and payment frequency (monthly, quarterly, semi-annual, annual). The system tracks your next dues date with color-coded urgency: red (overdue), yellow (due within 30 days), green (current). Click a membership to expand it and record payments — each payment auto-advances the next_dues_date. You can link dues payments to financial transactions for expense tracking and tax purposes (Schedule C deduction).`,
+  },
+  {
+    role: 'all',
+    title: 'How to use contractor reports and job comparison',
+    content: `Go to Dashboard → Reports for earnings summaries by client, 1099 threshold tracking ($600 per client), mileage totals, and benefits accrued YTD. Go to Dashboard → Compare to select 2-4 jobs and see side-by-side comparison: total pay, hours, rates, benefits, mileage cost, and net earnings. This helps evaluate which clients and events are most profitable. Reports can be exported as CSV for tax purposes.`,
+  },
+  {
+    role: 'all',
+    title: 'How to use the contractor job board',
+    content: `Go to Dashboard → Board. The job board shows jobs marked as public (is_public=true) by other contractors who need replacements. You can browse available jobs, request to cover one, and the original contractor can approve or decline your request. This is useful when you need to find a replacement for a job you can't work, or when you're looking for extra gigs.`,
+  },
+  {
+    role: 'all',
+    title: 'How to invite fellow contractors',
+    content: `Go to Dashboard → Invite (in the contractor nav). Enter a colleague's email address and click Send Invite. They'll receive a magic link to create an account with Contractor Hub access. You can send up to 10 invites. The invite list shows the status of each invite (pending or accepted).`,
+  },
+  {
+    role: 'all',
+    title: 'Contractor pricing and billing',
+    content: `The Contractor Hub (JobHub) is a separate paid product. Pricing: $10/month or $100/year (save $20). No free tier — access is via paid subscription or admin/peer invite. The subscription is independent from CentenarianOS and Lister subscriptions. Manage your subscription at Dashboard → Billing. Visit contractor.centenarianos.com/pricing for details.`,
+  },
+
+  // ─── LISTER / CREW COORDINATOR ──────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'What is the Lister platform (CrewOps)?',
+    content: `The Lister platform (branded as CrewOps) is for crew coordinators, staffing agencies, and union leaders who list and assign jobs to contractors. It includes job creation, crew roster management, assignment dispatch, group messaging, and availability tracking. Access it at /dashboard/contractor/lister or via the lister subdomain (lister.centenarianos.com). The Lister is a separate paid product — pricing starts at $10/month (intro promo, regularly $50/month).`,
+  },
+  {
+    role: 'all',
+    title: 'How to create and assign jobs as a lister',
+    content: `As a lister, go to the Lister Dashboard → create a new job with client, event, venue, dates, and rates. Jobs created by listers have is_lister_job=true and your user ID as lister_id. After creating a job, assign contractors from your roster. Each assignment has a status: offered, accepted, declined, or removed. Contractors receive the assignment in their inbox and can accept or decline with an optional message.`,
+  },
+  {
+    role: 'all',
+    title: 'How to manage your contractor roster',
+    content: `Go to Lister Dashboard → Roster. Your roster is a curated list of contractors you regularly work with, stored as contacts with is_contractor=true. Each roster entry includes name, email, phone, skills (array of specialties like "Camera Op", "Jib", "Steadicam"), availability notes, and optionally a linked user account. Use the roster to quickly assign contractors to jobs and check availability.`,
+  },
+  {
+    role: 'all',
+    title: 'How to use lister messaging',
+    content: `Go to Lister Dashboard → Messages. You can send individual messages to any contractor or group messages to message groups. Create groups (e.g., "Camera Department", "Indianapolis Crew") and add members. When you send a group message, all members see it. Contractors see lister messages in their inbox. You can track read status for group messages. Use messaging for crew calls, rate updates, W9 reminders, and schedule confirmations.`,
+  },
+  {
+    role: 'all',
+    title: 'How to manage message groups',
+    content: `Go to Lister Dashboard → Groups. Create groups with a name and description (e.g., "Audio Team — A1 and A2 operators"). Add contractor contacts as members. You can rename groups, update descriptions, add/remove members, or delete groups. Groups are used for targeted broadcast messaging — send crew calls or updates to specific teams.`,
+  },
+  {
+    role: 'all',
+    title: 'How to invite contractors and listers',
+    content: `Go to Lister Dashboard → Invite. Listers can invite both contractors and other listers using the product selector dropdown. Enter the email, choose "As Contractor" or "As Lister", and send. They'll receive a magic link. You can send up to 10 invites. Inviting as Contractor gives them JobHub access; inviting as Lister gives them CrewOps access.`,
+  },
+  {
+    role: 'all',
+    title: 'Lister pricing and billing',
+    content: `The Lister platform (CrewOps) is a separate paid product. Standard pricing: $50/month or $500/year. Introductory promo: $10/month or $100/year (limited time). The promo is controlled via platform settings. No free tier — access is via paid subscription or admin invite. The subscription is independent from CentenarianOS and Contractor Hub subscriptions. Visit lister.centenarianos.com/pricing for details.`,
+  },
+  {
+    role: 'all',
+    title: 'Union leader tools and capabilities',
+    content: `Union leaders have all lister capabilities plus additional tools: union member directory (view members by union_local), seniority and skills tracking, job priority flags (mark mandatory union jobs), minimum rate enforcement (set floor rates for union jobs), and dispatch queue (seniority-ordered contact list for open calls). To become a union leader, an admin must set your contractor_role to union_leader via the admin contractor management page.`,
+  },
 ];

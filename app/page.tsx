@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Zap, Shield, TrendingUp, Heart, Menu, X } from 'lucide-react';
+import { ArrowRight, Zap, Shield, TrendingUp, Heart, Menu, X, HardHat, Users } from 'lucide-react';
 import { useState } from 'react';
 import SiteFooter from '@/components/ui/SiteFooter';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -224,6 +224,38 @@ export default function LandingPage() {
               </ul>
             </Link>
           ))}
+        </div>
+      </section>
+
+      {/* For Contractors & Crew Coordinators */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="grid md:grid-cols-2 gap-6">
+          <Link href="/contractor-landing" className="rounded-2xl border border-amber-200 bg-linear-to-br from-amber-50 to-white p-6 sm:p-8 hover:border-amber-400 transition group">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
+                <HardHat className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">For Contractors</h3>
+                <p className="text-sm text-gray-500">Independent broadcast & production crews</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">Track jobs, log hours, generate invoices, build venue knowledge bases, and manage union memberships — all in one place.</p>
+            <span className="text-sm font-semibold text-amber-600 group-hover:underline">Explore JobHub &rarr;</span>
+          </Link>
+          <Link href="/lister-landing" className="rounded-2xl border border-indigo-200 bg-linear-to-br from-indigo-50 to-white p-6 sm:p-8 hover:border-indigo-400 transition group">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center">
+                <Users className="w-6 h-6 text-indigo-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">For Crew Coordinators</h3>
+                <p className="text-sm text-gray-500">Staffing agencies & union leaders</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">Create jobs, manage rosters, dispatch assignments, and communicate with your crew through individual and group messaging.</p>
+            <span className="text-sm font-semibold text-indigo-600 group-hover:underline">Explore CrewOps &rarr;</span>
+          </Link>
         </div>
       </section>
 

@@ -4,7 +4,7 @@
 import {
   Target, Utensils, Brain, Car, DollarSign, Heart, Dumbbell, Flame,
   Package, GraduationCap, BookOpen, TrendingUp, Database, ChartNetwork,
-  Camera, Tag, History, type LucideIcon,
+  Camera, Tag, History, HardHat, Users, type LucideIcon,
 } from 'lucide-react';
 
 export interface ModuleHighlight {
@@ -668,6 +668,84 @@ export const MODULES: ModuleData[] = [
     ],
     dashboardPath: '/dashboard/retrospective',
     relatedSlugs: ['correlations', 'engine', 'health-metrics'],
+  },
+];
+
+  {
+    slug: 'contractor',
+    name: 'Contractor Hub (JobHub)',
+    tagline: 'Your gigs, hours, invoices, and union tools — one place',
+    description: 'A dedicated workspace for independent contractors in broadcast, production, and live events. Track jobs, log hours, generate invoices, manage rate cards, build venue knowledge bases, and stay on top of union memberships and dues.',
+    color: 'border-amber-500',
+    iconColor: 'text-amber-600',
+    checkColor: 'text-amber-600',
+    bgGradient: 'from-amber-600 to-amber-800',
+    Icon: HardHat,
+    features: [
+      'Job tracking from assignment to payment',
+      'Time entry logging with ST/OT/DT auto-calc',
+      'One-click invoice generation from hours',
+      'Rate cards, venue KB, city guides, union RAG',
+    ],
+    highlights: [
+      {
+        title: 'Job Lifecycle Management',
+        description: 'Track every gig from assignment through payment. Store client, event, venue, dates, rates, department, and union local. Link invoices, trips, and expenses to each job.',
+      },
+      {
+        title: 'Invoice Generation',
+        description: 'Generate invoices directly from time entries. Line items auto-calculated from your rates and logged hours — ST, OT, and DT with correct rates applied.',
+      },
+      {
+        title: 'Venue Knowledge Base',
+        description: 'Build a reference for every venue: parking, load-in, WiFi, power, catering, security. Upload schematics and share with your crew.',
+      },
+      {
+        title: 'Union Contract Chat',
+        description: 'Upload union contracts and ask questions in plain language. AI searches your documents and returns relevant sections. Plus track memberships and dues across multiple locals.',
+      },
+    ],
+    dashboardPath: '/dashboard/contractor',
+    tutorialSlug: 'contractor',
+    relatedSlugs: ['finance', 'travel', 'lister'],
+  },
+  {
+    slug: 'lister',
+    name: 'Lister Platform (CrewOps)',
+    tagline: 'Staff your crews, dispatch with confidence',
+    description: 'Crew management for coordinators, staffing agencies, and union leaders. Create jobs, manage your contractor roster, dispatch assignments, and communicate via individual and group messaging.',
+    color: 'border-indigo-500',
+    iconColor: 'text-indigo-600',
+    checkColor: 'text-indigo-600',
+    bgGradient: 'from-indigo-600 to-indigo-800',
+    Icon: Users,
+    features: [
+      'Job creation and multi-position staffing',
+      'Contractor roster with skills and availability',
+      'Assignment dispatch with status tracking',
+      'Individual and group messaging',
+    ],
+    highlights: [
+      {
+        title: 'Assignment Dispatch',
+        description: 'Assign contractors from your roster to specific jobs. Track offered, accepted, declined, and removed statuses. Reassign on the fly when plans change.',
+      },
+      {
+        title: 'Crew Roster',
+        description: 'Maintain a curated list of contractors with skills, availability notes, and contact info. Filter by skill when staffing specific positions.',
+      },
+      {
+        title: 'Group Messaging',
+        description: 'Organize your roster into messaging groups by department, geography, or event type. Broadcast crew calls and rate updates to targeted groups.',
+      },
+      {
+        title: 'Union Leader Tools',
+        description: 'Union leaders get additional capabilities: member directory, seniority tracking, job priority flags, minimum rate enforcement, and dispatch queue.',
+      },
+    ],
+    dashboardPath: '/dashboard/contractor/lister',
+    tutorialSlug: 'lister',
+    relatedSlugs: ['contractor', 'finance'],
   },
 ];
 
