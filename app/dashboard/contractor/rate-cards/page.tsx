@@ -145,23 +145,24 @@ export default function RateCardsPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 p-4">
-      <Link href="/dashboard/contractor" className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-neutral-200">
-        <ArrowLeft size={14} /> Jobs
+      <Link href="/dashboard/contractor" className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-neutral-200 min-h-11 py-2" aria-label="Back to Jobs">
+        <ArrowLeft size={14} aria-hidden="true" /> Jobs
       </Link>
 
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-100">Rate Cards</h1>
         <button
           onClick={openCreate}
-          className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-500"
+          className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2.5 text-sm font-medium text-white hover:bg-amber-500 min-h-11"
+          aria-label="Create new rate card"
         >
-          <Plus size={16} /> New Rate Card
+          <Plus size={16} aria-hidden="true" /> New Rate Card
         </button>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="animate-spin text-neutral-500" size={24} />
+          <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading rate cards" />
         </div>
       ) : cards.length === 0 ? (
         <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-8 text-center text-neutral-500">
@@ -176,7 +177,7 @@ export default function RateCardsPage() {
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <CreditCard size={14} className="text-amber-400" />
+                  <CreditCard size={14} className="text-amber-400" aria-hidden="true" />
                   <span className="font-medium text-neutral-100">{card.name}</span>
                   {card.union_local && <span className="text-xs text-neutral-500">{card.union_local}</span>}
                   {card.department && <span className="text-xs text-neutral-500">· {card.department}</span>}
@@ -191,12 +192,12 @@ export default function RateCardsPage() {
                   <span className="text-neutral-600">used {card.use_count}×</span>
                 </div>
               </div>
-              <div className="flex gap-1.5">
-                <button onClick={() => openEdit(card)} className="rounded p-1.5 text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300">
-                  <Edit2 size={14} />
+              <div className="flex gap-1">
+                <button onClick={() => openEdit(card)} className="rounded p-2 text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300 min-h-11 min-w-11 flex items-center justify-center" aria-label={`Edit ${card.name}`}>
+                  <Edit2 size={16} />
                 </button>
-                <button onClick={() => handleDelete(card.id)} className="rounded p-1.5 text-neutral-500 hover:bg-neutral-800 hover:text-red-400">
-                  <Trash2 size={14} />
+                <button onClick={() => handleDelete(card.id)} className="rounded p-2 text-neutral-500 hover:bg-neutral-800 hover:text-red-400 min-h-11 min-w-11 flex items-center justify-center" aria-label={`Delete ${card.name}`}>
+                  <Trash2 size={16} />
                 </button>
               </div>
             </div>
@@ -253,19 +254,19 @@ export default function RateCardsPage() {
                 <div key={i} className="flex items-center gap-2 text-sm">
                   <span className="flex-1 text-neutral-300">{b.name}</span>
                   <span className="text-neutral-400">${b.amount.toFixed(2)}</span>
-                  <button type="button" onClick={() => removeBenefit(i)} className="text-neutral-600 hover:text-red-400"><X size={12} /></button>
+                  <button type="button" onClick={() => removeBenefit(i)} className="p-2 text-neutral-600 hover:text-red-400 min-h-11 min-w-11 flex items-center justify-center" aria-label={`Remove ${b.name} benefit`}><X size={14} /></button>
                 </div>
               ))}
             </div>
             <div className="mt-2 flex gap-2">
-              <input className={inputClass + ' flex-1'} placeholder="IBEW 1220 CBS 401K" value={benefitName} onChange={(e) => setBenefitName(e.target.value)} />
-              <input type="number" step="0.01" className={inputClass + ' w-24'} placeholder="20.54" value={benefitAmount} onChange={(e) => setBenefitAmount(e.target.value)} />
-              <button type="button" onClick={addBenefit} className="rounded-lg border border-neutral-700 px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-800">Add</button>
+              <input className={inputClass + ' flex-1'} placeholder="IBEW 1220 CBS 401K" value={benefitName} onChange={(e) => setBenefitName(e.target.value)} aria-label="Benefit name" />
+              <input type="number" step="0.01" className={inputClass + ' w-24'} placeholder="20.54" value={benefitAmount} onChange={(e) => setBenefitAmount(e.target.value)} aria-label="Benefit amount" />
+              <button type="button" onClick={addBenefit} className="rounded-lg border border-neutral-700 px-3 py-2.5 text-sm text-neutral-300 hover:bg-neutral-800 min-h-11">Add</button>
             </div>
           </div>
 
           {/* Travel Benefits */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <label className={labelClass}>Meal Allowance</label>
               <input type="number" step="0.01" className={inputClass} value={form.meal_allowance} onChange={(e) => setForm(p => ({ ...p, meal_allowance: e.target.value }))} />
@@ -292,7 +293,7 @@ export default function RateCardsPage() {
           <button
             type="submit"
             disabled={saving}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber-600 py-2.5 font-medium text-white hover:bg-amber-500 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber-600 py-3 text-base font-medium text-white hover:bg-amber-500 disabled:opacity-50 min-h-11"
           >
             {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
             {editId ? 'Update' : 'Create'} Rate Card

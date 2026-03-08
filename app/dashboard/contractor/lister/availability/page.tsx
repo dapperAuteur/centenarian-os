@@ -78,7 +78,7 @@ export default function ListerAvailabilityPage() {
           disabled={loading || !from || !to}
           className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
         >
-          {loading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+          {loading ? <Loader2 size={14} className="animate-spin" aria-label="Loading..." /> : <Search size={14} aria-hidden="true" />}
           Check
         </button>
       </div>
@@ -86,7 +86,7 @@ export default function ListerAvailabilityPage() {
       {/* Results */}
       {loading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading" />
+          <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading..." />
         </div>
       ) : !searched ? (
         <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-8 text-center text-neutral-500">
@@ -144,7 +144,7 @@ export default function ListerAvailabilityPage() {
                       <p className="text-xs text-neutral-500 font-medium">Conflicting jobs:</p>
                       {c.busy_dates.map((b) => (
                         <div key={b.job_id} className="text-xs text-red-400/80 flex gap-2">
-                          <CalendarCheck size={12} className="shrink-0 mt-0.5" />
+                          <CalendarCheck size={12} className="shrink-0 mt-0.5" aria-hidden="true" />
                           <span>
                             {b.event_name || 'Unnamed job'}
                             {b.start_date && ` (${new Date(b.start_date + 'T00:00:00').toLocaleDateString()}`}

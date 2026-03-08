@@ -61,9 +61,10 @@ export default function UnionChatPage() {
           <div>
             <Link
               href="/dashboard/contractor/union"
-              className="mb-1 flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500 rounded"
+              className="mb-1 inline-flex items-center gap-1 min-h-11 py-2 text-sm text-neutral-500 hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500 rounded"
+              aria-label="Back to documents"
             >
-              <ArrowLeft size={14} /> Documents
+              <ArrowLeft size={14} aria-hidden="true" /> Documents
             </Link>
             <h1 className="text-2xl font-bold text-neutral-100">Union Contract Chat</h1>
           </div>
@@ -98,7 +99,7 @@ export default function UnionChatPage() {
         {messages.length === 0 && (
           <div className="flex h-full items-center justify-center text-center">
             <div className="max-w-sm space-y-3">
-              <FileText size={32} className="mx-auto text-neutral-700" />
+              <FileText size={32} className="mx-auto text-neutral-700" aria-hidden="true" />
               <p className="text-neutral-500 text-sm">
                 Ask questions about your uploaded union contracts, bylaws, and work rules.
               </p>
@@ -146,7 +147,7 @@ export default function UnionChatPage() {
         {loading && (
           <div className="flex justify-start">
             <div className="rounded-xl bg-neutral-800 px-4 py-3">
-              <Loader2 size={16} className="animate-spin text-neutral-500" aria-label="Thinking" />
+              <Loader2 size={16} className="animate-spin text-neutral-500" aria-label="Loading..." />
             </div>
           </div>
         )}
@@ -167,10 +168,10 @@ export default function UnionChatPage() {
         <button
           onClick={sendMessage}
           disabled={loading || !input.trim()}
-          className="flex items-center justify-center rounded-lg bg-amber-600 px-4 py-3 text-white hover:bg-amber-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
+          className="min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-amber-600 px-4 py-3 text-white hover:bg-amber-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
           aria-label="Send message"
         >
-          {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+          {loading ? <Loader2 size={18} className="animate-spin" aria-label="Loading..." /> : <Send size={18} aria-hidden="true" />}
         </button>
       </div>
     </div>

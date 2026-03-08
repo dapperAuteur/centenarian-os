@@ -52,7 +52,7 @@ export default function ListerDashboardPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <Loader2 className="animate-spin text-neutral-500" size={28} aria-label="Loading" />
+        <Loader2 className="animate-spin text-neutral-500" size={28} aria-label="Loading..." />
       </div>
     );
   }

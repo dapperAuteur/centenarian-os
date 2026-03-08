@@ -119,7 +119,7 @@ export default function ListerMessagesPage() {
           onClick={() => setShowCompose(true)}
           className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
         >
-          <Send size={14} /> Compose
+          <Send size={14} aria-hidden="true" /> Compose
         </button>
       </div>
 
@@ -142,7 +142,7 @@ export default function ListerMessagesPage() {
                   : 'border-transparent text-neutral-500 hover:text-neutral-300'
               }`}
             >
-              <Icon size={14} />
+              <Icon size={14} aria-hidden="true" />
               {t.label}
             </button>
           );
@@ -154,8 +154,8 @@ export default function ListerMessagesPage() {
         <div className="rounded-xl border border-neutral-700 bg-neutral-900 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-neutral-100">New Message</h2>
-            <button onClick={() => setShowCompose(false)} className="rounded p-1 text-neutral-500 hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Close">
-              <X size={18} />
+            <button onClick={() => setShowCompose(false)} className="min-h-11 min-w-11 flex items-center justify-center rounded text-neutral-500 hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Close">
+              <X size={18} aria-hidden="true" />
             </button>
           </div>
 
@@ -174,7 +174,7 @@ export default function ListerMessagesPage() {
                     : 'bg-neutral-800 text-neutral-400 hover:text-neutral-200'
                 }`}
               >
-                <Icon size={14} /> {label}
+                <Icon size={14} aria-hidden="true" /> {label}
               </button>
             ))}
           </div>
@@ -193,7 +193,7 @@ export default function ListerMessagesPage() {
                     <option key={c.id} value={c.linked_user_id!}>{c.name}{c.username ? ` (@${c.username})` : ''}</option>
                   ))}
                 </select>
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" aria-hidden="true" />
               </div>
             </label>
           ) : (
@@ -210,7 +210,7 @@ export default function ListerMessagesPage() {
                     <option key={g.id} value={g.id}>{g.name} ({g.member_count} members)</option>
                   ))}
                 </select>
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" aria-hidden="true" />
               </div>
             </label>
           )}
@@ -241,7 +241,7 @@ export default function ListerMessagesPage() {
             <button onClick={sendMessage}
               disabled={sending || !form.body.trim() || (form.mode === 'individual' ? !form.recipient_id : !form.group_id)}
               className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-neutral-900">
-              {sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+              {sending ? <Loader2 size={14} className="animate-spin" aria-label="Loading..." /> : <Send size={14} aria-hidden="true" />}
               {sending ? 'Sending...' : 'Send'}
             </button>
             <button onClick={() => setShowCompose(false)}
@@ -255,7 +255,7 @@ export default function ListerMessagesPage() {
       {/* Message list */}
       {loading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading" />
+          <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading..." />
         </div>
       ) : messages.length === 0 ? (
         <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-8 text-center text-neutral-500">
@@ -299,10 +299,10 @@ export default function ListerMessagesPage() {
                     <button
                       onClick={() => deleteMessage(m.id)}
                       disabled={deletingId === m.id}
-                      className="rounded p-1.5 text-neutral-500 hover:text-red-400 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      aria-label="Delete message"
+                      className="min-h-11 min-w-11 flex items-center justify-center rounded text-neutral-500 hover:text-red-400 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      aria-label={`Delete message${m.subject ? `: ${m.subject}` : ''}`}
                     >
-                      {deletingId === m.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                      {deletingId === m.id ? <Loader2 size={14} className="animate-spin" aria-label="Loading..." /> : <Trash2 size={14} aria-hidden="true" />}
                     </button>
                   )}
                 </div>

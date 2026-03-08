@@ -75,9 +75,9 @@ export default function CityGuidesPage() {
         <h1 className="text-2xl font-bold text-neutral-100">City Guides</h1>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
+          className="flex min-h-11 items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
         >
-          <Plus size={14} /> New Guide
+          <Plus size={14} aria-hidden="true" /> New Guide
         </button>
       </div>
 
@@ -175,14 +175,14 @@ export default function CityGuidesPage() {
             <button
               onClick={createGuide}
               disabled={creating || !form.city_name.trim()}
-              className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
+              className="flex min-h-11 items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
             >
-              {creating && <Loader2 size={14} className="animate-spin" />}
+              {creating && <Loader2 size={14} className="animate-spin" aria-label="Loading..." />}
               Create
             </button>
             <button
               onClick={() => setShowCreate(false)}
-              className="rounded-lg border border-neutral-700 px-4 py-2.5 text-sm text-neutral-400 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="min-h-11 rounded-lg border border-neutral-700 px-4 py-2.5 text-sm text-neutral-400 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
             >
               Cancel
             </button>
@@ -193,7 +193,7 @@ export default function CityGuidesPage() {
       {/* List */}
       {loading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading" />
+          <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading..." />
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-8 text-center text-neutral-500">
@@ -209,7 +209,7 @@ export default function CityGuidesPage() {
             <button
               key={guide.id}
               onClick={() => router.push(`/dashboard/contractor/cities/${guide.id}`)}
-              className="flex w-full items-center justify-between rounded-xl border border-neutral-800 bg-neutral-900 p-4 text-left transition-colors hover:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="flex min-h-11 w-full items-center justify-between rounded-xl border border-neutral-800 bg-neutral-900 p-4 text-left transition-colors hover:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
               aria-label={`${guide.city_name}${guide.state ? `, ${guide.state}` : ''} — ${guide.entry_count} entries`}
             >
               <div className="min-w-0 flex-1">

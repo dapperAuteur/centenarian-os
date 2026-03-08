@@ -138,7 +138,7 @@ export default function ListerGroupsPage() {
           onClick={() => setShowCreate(true)}
           className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
         >
-          <Plus size={14} /> Create Group
+          <Plus size={14} aria-hidden="true" /> Create Group
         </button>
       </div>
 
@@ -147,8 +147,8 @@ export default function ListerGroupsPage() {
         <div className="rounded-xl border border-neutral-700 bg-neutral-900 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-neutral-100">New Group</h2>
-            <button onClick={() => setShowCreate(false)} className="rounded p-1 text-neutral-500 hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Close">
-              <X size={18} />
+            <button onClick={() => setShowCreate(false)} className="min-h-11 min-w-11 flex items-center justify-center rounded text-neutral-500 hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Close">
+              <X size={18} aria-hidden="true" />
             </button>
           </div>
 
@@ -169,7 +169,7 @@ export default function ListerGroupsPage() {
           <div className="flex gap-2 pt-1">
             <button onClick={createGroup} disabled={saving || !form.name.trim()}
               className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-neutral-900">
-              {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+              {saving ? <Loader2 size={14} className="animate-spin" aria-label="Loading..." /> : <Plus size={14} aria-hidden="true" />}
               {saving ? 'Creating...' : 'Create'}
             </button>
             <button onClick={() => setShowCreate(false)}
@@ -183,7 +183,7 @@ export default function ListerGroupsPage() {
       {/* Groups list */}
       {loading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading" />
+          <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading..." />
         </div>
       ) : groups.length === 0 ? (
         <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-8 text-center text-neutral-500">
@@ -201,7 +201,7 @@ export default function ListerGroupsPage() {
                     className="flex items-center gap-3 min-w-0 flex-1 text-left"
                     aria-expanded={isExpanded}
                   >
-                    <ChevronRight size={14} className={`text-neutral-500 shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                    <ChevronRight size={14} className={`text-neutral-500 shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`} aria-hidden="true" />
                     <UsersRound size={16} className="text-indigo-400 shrink-0" aria-hidden="true" />
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-neutral-100">{g.name}</p>
@@ -214,10 +214,10 @@ export default function ListerGroupsPage() {
                   <button
                     onClick={() => deleteGroup(g.id)}
                     disabled={deletingId === g.id}
-                    className="rounded p-1.5 text-neutral-500 hover:text-red-400 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="min-h-11 min-w-11 flex items-center justify-center rounded text-neutral-500 hover:text-red-400 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     aria-label={`Delete group ${g.name}`}
                   >
-                    {deletingId === g.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                    {deletingId === g.id ? <Loader2 size={14} className="animate-spin" aria-label="Loading..." /> : <Trash2 size={14} aria-hidden="true" />}
                   </button>
                 </div>
 
@@ -226,7 +226,7 @@ export default function ListerGroupsPage() {
                   <div className="border-t border-neutral-800 px-4 py-3 space-y-3">
                     {loadingDetail ? (
                       <div className="flex justify-center py-4">
-                        <Loader2 className="animate-spin text-neutral-500" size={18} />
+                        <Loader2 className="animate-spin text-neutral-500" size={18} aria-label="Loading..." />
                       </div>
                     ) : detail ? (
                       <>
@@ -247,16 +247,16 @@ export default function ListerGroupsPage() {
                                     <option key={c.id} value={c.linked_user_id!}>{c.name}{c.username ? ` (@${c.username})` : ''}</option>
                                   ))}
                               </select>
-                              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
+                              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" aria-hidden="true" />
                             </div>
                           </label>
                           <button
                             onClick={() => addMember(g.id)}
                             disabled={addingMember || !selectedMember}
-                            className="rounded-lg bg-indigo-600 px-3 py-2 text-sm text-white hover:bg-indigo-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-indigo-600 px-3 text-sm text-white hover:bg-indigo-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             aria-label="Add member"
                           >
-                            {addingMember ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
+                            {addingMember ? <Loader2 size={14} className="animate-spin" aria-label="Loading..." /> : <UserPlus size={14} aria-hidden="true" />}
                           </button>
                         </div>
 
@@ -271,10 +271,10 @@ export default function ListerGroupsPage() {
                                 <button
                                   onClick={() => removeMember(g.id, m.user_id)}
                                   disabled={removingMemberId === m.user_id}
-                                  className="rounded p-1 text-neutral-500 hover:text-red-400 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  className="min-h-11 min-w-11 flex items-center justify-center rounded text-neutral-500 hover:text-red-400 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                   aria-label={`Remove ${m.username}`}
                                 >
-                                  {removingMemberId === m.user_id ? <Loader2 size={12} className="animate-spin" /> : <UserMinus size={12} />}
+                                  {removingMemberId === m.user_id ? <Loader2 size={12} className="animate-spin" aria-label="Loading..." /> : <UserMinus size={12} aria-hidden="true" />}
                                 </button>
                               </div>
                             ))}

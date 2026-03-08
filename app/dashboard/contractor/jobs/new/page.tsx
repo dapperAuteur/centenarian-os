@@ -101,13 +101,13 @@ export default function NewJobPage() {
   }
 
   const inputClass =
-    'w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 placeholder-neutral-500 focus:border-amber-500 focus:outline-none';
+    'w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-sm text-neutral-100 placeholder-neutral-500 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40';
   const labelClass = 'block text-sm font-medium text-neutral-300 mb-1';
 
   return (
     <div className="mx-auto max-w-3xl p-4">
-      <Link href="/dashboard/contractor" className="mb-4 inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-neutral-200">
-        <ArrowLeft size={14} /> Back to Jobs
+      <Link href="/dashboard/contractor" className="mb-4 inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-neutral-200 min-h-11 py-2" aria-label="Back to Jobs">
+        <ArrowLeft size={14} aria-hidden="true" /> Back to Jobs
       </Link>
 
       <h1 className="mb-6 text-2xl font-bold text-neutral-100">New Job</h1>
@@ -145,13 +145,15 @@ export default function NewJobPage() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className={labelClass}>Job Number *</label>
+              <label htmlFor="job-number" className={labelClass}>Job Number <span aria-hidden="true">*</span></label>
               <input
+                id="job-number"
                 className={inputClass}
                 placeholder="J-223680"
                 value={form.job_number}
                 onChange={(e) => set('job_number', e.target.value)}
                 required
+                aria-required="true"
               />
             </div>
             <div>
@@ -233,26 +235,26 @@ export default function NewJobPage() {
         {/* Pay Rates */}
         <fieldset className="space-y-4 rounded-xl border border-neutral-800 bg-neutral-900 p-4">
           <legend className="px-2 text-sm font-semibold text-neutral-200">Pay Rates</legend>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <label className={labelClass}>Rate Type</label>
-              <select className={inputClass} value={form.rate_type} onChange={(e) => set('rate_type', e.target.value)}>
+              <label htmlFor="rate-type" className={labelClass}>Rate Type</label>
+              <select id="rate-type" className={inputClass} value={form.rate_type} onChange={(e) => set('rate_type', e.target.value)}>
                 {RATE_TYPES.map((t) => (
                   <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className={labelClass}>ST Rate</label>
-              <input type="number" step="0.01" className={inputClass} placeholder="41.09" value={form.pay_rate} onChange={(e) => set('pay_rate', e.target.value)} />
+              <label htmlFor="st-rate" className={labelClass}>ST Rate</label>
+              <input id="st-rate" type="number" step="0.01" className={inputClass} placeholder="41.09" value={form.pay_rate} onChange={(e) => set('pay_rate', e.target.value)} aria-label="Straight time rate" />
             </div>
             <div>
-              <label className={labelClass}>OT Rate</label>
-              <input type="number" step="0.01" className={inputClass} placeholder="61.64" value={form.ot_rate} onChange={(e) => set('ot_rate', e.target.value)} />
+              <label htmlFor="ot-rate" className={labelClass}>OT Rate</label>
+              <input id="ot-rate" type="number" step="0.01" className={inputClass} placeholder="61.64" value={form.ot_rate} onChange={(e) => set('ot_rate', e.target.value)} aria-label="Overtime rate" />
             </div>
             <div>
-              <label className={labelClass}>DT Rate</label>
-              <input type="number" step="0.01" className={inputClass} placeholder="82.18" value={form.dt_rate} onChange={(e) => set('dt_rate', e.target.value)} />
+              <label htmlFor="dt-rate" className={labelClass}>DT Rate</label>
+              <input id="dt-rate" type="number" step="0.01" className={inputClass} placeholder="82.18" value={form.dt_rate} onChange={(e) => set('dt_rate', e.target.value)} aria-label="Double time rate" />
             </div>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -279,41 +281,43 @@ export default function NewJobPage() {
             />
             Benefits Eligible
           </label>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <label className={labelClass}>Meal Allowance</label>
-              <input type="number" step="0.01" className={inputClass} placeholder="25.00" value={form.meal_allowance} onChange={(e) => set('meal_allowance', e.target.value)} />
+              <label htmlFor="meal-allowance" className={labelClass}>Meal Allowance</label>
+              <input id="meal-allowance" type="number" step="0.01" className={inputClass} placeholder="25.00" value={form.meal_allowance} onChange={(e) => set('meal_allowance', e.target.value)} />
             </div>
             <div>
-              <label className={labelClass}>Per Diem</label>
-              <input type="number" step="0.01" className={inputClass} placeholder="75.00" value={form.per_diem} onChange={(e) => set('per_diem', e.target.value)} />
+              <label htmlFor="per-diem" className={labelClass}>Per Diem</label>
+              <input id="per-diem" type="number" step="0.01" className={inputClass} placeholder="75.00" value={form.per_diem} onChange={(e) => set('per_diem', e.target.value)} />
             </div>
             <div>
-              <label className={labelClass}>Mileage Rate</label>
-              <input type="number" step="0.01" className={inputClass} placeholder="0.67" value={form.mileage_rate} onChange={(e) => set('mileage_rate', e.target.value)} />
+              <label htmlFor="mileage-rate" className={labelClass}>Mileage Rate</label>
+              <input id="mileage-rate" type="number" step="0.01" className={inputClass} placeholder="0.67" value={form.mileage_rate} onChange={(e) => set('mileage_rate', e.target.value)} />
             </div>
             <div>
-              <label className={labelClass}>Extra Pay</label>
-              <input type="number" step="0.01" className={inputClass} placeholder="0.00" value={form.extra_pay} onChange={(e) => set('extra_pay', e.target.value)} />
+              <label htmlFor="extra-pay" className={labelClass}>Extra Pay</label>
+              <input id="extra-pay" type="number" step="0.01" className={inputClass} placeholder="0.00" value={form.extra_pay} onChange={(e) => set('extra_pay', e.target.value)} />
             </div>
           </div>
         </fieldset>
 
         {/* Notes */}
         <div>
-          <label className={labelClass}>Notes</label>
+          <label htmlFor="job-notes" className={labelClass}>Notes</label>
           <textarea
+            id="job-notes"
             className={inputClass + ' h-24 resize-none'}
             placeholder="Additional job notes..."
             value={form.notes}
             onChange={(e) => set('notes', e.target.value)}
+            aria-label="Job notes"
           />
         </div>
 
         <button
           type="submit"
           disabled={saving}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber-600 py-3 font-medium text-white hover:bg-amber-500 disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber-600 py-3 text-base font-medium text-white hover:bg-amber-500 disabled:opacity-50 min-h-11"
         >
           {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
           {saving ? 'Creating...' : 'Create Job'}

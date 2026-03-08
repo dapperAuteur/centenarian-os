@@ -49,21 +49,23 @@ export default function ContractorHubPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <HardHat className="text-amber-400" size={28} />
+          <HardHat className="text-amber-400" size={28} aria-hidden="true" />
           <h1 className="text-2xl font-bold text-neutral-100">Job Hub</h1>
         </div>
         <div className="flex gap-2">
           <Link
             href="/dashboard/contractor/jobs/new"
-            className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-500"
+            className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2.5 text-sm font-medium text-white hover:bg-amber-500 min-h-11"
+            aria-label="Create new job"
           >
-            <Plus size={16} /> New Job
+            <Plus size={16} aria-hidden="true" /> New Job
           </Link>
           <Link
             href="/dashboard/contractor/jobs"
-            className="flex items-center gap-1.5 rounded-lg border border-neutral-700 px-3 py-2 text-sm text-neutral-300 hover:bg-neutral-800"
+            className="flex items-center gap-1.5 rounded-lg border border-neutral-700 px-3 py-2.5 text-sm text-neutral-300 hover:bg-neutral-800 min-h-11"
+            aria-label="View all jobs"
           >
-            All Jobs <ArrowRight size={14} />
+            All Jobs <ArrowRight size={14} aria-hidden="true" />
           </Link>
         </div>
       </div>
@@ -85,7 +87,7 @@ export default function ContractorHubPage() {
         <h2 className="mb-3 text-lg font-semibold text-neutral-200">Upcoming & Active</h2>
         {loading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="animate-spin text-neutral-500" size={24} />
+            <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading jobs" />
           </div>
         ) : upcoming.length === 0 ? (
           <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-8 text-center text-neutral-500">
@@ -119,7 +121,7 @@ export default function ContractorHubPage() {
                     )}
                   </div>
                 </div>
-                <ArrowRight size={16} className="shrink-0 text-neutral-600" />
+                <ArrowRight size={16} className="shrink-0 text-neutral-600" aria-hidden="true" />
               </Link>
             ))}
           </div>

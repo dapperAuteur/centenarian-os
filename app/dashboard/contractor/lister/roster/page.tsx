@@ -82,7 +82,7 @@ export default function ListerRosterPage() {
           onClick={() => setShowAdd(true)}
           className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
         >
-          <Plus size={14} /> Add Contractor
+          <Plus size={14} aria-hidden="true" /> Add Contractor
         </button>
       </div>
 
@@ -104,8 +104,8 @@ export default function ListerRosterPage() {
         <div className="rounded-xl border border-neutral-700 bg-neutral-900 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-neutral-100">Add to Roster</h2>
-            <button onClick={() => setShowAdd(false)} className="rounded p-1 text-neutral-500 hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Close form">
-              <X size={18} />
+            <button onClick={() => setShowAdd(false)} className="min-h-11 min-w-11 flex items-center justify-center rounded text-neutral-500 hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Close form">
+              <X size={18} aria-hidden="true" />
             </button>
           </div>
 
@@ -144,7 +144,7 @@ export default function ListerRosterPage() {
           <div className="flex gap-2 pt-1">
             <button onClick={addContractor} disabled={saving || !form.name.trim()}
               className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-neutral-900">
-              {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+              {saving ? <Loader2 size={14} className="animate-spin" aria-label="Loading..." /> : <Plus size={14} aria-hidden="true" />}
               {saving ? 'Saving...' : 'Add'}
             </button>
             <button onClick={() => setShowAdd(false)}
@@ -158,7 +158,7 @@ export default function ListerRosterPage() {
       {/* Roster list */}
       {loading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading" />
+          <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading..." />
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-8 text-center text-neutral-500">
@@ -193,10 +193,10 @@ export default function ListerRosterPage() {
                 <button
                   onClick={() => removeContractor(c.id)}
                   disabled={removingId === c.id}
-                  className="rounded p-1.5 text-neutral-500 hover:text-red-400 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="min-h-11 min-w-11 flex items-center justify-center rounded text-neutral-500 hover:text-red-400 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   aria-label={`Remove ${c.name} from roster`}
                 >
-                  {removingId === c.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                  {removingId === c.id ? <Loader2 size={14} className="animate-spin" aria-label="Loading..." /> : <Trash2 size={14} aria-hidden="true" />}
                 </button>
               </div>
             </article>

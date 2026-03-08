@@ -161,7 +161,7 @@ export default function JobBoardPage() {
 
           {loading ? (
             <div className="flex justify-center py-16">
-              <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading" />
+              <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading..." />
             </div>
           ) : filtered.length === 0 ? (
             <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-8 text-center text-neutral-500">
@@ -244,14 +244,14 @@ export default function JobBoardPage() {
                             <button
                               onClick={() => sendRequest(job.id)}
                               disabled={sendingRequest}
-                              className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
+                              className="flex-1 flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
                             >
-                              {sendingRequest ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                              {sendingRequest ? <Loader2 size={14} className="animate-spin" aria-label="Loading..." /> : <Send size={14} aria-hidden="true" />}
                               Send
                             </button>
                             <button
                               onClick={() => { setRequestingId(null); setRequestMessage(''); }}
-                              className="rounded-lg border border-neutral-700 px-3 py-2 text-sm text-neutral-400 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                              className="min-h-11 rounded-lg border border-neutral-700 px-3 py-2 text-sm text-neutral-400 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
                             >
                               Cancel
                             </button>
@@ -260,9 +260,9 @@ export default function JobBoardPage() {
                       ) : (
                         <button
                           onClick={() => setRequestingId(job.id)}
-                          className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
+                          className="flex min-h-11 items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
                         >
-                          <Send size={14} /> Request
+                          <Send size={14} aria-hidden="true" /> Request
                         </button>
                       )}
                     </div>
@@ -279,7 +279,7 @@ export default function JobBoardPage() {
         <>
           {loading ? (
             <div className="flex justify-center py-16">
-              <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading" />
+              <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading..." />
             </div>
           ) : requests.length === 0 ? (
             <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-8 text-center text-neutral-500">
@@ -333,15 +333,15 @@ export default function JobBoardPage() {
                             <button
                               onClick={() => handleAction(req.id, 'accepted')}
                               disabled={actionLoading === req.id}
-                              className="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
+                              className="flex min-h-11 items-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
                               aria-label={`Accept request from ${req.requester_username}`}
                             >
-                              <Check size={14} /> Accept
+                              <Check size={14} aria-hidden="true" /> Accept
                             </button>
                             <button
                               onClick={() => handleAction(req.id, 'declined')}
                               disabled={actionLoading === req.id}
-                              className="rounded-lg border border-neutral-700 px-3 py-2 text-sm text-neutral-400 hover:bg-neutral-800 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                              className="min-h-11 rounded-lg border border-neutral-700 px-3 py-2 text-sm text-neutral-400 hover:bg-neutral-800 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500"
                               aria-label={`Decline request from ${req.requester_username}`}
                             >
                               Decline
@@ -351,7 +351,7 @@ export default function JobBoardPage() {
                           <button
                             onClick={() => handleAction(req.id, 'withdrawn')}
                             disabled={actionLoading === req.id}
-                            className="rounded-lg border border-neutral-700 px-3 py-2 text-sm text-neutral-400 hover:bg-neutral-800 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            className="min-h-11 rounded-lg border border-neutral-700 px-3 py-2 text-sm text-neutral-400 hover:bg-neutral-800 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500"
                             aria-label="Withdraw request"
                           >
                             Withdraw

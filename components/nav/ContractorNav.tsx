@@ -162,13 +162,22 @@ export default function ContractorNav({ username, unreadMessages, onLogout }: Co
                       </Link>
                     )}
                     <Link
+                      href="/dashboard/contractor/settings"
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-300 hover:bg-neutral-800 transition"
+                      role="menuitem"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <Settings className="w-4 h-4 shrink-0" />
+                      Contractor Settings
+                    </Link>
+                    <Link
                       href="/dashboard/settings"
                       className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-300 hover:bg-neutral-800 transition"
                       role="menuitem"
                       onClick={() => setUserMenuOpen(false)}
                     >
                       <Settings className="w-4 h-4 shrink-0" />
-                      Settings
+                      Account Settings
                     </Link>
                     <Link
                       href="/dashboard/billing"
@@ -282,8 +291,11 @@ export default function ContractorNav({ username, unreadMessages, onLogout }: Co
                   <UserCircle className="w-4 h-4 shrink-0" /> My Profile
                 </Link>
               )}
+              <Link href="/dashboard/contractor/settings" className="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-300 hover:bg-neutral-800 transition">
+                <Settings className="w-4 h-4 shrink-0" /> Contractor Settings
+              </Link>
               <Link href="/dashboard/settings" className="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-300 hover:bg-neutral-800 transition">
-                <Settings className="w-4 h-4 shrink-0" /> Settings
+                <Settings className="w-4 h-4 shrink-0" /> Account Settings
               </Link>
               <Link href="/dashboard/billing" className="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-300 hover:bg-neutral-800 transition">
                 <CreditCard className="w-4 h-4 shrink-0" /> Billing

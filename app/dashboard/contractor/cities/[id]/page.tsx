@@ -151,7 +151,7 @@ export default function CityGuideDetailPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading" />
+        <Loader2 className="animate-spin text-neutral-500" size={24} aria-label="Loading..." />
       </div>
     );
   }
@@ -171,9 +171,10 @@ export default function CityGuideDetailPage() {
         <div>
           <button
             onClick={() => router.push('/dashboard/contractor/cities')}
-            className="mb-2 flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500 rounded"
+            className="mb-2 flex min-h-11 items-center gap-1 py-2 text-sm text-neutral-500 hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500 rounded"
+            aria-label="Back to city guides"
           >
-            <ArrowLeft size={14} /> Back
+            <ArrowLeft size={14} aria-hidden="true" /> Back
           </button>
           <h1 className="text-2xl font-bold text-neutral-100">
             {guide.city_name}{guide.state ? `, ${guide.state}` : ''}
@@ -181,9 +182,9 @@ export default function CityGuideDetailPage() {
           <div className="flex items-center gap-2 mt-1 text-sm text-neutral-500">
             {guide.region && <span>{guide.region}</span>}
             {guide.is_shared ? (
-              <span className="flex items-center gap-1 text-green-400"><Globe size={12} /> Shared</span>
+              <span className="flex items-center gap-1 text-green-400"><Globe size={12} aria-hidden="true" /> Shared</span>
             ) : (
-              <span className="flex items-center gap-1"><Lock size={12} /> Private</span>
+              <span className="flex items-center gap-1"><Lock size={12} aria-hidden="true" /> Private</span>
             )}
             <span>· {entries.length} {entries.length === 1 ? 'entry' : 'entries'}</span>
           </div>
@@ -192,9 +193,9 @@ export default function CityGuideDetailPage() {
         {isOwner && (
           <button
             onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
+            className="flex min-h-11 items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
           >
-            <Plus size={14} /> Add Entry
+            <Plus size={14} aria-hidden="true" /> Add Entry
           </button>
         )}
       </div>
@@ -318,14 +319,14 @@ export default function CityGuideDetailPage() {
             <button
               onClick={() => (editingId ? updateEntry(editingId) : addEntry())}
               disabled={saving || !form.name.trim()}
-              className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
+              className="flex min-h-11 items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-neutral-900"
             >
-              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+              {saving ? <Loader2 size={14} className="animate-spin" aria-label="Loading..." /> : <Save size={14} aria-hidden="true" />}
               {editingId ? 'Update' : 'Add'}
             </button>
             <button
               onClick={() => { setShowAdd(false); setEditingId(null); setForm(emptyForm); }}
-              className="rounded-lg border border-neutral-700 px-4 py-2.5 text-sm text-neutral-400 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="min-h-11 rounded-lg border border-neutral-700 px-4 py-2.5 text-sm text-neutral-400 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
             >
               Cancel
             </button>
@@ -386,21 +387,21 @@ export default function CityGuideDetailPage() {
                           <div className="flex gap-1 shrink-0">
                             <button
                               onClick={() => startEdit(entry)}
-                              className="rounded p-1.5 text-neutral-500 hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                              className="min-h-11 min-w-11 flex items-center justify-center rounded text-neutral-500 hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
                               aria-label={`Edit ${entry.name}`}
                             >
-                              <Edit2 size={14} />
+                              <Edit2 size={14} aria-hidden="true" />
                             </button>
                             <button
                               onClick={() => deleteEntry(entry.id)}
                               disabled={deletingId === entry.id}
-                              className="rounded p-1.5 text-neutral-500 hover:text-red-400 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                              className="min-h-11 min-w-11 flex items-center justify-center rounded text-neutral-500 hover:text-red-400 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500"
                               aria-label={`Delete ${entry.name}`}
                             >
                               {deletingId === entry.id ? (
-                                <Loader2 size={14} className="animate-spin" />
+                                <Loader2 size={14} className="animate-spin" aria-label="Loading..." />
                               ) : (
-                                <Trash2 size={14} />
+                                <Trash2 size={14} aria-hidden="true" />
                               )}
                             </button>
                           </div>
