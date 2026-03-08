@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   ArrowLeft, Loader2, Clock, FileText, DollarSign, Car,
   FolderOpen, Phone, MessageSquare, Camera, Receipt,
-  Trash2, Edit2, Check, X, Zap,
+  Trash2, Edit2, Check, X, Zap, Globe, Lock,
 } from 'lucide-react';
 import JobStatusBadge from '@/components/contractor/JobStatusBadge';
 import JobSummaryCards from '@/components/contractor/JobSummaryCards';
@@ -36,6 +36,8 @@ interface Job {
   travel_benefits: Record<string, number>;
   est_pay_date: string | null;
   distance_from_home_miles: number | null;
+  is_public: boolean;
+  share_contacts: boolean;
   notes: string | null;
   _counts: {
     time_entries: number;
@@ -180,6 +182,27 @@ export default function JobDetailPage() {
     loadJob();
   }
 
+  /* ─── Toggle Public / Share Contacts ────────────────── */
+  async function togglePublic() {
+    const newVal = !job?.is_public;
+    await fetch(`/api/contractor/jobs/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_public: newVal }),
+    });
+    loadJob();
+  }
+
+  async function toggleShareContacts() {
+    const newVal = !job?.share_contacts;
+    await fetch(`/api/contractor/jobs/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ share_contacts: newVal }),
+    });
+    loadJob();
+  }
+
   /* ─── Status Update ─────────────────────────────────── */
   async function updateStatus() {
     await fetch(`/api/contractor/jobs/${id}`, {
@@ -264,11 +287,41 @@ export default function JobDetailPage() {
           </button>
           <Link
             href={`/dashboard/contractor/jobs/${id}/edit`}
-            className="flex items-center gap-1.5 rounded-lg border border-neutral-700 px-3 py-2 text-sm text-neutral-300 hover:bg-neutral-800"
+            className="flex items-center gap-1.5 rounded-lg border border-neutral-700 px-3 py-2 text-sm text-neutral-300 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
           >
             <Edit2 size={14} /> Edit
           </Link>
+          <button
+            onClick={togglePublic}
+            className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+              job.is_public
+                ? 'border-green-600/50 text-green-400 hover:bg-green-600/10'
+                : 'border-neutral-700 text-neutral-400 hover:bg-neutral-800'
+            }`}
+            aria-label={job.is_public ? 'Job is public — click to make private' : 'Job is private — click to post on board'}
+            title={job.is_public ? 'Posted on board — click to make private' : 'Click to post on job board'}
+          >
+            {job.is_public ? <Globe size={14} /> : <Lock size={14} />}
+            <span className="hidden sm:inline">{job.is_public ? 'Public' : 'Private'}</span>
+          </button>
         </div>
+
+        {/* Share controls — shown when job is public */}
+        {job.is_public && (
+          <div className="flex items-center gap-3 text-xs text-neutral-500">
+            <span>This job is visible on the board.</span>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={job.share_contacts}
+                onChange={toggleShareContacts}
+                className="rounded border-neutral-600 bg-neutral-800 text-amber-500 focus:ring-amber-500 focus:ring-offset-neutral-950"
+                aria-label="Share contacts with accepted replacement"
+              />
+              <span className="text-neutral-400">Share contacts when accepted</span>
+            </label>
+          </div>
+        )}
       </div>
 
       {/* Summary Cards */}

@@ -65,7 +65,7 @@ const ALLOWED_FIELDS = [
   'pay_rate', 'ot_rate', 'dt_rate', 'rate_type',
   'distance_from_home_miles', 'benefits_eligible', 'travel_benefits',
   'union_local', 'department', 'brand_id', 'est_pay_date',
-  'is_public', 'notes', 'metadata',
+  'is_public', 'share_contacts', 'notes', 'metadata',
 ];
 
 export async function PATCH(request: NextRequest, ctx: Ctx) {

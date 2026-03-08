@@ -35,6 +35,7 @@ import {
   CreditCard,
   BarChart3,
   ArrowUpDown,
+  Users,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -91,6 +92,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Rate Cards', href: '/dashboard/contractor/rate-cards', icon: CreditCard, paid: true },
       { label: 'Reports', href: '/dashboard/contractor/reports', icon: BarChart3, paid: true },
       { label: 'Compare', href: '/dashboard/contractor/compare', icon: ArrowUpDown, paid: true },
+      { label: 'Board', href: '/dashboard/contractor/board', icon: Users, paid: true },
     ],
   },
   {
