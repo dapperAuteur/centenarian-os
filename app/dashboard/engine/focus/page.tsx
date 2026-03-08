@@ -212,6 +212,7 @@ export default function FocusTimerPage() {
       }, 1000);
     }
     return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRunning, timerMode, pomodoroPhase, currentPhaseSeconds, pomodoroSettings, handleCompleteCurrentInterval, targetDuration]);
 
   const startSession = async () => {

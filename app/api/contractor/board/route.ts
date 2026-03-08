@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
   // Check which jobs the current user has already requested
   const jobIds = (jobs ?? []).map((j) => j.id);
-  let myRequests: Record<string, string> = {};
+  const myRequests: Record<string, string> = {};
   if (jobIds.length > 0) {
     const { data: reqs } = await db
       .from('job_replacement_requests')
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
   // Get poster profiles (username) for display
   const posterIds = [...new Set((jobs ?? []).map((j) => j.user_id))];
-  let posterMap: Record<string, string> = {};
+  const posterMap: Record<string, string> = {};
   if (posterIds.length > 0) {
     const { data: profiles } = await db
       .from('profiles')

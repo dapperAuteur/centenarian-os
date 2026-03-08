@@ -26,7 +26,7 @@ export default function MealLoggingPage() {
   const [restaurantCountry, setRestaurantCountry] = useState('USA');
   const [restaurantWebsite, setRestaurantWebsite] = useState('');
   const [ingredientModalOpen, setIngredientModalOpen] = useState(false);
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [, setIngredients] = useState<Ingredient[]>([]);
   const supabase = createClient();
 
   const loadData = useCallback(async () => {

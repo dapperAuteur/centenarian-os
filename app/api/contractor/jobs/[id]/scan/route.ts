@@ -7,9 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 import { filesToImageParts, extractDocument } from '@/lib/ocr';
 import type { PayStubExtraction } from '@/lib/ocr';
 
-type Ctx = { params: Promise<{ id: string }> };
-
-export async function POST(request: NextRequest, _ctx: Ctx) {
+export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

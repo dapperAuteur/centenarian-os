@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, Loader2, Clock, FileText, DollarSign, Car,
+  ArrowLeft, Loader2, Clock, DollarSign, Car,
   FolderOpen, Phone, MessageSquare, Camera, Receipt,
   Trash2, Edit2, Check, X, Zap, Globe, Lock,
 } from 'lucide-react';
@@ -106,7 +106,6 @@ const STATUS_ORDER = ['assigned', 'confirmed', 'in_progress', 'completed', 'invo
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const [job, setJob] = useState<Job | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
