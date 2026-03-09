@@ -127,7 +127,7 @@ export default function SignupPage() {
         />
       )}
 
-      <div className={`min-h-screen flex flex-col ${isProduct ? 'bg-neutral-950 text-neutral-100' : 'bg-gray-50'}`}>
+      <div className={`min-h-screen flex flex-col ${isProduct ? 'bg-neutral-950 text-neutral-100 dark-input' : 'bg-gray-50'}`}>
         {/* Header */}
         {isProduct ? (
           <nav className="border-b border-neutral-800 px-4 py-4">
@@ -227,7 +227,7 @@ export default function SignupPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent form-input ${isProduct ? 'border-neutral-700 bg-neutral-800 text-neutral-100 ' + focusRing : 'border-gray-300 ' + focusRing}`}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${isProduct ? 'border-neutral-700 bg-neutral-800 text-neutral-100 ' + focusRing : 'form-input border-gray-300 ' + focusRing}`}
                   placeholder="you@example.com"
                   autoComplete="email"
                 />
@@ -244,7 +244,7 @@ export default function SignupPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent form-input ${isProduct ? 'border-neutral-700 bg-neutral-800 text-neutral-100 ' + focusRing : 'border-gray-300 ' + focusRing}`}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${isProduct ? 'border-neutral-700 bg-neutral-800 text-neutral-100 ' + focusRing : 'form-input border-gray-300 ' + focusRing}`}
                   placeholder="••••••••"
                   autoComplete="new-password"
                 />
@@ -295,7 +295,7 @@ export default function SignupPage() {
         </main>
 
         {isProduct ? (
-          <footer className="border-t border-neutral-800 px-4 py-8 text-center text-xs text-neutral-600">
+          <footer className="border-t border-neutral-800 px-4 py-8 text-center text-xs text-neutral-500">
             <p>&copy; {new Date().getFullYear()} {brandName}. All rights reserved.</p>
           </footer>
         ) : (

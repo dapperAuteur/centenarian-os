@@ -16,7 +16,7 @@ interface Props {
 
 export default function ContractorLayout({ username, unreadMessages, onLogout, children }: Props) {
   return (
-    <div className="min-h-screen bg-neutral-950">
+    <div className="min-h-screen bg-neutral-950 dark-input">
       <ContractorNav username={username} unreadMessages={unreadMessages} onLogout={onLogout} />
       <MfaBanner />
       <OfflineIndicator />

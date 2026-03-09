@@ -150,7 +150,7 @@ function LoginContent() {
   };
 
   return (
-    <div className={`min-h-screen flex flex-col ${isProduct ? 'bg-neutral-950 text-neutral-100' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen flex flex-col ${isProduct ? 'bg-neutral-950 text-neutral-100 dark-input' : 'bg-gray-50'}`}>
       {/* Header */}
       {isProduct ? (
         <nav className="border-b border-neutral-800 px-4 py-4">
@@ -297,7 +297,7 @@ function LoginContent() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent form-input ${isProduct ? 'border-neutral-700 bg-neutral-800 text-neutral-100 ' + focusRing : 'border-gray-300 ' + focusRing}`}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${isProduct ? 'border-neutral-700 bg-neutral-800 text-neutral-100 ' + focusRing : 'form-input border-gray-300 ' + focusRing}`}
                   placeholder="you@example.com"
                 />
               </div>
@@ -312,7 +312,7 @@ function LoginContent() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent form-input ${isProduct ? 'border-neutral-700 bg-neutral-800 text-neutral-100 ' + focusRing : 'border-gray-300 ' + focusRing}`}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${isProduct ? 'border-neutral-700 bg-neutral-800 text-neutral-100 ' + focusRing : 'form-input border-gray-300 ' + focusRing}`}
                   placeholder="••••••••"
                 />
               </div>
@@ -355,7 +355,7 @@ function LoginContent() {
                       value={otpEmail}
                       onChange={(e) => setOtpEmail(e.target.value)}
                       required
-                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent form-input ${isProduct ? 'border-neutral-700 bg-neutral-800 text-neutral-100 ' + focusRing : 'border-gray-300 ' + focusRing}`}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${isProduct ? 'border-neutral-700 bg-neutral-800 text-neutral-100 ' + focusRing : 'form-input border-gray-300 ' + focusRing}`}
                       placeholder="you@example.com"
                     />
                     <p className={`text-xs mt-1.5 ${isProduct ? 'text-neutral-500' : 'text-gray-400'}`}>
@@ -420,7 +420,7 @@ function LoginContent() {
       </main>
 
       {isProduct ? (
-        <footer className="border-t border-neutral-800 px-4 py-8 text-center text-xs text-neutral-600">
+        <footer className="border-t border-neutral-800 px-4 py-8 text-center text-xs text-neutral-500">
           <p>&copy; {new Date().getFullYear()} {brandName}. All rights reserved.</p>
         </footer>
       ) : (
