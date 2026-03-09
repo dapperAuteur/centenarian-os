@@ -221,7 +221,7 @@ export default function CityGuidesPage() {
                   {guide.is_shared ? (
                     <Globe size={12} className="text-green-400" aria-label="Shared" />
                   ) : (
-                    <Lock size={12} className="text-neutral-600" aria-label="Private" />
+                    <Lock size={12} className="text-neutral-500" aria-label="Private" />
                   )}
                 </div>
                 <div className="mt-1 flex items-center gap-2 text-xs text-neutral-500">
@@ -229,7 +229,7 @@ export default function CityGuidesPage() {
                   {guide.author && <span>· by {guide.author}</span>}
                 </div>
               </div>
-              <ChevronRight size={16} className="text-neutral-600 shrink-0" aria-hidden="true" />
+              <ChevronRight size={16} className="text-neutral-500 shrink-0" aria-hidden="true" />
             </button>
           ))}
         </div>

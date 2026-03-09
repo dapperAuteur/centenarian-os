@@ -117,7 +117,7 @@ export default function ListerDashboardPage() {
           >
             <Icon size={16} className="text-indigo-400 shrink-0" aria-hidden="true" />
             {label}
-            <ChevronRight size={14} className="ml-auto text-neutral-600" aria-hidden="true" />
+            <ChevronRight size={14} className="ml-auto text-neutral-500" aria-hidden="true" />
           </Link>
         ))}
       </div>
@@ -153,7 +153,7 @@ export default function ListerDashboardPage() {
                     {job.client_name}{job.start_date ? ` · ${new Date(job.start_date + 'T00:00:00').toLocaleDateString()}` : ''}
                   </p>
                 </div>
-                <ChevronRight size={14} className="text-neutral-600 shrink-0" aria-hidden="true" />
+                <ChevronRight size={14} className="text-neutral-500 shrink-0" aria-hidden="true" />
               </Link>
             ))}
           </div>

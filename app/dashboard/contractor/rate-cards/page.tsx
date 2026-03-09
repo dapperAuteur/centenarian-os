@@ -189,7 +189,7 @@ export default function RateCardsPage() {
                   {card.benefits.length > 0 && (
                     <span className="text-neutral-500">{card.benefits.length} benefit{card.benefits.length > 1 ? 's' : ''}</span>
                   )}
-                  <span className="text-neutral-600">used {card.use_count}×</span>
+                  <span className="text-neutral-500">used {card.use_count}×</span>
                 </div>
               </div>
               <div className="flex gap-1">
@@ -254,7 +254,7 @@ export default function RateCardsPage() {
                 <div key={i} className="flex items-center gap-2 text-sm">
                   <span className="flex-1 text-neutral-300">{b.name}</span>
                   <span className="text-neutral-400">${b.amount.toFixed(2)}</span>
-                  <button type="button" onClick={() => removeBenefit(i)} className="p-2 text-neutral-600 hover:text-red-400 min-h-11 min-w-11 flex items-center justify-center" aria-label={`Remove ${b.name} benefit`}><X size={14} /></button>
+                  <button type="button" onClick={() => removeBenefit(i)} className="p-2 text-neutral-500 hover:text-red-400 min-h-11 min-w-11 flex items-center justify-center" aria-label={`Remove ${b.name} benefit`}><X size={14} /></button>
                 </div>
               ))}
             </div>

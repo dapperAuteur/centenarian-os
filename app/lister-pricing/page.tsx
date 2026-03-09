@@ -31,7 +31,7 @@ export default function ListerPricingPage() {
               Log In
             </Link>
             <Link href="/signup" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
-              Start Free Trial
+              Get Started
             </Link>
           </div>
         </div>
@@ -52,7 +52,7 @@ export default function ListerPricingPage() {
               <span className="text-4xl font-extrabold text-indigo-400">$10</span>
               <span className="text-neutral-500">/month</span>
             </div>
-            <p className="mt-1 text-sm text-neutral-600 line-through">$50/month regular price</p>
+            <p className="mt-1 text-sm text-neutral-500 line-through">$50/month regular price</p>
             <p className="mt-1 text-sm text-neutral-500">Cancel anytime.</p>
             <Link
               href="/signup"
@@ -72,7 +72,7 @@ export default function ListerPricingPage() {
               <span className="text-4xl font-extrabold text-indigo-400">$100</span>
               <span className="text-neutral-500">/year</span>
             </div>
-            <p className="mt-1 text-sm text-neutral-600 line-through">$500/year regular price</p>
+            <p className="mt-1 text-sm text-neutral-500 line-through">$500/year regular price</p>
             <p className="mt-1 text-sm text-neutral-500">$8.33/month, billed annually.</p>
             <Link
               href="/signup"
@@ -113,7 +113,7 @@ export default function ListerPricingPage() {
         </div>
       </section>
 
-      <footer className="border-t border-neutral-800 px-4 py-8 text-center text-xs text-neutral-600">
+      <footer className="border-t border-neutral-800 px-4 py-8 text-center text-xs text-neutral-500">
         <p>&copy; {new Date().getFullYear()} CentenarianOS. All rights reserved.</p>
       </footer>
     </div>

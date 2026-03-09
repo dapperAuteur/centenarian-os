@@ -348,7 +348,7 @@ export default function CityGuideDetailPage() {
                 <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-neutral-300">
                   <CatIcon size={14} className="text-amber-400" aria-hidden="true" />
                   {getCatLabel(cat)}
-                  <span className="text-xs text-neutral-600">({catEntries.length})</span>
+                  <span className="text-xs text-neutral-500">({catEntries.length})</span>
                 </h3>
                 <div className="space-y-2" role="list">
                   {catEntries.map((entry) => (
@@ -380,7 +380,7 @@ export default function CityGuideDetailPage() {
                             <p className="mt-1 text-sm text-neutral-400">{entry.notes}</p>
                           )}
                           {entry.near_venue_name && (
-                            <p className="mt-0.5 text-xs text-neutral-600">Near {entry.near_venue_name}</p>
+                            <p className="mt-0.5 text-xs text-neutral-500">Near {entry.near_venue_name}</p>
                           )}
                         </div>
                         {isOwner && (

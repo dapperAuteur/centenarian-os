@@ -200,7 +200,7 @@ export default function CompareJobsPage() {
                         selected
                           ? 'bg-amber-500/10 text-amber-300'
                           : disabled
-                            ? 'text-neutral-600 cursor-not-allowed'
+                            ? 'text-neutral-500 cursor-not-allowed'
                             : 'text-neutral-300 hover:bg-neutral-800'
                       }`}
                     >

@@ -457,7 +457,7 @@ export default function JobDetailPage() {
                         )}
                       </td>
                       <td className="px-3 py-2">
-                        <button onClick={() => deleteTimeEntry(te.id)} className="p-2 text-neutral-600 hover:text-red-400 min-h-11 min-w-11 flex items-center justify-center" aria-label={`Delete time entry for ${new Date(te.work_date + 'T00:00').toLocaleDateString()}`}>
+                        <button onClick={() => deleteTimeEntry(te.id)} className="p-2 text-neutral-500 hover:text-red-400 min-h-11 min-w-11 flex items-center justify-center" aria-label={`Delete time entry for ${new Date(te.work_date + 'T00:00').toLocaleDateString()}`}>
                           <Trash2 size={16} />
                         </button>
                       </td>
@@ -544,7 +544,7 @@ export default function JobDetailPage() {
             ))
           )}
           {/* Upload placeholder — Cloudinary upload widget would go here */}
-          <p className="text-xs text-neutral-600 text-center">
+          <p className="text-xs text-neutral-500 text-center">
             Document upload via Cloudinary widget coming soon.
           </p>
         </div>

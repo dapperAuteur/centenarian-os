@@ -103,7 +103,7 @@ export default function UnionChatPage() {
               <p className="text-neutral-500 text-sm">
                 Ask questions about your uploaded union contracts, bylaws, and work rules.
               </p>
-              <div className="space-y-1 text-xs text-neutral-600">
+              <div className="space-y-1 text-xs text-neutral-500">
                 <p>&quot;What&apos;s the OT threshold for my local?&quot;</p>
                 <p>&quot;What are my meal penalty rights?&quot;</p>
                 <p>&quot;What&apos;s the turnaround time between shifts?&quot;</p>
@@ -134,7 +134,7 @@ export default function UnionChatPage() {
                         {s.document}
                         {s.union_local && ` (${s.union_local})`}
                         {' '}— Section {s.section}
-                        <span className="text-neutral-600"> ({Math.round(s.similarity * 100)}% match)</span>
+                        <span className="text-neutral-500"> ({Math.round(s.similarity * 100)}% match)</span>
                       </p>
                     ))}
                   </div>
