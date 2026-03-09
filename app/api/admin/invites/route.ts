@@ -48,9 +48,14 @@ export async function POST(request: NextRequest) {
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { email, access_type = 'trial', expires_at, allowed_modules, demo_profile, notes } = body;
+  const { email, access_type = 'trial', expires_at, allowed_modules, demo_profile, notes, product = 'centos' } = body;
 
   if (!email) return NextResponse.json({ error: 'email is required' }, { status: 400 });
+
+  const validProducts = ['centos', 'contractor', 'lister'];
+  if (!validProducts.includes(product)) {
+    return NextResponse.json({ error: 'product must be centos, contractor, or lister' }, { status: 400 });
+  }
 
   const db = serviceDb();
 
@@ -65,6 +70,8 @@ export async function POST(request: NextRequest) {
       allowed_modules: (allowed_modules && allowed_modules.length > 0) ? allowed_modules : null,
       demo_profile: demo_profile || null,
       notes: notes || null,
+      product,
+      invited_by_role: 'admin',
     }])
     .select()
     .single();
@@ -74,8 +81,24 @@ export async function POST(request: NextRequest) {
   // 2. Send Supabase invite email (creates user + sends magic link)
   const authClient = adminAuthClient();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+
+  // Build subdomain-aware redirect URL through auth callback
+  let baseUrl: string;
+  let destination: string;
+  if (product === 'contractor') {
+    baseUrl = siteUrl.replace('://', '://contractor.');
+    destination = '/dashboard/contractor';
+  } else if (product === 'lister') {
+    baseUrl = siteUrl.replace('://', '://lister.');
+    destination = '/dashboard/contractor/lister';
+  } else {
+    baseUrl = siteUrl;
+    destination = '/dashboard/planner';
+  }
+  const redirectTo = `${baseUrl}/auth/callback?next=${encodeURIComponent(destination)}`;
+
   const { error: inviteErr } = await authClient.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${siteUrl}/dashboard/planner`,
+    redirectTo,
   });
 
   if (inviteErr) {
