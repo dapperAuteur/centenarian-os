@@ -33,7 +33,7 @@ export default function ContractorPricingPage() {
               Log In
             </Link>
             <Link href="/signup" className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-500">
-              Start Free Trial
+              Get Started
             </Link>
           </div>
         </div>
@@ -97,7 +97,7 @@ export default function ContractorPricingPage() {
         <div className="mt-16 space-y-4">
           <h2 className="text-xl font-bold text-center mb-6">FAQ</h2>
           {[
-            { q: 'Is there a free plan?', a: 'No. We offer a focused paid product with no feature limits. You can start with a free trial after signing up.' },
+            { q: 'Is there a free plan?', a: 'No. We offer a focused paid product with no feature limits. Sign up and subscribe to get started.' },
             { q: 'Can I cancel anytime?', a: 'Yes. Monthly plans cancel immediately. Annual plans run through the billing period.' },
             { q: 'Do I need a CentenarianOS subscription?', a: 'No. Contractor Hub is a standalone product. You can subscribe to it independently.' },
             { q: 'What payment methods are accepted?', a: 'All major credit cards via Stripe. Secure checkout with no card data stored on our servers.' },
@@ -111,7 +111,7 @@ export default function ContractorPricingPage() {
         </div>
       </section>
 
-      <footer className="border-t border-neutral-800 px-4 py-8 text-center text-xs text-neutral-600">
+      <footer className="border-t border-neutral-800 px-4 py-8 text-center text-xs text-neutral-500">
         <p>&copy; {new Date().getFullYear()} CentenarianOS. All rights reserved.</p>
       </footer>
     </div>

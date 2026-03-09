@@ -121,7 +121,7 @@ export default function ContractorHubPage() {
                     )}
                   </div>
                 </div>
-                <ArrowRight size={16} className="shrink-0 text-neutral-600" aria-hidden="true" />
+                <ArrowRight size={16} className="shrink-0 text-neutral-500" aria-hidden="true" />
               </Link>
             ))}
           </div>

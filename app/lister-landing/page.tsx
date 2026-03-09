@@ -39,7 +39,7 @@ export default function ListerLandingPage() {
               href="/signup"
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
             >
-              Start Free Trial
+              Get Started
             </Link>
           </div>
         </div>
@@ -60,7 +60,7 @@ export default function ListerLandingPage() {
             href="/signup"
             className="flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-base font-medium text-white hover:bg-indigo-500"
           >
-            Start Free Trial <ArrowRight size={16} aria-hidden="true" />
+            Get Started <ArrowRight size={16} aria-hidden="true" />
           </Link>
           <Link
             href="/lister-pricing"
@@ -104,7 +104,7 @@ export default function ListerLandingPage() {
             href="/signup"
             className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-base font-medium text-white hover:bg-indigo-500"
           >
-            Start Free Trial <ArrowRight size={16} aria-hidden="true" />
+            Get Started <ArrowRight size={16} aria-hidden="true" />
           </Link>
           <Link
             href="/login"
@@ -115,7 +115,7 @@ export default function ListerLandingPage() {
         </div>
       </section>
 
-      <footer className="border-t border-neutral-800 px-4 py-8 text-center text-xs text-neutral-600">
+      <footer className="border-t border-neutral-800 px-4 py-8 text-center text-xs text-neutral-500">
         <p>&copy; {new Date().getFullYear()} CentenarianOS. All rights reserved.</p>
         <div className="mt-2 flex justify-center gap-4">
           <Link href="/terms" className="hover:text-neutral-400">Terms</Link>

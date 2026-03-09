@@ -204,7 +204,7 @@ export default function ListerRosterPage() {
         </div>
       )}
 
-      <p className="text-xs text-neutral-600">{filtered.length} contractor{filtered.length !== 1 ? 's' : ''} in roster</p>
+      <p className="text-xs text-neutral-500">{filtered.length} contractor{filtered.length !== 1 ? 's' : ''} in roster</p>
     </div>
   );
 }

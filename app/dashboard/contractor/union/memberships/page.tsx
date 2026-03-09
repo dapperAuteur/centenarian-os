@@ -490,14 +490,14 @@ export default function UnionMembershipsPage() {
                               <span className="font-medium text-amber-400">{fmt(p.amount)}</span>
                               <span className="text-neutral-500">{new Date(p.payment_date).toLocaleDateString()}</span>
                               {p.period_start && p.period_end && (
-                                <span className="text-xs text-neutral-600">
+                                <span className="text-xs text-neutral-500">
                                   ({new Date(p.period_start).toLocaleDateString()} – {new Date(p.period_end).toLocaleDateString()})
                                 </span>
                               )}
                               {p.payment_method && <span className="text-xs text-neutral-500">{p.payment_method}</span>}
                             </div>
                             {p.confirmation_number && (
-                              <span className="text-xs text-neutral-600">#{p.confirmation_number}</span>
+                              <span className="text-xs text-neutral-500">#{p.confirmation_number}</span>
                             )}
                           </div>
                         ))}
@@ -508,7 +508,7 @@ export default function UnionMembershipsPage() {
                     {m.notes && (
                       <p className="text-xs text-neutral-500 pt-2 border-t border-neutral-800">{m.notes}</p>
                     )}
-                    <div className="flex gap-4 text-xs text-neutral-600 pt-1 flex-wrap">
+                    <div className="flex gap-4 text-xs text-neutral-500 pt-1 flex-wrap">
                       {m.join_date && <span>Joined: {new Date(m.join_date).toLocaleDateString()}</span>}
                       {m.expiration_date && <span>Expires: {new Date(m.expiration_date).toLocaleDateString()}</span>}
                       {m.initiation_fee != null && (

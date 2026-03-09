@@ -121,7 +121,7 @@ export default function ContractorInvitePage() {
                       <Clock size={12} aria-hidden="true" /> Pending
                     </span>
                   )}
-                  <span className="text-neutral-600">{new Date(inv.invited_at).toLocaleDateString()}</span>
+                  <span className="text-neutral-500">{new Date(inv.invited_at).toLocaleDateString()}</span>
                 </div>
               </div>
             ))}

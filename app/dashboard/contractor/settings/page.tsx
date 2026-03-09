@@ -200,7 +200,7 @@ export default function ContractorSettingsPage() {
         </div>
       )}
 
-      <p className="text-xs text-neutral-600">
+      <p className="text-xs text-neutral-500">
         Distance is estimated using the Haversine formula with a 1.3x driving multiplier.
         Accurate within ~10-20% of actual driving distance.
       </p>

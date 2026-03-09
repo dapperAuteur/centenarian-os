@@ -217,7 +217,7 @@ export default function JobBoardPage() {
                           <span className="text-green-400">Benefits</span>
                         )}
                       </div>
-                      <div className="mt-1 text-xs text-neutral-600">
+                      <div className="mt-1 text-xs text-neutral-500">
                         Posted by {job.poster_username}
                       </div>
                     </div>

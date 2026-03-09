@@ -265,7 +265,7 @@ export default function ListerAssignPage() {
         </div>
       )}
 
-      <p className="text-xs text-neutral-600">{filtered.length} assignment{filtered.length !== 1 ? 's' : ''}</p>
+      <p className="text-xs text-neutral-500">{filtered.length} assignment{filtered.length !== 1 ? 's' : ''}</p>
     </div>
   );
 }
