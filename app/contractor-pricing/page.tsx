@@ -13,7 +13,7 @@ const FEATURES = [
   'Union membership and dues tracking',
   'Pay stub scanning (Gemini Vision)',
   'Mileage and expense tracking',
-  'Document storage (Cloudinary)',
+  'Document storage and uploads',
   'CSV import and export',
   'Mobile-first dark theme',
 ];
@@ -102,6 +102,7 @@ export default function ContractorPricingPage() {
             { q: 'Do I need a CentenarianOS subscription?', a: 'No. Contractor Hub is a standalone product. You can subscribe to it independently.' },
             { q: 'What payment methods are accepted?', a: 'All major credit cards via Stripe. Secure checkout with no card data stored on our servers.' },
             { q: 'Is my data private?', a: 'Yes. Row-level security ensures your data is isolated. Shared features (job board, city guides, union docs) are opt-in only.' },
+            { q: 'How do I get help if I have a problem?', a: 'Customer support is managed by a real human — not AI. Reach out through the in-app feedback form or email and a team member will respond personally.' },
           ].map((faq) => (
             <details key={faq.q} className="rounded-xl border border-neutral-800 bg-neutral-900 p-4 group">
               <summary className="cursor-pointer font-medium text-neutral-200 text-sm">{faq.q}</summary>

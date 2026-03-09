@@ -1,0 +1,2085 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+Lessons,1,1,The Teaching Dashboard,text,180,true,,"# Lesson 01: The Teaching Dashboard
+
+**Course:** Teaching on CentenarianOS
+**Module:** Getting Started
+**Duration:** ~3 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The Teaching Dashboard is your home base as a teacher on CentenarianOS. This lesson covers the overview page and the navigation sidebar so you know where everything lives before diving into course creation.
+
+---
+
+### Accessing the Teaching Dashboard
+
+Navigate to `/dashboard/teaching`. This page is only visible to accounts with the Teacher or Admin role. The sidebar on the left shows seven sections — this is your primary navigation for everything in your teacher workflow.
+
+---
+
+### The Sidebar
+
+The seven sections in the teaching sidebar:
+
+| Section | Route | Purpose |
+|---------|-------|---------|
+| **Overview** | `/dashboard/teaching` | Stats, recent courses, quick links |
+| **Courses** | `/dashboard/teaching/courses` | All your courses — manage, publish, edit |
+| **Students** | `/dashboard/teaching/students` | Roster of all enrolled students across courses |
+| **Messages** | `/dashboard/teaching/messages` | Inbox for student messages |
+| **Live Sessions** | `/dashboard/teaching/live` | Coming soon — will support live streaming |
+| **Promo Codes** | `/dashboard/teaching/promo-codes` | Discount codes for student checkout |
+| **Payouts** | `/dashboard/teaching/payouts` | Stripe Connect setup and payout status |
+
+---
+
+### The Overview Page
+
+The main overview page has three areas:
+
+**Stats row (three cards):**
+- **Total Courses** — how many courses you've created (published + draft)
+- **Published** — how many are live and visible to students
+- **Enrollments** — total enrollments across all your courses
+
+**Quick Links:**
+Three shortcut buttons below the stats — Learning Paths, Students, and Live Sessions — for direct navigation.
+
+**Recent Courses:**
+A list of up to five of your most recently created courses. Each row shows:
+- Course title
+- Price: ""Free"" or ""$X · one-time"" or ""$X · subscription""
+- Status: **Published** (green badge) or **Draft** (gray badge)
+
+---
+
+### The Stripe Connect Banner
+
+If you haven't completed Stripe onboarding, a yellow banner appears at the top of the overview page:
+
+> ""Connect your bank account — Complete Stripe onboarding to receive course payments.""
+
+The banner has a **Set Up Payouts** button that links to `/dashboard/teaching/payouts`. You can still create courses and publish them before completing onboarding, but students won't be able to enroll in paid courses until your Stripe account is active.
+
+---
+
+### Starting a New Course
+
+The **New Course** button (fuchsia, top right of the overview and courses pages) opens the course creation form. Courses are covered in detail in the next two lessons.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/teaching — show the overview page]
+
+> [SCREENSHOT: Teaching dashboard — callouts: Sidebar (7 sections), Stats cards (Total Courses, Published, Enrollments), Quick Links row, Recent Courses list]
+
+> [SCREEN: Point to each sidebar item — narrate its purpose]
+
+> [SCREEN: Show the Stripe Connect banner (if visible) — point to Set Up Payouts]
+
+> [SCREENSHOT: Overview page — callout: Stripe banner + ""Set Up Payouts"" button (if applicable)]
+
+> [SCREEN: Click ""New Course"" — show the form (don't fill it out — that's the next lesson)]
+
+> [SCREEN: End on the overview — end lesson]
+
+---
+
+## Key Takeaways
+
+- Teaching Dashboard at /dashboard/teaching — Teacher and Admin roles only
+- Sidebar has 7 sections: Overview, Courses, Students, Messages, Live, Promo Codes, Payouts
+- Overview stats: Total Courses, Published count, Enrollments
+- Stripe Connect banner appears until you complete payout onboarding — required for paid course enrollments
+- ""New Course"" button (top right) is available from Overview and Courses pages
+",markdown,,,,,,
+Lessons,1,2,Creating a Course,text,240,true,,"# Lesson 02: Creating a Course
+
+**Course:** Teaching on CentenarianOS
+**Module:** Course Management
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Creating a course starts with a simple form — title, description, category, pricing, and navigation mode. This lesson walks through every field and the decisions you'll make before the course editor opens.
+
+---
+
+### Opening the New Course Form
+
+Click **New Course** from either the Overview page or the Courses page. The form opens at `/dashboard/teaching/courses/new`.
+
+---
+
+### Course Title (Required)
+
+The title is the only required field. Keep it specific and outcome-oriented — it's the first thing prospective students see.
+
+Good examples:
+- ""Longevity Movement Fundamentals""
+- ""Mastering Sleep for Executive Performance""
+- ""The CentenarianOS Fuel Protocol""
+
+The title can be edited after creation in the course editor.
+
+---
+
+### Description (Optional)
+
+Four-line textarea. Describe what the course covers, who it's for, and what students will be able to do after completing it. This appears on the public course detail page.
+
+You can leave this blank now and fill it in from the course editor later.
+
+---
+
+### Category (Optional)
+
+A dropdown with predefined options:
+- Fitness, Nutrition, Recovery, Longevity, Mental Health, Sleep, Mindset, Biomechanics, Other
+
+Category helps students discover your course. Choose the one that most accurately describes the primary subject. If it spans multiple areas, pick the dominant one.
+
+---
+
+### Pricing — Three Options
+
+**Free**
+No enrollment fee. All lessons are accessible to any logged-in user who clicks Enroll. Use this for introductory content, demos, or courses you want to make widely available.
+
+**One-time**
+A single payment for lifetime access to the course. A price input field appears (enter just the number — no $ needed). Example: for a $49 course, type `49`.
+
+**Subscription (monthly)**
+Students pay a recurring monthly fee to maintain access. A price input field appears. Use this for evolving content you update regularly, or for cohort-based experiences.
+
+Pricing can be changed after creation. If you change a paid course to free, existing enrolled students retain access.
+
+---
+
+### Learning Path Style — Linear vs. Adventure
+
+This setting controls how students navigate through the lesson sequence.
+
+**Linear**
+Students work through lessons in the order you define, step by step. The standard experience. Use this when the lesson sequence builds progressively — each lesson assumes knowledge from prior ones.
+
+**Adventure (CYOA)**
+At the end of each lesson, the AI presents three path choices: the next lesson in sequence, a semantically related lesson, and a random unvisited lesson. Use this for modular content where lessons can stand alone or be consumed in non-linear order.
+
+Note: After creating an Adventure course, you'll need to generate AI embeddings from the course editor before the CYOA crossroads work properly. That step is covered in Lesson 04.
+
+---
+
+### Creating the Course
+
+Click **Create Course**. If the title is missing, an error message appears: ""Course title is required.""
+
+On success, you're redirected to the course editor at `/dashboard/teaching/{username}/courses/{id}`. The course is created as a **Draft** — not visible to students yet.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/teaching — click ""New Course""]
+
+> [SCREENSHOT: New course form — callouts: Title field (required), Description (optional), Category dropdown, Pricing buttons (Free/One-time/Subscription), Navigation style (Linear/Adventure)]
+
+> [SCREEN: Select ""One-time"" pricing — show the price input field appearing]
+
+> [SCREEN: Select ""Adventure (CYOA)"" — point out the description text]
+
+> [SCREENSHOT: Pricing toggle (One-time selected, price field visible) — callout: ""No $ prefix needed — just the number""]
+
+> [SCREENSHOT: Navigation style (Adventure selected) — callout: ""AI will recommend branching paths; generate embeddings from the editor after adding lessons""]
+
+> [SCREEN: Fill in a title — click ""Create Course"" — redirect to course editor]
+
+> [SCREEN: End on the course editor (empty) — end lesson]
+
+---
+
+## Key Takeaways
+
+- Title is the only required field — all other fields can be filled in from the editor later
+- Categories: Fitness, Nutrition, Recovery, Longevity, Mental Health, Sleep, Mindset, Biomechanics, Other
+- Pricing: Free / One-time (single number entry) / Subscription monthly (recurring)
+- Navigation: Linear (fixed sequence) vs. Adventure/CYOA (AI branching paths)
+- Creating a course opens the course editor — course starts as a Draft
+- Adventure courses require AI embedding generation (from the editor) before CYOA paths activate
+",markdown,,,,,,
+Lessons,1,3,Building Your Curriculum,text,360,true,,"# Lesson 03: Building Your Curriculum
+
+**Course:** Teaching on CentenarianOS
+**Module:** Course Management
+**Duration:** ~7 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The course editor is where you build the actual content. Courses are organized as Modules containing Lessons. This lesson covers the full curriculum builder — adding modules, adding lessons, editing content, uploading a cover image, and reordering everything.
+
+---
+
+### Opening the Course Editor
+
+After creating a course, you land in the course editor automatically. You can return to it any time from the Courses page by clicking the **Edit** (pencil) icon on any course card.
+
+The editor lives at `/dashboard/teaching/{username}/courses/{id}`.
+
+---
+
+### Course Settings Panel
+
+At the top of the editor, a settings panel lets you update every course-level detail without going back to the creation form:
+
+**Cover Image** — drag and drop or click to upload. Images are stored in Cloudinary. Click the X on an uploaded image to remove it.
+
+**Title** — click to edit inline. Changes save when you click away (on blur). No save button needed.
+
+**Description** — textarea, saves on blur.
+
+**Category** — text input (free-form, or match the predefined list from creation).
+
+**Price Type** — dropdown: Free, One-time, Subscription. A price input appears when you select One-time or Subscription.
+
+**Navigation Mode** — Linear or Adventure toggle. Changing this after lessons exist doesn't delete anything, but if switching to Adventure, generate embeddings afterward.
+
+**Visibility** — three options:
+- **Public** — visible to any logged-in user
+- **Members only** — visible only to users with an active subscription
+- **Scheduled** — hidden until a specific date/time you set
+
+When you select Scheduled, a date-and-time picker appears. The course goes live automatically at that moment.
+
+> ""Changes are saved automatically on blur."" — a reminder shown in the settings panel.
+
+---
+
+### The Curriculum Builder
+
+Below the settings panel, the **Curriculum** section is where you build your lessons.
+
+**Structure:** Courses → Modules → Lessons
+
+Modules are like chapters — grouping containers for related lessons. Lessons are individual content units inside a module.
+
+---
+
+### Adding a Module
+
+Click **Add Module** (+ icon). A text field appears: type the module title and click **Add**. The module appears in the curriculum list.
+
+Module titles are editable anytime — click the pencil icon on a module header.
+
+**Reordering modules:** Use the up/down arrow buttons on the module header to move it earlier or later in the course. A drag handle (grip icon) is also available.
+
+**Deleting a module:** Click the trash icon. This also deletes all lessons inside it — there is no undo, so confirm before deleting a module with content.
+
+---
+
+### Adding a Lesson
+
+Inside any module, click **Add Lesson**. A mini-form appears with three fields:
+
+**Lesson Title** (text input) — name of the lesson.
+
+**Lesson Type** — dropdown with four options:
+- **Video** — embed a video URL (YouTube, Vimeo, or any embeddable player)
+- **Text** — markdown content written directly in the editor
+- **Audio** — embed an audio URL
+- **Slides** — embed a slides URL (Google Slides, Loom, etc.)
+
+**Free Preview** — checkbox. Check this to make the lesson accessible to non-enrolled visitors. At least one free preview lesson per course is strongly recommended so prospective students can sample the content.
+
+**Content URL** (for Video, Audio, Slides) — paste the embed or direct URL.
+
+Click **Add Lesson**. The lesson appears under the module.
+
+---
+
+### Editing a Lesson
+
+Click the **pencil icon** on any lesson to expand the edit form. All the same fields from the add form are available, plus:
+
+**Text content** (for Text-type lessons) — a textarea where you write the lesson's markdown content. This is the lesson body students will read.
+
+**Duration (seconds)** — optional. Enter the approximate duration so students know what to expect. Displayed as a time estimate on lesson cards.
+
+Click **Save** when done, or **Cancel** to discard changes.
+
+---
+
+### Lesson Type Icons
+
+In the curriculum list, each lesson shows a small icon indicating its type:
+- Play triangle — Video
+- File text — Text
+- Speaker — Audio
+- Presentation — Slides
+
+A **Preview** badge appears on lessons marked as free preview.
+
+---
+
+### Reordering Lessons
+
+Use the up/down arrow buttons on each lesson row to move it within its module. Lessons can only be reordered within their current module — to move a lesson to a different module, delete and re-add it.
+
+---
+
+### Deleting a Lesson
+
+Hover over a lesson row — a trash icon appears on the right. Click it to delete. Deletion is immediate with no undo.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Open the course editor — show the full page]
+
+> [SCREENSHOT: Course editor — callouts: Settings panel (title, description, cover, pricing, navigation, visibility), Curriculum section (empty with ""Add Module"" button)]
+
+> [SCREEN: Upload a cover image — drag and drop or click]
+
+> [SCREEN: Edit the title field — click away — show it saves without a save button]
+
+> [SCREEN: Change visibility to ""Scheduled"" — show the datetime picker appear]
+
+> [SCREEN: Click ""Add Module"" — type a name — click Add]
+
+> [SCREENSHOT: Module added to curriculum — callouts: Module header (title, reorder arrows, edit/delete icons), ""Add Lesson"" button inside]
+
+> [SCREEN: Click ""Add Lesson"" — fill in title, select ""Text"" type, check Free Preview — click Add]
+
+> [SCREENSHOT: Add Lesson form — callouts: Title field, Lesson type dropdown (Text selected), Free Preview checkbox]
+
+> [SCREEN: Lesson appears in module — show the Preview badge]
+
+> [SCREEN: Add a second lesson as Video type — show the Content URL field]
+
+> [SCREEN: Click pencil icon on a lesson — expand the edit form — show Duration field]
+
+> [SCREENSHOT: Lesson edit form expanded — callouts: All fields including Duration input, Save/Cancel buttons]
+
+> [SCREEN: Use up/down arrows to reorder lessons]
+
+> [SCREEN: End on the curriculum with modules and lessons — end lesson]
+
+---
+
+## Key Takeaways
+
+- Course editor settings panel saves on blur (no manual save button) — title, description, pricing, visibility, navigation mode all editable here
+- Curriculum structure: Course → Modules → Lessons
+- Four lesson types: Video (URL), Text (markdown content), Audio (URL), Slides (URL)
+- Free preview checkbox makes individual lessons visible to non-enrolled visitors — mark at least one per course
+- Reorder modules and lessons with up/down arrows or the drag handle
+- Deleting a module deletes all lessons inside it — no undo
+- Scheduled visibility: course goes live automatically at the set date/time
+",markdown,,,,,,
+Lessons,1,4,Publishing and Visibility,text,300,true,,"# Lesson 04: Publishing and Visibility
+
+**Course:** Teaching on CentenarianOS
+**Module:** Course Management
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+A course starts as a Draft and stays hidden from students until you publish it. This lesson covers the publish/unpublish flow, the three visibility modes, and — for Adventure courses — how to generate the AI embeddings that power CYOA navigation.
+
+---
+
+### Draft vs. Published
+
+Every course starts as a **Draft**. Draft courses:
+- Are visible in your teaching dashboard (Courses page)
+- Are not listed in the student-facing Academy catalog
+- Cannot be enrolled in by students
+
+When you're ready to go live, publish the course.
+
+---
+
+### Publishing a Course
+
+**From the Courses page:**
+Each course card has a **Publish/Unpublish** toggle button (eye icon). Click it to toggle the status. Green = Published, gray = Draft.
+
+**From the course editor:**
+A **Publish** or **Unpublish** button sits in the top-right header of the editor. Clicking it toggles the status and updates the badge (""Published"" → green, ""Draft"" → gray) immediately.
+
+You can publish and unpublish as many times as you need. Unpublishing a course that has enrolled students doesn't remove their enrollments — they can still access the course from My Courses. It just removes the course from the catalog so new students can't find and enroll in it.
+
+---
+
+### Visibility Modes
+
+Visibility is set in the course editor settings panel (separate from publish status):
+
+**Public** (default)
+Any logged-in user can see and enroll in the course from the Academy catalog.
+
+**Members only**
+Only users with an active subscription (Monthly or Lifetime) can see and enroll. Free-tier users browsing the catalog won't see the course. Use this for premium content aligned with your target audience's subscription level.
+
+**Scheduled**
+The course is hidden until a specific date and time. Set the date using the datetime picker that appears. At the scheduled moment, the course goes live automatically with Public or Members-only visibility (whichever you set alongside it).
+
+> Scheduled is useful for cohort launches, announcement-tied releases, or building anticipation with a specific go-live date.
+
+---
+
+### Publish vs. Visibility: How They Work Together
+
+These two settings are independent:
+- A **Published + Public** course: visible to all logged-in users in the catalog
+- A **Published + Members only** course: visible only to subscribers
+- A **Published + Scheduled** course: hidden until the scheduled date, then goes live
+- A **Draft** course: hidden regardless of visibility setting
+
+Set your visibility before publishing.
+
+---
+
+### Generating AI Paths (Adventure/CYOA Courses Only)
+
+For courses with **Adventure (CYOA)** navigation, the crossroads panel needs AI embeddings — vector representations of each lesson's content — to suggest semantically related lessons.
+
+After adding your lessons to the curriculum, scroll to the **AI Adventure Paths** section in the course editor. Click **Generate AI Paths**.
+
+The system sends each lesson's content to Gemini, generates a 768-dimension embedding for each one, and stores them in the `lesson_embeddings` table. The process takes a few seconds.
+
+When complete, you'll see: **""Generated embeddings for X lessons.""**
+
+If you add or significantly edit lessons later, re-run Generate AI Paths to refresh the embeddings. The CYOA semantic path recommendations won't reflect new content until embeddings are regenerated.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/teaching/courses — show a Draft course card]
+
+> [SCREENSHOT: Course card in Draft state — callout: Gray publish toggle (eye icon), ""Draft"" status]
+
+> [SCREEN: Click the publish toggle — card changes to Published (green)]
+
+> [SCREENSHOT: Course card in Published state — callout: Green toggle, ""Published"" badge]
+
+> [SCREEN: Open the course editor — show the Publish button in the header]
+
+> [SCREENSHOT: Course editor header — callouts: Status badge (Published/Draft), Publish/Unpublish button (globe icon)]
+
+> [SCREEN: Open the Visibility dropdown — show three options (Public, Members only, Scheduled)]
+
+> [SCREENSHOT: Visibility setting — callout: Three options, datetime picker appearing when Scheduled is selected]
+
+> [SCREEN: Scroll to ""AI Adventure Paths"" section (CYOA course)]
+
+> [SCREENSHOT: AI Adventure Paths section — callout: ""Generate AI Paths"" button, result message after clicking]
+
+> [SCREEN: Click ""Generate AI Paths"" — show loading state — show success message]
+
+> [SCREEN: End on the published course editor — end lesson]
+
+---
+
+## Key Takeaways
+
+- Courses start as Drafts — hidden from students until published
+- Publish toggle: available on the Courses page card and in the course editor header
+- Unpublishing doesn't remove existing student enrollments — they keep access; new students just can't find it
+- Three visibility modes: Public (everyone), Members only (subscribers), Scheduled (auto-live at a set time)
+- Publish status and Visibility are independent settings — set both correctly before going live
+- Adventure/CYOA courses: click ""Generate AI Paths"" after adding lessons to power the semantic path recommendations; re-run after significant content edits
+",markdown,,,,,,
+Lessons,1,5,Assignments,text,300,true,,"# Lesson 05: Assignments
+
+**Course:** Teaching on CentenarianOS
+**Module:** Student Interaction
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Assignments let you give students structured exercises to complete and submit for your review. You can attach them to any course, ask students to fill in specific data fields, and provide individual graded feedback. This lesson covers creating assignments and the full grading workflow.
+
+---
+
+### Accessing Assignments
+
+From the course editor, click the **Assignments** button (clipboard icon) in the top-right header. This opens the assignments page for that specific course at `/dashboard/teaching/{username}/courses/{id}/assignments`.
+
+You can also navigate directly from the course editor header without leaving the editor.
+
+---
+
+### Creating an Assignment
+
+Click **New Assignment** (+ icon). A creation form appears inline at the top of the page:
+
+**Title** (required, marked with *) — the assignment name students will see. Be specific: ""7-Day Sleep Log"" or ""Week 1 Reflection: Nutrition Goals.""
+
+**Instructions** (optional) — a three-line textarea. Write the full prompt here: what you want students to do, what to include in their submission, and any specific questions to answer. This is displayed prominently in the student assignment viewer.
+
+**Due Date** (optional) — a date-and-time picker. If you set a due date, it's shown to students on the assignment card. The platform does not automatically lock submissions after the due date — it's informational.
+
+Click **Create**. The assignment appears in the list.
+
+---
+
+### Reviewing Submissions
+
+Click any assignment title to expand it. Inside, you'll see a list of all student submissions for that assignment.
+
+Each submission shows:
+- **Student name** — display name or username
+- **Submitted at** — the date and time they clicked Submit
+- **Grade badge** — **Ungraded** (amber) or the grade you assigned (green, with the grade text)
+- **Submission content** — the student's written response in a gray box
+- **Attached media** — if the student attached a file or URL, a ""View attached media"" link appears
+
+---
+
+### Grading a Submission
+
+Click **Grade Submission** (for ungraded submissions) or **Edit Grade** (to revise existing feedback). A grade form expands below the submission:
+
+**Grade** — a text field. Grades are free-form strings: ""A"", ""Pass"", ""90/100"", ""Excellent"", ""Needs revision"" — whatever format makes sense for your course.
+
+**Feedback** — a textarea. Write your comments, corrections, suggestions, or encouragement. Students see this feedback in their assignment viewer.
+
+Click **Save Grade** (check icon). The submission badge updates to green with your grade text. Your feedback is visible to the student immediately.
+
+---
+
+### Empty and Partial States
+
+- **No assignments yet** — the page shows ""No assignments yet. Create one to get started.""
+- **Assignment with no submissions** — the expanded assignment shows ""No submissions yet.""
+- Assignments with submissions show the full list; you can grade them one at a time at your own pace.
+
+---
+
+### Updating or Deleting Assignments
+
+Assignment titles and instructions are editable from the assignments list. There is no bulk-delete — assignments must be removed individually. Deleting an assignment also removes all student submissions for it.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Open a course editor — click the Assignments button in the header]
+
+> [SCREENSHOT: Assignments page — callouts: ""New Assignment"" button, empty assignment list]
+
+> [SCREEN: Click ""New Assignment"" — fill in title, instructions, and a due date]
+
+> [SCREENSHOT: Create assignment form — callouts: Title field (*required), Instructions textarea, Due date picker]
+
+> [SCREEN: Click Create — assignment appears in list — click to expand it]
+
+> [SCREENSHOT: Expanded assignment (no submissions yet) — callouts: ""No submissions yet"" message, assignment details visible]
+
+> [SCREEN: Switch to a course with a submission — expand the assignment with submissions]
+
+> [SCREENSHOT: Submission row — callouts: Student name, submit timestamp, Ungraded badge (amber), submission text, ""Grade Submission"" link]
+
+> [SCREEN: Click ""Grade Submission"" — grade form expands]
+
+> [SCREENSHOT: Grade form — callouts: Grade text input (""e.g. A, 90/100, Pass""), Feedback textarea, Save Grade button]
+
+> [SCREEN: Type a grade and feedback — click Save Grade — badge updates to green with grade text]
+
+> [SCREENSHOT: Graded submission — green ""Graded"" badge with grade text, feedback visible below]
+
+> [SCREEN: End on the graded submission view — end lesson]
+
+---
+
+## Key Takeaways
+
+- Access assignments from the course editor header (clipboard icon) or directly at /dashboard/teaching/{username}/courses/{id}/assignments
+- Create form fields: Title (required), Instructions (optional), Due Date (optional — informational only, doesn't lock submissions)
+- Click any assignment to expand and view all student submissions
+- Each submission shows: student name, timestamp, grade badge (amber Ungraded or green with grade), submission text, attached media
+- Grades are free-form text: ""A"", ""Pass"", ""90/100"", or any format you choose
+- Feedback is immediately visible to the student after you save — no separate publish step
+",markdown,,,,,,
+Lessons,1,6,Students and Messages,text,240,true,,"# Lesson 06: Students and Messages
+
+**Course:** Teaching on CentenarianOS
+**Module:** Student Interaction
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The Students page gives you a roster of everyone enrolled across your courses. Messages is your private inbox for student conversations. This lesson covers both.
+
+---
+
+### The Students Page
+
+Navigate to `/dashboard/teaching/students` from the sidebar.
+
+**Header:** ""Students"" with a subtitle showing the total active enrollment count (e.g., ""12 active enrollments"").
+
+**Search box:** Searches across student username, display name, email, and course title — all at once. Useful when you want to find everyone enrolled in a specific course (search the course name) or look up a specific student.
+
+**Student table** — three columns:
+1. **Student** — display name (or username if no display name) with `@username` shown below, and their email as a clickable link
+2. **Course** — the course title they're enrolled in
+3. **Enrolled** — the date they enrolled, formatted as a local date
+
+Each row represents one enrollment. A student enrolled in three of your courses appears as three rows, one per course.
+
+The table shows all active enrollments. Sorting and pagination are not currently available — the list is ordered by enrollment date.
+
+---
+
+### When the Students Page Is Empty
+
+If you have no published courses or no enrollments yet, the page shows: ""No students enrolled yet."" With the search active but no matches: ""No results match your search.""
+
+---
+
+### The Messages Page
+
+Navigate to `/dashboard/teaching/messages` from the sidebar.
+
+**Layout:** Two columns — the conversation list on the left, the message thread on the right.
+
+---
+
+### Conversation List (Left Column)
+
+Each conversation item shows:
+- **Student avatar** (profile photo) or initials fallback
+- **Student name** (truncated if long)
+- **Unread count badge** — a fuchsia circle with a number, shown only when there are unread messages
+- **Course title** — which course the conversation is from (in small gray text below the name)
+- **Last message preview** — the first line of the most recent message
+
+Click any conversation to open the thread.
+
+Conversations are ordered by recency (most recent activity at the top). A fuchsia left border and background highlight the currently active conversation.
+
+---
+
+### Message Thread (Right Column)
+
+Messages in the thread appear as chat bubbles:
+- **Your messages** — fuchsia background, right-aligned
+- **Student messages** — dark gray background, left-aligned
+- Each bubble shows the message text and a timestamp
+
+**Replying:**
+Type your response in the input field at the bottom. Press **Enter** to send (Shift+Enter for a new line). Or click the **Send** button (arrow icon). The send button is disabled while the message is sending.
+
+---
+
+### Mobile Behavior
+
+On mobile, the conversation list and thread take turns — you see one at a time. A **back arrow** in the thread header returns you to the conversation list.
+
+---
+
+### Unread Messages
+
+Unread count badges on conversations indicate messages you haven't read yet. Opening a conversation clears the unread count for that thread. The total across all conversations is also reflected in the sidebar notification badge (if one exists).
+
+---
+
+### Empty Inbox
+
+If no students have messaged you yet: ""No messages yet. Students will message you from course pages.""
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/teaching/students — show the student table]
+
+> [SCREENSHOT: Students page — callouts: Header with enrollment count, Search box, Table columns (Student, Course, Enrolled date)]
+
+> [SCREEN: Type a course name in the search box — show filtered results]
+
+> [SCREENSHOT: Filtered student list — callout: Only students from the searched course appear]
+
+> [SCREEN: Navigate to /dashboard/teaching/messages — show the two-column layout]
+
+> [SCREENSHOT: Messages page — callouts: Conversation list (left) with unread badge, Active conversation (fuchsia background), Thread area (right) with chat bubbles]
+
+> [SCREEN: Click a conversation — show the thread]
+
+> [SCREENSHOT: Message thread — callouts: Student message (gray, left), Teacher reply (fuchsia, right), Message input field, Send button]
+
+> [SCREEN: Type a reply — press Enter — message appears in thread]
+
+> [SCREEN: End on the message thread — end lesson]
+
+---
+
+## Key Takeaways
+
+- Students page (/dashboard/teaching/students): full enrollment roster, searchable by student name, email, or course title
+- Each table row = one enrollment; a student in 3 courses = 3 rows
+- Messages page (/dashboard/teaching/messages): two-column layout — conversation list (left) with unread badges, thread (right) with chat bubbles
+- Your messages: fuchsia (right); student messages: dark gray (left)
+- Send with Enter or the Send button; Shift+Enter for newlines
+- Unread count badges show in the conversation list; opening a thread clears the badge
+",markdown,,,,,,
+Lessons,1,7,Promo Codes,text,240,true,,"# Lesson 07: Promo Codes
+
+**Course:** Teaching on CentenarianOS
+**Module:** Revenue Tools
+**Duration:** ~3 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Promo codes let you offer discounts to students at checkout. They're backed by Stripe coupons, so the discount is applied before payment — students never pay full price and then request a refund. This lesson covers how to create and manage them.
+
+---
+
+### Navigating to Promo Codes
+
+Click **Promo Codes** in the teaching sidebar. The page is at `/dashboard/teaching/promo-codes`.
+
+---
+
+### Creating a Promo Code
+
+Click **New Code** (+ icon). A creation form appears:
+
+**Code** (required)
+The discount code string students will type at checkout. As you type, it's automatically uppercased — codes are always uppercase. Keep it short and memorable: `SUMMER20`, `LAUNCH50`, `WELCOME10`.
+
+**Discount %** (required)
+A number from 1 to 100. Default is 20. This is a percentage discount — `20` means 20% off, `100` means free.
+
+**Max Uses** (optional)
+How many times the code can be used total across all students. Leave blank for unlimited. If you want a code that only works once (for a single invited student), enter `1`.
+
+**Expires At** (optional)
+A date-and-time picker. After this moment, the code stops working at checkout. Leave blank if the code never expires.
+
+Click **Create Code**. The code is created in Stripe as a coupon and stored in the platform.
+
+---
+
+### The Promo Codes Table
+
+All active codes appear in a table with five columns:
+
+| Column | What It Shows |
+|--------|---------------|
+| **Code** | The code string in fuchsia monospace font |
+| **Discount** | ""{percent}% off"" |
+| **Uses** | ""{count}"" or ""{count} / {max}"" if you set a max |
+| **Expires** | Formatted date, or ""—"" if no expiry |
+| **Delete** | Trash icon |
+
+---
+
+### Deleting a Promo Code
+
+Click the trash icon on any row. A confirmation dialog appears: ""Delete this promo code? It will also be removed from Stripe.""
+
+Confirm to delete. The code is removed from both the platform and from Stripe — students who try to use it at checkout after deletion will see an invalid code error.
+
+If a student has already used the code before you delete it, their enrolled price is unaffected.
+
+---
+
+### How Students Use Promo Codes
+
+Students enter the code during Stripe checkout when enrolling in a paid course. The discount is applied at the payment step — the student pays the discounted price directly, not the full price.
+
+Promo codes apply to any of your courses that use paid enrollment. If you want a code that works only for a specific course, create a code with limited uses and share it only with the intended audience.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/teaching/promo-codes — show the page header]
+
+> [SCREENSHOT: Promo Codes page — callouts: ""New Code"" button, table (if codes exist) or empty state]
+
+> [SCREEN: Click ""New Code"" — form appears]
+
+> [SCREENSHOT: Create code form — callouts: Code input (auto-uppercase shown), Discount % input (default 20), Max Uses (optional/blank = unlimited), Expires At picker]
+
+> [SCREEN: Fill in Code = ""LAUNCH25"", Discount = 25, leave max uses and expiry blank — click Create]
+
+> [SCREEN: Code appears in the table — show the fuchsia monospace Code column, Uses showing ""0""]
+
+> [SCREENSHOT: Promo code table row — callouts: Code (fuchsia, monospace), ""25% off"", uses count, ""—"" for no expiry, delete icon]
+
+> [SCREEN: Click the trash icon — show the confirmation dialog]
+
+> [SCREENSHOT: Delete confirmation dialog — callout: ""It will also be removed from Stripe""]
+
+> [SCREEN: End on the promo codes table — end lesson]
+
+---
+
+## Key Takeaways
+
+- Promo codes are backed by Stripe coupons — applied at checkout before payment
+- Code field auto-uppercases; keep codes short and memorable
+- Discount: 1–100%; Max Uses: optional limit; Expires At: optional expiry date
+- Table shows code, discount %, usage count (and max if set), expiry, and delete button
+- Deleting removes the code from both the platform and Stripe — existing used discounts are unaffected
+- Students enter the code during Stripe checkout — no post-payment refunds needed
+",markdown,,,,,,
+Lessons,1,8,Payouts,text,240,true,,"# Lesson 08: Payouts
+
+**Course:** Teaching on CentenarianOS
+**Module:** Revenue Tools
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+When students pay for your courses, the money flows through Stripe. To receive your earnings, you need to connect a bank account via Stripe Connect. This lesson covers the onboarding process and what the payout setup looks like.
+
+---
+
+### Navigating to Payouts
+
+Click **Payouts** in the teaching sidebar. The page is at `/dashboard/teaching/payouts`.
+
+---
+
+### How Teacher Payments Work
+
+When a student enrolls in one of your paid courses:
+1. The student pays at Stripe Checkout
+2. The platform takes a small fee (the platform fee percentage, set by the platform)
+3. The remainder is transferred to your Stripe Connect account
+4. Stripe handles the payout from your Connect account to your bank on its standard schedule
+
+You don't need to invoice anyone or request payments — the transfer happens automatically when a student completes checkout.
+
+---
+
+### Connecting Your Bank Account
+
+If you haven't completed onboarding, the Payouts page shows a **Not Connected** card:
+
+- A gray credit card icon
+- Text: ""Not Connected — You need to connect your Stripe account to get paid.""
+- A description of how the system works
+
+Click **Connect Bank Account**. This redirects you to Stripe Express — Stripe's streamlined onboarding flow for platform sellers. You'll provide:
+- Legal name and date of birth (for identity verification)
+- Bank account details (routing and account number, or login via your bank)
+- Tax information (your SSN last 4 or full SSN, depending on your earnings)
+
+Stripe handles all compliance — you're dealing directly with Stripe, not sharing sensitive information with the platform.
+
+After completing the Stripe forms, you're redirected back to the Payouts page.
+
+---
+
+### If Onboarding Was Interrupted
+
+If you started onboarding but didn't finish (e.g., closed the browser or got an error), you'll see an amber warning banner:
+
+> ""Onboarding was not completed. Please try again to finish setting up your payout account.""
+
+The button changes to **Continue Onboarding** (instead of Connect Bank Account). Click it to resume where you left off in the Stripe flow.
+
+---
+
+### After Successful Onboarding
+
+Once onboarding is complete, the Payouts card changes to **Stripe Connected**:
+
+- Green check icon
+- Text: ""Stripe Connected — Your bank account is set up to receive payouts.""
+- Payout status: ""Active"" (green)
+- Button: **Manage Stripe Account** — opens the Stripe Express dashboard where you can:
+  - View your balance and payout history
+  - Update your bank account
+  - Download tax forms
+
+---
+
+### Payout Timing
+
+Stripe pays out on a rolling basis — typically 2–7 days after a transaction, depending on your bank. Stripe sends an email confirmation for each payout. You can also view payout history in your Stripe Express dashboard via the Manage Stripe Account button.
+
+---
+
+### Important Notes
+
+- You can publish courses and students can enroll in **free** courses before completing Stripe Connect.
+- Students **cannot** enroll in **paid** courses until your Stripe Connect account is active — they'll see an error at checkout.
+- The platform fee percentage is set by CentenarianOS. Check your teacher agreement for the current rate.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/teaching/payouts — show the ""Not Connected"" state]
+
+> [SCREENSHOT: Payouts page, not connected — callouts: Gray credit card icon, ""Not Connected"" title, ""Connect Bank Account"" button]
+
+> [SCREEN: Click ""Connect Bank Account"" — browser redirects to Stripe Express]
+
+> [SCREENSHOT: Stripe Express onboarding page — callout: ""Stripe handles all identity and bank verification""]
+
+> [SCREEN: Complete onboarding — redirect back — show ""Stripe Connected"" card]
+
+> [SCREENSHOT: Payouts page, connected — callouts: Green check icon, ""Stripe Connected"" title, ""Active"" status badge, ""Manage Stripe Account"" button]
+
+> [SCREEN: Click ""Manage Stripe Account"" — show the Stripe Express dashboard (brief glimpse)]
+
+> [SCREEN: End on the connected payouts page — end lesson]
+
+---
+
+## Key Takeaways
+
+- Payouts require Stripe Connect — a direct connection from your earnings to your bank account
+- Click ""Connect Bank Account"" → Stripe Express onboarding (identity verification + bank details)
+- If interrupted: amber warning banner + ""Continue Onboarding"" button to resume
+- When connected: green ""Stripe Connected"" card with ""Active"" status; Manage Stripe Account opens your Stripe dashboard
+- Free course enrollments work without Stripe Connect; paid enrollments require it
+- Platform takes a fee per sale; remainder goes to your Stripe Connect account; Stripe pays out to your bank on its standard schedule
+",markdown,,,,,,
+Lessons,1,9,Learning Paths,text,300,true,,"# Lesson 09: Learning Paths
+
+**Course:** Teaching on CentenarianOS
+**Module:** Course Management
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Learning Paths let you group multiple courses into a curated sequence — giving students a clear progression from start to finish. You can build paths manually or let the AI suggest them based on your existing courses. This lesson covers both.
+
+---
+
+### What Are Learning Paths?
+
+A learning path is a named, ordered sequence of your courses. Students can enroll in a path and the platform tracks their progress across all courses in it. Use paths to:
+- Create structured curricula (e.g., ""Foundations of Longevity — take these 4 courses in order"")
+- Group thematically related courses that work well together
+- Give students a clear sense of ""where to go next"" after completing one course
+
+---
+
+### Navigating to Learning Paths
+
+Click **Overview** in the teaching sidebar, then **Learning Paths** from the Quick Links. Or navigate directly to `/dashboard/teaching/learning-paths`.
+
+---
+
+### Creating a Path Manually
+
+Click **New Path** (fuchsia, + icon). A form opens:
+
+**Path Title** (required) — the name students will see. Example: ""Foundations of Health Metrics"" or ""Executive Performance Protocol.""
+
+**Description** (optional) — a textarea to explain what students will achieve by completing all courses in the path.
+
+Click **Create & Add Courses**. This creates the path and opens the path editor where you'll add courses to it.
+
+---
+
+### The Path Editor
+
+The editor at `/dashboard/teaching/learning-paths/{id}` has two sections:
+
+**Details** — title and description, editable inline. A **Save** button in the header records your changes (shows ""Saved!"" briefly after clicking).
+
+**Courses in This Path** — the ordered list of courses currently in the path. Each course row shows:
+- Drag handle and up/down arrows for reordering
+- A position badge (1, 2, 3...)
+- Course title and category
+- **Required / Optional toggle** — click to toggle whether this course is required for path completion. Required courses must be finished for the path to count as complete; optional ones contribute to progress but aren't mandatory.
+- Delete button (removes the course from the path, not from your catalog)
+
+**Add Courses** — a grid of your published courses not yet in the path. Click any card to add it to the bottom of the sequence.
+
+**Publish/Unpublish toggle** (header) — the same as individual courses. A Draft path is not visible in the student-facing paths catalog; a Published path is.
+
+---
+
+### Reordering Courses in a Path
+
+Use the up/down arrows to move courses earlier or later in the sequence. The position badge updates immediately. You can also drag using the grip handle.
+
+Order matters — students see the sequence and are guided to start with Course 1. Required courses block path completion if not finished; optional courses appear as supplementary.
+
+---
+
+### AI Path Suggestions
+
+Click **Suggest Paths (AI)** (Sparkles icon) on the Learning Paths page. The AI analyzes your published courses and generates suggested path groupings based on content similarity and logical progression.
+
+Each suggestion appears as a card:
+- Suggested path title
+- Description
+- Ordered list of your courses with numbered badges (1, 2, 3...)
+- **Accept & Create** button — creates the path with these courses in this order
+- **Dismiss** button — removes the suggestion if it's not useful
+
+You can edit accepted paths in the path editor just like manually created ones.
+
+If no useful suggestions appear, dismiss them all and build paths manually. The AI works best when you have at least 3–5 courses with meaningful, different content.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/teaching/learning-paths — show the page]
+
+> [SCREENSHOT: Learning Paths page — callouts: ""Suggest Paths (AI)"" button, ""New Path"" button, empty paths section or existing paths]
+
+> [SCREEN: Click ""New Path"" — fill in title and description — click ""Create & Add Courses""]
+
+> [SCREENSHOT: New path form — callouts: Title (required *), Description (optional textarea)]
+
+> [SCREEN: Path editor opens — show the Add Courses grid (your courses listed)]
+
+> [SCREENSHOT: Path editor, empty path — callouts: ""Courses in This Path"" (empty), Add Courses grid (course cards with + icons)]
+
+> [SCREEN: Click two course cards to add them — show them appear in the sequence]
+
+> [SCREENSHOT: Path with two courses — callouts: Position badges (1, 2), up/down arrows, Required/Optional toggle, Delete button]
+
+> [SCREEN: Toggle the second course from Required to Optional — show badge change]
+
+> [SCREEN: Click Save — show ""Saved!"" feedback — publish the path]
+
+> [SCREEN: Navigate back to /dashboard/teaching/learning-paths — click ""Suggest Paths (AI)""]
+
+> [SCREENSHOT: AI suggestions — callouts: Suggested title, course list with numbered badges, ""Accept & Create"" and ""Dismiss"" buttons]
+
+> [SCREEN: Click ""Accept & Create"" on a suggestion — path is created — appears in your list]
+
+> [SCREEN: End on the paths list — end lesson and end course]
+
+---
+
+## Key Takeaways
+
+- Learning paths group multiple courses into a named, ordered sequence for students
+- Create manually: New Path → title + description → path editor → add courses from your published catalog
+- Each course in a path can be Required (must complete for path completion) or Optional (supplementary)
+- Reorder courses with up/down arrows or drag handles; position badges reflect current order
+- AI Suggest Paths: analyzes your courses and generates grouping suggestions — Accept & Create to add them; Dismiss to skip
+- Publish the path to make it visible in the student-facing paths catalog
+",markdown,,,,,,
+Lessons,1,10,Adding Audio & Video Chapters,text,300,true,,"# Lesson 10: Adding Audio & Video Chapters
+
+**Course:** The Teaching Dashboard
+**Module:** Content Creation
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+When you create a video or audio lesson, you can add chapter markers and transcript data so students can jump to specific sections and follow along with text. This lesson covers how to add both.
+
+---
+
+### What Chapters Do
+
+Chapters divide a long video or audio lesson into named sections with timestamps. Students see:
+- Vertical markers on the progress bar
+- A clickable chapters panel listing all sections
+- A chapter label overlay showing the current section name
+
+This is especially useful for podcast-based courses where a single episode covers multiple topics.
+
+---
+
+### Adding Chapters to a Lesson
+
+When editing a lesson (video or audio type), you'll find an **Audio Chapters** field in the lesson editor. This field accepts a JSON array of chapter objects.
+
+Each chapter has four fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique identifier (e.g., ""ch1"", ""ch2"") |
+| `title` | string | Chapter name shown to students |
+| `startTime` | number | Start time in seconds |
+| `endTime` | number | End time in seconds |
+
+**Rules:**
+- Chapters should be in chronological order
+- `endTime` of one chapter should equal `startTime` of the next (no gaps)
+- The first chapter should start at 0
+- The last chapter's `endTime` should match the lesson's total duration
+
+---
+
+### Example: 6-Chapter Podcast Lesson (35 min)
+
+Paste this into the Audio Chapters field:
+
+```json
+[
+  { ""id"": ""ch1"", ""title"": ""Episode Intro"", ""startTime"": 0, ""endTime"": 120 },
+  { ""id"": ""ch2"", ""title"": ""Geography: The Physical Landscape"", ""startTime"": 120, ""endTime"": 480 },
+  { ""id"": ""ch3"", ""title"": ""Economics: Trade and Resources"", ""startTime"": 480, ""endTime"": 900 },
+  { ""id"": ""ch4"", ""title"": ""English Language Arts: Key Vocabulary"", ""startTime"": 900, ""endTime"": 1320 },
+  { ""id"": ""ch5"", ""title"": ""Social Studies: Culture and Governance"", ""startTime"": 1320, ""endTime"": 1800 },
+  { ""id"": ""ch6"", ""title"": ""Wrap-Up and Next Episode Preview"", ""startTime"": 1800, ""endTime"": 2100 }
+]
+```
+
+---
+
+### Adding Transcripts
+
+The **Transcript Content** field accepts a JSON array of transcript segments. Each segment has:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `startTime` | number | When this text begins (seconds) |
+| `endTime` | number | When this text ends (seconds) |
+| `text` | string | The spoken words for this segment |
+
+Students see the transcript in a scrollable panel that auto-highlights the active segment during playback.
+
+---
+
+### Example: Transcript Segments
+
+```json
+[
+  { ""startTime"": 0, ""endTime"": 5, ""text"": ""Welcome back to Better Vice Club, season two."" },
+  { ""startTime"": 5, ""endTime"": 12, ""text"": ""Today we're heading to the Andes Mountains to explore how geography shapes trade."" },
+  { ""startTime"": 12, ""endTime"": 20, ""text"": ""We'll cover the physical landscape first, then move into the economics of the region."" },
+  { ""startTime"": 20, ""endTime"": 28, ""text"": ""By the end of this episode, you'll understand how elevation affects agriculture and transportation."" },
+  { ""startTime"": 28, ""endTime"": 36, ""text"": ""Let's start with the basics. The Andes run along the western edge of South America."" },
+  { ""startTime"": 36, ""endTime"": 45, ""text"": ""At over 7,000 kilometers long, they're the longest continental mountain range in the world."" },
+  { ""startTime"": 45, ""endTime"": 55, ""text"": ""The highest peak, Aconcagua, sits at 6,961 meters — nearly 23,000 feet above sea level."" },
+  { ""startTime"": 55, ""endTime"": 65, ""text"": ""This altitude creates distinct ecological zones, each with different crops, animals, and human settlements."" },
+  { ""startTime"": 65, ""endTime"": 75, ""text"": ""In the low valleys, you'll find tropical agriculture — coffee, cacao, bananas."" },
+  { ""startTime"": 75, ""endTime"": 85, ""text"": ""Move up to the mid-altitudes and you see maize, potatoes, and quinoa — staples of Andean diet for thousands of years."" },
+  { ""startTime"": 85, ""endTime"": 95, ""text"": ""Above the tree line, herding takes over. Llamas and alpacas provide wool, meat, and transport."" }
+]
+```
+
+---
+
+### Tips for Good Chapters and Transcripts
+
+**Chapters:**
+- 4-8 chapters per lesson is typical
+- Name chapters by topic, not by time (""Geography: Trade Routes"" not ""Minute 5-10"")
+- Keep chapter titles under 60 characters for clean display
+
+**Transcripts:**
+- Segments of 5-15 seconds work well for readability
+- Each segment should be 1-2 sentences
+- Don't include timestamps in the text itself — the player handles timing
+- Transcripts don't need to be word-perfect — close paraphrasing is acceptable for readability
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Open the lesson editor for an audio lesson — scroll to the Audio Chapters field]
+
+> [SCREENSHOT: Audio Chapters JSON field — callout: ""Paste a JSON array of chapter objects""]
+
+> [SCREEN: Paste the 6-chapter example JSON — save the lesson]
+
+> [SCREEN: Open the lesson as a student — show chapter markers on the progress bar]
+
+> [SCREEN: Click the chapters panel — show the 6 chapters listed with titles]
+
+> [SCREEN: Scroll to the Transcript Content field in the editor]
+
+> [SCREENSHOT: Transcript Content JSON field — callout: ""Each segment has startTime, endTime, and text""]
+
+> [SCREEN: Paste transcript segments — save — preview the lesson with transcript panel open]
+
+> [SCREEN: Show the transcript auto-highlighting as audio plays]
+
+---
+
+## Key Takeaways
+
+- Chapters: JSON array with id, title, startTime, endTime — added via the lesson editor's Audio Chapters field
+- Transcripts: JSON array with startTime, endTime, text — added via the Transcript Content field
+- 4-8 chapters per lesson, 5-15 second segments for transcripts
+- Chapters appear as markers on the progress bar + in a clickable panel
+- Transcripts auto-highlight and auto-scroll during playback
+",markdown,,,,,,
+Lessons,1,11,Creating Map & Document Lessons,text,300,true,,"# Lesson 11: Creating Map & Document Lessons
+
+**Course:** The Teaching Dashboard
+**Module:** Content Creation
+**Duration:** ~7 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The Academy supports two supplementary content types that appear alongside your lesson text: interactive maps and attached documents. This lesson shows you how to add both using the lesson editor.
+
+---
+
+### Adding Map Content
+
+In the lesson editor, the **Map Content** field accepts a JSON object that defines what the MapViewer will display.
+
+The map supports three element types:
+
+**Markers** — labeled pins on the map. Each has a latitude, longitude, title, and description. Students click a marker to see its info popup.
+
+**Polygons** — colored shaded regions. Define a set of coordinate pairs that form the shape, plus a border color, fill color, and label.
+
+**Lines** — colored paths between coordinates. Useful for trade routes, trip paths, or migration patterns.
+
+---
+
+### Map Content Structure
+
+```json
+{
+  ""center"": [latitude, longitude],
+  ""zoom"": 6,
+  ""markers"": [
+    { ""lat"": 37.7749, ""lng"": -122.4194, ""title"": ""San Francisco"", ""description"": ""Starting point"" }
+  ],
+  ""polygons"": [
+    {
+      ""coordinates"": [[lat1, lng1], [lat2, lng2], [lat3, lng3], [lat4, lng4]],
+      ""color"": ""#3B82F6"",
+      ""fillColor"": ""#3B82F620"",
+      ""label"": ""Region Name""
+    }
+  ],
+  ""lines"": [
+    {
+      ""coordinates"": [[startLat, startLng], [endLat, endLng]],
+      ""color"": ""#EF4444"",
+      ""label"": ""Route Name""
+    }
+  ]
+}
+```
+
+---
+
+### Full Map Example: Ancient Trade Route Lesson
+
+```json
+{
+  ""center"": [30.0444, 31.2357],
+  ""zoom"": 5,
+  ""markers"": [
+    { ""lat"": 30.0444, ""lng"": 31.2357, ""title"": ""Cairo, Egypt"", ""description"": ""Major trading hub — spices, textiles, and gold converged here"" },
+    { ""lat"": 36.8065, ""lng"": 10.1815, ""title"": ""Tunis, Tunisia"", ""description"": ""Mediterranean port — connected North Africa to European markets"" },
+    { ""lat"": 33.8869, ""lng"": 35.5131, ""title"": ""Beirut, Lebanon"", ""description"": ""Phoenician trading post — gateway between East and West"" },
+    { ""lat"": 41.0082, ""lng"": 28.9784, ""title"": ""Istanbul, Turkey"", ""description"": ""Crossroads of continents — controlled the Bosphorus strait"" }
+  ],
+  ""polygons"": [
+    {
+      ""coordinates"": [[31.0, 29.0], [31.0, 33.0], [29.0, 33.0], [29.0, 29.0]],
+      ""color"": ""#F59E0B"",
+      ""fillColor"": ""#F59E0B20"",
+      ""label"": ""Nile Delta Trading Zone""
+    }
+  ],
+  ""lines"": [
+    { ""coordinates"": [[30.0444, 31.2357], [33.8869, 35.5131]], ""color"": ""#3B82F6"", ""label"": ""Cairo → Beirut (coastal route)"" },
+    { ""coordinates"": [[33.8869, 35.5131], [41.0082, 28.9784]], ""color"": ""#10B981"", ""label"": ""Beirut → Istanbul (sea route)"" },
+    { ""coordinates"": [[30.0444, 31.2357], [36.8065, 10.1815]], ""color"": ""#EF4444"", ""label"": ""Cairo → Tunis (overland route)"" }
+  ]
+}
+```
+
+---
+
+### Adding Documents
+
+The **Documents** field accepts a JSON array of document objects. Each document has:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `url` | string | Yes | The Cloudinary URL (or any public URL) of the file |
+| `title` | string | Yes | Document name shown to students |
+| `description` | string | No | Brief explanation of the content |
+| `source_url` | string | No | Link to the original source (attribution) |
+
+---
+
+### Document Example
+
+```json
+[
+  {
+    ""url"": ""https://res.cloudinary.com/your-cloud/raw/upload/v1/academy/trade-route-worksheet.pdf"",
+    ""title"": ""Trade Route Analysis Worksheet"",
+    ""description"": ""Fill in the blank worksheet — identify trade goods, routes, and key cities from the lesson."",
+    ""source_url"": null
+  },
+  {
+    ""url"": ""https://res.cloudinary.com/your-cloud/image/upload/v1/academy/ancient-map-1200ad.jpg"",
+    ""title"": ""Historical Map: Mediterranean Trade (1200 AD)"",
+    ""description"": ""Primary source — a reproduction of a medieval portolan chart showing major trade routes."",
+    ""source_url"": ""https://commons.wikimedia.org/wiki/File:Portolan_chart.jpg""
+  }
+]
+```
+
+---
+
+### Uploading Documents
+
+Documents are hosted on Cloudinary (same as images). Upload your file through the Cloudinary dashboard or media library, then copy the URL into the documents JSON.
+
+Supported formats:
+- **PDFs** — worksheets, reference guides, reading assignments
+- **Images** — charts, diagrams, historical photos, infographics
+
+The DocumentViewer renders PDFs as downloadable links and images as viewable galleries.
+
+---
+
+### Combining Map + Documents + Text
+
+A single lesson can have all three: text content (markdown or Tiptap), map content, and documents. They render in this order on the lesson page:
+
+1. Podcast links (if any)
+2. Video/audio player (if applicable)
+3. Text content
+4. Map viewer
+5. Document viewer
+6. Discussion section
+
+Design your lesson content to reference the map and documents in the text — ""See the map below for the trade routes mentioned in this section"" or ""Download the worksheet to follow along.""
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Open the lesson editor — scroll to the Map Content field]
+
+> [SCREENSHOT: Map Content JSON field — callout: ""Paste a JSON object with center, zoom, markers, polygons, lines""]
+
+> [SCREEN: Paste the trade route map example — save the lesson]
+
+> [SCREEN: Preview the lesson as a student — show the MapViewer with markers, lines, and polygon]
+
+> [SCREEN: Click a marker — show the popup with title and description]
+
+> [SCREEN: Return to the editor — scroll to the Documents field]
+
+> [SCREENSHOT: Documents JSON field — callout: ""Array of objects with url, title, description, source_url""]
+
+> [SCREEN: Paste the document example — save — preview showing document links below the map]
+
+---
+
+## Key Takeaways
+
+- Map Content: JSON object with center, zoom, markers, polygons, and lines
+- Documents: JSON array with url, title, description, and optional source_url
+- Upload files to Cloudinary and paste the URL into the documents JSON
+- A single lesson can combine text + map + documents + audio/video
+- Reference maps and documents in your text content so students know to scroll down
+",markdown,,,,,,
+Lessons,1,12,Building Quiz Lessons,text,300,true,,"# Lesson 12: Building Quiz Lessons
+
+**Course:** The Teaching Dashboard
+**Module:** Content Creation
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Quiz lessons let you test student understanding with multiple-choice questions. Each question includes an explanation and an optional citation, so the quiz serves as both an assessment and a learning tool. This lesson covers how to build one.
+
+---
+
+### Creating a Quiz Lesson
+
+1. Navigate to your course editor
+2. Add a new lesson (or edit an existing one)
+3. Set **Lesson Type** to **Quiz**
+4. The **Quiz Content** field appears — this is where you paste your quiz JSON
+
+---
+
+### Quiz Content Structure
+
+The quiz is a JSON object with a `questions` array. Each question has:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | Yes | Unique ID (e.g., ""q1"", ""q2"") |
+| `question` | string | Yes | The question text |
+| `options` | string[] | Yes | Array of 4 answer choices |
+| `correctIndex` | number | Yes | Index of the correct answer (0-based) |
+| `explanation` | string | Yes | Why the correct answer is right |
+| `citation` | string | No | Source reference (APA format recommended) |
+
+---
+
+### Full Quiz Example: 5 Questions
+
+```json
+{
+  ""questions"": [
+    {
+      ""id"": ""q1"",
+      ""question"": ""What is the longest continental mountain range in the world?"",
+      ""options"": [""The Himalayas"", ""The Rockies"", ""The Andes"", ""The Alps""],
+      ""correctIndex"": 2,
+      ""explanation"": ""The Andes stretch over 7,000 kilometers along the western coast of South America, making them the longest continental mountain range on Earth."",
+      ""citation"": ""National Geographic Society. (2023). Andes Mountains. https://education.nationalgeographic.org/resource/andes-mountains/""
+    },
+    {
+      ""id"": ""q2"",
+      ""question"": ""Which crop is NOT traditionally grown at high altitudes in the Andes?"",
+      ""options"": [""Quinoa"", ""Potatoes"", ""Bananas"", ""Maize""],
+      ""correctIndex"": 2,
+      ""explanation"": ""Bananas are a tropical lowland crop. The high-altitude Andes support potatoes, quinoa, and maize, which are adapted to cooler temperatures and thinner air."",
+      ""citation"": ""Brush, S. B. (2004). Farmers' Bounty: Locating Crop Diversity in the Contemporary World. Yale University Press.""
+    },
+    {
+      ""id"": ""q3"",
+      ""question"": ""What animals are primarily used for herding above the tree line in the Andes?"",
+      ""options"": [""Cattle and sheep"", ""Llamas and alpacas"", ""Goats and donkeys"", ""Horses and mules""],
+      ""correctIndex"": 1,
+      ""explanation"": ""Llamas and alpacas are native South American camelids domesticated thousands of years ago. They thrive at high altitudes and provide wool, meat, and transport."",
+      ""citation"": ""Wheeler, J. C. (1995). Evolution and present situation of the South American Camelidae. Biological Journal of the Linnean Society, 54(3), 271-295.""
+    },
+    {
+      ""id"": ""q4"",
+      ""question"": ""The Bosphorus strait is located in which modern country?"",
+      ""options"": [""Greece"", ""Turkey"", ""Egypt"", ""Lebanon""],
+      ""correctIndex"": 1,
+      ""explanation"": ""The Bosphorus strait runs through Istanbul, Turkey, connecting the Black Sea to the Sea of Marmara. It has been a strategic crossroads between Europe and Asia for millennia."",
+      ""citation"": ""Freely, J. (2011). A History of Ottoman Architecture. WIT Press.""
+    },
+    {
+      ""id"": ""q5"",
+      ""question"": ""What type of historical document is a portolan chart?"",
+      ""options"": [""A tax record"", ""A navigational sea chart"", ""A royal decree"", ""A trade agreement""],
+      ""correctIndex"": 1,
+      ""explanation"": ""Portolan charts are medieval navigational maps used by sailors. They show coastlines, harbors, and compass directions, and were essential tools for Mediterranean trade."",
+      ""citation"": ""Campbell, T. (1987). The Earliest Printed Maps, 1472-1500. British Library.""
+    }
+  ]
+}
+```
+
+---
+
+### Tips for Good Quiz Questions
+
+**Question design:**
+- Ask about concepts, not memorization — ""Why does X happen?"" beats ""What year did X occur?""
+- Make all 4 options plausible — avoid obviously wrong answers
+- Keep question text under 2 sentences
+
+**Explanations:**
+- Explain why the correct answer is right, not just that it is
+- Reference specific facts from the lesson content
+- Keep explanations to 2-3 sentences
+
+**Citations:**
+- Use APA format when citing published sources
+- Can reference your own course content: ""CentenarianOS Academy — Lesson 03: Geography of the Andes""
+- Citations build credibility and give students a path for further reading
+
+---
+
+### Scoring Behavior
+
+- Submitting the quiz marks the lesson as complete, regardless of score
+- There's no minimum passing grade — quizzes are self-assessment tools
+- Students see their score (""3 of 5 correct"") and can review all explanations
+- If the course uses CYOA, crossroads appears after quiz submission
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Open the lesson editor — set lesson type to Quiz]
+
+> [SCREENSHOT: Lesson editor with Quiz type selected — callout: ""Quiz Content JSON field appears""]
+
+> [SCREEN: Paste the 5-question example JSON into the Quiz Content field]
+
+> [SCREEN: Save the lesson — preview as a student]
+
+> [SCREEN: Answer 3 questions correctly and 2 incorrectly — click Submit]
+
+> [SCREENSHOT: Quiz results — callouts: Score (""3 of 5""), Green checkmarks on correct, Red X on incorrect, Explanation text, APA citation]
+
+> [SCREEN: Scroll through all explanations — show citations displayed below each explanation]
+
+---
+
+## Key Takeaways
+
+- Quiz lesson: set type to Quiz, paste JSON into Quiz Content field
+- Each question: id, question text, 4 options, correctIndex, explanation, optional citation
+- Submission marks the lesson complete — no minimum score
+- Write plausible distractors and concept-focused questions
+- Explanations are learning tools — explain the ""why,"" cite your sources
+",markdown,,,,,,
+Lessons,1,13,Podcast Links & Data Importer,text,360,true,,"# Lesson 13: Podcast Links & Data Importer
+
+**Course:** The Teaching Dashboard
+**Module:** Content Creation
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Two more content tools: podcast links let you connect lessons to external audio platforms, and the data importer lets you bulk-load lesson metadata from a CSV template. This lesson covers both.
+
+---
+
+### Adding Podcast Links
+
+The **Podcast Links** field in the lesson editor accepts a JSON array of link objects. Each link has:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `url` | string | Yes | Full URL to the episode on the platform |
+| `label` | string | No | Platform name (auto-detected from URL if omitted) |
+
+The PodcastLinks component auto-detects the platform from the URL:
+- **Spotify** — `open.spotify.com` → green button
+- **Apple Podcasts** — `podcasts.apple.com` → purple button
+- **YouTube** — `youtube.com` or `youtu.be` → red button
+- **Amazon Music** — `music.amazon.com` → teal button
+- **Other** — gray button with generic link icon
+
+---
+
+### Podcast Links Example
+
+```json
+[
+  { ""url"": ""https://open.spotify.com/episode/4rOoJ6Egrf8K2IrywzwOMk"", ""label"": ""Spotify"" },
+  { ""url"": ""https://podcasts.apple.com/us/podcast/better-vice-club/id1234567890?i=1000600000001"", ""label"": ""Apple Podcasts"" },
+  { ""url"": ""https://www.youtube.com/watch?v=dQw4w9WgXcQ"", ""label"": ""YouTube"" }
+]
+```
+
+Students see platform-specific colored buttons at the top of the lesson content. Clicking a button opens the episode in a new tab.
+
+---
+
+### When to Use Podcast Links
+
+Podcast links are ideal for:
+- **Podcast-based curriculum** — each lesson corresponds to an episode. The lesson page provides study guides, quizzes, and reference material while the audio lives on the podcast platform.
+- **Supplementary listening** — link to a relevant episode that adds context to a text or video lesson.
+- **Cross-platform distribution** — students choose their preferred listening app.
+
+You can combine podcast links with a locally-hosted audio file (chapter markers + transcript) — the external links let students listen on their preferred platform, while the in-app player provides structured navigation.
+
+---
+
+### The Bulk Course Importer
+
+For courses with many lessons, the Bulk Course Importer lets you create an entire course structure — modules and lessons — from a single CSV file. You can also use it to update existing lessons.
+
+The importer is in the **Curriculum** section of the course editor. Click **Bulk Import from CSV** to expand the import panel.
+
+---
+
+### CSV Template Format
+
+Download the template from the import panel, or use this column structure:
+
+```
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+```
+
+Each row is one lesson. The `module_title` column determines which module the lesson belongs to — modules are auto-created if they don't already exist.
+
+| Column | Required | Description |
+|--------|----------|-------------|
+| `module_title` | No | Module name (auto-creates if new) |
+| `module_order` | No | Display order of the module (default: auto-incrementing) |
+| `lesson_order` | No | Display order within the course (default: row index) |
+| `title` | **Yes** | Lesson title |
+| `lesson_type` | No | `video`, `text`, `audio`, `slides`, or `quiz` (default: `video`) |
+| `duration_seconds` | No | Length in seconds |
+| `is_free_preview` | No | `true` or `false` (default: follows course pricing) |
+| `content_url` | No | URL to video/audio/slides file (Cloudinary, etc.) |
+| `text_content` | No | Markdown or Tiptap JSON for text lessons |
+| `content_format` | No | `markdown` or `tiptap` (default: `markdown`) |
+| `audio_chapters` | No | JSON array of chapter markers |
+| `transcript_content` | No | JSON array of transcript segments |
+| `map_content` | No | JSON object for MapViewer |
+| `documents` | No | JSON array of document objects |
+| `podcast_links` | No | JSON array of podcast link objects |
+| `quiz_content` | No | JSON object with quiz questions |
+
+---
+
+### Example CSV (Full Course)
+
+```csv
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+Getting Started,1,1,Welcome to the Course,video,300,true,https://res.cloudinary.com/your-cloud/video/upload/welcome.mp4,,markdown,,,,,,
+Getting Started,1,2,Setting Up Your Workspace,text,240,true,,This is the lesson content in **markdown** format.,markdown,,,,,,
+Core Concepts,2,3,Understanding the Basics,video,600,false,https://res.cloudinary.com/your-cloud/video/upload/basics.mp4,,markdown,""[{""""id"""":""""ch1"""",""""title"""":""""Intro"""",""""startTime"""":0,""""endTime"""":120}]"",,,,
+Practice,3,5,Knowledge Check,quiz,180,false,,,,,,,,,""{ """"questions"""": [{ """"id"""": """"q1"""", """"question"""": """"What is the main purpose?"""", """"options"""": [""""A"""", """"B"""", """"C"""", """"D""""], """"correctIndex"""": 0, """"explanation"""": """"A is correct."""" }] }""
+```
+
+Note: JSON within CSV cells uses doubled quotes (`""""`) to escape.
+
+---
+
+### Import Modes
+
+The importer has two modes:
+
+- **Create Only** (default) — creates new modules and lessons. Skips if a lesson with the same order already exists in that module.
+- **Create + Update** — creates new modules and lessons, AND updates existing lessons that match by module + lesson order. Use this to update content_url, text_content, or any other field on existing lessons.
+
+---
+
+### Using the Bulk Importer
+
+1. Navigate to your course in the teaching dashboard
+2. In the **Curriculum** section, click **Bulk Import from CSV**
+3. Choose your import mode (Create Only or Create + Update)
+4. Upload your CSV file — or paste a Google Sheets published URL
+5. The importer shows how many rows were parsed
+6. Modules are auto-created, then lessons are inserted/updated
+7. The curriculum refreshes automatically to show the new structure
+
+---
+
+### Tips
+
+- Prepare your CSV in a spreadsheet app (Google Sheets, Excel) — it handles the quote escaping for you
+- Click the **Template** button in the import panel to download the exact CSV template
+- JSON fields can be left empty if not applicable
+- Rows without a `module_title` are added with no module assignment
+- Run **Generate Embeddings** after importing so CYOA crossroads works
+- Two template files are available: `course-import.csv` (modules + lessons) and `lessons-import.csv` (lessons only)
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Open the lesson editor — scroll to the Podcast Links field]
+
+> [SCREENSHOT: Podcast Links JSON field — callout: ""Array of { url, label } objects""]
+
+> [SCREEN: Paste the 3-platform example — save — preview the lesson]
+
+> [SCREEN: Show the colored platform buttons (Spotify green, Apple purple, YouTube red) at the top of lesson content]
+
+> [SCREEN: Click the Spotify button — show it open in a new tab]
+
+> [SCREEN: Return to the course editor — click ""Bulk Import from CSV"" in the Curriculum section]
+
+> [SCREENSHOT: Bulk Import panel — callouts: Mode toggle (Create Only / Create + Update), CSV upload, Template download]
+
+> [SCREEN: Select ""Create Only"" mode — upload a prepared CSV — show row count confirmation]
+
+> [SCREEN: Show modules and lessons auto-created in the curriculum — multiple modules populated at once]
+
+> [SCREEN: Switch to ""Create + Update"" mode — upload updated CSV — show existing lessons updated]
+
+---
+
+## Key Takeaways
+
+- Podcast Links: JSON array of { url, label } — platform auto-detected from URL
+- Buttons render with platform-specific colors (Spotify green, Apple purple, YouTube red)
+- Bulk Course Importer: create modules + lessons from a single CSV file
+- Two modes: Create Only (skip existing) or Create + Update (overwrite existing by module+order)
+- CSV template includes all lesson fields: title, type, content, chapters, maps, quizzes, podcasts, documents
+- Modules are auto-created from the `module_title` column
+- Supports CSV file upload or Google Sheets published URL
+- Run Generate Embeddings after importing so CYOA navigation works
+",markdown,,,,,,
+Lessons,1,14,Sequential Module Locking,text,240,true,,"# Lesson 14: Sequential Module Locking
+
+**Course:** The Teaching Dashboard
+**Module:** Course Settings
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+By default, students can access any lesson in any order (especially with CYOA navigation). But some courses need students to complete modules in sequence — Module 1 before Module 2, Module 2 before Module 3. Sequential module locking gives you that control.
+
+---
+
+### What Sequential Locking Does
+
+When you enable sequential locking on a course, students must complete all non-free-preview lessons in a module before accessing lessons in the next module.
+
+If a student tries to open a lesson in Module 3 but hasn't finished Module 2, they see a locked state with a message explaining which module they need to complete first.
+
+Free preview lessons are excluded from the lock — they're always accessible regardless of progress.
+
+---
+
+### Enabling Sequential Locking
+
+1. Navigate to your course editor
+2. Open the course settings
+3. Toggle **Sequential Modules** to ON (the `is_sequential` field)
+4. Save
+
+That's it. The system automatically enforces the module order based on your module structure.
+
+---
+
+### How the Lock Is Checked
+
+When a student opens a lesson, the system checks:
+
+1. Is `is_sequential` true on the course?
+2. Is this lesson inside Module N (where N > 1)?
+3. Has the student completed all non-free-preview lessons in Modules 1 through N-1?
+
+If any prior module has incomplete lessons, the student sees:
+```
+{ locked: true, module_locked: true }
+```
+
+The lesson page shows a lock icon and a message like ""Complete Module 2 to unlock this lesson.""
+
+---
+
+### Sequential Locking vs. CYOA
+
+These are separate settings and can coexist:
+
+| Setting | What It Controls |
+|---------|-----------------|
+| **Navigation Mode: CYOA** | After completing a lesson, students choose their next lesson from crossroads options |
+| **Sequential Modules: ON** | Students must complete all lessons in Module N before Module N+1 unlocks |
+
+**CYOA + Sequential** means: students can explore lessons freely within a module (CYOA), but the next module doesn't unlock until the current one is fully complete.
+
+**Linear + Sequential** means: strict lesson-by-lesson progression within each module, and module-by-module progression across the course.
+
+**CYOA without Sequential** means: students can jump to any lesson in any module at any time. This is the default for tutorial courses.
+
+---
+
+### When to Use Sequential Locking
+
+**Use it when:**
+- Later modules build directly on earlier material (e.g., math: algebra before calculus)
+- You need students to complete prerequisite assignments before advancing
+- The course has a certification or grading component that requires ordered completion
+
+**Skip it when:**
+- The course is a reference guide (like tutorial courses)
+- Modules are independent topics that don't depend on each other
+- You want students to self-direct their learning path
+
+---
+
+### Module Order
+
+Sequential locking uses the module `order` field to determine the sequence. Module order 1 is first, order 2 is second, etc.
+
+If you reorder modules in the course editor, the lock sequence updates accordingly. Make sure your module order matches your intended prerequisite chain.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to the course editor — open course settings]
+
+> [SCREENSHOT: Course settings — callout: ""Sequential Modules"" toggle (OFF by default)]
+
+> [SCREEN: Toggle Sequential Modules ON — save]
+
+> [SCREEN: Log in as a student — navigate to the course]
+
+> [SCREEN: Try to open a lesson in Module 2 without completing Module 1]
+
+> [SCREENSHOT: Locked lesson state — callout: Lock icon + ""Complete Module 1 to unlock this lesson""]
+
+> [SCREEN: Go back — complete all Module 1 lessons — return to Module 2]
+
+> [SCREEN: Show Module 2 lessons are now accessible]
+
+---
+
+## Key Takeaways
+
+- Sequential Modules: enable in course settings to enforce module-order progression
+- Students must complete all non-free-preview lessons in Module N before Module N+1 unlocks
+- Free preview lessons are never locked
+- Can combine with CYOA (free exploration within a module, locked between modules) or Linear (strict order everywhere)
+- Use for prerequisite-dependent content; skip for reference guides and self-directed courses
+",markdown,,,,,,
+Lessons,1,15,Bulk Course Import Workflow,text,420,true,,"# Lesson 15: Bulk Course Import Workflow
+
+**Course:** The Teaching Dashboard
+**Module:** Content Creation
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Building a course one lesson at a time works for small projects, but what if you have 20 or 50 lessons to add? The Bulk Course Importer lets you create an entire course structure — modules and lessons — from a single CSV file. This lesson walks through the complete workflow from spreadsheet to published curriculum.
+
+---
+
+### Overview
+
+The Bulk Course Importer lives in the **Curriculum** section of every course editor. It reads a CSV where each row is a lesson, groups rows by module name, auto-creates missing modules, and inserts (or updates) lessons — all in one operation.
+
+What it handles:
+- **Modules** — auto-created from unique `module_title` values in the CSV
+- **Lessons** — created with all supported fields (title, type, content, chapters, maps, quizzes, documents, podcasts)
+- **Updates** — in ""Create + Update"" mode, existing lessons matched by module + order are overwritten
+
+---
+
+### Step 1: Prepare Your Spreadsheet
+
+Start with a spreadsheet in Google Sheets or Excel. Use the downloadable CSV template from the import panel, or create your own with these columns:
+
+```
+module_title, module_order, lesson_order, title, lesson_type, duration_seconds, is_free_preview, content_url, text_content, content_format, audio_chapters, transcript_content, map_content, documents, podcast_links, quiz_content
+```
+
+**Tips for the spreadsheet:**
+- One row per lesson
+- Group lessons under the same `module_title` — the importer creates one module per unique title
+- Set `module_order` to control the display order of modules (1, 2, 3...)
+- Set `lesson_order` to control the display order of lessons within the course
+- Leave JSON columns empty if not applicable — the importer skips null fields
+
+---
+
+### Step 2: Fill In Lesson Data
+
+For each lesson row, fill in the fields that apply:
+
+| Lesson Type | Key Fields to Fill |
+|-------------|--------------------|
+| **video** | `content_url` (Cloudinary video URL), `duration_seconds`, optionally `audio_chapters` and `transcript_content` |
+| **audio** | `content_url` (Cloudinary audio URL), `duration_seconds`, optionally `audio_chapters`, `transcript_content`, `podcast_links` |
+| **text** | `text_content` (Markdown or Tiptap JSON), `content_format` (`markdown` or `tiptap`) |
+| **quiz** | `quiz_content` (full quiz JSON with questions, options, correct answers, explanations) |
+| **slides** | `content_url` (Cloudinary slides URL) |
+
+You can add rich content to any lesson type:
+- `audio_chapters` — chapter markers for the video/audio progress bar
+- `transcript_content` — synchronized transcript segments
+- `map_content` — interactive map with markers, lines, and polygons
+- `documents` — PDF/image attachments
+- `podcast_links` — platform-specific external audio links
+
+---
+
+### Step 3: Handle JSON Fields in CSV
+
+JSON fields need special handling in CSV format. Spreadsheet apps handle this automatically when you export to CSV, but if editing raw CSV:
+
+- Wrap the entire JSON in double quotes
+- Use doubled quotes (`""""`) for any quotes inside the JSON
+
+**Example chapter markers in raw CSV:**
+
+```csv
+""[{""""id"""":""""ch1"""",""""title"""":""""Introduction"""",""""startTime"""":0,""""endTime"""":180},{""""id"""":""""ch2"""",""""title"""":""""Main Topic"""",""""startTime"""":180,""""endTime"""":600}]""
+```
+
+**In Google Sheets**, just paste the plain JSON into the cell — the export handles escaping:
+
+```json
+[{""id"":""ch1"",""title"":""Introduction"",""startTime"":0,""endTime"":180}]
+```
+
+---
+
+### Step 4: Import Into Your Course
+
+1. Open your course in the teaching dashboard
+2. Scroll to the **Curriculum** section
+3. Click **Bulk Import from CSV** to expand the import panel
+4. Choose your import mode:
+   - **Create Only** — adds new modules and lessons; skips rows where a lesson with the same order already exists
+   - **Create + Update** — adds new items AND updates existing lessons that match by module + lesson order
+5. Upload your CSV file — or switch to the **Google Sheets** tab and paste a published sheet URL
+6. The importer reports how many modules were created, lessons were created, updated, or skipped
+7. Check the curriculum — your modules and lessons are now populated
+
+---
+
+### Step 5: Post-Import Checklist
+
+After importing, complete these steps:
+
+1. **Review the curriculum** — verify module order and lesson order look correct
+2. **Upload media** — if you left `content_url` empty, open each video/audio lesson and upload the file via the media uploader
+3. **Preview lessons** — click through a few lessons to verify text, chapters, maps, and quizzes render correctly
+4. **Generate embeddings** — click ""Generate AI Paths"" so CYOA crossroads navigation has semantic data
+5. **Set sequential locking** (optional) — if your course requires module-order completion, toggle it on in course settings
+6. **Publish** — flip the publish toggle when everything looks good
+
+---
+
+### Full Example CSV
+
+This CSV creates a 3-module, 6-lesson course:
+
+```csv
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+Getting Started,1,1,Welcome to the Course,video,300,true,https://res.cloudinary.com/demo/video/upload/welcome.mp4,,markdown,,,,,,
+Getting Started,1,2,Setting Up Your Workspace,text,240,true,,This is the lesson content in **markdown** format.,markdown,,,,,,
+Core Concepts,2,3,Understanding the Basics,video,600,false,https://res.cloudinary.com/demo/video/upload/basics.mp4,,markdown,""[{""""id"""":""""ch1"""",""""title"""":""""Intro"""",""""startTime"""":0,""""endTime"""":120},{""""id"""":""""ch2"""",""""title"""":""""Key Concepts"""",""""startTime"""":120,""""endTime"""":480}]"",""[{""""startTime"""":0,""""endTime"""":15,""""text"""":""""Welcome to the basics lesson.""""}]"",,,,
+Core Concepts,2,4,Interactive Map Exercise,text,300,false,,,markdown,,,""{ """"center"""": [37.7749, -122.4194], """"zoom"""": 12, """"markers"""": [{ """"lat"""": 37.7749, """"lng"""": -122.4194, """"title"""": """"Starting Point"""", """"description"""": """"Begin here"""" }] }"",,,
+Practice,3,5,Knowledge Check,quiz,180,false,,,,,,,,,""{ """"questions"""": [{ """"id"""": """"q1"""", """"question"""": """"What is the main purpose of this feature?"""", """"options"""": [""""Option A"""", """"Option B"""", """"Option C"""", """"Option D""""], """"correctIndex"""": 0, """"explanation"""": """"Option A is correct because..."""" }] }""
+Practice,3,6,Listen and Learn,audio,1200,true,https://res.cloudinary.com/demo/video/upload/podcast-ep1.mp3,,markdown,""[{""""id"""":""""ch1"""",""""title"""":""""Introduction"""",""""startTime"""":0,""""endTime"""":300},{""""id"""":""""ch2"""",""""title"""":""""Deep Dive"""",""""startTime"""":300,""""endTime"""":900}]"",,,""[{""""url"""":""""https://res.cloudinary.com/demo/docs/reference.pdf"""",""""title"""":""""Reference Guide"""",""""description"""":""""Quick reference for this lesson""""}]"",""[{""""url"""":""""https://open.spotify.com/episode/example"""",""""label"""":""""Spotify""""},{""""url"""":""""https://podcasts.apple.com/example"""",""""label"""":""""Apple Podcasts""""}]"",
+```
+
+**Result:** 3 modules (Getting Started, Core Concepts, Practice) with 2 lessons each. Lessons include video with chapters, text with markdown, map content, a quiz, and an audio lesson with podcast links.
+
+---
+
+### Google Sheets Workflow
+
+For the smoothest experience:
+
+1. Create a Google Sheet with the template columns
+2. Fill in your lessons — paste JSON directly into cells
+3. Go to **File → Share → Publish to web** → select the tab → choose CSV → Publish
+4. Copy the published URL
+5. In the import panel, switch to the **Google Sheets** tab
+6. Paste the URL → click the import button
+7. The importer fetches and parses the sheet automatically
+
+This lets you maintain your course content in a living spreadsheet and re-import whenever you update it (using ""Create + Update"" mode).
+
+---
+
+### Updating an Existing Course
+
+To update lessons that already exist:
+
+1. Switch the import mode to **Create + Update**
+2. Upload your updated CSV
+3. Lessons are matched by their `module_id` + `lesson_order` combination
+4. Matching lessons have all provided fields overwritten
+5. Non-matching rows create new lessons as usual
+
+This is useful for:
+- Bulk-updating `content_url` after uploading new video files
+- Adding `audio_chapters` or `transcript_content` to existing lessons
+- Updating `text_content` across multiple lessons at once
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Open a course in the teaching dashboard — scroll to Curriculum section]
+
+> [SCREEN: Click ""Bulk Import from CSV"" — show the panel expand]
+
+> [SCREENSHOT: Import panel — callouts: ""Mode toggle"", ""CSV File tab"", ""Google Sheets tab"", ""Template download""]
+
+> [SCREEN: Switch to Google Sheets tab — paste a published sheet URL — click import]
+
+> [SCREEN: Show the success message: ""Created 3 modules, 6 lessons""]
+
+> [SCREEN: Show the curriculum with all 3 modules populated with lessons]
+
+> [SCREEN: Open one of the imported lessons — show the chapter markers and text content rendered correctly]
+
+> [SCREEN: Demonstrate Create + Update mode — upload an updated CSV — show ""Updated 4 lessons""]
+
+---
+
+## Key Takeaways
+
+- The Bulk Course Importer creates modules + lessons from a single CSV file
+- Each CSV row is one lesson; the `module_title` column auto-creates modules
+- Two modes: Create Only (default, safe) and Create + Update (overwrites existing)
+- Supports CSV file upload and Google Sheets published URLs
+- JSON fields (chapters, maps, quizzes, documents, podcasts) are fully supported in CSV cells
+- After importing: review, upload media, generate embeddings, then publish
+- Maintain your course in a living spreadsheet and re-import with updates anytime
+",markdown,,,,,,

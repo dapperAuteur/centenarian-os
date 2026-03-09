@@ -1,0 +1,329 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+Lessons,1,1,The Data Hub — Your Data Command Center,text,180,true,,"# Lesson 1: The Data Hub — Your Data Command Center
+
+**Course:** Data Hub Guide
+**Module:** Getting Started
+**Duration:** ~4 min
+**Lesson type:** text
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Your data lives across ten modules — finance, health, travel, equipment, workouts, and more. The Data Hub brings every import and export into one centralized page so you never have to hunt for the right button.
+
+---
+
+### What Is the Data Hub?
+
+The Data Hub lives at **Dashboard > Life > Data Hub** (or `/dashboard/data`). It shows a grid of cards — one for every module that supports bulk data — with three actions per card:
+
+- **Import** — opens the import page where you upload a CSV or paste a Google Sheets URL
+- **Export All** — downloads all your data for that module as a CSV file
+- **Template** — downloads a pre-filled CSV template with example rows
+
+---
+
+### Modules Available
+
+| Module | What You Can Import/Export |
+|--------|--------------------------|
+| **Finance** | Transactions — income, expenses, transfers |
+| **Health Metrics** | Daily logs — RHR, steps, sleep, activity, body comp |
+| **Trips** | All trip logs — car, bike, walk, transit, flight |
+| **Fuel Logs** | Fill-ups — gallons, cost, MPG, station |
+| **Maintenance** | Vehicle service records and reminders |
+| **Vehicles** | Your fleet — cars, bikes, trucks, boats |
+| **Equipment** | Gear, tools, and merchandise |
+| **Contacts** | Vendors, customers, and saved locations |
+| **Tasks** | Planner tasks — daily, weekly, recurring |
+| **Workouts** | Workout logs with exercises |
+
+---
+
+### Quick Access from Dashboards
+
+You don't have to visit the Data Hub every time. Each module dashboard also has Import and Export buttons in its header:
+
+- **Finance** — Import + Export buttons in the action bar
+- **Health Metrics** — Import + Export next to the date
+- **Travel** — Import Data + Export Trips in the quick links grid
+- **Equipment** — Import + Export next to Add Item
+- **Planner** — Import + Export in the view controls bar
+- **Workouts** — Import + Export next to Quick Log / New Template
+
+---
+
+### Export Filter Parameters
+
+Each export URL supports optional query parameters for filtered downloads:
+
+```
+/api/finance/export?from=2026-01-01&to=2026-01-31
+/api/travel/trips/export?mode=bike&trip_category=fitness
+/api/equipment/export?category_id=abc123
+/api/planner/export?tag=work&completed=false
+```
+
+You can type these directly in your browser or bookmark them for regular use.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to Dashboard > Life > Data Hub]
+
+> [SCREENSHOT: Data Hub page showing 10 module cards with Import, Export, Template buttons]
+
+> [SCREEN: Click Export All on Finance card — show CSV download]
+
+> [SCREEN: Click Template on Trips card — show template download]
+
+> [SCREEN: Navigate to Workouts dashboard — show Import + Export buttons in the header]
+
+---
+
+## Key Takeaways
+
+- The Data Hub is a single page for all your data import/export needs
+- Each module card has Import, Export, and Template buttons
+- Dashboard pages also have their own Import/Export buttons for quick access
+- Export URLs support date ranges and module-specific filters
+",markdown,,,,,,
+Lessons,1,2,Importing Data from CSV & Google Sheets,text,240,true,,"# Lesson 2: Importing Data from CSV & Google Sheets
+
+**Course:** Data Hub Guide
+**Module:** Getting Started
+**Duration:** ~5 min
+**Lesson type:** text
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Whether you're migrating from another app or bulk-loading historical data, the Data Hub importer handles it. This lesson walks through the full import workflow — from downloading a template to seeing your data land in the dashboard.
+
+---
+
+### Step 1: Download the Template
+
+1. Go to the **Data Hub** (`/dashboard/data`)
+2. Find the module you want to import into
+3. Click the **Template** button to download the CSV template
+4. Open it in Google Sheets, Excel, or any spreadsheet app
+
+Each template includes:
+- A header row with the exact column names the importer expects
+- 2–3 example rows with realistic data
+- Required columns are noted in the import page instructions
+
+---
+
+### Step 2: Fill In Your Data
+
+Follow these guidelines:
+
+- **Dates** must be `YYYY-MM-DD` format (e.g., `2026-02-15`)
+- **Numbers** should be plain (no `$` signs or commas in amounts)
+- **Leave optional columns empty** if they don't apply — the importer skips blanks
+- **Vehicle/category nicknames** must match existing records (or they'll be skipped/auto-created depending on the module)
+- **Keep under the row limit**: 1,000 rows for most modules, 200 for vehicles, 500 for contacts
+
+---
+
+### Step 3: Upload and Preview
+
+1. Click **Import** on the module card in the Data Hub
+2. Choose your CSV file — or switch to the **Google Sheets** tab and paste a published sheet URL
+3. The importer validates your columns and shows a **preview table** of the first 50 rows
+4. Review the preview for any obvious issues
+
+---
+
+### Step 4: Import
+
+1. Click the **Import** button (shows row count, e.g., ""Import 47 Rows"")
+2. Wait for the progress indicator
+3. Review the result banner:
+   - **Green** — success! Shows imported count and any skipped rows
+   - **Red** — error details with row numbers so you can fix and retry
+
+---
+
+### Module-Specific Tips
+
+| Module | Tips |
+|--------|------|
+| **Trips** | Vehicle nicknames must match existing vehicles. CO2 is auto-calculated. Linked finance transactions are NOT auto-created during bulk import. |
+| **Fuel** | If you provide `total_cost` and `gallons`, `cost_per_gallon` is calculated for you. |
+| **Maintenance** | `service_type` must be a valid type: oil_change, tire_rotation, brake_service, etc. |
+| **Vehicles** | Max 200. Duplicate nicknames are skipped. |
+| **Equipment** | Category names are auto-created if they don't exist. `current_value` defaults to `purchase_price`. |
+| **Contacts** | Upserts by name + type — existing contacts are updated, not duplicated. Location fields create sub-locations. |
+| **Tasks** | An ""Imported Tasks"" milestone is auto-created if needed. Default tag: personal, priority: 2. |
+| **Workouts** | Rows with the same name + date are grouped into one workout. Each row becomes one exercise. |
+
+---
+
+### Google Sheets Workflow
+
+For ongoing imports:
+
+1. Create a Google Sheet with the template columns
+2. Fill in your data
+3. Go to **File > Share > Publish to web** > choose CSV format > Publish
+4. Copy the published URL
+5. On the import page, switch to the **Google Sheets** tab
+6. Paste the URL and click Import
+
+This lets you maintain a living spreadsheet and re-import anytime.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Download a template from the Data Hub]
+
+> [SCREEN: Open template in Google Sheets — fill in 5 rows of trip data]
+
+> [SCREEN: On the Trips import page — upload the CSV file]
+
+> [SCREEN: Show preview table with 5 rows]
+
+> [SCREEN: Click Import — show green success banner: ""Imported 5 trips""]
+
+> [SCREEN: Navigate to Travel dashboard — show the 5 trips appear]
+
+> [SCREEN: Demonstrate Google Sheets flow — publish, paste URL, import]
+
+---
+
+## Key Takeaways
+
+- Download the CSV template first — it shows the exact format expected
+- Dates must be YYYY-MM-DD, numbers plain (no $ or commas)
+- Preview your data before importing to catch issues
+- Each module has specific behaviors (auto-calc CO2, category creation, upserts)
+- Google Sheets publishing lets you maintain a living spreadsheet for re-imports
+",markdown,,,,,,
+Lessons,1,3,"Exporting Data — Full, Date Range & Filtered",text,180,true,,"# Lesson 3: Exporting Data — Full, Date Range & Filtered
+
+**Course:** Data Hub Guide
+**Module:** Getting Started
+**Duration:** ~4 min
+**Lesson type:** text
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Your data belongs to you. CentenarianOS makes it easy to export everything — or just a filtered slice — as a downloadable CSV file. Use exports for backups, analysis in spreadsheets, or migrating to another tool.
+
+---
+
+### Full Export
+
+The simplest export: click **Export All** on any module card in the Data Hub. This downloads every record you have for that module as a CSV file.
+
+The file is named with the module and today's date, for example:
+- `trips-export-2026-02-28.csv`
+- `finance-export-2026-02-28.csv`
+
+---
+
+### Date Range Export
+
+Most modules support `from` and `to` query parameters to export a specific date range:
+
+```
+/api/finance/export?from=2026-01-01&to=2026-01-31
+/api/health-metrics/export?from=2026-02-01&to=2026-02-28
+/api/travel/trips/export?from=2025-06-01&to=2025-12-31
+/api/planner/export?from=2026-01-01&to=2026-03-31
+/api/workouts/logs/export?from=2026-01-01&to=2026-02-28
+```
+
+Type these URLs directly in your browser's address bar, or bookmark them.
+
+---
+
+### Filtered Export
+
+Some modules support additional filters beyond date ranges:
+
+| Module | Filter Parameters | Example |
+|--------|-------------------|---------|
+| **Trips** | `mode`, `trip_category` | `?mode=bike&trip_category=fitness` |
+| **Fuel Logs** | `vehicle_id` | `?vehicle_id=abc-123` |
+| **Maintenance** | `vehicle_id` | `?vehicle_id=abc-123` |
+| **Vehicles** | `include_retired` | `?include_retired=true` |
+| **Equipment** | `category_id` | `?category_id=xyz-456` |
+| **Contacts** | `type` | `?type=vendor` |
+| **Tasks** | `tag`, `completed` | `?tag=work&completed=false` |
+
+You can combine date range and filter parameters:
+
+```
+/api/travel/trips/export?from=2026-01-01&to=2026-06-30&mode=car&trip_category=business
+```
+
+---
+
+### What's in the Export?
+
+Each CSV includes all fields for that module. Here's what to expect:
+
+| Module | Key Columns |
+|--------|-------------|
+| **Finance** | date, amount, type, description, vendor, category, account |
+| **Health Metrics** | logged_date, resting_hr, steps, sleep_hours, activity_min, hrv_ms, spo2_pct, weight_lbs |
+| **Trips** | date, mode, origin, destination, distance_miles, cost, vehicle, co2_kg |
+| **Fuel** | date, vehicle, odometer_miles, gallons, total_cost, mpg_calculated |
+| **Maintenance** | date, vehicle, service_type, cost, vendor, next_service_date |
+| **Vehicles** | type, nickname, make, model, year, ownership_type |
+| **Equipment** | name, category, brand, purchase_price, current_value, condition |
+| **Contacts** | name, contact_type, location_label, address, lat, lng |
+| **Tasks** | date, activity, description, tag, priority, completed, estimated_cost |
+| **Workouts** | date, name, exercise_name, sets_completed, reps_completed, weight_lbs |
+
+---
+
+### Tips for Working with Exports
+
+1. **Open in Google Sheets** — drag the downloaded CSV into Google Drive, then open with Sheets
+2. **Pivot tables** — use the exported data to create custom reports and charts
+3. **Regular backups** — bookmark your export URLs and download monthly
+4. **Re-import after edits** — export, edit in a spreadsheet, then re-import via the Data Hub
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Click Export All on the Finance card — show CSV download]
+
+> [SCREEN: Open the exported CSV in Google Sheets — show the data]
+
+> [SCREEN: Type a date-range URL in the browser: /api/travel/trips/export?from=2026-01-01&to=2026-01-31]
+
+> [SCREEN: Show the filtered export downloading]
+
+> [SCREEN: Type a combined filter URL: /api/planner/export?tag=work&completed=false]
+
+> [SCREEN: Open the result in a spreadsheet — show filtered task data]
+
+---
+
+## Key Takeaways
+
+- Export All downloads every record for a module as CSV
+- Add `?from=` and `?to=` for date-range filtering
+- Module-specific filters let you export exactly the data you need
+- Combine date ranges with filters for precision exports
+- Use exported CSVs for backups, analysis, or re-import after edits
+",markdown,,,,,,

@@ -7,10 +7,10 @@ const FEATURES = [
   'Job assignment and tracking',
   'Individual and group messaging',
   'Read receipts on messages',
-  'Message group CRUD',
+  'Create and manage message groups',
   'Availability calendar',
   'Fill rate and response reports',
-  'Union leader tools (seniority, dispatch, rate enforcement)',
+  'Union contract search and dues tracking',
   'Invite contractors to the platform',
   'Cross-reference job schedules',
   'Mobile-first dark theme',
@@ -103,7 +103,8 @@ export default function ListerPricingPage() {
             { q: 'How long does the intro pricing last?', a: 'The promotional pricing will be available until we announce otherwise. Lock in now to keep your rate.' },
             { q: 'Do contractors need a subscription too?', a: 'Contractors you assign to jobs need their own Contractor Hub subscription ($10/mo) to accept assignments and log time.' },
             { q: 'Can I be both a lister and a contractor?', a: 'Yes. Subscribe to both products independently. Your dashboard adapts based on your role.' },
-            { q: 'What union leader features are included?', a: 'Seniority tracking, minimum rate enforcement, dispatch queues, and union member directories. All included at the same price.' },
+            { q: 'What union features are included?', a: 'Union contract search (AI-powered), membership management, and dues tracking. All included at the same price.' },
+            { q: 'How do I get help if I have a problem?', a: 'Customer support is managed by a real human — not AI. Reach out through the in-app feedback form or email and a team member will respond personally.' },
           ].map((faq) => (
             <details key={faq.q} className="rounded-xl border border-neutral-800 bg-neutral-900 p-4 group">
               <summary className="cursor-pointer font-medium text-neutral-200 text-sm">{faq.q}</summary>

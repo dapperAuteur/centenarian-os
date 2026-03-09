@@ -1,0 +1,830 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+Lessons,1,1,What is Umami & Why We Use It,text,180,true,,"# Lesson 01: What is Umami & Why We Use It
+
+**Course:** Umami Analytics for CentenarianOS
+**Module:** Introduction
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+CentenarianOS is a health and longevity platform. Our users trust us with sensitive data — sleep patterns, health metrics, nutrition, finances. Adding Google Analytics would mean sharing their browsing behavior with Google, requiring cookie consent banners, and adding 45KB of JavaScript that gets blocked by 30–40% of privacy-conscious users.
+
+Umami is the opposite approach. It's a privacy-first, open-source analytics platform that gives us the data we need to improve the product without compromising user trust.
+
+---
+
+### How Umami Works
+
+Umami tracks page views and custom events using a lightweight script (~2KB). Here's what makes it different:
+
+**No cookies.** Umami doesn't set any cookies or use local storage. It generates a hash from the visitor's IP address and user agent, salted with a daily rotating key. This means it can count unique visitors per day without ever storing personal identifiers.
+
+**No fingerprinting.** Unlike GA4's client ID system, Umami doesn't build persistent user profiles. Each day starts fresh — there's no cross-session tracking.
+
+**No consent banner required.** Because Umami doesn't store personal data on the user's device, it's GDPR and CCPA compliant without a consent mechanism. This is a significant UX win — no interstitial popup before users can interact with the app.
+
+**Lightweight.** The tracking script is ~2KB gzipped. Compare that to GA4's ~45KB. Page load impact is negligible.
+
+---
+
+### Umami vs Google Analytics (GA4)
+
+| Feature | Umami | GA4 |
+|---------|-------|-----|
+| Script size | ~2 KB | ~45 KB |
+| Cookies | None | Multiple |
+| Consent banner needed | No | Yes (GDPR/CCPA) |
+| Ad blocker resistance | High (self-hosted) | Low (~30-40% blocked) |
+| User profiles | None (daily hash) | Persistent client ID |
+| Custom events | Unlimited, any JSON | 30 properties max, strings only |
+| Funnels | Manual (API query) | Built-in |
+| Cost | Free (self-host) or $9/mo | Free (with data sampling) |
+| Data ownership | 100% yours | Google's servers |
+
+---
+
+### Umami vs Vercel Analytics
+
+We run both. They serve different purposes:
+
+**Vercel Analytics** — Performance monitoring. Core Web Vitals (LCP, FID, CLS), real user metrics, page load speed. This tells us how fast the app is.
+
+**Umami** — Behavioral analytics. Which pages are visited, which features are used, where users come from, what devices they use. This tells us what users do.
+
+Together, they provide a complete picture: what users do (Umami) and how well the app performs while they do it (Vercel).
+
+---
+
+### Why It Fits a Health App
+
+Trust is foundational for a health-focused product. Users logging their sleep data, health metrics, and financial transactions expect that data to be private. Extending that same privacy commitment to analytics is both an ethical choice and a competitive advantage.
+
+When users see no cookie banner, no tracking consent popup — that's a signal. It says: we respect your data everywhere, not just in the features we advertise.
+
+---
+
+## Key Takeaways
+
+- Umami is a privacy-first, open-source analytics platform — no cookies, no fingerprinting, no consent banner
+- ~2KB script vs GA4's ~45KB — negligible performance impact
+- CentenarianOS runs Umami (behavioral analytics) + Vercel Analytics (performance monitoring)
+- Self-hosting keeps all analytics data under your control
+- Privacy-first analytics is both an ethical choice and a trust signal for health app users
+",markdown,,,,,,
+Lessons,1,2,Accessing the Umami Dashboard,text,180,true,,"# Lesson 02: Accessing the Umami Dashboard
+
+**Course:** Umami Analytics for CentenarianOS
+**Module:** Getting Started
+**Duration:** ~3 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The Umami dashboard is where all your analytics data lives. Whether you're using Umami Cloud or a self-hosted instance, the interface is the same. Let's walk through accessing it and understanding the main layout.
+
+---
+
+### Logging In
+
+**Umami Cloud:** Navigate to `https://cloud.umami.is` and sign in with your account credentials.
+
+**Self-hosted:** Navigate to your Umami instance URL (e.g., `https://umami.your-domain.com`). Default credentials on first setup are `admin` / `umami` — change these immediately.
+
+---
+
+### Dashboard Layout
+
+The main dashboard shows all your tracked websites. Click on CentenarianOS to open its analytics view. You'll see:
+
+**Top bar** — Date range selector, compare toggle, filter controls. Default view is ""Last 24 hours"" — switch to ""Last 7 days"" or ""Last 30 days"" for more meaningful patterns.
+
+**Overview cards** — Four summary metrics at the top:
+- **Pageviews** — Total page loads in the selected period
+- **Unique visitors** — Distinct visitors (daily hash-based)
+- **Bounces** — Single-page visits (visitor left without navigating)
+- **Average visit duration** — Time spent on site per session
+
+**Pageviews chart** — Line/bar chart showing pageviews over time. Useful for spotting trends, traffic spikes, or drops after deploys.
+
+**Below the chart** — Tabbed sections for detailed breakdowns:
+- **Pages** — Which pages were visited and how many times
+- **Referrers** — Where traffic came from (direct, search, social, etc.)
+- **Browsers** — Chrome, Safari, Firefox breakdown
+- **OS** — macOS, iOS, Android, Windows
+- **Devices** — Desktop vs mobile vs tablet
+- **Countries** — Geographic distribution
+- **Languages** — Browser language settings
+- **Events** — Custom events tracked via `trackEvent()`
+
+---
+
+### Real-Time View
+
+Click the ""Realtime"" tab to see live visitor activity. This shows:
+- Current active visitors
+- Pages being viewed right now
+- Events firing in real time
+
+Useful for verifying that tracking is working after a deploy, or monitoring a launch in real time.
+
+---
+
+### Filtering
+
+Click any value in the breakdown tables to filter the entire dashboard by that dimension. For example:
+- Click ""/dashboard/travel"" in Pages → see only traffic to the travel module
+- Click ""Mobile"" in Devices → see only mobile user behavior
+- Click ""United States"" in Countries → see only US traffic
+
+Filters stack — you can combine them for precise analysis.
+
+---
+
+## Key Takeaways
+
+- Access Umami Cloud at `cloud.umami.is` or your self-hosted URL
+- Dashboard shows: pageviews, unique visitors, bounces, visit duration at the top
+- Breakdown tabs cover: pages, referrers, browsers, OS, devices, countries, events
+- Real-time view for live monitoring
+- Click any breakdown value to filter the entire dashboard by that dimension
+",markdown,,,,,,
+Lessons,1,3,Reading Page-Level Analytics,text,240,true,,"# Lesson 03: Reading Page-Level Analytics
+
+**Course:** Umami Analytics for CentenarianOS
+**Module:** Core Analytics
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Page-level analytics answer the most fundamental product question: what are users actually doing? Which modules get the most traffic? Which pages do users visit once and never return to? Where do they spend the most time?
+
+---
+
+### Pages Tab
+
+The Pages breakdown shows every URL path visited, sorted by view count. For CentenarianOS, the most important pages to monitor are:
+
+| Path pattern | What it tells you |
+|---|---|
+| `/dashboard/travel/*` | Travel module engagement |
+| `/dashboard/fuel/*` | Nutrition/fuel module usage |
+| `/dashboard/finance/*` | Finance module adoption |
+| `/dashboard/planner/*` | Planner usage patterns |
+| `/dashboard/workouts/*` | Workout logging frequency |
+| `/dashboard/metrics/*` | Health metrics check-ins |
+| `/pricing` | Purchase intent — high traffic here means people are considering subscribing |
+| `/dashboard/coach` | AI coaching usage |
+| `/academy/*` | Course engagement |
+
+**What to look for:**
+- **High-traffic pages** — These are your core value. Protect and improve them.
+- **Low-traffic dashboard pages** — Either undiscovered or not useful. Consider improving discoverability or the feature itself.
+- **Pricing page visits** — Leading indicator for conversions. Track trends over time.
+
+---
+
+### Bounce Rate by Page
+
+A ""bounce"" is when someone visits a page and leaves without navigating further. High bounce rate on dashboard pages is concerning — it might mean:
+- The page loads too slowly (check Vercel Analytics for Core Web Vitals)
+- The content isn't what users expected
+- There's a UX issue (broken layout, confusing navigation)
+
+High bounce rate on **content pages** (blog, recipes) is normal — users often find what they need and leave.
+
+---
+
+### Referrers
+
+The Referrers tab shows where traffic comes from:
+
+- **Direct / None** — Users typing the URL or using bookmarks (most common for a logged-in app)
+- **Google** — Organic search traffic (typically to public pages: blog, recipes, landing page)
+- **Social** — Links shared on Twitter, Reddit, LinkedIn, etc.
+- **Other sites** — Backlinks from blogs, directories, partner sites
+
+For a SaaS like CentenarianOS, expect 80%+ direct traffic since most usage is authenticated dashboard activity. The referrers that matter most are for **acquisition** — how new users find you.
+
+---
+
+### Device & Browser Breakdown
+
+Key insights from device data:
+
+- **Mobile vs Desktop ratio** — If mobile traffic is >40%, every feature must work well on mobile. CentenarianOS uses sticky buttons and safe-area-inset handling for this reason.
+- **Browser distribution** — If Safari is significant (common for health-conscious Apple users), test every feature in Safari. WebKit has quirks.
+- **OS breakdown** — High iOS percentage reinforces the need for PWA quality on iOS.
+
+---
+
+### Using Filters for Deep Dives
+
+Combine filters to answer specific questions:
+
+**""How do mobile users use the travel module?""**
+→ Filter: Device = Mobile, then look at Pages tab for `/dashboard/travel/*` paths
+
+**""Which country has the most active users?""**
+→ Filter: Sort Countries by pageviews, then click the top country to see their page patterns
+
+**""Are new users finding the planner?""**
+→ Filter: Referrer = Google (likely new users), check if `/dashboard/planner` appears in their page visits
+
+---
+
+## Key Takeaways
+
+- Pages tab reveals which features get used most — monitor dashboard paths for module adoption
+- High bounce rate on dashboard pages signals UX or performance issues
+- Referrers show acquisition channels — direct traffic dominates for authenticated apps
+- Device/browser data informs mobile-first decisions and browser testing priorities
+- Combine filters for targeted analysis: device + page path, country + referrer, etc.
+",markdown,,,,,,
+Lessons,1,4,Custom Event Tracking,text,240,true,,"# Lesson 04: Custom Event Tracking
+
+**Course:** Umami Analytics for CentenarianOS
+**Module:** Core Analytics
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Page views tell you where users go. Custom events tell you what they do. CentenarianOS uses Umami's custom event tracking to measure feature engagement — meals logged, trips created, workouts completed, subscriptions started.
+
+---
+
+### How Event Tracking Works
+
+CentenarianOS includes a tracking helper at `lib/analytics/umami.ts`:
+
+```typescript
+import { trackEvent } from '@/lib/analytics/umami';
+
+// Track a simple event
+trackEvent('meal_logged');
+
+// Track an event with properties
+trackEvent('trip_created', {
+  mode: 'car',
+  is_round_trip: true,
+  has_cost: true,
+});
+```
+
+The `trackEvent` function:
+- Calls `window.umami.track()` under the hood
+- No-ops gracefully when Umami isn't loaded (dev mode, ad-blocked, SSR)
+- Accepts any key-value data: strings, numbers, booleans
+
+---
+
+### What Events to Track
+
+The most valuable events for CentenarianOS fall into four categories:
+
+**1. Feature Usage Events**
+These tell you which features are actively used vs. dormant.
+
+| Event name | When it fires | Properties |
+|---|---|---|
+| `meal_logged` | User submits a meal log | `meal_type`, `is_restaurant` |
+| `trip_created` | User logs a trip | `mode`, `is_round_trip` |
+| `route_created` | User creates a multi-stop route | `leg_count` |
+| `workout_logged` | User completes a workout | `exercise_count` |
+| `ingredient_created` | User adds a new ingredient | `ncv_score` |
+| `transaction_logged` | User logs a financial transaction | `type` (income/expense) |
+
+**2. Conversion Events**
+These track the monetization funnel.
+
+| Event name | When it fires | Properties |
+|---|---|---|
+| `pricing_viewed` | User visits /pricing | `from` (signup, dashboard, etc.) |
+| `checkout_started` | User clicks Subscribe | `plan` (monthly/lifetime) |
+| `subscription_activated` | Webhook confirms payment | `plan`, `amount` |
+
+**3. Engagement Events**
+These measure depth of usage.
+
+| Event name | When it fires | Properties |
+|---|---|---|
+| `coach_session_started` | User starts a coaching session | `gem_name` |
+| `course_lesson_completed` | User finishes a lesson | `course_name` |
+| `export_downloaded` | User exports data | `module` |
+| `import_completed` | User imports data | `module`, `row_count` |
+
+**4. Infrastructure Events**
+These track technical quality signals.
+
+| Event name | When it fires | Properties |
+|---|---|---|
+| `offline_fallback` | Offline fetch serves cached data | `url` |
+| `pwa_installed` | User installs the PWA | — |
+| `wearable_synced` | Wearable data syncs successfully | `provider` (oura/whoop/garmin) |
+
+---
+
+### Adding a New Event
+
+To track a new user action:
+
+1. Import the helper:
+```typescript
+import { trackEvent } from '@/lib/analytics/umami';
+```
+
+2. Call it at the right moment (after successful action, not on button click):
+```typescript
+const handleSave = async () => {
+  const res = await fetch('/api/some-endpoint', { method: 'POST', ... });
+  if (res.ok) {
+    trackEvent('feature_used', { detail: 'value' });
+  }
+};
+```
+
+3. The event appears in the Umami dashboard under the Events tab within seconds.
+
+---
+
+### Viewing Events in Umami
+
+In the Umami dashboard:
+1. Click the **Events** tab in the breakdown section
+2. You'll see a list of all tracked event names with counts
+3. Click any event name to see its property breakdown
+4. Use date range filters to see trends over time
+
+---
+
+### Events vs Internal Usage Tracking
+
+CentenarianOS also has `trackUsage()` in `lib/trackUsage.ts` — a server-side event logger that writes to the `usage_events` table in Supabase. How do these relate?
+
+| | `trackUsage()` | `trackEvent()` |
+|---|---|---|
+| Runs on | Server (API routes) | Client (browser) |
+| Storage | Supabase `usage_events` table | Umami database |
+| User identity | Has user_id, user_type | Anonymous (no user identity) |
+| Purpose | Internal analytics, admin dashboard | Product analytics, feature adoption |
+| Query via | SQL / Supabase queries | Umami dashboard / API |
+
+They complement each other. `trackUsage()` is for internal admin analysis with user identity. `trackEvent()` is for aggregate product analytics without personal data.
+
+---
+
+## Key Takeaways
+
+- `trackEvent()` from `lib/analytics/umami.ts` is the client-side tracking helper
+- Track events after successful actions, not on button clicks (avoid false positives)
+- Four event categories: feature usage, conversion, engagement, infrastructure
+- Events appear in Umami's Events tab with property breakdowns
+- `trackEvent()` (anonymous, client) complements `trackUsage()` (identified, server) — use both
+",markdown,,,,,,
+Lessons,1,5,Building Custom Reports,text,180,true,,"# Lesson 05: Building Custom Reports
+
+**Course:** Umami Analytics for CentenarianOS
+**Module:** Advanced Features
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The default Umami dashboard gives you a solid overview. But real product insight comes from custom reports — combining dimensions, filtering by time periods, and comparing segments to answer specific questions about how CentenarianOS is being used.
+
+---
+
+### Umami's Report Builder
+
+Navigate to **Reports** in the left sidebar. Click **Create Report**. You'll see several report types:
+
+**Insights** — The most versatile. Combine any dimensions (page, referrer, browser, country, event) with any metrics (views, visitors, bounces, duration) over any date range.
+
+**Funnel** — Define a sequence of pages or events and measure how many users complete each step. Essential for conversion analysis.
+
+**Retention** — Shows how many users return after their first visit, broken down by day/week/month.
+
+**UTM** — Tracks campaign parameters (utm_source, utm_medium, utm_campaign) for marketing attribution.
+
+---
+
+### Insights Report Examples
+
+**""Which dashboard modules have the highest engagement?""**
+
+1. Create new Insights report
+2. Field: URL path
+3. Filter: URL contains `/dashboard/`
+4. Metric: Pageviews
+5. Date range: Last 30 days
+6. Sort: Descending by pageviews
+
+This instantly shows which modules users visit most. If travel has 3x the pageviews of equipment, that's a clear signal about feature priority.
+
+---
+
+**""Mobile vs Desktop feature usage""**
+
+1. Create new Insights report
+2. Field 1: Device type
+3. Field 2: URL path
+4. Filter: URL contains `/dashboard/`
+5. Date range: Last 30 days
+
+This shows a cross-tab of device type by page. If mobile users overwhelmingly use planner and travel but rarely use finance, it tells you which mobile experiences to prioritize.
+
+---
+
+**""Event frequency by type""**
+
+1. Create new Insights report
+2. Field: Event name
+3. Metric: Count
+4. Date range: Last 7 days
+5. Sort: Descending
+
+Shows your most-fired custom events. If `meal_logged` fires 50x/day but `workout_logged` fires 5x, the nutrition module is seeing more engagement.
+
+---
+
+### Funnel Reports
+
+Funnels measure drop-off between sequential steps. Useful funnels for CentenarianOS:
+
+**Signup to Subscription:**
+1. `/pricing` (viewed pricing)
+2. `checkout_started` event
+3. `subscription_activated` event
+
+**Onboarding Completion:**
+1. `/dashboard` (first dashboard visit)
+2. `/dashboard/travel` or `/dashboard/fuel` (explored a module)
+3. Any creation event (`trip_created`, `meal_logged`, etc.)
+
+**Tutorial Engagement:**
+1. `/academy` (viewed course catalog)
+2. Course lesson page view
+3. `course_lesson_completed` event
+
+---
+
+### Retention Reports
+
+Retention shows whether users stick around. Configure:
+- **Cohort basis:** First visit date
+- **Return window:** Daily or Weekly
+- **Date range:** Last 30-90 days
+
+A healthy SaaS app shows 30-40%+ weekly retention. If CentenarianOS retention is below 20% at Week 2, it signals an onboarding or value-delivery problem.
+
+---
+
+### Saving and Sharing Reports
+
+- Save any report for quick access later
+- Reports auto-update with fresh data each time you open them
+- Share report URLs with team members who have Umami access
+
+---
+
+## Key Takeaways
+
+- Insights reports combine any dimension + metric for flexible analysis
+- Funnel reports measure conversion drop-off (pricing → checkout → subscription)
+- Retention reports show whether users come back after their first visit
+- Cross-dimension analysis (device x page path) reveals platform-specific behavior patterns
+- Save reports for recurring analysis — they auto-refresh with new data
+",markdown,,,,,,
+Lessons,1,6,Goal Tracking & Conversion Insights,text,240,true,,"# Lesson 06: Goal Tracking & Conversion Insights
+
+**Course:** Umami Analytics for CentenarianOS
+**Module:** Advanced Features
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Analytics without goals is just data. Goals turn raw pageview and event counts into actionable conversion metrics. This lesson covers how to define goals in Umami, measure feature adoption rates, and track the signup-to-subscribe flow.
+
+---
+
+### Defining Goals
+
+Umami doesn't have a dedicated ""Goals"" UI like GA4. Instead, you measure goals using two approaches:
+
+**1. Funnel Reports (for sequential goals)**
+
+Best for: conversion flows where users must complete steps in order.
+
+Example — Subscription conversion:
+```
+Step 1: /pricing (pageview)
+Step 2: checkout_started (event)
+Step 3: subscription_activated (event)
+```
+
+The funnel report shows how many users reach each step and where they drop off. If 100 users visit pricing but only 5 start checkout, the pricing page needs work.
+
+**2. Insights Reports (for standalone goals)**
+
+Best for: measuring whether a specific action happens, regardless of the path to get there.
+
+Example — Feature adoption: ""What percentage of visitors log at least one meal?""
+```
+Total unique visitors (last 30 days): from overview
+Users who fired meal_logged event (last 30 days): from Events insight
+Adoption rate = events / visitors
+```
+
+---
+
+### Key Goals for CentenarianOS
+
+Define and track these goals to measure product health:
+
+**Acquisition Goals**
+| Goal | How to measure |
+|---|---|
+| Pricing page conversion rate | Funnel: homepage → /pricing → checkout_started |
+| Signup completion rate | Funnel: /pricing → signup (if applicable) |
+
+**Activation Goals**
+| Goal | How to measure |
+|---|---|
+| First feature used | Event: any creation event within 24h of first visit |
+| Module exploration | Insight: unique visitors who view 3+ different /dashboard/* paths |
+
+**Engagement Goals**
+| Goal | How to measure |
+|---|---|
+| Daily active feature users | Event count: sum of all creation events per day |
+| Multi-module users | Cross-dimension: users with events across 2+ modules |
+| Coach session frequency | Event count: coach_session_started per week |
+
+**Retention Goals**
+| Goal | How to measure |
+|---|---|
+| Week 1 return rate | Retention report: % returning within 7 days |
+| Week 4 return rate | Retention report: % returning within 28 days |
+
+---
+
+### Interpreting Conversion Data
+
+When analyzing funnels, focus on the **biggest drop-off point**. That's where you'll get the most improvement for the least effort.
+
+Common patterns:
+
+- **Big drop at pricing page** → Pricing isn't compelling, or the value proposition isn't clear enough before users reach it
+- **Big drop at checkout** → Price friction, missing payment method, or trust issue
+- **Big drop after first dashboard visit** → Onboarding isn't guiding users to value quickly enough
+- **Steady decline across all steps** → Normal friction, optimize incrementally
+
+---
+
+### Comparing Periods
+
+Use Umami's date comparison to spot trends:
+
+1. Select ""Last 7 days""
+2. Toggle ""Compare"" and select ""Previous period""
+3. See whether your goal metrics are improving or declining
+
+A 10% week-over-week improvement in activation events means your product changes are working. A 10% decline means something broke or engagement dropped.
+
+---
+
+### Using the API for Custom Goal Tracking
+
+For goals that Umami's UI doesn't support natively, use the REST API:
+
+```bash
+# Get event counts for a specific date range
+GET /api/websites/{websiteId}/events?startAt=...&endAt=...
+```
+
+You could build a custom admin panel widget that pulls Umami data via API and displays goal progress alongside your internal `usage_events` data. This gives you a unified view of anonymous product analytics and identified user analytics.
+
+---
+
+## Key Takeaways
+
+- Use Funnel reports for sequential conversion goals (pricing → checkout → subscription)
+- Use Insights reports for standalone adoption metrics (% of visitors who log a meal)
+- Track four goal categories: acquisition, activation, engagement, retention
+- Focus optimization on the biggest funnel drop-off point — highest ROI
+- Compare periods to spot trends: week-over-week improvement or decline
+- Umami's API enables custom goal dashboards integrated with your admin panel
+",markdown,,,,,,
+Lessons,1,7,Self-Hosting vs Cloud & Configuration,text,300,true,,"# Lesson 07: Self-Hosting vs Cloud & Configuration
+
+**Course:** Umami Analytics for CentenarianOS
+**Module:** Advanced Features
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Umami offers two deployment options: cloud-hosted and self-hosted. CentenarianOS is configured to work with either. This lesson covers the trade-offs, how to set up each option, and how to configure the integration for maximum effectiveness.
+
+---
+
+### Cloud vs Self-Hosted
+
+| | Umami Cloud | Self-Hosted |
+|---|---|---|
+| **Cost** | $9/mo (100k events) | Free (your server costs) |
+| **Setup time** | 5 minutes | 30-60 minutes |
+| **Maintenance** | Zero | You handle updates |
+| **Data location** | US (Vercel) | Your server, your choice |
+| **Ad blocker bypass** | Harder (known domain) | Easy (custom subdomain) |
+| **Database** | Managed | Your PostgreSQL or MySQL |
+| **API access** | Full | Full |
+
+**Choose Cloud if:** You want zero maintenance and don't mind US-hosted data.
+
+**Choose Self-Hosted if:** You want full data ownership, ad-blocker resistance via custom domain, or you already run PostgreSQL infrastructure.
+
+---
+
+### CentenarianOS Configuration
+
+The integration uses three environment variables:
+
+```env
+# Required: Your Umami website ID
+# Found in Umami: Settings → Websites → click your site → ID in URL
+NEXT_PUBLIC_UMAMI_WEBSITE_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+
+# Self-hosted: direct script URL (used as fallback if proxy not configured)
+NEXT_PUBLIC_UMAMI_SCRIPT_URL=https://your-umami-host.up.railway.app/script.js
+
+# Self-hosted: enables the ad-blocker proxy (server-side only, not exposed to browser)
+UMAMI_HOST_URL=https://your-umami-host.up.railway.app
+```
+
+When `NEXT_PUBLIC_UMAMI_WEBSITE_ID` is not set, the Umami script is not loaded at all — zero impact on the app.
+
+When `UMAMI_HOST_URL` is set, the app automatically proxies analytics requests through `/a/script.js` and `/a/api/send` — ad blockers can't distinguish these from normal app traffic.
+
+The script is loaded in `app/layout.tsx` with `strategy=""afterInteractive""` — it loads after the page is interactive, so it never blocks rendering.
+
+---
+
+### Self-Hosting with Railway (Recommended)
+
+Railway provides a 1-click Umami template that provisions PostgreSQL, Valkey (Redis-compatible), and Umami automatically.
+
+**Setup steps:**
+
+1. Create a Railway account at `https://railway.com`
+2. Search for ""Umami"" in the template marketplace, or click **New Project → Deploy a template → Umami**
+3. Railway pre-configures 8 environment variables (DATABASE_URL, APP_SECRET, etc.) — leave them all as-is
+4. Click **Save Config** → Railway builds and deploys Umami in ~2 minutes
+5. Once deployed, click the Umami service → **Settings** → copy the **Public Domain** URL
+6. Visit the URL → log in with default credentials: `admin` / `umami`
+7. **Change the password immediately** (Settings → Profile)
+8. Click **Settings → Websites → Add website** → enter your CentenarianOS domain
+9. Copy the **Website ID** (UUID format)
+
+**Cost:** Railway offers a 30-day free trial, then $5/mo Hobby plan. The Umami stack (web + PostgreSQL + Valkey) typically fits within the $5 credit.
+
+**Data retention:** Unlimited — your PostgreSQL database stores all analytics data permanently, unlike Umami Cloud's 6-month limit.
+
+---
+
+### Self-Hosting with Docker (Alternative)
+
+If you prefer to manage your own infrastructure:
+
+```yaml
+# docker-compose.yml
+services:
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    ports:
+      - ""3001:3000""
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/umami
+      APP_SECRET: your-random-secret-here
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - umami-db:/var/lib/postgresql/data
+    healthcheck:
+      test: [""CMD-SHELL"", ""pg_isready -U user -d umami""]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  umami-db:
+```
+
+Run `docker compose up -d` and access Umami at `http://localhost:3001`.
+
+For production, put it behind a reverse proxy (Nginx, Caddy) with SSL on a subdomain like `analytics.your-domain.com`.
+
+---
+
+### Ad Blocker Bypass (Built-In)
+
+CentenarianOS has a built-in ad-blocker proxy. When `UMAMI_HOST_URL` is set, the app automatically:
+
+1. Rewrites `/a/script.js` → your Umami instance's `script.js`
+2. Rewrites `/a/api/send` → your Umami instance's event endpoint
+3. Sets `data-host-url=""/a""` on the script tag so events route through the proxy too
+
+This is configured in `next.config.mjs` and `app/layout.tsx` — no manual rewrite setup needed. Analytics requests are indistinguishable from normal app traffic, making them virtually unblockable.
+
+---
+
+### Umami Cloud Setup (Quick Start)
+
+1. Create an account at `https://cloud.umami.is`
+2. Click **Add website** → enter your domain
+3. Copy the **Website ID** from the settings page
+4. Set the environment variable:
+   ```env
+   NEXT_PUBLIC_UMAMI_WEBSITE_ID=your-website-id
+   ```
+5. Deploy. Analytics start flowing immediately.
+
+---
+
+### Verifying the Integration
+
+After configuration, verify tracking is working:
+
+1. Open your site in a browser
+2. Open the Umami dashboard → **Realtime** tab
+3. You should see your visit appear within seconds
+4. Navigate to a few pages — verify they appear in the realtime view
+5. If using `trackEvent()`, trigger an action and verify the event appears
+
+If nothing appears:
+- Check the browser console for script loading errors
+- Verify the environment variable is set and the deployment includes it
+- Check if an ad blocker is blocking the script (try incognito mode)
+
+---
+
+### Data Retention
+
+Umami doesn't auto-delete data. Over time, the database will grow. For self-hosted instances:
+
+- Monitor database size quarterly
+- Consider archiving data older than 12-24 months
+- Umami's API supports date-range queries, so old data is still accessible but can be moved to cold storage
+
+For Umami Cloud, data retention is managed by the plan.
+
+---
+
+## Key Takeaways
+
+- Three env vars control the integration: `NEXT_PUBLIC_UMAMI_WEBSITE_ID` (required), `NEXT_PUBLIC_UMAMI_SCRIPT_URL` (self-host), `UMAMI_HOST_URL` (enables proxy)
+- When no website ID is set, Umami is completely inactive — zero overhead
+- Railway 1-click template is the recommended self-host path (~2 minutes, $0-5/mo)
+- Ad-blocker proxy is built-in — set `UMAMI_HOST_URL` and it activates automatically
+- Self-hosted = unlimited data retention (vs Umami Cloud's 6-month limit)
+- Verify with the Realtime tab after deployment
+",markdown,,,,,,

@@ -12,6 +12,7 @@ import { NAV_GROUPS } from '@/components/nav/NavConfig';
 interface Invite {
   id: string;
   email: string;
+  product: 'centos' | 'contractor' | 'lister';
   access_type: 'trial' | 'lifetime';
   expires_at: string | null;
   is_active: boolean;
@@ -26,9 +27,18 @@ interface Invite {
   notes: string | null;
 }
 
-const ALL_PAID_ITEMS = NAV_GROUPS.flatMap((g) =>
-  g.items.filter((i) => i.paid && !i.adminOnly).map((i) => ({ label: i.label, href: i.href }))
-);
+const MODULE_GROUPS = [
+  {
+    label: 'CentOS',
+    items: NAV_GROUPS.filter((g) => ['operate', 'health', 'life'].includes(g.id))
+      .flatMap((g) => g.items.filter((i) => i.paid && !i.adminOnly).map((i) => ({ label: i.label, href: i.href }))),
+  },
+  {
+    label: 'Contractor & Lister',
+    items: NAV_GROUPS.filter((g) => g.id === 'work')
+      .flatMap((g) => g.items.filter((i) => i.paid && !i.adminOnly).map((i) => ({ label: i.label, href: i.href }))),
+  },
+];
 
 function statusChip(invite: Invite) {
   if (!invite.is_active) return { label: 'Revoked', cls: 'bg-gray-100 text-gray-500' };
@@ -44,6 +54,7 @@ function fmtDate(d: string | null) {
 
 const EMPTY_FORM = {
   email: '',
+  product: 'centos' as 'centos' | 'contractor' | 'lister',
   access_type: 'trial' as 'trial' | 'lifetime',
   expires_at: '',
   all_modules: true,
@@ -85,6 +96,7 @@ export default function AdminInvitesPage() {
     setEditId(invite.id);
     setForm({
       email: invite.email,
+      product: invite.product ?? 'centos',
       access_type: invite.access_type,
       expires_at: invite.expires_at ? invite.expires_at.slice(0, 10) : '',
       all_modules: invite.allowed_modules === null,
@@ -103,6 +115,7 @@ export default function AdminInvitesPage() {
 
     const payload = {
       email: form.email,
+      product: form.product,
       access_type: form.access_type,
       expires_at: form.access_type === 'lifetime' || !form.expires_at ? null : form.expires_at,
       allowed_modules: form.all_modules ? null : form.allowed_modules,
@@ -219,6 +232,7 @@ export default function AdminInvitesPage() {
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Email</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Product</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Access</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Expiry</th>
@@ -238,6 +252,15 @@ export default function AdminInvitesPage() {
                       <td className="px-4 py-3">
                         <div className="font-medium text-gray-900">{inv.email}</div>
                         {inv.notes && <div className="text-xs text-gray-400 mt-0.5 truncate max-w-48">{inv.notes}</div>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          inv.product === 'contractor' ? 'bg-amber-100 text-amber-700'
+                            : inv.product === 'lister' ? 'bg-indigo-100 text-indigo-700'
+                            : 'bg-fuchsia-100 text-fuchsia-700'
+                        }`}>
+                          {inv.product === 'centos' ? 'CentOS' : inv.product === 'contractor' ? 'Contractor' : 'Lister'}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${chip.cls}`}>
@@ -346,6 +369,39 @@ export default function AdminInvitesPage() {
               />
             </div>
 
+            {/* Product */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Product</label>
+              <div className="flex gap-2">
+                {([
+                  { value: 'centos', label: 'CentOS' },
+                  { value: 'contractor', label: 'Contractor' },
+                  { value: 'lister', label: 'Lister' },
+                ] as const).map((p) => (
+                  <button
+                    key={p.value}
+                    type="button"
+                    disabled={!!editId}
+                    onClick={() => setForm((f) => ({ ...f, product: p.value }))}
+                    className={`flex-1 py-2 rounded-lg border text-sm font-medium transition disabled:opacity-50 ${
+                      form.product === p.value
+                        ? p.value === 'contractor' ? 'bg-amber-600 text-white border-amber-600'
+                          : p.value === 'lister' ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-fuchsia-600 text-white border-fuchsia-600'
+                        : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                {form.product === 'contractor' ? 'Invite link redirects to contractor.centenarianos.com'
+                  : form.product === 'lister' ? 'Invite link redirects to lister.centenarianos.com'
+                  : 'Invite link redirects to centenarianos.com'}
+              </p>
+            </div>
+
             {/* Access type */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Access Type</label>
@@ -400,25 +456,50 @@ export default function AdminInvitesPage() {
                 </button>
               </div>
               {!form.all_modules && (
-                <div className="grid grid-cols-2 gap-1.5 mt-2">
-                  {ALL_PAID_ITEMS.map((item) => {
-                    const checked = form.allowed_modules.includes(item.href);
-                    return (
-                      <button
-                        key={item.href}
-                        type="button"
-                        onClick={() => toggleModule(item.href)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition text-left ${
-                          checked
-                            ? 'bg-indigo-50 text-indigo-700 border-indigo-300'
-                            : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                        }`}
-                      >
-                        {checked && <Check className="w-3 h-3 shrink-0" />}
-                        {item.label}
-                      </button>
-                    );
-                  })}
+                <div className="mt-2 space-y-4">
+                  {MODULE_GROUPS.map((group) => (
+                    <div key={group.label}>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{group.label}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const allHrefs = group.items.map((i) => i.href);
+                            const allSelected = allHrefs.every((h) => form.allowed_modules.includes(h));
+                            setForm((f) => ({
+                              ...f,
+                              allowed_modules: allSelected
+                                ? f.allowed_modules.filter((m) => !allHrefs.includes(m))
+                                : [...new Set([...f.allowed_modules, ...allHrefs])],
+                            }));
+                          }}
+                          className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                        >
+                          {group.items.every((i) => form.allowed_modules.includes(i.href)) ? 'Deselect all' : 'Select all'}
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {group.items.map((item) => {
+                          const checked = form.allowed_modules.includes(item.href);
+                          return (
+                            <button
+                              key={item.href}
+                              type="button"
+                              onClick={() => toggleModule(item.href)}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition text-left ${
+                                checked
+                                  ? 'bg-indigo-50 text-indigo-700 border-indigo-300'
+                                  : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                              }`}
+                            >
+                              {checked && <Check className="w-3 h-3 shrink-0" />}
+                              {item.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

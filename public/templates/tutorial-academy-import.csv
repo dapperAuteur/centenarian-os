@@ -1,0 +1,1490 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+Lessons,1,1,Welcome to the Academy,text,240,true,,"# Lesson 01: Welcome to the Academy
+
+**Course:** Navigating the Centenarian Academy
+**Module:** Getting Started
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The Centenarian Academy is where the knowledge layer of CentenarianOS lives. This lesson walks through the course catalog — how it's organized, how to find what you're looking for, and how to tell which courses are available to you.
+
+---
+
+### Navigating to the Academy
+
+From anywhere in your dashboard, click **Academy** in the left navigation sidebar. This brings you to `/academy` — the main course catalog.
+
+---
+
+### The Catalog Layout
+
+The catalog page has three main areas:
+
+**Search bar** — at the top of the catalog. Type any keyword (topic, teacher name, course title) and the list filters in real time.
+
+**Tab filters** — a row of tabs below the search bar:
+- **All** — every published course
+- **Enrolled** — courses you're currently enrolled in
+- **Completed** — courses you've finished
+- **Free** — courses with no enrollment fee (or with enough free preview lessons to start immediately)
+
+Switching tabs doesn't clear your search — you can combine a search term with a tab filter.
+
+**Course grid** — cards below the tabs. Each card shows:
+- Course thumbnail (or a default gradient)
+- Course title and teacher name
+- A short description
+- Duration indicator (total lessons)
+- Price or ""Free"" badge
+- An enrollment status indicator if you're already enrolled (progress percentage or ""Completed"" badge)
+
+---
+
+### Course Cards: What the Badges Mean
+
+**Free badge** — the course has no enrollment fee. All lessons are accessible without payment.
+
+**Preview badge** — the course has at least one free preview lesson. You can start those lessons without enrolling. Paid lessons are locked until you enroll.
+
+**Enrolled badge with progress %** — you're enrolled and have started the course. The percentage shows how many lessons you've marked complete.
+
+**Completed badge** — you've finished all lessons in the course.
+
+---
+
+### Browsing by Topic
+
+There is no topic taxonomy browser — use the search bar to filter by topic keyword. Searching ""sleep"" will surface any course with sleep in its title, description, or metadata.
+
+---
+
+### Teacher Profiles
+
+Each course card shows the teacher's name. Clicking the teacher name opens their teacher profile page at `/academy/teachers/[teacherId]`. The profile shows:
+- Their bio and credentials
+- All courses they've published
+- Their teaching focus areas
+
+---
+
+### Before You Enroll
+
+Every course has a detail page at `/academy/[courseId]`. Click any course card to open it. The detail page shows:
+- Full course description
+- The lesson list (with free preview lessons marked)
+- Teacher information
+- Enrollment button and price
+
+You don't need to enroll to read the detail page. The next lesson covers enrollment.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /academy — show the full catalog page]
+
+> [SCREENSHOT: Catalog page — callouts: Search bar, Tab filters (All/Enrolled/Completed/Free), Course grid with cards]
+
+> [SCREEN: Type a keyword in the search bar — show results filtering]
+
+> [SCREEN: Click ""Enrolled"" tab — show only enrolled courses with progress badges]
+
+> [SCREENSHOT: Course card close-up — callouts: Thumbnail, Title + teacher, Description, Price/Free badge, Progress badge (if enrolled)]
+
+> [SCREEN: Click a course card — navigate to course detail page]
+
+> [SCREENSHOT: Course detail page — callouts: Description, Lesson list (free preview labels), Enroll button]
+
+> [SCREEN: Click teacher name — navigate to teacher profile]
+
+> [SCREEN: End on the catalog — end lesson]
+
+---
+
+## Key Takeaways
+
+- Academy catalog lives at /academy — accessible from the dashboard sidebar
+- Search bar + tab filters (All, Enrolled, Completed, Free) let you find courses quickly
+- Course cards show title, teacher, price, and enrollment/progress status
+- Free preview lessons are accessible without enrolling — the lesson list marks which ones
+- Click any course card → course detail page; click teacher name → teacher profile
+",markdown,,,,,,
+Lessons,1,2,Enrolling in a Course,text,240,true,,"# Lesson 02: Enrolling in a Course
+
+**Course:** Navigating the Centenarian Academy
+**Module:** Getting Started
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Before you can access all lessons in a course, you need to enroll. This lesson covers how enrollment works — for free courses, for paid courses, and for courses that have free preview lessons mixed in with locked content.
+
+---
+
+### Free Courses
+
+If a course has no enrollment fee, clicking **Enroll** on the course detail page immediately adds you to the course — no checkout, no payment. The button changes to **Go to Course** and you can start any lesson right away.
+
+---
+
+### Previewing Before You Enroll
+
+Most paid courses have at least one free preview lesson — usually the welcome lesson or course overview. These are marked with a **Preview** label on the lesson list.
+
+You can click a preview lesson directly from the course detail page without enrolling. The lesson viewer opens normally. When the preview lesson ends, you'll see a prompt to enroll to continue.
+
+---
+
+### Paid Enrollment
+
+For courses with an enrollment fee:
+
+1. Open the course detail page
+2. Click **Enroll Now** — the button shows the price (e.g., ""Enroll — $49"")
+3. You're redirected to Stripe Checkout — the same secure payment page used for your CentenarianOS subscription
+4. Complete payment with your card
+5. After payment, Stripe redirects you back to the course detail page — now fully enrolled
+
+Your enrollment is permanent. Once you pay for a course, you have lifetime access to it — no expiration, no re-enrollment fee.
+
+---
+
+### What Happens After Enrollment
+
+After enrolling (free or paid):
+- The course appears on the **Enrolled** tab in the catalog
+- The course appears on your **My Courses** dashboard at `/academy/my-courses`
+- All lessons in the course are now accessible
+- Your progress is tracked from the first lesson you open
+
+---
+
+### Finding Your Enrolled Courses
+
+Two ways to get back to a course you're enrolled in:
+
+1. **Catalog → Enrolled tab** — filter the catalog to just your enrolled courses
+2. **My Courses** (`/academy/my-courses`) — a dedicated dashboard showing all your enrolled and completed courses with progress bars
+
+The My Courses lesson covers this in detail.
+
+---
+
+### Subscription vs. Per-Course Enrollment
+
+Some courses are included with your CentenarianOS subscription — these will show as free even if they have a list price. Other courses require a separate per-course enrollment fee regardless of your subscription tier.
+
+The course detail page always shows the price you'll actually pay given your current subscription.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to a free course detail page — show the Enroll button with no price]
+
+> [SCREEN: Click Enroll — show the button change to ""Go to Course"" — no checkout step]
+
+> [SCREEN: Navigate to a paid course detail page — show the lesson list with Preview labels]
+
+> [SCREENSHOT: Course detail page — callouts: ""Preview"" label on first lesson, Enroll button with price, Lesson list (locked lessons greyed out)]
+
+> [SCREEN: Click a preview lesson — show it opens normally in the lesson viewer]
+
+> [SCREEN: Navigate back to course detail — click ""Enroll Now"" — Stripe Checkout redirects]
+
+> [SCREENSHOT: Stripe Checkout page — callout: ""Same secure checkout as your subscription""]
+
+> [SCREEN: After payment — redirected back to course detail — now shows enrolled]
+
+> [SCREEN: Navigate to /academy — Enrolled tab — course now visible]
+
+> [SCREEN: End on My Courses or catalog — end lesson]
+
+---
+
+## Key Takeaways
+
+- Free courses: click Enroll → immediate access, no payment
+- Preview lessons: accessible on any course without enrolling — look for the ""Preview"" label
+- Paid enrollment: Enroll Now → Stripe Checkout → permanent lifetime access after payment
+- After enrollment: course appears in the Enrolled tab and on My Courses (/academy/my-courses)
+- Subscription may include some courses at no additional charge — detail page shows your actual price
+",markdown,,,,,,
+Lessons,1,3,Navigating Lessons (Linear Mode),text,240,true,,"# Lesson 03: Navigating Lessons (Linear Mode)
+
+**Course:** Navigating the Centenarian Academy
+**Module:** Learning Experience
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Once you're inside a course, the lesson viewer is where you spend most of your time. This lesson covers linear mode — the step-by-step navigation that takes you through lessons in a fixed sequence. CYOA mode is covered in the next lesson.
+
+---
+
+### Opening the Lesson Viewer
+
+From the course detail page, click any unlocked lesson title. The lesson viewer opens at `/academy/[courseId]/lessons/[lessonId]`.
+
+---
+
+### The Lesson Viewer Layout
+
+The viewer has three areas:
+
+**Left sidebar — Lesson List**
+- Shows every lesson in the course in order
+- Your current lesson is highlighted
+- Completed lessons show a checkmark
+- Locked lessons (unenrolled paid content) show a lock icon
+- The sidebar is collapsible — click the arrow to expand it to full content view
+
+**Center — Lesson Content**
+- The main lesson content area: text, video embeds, or both depending on lesson type
+- Text lessons render formatted markdown (headers, bold, bullet lists, code blocks)
+- Video lessons embed the video player above the text content
+- Content scrolls vertically — some lessons are long
+
+**Bottom — Navigation Bar**
+- **Previous** button (left) — goes to the prior lesson in sequence
+- **Mark Complete** button (center) — marks this lesson done and advances automatically
+- **Next** button (right) — advances without marking complete (useful for reviewing)
+- Progress indicator: ""Lesson X of Y"" showing your position in the course
+
+---
+
+### Marking Lessons Complete
+
+Click **Mark Complete** to record that you've finished the lesson. This:
+- Adds a checkmark to the lesson in the sidebar
+- Updates your course progress percentage
+- Automatically advances to the next lesson
+
+You can also click **Next** to move forward without marking complete — useful if you want to preview what's ahead without recording progress.
+
+Marking a lesson complete is what drives the progress bar on My Courses and what determines whether a course shows as finished.
+
+---
+
+### Revisiting Lessons
+
+All lessons you've already opened remain accessible — click any lesson in the sidebar to jump to it directly. There's no restriction on revisiting completed lessons.
+
+If you marked a lesson complete but want to undo it, there's no un-mark button — but returning to a lesson doesn't subtract from your progress. Progress only increases.
+
+---
+
+### Free Preview Lessons in Linear Mode
+
+If you open a course as a non-enrolled visitor using a preview lesson, the lesson viewer looks the same — but lessons not marked as free previews are locked. Clicking a locked lesson shows an enrollment prompt.
+
+After enrolling, all locks lift immediately without needing to refresh.
+
+---
+
+### Progress Persistence
+
+Progress saves automatically. Close the browser, switch devices, or log out — when you return to the course, the sidebar shows your completed lessons and the viewer resumes from where you left off (the first incomplete lesson).
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to a course detail page — click the first lesson]
+
+> [SCREENSHOT: Lesson viewer — callouts: Left sidebar (lesson list, checkmarks, current lesson highlighted), Center content area, Bottom nav bar (Previous / Mark Complete / Next, ""Lesson X of Y"")]
+
+> [SCREEN: Scroll through lesson content — show text formatting]
+
+> [SCREEN: Click ""Mark Complete"" — lesson gets checkmark in sidebar — auto-advances to next lesson]
+
+> [SCREENSHOT: Sidebar after marking complete — checkmark visible on completed lesson, next lesson highlighted]
+
+> [SCREEN: Click a lesson further down the sidebar — jump to it directly]
+
+> [SCREEN: Click the sidebar collapse arrow — content area expands to full width]
+
+> [SCREENSHOT: Collapsed sidebar view — full-width content, sidebar toggle button visible]
+
+> [SCREEN: End on lesson viewer — end lesson]
+
+---
+
+## Key Takeaways
+
+- Lesson viewer has three areas: left sidebar (lesson list + progress), center (content), bottom nav bar (Previous / Mark Complete / Next)
+- Mark Complete = records progress + auto-advances; Next = advances without recording
+- All completed lessons get a checkmark in the sidebar; progress only increases
+- Jump to any lesson by clicking it in the sidebar — no restrictions on revisiting
+- Progress saves automatically — pick up where you left off across sessions and devices
+- Free preview lessons look identical to enrolled-mode lessons; locked lessons show an enrollment prompt
+",markdown,,,,,,
+Lessons,1,4,CYOA Adventure Mode,text,300,true,,"# Lesson 04: CYOA Adventure Mode
+
+**Course:** Navigating the Centenarian Academy
+**Module:** Learning Experience
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Some courses on the Academy use CYOA — Choose Your Own Adventure — navigation. Instead of a fixed lesson sequence, these courses offer you a choice at the end of each lesson: three different paths for where to go next. This lesson explains how it works and how to use it intentionally.
+
+---
+
+### What Is CYOA Mode?
+
+CYOA mode is a navigation style where the course is a connected graph of lessons rather than a fixed sequence. At the end of each lesson, instead of one ""Next"" button, you see a **Choose Your Next Path** panel with three options.
+
+Not all courses use CYOA. The course detail page shows the navigation mode. This course — the one you're in right now — uses CYOA.
+
+---
+
+### The Crossroads Panel
+
+At the bottom of every lesson in CYOA mode, after the content, there's a crossroads panel. It shows three lesson options, each presented as a card with:
+
+- **Lesson title**
+- **Short description** — one sentence explaining what that lesson covers
+- **Path type badge** — indicates how that lesson was chosen for you (see below)
+- **Duration** — estimated reading/viewing time
+
+Click any card to go to that lesson.
+
+---
+
+### The Three Path Types
+
+The three options are generated by the **Crossroads API**, which uses a combination of three selection strategies:
+
+**Linear** (in-sequence)
+The lesson that comes next in the course's fixed sequence — the same lesson you'd see in linear mode. Useful when you want to follow the intended order.
+
+*Badge appearance:* ""Next Up"" or a sequential icon.
+
+**Semantic** (AI-recommended)
+A lesson selected by AI (using vector embeddings of lesson content) as thematically related to what you just read. This is the discovery path — it may jump to a different module or a lesson you haven't seen yet that connects to the current topic.
+
+*Badge appearance:* ""Related"" or a sparkle/AI icon.
+
+**Random** (exploration)
+A randomly selected unvisited lesson from the course. Useful for broad exploration when you don't want to follow any particular thread.
+
+*Badge appearance:* ""Explore"" or a shuffle icon.
+
+---
+
+### How to Use CYOA Intentionally
+
+**Follow Linear when:**
+- You're new to the subject and want the structured progression the teacher designed
+- You're near the end of the course and want to complete remaining lessons in order
+- A lesson explicitly references ""in the next lesson, we'll cover...""
+
+**Follow Semantic when:**
+- A concept in the current lesson sparked a question and you want to go deeper
+- You want to explore connections the AI identified between topics
+- You've already done a few linear lessons and want to branch out
+
+**Follow Random when:**
+- You've completed most of the course and want to fill in gaps without a particular goal
+- You want to expose yourself to topics you might have skipped
+- You're revisiting the course and want variety
+
+---
+
+### Progress in CYOA Mode
+
+Progress works the same way as linear mode — Mark Complete still records completion and advances you. The difference is the ""advance to next"" behavior: in CYOA mode, instead of auto-advancing to a single next lesson, the crossroads panel appears.
+
+If you Mark Complete and the crossroads panel appears, you can:
+- Click one of the three path options to continue
+- Close the crossroads panel and navigate via the sidebar to any lesson directly
+- Leave the course and return later — your completed lessons are saved
+
+---
+
+### Completing a CYOA Course
+
+A CYOA course is ""complete"" when you've marked every lesson done — regardless of the path order you took to get there. The progress percentage on My Courses reflects completed vs. total lessons.
+
+Because CYOA courses are navigated non-linearly, you may reach lessons out of the ""intended"" order. This is by design. The crossroads panel will eventually surface all lessons as recommendations until you've covered everything.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Open a CYOA-mode course — navigate to any lesson — scroll to the bottom]
+
+> [SCREENSHOT: Crossroads panel — callouts: Three lesson cards, each with title + description + path type badge (Linear / Semantic / Random)]
+
+> [SCREEN: Click the Semantic option — navigate to that lesson]
+
+> [SCREENSHOT: Destination lesson — callout: ""Jumped to a thematically related lesson via AI recommendation""]
+
+> [SCREEN: Mark Complete — crossroads panel reappears — show the three new options]
+
+> [SCREEN: Navigate directly via sidebar — show that CYOA doesn't prevent sidebar navigation]
+
+> [SCREENSHOT: Sidebar in CYOA mode — checkmarks on completed lessons, remaining lessons accessible]
+
+> [SCREEN: End on the crossroads panel — end lesson]
+
+---
+
+## Key Takeaways
+
+- CYOA mode presents three lesson choices at the end of each lesson instead of a fixed ""Next""
+- Three path types: Linear (next in sequence), Semantic (AI-recommended related lesson), Random (explore unvisited lessons)
+- Use Linear for structure, Semantic for discovery, Random for exploration
+- Progress works the same: Mark Complete saves completion; sidebar navigation still works
+- A CYOA course is complete when all lessons are marked done, regardless of the order you took
+- Not all courses use CYOA — check the course detail page for navigation mode
+",markdown,,,,,,
+Lessons,1,5,Tracking Your Progress,text,240,true,,"# Lesson 05: Tracking Your Progress
+
+**Course:** Navigating the Centenarian Academy
+**Module:** Learning Experience
+**Duration:** ~3 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+My Courses is your central view of everything you're working on in the Academy — all enrolled courses in one place, with progress at a glance. This lesson covers how to use it.
+
+---
+
+### Finding My Courses
+
+Navigate to `/academy/my-courses`. You can also reach it from the Academy catalog by clicking the **My Courses** link in the catalog nav.
+
+---
+
+### What My Courses Shows
+
+The page has two sections:
+
+**In Progress**
+Courses you're enrolled in with at least one lesson completed but not fully finished. Each card shows:
+- Course title and teacher
+- Progress bar — visually shows how far through the course you are
+- Percentage complete (""12 of 20 lessons complete"" or ""60%"")
+- A **Continue** button that links directly to the first incomplete lesson
+
+**Completed**
+Courses where every lesson has been marked complete. Each card shows:
+- Course title and teacher
+- ""Completed"" badge
+- Completion date
+- A **Review** button that links to the course's first lesson (for revisiting)
+
+---
+
+### The Progress Bar
+
+The progress bar reflects the ratio of completed lessons to total lessons:
+
+```
+progress = (lessons marked complete) / (total lessons in course)
+```
+
+Marking a lesson complete is the only action that moves the bar. Opening a lesson without marking it complete doesn't change your progress.
+
+---
+
+### Continuing a Course
+
+Click **Continue** on any In Progress card. The viewer opens directly at the first lesson you haven't completed yet — so you don't have to scroll through the sidebar to find where you left off.
+
+If you want to revisit a specific earlier lesson instead of continuing from where you left off, click the course title to go to the course detail page, then select the lesson from the list.
+
+---
+
+### Reattempting a Completed Course
+
+Completed courses don't disappear or lock you out. Click **Review** to reopen the course from the beginning. All your completion marks are preserved — the sidebar still shows checkmarks. You can re-read any lesson freely.
+
+There's no way to ""reset"" a course and clear your completion marks. If you want to re-do a course fresh, that's a feature for future development — for now, the content is fully accessible for review regardless of completion status.
+
+---
+
+### Unenrolling from a Course
+
+There is currently no self-service unenroll button. If you need to remove a course from your My Courses list, contact support. Paid enrollments are non-refundable after the first lesson is accessed.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /academy/my-courses — show the full page]
+
+> [SCREENSHOT: My Courses page — callouts: ""In Progress"" section (course cards with progress bars), ""Completed"" section (completion badges and dates)]
+
+> [SCREEN: Click Continue on an In Progress card — show it opens at the first incomplete lesson]
+
+> [SCREENSHOT: Lesson viewer opened at the first incomplete lesson — callout: ""Continue drops you at the next unfinished lesson""]
+
+> [SCREEN: Navigate back to My Courses — click Review on a completed course — show it opens at lesson 01]
+
+> [SCREENSHOT: Completed course reopened — checkmarks still visible in sidebar — callout: ""Completed status preserved — all content accessible for review""]
+
+> [SCREEN: End on My Courses — end lesson]
+
+---
+
+## Key Takeaways
+
+- My Courses at /academy/my-courses — two sections: In Progress and Completed
+- Progress bar = lessons marked complete / total lessons — only Mark Complete moves the bar
+- Continue button drops you at your first incomplete lesson, not the beginning
+- Completed courses stay accessible — click Review to re-read any lesson without clearing progress
+- No self-service unenroll — contact support if needed
+",markdown,,,,,,
+Lessons,1,6,Assignments,text,300,true,,"# Lesson 06: Assignments
+
+**Course:** Navigating the Centenarian Academy
+**Module:** Interaction
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Some courses include assignments — structured exercises where you apply what you've learned and submit your work for teacher review. This lesson covers how to find, complete, and submit assignments, and how to read the feedback you receive.
+
+---
+
+### What Are Assignments?
+
+Assignments are optional or required exercises attached to a course. They appear as a separate tab or section on the course detail page (not as lessons in the lesson list). A teacher creates them and can attach specific data slots you need to fill in — called metric slots.
+
+Not every course has assignments. The course detail page shows an **Assignments** tab only when the teacher has created at least one.
+
+---
+
+### Finding Assignments
+
+From the course detail page, click the **Assignments** tab. This opens the assignment list for the course — titles, descriptions, and due dates if the teacher set them.
+
+Click any assignment title to open the assignment viewer.
+
+---
+
+### The Assignment Viewer
+
+The assignment viewer at `/academy/[courseId]/assignments/[assignmentId]` has two main areas:
+
+**Left — Assignment Prompt**
+The teacher's instructions: what you need to do, what to submit, and any reference materials. Read this carefully before starting.
+
+**Metric Slots (if present)**
+Some assignments include metric slots — structured input fields where you log specific data:
+- A sleep hours observation (""Log your sleep hours for 7 consecutive days"")
+- An energy rating entry (""Rate your energy each morning for the next 5 days"")
+- A numeric measurement
+
+Metric slots appear as labeled input fields within the prompt area. Fill them in as part of your submission.
+
+**Right — Submission Area**
+A text editor where you write your response — your reflection, analysis, answers to questions, or explanation of the data you logged in the metric slots.
+
+The editor supports basic formatting. You can write as much or as little as the assignment requires.
+
+---
+
+### Saving a Draft
+
+You don't have to submit the moment you start. Click **Save Draft** to store your in-progress response. Drafts are saved automatically every 30 seconds as well.
+
+You can close the assignment and return later — your draft will be waiting. The assignment list shows a ""Draft saved"" indicator on assignments where you have an in-progress response.
+
+---
+
+### Submitting Your Assignment
+
+When you're ready, click **Submit**. A confirmation dialog appears (""Submit this assignment? You won't be able to edit it after submission.""). Click **Confirm** to finalize.
+
+After submission:
+- The submission area becomes read-only — you can still read your response but can't edit it
+- The status badge on the assignment changes from ""Draft"" to ""Submitted""
+- The teacher is notified of your submission
+
+---
+
+### Teacher Feedback
+
+After the teacher reviews your submission, they leave feedback as a threaded reply in the assignment viewer. You'll see a notification when feedback is available.
+
+The feedback thread appears below your submission in the assignment viewer:
+- Teacher's name and avatar
+- Their feedback text
+- Timestamp
+
+If the teacher asks a follow-up question in their feedback, you can reply — the thread supports multiple back-and-forth exchanges. Click **Reply** below the feedback to add your response. Replies don't have the same ""can't edit after submit"" restriction — they work like a conversation.
+
+---
+
+### Assignment Status Labels
+
+| Status | Meaning |
+|--------|---------|
+| Not started | You haven't opened or drafted anything yet |
+| Draft | You've saved a draft but haven't submitted |
+| Submitted | You submitted — awaiting teacher review |
+| Feedback received | Teacher has replied — check the thread |
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to a course detail page — click the Assignments tab]
+
+> [SCREENSHOT: Assignment list — callouts: Assignment title, description, due date (if set), status badges]
+
+> [SCREEN: Click an assignment to open the viewer]
+
+> [SCREENSHOT: Assignment viewer — callouts: Left area (assignment prompt), Metric slots (if present), Right area (submission text editor), Save Draft + Submit buttons]
+
+> [SCREEN: Type a draft response — click Save Draft — show ""Draft saved"" indicator]
+
+> [SCREEN: Click Submit — confirmation dialog — click Confirm]
+
+> [SCREENSHOT: Submitted state — submission area is read-only, status badge shows ""Submitted""]
+
+> [SCREEN: Teacher feedback appears — show the feedback thread]
+
+> [SCREENSHOT: Feedback thread — callouts: Teacher name, feedback text, Reply button]
+
+> [SCREEN: Click Reply — type a follow-up — submit reply]
+
+> [SCREEN: End on the assignment thread — end lesson]
+
+---
+
+## Key Takeaways
+
+- Assignments appear on the Assignments tab of the course detail page — not in the lesson list
+- Assignment viewer has two areas: assignment prompt (with optional metric slots) and your submission text editor
+- Save Draft saves your progress; drafts auto-save every 30 seconds
+- After clicking Submit + Confirm, your submission is locked (read-only)
+- Teacher feedback appears as a threaded reply below your submission — you can reply back
+- Status labels: Not started → Draft → Submitted → Feedback received
+",markdown,,,,,,
+Lessons,1,7,Messaging Your Teacher,text,180,true,,"# Lesson 07: Messaging Your Teacher
+
+**Course:** Navigating the Centenarian Academy
+**Module:** Interaction
+**Duration:** ~3 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Beyond assignments, every course has a messaging system for direct communication with the teacher. This is where you ask questions, share observations, or get clarification on lesson content.
+
+---
+
+### What Course Messaging Is
+
+Course messaging is a per-course inbox — a private conversation thread between you and the teacher of that specific course. It's separate from assignments. Use it for:
+
+- Questions about lesson content (""In lesson 3, you mentioned X — can you clarify what Y means?"")
+- Practical application questions (""How would I apply this protocol if I travel frequently?"")
+- General feedback on the course
+
+---
+
+### Accessing Course Messages
+
+From the course detail page, click the **Messages** tab (next to Lessons and Assignments). This opens your message thread with the teacher for this course.
+
+The first time you open it, the thread is empty — you initiate the conversation.
+
+---
+
+### Sending a Message
+
+In the message composer at the bottom of the Messages tab:
+
+1. Type your message in the text field
+2. Click **Send**
+
+Your message appears in the thread immediately. There's no draft mode — messages send when you click Send.
+
+Keep messages specific. Reference the lesson number or topic so the teacher can respond helpfully (""In Lesson 04 on CYOA mode, I was confused about..."").
+
+---
+
+### Reading Replies
+
+When the teacher replies, you'll receive a notification (the bell icon in the top nav). Click the notification to go directly to the message thread.
+
+Replies appear chronologically in the thread — newest messages at the bottom. The conversation scrolls like a standard chat thread.
+
+---
+
+### Conversation History
+
+All messages are preserved permanently. You can scroll back to see any previous exchange in the thread. If you had a conversation weeks ago and want to reference the teacher's answer, it's still there.
+
+---
+
+### One Thread Per Course
+
+Each course has a single thread between you and that teacher. If you're enrolled in two courses taught by the same teacher, you have two separate threads — one per course.
+
+---
+
+### Response Time
+
+Teachers set their own availability. Some respond within hours; others check weekly. If a course has a stated response time in the description, that's the teacher's commitment. There's no guaranteed SLA from the platform side.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to a course detail page — click the Messages tab]
+
+> [SCREENSHOT: Messages tab — empty state (first time) — callout: ""Your private conversation with the teacher for this course""]
+
+> [SCREEN: Type a message in the composer — click Send — message appears in thread]
+
+> [SCREENSHOT: Thread with sent message — callouts: Your message (right-aligned), Teacher's reply (left-aligned), timestamp]
+
+> [SCREEN: Click the notification bell — show new message notification — click through to the thread]
+
+> [SCREENSHOT: Notification to thread flow — callout: ""Notifications alert you when the teacher replies""]
+
+> [SCREEN: End on the message thread — end lesson]
+
+---
+
+## Key Takeaways
+
+- Course messages live on the Messages tab of the course detail page
+- One private thread per course between you and the teacher
+- Type your message and click Send — no draft mode
+- Replies show as notifications in the top nav — click through to the thread
+- All message history is preserved permanently
+- Two courses by the same teacher = two separate threads (one per course)
+",markdown,,,,,,
+Lessons,1,8,Learning Paths,text,300,true,,"# Lesson 08: Learning Paths
+
+**Course:** Navigating the Centenarian Academy
+**Module:** Going Deeper
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Individual courses teach specific skills. Learning Paths are curated sequences of multiple courses designed to take you from where you are to a defined outcome — like building a complete longevity protocol from scratch, or mastering the analytics layer of CentenarianOS. This lesson covers how to find, follow, and track progress through a learning path.
+
+---
+
+### What Are Learning Paths?
+
+A learning path is a named sequence of courses — usually 3 to 8 — grouped around a specific goal. They're created by teachers or the platform, and they tell you: ""If you want to achieve X, take these courses in this order.""
+
+Examples:
+- **CentenarianOS Foundation** — covers all platform modules in the recommended order
+- **Sleep & Energy Protocol** — courses on health metrics, correlations, and fuel that focus on sleep optimization
+- **High-Performance Athlete Track** — body tracking, engine analytics, travel, and recovery courses
+
+---
+
+### Finding Learning Paths
+
+Navigate to `/academy/paths`. This is the Learning Paths catalog. Each path card shows:
+- Path name and description
+- Number of courses in the path
+- Estimated total duration
+- A ""Recommended"" badge if the platform suggests it based on your subscription tier or usage
+- Your enrollment status (Not started / In Progress / Completed)
+
+---
+
+### Path Detail Page
+
+Click any path card to open the path detail page at `/academy/paths/[pathId]`. Here you'll see:
+
+**Path overview** — the goal of the path, who it's designed for, and what you'll be able to do after completing it.
+
+**Course sequence** — an ordered list of courses in the path. Each course shows:
+- Course title and teacher
+- Short description of how it fits the path's overall goal
+- Your enrollment and completion status for that specific course
+- An **Enroll** or **Continue** button
+
+**Your path progress** — at the top of the sequence: a progress bar showing how many courses in the path you've completed.
+
+---
+
+### Following a Path
+
+Learning paths don't require separate enrollment — they're organizational structures that reference courses you may or may not already be enrolled in.
+
+When you click **Enroll** on a course within a path, that's a standard course enrollment (same as enrolling from the catalog). The path tracks your progress across those courses automatically.
+
+The recommended workflow:
+1. Open the path detail page
+2. Start with Course 1 — click Enroll (if needed) and then Go to Course
+3. Complete that course at your own pace
+4. Return to the path detail page and start Course 2
+5. Repeat through the sequence
+
+There's no obligation to follow paths in strict order — you can skip ahead or come back. The path tracker reflects reality: only courses you've completed are marked done.
+
+---
+
+### Path Progress Tracking
+
+Your path progress bar shows:
+
+```
+path progress = courses completed in this path / total courses in path
+```
+
+A course counts as ""completed"" in the path when all its lessons are marked done (same definition as My Courses).
+
+Completing all courses in a path marks the path as completed and adds it to a ""Completed Paths"" section on the My Courses page.
+
+---
+
+### Recommended Paths
+
+The platform may show a **Recommended** badge on paths that align with your subscription tier or the modules you've used most. These are suggestions, not requirements.
+
+If you're new to CentenarianOS and unsure where to start, look for the **CentenarianOS Foundation** path — it's designed to walk through all the platform's core modules in the sequence that builds best.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /academy/paths — show the paths catalog]
+
+> [SCREENSHOT: Paths catalog — callouts: Path cards (name, description, course count, duration, Recommended badge), enrollment status indicators]
+
+> [SCREEN: Click a path card — open the path detail page]
+
+> [SCREENSHOT: Path detail page — callouts: Path overview, Course sequence (ordered list with enroll/continue buttons, per-course status), Path progress bar at top]
+
+> [SCREEN: Click Enroll on the first course in the path — standard enrollment flow]
+
+> [SCREEN: Complete the course — return to path detail — show that course is now marked complete]
+
+> [SCREENSHOT: Path detail after completing one course — first course shows checkmark, progress bar advances]
+
+> [SCREEN: Navigate to My Courses — show completed path in ""Completed Paths"" section]
+
+> [SCREEN: End on the path detail page — end lesson and end course]
+
+---
+
+## Key Takeaways
+
+- Learning Paths are curated multi-course sequences grouped around a defined outcome
+- Find them at /academy/paths — each path has a name, description, course count, and duration
+- Path detail page shows the ordered course sequence and your per-course status
+- No separate path enrollment — enroll in each course within the path as you reach it
+- Path progress = courses completed in path / total courses; all lessons done = course complete
+- Completed paths appear in a ""Completed Paths"" section on My Courses
+- New to CentenarianOS? Look for the CentenarianOS Foundation path to start
+",markdown,,,,,,
+Lessons,1,9,Video & Audio Chapters,text,300,true,,"# Lesson 09: Video & Audio Chapters
+
+**Course:** Navigating the Centenarian Academy
+**Module:** Rich Media
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Some lessons include video or audio content with chapter markers and synchronized transcripts. These features let you jump to specific sections, follow along with the text, and control playback speed. This lesson explains how to use them.
+
+---
+
+### Chapter Markers
+
+When a video or audio lesson has chapters, you'll see them in two places:
+
+**On the progress bar** — vertical lines mark the boundary between chapters. Hovering over a marker shows the chapter title.
+
+**In the chapters panel** — click the chapters button (looks like a list icon) on the player controls. A side panel opens showing all chapters with their titles and timecodes. Click any chapter to jump directly to that point.
+
+The currently playing chapter is highlighted. A label also appears in the bottom-left corner of the video player showing the active chapter name.
+
+---
+
+### Transcript Sync
+
+If the lesson includes a transcript, click the transcript button (speech bubble icon) on the player controls. A side panel opens showing the full transcript broken into segments.
+
+Each segment is timestamped. As the audio or video plays, the active segment is highlighted and the panel auto-scrolls to keep it in view.
+
+Click any transcript segment to jump to that point in the playback. This is useful for reviewing a specific sentence or finding a section you want to re-listen to.
+
+---
+
+### Playback Controls
+
+The video and audio players include:
+
+- **Play/Pause** — center button or click the video area
+- **Skip back 15 seconds** — for re-hearing a sentence
+- **Skip forward 30 seconds** — for jumping past slow sections
+- **Playback speed** — cycle through: 0.75x, 1x, 1.25x, 1.5x, 2x. Click the speed button to advance to the next speed.
+- **Volume/Mute** — click the speaker icon to mute/unmute
+- **Fullscreen** — expand the video to fill your screen (video lessons only)
+- **Progress bar** — click anywhere on the bar to seek to that position
+
+---
+
+### How Chapters Are Structured
+
+Chapters divide a lesson into logical sections. A typical 20-minute lesson might have 4-6 chapters:
+
+```json
+[
+  { ""id"": ""ch1"", ""title"": ""Introduction"", ""startTime"": 0, ""endTime"": 210 },
+  { ""id"": ""ch2"", ""title"": ""Core Concept: How It Works"", ""startTime"": 210, ""endTime"": 600 },
+  { ""id"": ""ch3"", ""title"": ""Step-by-Step Walkthrough"", ""startTime"": 600, ""endTime"": 960 },
+  { ""id"": ""ch4"", ""title"": ""Common Mistakes"", ""startTime"": 960, ""endTime"": 1080 },
+  { ""id"": ""ch5"", ""title"": ""Summary & Next Steps"", ""startTime"": 1080, ""endTime"": 1200 }
+]
+```
+
+Each chapter has an ID, a title, and start/end times in seconds. The player uses these to draw markers on the progress bar and populate the chapters panel.
+
+---
+
+### How Transcripts Are Structured
+
+Transcripts are an array of segments, each with a time range and text:
+
+```json
+[
+  { ""startTime"": 0, ""endTime"": 8, ""text"": ""Welcome to this lesson on chapter markers and transcript sync."" },
+  { ""startTime"": 8, ""endTime"": 18, ""text"": ""Today we'll cover how to navigate lessons that include audio or video content with structured chapters."" },
+  { ""startTime"": 18, ""endTime"": 30, ""text"": ""If you've ever listened to a podcast and wished you could jump to a specific topic, that's exactly what chapters give you."" }
+]
+```
+
+The player matches the current playback time to the active segment and highlights it in the transcript panel.
+
+---
+
+### Not All Lessons Have Chapters
+
+Chapters and transcripts are optional. If a lesson doesn't include them, the chapter and transcript buttons won't appear in the player controls. The progress bar will show a simple timeline without markers.
+
+Text-only and quiz lessons don't have a player at all — they render as formatted content or interactive quizzes instead.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to a video lesson that has chapters — show the player with chapter markers on the progress bar]
+
+> [SCREENSHOT: Video player — callouts: Chapter markers on progress bar, Play/Pause, Skip ±15/30s, Speed control, Volume, Fullscreen]
+
+> [SCREEN: Click the chapters button — show the chapters panel expand with chapter list]
+
+> [SCREEN: Click a chapter in the panel — show playback jump to that timestamp]
+
+> [SCREENSHOT: Chapters panel — callout: ""Click any chapter to jump to that section""]
+
+> [SCREEN: Click the transcript button — show the transcript panel with highlighted active segment]
+
+> [SCREEN: Let playback continue for a few seconds — show the highlight moving through transcript segments with auto-scroll]
+
+> [SCREEN: Click a transcript segment — show playback seek to that timestamp]
+
+> [SCREEN: Click the speed button — cycle through 1x → 1.25x → 1.5x — show the speed indicator change]
+
+---
+
+## Key Takeaways
+
+- Chapter markers appear as lines on the progress bar and in a clickable chapters panel
+- Transcript sync highlights the active segment and auto-scrolls as content plays
+- Click any chapter or transcript segment to jump to that point
+- Playback speed cycles through 0.75x, 1x, 1.25x, 1.5x, 2x
+- Chapters and transcripts are optional — not all lessons include them
+",markdown,,,,,,
+Lessons,1,10,Interactive Maps & Documents,text,240,true,,"# Lesson 10: Interactive Maps & Documents
+
+**Course:** Navigating the Centenarian Academy
+**Module:** Rich Media
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Some lessons include interactive maps and downloadable documents alongside the main content. These are especially common in geography-focused or research-oriented courses. This lesson shows you how to interact with them.
+
+---
+
+### Interactive Maps
+
+When a lesson includes map content, a MapViewer component appears within the lesson page. The map is interactive — you can:
+
+- **Pan** — click and drag to move the view
+- **Zoom** — scroll wheel or pinch to zoom in/out
+- **Click markers** — markers are labeled points on the map. Click one to see its title and description in a popup
+- **View polygons** — colored shaded regions that highlight geographic areas
+- **View lines** — colored lines connecting points, often representing routes or trade paths
+
+Maps are read-only — you can't add or edit markers. They're set by the course teacher to illustrate the lesson content.
+
+---
+
+### Example Map Data
+
+Here's what a lesson's `map_content` looks like — this example shows a multi-stop trip route:
+
+```json
+{
+  ""center"": [37.7749, -122.4194],
+  ""zoom"": 6,
+  ""markers"": [
+    { ""lat"": 37.7749, ""lng"": -122.4194, ""title"": ""San Francisco"", ""description"": ""Starting point — depart 8:00 AM"" },
+    { ""lat"": 36.7783, ""lng"": -119.4179, ""title"": ""Fresno"", ""description"": ""Lunch stop — Central Valley"" },
+    { ""lat"": 36.1699, ""lng"": -115.1398, ""title"": ""Las Vegas"", ""description"": ""Final destination — arrive 6:00 PM"" }
+  ],
+  ""lines"": [
+    { ""coordinates"": [[37.7749, -122.4194], [36.7783, -119.4179]], ""color"": ""#3B82F6"", ""label"": ""Leg 1: SF to Fresno"" },
+    { ""coordinates"": [[36.7783, -119.4179], [36.1699, -115.1398]], ""color"": ""#EF4444"", ""label"": ""Leg 2: Fresno to Vegas"" }
+  ],
+  ""polygons"": [
+    { ""coordinates"": [[37.0, -122.5], [37.0, -119.0], [36.5, -119.0], [36.5, -122.5]], ""color"": ""#10B981"", ""fillColor"": ""#10B98120"", ""label"": ""Central Valley Region"" }
+  ]
+}
+```
+
+---
+
+### Document Viewer
+
+Some lessons include attached documents — PDFs, reference sheets, or image galleries. These appear in a DocumentViewer component below or alongside the lesson text.
+
+For each document, you'll see:
+- **Title** — what the document is
+- **Description** — a brief explanation of the content
+- **View/Download** — click to open the document in a new tab or download it
+- **Source URL** — if the document has an external source, a link is provided
+
+Documents are supplementary — the lesson's main content stands on its own, but documents provide deeper reference material, worksheets, or primary sources.
+
+---
+
+### Example Document Data
+
+```json
+[
+  {
+    ""url"": ""https://res.cloudinary.com/example/raw/upload/v1/docs/trip-packing-list.pdf"",
+    ""title"": ""Road Trip Packing Checklist"",
+    ""description"": ""A printable checklist covering essentials for a 3-day road trip — gear, food, first aid, and vehicle prep."",
+    ""source_url"": ""https://centenarianos.com/resources/packing""
+  },
+  {
+    ""url"": ""https://res.cloudinary.com/example/image/upload/v1/docs/route-elevation-profile.png"",
+    ""title"": ""Route Elevation Profile"",
+    ""description"": ""Elevation chart for the SF to Vegas route showing mountain passes and valley sections."",
+    ""source_url"": null
+  }
+]
+```
+
+---
+
+### When to Expect Maps and Documents
+
+Maps are most common in:
+- Geography-focused courses (history, social studies)
+- Travel tutorial lessons showing routes
+- Courses that reference real-world locations
+
+Documents are most common in:
+- Research-oriented courses (primary sources)
+- Practical courses (checklists, worksheets, reference guides)
+- Tutorial lessons with supplementary PDFs
+
+If a lesson doesn't include maps or documents, those sections simply won't appear.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to a lesson with map content — show the MapViewer loading]
+
+> [SCREENSHOT: MapViewer — callouts: Markers (clickable pins), Polygon (shaded region), Lines (route paths), Zoom controls]
+
+> [SCREEN: Click a marker — show the popup with title and description]
+
+> [SCREEN: Pan and zoom the map — show interactive navigation]
+
+> [SCREEN: Scroll down to the DocumentViewer section — show attached documents]
+
+> [SCREENSHOT: DocumentViewer — callouts: Document title, Description, View/Download button, Source URL link]
+
+> [SCREEN: Click a document — show it open in a new tab]
+
+---
+
+## Key Takeaways
+
+- Interactive maps show markers, polygons, and lines — click markers for details, pan and zoom freely
+- Maps are read-only — set by the teacher to illustrate lesson content
+- Documents are supplementary attachments — PDFs, images, reference sheets
+- Both are optional — they appear only when the teacher includes them in the lesson
+- Maps are common in geography/travel courses; documents in research/practical courses
+",markdown,,,,,,
+Lessons,1,11,Taking Quizzes,text,240,true,,"# Lesson 11: Taking Quizzes
+
+**Course:** Navigating the Centenarian Academy
+**Module:** Assessments
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Some lessons are quizzes — interactive assessments that test your understanding of the course material. This lesson explains how quizzes work, how they're scored, and what happens after you submit.
+
+---
+
+### Recognizing a Quiz Lesson
+
+In the lesson list, quiz lessons are marked with a quiz icon. When you open a quiz lesson, instead of a video player or text content, you'll see a set of questions with answer options.
+
+---
+
+### Taking the Quiz
+
+Each question shows:
+- The question text
+- Multiple-choice answer options (typically 4 choices)
+- A select indicator — click an option to choose it
+
+Work through the questions at your own pace. You can change your answer before submitting. There's no time limit.
+
+When you've answered all questions, click **Submit** to see your results.
+
+---
+
+### After Submission
+
+After submitting, each question reveals:
+- **Correct/Incorrect indicator** — green checkmark for correct, red X for incorrect
+- **The correct answer** — highlighted in green
+- **Explanation** — a paragraph explaining why the correct answer is right
+- **Citation** — a source reference (often in APA format) supporting the explanation
+
+Your overall score appears at the top: ""You got X out of Y correct.""
+
+---
+
+### Scoring and Progress
+
+Submitting a quiz marks the lesson as complete, regardless of your score. There's no minimum passing score — the quiz is a learning tool, not a gate.
+
+If the course uses CYOA navigation, completing the quiz triggers the crossroads options, just like completing any other lesson type.
+
+---
+
+### Example Quiz Data
+
+Here's what a quiz lesson's `quiz_content` looks like:
+
+```json
+{
+  ""questions"": [
+    {
+      ""id"": ""q1"",
+      ""question"": ""What is the primary purpose of the CYOA navigation mode?"",
+      ""options"": [
+        ""To restrict students to a fixed lesson order"",
+        ""To let students choose their own path through the course"",
+        ""To randomly shuffle lessons on each visit"",
+        ""To hide unfinished lessons from the sidebar""
+      ],
+      ""correctIndex"": 1,
+      ""explanation"": ""CYOA (Choose Your Own Adventure) navigation gives students crossroads options after completing a lesson, allowing them to choose their next topic based on semantic relevance, linear sequence, or random discovery."",
+      ""citation"": ""CentenarianOS Academy — Crossroads API Documentation""
+    },
+    {
+      ""id"": ""q2"",
+      ""question"": ""Which of these is NOT a valid lesson type in the Academy?"",
+      ""options"": [
+        ""Video"",
+        ""Spreadsheet"",
+        ""Quiz"",
+        ""Audio""
+      ],
+      ""correctIndex"": 1,
+      ""explanation"": ""The Academy supports five lesson types: video, text, audio, slides, and quiz. Spreadsheet is not a supported lesson type."",
+      ""citation"": ""CentenarianOS Lesson Schema — Migration 070""
+    },
+    {
+      ""id"": ""q3"",
+      ""question"": ""What happens to your progress when you submit a quiz?"",
+      ""options"": [
+        ""Nothing — quizzes don't affect progress"",
+        ""The lesson is marked complete regardless of score"",
+        ""You must score above 70% to get credit"",
+        ""The quiz resets and you must retake it""
+      ],
+      ""correctIndex"": 1,
+      ""explanation"": ""Submitting a quiz marks the lesson as complete. There is no minimum passing score — the quiz is a learning tool for self-assessment."",
+      ""citation"": ""CentenarianOS Academy — Quiz Submission Handler""
+    }
+  ]
+}
+```
+
+---
+
+### Retaking a Quiz
+
+After submission, you can review your answers and the explanations as many times as you want. The lesson remains accessible. There is currently no ""retake"" flow that resets your answers — the quiz shows your submitted state on revisit.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to a quiz lesson — show the quiz interface with questions and options]
+
+> [SCREENSHOT: Quiz lesson — callouts: Question text, Answer options (radio buttons), Submit button]
+
+> [SCREEN: Select answers for 2-3 questions — show the selection state change]
+
+> [SCREEN: Click Submit — show results appear]
+
+> [SCREENSHOT: Quiz results — callouts: Score (""2 out of 3""), Correct answer (green), Incorrect answer (red), Explanation text, Citation]
+
+> [SCREEN: Scroll through explanations — show the detail provided for each answer]
+
+> [SCREEN: Show the lesson marked as complete in the sidebar after submission]
+
+---
+
+## Key Takeaways
+
+- Quiz lessons present multiple-choice questions with 4 options each
+- No time limit — work at your own pace, change answers before submitting
+- After submission: see correct answers, explanations, and citations for each question
+- Submitting marks the lesson complete — no minimum score required
+- Quiz results are reviewable anytime — the lesson stays accessible after completion
+",markdown,,,,,,
+Lessons,1,12,Lesson Discussions,text,180,true,,"# Lesson 12: Lesson Discussions
+
+**Course:** Navigating the Centenarian Academy
+**Module:** Community
+**Duration:** ~3 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Lessons can have threaded discussion sections where students and teachers can ask questions, share insights, and have conversations about the lesson content. This lesson covers how discussions work.
+
+---
+
+### Finding the Discussion Section
+
+Scroll below the main lesson content (past the video/text/quiz area). If the lesson has discussions enabled, you'll see a **Discussion** section with a comment input field and any existing threads.
+
+---
+
+### Posting a Comment
+
+Type your message in the input field and click **Post**. Your comment appears in the discussion thread with your name and a timestamp.
+
+Comments are visible to all enrolled students and the course teacher. Be respectful and stay on topic — discussions are meant for lesson-related questions and insights.
+
+---
+
+### Threaded Replies
+
+Each top-level comment can have replies. Click **Reply** below a comment to open a nested reply field. Post your reply to start a thread under that comment.
+
+Threads are displayed as indented conversations below the parent comment. This keeps related discussion organized — a question and its answers stay grouped together.
+
+---
+
+### Teacher Responses
+
+Teachers can see and respond to all discussion threads in their courses. Teacher responses are displayed with a visual indicator (often a highlighted name or badge) so you can identify official responses.
+
+Discussion is a two-way channel — use it to ask questions you can't resolve from the lesson content alone.
+
+---
+
+### What Discussions Are Not
+
+- **Not real-time chat** — discussions are asynchronous. Expect responses within hours or days, not seconds.
+- **Not graded** — participation in discussions doesn't affect your progress or score.
+- **Not on every lesson** — discussions are enabled per-lesson by the teacher. Some lessons may not have them.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to a lesson with discussions enabled — scroll past the main content]
+
+> [SCREENSHOT: Discussion section — callouts: Comment input field, ""Post"" button, Existing comments with timestamps]
+
+> [SCREEN: Type a comment — click Post — show it appear in the thread]
+
+> [SCREEN: Click ""Reply"" under an existing comment — show the nested reply field]
+
+> [SCREEN: Post a reply — show it appear indented below the parent comment]
+
+> [SCREENSHOT: Threaded discussion — callout: ""Replies are nested under parent comments for organized conversations""]
+
+---
+
+## Key Takeaways
+
+- Discussions appear below lesson content when enabled by the teacher
+- Post comments and threaded replies for lesson-related questions and insights
+- Teachers can respond to discussions — look for highlighted teacher names
+- Discussions are asynchronous and not graded — they don't affect progress
+- Not all lessons have discussions — it's an opt-in feature per lesson
+",markdown,,,,,,
+Lessons,1,13,Podcast Episodes & External Links,text,180,true,,"# Lesson 13: Podcast Episodes & External Links
+
+**Course:** Navigating the Centenarian Academy
+**Module:** Rich Media
+**Duration:** ~3 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Some lessons link to external podcast episodes on platforms like Spotify, Apple Podcasts, and YouTube. This lesson explains how podcast links work and how to use them alongside lesson content.
+
+---
+
+### Podcast Link Buttons
+
+When a lesson includes podcast links, you'll see colored buttons at the top of the lesson content area, before the main text or video. Each button is labeled with the platform name:
+
+- **Spotify** — green button with Spotify icon
+- **Apple Podcasts** — purple button with Apple Podcasts icon
+- **YouTube** — red button with YouTube icon
+- **Amazon Music** — teal button
+- **Other platforms** — gray button with a generic link icon
+
+Click any button to open the episode on that platform in a new browser tab.
+
+---
+
+### Why Podcast Links?
+
+Some courses are built around podcast episodes — the lesson content provides study guides, discussion questions, or reference material while the actual instruction happens in the audio episode.
+
+This is common in courses like BVC (Better Vice Club) where each module corresponds to a podcast episode covering geography, economics, and social studies topics.
+
+---
+
+### Podcast Links + Chapter Markers
+
+A powerful combination: a lesson can have both podcast links (for the external episode) and chapter markers (for a locally hosted audio version). The external links let you listen on your preferred platform, while the chapter-enabled audio player in the lesson gives you structured navigation within the Academy itself.
+
+---
+
+### Example Podcast Links Data
+
+```json
+[
+  { ""url"": ""https://open.spotify.com/episode/ABC123"", ""label"": ""Spotify"" },
+  { ""url"": ""https://podcasts.apple.com/us/podcast/episode-name/id123"", ""label"": ""Apple Podcasts"" },
+  { ""url"": ""https://www.youtube.com/watch?v=XYZ789"", ""label"": ""YouTube"" }
+]
+```
+
+The platform is auto-detected from the URL — teachers just paste the link and add a label.
+
+---
+
+### Not All Lessons Have Podcast Links
+
+Podcast links are optional. If a lesson doesn't include them, the buttons won't appear. Most tutorial courses don't use podcast links — they're primarily for podcast-based curriculum courses.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to a lesson with podcast links — show the colored platform buttons above the lesson content]
+
+> [SCREENSHOT: Podcast link buttons — callouts: Spotify (green), Apple Podcasts (purple), YouTube (red)]
+
+> [SCREEN: Click the Spotify button — show it open the episode in a new tab]
+
+> [SCREEN: Return to the lesson — show the audio player with chapter markers below the podcast links]
+
+> [SCREEN: End on the lesson page]
+
+---
+
+## Key Takeaways
+
+- Podcast links appear as colored buttons at the top of lesson content (Spotify, Apple, YouTube, etc.)
+- Click any button to open the episode on that platform in a new tab
+- Common in podcast-based courses where lessons pair audio episodes with study materials
+- Can coexist with chapter-enabled audio players for structured in-app navigation
+- Optional feature — only appears when the teacher adds podcast links to the lesson
+",markdown,,,,,,

@@ -1,0 +1,1574 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+Lessons,1,1,Welcome to the Planner,text,240,true,,"# Lesson 01: Welcome to the Planner
+
+**Course:** Mastering the Planner
+**Module:** Getting Started
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** linear → lesson 02 next
+
+---
+
+## Narrator Script
+
+Most planning systems fail for the same reason: they only operate at one timescale. You either have a list of tasks for today, or a vague set of long-term goals — but nothing connecting the two. The Planner in CentenarianOS is built to solve that gap.
+
+It operates across four levels simultaneously, from the scale of decades down to the scale of a single morning. Every task you check off is connected, by design, to something larger than today.
+
+In this lesson, we'll take a quick tour of the module and explain the philosophy before you start building.
+
+---
+
+### What the Planner Is For
+
+The Planner is for people who have meaningful long-term goals — the kind that take years or decades to achieve — and who want daily accountability without losing sight of the big picture.
+
+A roadmap might span 10–25 years. A goal inside that roadmap might target a specific year. A milestone might be due in six months. And a task might be on your calendar for 7 AM tomorrow. All of these are linked. When you complete tomorrow's task, it contributes to the milestone, which contributes to the goal, which moves the roadmap forward.
+
+That's the operating system model: every action is purposeful, traceable, and connected to something that matters.
+
+---
+
+### The Three Pages
+
+The Planner module has three main pages, each with a different scope:
+
+**Roadmap** (`/dashboard/roadmap`) — The big picture. This is where you create and manage your roadmap, add goals, set milestones, and see the entire hierarchy in one expandable tree view. You use this page to structure your long-term plan and periodically review whether everything is set up correctly.
+
+**Daily Planner** (`/dashboard/planner`) — The everyday view. This shows your tasks for today, this week, or this month. It's your operating dashboard: check tasks off as you complete them, see your completion percentage for the day, and manage the work in front of you. Most days, this is the only page you need to visit.
+
+**Weekly Review** (`/dashboard/weekly-review`) — The reflection layer. Once a week, generate an AI-written summary of how your week went: tasks completed, nutrition quality, focus sessions, travel, health metrics, and more. It ends with one actionable focus for the coming week.
+
+---
+
+### Tags: The Common Language
+
+Throughout the Planner, everything is tagged using a shared set of seven categories:
+
+- **FITNESS** — physical training, movement, recovery
+- **CREATIVE** — writing, design, music, art
+- **SKILL** — learning, professional development
+- **OUTREACH** — community, relationships, teaching, networking
+- **LIFESTYLE** — habits, environment, daily systems
+- **MINDSET** — mental health, journaling, meditation
+- **FUEL** — nutrition, meal prep, cooking
+
+These tags connect goals, milestones, and tasks across the hierarchy. A FITNESS goal has FITNESS milestones and FITNESS tasks. The tags make it easy to filter your day to just the work you need to do, and they feed the analytics that show how your time is distributed across life areas.
+
+---
+
+### What You'll Build in This Course
+
+By the end of this course, you'll have a fully functioning multi-decade plan with:
+- At least one roadmap with a time horizon
+- Goals organized under that roadmap
+- Milestones with specific target dates
+- Tasks scheduled in your calendar
+- Recurring tasks for habits
+- A weekly review set up
+
+Ready to understand the four-level hierarchy? That's the next lesson — and it's the key to everything.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/roadmap — show the roadmap builder interface with an expanded example]
+
+> [SCREENSHOT: Roadmap page with callouts: Roadmap (top level, sky-blue banner), Goal (second level), Milestone (third level), Task (leaf level)]
+
+> [SCREEN: Navigate to /dashboard/planner — show tasks for today with checkboxes, progress bar]
+
+> [SCREENSHOT: Daily planner with callouts: Date picker, View mode toggle (Day/Week/Month), Progress bar, Task checkbox, Tag badge]
+
+> [SCREEN: Navigate to /dashboard/weekly-review — show the review generation interface]
+
+> [SCREENSHOT: Weekly review with callouts: Week navigation arrows, Generate button, Past reviews list]
+
+> [SCREEN: Return to /dashboard/roadmap — end on the hierarchy view to preview the next lesson]
+
+---
+
+## Key Takeaways
+
+- The Planner connects decades to days: Roadmap → Goal → Milestone → Task
+- Three pages: Roadmap (structure), Daily Planner (execution), Weekly Review (reflection)
+- Seven shared tags (FITNESS, CREATIVE, SKILL, etc.) unify the hierarchy and power analytics
+- Every daily task is traceable back to a long-term goal — nothing is disconnected from purpose
+",markdown,,,,,,
+Lessons,1,2,The Goal Hierarchy,text,360,true,,"# Lesson 02: The Goal Hierarchy
+
+**Course:** Mastering the Planner
+**Module:** Getting Started
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** linear → CYOA crossroads after this lesson
+
+---
+
+## Narrator Script
+
+Before you create anything in the Planner, you need to understand the four-level hierarchy that everything is built on. Get this mental model right, and the whole system will feel intuitive. Skip it, and you'll waste time building things in the wrong places.
+
+The four levels are: **Roadmap → Goal → Milestone → Task**. Each one answers a different question, operates at a different timescale, and has a different purpose.
+
+---
+
+### Level 1: The Roadmap
+
+A roadmap is your longest-range container. It represents a chapter of your life — a period during which you're pursuing a coherent set of goals.
+
+**The question it answers:** ""What am I trying to accomplish across the next 5, 10, or 25 years?""
+
+A roadmap has a title, an optional description, and a start and end year. For example: ""Centenarian Journey 2025–2050"" or ""Athletic Peak 2025–2035"".
+
+Most people only have one or two roadmaps. You might have one for your personal health and longevity journey, and another for a business or creative project with a separate time horizon.
+
+A roadmap is the anchor. Everything else lives inside it.
+
+---
+
+### Level 2: Goals
+
+Goals live inside a roadmap. Each goal is a major life objective — something worth pursuing over months to years.
+
+**The question it answers:** ""What specific outcomes do I want to achieve by a certain year?""
+
+A goal has a title, a target year, and a category (FITNESS, CREATIVE, SKILL, OUTREACH, LIFESTYLE, MINDSET, or FUEL). Examples:
+- ""Run a sub-4:00 mile"" — FITNESS goal, target year: 2027
+- ""Publish a novel"" — CREATIVE goal, target year: 2028
+- ""Learn conversational Japanese"" — SKILL goal, target year: 2026
+
+Goals can be set to active, completed, deferred, or archived. When you hit one, mark it completed and move on to the next.
+
+---
+
+### Level 3: Milestones
+
+Milestones live inside a goal. Each milestone is a measurable checkpoint on the way to that goal.
+
+**The question it answers:** ""What specific, verifiable things need to happen, and by when, for me to achieve this goal?""
+
+A milestone has a title, a specific target date, and a status: not started, in progress, completed, or blocked.
+
+Good milestones are:
+- **Time-bound** — a specific date, not ""someday""
+- **Binary** — either done or not done (no ambiguity)
+- **Sequenced** — earlier milestones enable later ones
+
+For the ""Run a sub-4:00 mile"" goal, milestones might be:
+- Q2 2025: Run a sub-5:00 mile
+- Q4 2025: Run a sub-4:30 mile
+- Q2 2026: Run a sub-4:10 mile
+- Q4 2026: Run a sub-4:00 mile
+
+Each milestone is a measurable waypoint. The goal is the destination; milestones are the route markers.
+
+---
+
+### Level 4: Tasks
+
+Tasks live inside a milestone. Each task is a specific action you'll do on a specific date and time.
+
+**The question it answers:** ""What do I actually do today, this week, or this month to move toward this milestone?""
+
+A task has:
+- **Activity** — what you're doing (e.g., ""Morning track session: 6×400m @ 70% effort"")
+- **Date** — when you'll do it
+- **Time** — what time of day
+- **Tag** — which category it belongs to
+- **Priority** — High (P1), Medium (P2), or Low (P3)
+- **Description** (optional) — detailed notes, instructions, sets/reps, focus
+
+Tasks are the daily executable units. They're what you see in the Daily Planner view. They're what you check off. They're what moves the needle.
+
+---
+
+### Why the Hierarchy Matters
+
+The hierarchy creates two things that most planning systems don't: **traceability** and **accountability**.
+
+**Traceability** — Every task you create is connected to a milestone, which is connected to a goal, which is connected to a roadmap. You always know *why* you're doing something. This matters when willpower is low and you need to remember the bigger picture.
+
+**Accountability** — The hierarchy creates natural review points. When you do your weekly review, you can see: are my tasks progressing my milestones? Are my milestones on track to hit my goals? If a milestone is ""blocked"", what tasks would unblock it?
+
+The system doesn't just track what you're doing — it tracks whether what you're doing is actually moving you forward.
+
+---
+
+### A Quick Design Note
+
+You don't need to have everything figured out before you start. Start with one roadmap. Add one or two goals. Add one milestone per goal. Add a few tasks.
+
+The hierarchy grows as you plan more. Most people find that the act of filling in the hierarchy reveals gaps in their thinking — ""wait, I don't actually know how I'm going to get from here to there."" That clarity is the point.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/roadmap — show a fully populated hierarchy with everything expanded]
+
+> [SCREENSHOT: Full expanded hierarchy with callouts at each level: ""Roadmap (years)"", ""Goal (months-years)"", ""Milestone (weeks-months)"", ""Task (daily)""]
+
+> [SCREEN: Click into a roadmap — show the sky-blue gradient header with title and year range]
+
+> [SCREEN: Expand a goal — show the sky border, category badge, target year]
+
+> [SCREEN: Expand a milestone — show the status badge (color-coded), target date]
+
+> [SCREEN: Expand a milestone to show tasks — show task rows with time and activity name]
+
+> [SCREENSHOT: Zoom in on the milestone/task boundary — callout: ""Milestone = the checkpoint; Task = the daily action that gets you there""]
+
+> [SCREEN: Show an empty hierarchy — a roadmap with no goals — to show the starting state]
+
+> [SCREEN: End on the CYOA crossroads menu — ""What do you want to do next?"" — end lesson]
+
+---
+
+## Key Takeaways
+
+- **Roadmap** — your life chapter (5–25 years); answers ""what am I pursuing long-term?""
+- **Goal** — a major outcome in a specific year; tagged by life area; can be completed, deferred, or archived
+- **Milestone** — a binary checkpoint with a specific due date; status: not started / in progress / completed / blocked
+- **Task** — a specific daily action; has a date, time, tag, and priority; lives in the Daily Planner
+- Every task traces back to a goal — that's what makes daily work feel meaningful
+- Start simple: one roadmap, two goals, one milestone each, a few tasks — build from there
+",markdown,,,,,,
+Lessons,1,3,Creating Your Roadmap,text,240,true,,"# Lesson 03: Creating Your Roadmap
+
+**Course:** Mastering the Planner
+**Module:** Roadmap Builder
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+A roadmap is the container for everything else in your plan. Before you can add goals, milestones, or tasks, you need at least one roadmap. This lesson walks through creating one, what the fields mean, and how to think about your time horizon.
+
+---
+
+### Navigating to the Roadmap Page
+
+Go to `/dashboard/roadmap`. If you're new to the Planner, you'll see an empty state with a prompt to create your first roadmap. If you've already set up a roadmap, you'll see it displayed as a sky-blue card.
+
+Click **+ New Roadmap** to open the creation form.
+
+---
+
+### The Roadmap Form
+
+**Title** — The name of this roadmap. Think of it as the name of a life chapter. Examples:
+- ""My Centenarian Journey""
+- ""Athletic Peak Project""
+- ""Building the Business 2025–2030""
+
+Keep it meaningful to you — you'll see this name every time you open the Planner.
+
+**Description** (optional) — A few sentences describing what this roadmap is about. Useful if you have multiple roadmaps and want to remember the focus of each.
+
+**Start date** — When does this chapter begin? For most users, this is today or the beginning of the current year.
+
+**End date** — When do you envision this chapter completing? For a longevity-focused roadmap, you might put 2050 or 2075. For a business sprint, it might be 3–5 years from now. Don't overthink this — you can always update the end date later.
+
+---
+
+### How to Think About Your Time Horizon
+
+Most people underestimate how much they can accomplish over 10–25 years and overestimate what they can do in a single year. A multi-decade roadmap forces you to zoom out.
+
+A useful framing: what would your life look like if you made consistent, deliberate progress for the next 15 years? What would your health be like? What skills would you have? What would you have built or created? The roadmap is where you write that answer down.
+
+You don't need to have every goal figured out when you create the roadmap. The title, description, and time horizon are enough to start. Goals come next.
+
+---
+
+### Saving the Roadmap
+
+Click **Save**. The roadmap card appears on your page with the sky-blue gradient header. It will be empty — no goals yet — but it's the foundation your whole plan sits on.
+
+---
+
+### Multiple Roadmaps
+
+You can have more than one roadmap. Some users have:
+- A personal health roadmap (long horizon)
+- A business or career roadmap (shorter horizon)
+- A creative project roadmap (could be 2–5 years)
+
+Each roadmap is completely separate — its own goals, milestones, and tasks. If you have genuinely separate life projects that don't share goals, separate roadmaps make sense. If everything is connected (you want to be healthy so you can build the business, which funds the lifestyle that supports longevity), one roadmap might be better.
+
+---
+
+### Editing a Roadmap
+
+To change a roadmap's title, description, or dates, click the **Edit** button on the roadmap card. The same form opens with your current values. Update and save.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/roadmap — show empty state with ""+ New Roadmap"" button]
+
+> [SCREEN: Click ""+ New Roadmap"" — form opens (modal or inline)]
+
+> [SCREENSHOT: Roadmap form with all fields labeled: Title, Description, Start date, End date]
+
+> [SCREEN: Type ""My Centenarian Journey"" in the Title field]
+
+> [SCREEN: Add a description: ""Long-term health, longevity, and performance goals. 2025–2050.""]
+
+> [SCREEN: Set Start date to today's date, End date to ""2050-01-01""]
+
+> [SCREEN: Click Save — roadmap card appears with the sky-blue gradient header]
+
+> [SCREENSHOT: Roadmap card after saving — callouts: Title, Year range (""2025 – 2050""), Edit button]
+
+> [SCREEN: Click Edit on the roadmap — show the pre-filled form — change the description — save]
+
+> [SCREEN: End on the roadmap card — end lesson]
+
+---
+
+## Key Takeaways
+
+- A roadmap is the top-level container; everything else (goals, milestones, tasks) nests inside it
+- Required: Title, Start date, End date — description is optional
+- Multi-decade time horizons are the point — don't constrain your vision to a year or two
+- You can have multiple roadmaps for genuinely separate life chapters
+- Edit at any time — time horizons change, and that's expected
+",markdown,,,,,,
+Lessons,1,4,Adding Goals,text,300,true,,"# Lesson 04: Adding Goals
+
+**Course:** Mastering the Planner
+**Module:** Roadmap Builder
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Goals are the outcomes that justify the roadmap. They're specific, meaningful achievements you're working toward — not vague intentions, but concrete targets with a category and a target year.
+
+This lesson covers how to add goals to your roadmap, what the fields mean, and how to think about designing good goals.
+
+---
+
+### Adding a Goal
+
+Navigate to `/dashboard/roadmap` and expand your roadmap by clicking on it (or the chevron). Inside the roadmap, you'll see a **+ Add Goal** button.
+
+Click it. The goal creation form opens.
+
+---
+
+### The Goal Form
+
+**Title** — What specifically do you want to achieve? Be concrete. ""Get in shape"" is not a goal — it's a wish. ""Achieve a sub-4:00 mile run"" is a goal. ""Publish a novel by December 2027"" is a goal.
+
+The more specific the title, the easier it is to know when you've achieved it. Vague titles lead to milestone and task ambiguity down the line.
+
+**Description** (optional) — More context on this goal. Why does it matter? What does achieving it look like? How does it connect to the roadmap?
+
+**Category** — Choose from the seven tags:
+- FITNESS — physical performance, body composition, endurance
+- CREATIVE — writing, music, design, art, building
+- SKILL — languages, technical skills, professional capabilities
+- OUTREACH — community involvement, teaching, mentoring, relationships
+- LIFESTYLE — environment, daily systems, housing, travel
+- MINDSET — meditation, therapy, journaling, emotional regulation
+- FUEL — nutrition mastery, cooking skills, food quality
+
+The category affects how the goal is displayed and how it's aggregated in analytics. A FITNESS goal will generate FITNESS milestones and tasks.
+
+**Target year** — The year by which you expect to achieve this goal. This is a commitment, not a wish. If you're not willing to say a year, the goal isn't real yet — it's still an idea.
+
+---
+
+### Designing Goals That Work
+
+The most common mistake in goal-setting: goals that are too vague to generate specific milestones.
+
+A good test: can you name three milestones right now that would clearly indicate you're on track for this goal? If yes, the goal is specific enough. If no, narrow it down.
+
+Another test: could someone other than you verify that you've achieved this goal? ""Be healthier"" can't be verified. ""Run a 5K in under 25 minutes"" can. Verifiability keeps you honest.
+
+**Time horizon alignment:** goals should be achievable within the roadmap's time frame. If your roadmap ends in 2040 and your goal targets 2035, that's well-aligned. If your goal targets 2060 in a roadmap that ends in 2050, consider either extending the roadmap or adjusting the target year.
+
+---
+
+### Goal Status
+
+Goals start as **active**. Over time, you can update the status:
+
+- **Active** — you're working on it
+- **Completed** — you achieved it (congratulations!)
+- **Deferred** — you've paused it; the goal still matters but it's on hold
+- **Archived** — you've decided not to pursue it anymore; it will be removed from the active view
+
+Use Deferred for temporary pauses (injured and can't train, project pivoted, life circumstances changed). Use Completed when you've actually hit the target. Archive goals you've decided to abandon entirely.
+
+---
+
+### Multiple Goals Per Roadmap
+
+A roadmap can have many goals. Across different categories, this is expected — you're not one-dimensional. A healthy roadmap might have:
+- 2–3 FITNESS goals
+- 1–2 SKILL goals
+- 1 CREATIVE goal
+- 1–2 LIFESTYLE goals
+
+Don't add more goals than you can actively work toward simultaneously. Each active goal needs milestones and tasks. If you have 20 active goals but can only realistically work on 4–6 at once, you'll create a cluttered plan with no focus. Add goals when you're ready to generate milestones for them.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/roadmap — expand the roadmap to show the ""Add Goal"" button]
+
+> [SCREEN: Click ""+ Add Goal"" — goal form opens]
+
+> [SCREENSHOT: Goal form with all fields labeled: Title, Description, Category buttons (7 options), Target year dropdown]
+
+> [SCREEN: Type ""Achieve a sub-4:00 mile run"" in the Title field]
+
+> [SCREEN: Click through the category buttons — show all 7 options — click ""FITNESS""]
+
+> [SCREEN: Set Target year to 2027 using the dropdown]
+
+> [SCREEN: Click Create — goal card appears under the roadmap]
+
+> [SCREENSHOT: Roadmap expanded to show the new Goal — callouts: Category badge, Target year, Status ""Active"", Edit button]
+
+> [SCREEN: Add a second goal — ""Publish a novel"" — CREATIVE — 2028 — show two goals now visible]
+
+> [SCREEN: Click on the first goal's status — show how to change it to ""Deferred""]
+
+> [SCREEN: Change it back to ""Active"" — end on the two-goal view]
+
+---
+
+## Key Takeaways
+
+- Goals answer: ""What specific outcomes do I want to achieve by a certain year?""
+- Title should be concrete and verifiable — you must be able to know when you've hit it
+- Seven categories: FITNESS, CREATIVE, SKILL, OUTREACH, LIFESTYLE, MINDSET, FUEL
+- Target year is a commitment — if you can't name a year, the goal isn't ready
+- Status: active → completed when done; deferred for pauses; archived to remove from view
+- Don't create more goals than you can generate milestones for — focus wins over breadth
+",markdown,,,,,,
+Lessons,1,5,Breaking Goals into Milestones,text,300,true,,"# Lesson 05: Breaking Goals into Milestones
+
+**Course:** Mastering the Planner
+**Module:** Roadmap Builder
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+A goal without milestones is just a wish. Milestones are the bridge between the aspirational and the executable — they're the specific, time-bound checkpoints that tell you whether you're on track.
+
+This lesson covers how to create milestones, what makes a good one, and how to use milestone status to actively manage your progress.
+
+---
+
+### Adding a Milestone
+
+Navigate to `/dashboard/roadmap` and expand your roadmap, then expand a goal. You'll see a **+ Add Milestone** button under the goal.
+
+Click it. The milestone form opens.
+
+---
+
+### The Milestone Form
+
+**Title** — A specific, verifiable checkpoint. Not ""improve running"" but ""Run a sub-4:30 mile."" Not ""make progress on the novel"" but ""Complete a full first draft (80,000 words).""
+
+Good milestone titles describe the outcome, not the activity. The activity is what you'll put in tasks. The milestone is what you'll have achieved.
+
+**Description** (optional) — More context: why this milestone, what it unlocks, what it means for the goal.
+
+**Target date** — A specific calendar date by which this milestone will be reached. This is more precise than a goal's target year — milestones should have quarter, month, or week-level precision. Examples:
+- March 31, 2026
+- June 15, 2025
+- December 1, 2027
+
+If you can't assign a target date, the milestone isn't ready. Break it down further or gather more information first.
+
+**Status** — Start with ""Not Started."" The full progression is:
+- **Not Started** — hasn't begun
+- **In Progress** — actively working toward it
+- **Completed** — done
+- **Blocked** — you can't move forward until something else happens (waiting on a resource, an external dependency, recovery from injury, etc.)
+
+---
+
+### What Makes a Good Milestone
+
+The best milestones are:
+
+**Binary** — Either done or not done. ""Complete a half marathon"" is binary. ""Improve my running"" is not. You can't be ""mostly done"" with a binary milestone — clarity is the point.
+
+**Achievable in 1–6 months** — Milestones that stretch longer than 6 months are often goals in disguise. If a milestone would take 2 years, it's probably a goal itself. Break it into 3–4 quarterly milestones instead.
+
+**Sequenced logically** — Earlier milestones should enable later ones. For the sub-4:00 mile goal, the milestone sequence would be: sub-5:00, then sub-4:30, then sub-4:10, then sub-4:00. Each one proves capacity for the next.
+
+**Preceded by a sprint of tasks** — Every milestone should have tasks that specifically prepare for it. If you can't describe what you'd do in the next two weeks to move a milestone toward completion, something is wrong with either the milestone or your planning.
+
+---
+
+### Using Status Actively
+
+The status field isn't just a label — it's a management tool.
+
+Update milestones to **In Progress** when you've started generating tasks for them. This signals that this milestone is live, not hypothetical.
+
+Mark milestones as **Completed** when you've hit the target. The completion timestamp is recorded — over time, you can look back and see exactly when you achieved each checkpoint on the way to a goal.
+
+Use **Blocked** when you genuinely can't move forward. Name the blocker in the description so you can address it. A blocked milestone might need a new prerequisite milestone (""Get clearance from physical therapist"") before it can resume.
+
+---
+
+### How Many Milestones Per Goal?
+
+For a 2–3 year goal, aim for 4–8 milestones total. That's roughly one milestone every 3–6 months.
+
+Too few milestones and you lose the feedback loop — you won't know if you're off track until it's too late. Too many and the milestone layer becomes noisy, with milestones indistinguishable from tasks.
+
+A useful rule: if you can do a milestone in a single week, it's probably a task. If it would take more than a year, it's probably a goal.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/roadmap — expand roadmap and goal — click ""+ Add Milestone""]
+
+> [SCREEN: Milestone form opens]
+
+> [SCREENSHOT: Milestone form with all fields labeled: Title, Description, Target date, Status buttons (Not Started / In Progress / Completed / Blocked)]
+
+> [SCREEN: Type ""Run a sub-4:30 mile"" in the Title field]
+
+> [SCREEN: Set Target date to ""2026-06-15""]
+
+> [SCREEN: Status is ""Not Started"" by default — show it selected]
+
+> [SCREEN: Click Create — milestone appears under the goal with a gray ""Not Started"" badge and the date]
+
+> [SCREENSHOT: Goal expanded to show milestone — callouts: Status badge (gray = Not Started), Target date ""Due: Jun 15, 2026"", Edit button]
+
+> [SCREEN: Add a second milestone: ""Run a sub-4:10 mile"" — Target date: 2026-12-15]
+
+> [SCREEN: Change the first milestone's status to ""In Progress"" — badge changes to amber]
+
+> [SCREENSHOT: Two milestones — first one amber ""In Progress"", second one gray ""Not Started"" — shows the sequence clearly]
+
+> [SCREEN: Click the ""Completed"" status on the first milestone — show the completed timestamp being set — badge goes green]
+
+> [SCREEN: Revert it back to ""In Progress"" for clarity — end lesson]
+
+---
+
+## Key Takeaways
+
+- Milestones are binary, time-bound checkpoints between goals and tasks
+- Title should describe the outcome, not the activity
+- Target date must be a specific calendar date — no ""someday""
+- Status: Not Started → In Progress → Completed (or Blocked when stuck)
+- Best milestones: binary, 1–6 months in scope, sequenced so each one enables the next
+- Aim for 4–8 milestones per 2–3 year goal — enough for a feedback loop, not so many they become noise
+",markdown,,,,,,
+Lessons,1,6,Creating and Scheduling Tasks,text,300,true,,"# Lesson 06: Creating and Scheduling Tasks
+
+**Course:** Mastering the Planner
+**Module:** Roadmap Builder
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Tasks are where planning meets execution. They're the daily actions — the 7 AM training session, the 9 PM writing block, the Tuesday lunch prep — that accumulate over time into milestones, then goals, then roadmaps.
+
+This lesson covers how to create tasks from the Roadmap page, what each field does, and how to think about building a realistic task schedule.
+
+---
+
+### Adding a Task
+
+Navigate to `/dashboard/roadmap`, expand your roadmap and goal, then expand a milestone. You'll see a **+ Add Task** button under the milestone.
+
+Click it. The task creation form opens.
+
+---
+
+### The Task Form
+
+**Date** — The specific calendar date for this task. Not ""sometime this week"" — a specific day. The date determines when this task appears in your Daily Planner.
+
+**Time** — What time of day you'll do this. Enter it in 24-hour format (e.g., 07:00 for 7 AM, 19:30 for 7:30 PM). This orders your tasks within a day — earlier tasks appear first.
+
+**Activity** — A short title describing what you'll do. This is what you see in the Daily Planner list. Keep it concise but specific: ""Morning track session: 6×400m intervals"" is better than ""Track workout"" because it eliminates decision-making when you open the planner.
+
+**Description** (optional) — Detailed notes. Use this for:
+- Exercise protocols (sets, reps, rest periods, weights)
+- Creative session prompts or goals
+- Reference materials, links, or context
+- Progress targets to hit during the session
+
+**Tag** — Which category does this task belong to? This should match the goal's category in most cases. The seven options are the same as goals: FITNESS, CREATIVE, SKILL, OUTREACH, LIFESTYLE, MINDSET, FUEL.
+
+**Priority** — High (P1), Medium (P2), or Low (P3). Priorities show in the Daily Planner and help you triage on busy days. If everything is P1, nothing is P1. Use P1 for tasks that absolutely must happen today, P2 for important but flexible, P3 for ""nice to have.""
+
+---
+
+### Building a Task Schedule
+
+The most effective task planning starts from the milestone's target date and works backward.
+
+For example: if your milestone ""Run a sub-4:30 mile"" is due June 15, and today is February 1, you have about 4.5 months. A four-day-per-week training schedule would give you roughly 70 training sessions before the target date.
+
+Work backward:
+- Week 1–4: Base fitness and form (4 sessions/week × 4 weeks = 16 tasks)
+- Week 5–8: Speed introduction (4 × 4 = 16 tasks)
+- Week 9–12: Threshold intervals (4 × 4 = 16 tasks)
+- Week 13–16: Race-pace preparation (4 × 4 = 16 tasks)
+- Week 17–18: Taper and race (6 tasks)
+
+That's roughly 70 tasks. You wouldn't create all 70 at once — you'd create the next 2–4 weeks at a time, then replenish as you go. The Daily Planner shows you what's coming up, and the Roadmap shows you whether the task volume is appropriate for the milestone.
+
+---
+
+### Creating Tasks in Bulk
+
+If you need many similar tasks (like a training schedule), the most efficient approach is to:
+1. Create the first task with a complete description
+2. Note the milestone it's under
+3. Add tasks for the next 2–3 weeks, adjusting the date and any session-specific details
+
+For recurring tasks with the same pattern every week, use the Recurring Tasks feature covered in Lesson 08 — it generates tasks automatically instead of creating them manually.
+
+---
+
+### Editing Tasks
+
+To edit a task, click the **Edit** button on the task row in the Roadmap view, or click the Edit button on the task card in the Daily Planner. The same form opens with current values pre-filled. Update any field and save.
+
+You can change the date (reschedule), time (adjust your schedule), activity name, description, priority, or any other field. All changes take effect immediately.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/roadmap — expand to the milestone level — click ""+ Add Task""]
+
+> [SCREEN: Task form opens]
+
+> [SCREENSHOT: Task form with all fields labeled: Date, Time, Activity, Description, Tag buttons, Priority buttons]
+
+> [SCREEN: Set Date to tomorrow's date]
+
+> [SCREEN: Set Time to ""07:00""]
+
+> [SCREEN: Type ""Morning track session: 6×400m @ easy pace"" in Activity field]
+
+> [SCREEN: Type ""Warm up 10 min. 6 reps of 400m with 90 sec rest. Cool down 5 min. Focus on form, not speed."" in Description]
+
+> [SCREEN: Click ""FITNESS"" tag]
+
+> [SCREEN: Click ""High (P1)"" priority]
+
+> [SCREEN: Click Create — task appears under the milestone]
+
+> [SCREENSHOT: Task row in the milestone — callouts: Date, Time, Activity name, Priority badge]
+
+> [SCREEN: Add two more tasks with different dates — quickly show 3 tasks under the milestone]
+
+> [SCREEN: Navigate to /dashboard/planner — show one of the tasks appearing in the daily planner]
+
+> [SCREENSHOT: Daily planner with the task visible — callout: ""Task created in Roadmap view → appears here automatically""]
+
+> [SCREEN: Click Edit on the task in the planner — show the pre-filled form]
+
+> [SCREEN: Change the time to 08:00 — save — task updates immediately]
+
+> [SCREEN: End on the daily planner — end lesson]
+
+---
+
+## Key Takeaways
+
+- Tasks require: Date, Time, Activity, Tag, and Priority — description is optional but highly recommended
+- Date and Time determine when the task appears in the Daily Planner
+- Activity name should be specific enough to eliminate decision-making at execution time
+- Use description for protocols, notes, targets, or anything you'll want at execution time
+- Build task schedules by working backward from milestone target dates
+- For recurring patterns (daily training, weekly sessions), use Recurring Tasks (Lesson 08)
+",markdown,,,,,,
+Lessons,1,7,Using the Daily Planner,text,360,true,,"# Lesson 07: Using the Daily Planner
+
+**Course:** Mastering the Planner
+**Module:** Daily Execution
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The Roadmap page is where you build your plan. The Daily Planner is where you live it. It's your operational view — what needs to happen today, this week, or this month — and it's the interface you'll interact with every single day.
+
+This lesson covers everything about using the Daily Planner effectively: the view modes, task completion, and how to make the planner a genuine daily habit.
+
+---
+
+### Navigating to the Daily Planner
+
+Go to `/dashboard/planner`. You'll see your tasks organized by date, starting from today.
+
+If you've created tasks on the Roadmap page, they appear here automatically — no extra steps needed. The planner is a live view of all your tasks, regardless of which milestone or goal they belong to.
+
+---
+
+### View Modes
+
+At the top of the planner, you'll find a view mode toggle with three options:
+
+**Day** — Shows tasks for a single day. Good for focus: see only what's on today's plate. If you have many tasks and want to stay in a narrow window, Day mode keeps it simple.
+
+**Week** — Shows tasks from Monday through Sunday of the selected week. This is the most popular view for most users — enough context to see the week's shape without being overwhelming. You can see which days are heavy and which are light.
+
+**Month** — Shows tasks for the entire calendar month. Useful for periodic planning sessions: step back, see the full month, and identify gaps, overloads, or upcoming milestone dates.
+
+Toggle between modes using the Day/Week/Month buttons. The date picker adjusts automatically to match the selected period.
+
+---
+
+### Navigating Dates
+
+Use the **date picker** to jump to any specific date. Change the view mode and the date picker together to see, say, ""the week of March 10"" or ""next month.""
+
+For the Day view, clicking forward or backward moves by one day. For Week, it moves a full week. For Month, a full month.
+
+---
+
+### Completing Tasks
+
+Each task card has a **checkbox** on the left side. Check it when you've completed the task.
+
+When a task is checked:
+- The activity text gets a strikethrough
+- The task is marked complete in the database with a `completed_at` timestamp
+- The progress bar at the top updates immediately
+- The completion count (""X / Y tasks"") increments
+
+The progress bar shows your completion percentage for the current view period. For Day mode, it shows today's progress. For Week mode, it shows the week's completion percentage.
+
+This is the daily feedback loop: open the planner in the morning, see what's scheduled, work through the day, and watch the progress bar fill up.
+
+---
+
+### Task Cards in the Planner
+
+Each task card shows:
+
+**Tag badge** — The colored category (FITNESS, CREATIVE, etc.) so you can see at a glance what kind of work this is.
+
+**Priority** — P1, P2, or P3. P1 items are shown with higher visual emphasis — they're what you must do today.
+
+**Financial info** (if set) — If a task has estimated cost or revenue, it shows in green (+$X) or red (-$X) inline. See Lesson 09 for more on financial tracking.
+
+**Activity name** — What you're doing, with strikethrough if completed.
+
+**Time** — When the task is scheduled, with a clock icon.
+
+**Expand toggle** — Click to show the full description. If you wrote a detailed session protocol in the description, it appears here.
+
+**Edit button** — Opens the edit form for this task. Change date, time, activity, description, priority, or any other field.
+
+---
+
+### Financial Summary
+
+At the bottom of the Planner (or in a summary panel), you'll see a summary for the current view period:
+- **Estimated Cost** — total estimated cost of all tasks in the period
+- **Actual Cost** — total actual cost logged
+- **Revenue** — total revenue associated with tasks
+- **Net Profit** — revenue minus actual cost (green if positive, red if negative)
+
+This is useful for tracking project economics. If you're building a business and tagging tasks with their costs and revenue, the Planner summary gives you a live financial picture.
+
+---
+
+### Building a Daily Habit with the Planner
+
+The Daily Planner only works if you actually open it. The users who get the most value from it have a morning routine built around it:
+
+1. Open the Daily Planner (Day view)
+2. Review what's scheduled for today
+3. Note any P1 tasks that must happen — those are non-negotiable
+4. Throughout the day, check tasks off as you complete them
+5. End of day: see the progress bar and reflect on what got done
+
+Some people also do a brief evening review in Week mode: look at what they completed this week, see what's coming up tomorrow, and adjust any tasks that need to move.
+
+The planner is only as useful as the habits around it. Two minutes in the morning and two minutes in the evening is enough to get significant value.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/planner — show the Day view with several tasks visible]
+
+> [SCREENSHOT: Planner in Day view with callouts: View mode toggle (Day/Week/Month highlighted), Date picker, Progress bar, Task count (""3 / 7 tasks""), Task cards]
+
+> [SCREEN: Click the ""Week"" view mode — show the planner expanding to show Monday–Sunday]
+
+> [SCREENSHOT: Week view showing multiple days with tasks distributed across them — callout: ""See your week's shape at a glance""]
+
+> [SCREEN: Click the ""Month"" view — show a full calendar month]
+
+> [SCREEN: Switch back to ""Day"" view]
+
+> [SCREEN: Click the date picker — advance to tomorrow — show the planner updating to tomorrow's tasks]
+
+> [SCREEN: Return to today]
+
+> [SCREEN: Check the checkbox on a P1 task — show the strikethrough appear, progress bar increment, task count update]
+
+> [SCREENSHOT: Task card before/after completion — strikethrough text, progress bar change callout]
+
+> [SCREEN: Expand a task to show the description]
+
+> [SCREEN: Click Edit on a task — show the form — change the time — save — task updates in the list]
+
+> [SCREEN: Show the financial summary panel at the bottom — label each stat]
+
+> [SCREEN: End on the progress bar showing partial completion — end lesson]
+
+---
+
+## Key Takeaways
+
+- Three view modes: Day (today's focus), Week (the week's shape), Month (big picture)
+- Check the checkbox to mark a task complete — strikethrough + progress bar update instantly
+- Completion percentage at the top shows your progress for the current view period
+- P1/P2/P3 priorities help you triage on busy days — always protect your P1 tasks
+- Tag badges, financial info, and the expand toggle are all in the task card
+- Two-minute morning + two-minute evening check-in is all it takes to use the planner effectively
+",markdown,,,,,,
+Lessons,1,8,Recurring Tasks,text,300,true,,"# Lesson 08: Recurring Tasks
+
+**Course:** Mastering the Planner
+**Module:** Daily Execution
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+If you train four days a week, meditate every morning, or review your finances every Monday, you shouldn't have to create that task manually every time. Recurring tasks automate the generation of repetitive scheduled work so your planner stays current without extra effort.
+
+---
+
+### What Recurring Tasks Are
+
+A recurring task is a pattern, not a single entry. You define the task once — what it is, when it happens, how often — and the system generates individual task instances according to that pattern.
+
+Each generated instance is a real task in your planner: it has a date, time, activity name, and all the other fields. You check it off just like any manually created task. The difference is that the next instance generates automatically.
+
+---
+
+### Creating a Recurring Task
+
+Go to `/dashboard/planner` and click **+ Recurring Task** (or the recurring task button in the toolbar).
+
+The recurring task form opens.
+
+---
+
+### The Recurring Task Form
+
+**Milestone** — Select which milestone this recurring task belongs to. Every recurring task must be linked to a milestone, just like regular tasks. Start typing the milestone name and select from the dropdown.
+
+**Activity** — What you're doing. Same as a regular task activity name.
+
+**Description** (optional) — Your standard session protocol, a template you'll follow each time, or notes about the recurring activity.
+
+**Tag** — Which category.
+
+**Priority** — P1, P2, or P3.
+
+**Time** — The time of day for this task (HH:MM format).
+
+**Recurrence pattern** — This is the key field. Choose from:
+
+---
+
+### Recurrence Patterns
+
+**Daily** — Creates a task every single day. Good for: meditation, journaling, daily review, stretching routines.
+
+**Weekly** — Creates a task on specific days of the week. You select which days: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday (any combination). This is the most common pattern. Good for: training schedules (Mon/Wed/Fri/Sat), weekly meetings (Tuesday mornings), or habits on specific days.
+
+**Biweekly** — Creates a task every two weeks (every 14 days). Good for: fortnightly check-ins, bi-weekly meal prep sessions, long-run training (when combined with a weekly shorter run).
+
+**Monthly** — Creates a task on a specific day of the month (e.g., the 1st, the 15th, the last day). Good for: monthly financial reviews, monthly goal check-ins, cycle-based habits.
+
+**Custom** — Creates a task every N days of your choice. If you want something every 3 days, or every 5 days, custom handles it. Good for: progressive training loads, recovery cycles, unconventional schedules.
+
+---
+
+### Setting an End Date (Optional)
+
+Most recurring patterns can have an optional end date. If you're setting up a training block that runs through a specific milestone date, set the end date to match. After that date, no more instances will be generated.
+
+If you don't set an end date, the pattern continues indefinitely until you pause or delete the recurring task.
+
+---
+
+### Pausing or Removing a Recurring Task
+
+If a recurring task is no longer relevant — you're injured, the goal has changed, the habit has become automatic enough that you don't need to track it — you can deactivate the recurring pattern. This stops future instances from generating. Existing instances (already generated) are unaffected.
+
+---
+
+### Recurring vs. Manual Tasks
+
+Use recurring tasks for:
+- Regular training sessions or workouts
+- Daily habits (meditation, journaling, stretching)
+- Weekly processes (review, meal prep, planning session)
+- Recurring commitments (classes, appointments, scheduled work blocks)
+
+Use manual tasks for:
+- One-off events (a specific race, a presentation, a launch day)
+- Sessions with non-standard content that changes each time
+- Tasks you need fine-grained control over
+
+Many users use both: recurring tasks for the scaffolding of weekly routines, plus manual tasks for specific events and projects. The combination means you always have a realistic schedule in the planner without spending a lot of time on setup.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/planner — click ""+ Recurring Task"" button]
+
+> [SCREEN: Recurring task form opens]
+
+> [SCREENSHOT: Recurring task form with all fields labeled: Milestone selector, Activity, Description, Tag, Priority, Time, Recurrence pattern selector]
+
+> [SCREEN: Click the Milestone selector — type a milestone name — select it]
+
+> [SCREEN: Type ""Morning track session: speed intervals"" in Activity]
+
+> [SCREEN: Set Time to ""07:00""]
+
+> [SCREEN: Click ""FITNESS"" tag, ""High (P1)"" priority]
+
+> [SCREEN: Click the Recurrence pattern selector — show all 5 options: Daily, Weekly, Biweekly, Monthly, Custom]
+
+> [SCREEN: Select ""Weekly"" — a day-of-week selector appears — select Monday, Wednesday, Friday, Saturday]
+
+> [SCREENSHOT: Weekly pattern with Mon/Wed/Fri/Sat selected — callout: ""4 sessions per week generated automatically""]
+
+> [SCREEN: Set an end date 3 months out]
+
+> [SCREEN: Click Create — form closes]
+
+> [SCREEN: Navigate to /dashboard/planner in Week view — show the recurring tasks appearing on Mon/Wed/Fri/Sat]
+
+> [SCREENSHOT: Week view with recurring training tasks on the selected days — callout: ""Generated automatically from the recurring pattern""]
+
+> [SCREEN: Check one off — show it completing normally]
+
+> [SCREEN: Navigate to next week — show tasks generated for next week as well]
+
+> [SCREEN: End on the planner with recurring tasks visible — end lesson]
+
+---
+
+## Key Takeaways
+
+- Recurring tasks generate individual task instances automatically based on a pattern
+- Must be linked to a milestone — each instance is a real task in your planner
+- Five patterns: Daily, Weekly (select days), Biweekly, Monthly (specific day), Custom (every N days)
+- Optional end date — use it to align with a milestone's target date
+- Deactivate a pattern to stop future generation; past instances are unaffected
+- Best for regular habits and training schedules; use manual tasks for one-off events
+",markdown,,,,,,
+Lessons,1,9,Financial Tracking in Your Plan,text,300,true,,"# Lesson 09: Financial Tracking in Your Plan
+
+**Course:** Mastering the Planner
+**Module:** Analytics
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Goals cost money. Training equipment, coaching fees, software, books, course fees, therapy, supplements, recording equipment — pursuing meaningful goals requires real investment. CentenarianOS lets you attach financial data to every level of your plan so you can see the true cost of your goals and track the return on your investments.
+
+---
+
+### Financial Fields at Every Level
+
+Every roadmap, goal, milestone, and task has three financial fields:
+
+**Estimated cost** — What you expect to spend. Before you start, estimate the cost: a training plan might cost $50/month, a music course might cost $200, a race entry might cost $100. Estimated costs sum up through the hierarchy so you can see the projected financial commitment of a whole goal or roadmap.
+
+**Actual cost** — What you actually spent. Update this as costs occur. This might be the same as estimated (if you planned well) or different (costs always run over).
+
+**Revenue** — Income generated from this work. If you're building a freelance skill, a business, or a creative output you sell, log the revenue here. A task might represent a client meeting, a sale, or a launch. Logging revenue lets you calculate the return on your investment.
+
+The difference between revenue and actual cost is your **net profit** (or net investment, if it's negative). Seeing ""$2,400 invested in this goal, $0 returned so far"" is honest feedback. Seeing ""$800 invested, $3,200 returned"" is motivating.
+
+---
+
+### Where Financial Data Shows Up
+
+**Task cards in the Daily Planner** — if a task has a cost or revenue entry, it shows inline in the card: green ""+$X"" for revenue, red ""-$X"" for cost. These are quick-scan reminders of the financial dimension of your daily work.
+
+**Planner summary bar** — at the bottom of the planner (or in a summary card), the current view period's financial totals are shown: Estimated Cost, Actual Cost, Revenue, and Net Profit. For a week view, this shows the week's financial picture. For a month view, the month's.
+
+**Roadmap hierarchy** — financial totals flow upward. A goal's total cost is the sum of all its milestones' costs, which are the sum of their tasks' costs. You can see at the goal or roadmap level what the entire project costs and earns.
+
+---
+
+### Practical Uses
+
+**Project tracking** — If a milestone is ""Launch a product"" and the tasks include ""hire a designer ($500)"", ""run ads ($200)"", ""set up hosting ($50)"", the milestone's actual cost reflects the true launch spend.
+
+**ROI on learning** — If you invest $1,000 in courses and coaching to learn a skill, and that skill generates $5,000 in freelance revenue over the next year, you can see that 5x return in your plan.
+
+**Longevity investment tracking** — Some users track health spending here: gym membership, supplements, coaching fees. Seeing the annual investment in your physical health written down is useful context for whether you're actually prioritizing it.
+
+---
+
+### Keeping It Simple
+
+Financial tracking is optional at every level. Many users only track costs and revenue for professional or business goals and leave personal development goals without financial data. That's fine — the system only surfaces financial information when it's been entered.
+
+If financial tracking adds friction to your planning workflow, skip it entirely. The core value of the Planner is the hierarchy and the daily execution loop. Financials are an enrichment layer, not a requirement.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/roadmap — expand a goal to show a milestone — expand a milestone to show tasks]
+
+> [SCREEN: Click Edit on a task — show the edit form — scroll down to find the financial fields: Estimated cost, Actual cost, Revenue]
+
+> [SCREENSHOT: Task edit form with financial fields labeled — callout: ""Optional fields — add when relevant""]
+
+> [SCREEN: Enter: Estimated cost: 50, Actual cost: 50, Revenue: 0 — Save]
+
+> [SCREEN: Show the task card in the planner — the cost shows as ""-$50"" in red on the card]
+
+> [SCREENSHOT: Task card with cost indicator highlighted — callout: ""Inline financial display""]
+
+> [SCREEN: Add revenue to a different task — enter Revenue: 200 — Save]
+
+> [SCREEN: Show that task card with ""+$200"" in green]
+
+> [SCREEN: Navigate to /dashboard/planner — show the financial summary panel at the bottom with totals for the week]
+
+> [SCREENSHOT: Planner financial summary — callouts: Estimated Cost, Actual Cost, Revenue, Net Profit]
+
+> [SCREEN: End on the summary panel — end lesson]
+
+---
+
+## Key Takeaways
+
+- Every roadmap, goal, milestone, and task has: Estimated cost, Actual cost, Revenue
+- Financial data is optional — add it when it's relevant, skip it when it's not
+- Task cards show inline cost (-$X in red) and revenue (+$X in green) at a glance
+- The Planner summary bar shows total cost, revenue, and net profit for the current view period
+- Costs aggregate upward — a goal's total = sum of all its milestones, which = sum of their tasks
+- Useful for: project economics, ROI on learning, and tracking your investment in health and longevity
+",markdown,,,,,,
+Lessons,1,10,Archiving and Restoring,text,300,true,,"# Lesson 10: Archiving and Restoring
+
+**Course:** Mastering the Planner
+**Module:** Plan Maintenance
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Plans change. Goals get completed. Some goals get dropped. Milestones get superseded. After a few months of active planning, you'll accumulate items that are no longer relevant to your active work — but that you might not want to delete permanently.
+
+The Archive system lets you remove completed or abandoned items from your active view without losing the data. Think of it as decluttering without throwing anything away.
+
+---
+
+### What Archiving Does
+
+When you archive a roadmap, goal, or milestone, it:
+- Is removed from your active view (the default view you see every day)
+- Gets an `archived_at` timestamp and its status is set to ""archived""
+- All its children are moved with it (unless you choose to keep them)
+- Is accessible in the ""Show Archived"" view
+- Is permanently deleted after 30 days unless you restore it first
+
+Archiving is not permanent. You have 30 days to change your mind. After that, the item and all its data are deleted automatically.
+
+---
+
+### The Archive vs. Delete Distinction
+
+**Archive** — the item disappears from your active view but all data is preserved for 30 days. Recoverable.
+
+**Delete** — permanent, immediate. Only available on archived items. Use delete when you're sure you don't need the data and want to clean up before the 30-day auto-deletion.
+
+There's no direct delete from the active view — you must archive first, then delete. This two-step process prevents accidental data loss.
+
+---
+
+### How to Archive an Item
+
+On the Roadmap page, each roadmap, goal, and milestone row has an **Archive** button (archive icon). Click it.
+
+An archive confirmation modal opens showing:
+- The item you're archiving
+- How many children it has (goals inside a roadmap, milestones inside a goal, tasks inside a milestone)
+- What will happen to those children
+
+You have two options for children:
+
+**Cascade archive** — archive the item and all its children. Use this when you're done with everything in this branch. Example: you've completed a fitness goal and all its milestones — archive the goal and cascade-archive all associated milestones and tasks.
+
+**Move children** — reassign the children to another parent before archiving this item. Use this when the item is no longer needed but its children are still relevant. Example: a milestone that's been superseded, but the tasks under it are still valid and can move to a replacement milestone.
+
+Choose your option and confirm. The item disappears from the active view.
+
+---
+
+### Viewing Archived Items
+
+At the top of the Roadmap page, there's a **Show Archived** toggle. Click it to switch to the archived view.
+
+In the archived view:
+- All archived roadmaps, goals, and milestones are shown with their `archived_at` date
+- Each item shows how many days until auto-deletion (""Auto-delete in 24 days"")
+- Each item has a **Restore** button (↻) and a **Delete** button (🗑️)
+
+The archive count badge on the toggle button shows how many archived items you have across all levels.
+
+---
+
+### Restoring an Item
+
+In the archived view, click **Restore** (↻) on any item. The item returns to your active view with its status reset to active. Its children (if they were cascade-archived with it) are also restored.
+
+Restoring is useful when:
+- You archived something prematurely
+- A goal you deferred comes back into focus
+- You realized mid-archive that you still need the data
+- A roadmap you thought you were done with has become relevant again
+
+---
+
+### Archive Count Badges
+
+The Show Archived toggle shows a badge count: the total number of archived items across all levels. This is a useful maintenance signal. If the badge shows ""47"", you have a lot of archived items that should probably be reviewed and either restored or permanently deleted.
+
+A healthy planning practice: at the start of each quarter, review archived items. Restore anything that needs to come back. Delete anything you're sure you don't need. Keep the archive small and intentional.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/roadmap — show the active view with several items]
+
+> [SCREEN: Click the Archive button (archive icon) on a milestone — archive confirmation modal opens]
+
+> [SCREENSHOT: Archive modal with callouts: Item name, Child count, ""Cascade archive"" option, ""Move children"" option]
+
+> [SCREEN: Select ""Cascade archive"" — click Confirm — milestone disappears from active view]
+
+> [SCREEN: Click ""Show Archived"" toggle — archived view loads]
+
+> [SCREENSHOT: Archived view showing the archived milestone — callouts: Archived date, ""Auto-delete in X days"", Restore button, Delete button]
+
+> [SCREEN: Click Restore on the archived milestone — show it returning to the active view]
+
+> [SCREEN: Archive it again — this time choose ""Move children"" — show the dropdown for selecting a new parent milestone]
+
+> [SCREEN: Select the new parent — confirm — original milestone archived, children moved to new parent]
+
+> [SCREEN: Show the archive count badge on the toggle — callout: ""Total archived items across all levels""]
+
+> [SCREEN: End on the active view — end lesson]
+
+---
+
+## Key Takeaways
+
+- Archive removes items from the active view without deleting them — they're recoverable for 30 days
+- Cascade archive = archive the item and all its children; Move children = reassign children, then archive
+- Show Archived toggle switches to the archived view; badge shows total archived count
+- Restore (↻) brings an item back to active; Delete (🗑️) permanently removes it immediately
+- 30-day auto-deletion is the safety net — use the quarterly archive review to clean up
+- No direct delete from the active view — must archive first, reducing accidental data loss
+",markdown,,,,,,
+Lessons,1,11,The AI Weekly Review,text,360,true,,"# Lesson 11: The AI Weekly Review
+
+**Course:** Mastering the Planner
+**Module:** Reflection & Insights
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Execution without reflection is just busyness. The weekly review is where you step back, see the full picture of how your week went, and get one clear focus for the week ahead. In CentenarianOS, this review is generated by Gemini — an AI that reads your actual data across every module and writes a personalized coaching summary.
+
+---
+
+### What the Weekly Review Is
+
+Once a week (typically Sunday evening or Monday morning), you generate a review. The system pulls data from every module you've been using — tasks, nutrition, focus sessions, health metrics, travel, courses — and synthesizes it into a 300–450 word plain-text summary.
+
+It covers:
+- **Energy & Recovery** — sleep, resting heart rate, HRV, pain levels, energy ratings
+- **Focus & Productivity** — focus sessions logged, minutes of deep work, quality ratings, task revenue
+- **Nutrition** — meals logged, Green/Yellow/Red NCV distribution, restaurant vs. home-cooked ratio
+- **Tasks** — total scheduled, total completed, completion percentage
+- **Learning** — lessons completed in courses, watch time, what you studied
+- **Travel** — bike miles logged, commute days, CO2 saved, car miles, fuel cost
+
+The review ends with **one actionable focus for the coming week** — a specific, grounded recommendation based on what the data shows.
+
+---
+
+### Navigating to Weekly Review
+
+Go to `/dashboard/weekly-review`. You'll see:
+- A week selector with navigation arrows (< >)
+- A **Generate Review** button
+- The current week's review (if you've generated one)
+- An archive of past reviews on the side
+
+---
+
+### Generating Your First Review
+
+Make sure you're on the week you want to review. The default is the current week, but you can navigate backward to review past weeks too.
+
+Click **Generate Review**.
+
+The system makes 8 parallel data queries across all your modules, then sends the aggregated data to Gemini with a coaching prompt. This typically takes 30–60 seconds.
+
+When the review appears, read it all the way through. It will reference specific numbers from your week: ""You completed 14 of 21 scheduled tasks (67%)"" or ""Your nutrition averaged Yellow NCV for the week with 3 restaurant meals."" These aren't generic motivational statements — they're grounded in your actual data.
+
+---
+
+### The Review Structure
+
+A typical weekly review covers six sections in sequence:
+
+1. **Energy & Recovery** — how your body held up (sleep quality, pain levels, HRV trends)
+2. **Focus & Productivity** — time in deep work and task completion rate
+3. **Nutrition** — meal quality and eating patterns
+4. **Tasks & Milestones** — progress toward goals
+5. **Learning** — course and skill progress
+6. **Travel & Activity** — movement, commutes, bike savings
+
+If you didn't log any data in a module that week (e.g., no health metrics logged), the review will note the gap and suggest that tracking it would improve future reviews. It flags zero or null data rather than ignoring it.
+
+---
+
+### The Actionable Focus
+
+The final paragraph of every review gives you one concrete focus for the coming week. This might be:
+- ""Your task completion rate dropped to 52% — focus on protecting your P1 tasks and deferring P3s when time is tight""
+- ""Nutrition was mostly Yellow with significant restaurant meals — consider logging one more home-cooked protocol meal per day""
+- ""You had no focus sessions this week — schedule at least two 45-minute deep work blocks as P1 tasks for Monday and Wednesday""
+
+The focus is based on what your data actually shows, not generic advice. This is the most actionable part of the review.
+
+---
+
+### Past Reviews
+
+Your generated reviews are stored. The archive sidebar on the review page lists every week you've generated a review for — click any date to load that week's review.
+
+Over time, the archive becomes a journal of your progress. Looking back at reviews from three months ago and comparing them to now is one of the most motivating experiences the system offers. The numbers change. The patterns become visible.
+
+---
+
+### When to Do It
+
+Most users generate their review on Sunday evening or first thing Monday morning. The best time is when you have 5–10 minutes to actually read it, not just generate it and close the tab.
+
+The review is most valuable when you take the actionable focus seriously and act on it during the coming week. If you consistently generate reviews but ignore the focus, the pattern will eventually show up in the data itself.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/weekly-review — show the interface with week selector and Generate button]
+
+> [SCREENSHOT: Weekly review page with callouts: Week navigation (<>), Selected week date range, Generate Review button, Past reviews sidebar]
+
+> [SCREEN: Click ""Generate Review"" — show a loading state (spinner or progress message)]
+
+> [SCREEN: After ~30 seconds, the review appears — scroll through the full review content]
+
+> [SCREENSHOT: Generated review with callouts pointing to different sections: Energy & Recovery, Tasks & Milestones, Nutrition, actionable focus paragraph at the end]
+
+> [SCREEN: Click a past review in the sidebar — show that week's review loading]
+
+> [SCREEN: Navigate back to the current week]
+
+> [SCREEN: Click ""Regenerate"" (shown because a review already exists for this week) — show it regenerating]
+
+> [SCREENSHOT: Regenerated review — callout: ""Regenerate to refresh with the latest data if you've logged more since the first generation""]
+
+> [SCREEN: End on the review content — end lesson and the course]
+
+---
+
+## Key Takeaways
+
+- The weekly review is an AI-generated (Gemini) coaching summary based on your actual data from all modules
+- Covers: energy/recovery, focus/productivity, nutrition, tasks, learning, and travel
+- Generation takes 30–60 seconds; pulls from 8 data sources in parallel
+- The final paragraph gives one concrete actionable focus for the coming week — based on real data, not generic advice
+- Past reviews are archived — reading them over time shows your long-term progress
+- Best done Sunday evening or Monday morning — read it fully and act on the focus this week
+",markdown,,,,,,
+Lessons,1,12,Task Contacts & Locations,text,180,true,,"# Lesson 12: Task Contacts & Locations
+
+**Course:** Mastering the Planner
+**Module:** Connections
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Tasks don't just have dates and descriptions — they can also have a who and a where. Task contacts and locations let you assign a vendor, customer, or place to any task, turning your planner into a context-aware schedule.
+
+---
+
+### Assigning a Contact to a Task
+
+When editing a task (via the EditTaskModal), you'll see a **Contact** field. This uses the same ContactAutocomplete component from the Finance module:
+
+1. Start typing a contact name
+2. Select from the dropdown of saved contacts
+3. The contact is assigned to the task
+
+The contact appears on the task card as additional context — you can see at a glance ""Costco"" or ""Dr. Smith"" alongside the task description.
+
+---
+
+### Assigning a Location to a Task
+
+If the selected contact has locations (sub-addresses), a **Location** dropdown appears below the contact field. Select a specific location:
+
+- ""Costco → Main Store (123 Main St)""
+- ""Client: Acme → Downtown HQ (456 Market St)""
+
+The location is stored as `tasks.location_id`, referencing the `contact_locations` table.
+
+If the contact has only one location, it may auto-select. If the contact has no locations, the location field doesn't appear.
+
+---
+
+### Why Assign Contacts and Locations?
+
+**Context on your schedule** — when reviewing your daily planner, seeing ""Meet with Acme Corp at Downtown HQ"" is more useful than just ""Client meeting.""
+
+**Cross-module tracing** — the same contacts and locations used in Finance (vendor autocomplete) and Travel (trip endpoints) appear here. This means ""Costco"" in your planner, your transactions, and your trips all reference the same contact record.
+
+**Future analysis** — task contacts let you see patterns: how often you visit a vendor, which locations you frequent, and how contacts relate to your time allocation.
+
+---
+
+### Managing Contacts on Tasks
+
+- **Change contact** — edit the task, clear the current contact, select a new one
+- **Remove contact** — edit the task, clear the contact field, save
+- **Contact with no locations** — only the contact name is stored; no location sub-select
+- **New contacts** — if the contact doesn't exist, the ""Save?"" prompt lets you create it inline
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/planner — click a task to open EditTaskModal]
+
+> [SCREEN: Scroll to the Contact field — start typing a contact name]
+
+> [SCREENSHOT: ContactAutocomplete in task modal — callout: ""Same contact system used in Finance and Travel""]
+
+> [SCREEN: Select a contact — show the Location dropdown appear with sub-locations]
+
+> [SCREEN: Select a location — save the task]
+
+> [SCREEN: Show the task card on the planner with the contact and location displayed]
+
+---
+
+## Key Takeaways
+
+- Tasks can have an assigned contact (vendor/customer/location) via ContactAutocomplete
+- If the contact has locations, a sub-select lets you pick a specific address
+- Same contacts used across Finance (vendors), Travel (trip endpoints), and Planner (tasks)
+- Contacts add context to your schedule and enable cross-module tracing
+- Create new contacts inline with the ""Save?"" prompt
+",markdown,,,,,,
+Lessons,1,13,Cross-Module Activity Links,text,240,true,,"# Lesson 13: Cross-Module Activity Links
+
+**Course:** Mastering the Planner
+**Module:** Connections
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Activity links let you connect a task to records in other modules — a trip, a transaction, a piece of equipment, a workout, or a recipe. This lesson covers how to create and manage activity links from the task edit modal.
+
+---
+
+### What Are Activity Links?
+
+An activity link is a bidirectional connection between two records in different modules. When you link a task to a trip, the task shows the trip and the trip shows the task. Neither record is modified — the link is just a cross-reference.
+
+Supported entity types:
+- Task ↔ Trip
+- Task ↔ Route (multi-stop)
+- Task ↔ Transaction
+- Task ↔ Equipment
+- Task ↔ Recipe
+- Task ↔ Fuel Log
+- Task ↔ Maintenance
+- Task ↔ Workout
+
+---
+
+### Creating Activity Links on Tasks
+
+In the EditTaskModal, scroll to the **Linked Activities** section. This uses the ActivityLinker component:
+
+1. Click **+ Link**
+2. Select an entity type from the dropdown (e.g., ""trip"")
+3. Type a search term
+4. Click the search icon or press Enter
+5. Click a result to create the link
+6. A color-coded pill appears showing the linked item
+
+You can add multiple links to different entity types.
+
+---
+
+### Reading Activity Links
+
+Each link pill shows:
+- Entity type label (e.g., ""trip"", ""transaction"", ""equipment"")
+- Display name (e.g., ""SF to Vegas"", ""$1,799 at B&H Photo"", ""Sony A7III"")
+- An X button to remove the link
+
+The display name is resolved from the linked record — you see the trip name, transaction vendor + amount, or equipment name.
+
+---
+
+### Common Task Links
+
+| Task | Linked To | Purpose |
+|------|-----------|---------|
+| ""Buy camera gear"" | Transaction ($1,799 at B&H) | Track purchase spend |
+| ""Road trip prep"" | Trip (SF to Vegas) | Connect planning to execution |
+| ""Bike maintenance"" | Equipment (Trek Domane) + Maintenance record | Full equipment lifecycle |
+| ""Meal prep Sunday"" | Recipe (Chicken Stir Fry) | Connect planning to cooking |
+| ""Client meeting"" | Transaction (Invoice #45) | Connect task to income |
+
+---
+
+### Removing Links
+
+Click the X on any link pill. The connection is removed immediately. Neither the task nor the linked record is affected — only the cross-reference is deleted.
+
+---
+
+### Activity Links Across the Platform
+
+Activity links aren't just for tasks. The same system works on:
+- Equipment detail pages (Lesson 06 in the Equipment course)
+- Trip detail pages
+- Any module with an ActivityLinker component
+
+All links are bidirectional — creating a link from a task to a trip also makes that link visible on the trip's detail page.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Open EditTaskModal on a task — scroll to Linked Activities]
+
+> [SCREENSHOT: ActivityLinker in task modal — callouts: ""+ Link"" button, entity type dropdown, search field]
+
+> [SCREEN: Click ""+ Link"" — select ""trip"" — search ""Vegas""]
+
+> [SCREEN: Click a result — show the link pill appear]
+
+> [SCREEN: Add another link: select ""equipment"" — search ""camera"" — click result]
+
+> [SCREENSHOT: Task with two activity links — callout: ""Trip and equipment linked to this task""]
+
+> [SCREEN: Click X on a link — show it removed]
+
+> [SCREEN: Navigate to the linked trip — show the task appearing on the trip's detail page]
+
+---
+
+## Key Takeaways
+
+- Activity links connect tasks to trips, transactions, equipment, recipes, workouts, and more
+- Use the ActivityLinker in EditTaskModal: + Link → select type → search → click result
+- Links are bidirectional — visible on both the task and the linked record
+- Display names are auto-resolved (trip names, transaction vendors, equipment names)
+- Removing a link deletes only the cross-reference, not the underlying records
+",markdown,,,,,,

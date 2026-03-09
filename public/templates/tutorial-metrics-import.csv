@@ -1,0 +1,915 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+Lessons,1,1,Welcome to Health Metrics,text,240,true,,"# Lesson 01: Welcome to Health Metrics
+
+**Course:** Mastering Health Metrics
+**Module:** Introduction
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Longevity is a long game. The data you track today won't mean much in isolation — but a year from now, those daily logs become a dataset that shows you patterns most people never see. When your energy tanked in September, what was your sleep doing? When your focus was sharpest, what did your HRV look like? These questions are only answerable if you tracked the data.
+
+The Health Metrics module is where that data lives.
+
+---
+
+### What Health Metrics Tracks
+
+The module tracks up to 14 data points per day, organized into three tiers:
+
+---
+
+### Tier 1: Core Metrics
+
+Always available — no unlock required. These are the baseline health signals most people can track without any special device:
+
+- **Resting Heart Rate (bpm)** — Your resting HR on waking. One of the most sensitive daily indicators of recovery, stress, and illness. Most smartwatches log this automatically.
+- **Steps** — Total steps for the day. A simple proxy for overall movement.
+- **Sleep hours** — Hours of sleep the previous night (decimal format: 7.5 = 7 hours 30 minutes).
+- **Activity minutes** — Minutes of moderate-to-vigorous activity logged for the day.
+
+---
+
+### Tier 2: Enrichment Metrics
+
+Optional — each requires acknowledgment before logging. These are more advanced metrics that require a wearable or device capable of measuring them:
+
+- **Sleep score** — Composite sleep quality score (0–100), typically from Oura, WHOOP, or Garmin
+- **HRV (ms)** — Heart rate variability in milliseconds. A high-signal recovery and autonomic nervous system indicator
+- **SpO2 (%)** — Blood oxygen saturation
+- **Active calories** — Calories burned above resting metabolic rate
+- **Stress score** — Device-computed stress level (0–100)
+- **Recovery score** — Device-computed daily readiness (0–100)
+
+---
+
+### Tier 3: Body Composition
+
+Locked by default — each metric requires an explicit acknowledgment before it can be logged. Body composition data is sensitive and optional:
+
+- **Weight (lbs)**
+- **Body fat (%)**
+- **Muscle mass (lbs)**
+- **BMI**
+
+The unlock requirement for body composition metrics is intentional. These numbers can be triggering for some people. The system asks you to explicitly opt in before any body composition field appears in your log.
+
+---
+
+### The Daily Logging Workflow
+
+Navigate to `/dashboard/metrics`. You'll see:
+
+1. A **7-day summary strip** at the top — average values for your core metrics over the last 7 days
+2. The **Core Metrics form** — four fields, always visible
+3. The **Enrichment Metrics section** — shows unlocked metrics, with lock icons on metrics you haven't enabled
+4. The **Body Composition section** — locked until acknowledged
+
+Fill in the values you have for today, click **Save Today's Log**, and you're done. One entry per day — if you log again the same day, it updates the existing entry.
+
+---
+
+### Where This Data Goes
+
+Everything you log in the Health Metrics module flows into:
+
+- **The AI weekly review** — the Energy & Recovery section is built almost entirely from this data. Sleep hours, resting HR, HRV, and pain levels from the Engine all factor into Gemini's coaching summary.
+- **The Correlations dashboard** — the correlation engine surfaces relationships between your health data and your focus, nutrition, and task completion data.
+- **The Analytics dashboard** — shows your 7, 30, and 90-day averages alongside other module stats.
+
+The more consistently you log, the more the system can tell you.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/metrics — show the full page]
+
+> [SCREENSHOT: Health Metrics dashboard — callouts: 7-day summary strip at top, Core Metrics form (4 fields), Enrichment Metrics section (some locked), Body Composition section (locked)]
+
+> [SCREEN: Hover over the 7-day summary strip — show the average values for RHR, Steps, Sleep, Activity]
+
+> [SCREEN: Scroll down to show all three sections of the form]
+
+> [SCREEN: End on the full metrics page — end lesson]
+
+---
+
+## Key Takeaways
+
+- Three metric tiers: Core (always on), Enrichment (acknowledgment required), Body Composition (locked by default, explicit unlock)
+- 14 total trackable metrics per day
+- One log per day — saves/updates on each submit
+- Data feeds directly into: AI weekly review (Energy & Recovery), Correlations dashboard, Analytics
+- No wearable required — all metrics can be entered manually; wearables automate entry
+",markdown,,,,,,
+Lessons,1,2,Logging Your Daily Metrics,text,300,true,,"# Lesson 02: Logging Your Daily Metrics
+
+**Course:** Mastering Health Metrics
+**Module:** Daily Logging
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Logging your health metrics takes about 60 seconds once you have the habit. This lesson walks through the exact workflow — opening the page, filling in your numbers, and saving. We'll also cover the 7-day summary strip and what to do if you miss a day.
+
+---
+
+### Opening the Metrics Page
+
+Navigate to `/dashboard/metrics`. The page loads with today's form — if you've already logged today, the form will be pre-filled with your existing values. If not, the fields will be empty.
+
+---
+
+### The 7-Day Summary Strip
+
+At the top of the page, before the form, you'll see a row of stat cards showing your 7-day averages:
+
+- **Avg RHR** — average resting heart rate over the last 7 days
+- **Avg Steps** — average daily steps
+- **Avg Sleep** — average sleep hours
+- **Avg Activity** — average active minutes
+
+These are baseline reference points. They update daily as you log. Over time, you use them to spot deviations — a resting HR that's 6 bpm above your 7-day average is a signal worth noting.
+
+---
+
+### Core Metrics Form
+
+Below the summary strip, the Core Metrics form shows four fields:
+
+**Resting HR (bpm)** — Enter your resting heart rate. If you have a smartwatch, this is typically available in the morning summary. If you're measuring manually, take your pulse for 60 seconds after waking before getting out of bed.
+
+**Steps** — Total steps for today. Your phone's health app, Garmin, Apple Watch, or Fitbit all track this. Enter the end-of-day total.
+
+**Sleep hours** — Hours of sleep last night. Enter as a decimal: 6 hours 45 minutes = 6.75. Round to the nearest quarter hour if you're estimating.
+
+**Activity minutes** — Minutes of deliberate movement for today. This is not steps — it's time spent in moderate or vigorous physical activity (training, a brisk walk, a bike commute, yard work). Your training sessions from the Engine or Travel module can inform this number.
+
+---
+
+### Notes Field
+
+At the bottom of the core form, there's an optional **Notes** field. Use it for anything relevant that the numbers don't capture: ""Sick — sore throat, low energy"", ""First day back from travel"", ""Slept on the couch, poor sleep quality despite hours logged"", ""Deload week — intentionally lower activity."" These notes show in your history and can help explain anomalous data later.
+
+---
+
+### Saving
+
+Click **Save Today's Log**. A confirmation message appears. The 7-day summary strip updates to reflect today's entry.
+
+If you need to correct a value after saving, just navigate back to the metrics page for that date (use the date selector at the top of the page), update the fields, and save again. The second save overwrites the first.
+
+---
+
+### Logging for a Past Date
+
+The date selector at the top of the metrics page lets you navigate to any past date. If you missed logging yesterday, click the back arrow to go to yesterday's date, fill in your values from memory or your device, and save.
+
+The most important thing is consistent data — a 3-day-old entry is better than no entry. Logging retroactively preserves the dataset.
+
+---
+
+### What to Do When You Don't Have All the Data
+
+You don't need to fill in every field every day. Log what you have. The system handles missing fields gracefully — blank fields are stored as null and excluded from averages. A partial log is better than no log.
+
+If you don't have a resting HR reading today, leave it blank. If you forgot your step count, leave it blank. The important thing is that the data you do have gets recorded.
+
+---
+
+### Building the Habit
+
+Most users find the easiest workflow is:
+1. Morning: log Resting HR (from waking, or from your device's overnight reading) and Sleep hours
+2. Evening: log Steps, Activity minutes, and any Notes
+
+Some prefer to do it all at once in the evening when the day is complete. Either is fine — what matters is that it gets done.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/metrics — page loads with empty form for today]
+
+> [SCREENSHOT: Metrics page — callouts: 7-day summary strip (4 stat cards), Core Metrics form (4 input fields + notes), Save button]
+
+> [SCREEN: Click the 7-day summary strip stat cards — show the average values displayed clearly]
+
+> [SCREEN: Type ""58"" in Resting HR field]
+
+> [SCREEN: Type ""8742"" in Steps field]
+
+> [SCREEN: Type ""7.5"" in Sleep hours field]
+
+> [SCREEN: Type ""45"" in Activity minutes field]
+
+> [SCREEN: Type ""Good energy day — trained in morning"" in Notes]
+
+> [SCREEN: Click ""Save Today's Log"" — confirmation message appears]
+
+> [SCREENSHOT: After save — confirmation message visible, 7-day summary strip updated with new average]
+
+> [SCREEN: Click the back arrow on the date selector — navigate to yesterday — show yesterday's empty form]
+
+> [SCREEN: Fill in a couple of values for yesterday — save — navigate back to today]
+
+> [SCREEN: End on today's logged metrics page — end lesson]
+
+---
+
+## Key Takeaways
+
+- Core Metrics form: Resting HR, Steps, Sleep hours (decimal), Activity minutes, optional Notes
+- 7-day summary strip shows rolling averages — updates immediately after each save
+- Save overwrites — logging twice on the same date updates, doesn't duplicate
+- Date selector at top lets you log past dates retroactively
+- Leave fields blank if you don't have the data — nulls are excluded from averages
+- Morning + evening is the natural split: HR/sleep in morning, steps/activity in evening
+",markdown,,,,,,
+Lessons,1,3,Enrichment Metrics,text,360,true,,"# Lesson 03: Enrichment Metrics
+
+**Course:** Mastering Health Metrics
+**Module:** Advanced Tracking
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The core metrics give you the baseline. Enrichment metrics give you depth. HRV, SpO2, sleep score, recovery score — these are the signals that most wearables track automatically, and they tell you things resting HR and sleep hours alone can't.
+
+This lesson covers what each enrichment metric means, when to care about it, and how to unlock it in your metrics log.
+
+---
+
+### What Enrichment Metrics Are
+
+Enrichment metrics are six additional data points available in the Health Metrics module. They're not locked — they're just disabled by default because most people don't have access to all of them from day one. Each one requires a brief acknowledgment before it appears in your log form.
+
+The six enrichment metrics:
+
+---
+
+### Sleep Score (0–100)
+
+A composite quality score for your sleep from the previous night. This is different from sleep hours — it's a device-computed quality rating that accounts for sleep stages, consistency, and disturbances.
+
+**Source:** Oura Ring, WHOOP, Garmin devices, Fitbit. Each device has its own algorithm and scale, but most score 0–100 with 85+ being high quality.
+
+**Why it matters:** Eight hours of fragmented light sleep is very different from six hours of deep, unbroken sleep. Sleep hours tells you duration; sleep score tells you quality. Tracking both gives you a complete picture.
+
+---
+
+### HRV (Heart Rate Variability, in milliseconds)
+
+The variation in time between consecutive heartbeats. Counterintuitively, more variation is better — high HRV indicates your nervous system is in a parasympathetic (recovery, calm) state. Low HRV indicates stress, fatigue, illness, or overtraining.
+
+**Source:** Oura, WHOOP, Garmin, Apple Watch (overnight HRV average). Most devices report it in milliseconds (e.g., 55 ms).
+
+**Why it matters:** HRV is one of the most sensitive early-warning signals in sports science. A significant HRV drop (10–20% below your baseline) on a given morning often indicates that your body is under stress before you consciously feel it. Tracking trends over weeks matters more than any single reading.
+
+---
+
+### SpO2 — Blood Oxygen Saturation (%)
+
+The percentage of hemoglobin in your blood that's carrying oxygen. Normal range for healthy adults: 95–100%.
+
+**Source:** Most Oura, Garmin, and Apple Watch models with blood oxygen monitoring.
+
+**Why it matters:** For most users at sea level, SpO2 rarely deviates significantly. It's most useful for: detecting sleep apnea risk (regular overnight dips below 90%), monitoring at altitude, or tracking illness recovery.
+
+---
+
+### Active Calories
+
+Calories burned above your resting metabolic rate. This is your output from movement and exercise — different from total daily calories burned (which includes your baseline metabolism).
+
+**Source:** Any fitness tracker that monitors heart rate during activity.
+
+**Why it matters:** Active calories give you a consistent measure of your physical output day to day, independent of body weight. Useful for tracking training volume across different activity types.
+
+---
+
+### Stress Score (0–100)
+
+A device-computed measure of autonomic nervous system stress throughout the day. Low scores = calm. High scores = elevated stress load. Computed from HRV patterns, heart rate, and sometimes galvanic skin response.
+
+**Source:** Garmin (Body Battery stress), some WHOOP metrics.
+
+**Why it matters:** Stress score is useful for days when you feel fine subjectively but your body data says otherwise — or the reverse. It's a more continuous measure than single-point readings.
+
+---
+
+### Recovery Score (0–100)
+
+A composite daily readiness score. ""How ready is your body for today's demands?"" High = ready to train hard. Low = prioritize recovery.
+
+**Source:** WHOOP (Recovery %), Oura (Readiness Score), Garmin (Body Battery).
+
+**Why it matters:** Recovery score tells you what you should do with today's effort. Consistent low recovery scores while maintaining training load is a sign of accumulated fatigue. The weekly review uses this data to recommend training adjustments.
+
+---
+
+### Unlocking an Enrichment Metric
+
+In the Enrichment Metrics section on the metrics page, each metric you haven't unlocked shows with a lock icon and an **Unlock** button.
+
+Click **Unlock** on any enrichment metric. A brief modal appears describing what the metric tracks and asking you to acknowledge that you have access to data for it (or understand you'll enter it manually). Click **Acknowledge & Unlock**. The metric field immediately appears in your daily log form.
+
+You can unlock as many or as few enrichment metrics as you track. Only unlock the ones you actually have data for — a field you can't fill in adds friction without adding value.
+
+---
+
+### Logging Enrichment Metrics
+
+Once unlocked, the enrichment metric fields appear in the form alongside your core metrics. Fill in the values you have for today and save with the rest of your log. The save covers everything in one button click.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/metrics — scroll to the Enrichment Metrics section]
+
+> [SCREENSHOT: Enrichment Metrics section — some metrics locked (lock icon + Unlock button), some already unlocked — callouts: Lock icon, Unlock button, already-unlocked field example]
+
+> [SCREEN: Click ""Unlock"" on the HRV metric]
+
+> [SCREENSHOT: Unlock modal — callouts: Metric name, description, ""Acknowledge & Unlock"" button]
+
+> [SCREEN: Click ""Acknowledge & Unlock"" — modal closes — HRV field appears in the form]
+
+> [SCREENSHOT: HRV field now visible in form — callout: ""Field appears immediately after unlock""]
+
+> [SCREEN: Type ""62"" in the HRV field]
+
+> [SCREEN: Unlock Sleep Score similarly — fill in ""84""]
+
+> [SCREEN: Click Save Today's Log — all fields save together]
+
+> [SCREEN: Navigate to the analytics or 7-day summary — show HRV appearing in averages]
+
+> [SCREEN: End on the metrics form with enrichment fields visible — end lesson]
+
+---
+
+## Key Takeaways
+
+- Six enrichment metrics: Sleep Score, HRV (ms), SpO2 (%), Active Calories, Stress Score (0–100), Recovery Score (0–100)
+- Each requires a one-time acknowledgment unlock before appearing in the log form
+- Only unlock metrics you have data for — empty fields add friction without value
+- HRV is the highest-signal metric: trends over weeks matter more than single readings
+- Sleep Score and Sleep hours complement each other: duration vs. quality
+- Recovery Score drives the training adjustment section of the AI weekly review
+- All enrichment metrics save together with core metrics on a single ""Save Today's Log"" click
+",markdown,,,,,,
+Lessons,1,4,Body Composition Tracking,text,300,true,,"# Lesson 04: Body Composition Tracking
+
+**Course:** Mastering Health Metrics
+**Module:** Advanced Tracking
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Body composition metrics — weight, body fat percentage, muscle mass, and BMI — are locked by default in CentenarianOS. This lesson covers why that is, how to unlock them, and how to think about tracking this data constructively.
+
+---
+
+### Why Body Composition Is Locked
+
+The lock on body composition metrics is intentional. Weight and body fat data can be triggering for people with a history of disordered eating or body image issues. The explicit acknowledgment before unlocking is a safeguard — a moment to confirm that you're choosing to track this data intentionally, not having it automatically thrust into your daily workflow.
+
+If you don't want to track body composition, don't unlock it. The rest of the system works completely without it. The weekly review doesn't require it, the analytics don't require it, and nothing prompts you to unlock it.
+
+If you do want to track it, the process is simple and the data can be genuinely useful.
+
+---
+
+### The Four Body Composition Metrics
+
+**Weight (lbs)** — Body weight in pounds. Measured at the same time each day (usually morning, after using the bathroom, before eating) for the most consistent data. Daily weight fluctuates 1–3 lbs due to water, food, hormones — weekly averages are more meaningful than any single reading.
+
+**Body Fat (%)** — The percentage of your weight that is fat mass. Measured via smart scale, DEXA scan, InBody scan, or calipers. Smart scales use bioelectrical impedance, which has meaningful error margins but is useful for tracking trends. DEXA and InBody are more accurate but less frequent.
+
+**Muscle Mass (lbs)** — The total weight of muscle tissue. Increases with consistent resistance training and adequate protein intake. Decreasing muscle mass (sarcopenia) is one of the most critical factors in longevity — maintaining it as you age is the central goal.
+
+**BMI** — Body Mass Index, calculated from height and weight. It's a rough population-level metric with well-known limitations (it can't distinguish between muscle and fat mass). Log it if your device or doctor tracks it, but use body fat percentage as the more meaningful individual indicator.
+
+---
+
+### Unlocking Body Composition Metrics
+
+In the Body Composition section on the metrics page, you'll see four locked fields — each with its own lock icon and **Unlock** button. The unlock is per-metric, not all-or-nothing. You can unlock Weight but leave Body Fat locked, for example.
+
+Click **Unlock** on any body composition field. A modal appears with a brief description of the metric and a more prominent acknowledgment statement about body image sensitivity. Click **Acknowledge & Unlock** to enable the field.
+
+Unlike enrichment metrics, body composition unlocks have a slightly more deliberate acknowledgment flow — the modal is not dismissible by clicking outside it. You must click Acknowledge or Cancel. This is intentional.
+
+---
+
+### Logging Body Composition
+
+Once unlocked, the body composition fields appear in the form below the enrichment metrics. Enter your values and save with the same **Save Today's Log** button.
+
+For consistent results:
+- **Weight**: Log first thing in the morning, before eating or drinking, after using the bathroom
+- **Body Fat % and Muscle Mass**: Log when you have a reading from your scale or device. You don't need to log these daily — weekly or monthly readings are sufficient if your scale doesn't track them automatically
+- **BMI**: Only log if your device or healthcare provider gives you a reading. There's little value in manually computing it
+
+---
+
+### Trends, Not Daily Numbers
+
+The most important thing to understand about body composition data: single readings are noise. A weight reading 2 lbs higher than yesterday means nothing — water retention from a salty meal or a training session with high inflammation can cause that easily.
+
+What matters is the trend over 4–12 weeks. The metrics page and analytics show you rolling averages precisely to smooth out the daily noise.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/metrics — scroll to Body Composition section]
+
+> [SCREENSHOT: Body Composition section — all four metrics locked — callouts: Lock icon, Unlock button per metric, ""Locked by default"" label or explanation text]
+
+> [SCREEN: Click ""Unlock"" on Weight]
+
+> [SCREENSHOT: Body composition unlock modal — callouts: Metric description, Acknowledgment statement, ""Acknowledge & Unlock"" button, Cancel button — note that the modal is more prominent than the enrichment unlock modal]
+
+> [SCREEN: Click ""Acknowledge & Unlock"" — Weight field unlocks and appears in the form]
+
+> [SCREEN: Unlock Body Fat % — show the same flow]
+
+> [SCREENSHOT: Two unlocked fields (Weight, Body Fat %) visible in Body Composition form section]
+
+> [SCREEN: Enter ""172.4"" in Weight, ""18.2"" in Body Fat %]
+
+> [SCREEN: Click Save Today's Log — all fields save]
+
+> [SCREEN: Navigate back to metrics — show today's saved data including body composition fields]
+
+> [SCREEN: End on the completed metrics form — end lesson]
+
+---
+
+## Key Takeaways
+
+- Body composition is locked by default — explicit per-metric acknowledgment required to unlock
+- Four metrics: Weight (lbs), Body Fat (%), Muscle Mass (lbs), BMI
+- Unlock is per-metric — unlock only what you want to track
+- The acknowledgment modal is deliberate and can't be dismissed by clicking outside — confirms intentional choice
+- Log weight first thing in the morning for consistency; body fat/muscle mass can be weekly or monthly
+- Track trends over 4–12 weeks — daily fluctuations (1–3 lbs) are normal noise
+- Muscle mass maintenance is a longevity priority — it's the most important of the four metrics
+",markdown,,,,,,
+Lessons,1,5,Importing Health Data,text,300,true,,"# Lesson 05: Importing Health Data
+
+**Course:** Mastering Health Metrics
+**Module:** Data Import
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+If you've been using Garmin, Apple Health, Oura, or another health app for months or years, you already have historical data sitting in those systems. The import tool lets you bring that history into CentenarianOS in bulk — up to 365 rows per import — so your analytics and weekly review have context from day one instead of starting cold.
+
+---
+
+### Navigating to Import
+
+From the Health Metrics page, click the **Import** button in the header. This takes you to `/dashboard/metrics/import`.
+
+---
+
+### Choosing a Data Source
+
+At the top of the import page, select your data source. Eight options are available:
+
+**CSV Import providers:**
+- **Garmin** — CSV export from Garmin Connect (Health Stats → Export)
+- **Apple Health** — CSV export from Apple Health or a third-party export app
+- **Oura** — CSV export from the Oura app
+- **WHOOP** — CSV export from the WHOOP app
+- **Google Health** — CSV export from Google Fit or Health Connect
+- **InBody** — CSV export from InBody scale or InBody app
+- **Hume Health** — CSV from Hume Health
+
+**Manual Entry:**
+- Opens an editable table without any file upload — useful for entering a few days of backlogged data without a CSV
+
+Each source has pre-configured column mapping that matches the typical export format from that provider. When you select a source and upload its CSV, the fields map automatically without manual column configuration.
+
+---
+
+### Uploading a CSV
+
+After selecting your source, you'll see two options for getting data into the import tool:
+
+**File upload** — Click the upload area or drag a CSV file onto it. The file is parsed immediately in your browser.
+
+**Paste CSV** — Click the ""Paste CSV"" tab, paste the raw CSV text from your clipboard, and click **Parse CSV**. Useful when you're working from a downloaded file you don't want to navigate to, or when copying directly from an app export.
+
+---
+
+### The Import Data Table
+
+After uploading or pasting, the data appears in an editable table. Each row represents one day:
+
+- **Date** — The calendar date for this entry (YYYY-MM-DD format). Editable via date picker if the parsed date is wrong.
+- **Core metric columns** — Resting HR, Steps, Sleep hours, Activity minutes
+- **Enrichment metric columns** — Collapsed by default (click to expand), showing HRV, SpO2, Sleep Score, etc. if those columns exist in your export
+- **Notes** — Optional text field per row
+- **Delete row** — Remove any row you don't want to import (duplicates, test dates, etc.)
+
+You can edit any cell in the table before importing — correct a misread value, remove an outlier, or adjust a date that was formatted incorrectly.
+
+The **Add Row** button at the bottom lets you manually add a row if your CSV was missing a date you have data for.
+
+---
+
+### Validation
+
+Before import, the system validates each row:
+- Dates must be in YYYY-MM-DD format (dates in other formats are auto-converted where possible)
+- Metric values must be numeric
+- Rows without a valid date are skipped and listed as errors
+- Rows without any metric values (date only) are skipped
+
+---
+
+### Importing
+
+When the table looks correct, click **Import**. The system processes all rows and returns a summary:
+
+- **Imported:** X rows successfully inserted or updated
+- **Skipped:** Y rows that had no valid metric data
+- **Errors:** Up to 10 specific error messages for rows that couldn't be processed
+
+Imported rows follow the same upsert logic as manual logging: if a row already exists for that date, it's updated. If not, it's created. This means you can re-import without creating duplicates — the new import simply overwrites the existing data for those dates.
+
+**Maximum import size:** 365 rows per import. For larger historical datasets, run multiple imports.
+
+---
+
+### After Import
+
+Navigate back to `/dashboard/metrics` after importing. Your 7-day summary strip will now reflect any imported dates within the last 7 days. The analytics page and weekly review will also incorporate the imported data the next time they're loaded.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/metrics — click ""Import"" button in page header]
+
+> [SCREEN: Import page loads — show the source selector at top]
+
+> [SCREENSHOT: Import page — callouts: Source selector (8 options), Upload area, Paste CSV tab]
+
+> [SCREEN: Select ""Garmin"" from the source dropdown]
+
+> [SCREEN: Upload a sample Garmin CSV (or demonstrate the paste option)]
+
+> [SCREENSHOT: Data table after CSV parse — callouts: Date column, Core metric columns, Enrichment columns toggle, Delete row button per row, Add Row button at bottom]
+
+> [SCREEN: Edit one cell in the table — demonstrate editing a value]
+
+> [SCREEN: Delete one row — show it disappear]
+
+> [SCREEN: Click Import — import result summary appears]
+
+> [SCREENSHOT: Import result — callouts: Imported count, Skipped count, Errors list (if any)]
+
+> [SCREEN: Navigate back to /dashboard/metrics — show updated 7-day summary with imported data]
+
+> [SCREEN: Demonstrate the Manual Entry option — click Manual Entry source — show the empty editable table]
+
+> [SCREEN: End on the metrics page with imported data visible — end lesson]
+
+---
+
+## Key Takeaways
+
+- Import from 8 sources: Garmin, Apple Health, Oura, WHOOP, Google Health, InBody, Hume Health, or Manual Entry
+- Upload a CSV file or paste CSV text directly — both are parsed into an editable table
+- Edit any cell before importing — correct dates, values, or remove rows
+- Auto column mapping for all supported providers — no manual field configuration needed
+- Maximum 365 rows per import; run multiple imports for larger datasets
+- Import uses upsert — re-importing won't create duplicates, it updates existing dates
+- Imported data immediately appears in analytics, weekly review, and the 7-day summary strip
+",markdown,,,,,,
+Lessons,1,6,Connecting Wearables,text,360,true,,"# Lesson 06: Connecting Wearables
+
+**Course:** Mastering Health Metrics
+**Module:** Integrations
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Manual logging works, but wearable integrations make it automatic. If you have an Oura Ring, WHOOP, or Garmin device, you can connect it to CentenarianOS and have your daily metrics sync without entering them by hand. This lesson covers how to connect your device and what happens when the sync runs.
+
+---
+
+### Where to Manage Integrations
+
+Navigate to `/dashboard/settings/wearables`. This page shows all supported providers with their connection status.
+
+Alternatively, navigate to the Health Metrics import page — the wearable connections section is accessible from there too.
+
+---
+
+### Two Types of Providers
+
+**OAuth providers (automatic sync):**
+These connect via OAuth and can pull data automatically. Three providers:
+- **Oura Ring** — Syncs sleep score, HRV, recovery/readiness score, SpO2, resting HR, activity
+- **WHOOP** — Syncs recovery score, HRV, sleep data, strain (active calories)
+- **Garmin** — Syncs steps, resting HR, HRV, sleep, activity minutes, stress score
+
+**CSV import providers (manual file upload):**
+These don't have OAuth — you export a CSV from their app and use the import tool. Covered in Lesson 05. Four providers:
+- Apple Health
+- Google Health
+- InBody
+- Hume Health
+
+---
+
+### Connecting an OAuth Provider
+
+From the Wearables settings page, find the provider card for your device (Oura, WHOOP, or Garmin).
+
+Click **Connect**. You'll be redirected to that provider's OAuth authorization page. Sign in with your account credentials and grant permission for CentenarianOS to read your health data.
+
+After authorization, you're redirected back to the Wearables settings page. The provider card now shows:
+- **""Connected""** badge
+- Last sync timestamp (will show ""Never synced yet"" on first connect)
+- A **Sync** button
+- A **Disconnect** button
+
+---
+
+### Running a Sync
+
+After connecting, click **Sync** to pull your data. The provider card shows a loading state while syncing. When complete, the last sync timestamp updates.
+
+What gets synced:
+- The most recent data from your device (typically the last 7–30 days, depending on the provider's API limits)
+- Only metrics you've unlocked in CentenarianOS will be written — if you haven't unlocked HRV, Oura HRV data won't be saved even if the sync fetches it
+
+**Automatic sync:** Syncs run automatically once per day in the background when you're logged in. You don't need to manually click Sync for daily updates — it happens automatically. The manual Sync button is for when you want an on-demand update (e.g., after a morning workout before the auto-sync runs).
+
+---
+
+### Sync Status
+
+The provider card shows one of three sync statuses:
+
+- **Idle** — Connected and up to date. No action needed.
+- **Syncing** — A sync is in progress.
+- **Error** — The last sync failed. The error message is shown on the card. Common errors: expired token (reconnect by clicking Connect again), provider API outage, or a permissions scope issue.
+
+If you see an error, the first step is always to click **Connect** again and re-authorize. Most sync errors are resolved by re-authorization.
+
+---
+
+### Disconnecting a Provider
+
+Click **Disconnect** on any connected provider. A confirmation prompt appears. After disconnecting:
+- The OAuth token is revoked and deleted from CentenarianOS
+- **Your existing health data is not deleted** — synced data already in your metrics history remains intact
+- Future automatic syncs stop for that provider
+
+You can reconnect at any time by clicking Connect again.
+
+---
+
+### Multiple Providers
+
+You can connect multiple OAuth providers simultaneously. If you have both Oura and Garmin connected, and both provide resting HR data, the sync will write both readings. The last provider to sync wins for any given date — there's no automatic merge or priority system.
+
+Most users with multiple devices use them for different metrics: Oura for sleep and HRV, Garmin for steps and activity. Configure your metric unlocks to reflect which device you trust most for each metric.
+
+---
+
+### CSV Providers
+
+For Apple Health, Google Health, InBody, and Hume Health — there's no direct connection. Instead, export a CSV from the provider's app and use the Import tool (Lesson 05) to upload the data. These providers don't have public OAuth APIs that allow third-party data access.
+
+Each CSV provider card shows an **Import CSV** button that links directly to the import page with that provider pre-selected.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/settings/wearables — show the full page with all provider cards]
+
+> [SCREENSHOT: Wearables settings page — callouts: OAuth provider cards (Oura, WHOOP, Garmin) with Connect buttons, CSV provider cards (Apple Health, Google Health, InBody, Hume Health) with Import CSV buttons]
+
+> [SCREEN: Click ""Connect"" on Oura Ring card — OAuth redirect page]
+
+> [SCREENSHOT: Oura OAuth page — callout: ""Authorize CentenarianOS to read your health data""]
+
+> [SCREEN: Return to wearables settings — Oura card now shows ""Connected"" badge]
+
+> [SCREENSHOT: Connected Oura card — callouts: Connected badge, Last sync timestamp, Sync button, Disconnect button]
+
+> [SCREEN: Click ""Sync"" — card shows syncing state — complete — timestamp updates]
+
+> [SCREENSHOT: After sync — updated last sync timestamp — callout: ""Auto-sync runs daily — manual sync for on-demand updates""]
+
+> [SCREEN: Show the sync error state on a different card (if possible to demo) — show error message text]
+
+> [SCREEN: Click ""Disconnect"" on the Oura card — confirmation prompt — cancel (don't disconnect for demo)]
+
+> [SCREEN: Show Garmin card — click ""Connect"" to start Garmin OAuth (or just show what it looks like)]
+
+> [SCREEN: Click ""Import CSV"" on Apple Health card — show redirect to import page with Apple Health pre-selected]
+
+> [SCREEN: End on wearables settings page — end lesson]
+
+---
+
+## Key Takeaways
+
+- Three OAuth providers (auto-sync): Oura Ring, WHOOP, Garmin
+- Four CSV providers (manual import): Apple Health, Google Health, InBody, Hume Health
+- Connect from /dashboard/settings/wearables — OAuth redirects to provider's authorization page
+- Auto-sync runs daily in background; manual Sync button for on-demand updates
+- Only unlocked metrics are written during sync — unlock metrics in Health Metrics before expecting data
+- Sync error → first step is reconnect (re-authorize) — resolves most token expiry issues
+- Disconnecting does not delete your existing synced data
+- Multiple providers can run simultaneously; last sync wins per date/metric
+",markdown,,,,,,
+Lessons,1,7,Understanding Your Metrics,text,420,true,,"# Lesson 07: Understanding Your Metrics
+
+**Course:** Mastering Health Metrics
+**Module:** Interpretation
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Tracking numbers is only useful if you understand what they're telling you. This lesson covers what each metric actually means, what ranges to pay attention to, and how your metrics data connects to the rest of CentenarianOS — specifically the AI weekly review and the correlations engine.
+
+---
+
+### Resting Heart Rate
+
+**What it is:** The number of times your heart beats per minute at complete rest, typically measured first thing in the morning.
+
+**Healthy ranges:** For adults, 60–100 bpm is considered normal. Athletes often measure 40–60 bpm. Lower is generally better — it indicates a stronger, more efficient cardiovascular system.
+
+**What changes in it mean:**
+- Elevated RHR (5–10+ bpm above your personal baseline) on a given morning often indicates: poor sleep, illness onset, dehydration, high training load, alcohol, or elevated stress
+- Sustained downward trend over weeks: improving cardiovascular fitness
+- Sudden spike after a stable period: investigate what changed (new training load, illness, life stress)
+
+**Key insight:** Track your personal baseline, not the population average. A 65 bpm morning that's normal for you is very different from a 65 bpm that's 8 bpm above your usual 57.
+
+---
+
+### Steps
+
+**What it is:** Total steps taken throughout the day.
+
+**Target ranges:** Research links 7,000–10,000+ daily steps with significantly lower all-cause mortality. The specific number matters less than avoiding the <3,000 ""sedentary day"" territory.
+
+**What it measures:** Ambient movement and light activity. Steps are not a substitute for structured exercise — a 10,000-step day with no resistance training is still missing a critical longevity input — but consistent step counts indicate you're not sedentary by default.
+
+---
+
+### Sleep Hours
+
+**What it is:** Total hours of sleep the previous night.
+
+**Target ranges:** 7–9 hours is the consensus recommendation for adults. Below 6 hours chronically is associated with significant negative health outcomes. Above 9 hours regularly may indicate sleep quality issues or illness.
+
+**What to watch:**
+- Consistent under-7 hours: a recovery debt that accumulates. Energy ratings and HRV often reflect it within 2–3 days
+- Short-term dips (travel, illness, deadline crunch): acceptable. The weekly review will flag them
+- Compare sleep hours against sleep score (if tracked) — 8 hours of poor-quality sleep is not equivalent to 7 hours of high-quality sleep
+
+---
+
+### HRV
+
+**What it is:** The millisecond variation between consecutive heartbeats. Higher variation = healthier autonomic nervous system response.
+
+**Baseline vs. trends:** HRV is highly individual. A ""good"" HRV of 55 ms for one person might be low for another. Track your own baseline, not population averages. Most devices establish your personal baseline over 2–3 weeks.
+
+**What changes in it mean:**
+- HRV 10–20% below your baseline: your body is under stress. Could be overtraining, illness onset, poor sleep, or psychological stress
+- Sustained HRV decline over multiple days: accumulating load; consider a recovery day or reduced training intensity
+- Rising HRV trend over weeks: improving fitness and/or recovery quality
+
+**Practical use:** Many athletes use morning HRV to decide training intensity for the day. Low HRV → easy session or rest. High HRV → harder session is safe.
+
+---
+
+### Sleep Score, Recovery Score, Stress Score
+
+**Sleep Score:** Device-computed quality rating, typically 0–100. Most devices consider deep sleep proportion, REM sleep, sleep consistency, and disturbances. 85+ is high quality; below 70 warrants attention.
+
+**Recovery Score (WHOOP Recovery %, Oura Readiness, Garmin Body Battery):** Daily readiness rating based on HRV, sleep, and other signals. Low recovery (below 33% on WHOOP, below 60 on Oura) suggests your body needs easier demands today — not a reason to skip training entirely, but a reason to reduce intensity.
+
+**Stress Score:** Continuous autonomic stress load. Most useful for identifying high-stress days that don't feel subjectively stressful — and for confirming what you already know on obviously hard days.
+
+---
+
+### Body Composition
+
+**Weight:** Daily fluctuations of 1–3 lbs are normal. Weekly averages are meaningful. Monthly trends are strategic. Use a 7-day rolling average when reading your weight data.
+
+**Body Fat % and Muscle Mass:** These are the metrics that actually matter for longevity, not weight in isolation. Body recomposition — losing fat while maintaining or gaining muscle — may show no weight change but significant body fat and muscle mass change. Track all three together for a complete picture.
+
+**Muscle Mass:** Prioritize this one. Sarcopenia (age-related muscle loss) accelerates after 40 if untrained. Tracking muscle mass over years tells you whether your training is working against the natural decline.
+
+---
+
+### How Metrics Feed the Weekly Review
+
+The AI weekly review (accessible from `/dashboard/weekly-review`) pulls your health data alongside focus, nutrition, tasks, and travel. The **Energy & Recovery** section of your weekly review is built from this data:
+
+- Average sleep hours for the week
+- Average resting HR for the week vs. your historical baseline
+- Average HRV for the week
+- Any elevated pain entries from the Engine Pain Log
+- Your daily energy ratings from the Engine debrief
+
+Gemini writes a coaching summary based on these numbers. If your HRV averaged 12% below your baseline and your energy ratings were 2–3 all week, the review will name that pattern and suggest recovery as the priority focus for the coming week.
+
+---
+
+### The Correlations Dashboard
+
+Once you have 30+ days of consistent data, the Correlations dashboard (`/dashboard/correlations`) becomes valuable. It automatically discovers statistical relationships in your data — for example:
+
+- ""Days with sleep score above 80 correlate with focus quality ratings above 4.0 (r=0.71)""
+- ""Resting HR above 65 correlates with task completion below 60% (r=-0.62)""
+- ""Days with HRV above your baseline correlate with nutrition NCV score above 3.5 (r=0.58)""
+
+These aren't insights anyone told the system to look for — they emerge from your actual data. That's what makes them actionable.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/metrics — show a date with all core + some enrichment metrics logged]
+
+> [SCREENSHOT: Logged metrics for a day — callouts pointing to each metric with a brief label of what it represents]
+
+> [SCREEN: Navigate to the 7-day summary strip — discuss the averages]
+
+> [SCREEN: Navigate to /dashboard/weekly-review — show the Energy & Recovery section]
+
+> [SCREENSHOT: Weekly review Energy & Recovery section — callouts: Sleep average, RHR average, HRV average, Pain log reference, Energy rating average — all pulling from health metrics data]
+
+> [SCREEN: Navigate to /dashboard/correlations — show one or two discovered correlations]
+
+> [SCREENSHOT: Correlations dashboard with a scatter plot — callout: ""Auto-discovered from 30+ days of data across modules""]
+
+> [SCREEN: End on the correlations page — end lesson and the course]
+
+---
+
+## Key Takeaways
+
+- Track your personal baselines, not population averages — deviations from your norm matter most
+- RHR: elevated >5–10 bpm above baseline = stress/illness/overtraining signal
+- HRV: 10–20% below baseline = load signal; use it to modulate training intensity
+- Sleep: hours vs. quality (score) — both matter and complement each other
+- Body composition: track weight, body fat %, and muscle mass together; weekly averages over daily numbers
+- Health metrics feed the AI weekly review Energy & Recovery section directly
+- After 30+ days, the Correlations dashboard surfaces cross-module patterns in your data
+",markdown,,,,,,

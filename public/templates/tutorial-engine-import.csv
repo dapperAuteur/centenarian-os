@@ -1,0 +1,1149 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+Lessons,1,1,Welcome to the Engine,text,300,true,,"# Lesson 01: Welcome to the Engine
+
+**Course:** Mastering the Engine
+**Module:** Introduction
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Most productivity systems track what you did. The Engine tracks how you worked — the quality of your focus, the state of your body, and the relationship between the two over time.
+
+It's built around a simple insight: sustainable performance requires monitoring both output and recovery. Logging that you completed 3 hours of deep work is useful. Knowing that those 3 hours happened on a day when your energy was 4/5 and you had no pain — and that your worst focus days correlate with poor sleep — is something you can actually act on.
+
+---
+
+### What the Engine Is
+
+The Engine is CentenarianOS's focus and recovery module. It has five core sections:
+
+**Focus Sessions** — timed work blocks. You log what you did, link it to a task in your plan, and rate the quality of your focus at the end. Sessions can run in Simple mode (pure timer) or Pomodoro mode (alternating work and break intervals).
+
+**Session Templates** — saved session presets. If you run the same type of session regularly (a 45-minute writing block, a 25/5 Pomodoro, a 2-hour deep coding session), templates let you start them with one click instead of configuring from scratch each time.
+
+**Daily Debrief** — a short end-of-day check-in. You rate your energy for the day, write your biggest win, write your biggest challenge, and log any financial data for the day. One entry per day — it takes about 2 minutes.
+
+**Pain Log** — body state tracking. Log any pain or discomfort: where it is, how intense, what type of sensation, and what activity may have caused it. This data connects to the recovery sections of the weekly review.
+
+**Session History** — every focus session you've run, with filters, edit capability, and export. Useful for reviewing your work patterns or correcting a session entry.
+
+---
+
+### The Engine Dashboard
+
+Navigate to `/dashboard/engine`. You'll see a stats grid at the top showing:
+
+- **Today's focus minutes** — total time logged in focus sessions today
+- **This week's focus minutes** — total for the current week
+- **Sessions this week** — count of sessions, not just time
+- **Daily goal progress** — how close you are to your daily focus goal (set in Lesson 09)
+
+Below the stats grid, you'll see:
+
+- **Recent sessions** — the last few focus sessions you've run with time, activity, and quality rating
+- **Start a Focus Session** button — the primary action
+- **Daily Debrief** section — today's debrief (or a prompt to complete one if not done)
+
+The Engine is designed to be your daily entry point for the work side of CentenarianOS. Open it, start a session, close the session with a rating, and move on. The data accumulates silently.
+
+---
+
+### Why Quality Ratings Matter
+
+At the end of every focus session, you rate the quality of your focus on a scale of 1 to 5. This is the most important data point the Engine collects.
+
+It's a subjective rating — 5 means you were deeply focused, in flow, highly productive. 1 means you were constantly distracted, couldn't concentrate, barely made progress.
+
+Over time, your quality ratings tell you things your calendar can't. A week of 4s and 5s followed by a drop to 2s and 3s is a pattern worth investigating. That pattern often correlates with something trackable — sleep quality from your health logs, nutrition changes in your Fuel data, or increased task load from the Planner.
+
+You can't optimize what you don't measure.
+
+---
+
+### How the Engine Connects to the Rest of the System
+
+The Engine doesn't operate in isolation. Every focus session can be linked to a specific task in your Planner — so your deep work time contributes to task completion. Your session quality data feeds into the weekly review that Gemini generates. Your pain logs connect to the recovery analysis in the review.
+
+The more consistently you use the Engine, the more the weekly review reflects the full picture of how you're performing — not just what you completed, but how hard it was to get there.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/engine — show the full dashboard]
+
+> [SCREENSHOT: Engine dashboard with callouts: Stats grid (today's focus minutes, this week's minutes, sessions this week, daily goal progress), Recent sessions list, Start a Focus Session button, Daily Debrief section]
+
+> [SCREEN: Scroll down to show all sections — brief hover over each area without clicking]
+
+> [SCREEN: Tap the ""Focus Sessions"" tab or section heading — show session history briefly]
+
+> [SCREEN: Return to main engine dashboard — end lesson]
+
+---
+
+## Key Takeaways
+
+- The Engine has five sections: Focus Sessions, Session Templates, Daily Debrief, Pain Log, Session History
+- Dashboard shows: today's focus minutes, weekly total, session count, daily goal progress
+- Two timer modes: Simple (pure countdown/countup) and Pomodoro (work + break intervals)
+- Quality rating (1–5) at session end is the most actionable data point the Engine collects
+- Engine data feeds into the AI weekly review — energy, pain, and focus quality are all included
+- Primary daily workflow: start session → work → close with quality rating → done
+",markdown,,,,,,
+Lessons,1,2,Your First Focus Session,text,360,true,,"# Lesson 02: Your First Focus Session
+
+**Course:** Mastering the Engine
+**Module:** Focus Sessions
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+A focus session is a logged block of intentional work time. You start it, you work, you stop it, you rate how it went. That's the core loop. This lesson walks through every step of running a session in Simple mode — the standard timer.
+
+---
+
+### Starting a Session
+
+From the Engine dashboard, click **Start a Focus Session**.
+
+The session setup panel opens. Fill in the fields:
+
+---
+
+### Session Fields
+
+**Activity** — What you're working on. Be specific: ""Write intro section for podcast episode 3"" is more useful than ""writing."" Specific entries make your session history searchable and your analytics meaningful.
+
+**Milestone** (optional) — Link this session to a milestone in your Planner. When you link to a milestone, the session appears in that milestone's history, and the time can contribute to focus metrics for that goal.
+
+**Task** (optional) — Link to a specific task under the milestone. This is the most granular link — it connects your deep work time directly to a scheduled task in your daily plan. If you link a task and mark it complete at session end, the task is checked off automatically.
+
+**Duration** — How long you plan to work. The timer counts down from this time. Common choices: 25 min, 45 min, 60 min, 90 min. You can also set it to 0 for an open-ended session (timer counts up instead of down).
+
+**Mode** — **Simple** for a single uninterrupted work block. **Pomodoro** for alternating work/break intervals. This lesson covers Simple mode. Pomodoro is covered in Lesson 03.
+
+**Notes** (optional) — What you intend to accomplish, questions you want to answer, or context for this session. These show up when you review the session later.
+
+---
+
+### Running the Session
+
+Click **Start**.
+
+The timer begins. The UI shows:
+- Time remaining (or elapsed, if open-ended)
+- The activity name
+- A pause button
+- A stop/end button
+
+Work on whatever you set out to work on. The timer runs in the background — you don't need to keep the tab focused.
+
+If you get interrupted, click **Pause**. The timer freezes. Click **Resume** when you're ready to continue. The session logs actual focused time (paused time is excluded from the total).
+
+When you're done (either the timer hits zero or you click **Stop**), the session ends and the completion screen appears.
+
+---
+
+### The Completion Screen
+
+After stopping a session, you see the completion screen:
+
+**Duration logged** — The actual time you worked (not counting paused time).
+
+**Quality rating** — Rate this session from 1 to 5:
+- **5** — Deep focus. In flow. Highly productive. No meaningful distractions.
+- **4** — Good focus with minor interruptions. Solid output.
+- **3** — Average. Some distraction. Got work done but not in the zone.
+- **2** — Struggled to focus. Frequent distraction. Limited productive output.
+- **1** — Couldn't focus. Mostly distracted. Very little accomplished.
+
+This is subjective and that's fine. You're rating your experience, not your output. Sometimes a 3-quality session produces good work; sometimes a 5-quality session produces less than expected. Both data points are useful.
+
+**Mark task complete** (if you linked a task) — Checkbox to check off the linked task immediately.
+
+**Session notes** — Add any end-of-session notes: what you accomplished, what you didn't get to, what to continue in the next session.
+
+Click **Save** to log the session.
+
+---
+
+### What Gets Logged
+
+After saving, the session is recorded with:
+- Activity name
+- Date and time
+- Duration (actual focused time)
+- Quality rating
+- Linked milestone and task (if set)
+- Start and end notes
+
+This data appears immediately in:
+- Your Engine dashboard stats
+- Your session history
+- The weekly review (focus minutes and quality averages for the week)
+
+---
+
+### Practical Tips
+
+**Don't overthink the setup.** A quick session with just an Activity and duration set is better than no session. The optional fields (milestone, task, notes) are for when they add value.
+
+**Use the task link when you can.** Linking sessions to tasks in your Planner creates a clear connection between your planned work and your actual time on task. Over weeks, you can see which tasks took more time than estimated.
+
+**Rate honestly.** A session where you got 20 minutes of real work in a 45-minute block is a 2 or 3, not a 5. Honest ratings make the analytics useful. Inflated ratings make the data noise.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/engine — click ""Start a Focus Session""]
+
+> [SCREEN: Session setup panel opens]
+
+> [SCREENSHOT: Session form with all fields labeled: Activity, Milestone (optional), Task (optional), Duration, Mode (Simple/Pomodoro), Notes]
+
+> [SCREEN: Type ""Write introduction section — podcast episode 3"" in Activity]
+
+> [SCREEN: Click Milestone dropdown — select a milestone — then click Task dropdown — select a task]
+
+> [SCREEN: Set Duration to 45 minutes]
+
+> [SCREEN: Confirm Mode is set to ""Simple""]
+
+> [SCREEN: Click Start — timer begins]
+
+> [SCREENSHOT: Running session UI — callouts: Time remaining, Activity name, Pause button, Stop button]
+
+> [SCREEN: Wait ~5 seconds — click Pause — show timer frozen — click Resume — timer continues]
+
+> [SCREEN: Click Stop — completion screen appears]
+
+> [SCREENSHOT: Completion screen — callouts: Duration logged, Quality rating (1–5 stars or buttons), ""Mark task complete"" checkbox, Session notes field]
+
+> [SCREEN: Click quality rating ""4""]
+
+> [SCREEN: Check ""Mark task complete""]
+
+> [SCREEN: Click Save — return to engine dashboard]
+
+> [SCREENSHOT: Engine dashboard showing updated stats — today's focus minutes now shows the logged time]
+
+> [SCREEN: End on the updated dashboard stats — end lesson]
+
+---
+
+## Key Takeaways
+
+- Start a session from the Engine dashboard — set Activity, optional Milestone/Task link, Duration, and Mode
+- Simple mode = single uninterrupted timer (counts down or up if duration = 0)
+- Pause/Resume tracks actual focused time — paused time is excluded
+- Quality rating (1–5) is the most important field — be honest, not optimistic
+- Linking a task lets you check it off automatically at session end
+- Session data appears immediately in dashboard stats and weekly review
+",markdown,,,,,,
+Lessons,1,3,Pomodoro Mode,text,300,true,,"# Lesson 03: Pomodoro Mode
+
+**Course:** Mastering the Engine
+**Module:** Focus Sessions
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Pomodoro is a time-boxing method: you work in focused intervals separated by short breaks. The original technique uses 25-minute work blocks and 5-minute breaks, but the principle — structured alternation between effort and rest — is what matters, not the specific numbers.
+
+CentenarianOS's Pomodoro mode implements this natively. You set the work interval, the break interval, and how many cycles to run. The timer manages the transitions automatically.
+
+---
+
+### When to Use Pomodoro Mode
+
+Pomodoro works best when:
+- You're doing work where starting is the hardest part
+- You need permission to take breaks without losing momentum
+- You're prone to over-working without adequate recovery
+- The task is long enough that a single 45 or 90-minute block feels overwhelming
+
+Simple mode works best when:
+- You're already in flow and don't want interruptions
+- The work requires deep sustained concentration (writing, coding, complex analysis)
+- Breaks would disrupt your state more than help
+
+Many users alternate: Pomodoro for administrative or reactive work, Simple for deep creative or analytical sessions.
+
+---
+
+### Starting a Pomodoro Session
+
+From the session setup panel, select **Pomodoro** as the mode.
+
+Three additional fields appear:
+
+**Work interval** — The length of each focused work block. Default: 25 minutes. Common alternatives: 50 minutes (for longer focus windows with a 10-min break), 90 minutes (ultradian rhythm-based), or 45 minutes.
+
+**Break interval** — The length of each break. Default: 5 minutes. For longer work intervals, increase the break proportionally (10 minutes for a 50-minute block, 15–20 minutes for a 90-minute block).
+
+**Cycles** — How many work/break pairs to run. A standard Pomodoro session is 4 cycles (4 × 25/5 = 2 hours of work, 20 minutes of breaks, 2h20m total). You can set 1–8 cycles.
+
+After setting the cycle configuration, the rest of the form is the same: Activity, optional Milestone/Task link, Notes.
+
+---
+
+### Running a Pomodoro Session
+
+Click **Start**.
+
+**Work phase:** The timer counts down through the work interval. Your activity is shown. No break prompt until the interval ends.
+
+**Break prompt:** When the work interval ends, a notification sounds (if enabled) and the break timer starts. A visual indicator shows you're in break mode. You can skip the break if you're in flow and want to keep working.
+
+**Cycle counter:** The UI shows which cycle you're on (e.g., ""Cycle 2 of 4"") and how many work intervals remain.
+
+**Auto-start** (configurable): If enabled, breaks start automatically after the work interval ends without requiring you to click anything. Same for the next work interval after a break. This keeps you from ""accidentally"" extending breaks by not clicking. If disabled, each phase requires a manual start.
+
+**Session end:** When all cycles complete, the completion screen appears — same as Simple mode. You rate quality, add end notes, and save.
+
+---
+
+### The Long Break
+
+After every 4th work interval in a standard Pomodoro, the traditional method calls for a longer break (15–30 minutes). CentenarianOS implements this: if you complete 4 cycles, the final break is automatically extended to 4× the regular break length.
+
+You can configure whether the long break triggers (some users prefer consistent break lengths throughout).
+
+---
+
+### Pomodoro Analytics
+
+Pomodoro sessions log additional data compared to Simple sessions:
+- Number of cycles completed
+- Work intervals started vs. completed (if you stopped mid-cycle)
+- Breaks taken vs. skipped
+
+The **Pomodoro tab** in Engine Analytics shows your Pomodoro-specific metrics: average cycles per session, completion rate, skip rate, and your most common interval configuration.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/engine — click ""Start a Focus Session""]
+
+> [SCREEN: Session setup — click ""Pomodoro"" mode]
+
+> [SCREEN: Pomodoro-specific fields appear: Work interval, Break interval, Cycles]
+
+> [SCREENSHOT: Pomodoro setup form — callouts: Work interval (25 min), Break interval (5 min), Cycles (4), plus existing fields: Activity, Milestone, Task, Notes]
+
+> [SCREEN: Type ""Clear inbox + reply to outstanding emails"" in Activity]
+
+> [SCREEN: Set work interval to 25, break interval to 5, cycles to 4]
+
+> [SCREEN: Click Start — work phase timer begins]
+
+> [SCREENSHOT: Running Pomodoro UI — callouts: Work phase timer, Cycle counter (""Cycle 1 of 4""), ""Skip Break"" button, pause/stop]
+
+> [SCREEN: Fast-forward or speed through — show work interval ending → break starting → break ending → next work interval]
+
+> [SCREENSHOT: Break phase UI — callouts: Break timer, ""Skip"" option, ""Next cycle"" indicator]
+
+> [SCREEN: Stop mid-session — completion screen appears]
+
+> [SCREENSHOT: Completion screen for Pomodoro — callouts: Cycles completed (e.g., 1 of 4), Quality rating, Notes]
+
+> [SCREEN: Rate quality, add end note, save — return to dashboard]
+
+> [SCREEN: End on the dashboard — end lesson]
+
+---
+
+## Key Takeaways
+
+- Pomodoro mode alternates work intervals and break intervals for a set number of cycles
+- Default: 25 min work / 5 min break / 4 cycles — fully configurable
+- Auto-start option keeps transitions automatic so you don't extend breaks by not clicking
+- After 4 cycles: extended long break (4× regular break length) — configurable
+- Skip any break if you're in flow — the timer won't force you to stop
+- Pomodoro analytics tab shows: cycles per session, completion rate, skip rate, most-used interval config
+- Use Pomodoro for tasks where starting is hard or breaks help; use Simple for sustained deep work
+",markdown,,,,,,
+Lessons,1,4,Session Templates,text,300,true,,"# Lesson 04: Session Templates
+
+**Course:** Mastering the Engine
+**Module:** Focus Sessions
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+If you run the same type of session regularly — a morning writing block, a 25/5 Pomodoro for email, a 90-minute deep work session — setting up the same fields every time adds unnecessary friction. Session templates eliminate that friction. Define a session type once, then start it in one click.
+
+---
+
+### What Session Templates Are
+
+A session template is a saved configuration for a focus session. It stores:
+- Activity name (can be a general name like ""Deep Work Block"" or session-specific)
+- Mode (Simple or Pomodoro)
+- Duration (for Simple) or work interval / break interval / cycles (for Pomodoro)
+- Default notes (optional) — a standing protocol or prompt you use for this session type
+
+Templates don't store milestone or task links — those are set at session start because they vary each time. Everything else can be pre-filled.
+
+---
+
+### Creating a Template
+
+From the Engine dashboard, click **Session Templates** (or navigate via the Engine menu).
+
+Click **+ New Template**.
+
+The template form opens — it's the same as the session setup form, but without the Milestone and Task fields. Fill in:
+
+- **Template name** — What you call this template. This is what shows in your template list. ""Morning Writing Block"", ""45-min Simple Session"", ""Email Pomodoros"", ""Deep Work 90"".
+- **Activity** — Pre-fill with a default activity name, or leave it editable so you can fill it in at session start.
+- **Mode** — Simple or Pomodoro.
+- **Duration** (Simple) or **Work/Break/Cycles** (Pomodoro).
+- **Default notes** — Optional standing text for this session type. Useful for session protocols you follow: ""Focus on one section only. No multitasking. Phone face-down.""
+
+Click **Save Template**.
+
+---
+
+### Using a Template
+
+From the Engine dashboard, click **Start a Focus Session**. Above the manual session form, you'll see a **Templates** section with your saved templates listed as cards.
+
+Click any template card to pre-fill the session form with that template's configuration. The Activity, Mode, Duration, and Notes fields fill in immediately.
+
+You can then:
+- Change the Activity if this session's specific focus differs from the template default
+- Add a Milestone and Task link
+- Adjust the duration or any other field
+- Click Start
+
+The template is a starting point, not a constraint. You can modify any field before starting.
+
+---
+
+### Editing and Deleting Templates
+
+From the Session Templates list, each template has an **Edit** button and a **Delete** button.
+
+Edit to update any field — name, mode, duration, default notes. Changes apply to future sessions started from this template; past sessions are unaffected.
+
+Delete removes the template from the list. Past sessions that were started from this template are unaffected — sessions log the actual values used, not a reference to the template.
+
+---
+
+### How Many Templates Is Enough
+
+Most users maintain 3–6 templates. Too few and you're still configuring everything manually. Too many and choosing a template adds its own cognitive load.
+
+A useful template set for a typical user:
+- **Morning Deep Work** — 90-min Simple, default notes with focus intention prompt
+- **Standard Pomodoro** — 25/5/4 Pomodoro for administrative tasks
+- **Quick Session** — 25-min Simple for short focused blocks
+- **Writing Session** — 45-min Simple with default note: ""One section, one draft, no editing""
+
+Start with the session types you run most often and add more only if you find yourself reconfiguring the same setup repeatedly.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/engine — click ""Session Templates"" in the Engine menu or section]
+
+> [SCREEN: Session Templates list — click ""+ New Template""]
+
+> [SCREEN: Template form opens]
+
+> [SCREENSHOT: Template form with callouts: Template name, Activity (optional pre-fill), Mode (Simple/Pomodoro), Duration/interval fields, Default notes]
+
+> [SCREEN: Fill in: Template name ""Morning Deep Work"", Activity ""Deep work block"", Simple mode, Duration 90 minutes, Default notes ""No email. No Slack. One task. Close everything else.""]
+
+> [SCREEN: Click Save Template — template appears in the list]
+
+> [SCREEN: Click ""+ New Template"" again — create a Pomodoro template: ""Email Batch"", Pomodoro mode, 25/5/4]
+
+> [SCREENSHOT: Template list showing two templates: ""Morning Deep Work"" and ""Email Batch""]
+
+> [SCREEN: Click ""Start a Focus Session"" from dashboard]
+
+> [SCREENSHOT: Session setup panel with templates shown at top — callout: ""Click a template to pre-fill""]
+
+> [SCREEN: Click ""Morning Deep Work"" template — form fields fill in automatically]
+
+> [SCREENSHOT: Pre-filled session form — callout: ""All fields pre-filled from template — modify if needed, then Start""]
+
+> [SCREEN: Add a Milestone link — click Start]
+
+> [SCREEN: End on the running session — end lesson]
+
+---
+
+## Key Takeaways
+
+- Templates save session configurations (mode, duration, activity, notes) for one-click session starts
+- Templates don't store milestone/task links — those vary per session
+- Create from Session Templates → + New Template; use by clicking a template card at session start
+- All fields are pre-filled but editable — templates are a starting point, not a lock
+- Keep the template list short (3–6) — enough to cover your regular session types without adding choice friction
+- Deleting a template doesn't affect past sessions; editing only affects future ones
+",markdown,,,,,,
+Lessons,1,5,The Daily Debrief,text,300,true,,"# Lesson 05: The Daily Debrief
+
+**Course:** Mastering the Engine
+**Module:** Daily Tracking
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The daily debrief is a 2-minute end-of-day check-in that captures three things: how your energy felt, what went well, and what didn't. It takes almost no time, but over weeks it creates a longitudinal record of your daily state that you can't get from task completion data alone.
+
+---
+
+### What the Daily Debrief Captures
+
+One debrief per day. It has four fields:
+
+**Energy rating** — How was your energy level for this day, overall? Rate 1 to 5.
+- **5** — High energy all day. Alert, motivated, physically capable.
+- **4** — Good energy. Some dips but mostly strong.
+- **3** — Average. A few productive hours, some fatigue.
+- **2** — Low energy. Hard to concentrate, tired, sluggish.
+- **1** — Exhausted. Minimal productive capacity.
+
+This is the single most useful field in the daily debrief. It correlates with every other variable you track — sleep quality, nutrition, training load, pain levels.
+
+**Biggest win** — One thing that went well today. It doesn't have to be spectacular. ""Shipped a feature I'd been putting off"" is as valid as ""Completed a personal record in the gym."" The habit of identifying one positive outcome per day is worth more than the specific content.
+
+**Biggest challenge** — One thing that was hard or didn't go well. A task that took three times longer than expected, a conversation that was difficult, a training session that fell apart, a meal plan that broke down. Write what actually happened, not a sanitized version.
+
+**Daily finances** (optional) — Revenue and expenses for the day. These are different from the financial fields on tasks in the Planner — they're for ad hoc financial activity that doesn't belong to a specific task. Day-trading activity, a freelance invoice, an unexpected expense.
+
+---
+
+### Where to Log the Debrief
+
+The debrief section is visible on the Engine dashboard. If you haven't completed today's debrief, you'll see a prompt with a **Log Today's Debrief** button.
+
+Click it. A modal opens with the four fields. Fill them in and click **Save**.
+
+You can also find the debrief in the Engine daily log section, accessible from the Engine navigation.
+
+---
+
+### Editing a Debrief
+
+If you want to add to or correct a debrief entry, click **Edit** on the logged debrief. All four fields are editable. Changes are saved immediately.
+
+You can only have one debrief per calendar day — if you click ""Log Today's Debrief"" and one already exists for today, the edit form opens instead of creating a duplicate.
+
+---
+
+### How Debrief Data Appears in the Weekly Review
+
+Your energy ratings for the week are averaged and included in the weekly review. A week where your average energy was 2.1 looks very different from one where it was 4.3 — and the review will reference it directly.
+
+The biggest wins and challenges are not summarized by Gemini (they're qualitative text), but they're stored in your history. Reading through a week's wins and challenges in the weekly review debrief section gives you a narrative of how the week felt, not just what the numbers show.
+
+---
+
+### The Best Time to Log It
+
+End of the work day — before you switch into personal mode. Or in the evening before bed. Not in the morning about the previous day, if you can avoid it — recency bias means today's mood will color your rating of yesterday.
+
+The debrief takes under 2 minutes. If it's taking longer than that, you're overthinking it. Write what comes to mind first. The first answer is usually the most honest.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/engine — show the Daily Debrief section at the bottom of the dashboard]
+
+> [SCREENSHOT: Engine dashboard with debrief section highlighted — callout: ""Log Today's Debrief — 2-minute end-of-day check-in""]
+
+> [SCREEN: Click ""Log Today's Debrief"" — modal opens]
+
+> [SCREENSHOT: Debrief modal — callouts: Energy rating (1–5), Biggest Win text field, Biggest Challenge text field, Daily Finances section (Revenue, Expenses — optional)]
+
+> [SCREEN: Click energy rating ""4""]
+
+> [SCREEN: Type ""Biggest win: Finished the first draft of the article, earlier than planned""]
+
+> [SCREEN: Type ""Biggest challenge: Two-hour meeting that broke up my morning focus block""]
+
+> [SCREEN: Click Save — modal closes — debrief section on dashboard now shows today's entry]
+
+> [SCREENSHOT: Completed debrief entry on dashboard — callouts: Energy rating displayed, Win and challenge text visible, Edit button]
+
+> [SCREEN: Click Edit — show debrief modal re-opens with existing data — make a small change — save]
+
+> [SCREEN: End on the completed dashboard — end lesson]
+
+---
+
+## Key Takeaways
+
+- One debrief per day: energy rating (1–5), biggest win, biggest challenge, optional daily finances
+- Energy rating is the most valuable field — tracks correlation with sleep, nutrition, pain, and training load
+- Log end-of-day or evening — not the next morning
+- Takes under 2 minutes — don't overthink it, write the first honest answer
+- Energy averages for the week appear in the AI weekly review
+- Qualitative wins and challenges are stored in history — useful for reading week-over-week narratives
+",markdown,,,,,,
+Lessons,1,6,Pain & Body Check,text,300,true,,"# Lesson 06: Pain & Body Check
+
+**Course:** Mastering the Engine
+**Module:** Daily Tracking
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Longevity isn't just about what you can do — it's about avoiding the injuries and accumulated damage that limit what you can do in the future. The Pain Log is where you track body signals: discomfort, soreness, acute pain, chronic patterns. Done consistently, it becomes one of the most useful datasets in the system.
+
+---
+
+### Why Log Pain
+
+Most people ignore minor pain until it becomes a real injury. By that point, there was usually a warning period — a few weeks of minor signals that got dismissed. The Pain Log is where those signals go.
+
+A single pain entry is just data. Ten entries over three weeks showing the same pattern — left knee, moderate intensity, after running — is actionable information. You can see it, name it, and address it before it becomes a forced rest.
+
+The pain data also feeds into the weekly review. If your energy was consistently low and your pain levels were elevated, Gemini can note the correlation and suggest recovery as the priority for the coming week.
+
+---
+
+### Logging a Pain Entry
+
+From the Engine dashboard, navigate to **Pain Log** or click **+ Log Pain** if visible.
+
+The pain entry form has:
+
+---
+
+### Pain Form Fields
+
+**Date** — The calendar date this pain occurred or was first noticed. Defaults to today.
+
+**Intensity** — A 1–10 scale.
+- 1–2: Mild, barely noticeable. Slight soreness or stiffness.
+- 3–4: Moderate. Present but not limiting activity.
+- 5–6: Significant. Affects your range of motion or performance.
+- 7–8: Severe. Difficult to train through. Likely modifying activities.
+- 9–10: Extreme. Can't perform normal activities. See a professional.
+
+**Body location** — Where is the pain? Twelve options cover the major areas:
+- Head / Neck
+- Left shoulder / Right shoulder
+- Left elbow / Right elbow
+- Left wrist / Right wrist
+- Lower back / Upper back
+- Left hip / Right hip
+- Left knee / Right knee
+- Left ankle / Right ankle
+- Left foot / Right foot
+- Abdomen / Core
+- Chest
+- Other
+
+**Sensation type** — What does it feel like? Five options:
+- **Sharp** — acute, localized, stabbing sensation
+- **Dull** — diffuse, aching, low-grade discomfort
+- **Burning** — heat, friction, nerve sensation
+- **Throbbing** — pulsing, pressure, often inflammation
+- **Stiffness** — reduced range of motion, tension without acute pain
+
+**Activity that triggered it** (optional) — What were you doing when you noticed it? ""Running"", ""heavy squat session"", ""seated at desk all day"", ""woke up with it."" This field is the most useful for pattern recognition.
+
+**Notes** (optional) — Any additional context: how long it's been present, whether it's getting better or worse, what helps.
+
+---
+
+### Multiple Locations
+
+You can log multiple pain entries per day — one per location. If your left knee and lower back are both bothering you, log two entries with the same date. Each entry is tracked independently so trends by location are accurate.
+
+---
+
+### Viewing Pain History
+
+From the Pain Log section, you can view your entries sorted by date. Filter by body location to see the history of a specific area — for example, all left knee entries over the past three months.
+
+The history view shows intensity over time as a simple chart per location. Upward trends are warning signs. Downward trends mean whatever you're doing is working.
+
+---
+
+### When to Log
+
+Log pain the same day it appears, not days later. Intensity ratings especially lose accuracy with time — what you remember as a 6 might have been a 4 at the time.
+
+It doesn't need to be every minor ache. Use it when:
+- Pain is noticeable enough to affect your workout, focus, or daily movement
+- You've had the same discomfort two or more times
+- You want a record to show a physical therapist or doctor (""here's the pattern over the last 6 weeks"")
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/engine — show the Pain Log section or click through to the Pain Log page]
+
+> [SCREEN: Click ""+ Log Pain"" — pain entry form opens]
+
+> [SCREENSHOT: Pain entry form — callouts: Date, Intensity (1–10), Body location (12 options grid), Sensation type (5 options), Activity trigger, Notes]
+
+> [SCREEN: Set Date to today]
+
+> [SCREEN: Set Intensity to 4]
+
+> [SCREEN: Click ""Left knee"" in the body location grid]
+
+> [SCREEN: Click ""Dull"" sensation type]
+
+> [SCREEN: Type ""Running — 5-mile tempo run"" in the activity trigger field]
+
+> [SCREEN: Type ""Outer knee. Started at mile 3. Eased after stretching."" in notes]
+
+> [SCREEN: Click Save — entry appears in pain log list]
+
+> [SCREENSHOT: Pain log list entry — callouts: Date, Intensity badge, Location, Sensation type, Activity trigger shown]
+
+> [SCREEN: Click on the pain log entry or navigate to history view — show a list of past entries]
+
+> [SCREENSHOT: Pain history for left knee — small intensity chart over time — callout: ""Track patterns by location over time""]
+
+> [SCREEN: End on the history view — end lesson]
+
+---
+
+## Key Takeaways
+
+- Pain Log captures: date, intensity (1–10), body location (12 zones), sensation (5 types), trigger activity, notes
+- Log the same day — intensity ratings lose accuracy with time
+- Multiple entries per day are fine — one per location
+- Filter history by body location to see trends for a specific area
+- Pain data feeds into the AI weekly review: repeated high-intensity entries trigger recovery recommendations
+- Use it for noticeable pain, recurring discomfort, or when you need a record to share with a professional
+",markdown,,,,,,
+Lessons,1,7,Session History,text,360,true,,"# Lesson 07: Session History
+
+**Course:** Mastering the Engine
+**Module:** Session Management
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Every focus session you run is stored in Session History. This is your complete log of focused work — searchable, filterable, and editable. You can review what you worked on, correct mistakes in logged data, and build a clear picture of how you're actually spending your focused time.
+
+---
+
+### Navigating to Session History
+
+From the Engine dashboard, click **Session History** in the Engine navigation. You'll see a list of all your focus sessions, most recent first.
+
+---
+
+### What the History List Shows
+
+Each row in the session history shows:
+- **Date and time** — when the session started
+- **Activity** — what you worked on
+- **Duration** — actual focused time logged
+- **Mode** — Simple or Pomodoro indicator
+- **Quality rating** — the 1–5 rating you gave the session
+- **Milestone / Task** — linked plan items (if set)
+- **Revenue / Cost** — financial data (if set — see below)
+
+---
+
+### Filtering and Searching
+
+At the top of the history list, you can filter by:
+
+**Date range** — View sessions from a specific period. Useful for reviewing a particular week or month.
+
+**Activity search** — Type any keyword to filter sessions by activity name. If you always prefix writing sessions with ""Write:"", searching ""Write:"" shows only writing sessions.
+
+**Quality filter** — Filter to show only sessions above or below a certain quality rating. Useful for reviewing your best sessions (""what was I doing when I was focused?"") or your worst (""when do I struggle most?"").
+
+**Milestone filter** — Filter to sessions linked to a specific milestone.
+
+**Mode filter** — Simple only, Pomodoro only, or both.
+
+---
+
+### Editing a Session
+
+Sessions don't always get logged correctly. Maybe you forgot to stop the timer and it ran for 3 hours, or you set the wrong activity name, or you want to add a milestone link after the fact.
+
+Click **Edit** on any session row. The session edit form opens with all fields editable:
+- Activity name
+- Duration (manual override)
+- Quality rating
+- Milestone and task link
+- Start and end notes
+- Revenue and cost (optional financial fields)
+
+Make your changes and click **Save**. The updated session data propagates to your stats and weekly review totals.
+
+---
+
+### Adding Revenue and Cost to a Session
+
+Focus sessions have optional financial fields: **Revenue** and **Cost**. These are separate from the financial fields on tasks in the Planner — they're for logging the financial output of a specific work session.
+
+Common uses:
+- **Revenue**: You did a billable client call (log the invoice value), shipped a product feature that closed a deal, or completed a freelance deliverable
+- **Cost**: You paid for a tool, software, or resource used in this session
+
+These session-level financials aggregate into the Engine analytics and appear in the financial summary for the weekly review period.
+
+---
+
+### Duplicating a Session
+
+If you ran a session that was nearly identical to a previous one (same activity, same duration, same mode), you can duplicate a past session to pre-fill the session setup form.
+
+Click **Duplicate** on any history row. The session setup form opens with all fields from that session pre-filled. Adjust the date, modify any details, and click Start (or Save if you're logging it retroactively without running the timer).
+
+This is useful for recurring work that doesn't follow a fixed schedule — less structured than a template, more convenient than setting up from scratch.
+
+---
+
+### Deleting a Session
+
+Click **Delete** on any session row. A confirmation prompt appears. Confirm to permanently remove the session from your history and stats.
+
+Use this for accidental sessions (you forgot to stop the timer), test entries, or truly erroneous logs. Don't use it to remove sessions that just had poor quality ratings — low-quality sessions are valid data.
+
+---
+
+### Retroactive Logging
+
+You can log a session retroactively without running the timer. From Session History, click **+ Log Session**. Fill in all fields including the date (set to any past date). This is useful if you did focused work but forgot to run the timer.
+
+The retroactively logged session is identical to a timer-run session in every way — it shows in stats, analytics, and the weekly review.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/engine — click ""Session History""]
+
+> [SCREEN: Session history list loads — shows several sessions]
+
+> [SCREENSHOT: Session history list — callouts: Date/Time, Activity name, Duration, Mode badge (Simple/Pomodoro), Quality rating stars, Milestone/Task column, Edit and Delete buttons]
+
+> [SCREEN: Use the date range filter — set to last 7 days — list filters]
+
+> [SCREEN: Type a keyword in the search box — list filters to matching sessions]
+
+> [SCREEN: Click Edit on a session — edit form opens]
+
+> [SCREENSHOT: Session edit form — callouts: All editable fields, Revenue/Cost financial fields highlighted as ""optional financial tracking""]
+
+> [SCREEN: Update the quality rating — add a milestone link — click Save]
+
+> [SCREEN: Click Duplicate on a different session — session setup form opens pre-filled]
+
+> [SCREENSHOT: Pre-filled session form from duplicate — callout: ""All fields copied from the source session — modify as needed""]
+
+> [SCREEN: Close the duplicate form]
+
+> [SCREEN: Click Delete on a session — confirmation prompt — cancel (don't delete for demo)]
+
+> [SCREEN: Click ""+ Log Session"" — show retroactive logging form with date set to yesterday]
+
+> [SCREEN: End on the session history list — end lesson]
+
+---
+
+## Key Takeaways
+
+- Session history shows all focus sessions: date, activity, duration, mode, quality rating, milestone/task
+- Filter by date range, activity keyword, quality rating, milestone, or mode
+- Edit any session to correct duration, quality, activity, notes, or add financial data
+- Revenue/Cost fields on sessions are for session-level financial output (separate from task financials in Planner)
+- Duplicate a session to pre-fill the setup form from a past session
+- Log sessions retroactively with ""+ Log Session"" — identical to timer-run sessions in all stats
+- Delete is permanent — use for errors, not for low-quality sessions (those are valid data)
+",markdown,,,,,,
+Lessons,1,8,Engine Analytics,text,360,true,,"# Lesson 08: Engine Analytics
+
+**Course:** Mastering the Engine
+**Module:** Analytics
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The Engine Analytics page turns your session history into patterns. It's not a vanity dashboard — it's a diagnostic tool. The data it shows is only useful if you look at it regularly and act on what you find.
+
+---
+
+### Navigating to Analytics
+
+From the Engine dashboard or navigation, click **Analytics**. The analytics page has four tabs: **Overview**, **Trends**, **Pomodoro**, and **Performance**.
+
+---
+
+### Overview Tab
+
+The Overview tab shows your focus metrics for a selected time period (default: last 30 days). Key stats:
+
+**Total focus minutes** — Total logged focus time in the period. This is the headline metric. If your goal is 20 hours of deep work per week and you logged 12, the gap is visible here.
+
+**Sessions completed** — Count of focus sessions in the period.
+
+**Average session duration** — Mean session length. Useful for calibrating your templates and goals. If your average is 28 minutes but you always set 45-minute sessions, you're regularly stopping early.
+
+**Average quality rating** — Mean quality across all sessions. Below 3.0 consistently means something is interfering with your focus — worth investigating. Above 4.0 consistently means you're creating the right conditions for deep work.
+
+**Focus minutes by tag** — A breakdown of your focused time by task category (FITNESS, CREATIVE, SKILL, OUTREACH, etc., matching the tags in your Planner). This shows where your focused time is actually going relative to your goals. If 80% of your focus time is on OUTREACH but CREATIVE is the goal you care most about, the chart surfaces that imbalance.
+
+**Sessions per day of week** — Which days do you run the most sessions? Most people see a clear weekly pattern. If you're aiming for focus on Wednesdays but the chart shows your lowest session count on Wednesdays, something about your Wednesday schedule is working against you.
+
+---
+
+### Trends Tab
+
+The Trends tab shows how your focus metrics have changed over time. The default view shows a 12-week rolling window.
+
+**Weekly focus minutes** — Bar chart showing total focus minutes per week. Spot trends: are you building momentum? Is there a consistent dip in certain weeks? Did a change in your environment or schedule affect your focus output?
+
+**Quality over time** — Line chart showing your average quality rating per week. This is the most important trend to watch. A declining quality trend with stable or rising volume means you're logging more sessions but getting less out of them — often a sign of fatigue or increasing distraction.
+
+**Session streak** — Days with at least one focus session. Streaks are useful for building the habit early, but long-term, consistency (most days, most weeks) matters more than unbroken streaks.
+
+**Energy correlation** — If you've been logging daily debriefs with energy ratings, this chart overlays your average daily energy with your session quality rating. The correlation (or lack of it) tells you how much your physical energy predicts your focus quality.
+
+---
+
+### Pomodoro Tab
+
+The Pomodoro tab shows analytics specific to Pomodoro-mode sessions.
+
+**Pomodoro sessions vs. Simple sessions** — Proportion of each mode in your history. Useful if you're intentionally shifting toward more Pomodoro or more Simple usage.
+
+**Average cycles per session** — For Pomodoro sessions, how many work intervals do you typically complete? If you consistently stop at 2 of 4 planned cycles, you may be over-estimating your available time or under-estimating the task.
+
+**Break skip rate** — What percentage of scheduled breaks do you skip? A high skip rate might mean your work intervals are too short (you're in flow when the break triggers) or that you feel guilty about breaks and skip them reflexively.
+
+**Most-used interval configuration** — Your most common work/break combination. This helps you decide whether your default Pomodoro template is actually the one you use most.
+
+---
+
+### Performance Tab
+
+The Performance tab connects your focus data to your plan outcomes.
+
+**Task completion vs. focus minutes** — Correlation between the weeks you logged the most focus time and the weeks you completed the most tasks. High correlation means your focus sessions are converting to plan execution. Low correlation means you may be logging sessions for low-value tasks.
+
+**Focus minutes by milestone** — A breakdown of total focused time by milestone. This shows which milestones are receiving the most focused attention. If a high-priority milestone shows almost no session time, either the tasks aren't being linked to sessions or the work isn't happening.
+
+**Session revenue / cost** — If you've logged financial data on sessions, this tab shows total session revenue, total session cost, and net output for the period.
+
+---
+
+### Using Analytics to Improve
+
+The most common pattern improvement cycles:
+
+1. **Low total minutes** → Review your schedule. Are you protecting focus time? Check whether recurring tasks in the Planner are blocking time for focused work.
+
+2. **Low quality average** → Investigate your environment. Time of day, noise, notification load, physical energy (check energy ratings from daily debrief).
+
+3. **Quality declining over time** → Often a training load / recovery issue. Check pain logs and health metrics from the same period.
+
+4. **Focus minutes not matching plan priorities** → Check the ""by milestone"" breakdown. Reprioritize what you start sessions for.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/engine — click ""Analytics""]
+
+> [SCREEN: Overview tab loads — shows stats grid]
+
+> [SCREENSHOT: Overview tab — callouts: Total focus minutes, Sessions completed, Average duration, Average quality, Focus minutes by tag (pie or bar), Sessions per day of week chart]
+
+> [SCREEN: Click ""Trends"" tab]
+
+> [SCREENSHOT: Trends tab — callouts: Weekly focus minutes bar chart, Quality over time line chart, Session streak indicator, Energy correlation chart (if daily debriefs logged)]
+
+> [SCREEN: Click ""Pomodoro"" tab]
+
+> [SCREENSHOT: Pomodoro tab — callouts: Pomodoro vs. Simple ratio, Average cycles per session, Break skip rate, Most-used interval config]
+
+> [SCREEN: Click ""Performance"" tab]
+
+> [SCREENSHOT: Performance tab — callouts: Task completion vs. focus minutes, Focus minutes by milestone bar chart, Session revenue/cost (if applicable)]
+
+> [SCREEN: Navigate back to Overview — change the date range filter — show how the stats update]
+
+> [SCREEN: End on the Overview tab — end lesson]
+
+---
+
+## Key Takeaways
+
+- Four analytics tabs: Overview (summary stats), Trends (time-series patterns), Pomodoro (Pomodoro-specific metrics), Performance (plan execution correlation)
+- Overview: total minutes, sessions, average duration, average quality, minutes by tag, sessions by day of week
+- Trends: weekly minutes chart, quality over time, energy/quality correlation (if debriefs logged)
+- Pomodoro tab: cycles per session, break skip rate, most-used interval config
+- Performance tab: focus minutes by milestone — shows where your deep work time is actually going
+- Most useful diagnostic: declining quality with stable or rising volume = fatigue signal
+- Check analytics weekly, not daily — weekly patterns reveal what daily numbers hide
+",markdown,,,,,,
+Lessons,1,9,Focus Goals,text,300,true,,"# Lesson 09: Focus Goals
+
+**Course:** Mastering the Engine
+**Module:** Goals & Settings
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Focus goals give the Engine a target to measure against. Without a goal, your focus minutes are just a number. With a goal, they're a percentage of what you intended — and the dashboard shows you exactly where you stand.
+
+---
+
+### What Focus Goals Are
+
+Focus goals are daily and weekly minute targets for focused work. They live in your Engine settings and power the progress indicators on the Engine dashboard.
+
+**Daily focus goal** — How many minutes of focused work you aim to log each day. A common starting point for knowledge workers: 120 minutes (2 hours of deep work). Athletes doing double days might log focused study or creative work in addition to training — 60–90 minutes may be more realistic. Adjust to what's achievable on a typical day, not your best day.
+
+**Weekly focus goal** — Total focused minutes for the week. You can set this independently from the daily goal (e.g., you might have a 120-minute daily goal but a 600-minute weekly goal if you only plan to focus 5 days). Or set it as a simple multiple (daily × 5).
+
+---
+
+### Setting Your Focus Goals
+
+From the Engine dashboard, click **Settings** (gear icon) or navigate to **Engine Settings**.
+
+The settings panel shows:
+
+**Daily focus goal** — Input field in minutes. Enter your target.
+
+**Weekly focus goal** — Input field in minutes.
+
+Click **Save**. Goals take effect immediately — the dashboard progress indicators update.
+
+---
+
+### The Dashboard Progress Indicators
+
+Once goals are set, the Engine dashboard stats grid shows progress bars under the focus minute counts:
+
+**Today's focus minutes / Daily goal** — A horizontal progress bar. If your daily goal is 120 minutes and you've logged 85, the bar is at 71%. The color changes as you approach and hit the goal: neutral below 50%, amber at 50–85%, green at 85%+.
+
+**This week's focus minutes / Weekly goal** — Same progress bar structure for the week total.
+
+These progress bars are the most visible part of the Engine dashboard. They tell you at a glance whether today's focused work is on track, without requiring you to calculate anything.
+
+---
+
+### Calibrating Your Goals
+
+Start conservative. A goal you consistently hit builds the habit; a goal you consistently miss erodes motivation.
+
+If you're new to the Engine: set your daily goal to 60 minutes. After two weeks, look at your session history average. If you're consistently exceeding 60 minutes, raise the goal to 90. Build from there.
+
+If you're an experienced user: set the goal to 80% of your best recent week. That gives you a challenging but realistic target that accounts for bad days.
+
+Review your goals quarterly. A goal that was right in February may be wrong in August — your life, workload, and energy fluctuate.
+
+---
+
+### Focus Goals vs. Task Deadlines
+
+Focus goals measure time input. Task completion in the Planner measures output. Both matter. Neither replaces the other.
+
+A week where you hit your focus goal but complete very few tasks might mean your session quality is low (check the quality average) or that you're spending focus time on low-priority tasks (check the Performance analytics tab).
+
+A week where task completion is high but focus minutes are low might mean you're completing tasks through quick bursts of execution rather than deep work — which is sometimes fine, but often not sustainable.
+
+Use both metrics together, not either/or.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/engine — show the stats grid without goals set (plain numbers, no progress bars) OR with placeholder zeros]
+
+> [SCREEN: Click the settings/gear icon or navigate to Engine Settings]
+
+> [SCREENSHOT: Engine settings panel — callouts: Daily focus goal (minutes), Weekly focus goal (minutes)]
+
+> [SCREEN: Type ""120"" in Daily focus goal]
+
+> [SCREEN: Type ""600"" in Weekly focus goal]
+
+> [SCREEN: Click Save — return to Engine dashboard]
+
+> [SCREENSHOT: Engine dashboard stats grid — callouts: Daily progress bar (85/120 min → 71%), Weekly progress bar (240/600 min → 40%), Color coding on bars]
+
+> [SCREEN: Log a quick short session (20 min) — show the dashboard stats update in real time after the session ends]
+
+> [SCREENSHOT: Updated dashboard — progress bars advance — callout: ""Goals give your minutes a target to measure against""]
+
+> [SCREEN: Navigate back to Engine settings — show the goals fields again]
+
+> [SCREEN: End on the dashboard with progress bars visible — end lesson and the course]
+
+---
+
+## Key Takeaways
+
+- Focus goals set daily and weekly minute targets for the Engine dashboard progress bars
+- Set in Engine Settings: Daily focus goal (minutes) + Weekly focus goal (minutes)
+- Dashboard shows progress bars: today vs. daily goal, this week vs. weekly goal
+- Color coding: neutral below 50%, amber 50–85%, green 85%+
+- Start conservative — a goal you consistently hit is more valuable than one you consistently miss
+- Review goals quarterly — they should reflect your current life and workload, not your ideal
+- Focus goals (time input) and task completion (output) are complementary — use both
+",markdown,,,,,,

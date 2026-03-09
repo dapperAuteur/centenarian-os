@@ -1,0 +1,915 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+Lessons,1,1,Welcome to Coach & Gems,text,240,true,,"# Lesson 01: Welcome to Coach & Gems
+
+**Course:** Mastering Coach & Gems
+**Module:** Introduction
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Generic AI assistants are useful. A custom AI that's been specifically designed to think like a longevity-focused nutrition coach, or a performance-oriented recovery specialist, or a demanding writing editor — that's something different.
+
+Coach & Gems is CentenarianOS's AI conversation module. Instead of a single generic chatbot, you build a library of purpose-built AI personas called Gems. Each Gem has a specific focus, a defined expertise, and a system prompt that shapes every response it gives you. The Coach is where you have conversations with them.
+
+---
+
+### Gems: Custom AI Personas
+
+A Gem is a configured AI persona. You define three things when you create one:
+
+**Name** — What you call this Gem. ""Longevity Strategist"", ""Nutrition Auditor"", ""Recovery Coach"", ""Writing Editor"". The name appears in your Gem selector and session history.
+
+**Description** — A short summary of what this Gem does. Helps you remember which Gem to use for which type of conversation. Not seen by the AI — it's for your reference.
+
+**System prompt** — The core instruction that defines the AI's behavior for every conversation with this Gem. This is what makes a Gem useful: a well-written system prompt turns Gemini into a focused, expert-level advisor for a specific domain.
+
+You can create as many Gems as you want. Most users settle on 4–8 that cover their primary coaching needs.
+
+---
+
+### Coach: The Conversation Interface
+
+Navigate to `/dashboard/coach`. The page has two sections:
+
+**The sidebar (left):**
+- A **New Chat** button
+- A **Gem selector** dropdown — choose which Gem to chat with
+- A **History** panel — your past sessions listed chronologically by first message
+
+**The main chat area (right):**
+- The conversation history for the current session
+- A message input at the bottom with a Send button (or press Enter to send; Shift+Enter for a new line)
+
+---
+
+### How Gems and Coach Connect
+
+When you start a new session, you select a Gem. That Gem's system prompt is sent to the AI with every message in that session — it defines the AI's persona, expertise, and behavior for the entire conversation.
+
+Once a session starts, the Gem is locked to that session. If you want to switch to a different Gem, start a New Chat. This is intentional: changing AI persona mid-conversation would break the context and produce inconsistent responses.
+
+---
+
+### What Powers the AI
+
+Every conversation is powered by **Gemini 2.5 Flash** — Google's fast, capable multimodal model. The full conversation history is included in every request, which means the AI maintains genuine multi-turn context: it remembers what you said three messages ago without you having to repeat yourself.
+
+---
+
+### When to Use Coach vs. Other AI Features in the System
+
+The weekly review (`/dashboard/weekly-review`) uses Gemini to generate a data-driven coaching summary based on your logged metrics. That's automated.
+
+The Coach is interactive — it's for real-time dialogue, iterative problem solving, and ongoing advisory relationships. You ask questions, get answers, push back, refine, and build on the conversation.
+
+Use the weekly review when you want automated insights from your data. Use the Coach when you want to think through a problem, explore options, or get domain-specific guidance.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/coach — show the full page]
+
+> [SCREENSHOT: Coach interface — callouts: Sidebar (New Chat button, Gem selector dropdown, History panel), Main chat area (empty state with Gem name + ""start a conversation"" message), Input area at bottom]
+
+> [SCREEN: Navigate to /dashboard/gems — show the Gems list]
+
+> [SCREENSHOT: Gems Manager — callouts: Gem card (name, description, system prompt snippet), New Gem button, Edit/Delete buttons]
+
+> [SCREEN: Return to /dashboard/coach — show the Gem selector dropdown — click to expand and show Gem options]
+
+> [SCREEN: End on the Coach page — end lesson]
+
+---
+
+## Key Takeaways
+
+- Gems are custom AI personas: Name (your reference) + Description (your reference) + System Prompt (defines AI behavior)
+- Coach is the chat interface at `/dashboard/coach` — sidebar + chat area
+- Sessions are locked to one Gem — switch Gems with New Chat
+- Powered by Gemini 2.5 Flash with full multi-turn context per session
+- Use Coach for interactive dialogue; use Weekly Review for automated data-driven insights
+",markdown,,,,,,
+Lessons,1,2,Creating Your First Gem,text,300,true,,"# Lesson 02: Creating Your First Gem
+
+**Course:** Mastering Coach & Gems
+**Module:** Gem Setup
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Before you can use the Coach, you need at least one Gem. This lesson walks through the Gem Manager, the creation form, and what each field actually does.
+
+---
+
+### The Gem Manager
+
+Navigate to `/dashboard/gems`. This is the Gem Manager — the central hub for all your AI personas.
+
+If you haven't created any Gems yet, you'll see an empty state with a **Create Your First Gem** button. Once you have Gems, they're listed as cards showing the name, description, and a preview of the first 400 characters of the system prompt.
+
+---
+
+### Creating a New Gem
+
+Click **New Gem** (or ""Create Your First Gem"" on the empty state). A modal opens with three fields.
+
+---
+
+### Field 1: Name
+
+The name you'll use to identify this Gem when selecting it in the Coach. It appears in the dropdown selector and in your session history.
+
+Good names are short and specific: **""Nutrition Auditor""**, **""Recovery Coach""**, **""Longevity Strategist""**, **""Training Programmer""**, **""Writing Editor""**. Avoid generic names like ""AI Coach"" — that tells you nothing about which Gem to use for a given conversation.
+
+---
+
+### Field 2: Description
+
+A short explanation of what this Gem does. This field is for your reference only — the AI never sees it. Use it to remind yourself which conversations belong here.
+
+Examples:
+- ""Evaluates my meals and nutrition logs against longevity principles. Harsh and direct.""
+- ""Designs periodized training blocks. Knows my injury history.""
+- ""Helps me think through business decisions with an operator's lens.""
+
+---
+
+### Field 3: System Prompt
+
+This is the most important field. The system prompt is sent to the AI at the start of every message in every session with this Gem. It defines the AI's persona, knowledge base, constraints, and style.
+
+A system prompt can be as short as two sentences or as long as several paragraphs. Longer is not always better — a focused, specific prompt often produces more consistent results than an exhaustive one.
+
+The field uses a monospace font because you're writing instructions, not prose. Take your time with it. The quality of your Gem is almost entirely determined by the quality of this field.
+
+For guidance on writing effective system prompts, see Lesson 03.
+
+---
+
+### Saving the Gem
+
+Click **Create Gem**. The modal closes and the new Gem appears in the Gems list.
+
+If either the Name or System Prompt field is empty, the form won't submit — both are required. Description is optional.
+
+---
+
+### Editing a Gem
+
+Click **Edit** on any Gem card. The same modal opens with the existing values pre-filled. Update any field and click **Save Changes**.
+
+One important note: if you edit a Gem's system prompt, that change takes effect immediately for any new message in any session — including sessions you resume. The system prompt is re-sent fresh with every API call, so the updated prompt applies going forward, even in an ongoing conversation. This means you can improve a Gem's behavior mid-engagement.
+
+---
+
+### Deleting a Gem
+
+Click the **trash icon** on any Gem card. A confirmation prompt appears. Deleting a Gem does not delete its associated sessions — your conversation history is preserved. However, sessions that used the deleted Gem will no longer have a functioning Gem to continue with.
+
+---
+
+### How Many Gems to Create
+
+Start with 2–3 Gems that cover your most frequent coaching needs. You'll get a feel for what system prompt quality produces good conversations. Add Gems as you identify new recurring use cases.
+
+Most users find that 4–8 Gems covers 95% of their needs. For Gem ideas suited to longevity and performance goals, see Lesson 07.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/gems — show the Gems list (or empty state)]
+
+> [SCREEN: Click ""New Gem"" — modal opens]
+
+> [SCREENSHOT: Gem creation modal — callouts: Name field, Description field, System Prompt textarea (monospace, tall), Create Gem button, Cancel button]
+
+> [SCREEN: Type ""Nutrition Auditor"" in Name]
+
+> [SCREEN: Type ""Reviews my meals and eating patterns against longevity nutrition science. Direct feedback."" in Description]
+
+> [SCREEN: Type a system prompt in the textarea — use: ""You are a precision nutrition coach with expertise in longevity-focused eating patterns. The user will describe meals, food choices, and nutrition questions. Evaluate everything against evidence-based longevity nutrition principles: protein adequacy, anti-inflammatory foods, metabolic health, and sustainable eating patterns. Be specific and direct. Don't soften criticism — the user wants accurate feedback, not validation. When you identify a problem, name it clearly and suggest a specific correction.""]
+
+> [SCREENSHOT: Filled modal — callouts: All three fields populated, System prompt in monospace showing the full text]
+
+> [SCREEN: Click ""Create Gem"" — modal closes — Gem appears in the list]
+
+> [SCREENSHOT: Gems list showing the new Gem card — callouts: Name, Description, System prompt snippet at bottom of card]
+
+> [SCREEN: Click Edit on the Gem — show pre-filled modal — make a small change — click Save Changes]
+
+> [SCREEN: End on the Gems Manager with the new Gem visible — end lesson]
+
+---
+
+## Key Takeaways
+
+- Gem Manager at `/dashboard/gems` — create, edit, delete AI personas
+- Three fields: Name (your label), Description (your reference only), System Prompt (defines AI behavior)
+- Both Name and System Prompt are required; Description is optional
+- System prompt is sent fresh with every API call — edits take effect immediately for all future messages
+- Deleting a Gem preserves its conversation history
+- Start with 2–3 Gems; expand as you identify recurring use cases
+",markdown,,,,,,
+Lessons,1,3,Writing Effective System Prompts,text,360,true,,"# Lesson 03: Writing Effective System Prompts
+
+**Course:** Mastering Coach & Gems
+**Module:** Gem Setup
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The system prompt is the difference between a useful Gem and a generic chatbot. A well-written system prompt produces focused, expert-level, consistent responses. A poorly written one produces the same generic AI output you could get anywhere. This lesson covers what makes a system prompt effective.
+
+---
+
+### What the System Prompt Does
+
+Every time you send a message to the Coach, the system prompt from your selected Gem is included in the request to Gemini. It's the standing instruction that tells the AI:
+
+- Who it is and what it knows
+- How it should behave and communicate
+- What it should focus on and what it should ignore
+- Any constraints on its responses
+
+Think of it as writing a job description for an AI employee. The more precise and specific, the more consistently it will perform the role.
+
+---
+
+### The Core Elements of a Good System Prompt
+
+**1. Role definition**
+
+Start by clearly defining who the AI is. Not ""you are a helpful assistant"" — that's generic and tells the AI almost nothing. Be specific:
+
+- ""You are a longevity-focused nutritionist with expertise in metabolic health, protein optimization, and anti-inflammatory eating patterns.""
+- ""You are a corrective exercise coach who specializes in movement dysfunction assessment and injury prevention.""
+- ""You are a high-performance recovery specialist who advises elite athletes on sleep, HRV management, and training load periodization.""
+
+The more specific the role, the more focused and expert the responses will be.
+
+---
+
+**2. Context about the user**
+
+Tell the AI who it's talking to and what that person cares about. You can include standing context that would otherwise require you to re-explain every session:
+
+- ""The user is an executive who travels 2–3 weeks per month and has limited access to a full kitchen when traveling.""
+- ""The user has a history of left knee patellofemoral syndrome and should avoid high-impact activities during loading phases.""
+- ""The user's primary goal is metabolic health and muscle mass retention, not athletic performance.""
+
+This context shapes responses without you having to repeat your situation in every message.
+
+---
+
+**3. Communication style**
+
+Tell the AI how to talk to you:
+
+- ""Be direct and specific. No hedging, no generic disclaimers. The user has a graduate-level science background.""
+- ""Provide evidence-based explanations with source mechanisms, not just recommendations.""
+- ""When you identify a problem, name it explicitly before suggesting a correction. Don't soften criticism.""
+- ""Use concise, actionable bullet points rather than long paragraphs.""
+
+Style instructions are often the most impactful part of the prompt — they determine whether responses are useful or generic.
+
+---
+
+**4. Scope constraints**
+
+Optionally, define what the Gem should and shouldn't engage with:
+
+- ""Focus exclusively on nutrition and metabolic health. If the user asks about training programming, refer them to a trainer.""
+- ""Do not recommend specific medications or interpret medical test results. Flag anything requiring medical expertise and advise consulting a physician.""
+- ""Stay within the scope of evidence-based longevity interventions. Do not speculate beyond the research.""
+
+Scope constraints prevent the Gem from drifting into areas where it's less reliable.
+
+---
+
+### A Complete Example System Prompt
+
+Here's a full system prompt for a Recovery Coach Gem:
+
+```
+You are a high-performance recovery specialist. Your expertise covers sleep architecture optimization, heart rate variability (HRV) interpretation, training load management, and evidence-based recovery modalities.
+
+The user is a high-achieving professional who trains 4–5 days per week and has access to HRV data from an Oura Ring. Their primary concern is sustainable performance: not overtraining, protecting their sleep, and maintaining cognitive output alongside physical training.
+
+When interpreting HRV data: always contextualize against the user's personal baseline, not population averages. A 10–15% drop below rolling baseline is significant. Advise on adjustments to training intensity, not training elimination.
+
+Be direct. When the data or situation calls for a recovery day, say so clearly. Don't hedge. The user understands sports science concepts and doesn't need basic terms explained.
+
+If the user asks for a recommendation, give one specific recommendation — not a list of options. They want a decision, not more variables to manage.
+```
+
+This prompt establishes role, user context, domain-specific guidance, communication style, and a concrete behavioral instruction.
+
+---
+
+### Common Mistakes
+
+**Too vague:**
+""You are a health coach. Help the user with health goals.""
+— This produces generic responses indistinguishable from any AI assistant.
+
+**Too long without focus:**
+A prompt that's five paragraphs covering every possible health topic produces a confused Gem that tries to be everything. Focused prompts outperform comprehensive ones.
+
+**No style instructions:**
+Without style guidance, AI defaults to verbose, hedge-heavy, qualification-laden responses. Add explicit style instructions to get direct, useful outputs.
+
+**Re-explaining context every session:**
+If you find yourself starting every session with the same background information (""I'm an executive who trains 4x a week, I have left knee issues...""), that information belongs in the system prompt — not in the chat.
+
+---
+
+### Iterating on Prompts
+
+Don't expect your first system prompt to be perfect. Start a session, notice where responses are off, and edit the prompt to address it. Because the system prompt updates immediately (edits apply to all future messages even in ongoing sessions), you can tune a Gem over multiple conversations until it reliably produces the responses you need.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/gems — click Edit on an existing Gem]
+
+> [SCREENSHOT: Gem edit modal — system prompt field highlighted — callout: ""This is what shapes every response""]
+
+> [SCREEN: Show a before/after example — a vague prompt vs. a specific one in the textarea field]
+
+> [SCREENSHOT: Side-by-side example (or sequential) of vague prompt vs. specific prompt text in the textarea]
+
+> [SCREEN: Close modal — navigate to /dashboard/coach — select the Gem — send a test message — show AI response]
+
+> [SCREENSHOT: Chat response showing a focused, expert-level answer — callout: ""System prompt shaping the response""]
+
+> [SCREEN: Return to Gems — edit the prompt — add a style instruction — return to Coach — show how response changes]
+
+> [SCREEN: End on the Coach chat — end lesson]
+
+---
+
+## Key Takeaways
+
+- System prompt = standing instruction sent with every message in every session with this Gem
+- Four elements: Role definition, User context, Communication style, Scope constraints
+- Role definition: be specific — ""longevity nutritionist with metabolic health expertise"" outperforms ""health coach""
+- User context: put standing background in the prompt so you never re-explain it in chat
+- Style instructions are the most impactful element — they determine if responses are direct or generic
+- Iterate: edit the prompt based on what you see in actual sessions; updates apply immediately
+",markdown,,,,,,
+Lessons,1,4,Your First Coaching Session,text,360,true,,"# Lesson 04: Your First Coaching Session
+
+**Course:** Mastering Coach & Gems
+**Module:** Using Coach
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+You have at least one Gem. Now let's use it. This lesson walks through starting a coaching session, how to send messages, how the AI maintains context across the conversation, and what good chat hygiene looks like.
+
+---
+
+### Starting a Session
+
+Navigate to `/dashboard/coach`.
+
+If you have Gems but no active session, the main chat area shows your selected Gem's name with a ""Start a new conversation by typing below"" prompt. The Gem selector in the sidebar defaults to your first Gem.
+
+**Step 1: Select your Gem.** Use the dropdown in the sidebar to choose the Gem you want to work with. Pick the one that matches what you want to discuss.
+
+**Step 2: Type your message.** Click into the input field at the bottom of the chat area and type your opening message. Press **Enter** to send, or **Shift+Enter** to add a new line without sending.
+
+**Step 3: Wait for the response.** The send button shows a spinner while the AI generates its response. Responses are full text (not streamed character by character) — the complete response appears at once.
+
+That's it. You're in a session.
+
+---
+
+### How Multi-Turn Context Works
+
+Every time you send a message, the system sends the AI the full conversation history alongside your new message. This means:
+
+- The AI remembers everything said earlier in this session
+- You can reference previous messages without re-explaining (""the plan you suggested in your last message..."")
+- The AI builds on earlier context to give increasingly relevant answers
+
+This is real multi-turn context — not a stateless question/answer exchange. Use it: probe, follow up, push back, ask for clarification. A good coaching session is a dialogue, not a series of isolated queries.
+
+---
+
+### What to Say in Your First Message
+
+Opening messages that produce useful responses:
+
+**Structured context:** ""I'm preparing for a 90-day strength and endurance training block. I can train 4 days per week with access to a full gym. My priorities are muscle mass retention and improving VO₂ max. I have a history of left knee patellofemoral syndrome that flares under high eccentric load. What would you recommend for structuring the training weeks?""
+
+**Problem statement:** ""My HRV has been 15% below my 30-day baseline for the past 8 days. Training load hasn't changed. Sleep hours are consistent. What are the most likely explanations and what would you check first?""
+
+**Review request:** ""I've been following this eating pattern for the past two weeks: [describe pattern]. Evaluate it against longevity nutrition principles and tell me the most significant gaps.""
+
+Avoid: ""How do I get healthier?"" — too vague to produce a useful response.
+
+---
+
+### Keyboard Shortcuts and UI Notes
+
+- **Enter** — Send message
+- **Shift+Enter** — Add a new line (for longer, structured messages)
+- The input field is disabled while the AI is generating a response — you can't interrupt it
+- The chat area auto-scrolls to the bottom on each new message
+- Both your messages (right-aligned, blue background) and AI responses (left-aligned, gray background) are shown chronologically
+
+---
+
+### During the Conversation
+
+**Follow up, don't restart.** If the AI's response is close but not quite right, reply in the same session: ""That works for the conditioning days, but I need you to account for the knee limitation in the lower-body sessions specifically."" The AI has full context of everything said before.
+
+**Ask for specifics.** If a response is more general than you need: ""Give me a specific Monday morning training session from that plan, with exact exercises, sets, and rest periods.""
+
+**Push back.** If you disagree: ""I think that protein recommendation is too conservative given my training volume. Here's my reasoning: [explain]. Reassess."" Good AI responds to direct challenge constructively.
+
+---
+
+### What Happens After You Send Your First Message
+
+The first message in a session creates a session record in your history. After that:
+- The Gem selector in the sidebar is locked (grayed out and disabled) — you can't switch Gems mid-session
+- The session appears at the top of your History list in the sidebar
+- Subsequent messages in this session are appended to the saved history
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/coach — show the empty state with a Gem name displayed]
+
+> [SCREENSHOT: Empty chat state — callouts: Gem name in center, Gem selector in sidebar (showing selected Gem), New Chat button, Input field at bottom]
+
+> [SCREEN: Click the Gem dropdown — show multiple Gems listed — select one]
+
+> [SCREEN: Type a first message: ""I've been sleeping 7.5 hours average this week but my energy ratings are consistently 2-3 out of 5. What are the most likely causes and what would you investigate first?""]
+
+> [SCREEN: Press Enter — spinner appears in send button — then AI response appears]
+
+> [SCREENSHOT: Chat with first exchange — callouts: User message (right-aligned, blue), AI response (left-aligned, gray), Auto-scrolled to bottom]
+
+> [SCREEN: Type a follow-up message building on the AI's response: ""You mentioned HRV as a factor — my HRV has been averaging 48ms this week vs. my 30-day baseline of 61ms. Does that change your assessment?""]
+
+> [SCREEN: Send — show AI responding with updated analysis using the context from earlier messages]
+
+> [SCREENSHOT: Multi-turn conversation showing 2-3 exchanges — callout: ""Full conversation history sent with every message — real multi-turn context""]
+
+> [SCREEN: Show the sidebar — History section now shows the session with a preview of the first message]
+
+> [SCREENSHOT: Sidebar with History panel showing session — callout: ""Session created automatically after first message; Gem selector now locked""]
+
+> [SCREEN: End on the chat — end lesson]
+
+---
+
+## Key Takeaways
+
+- Start a session: select Gem → type first message → Enter to send
+- Responses appear as full text (not streamed); spinner shows while generating
+- Full conversation history is included in every request — genuine multi-turn context
+- Enter to send; Shift+Enter for new line in message
+- Gem is locked to session after first message — start New Chat to switch Gems
+- Session appears in History automatically after the first message
+- Follow up, probe, and push back within the session — dialogue outperforms isolated queries
+",markdown,,,,,,
+Lessons,1,5,Session History,text,300,true,,"# Lesson 05: Session History
+
+**Course:** Mastering Coach & Gems
+**Module:** Using Coach
+**Duration:** ~3 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Every coaching session you have is saved. The History panel in the Coach sidebar lets you return to any past conversation and pick up exactly where you left off. This lesson covers how sessions are stored, how to resume them, and how to manage your session list.
+
+---
+
+### The History Panel
+
+In the Coach sidebar, below the Gem selector and New Chat button, there's a **History** section. It lists your past sessions in reverse chronological order (most recent at the top).
+
+Each session entry shows:
+- The first 50 characters of your opening message — a preview that helps you identify what that session was about
+- The date and time the session was created
+
+Sessions are listed across all your Gems — it's a unified history, not filtered by Gem.
+
+---
+
+### Resuming a Session
+
+Click any session in the History panel. The main chat area loads that session's full conversation history. The AI is ready to continue from where you left off.
+
+When you load a session:
+- The Gem selector in the sidebar switches to the Gem associated with that session
+- The Gem selector is locked (as it always is for an active session)
+- All previous messages in the session are displayed
+- Your next message continues the conversation with full context of everything said before
+
+You can resume a session from days or weeks ago and the AI will have the full context of the prior conversation. This is particularly useful for multi-session engagements — a training programming conversation that evolves over several weeks, or a problem-solving session you want to revisit.
+
+---
+
+### Starting a New Chat
+
+Click **New Chat** in the sidebar. This:
+- Clears the current chat display
+- Resets the Gem selector to its default (first Gem in your list)
+- Allows you to select a different Gem for the new session
+- Does not delete the session you were just in — it remains in History
+
+Use New Chat whenever you're starting a genuinely different conversation. Keeping unrelated topics in the same session degrades context quality — the AI tries to maintain coherence across the full message history, so a session about nutrition that suddenly shifts to training programming will produce less focused responses than two separate sessions.
+
+---
+
+### Session Naming
+
+Sessions are not manually named. The title shown in History is automatically derived from the first message you send. For this reason, your first message doubles as the session title — a specific, descriptive opening message is easier to find later than a vague one.
+
+Compare:
+- ""Tell me about nutrition"" → hard to identify later
+- ""Evaluate my current nutrition protocol for longevity: high protein (220g), low saturated fat, intermittent fasting 16:8"" → immediately identifiable
+
+You don't need to change how you message to accommodate this — just write specific first messages and your History will be easy to navigate.
+
+---
+
+### No Deletion in the Coach
+
+Sessions cannot be deleted from the Coach interface. The History is a permanent record of your AI coaching conversations. Over time, this history becomes a useful reference: you can see how your coaching conversations have evolved, what questions you were asking six months ago, and what advice you received at different stages of your journey.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/coach — show the sidebar History panel with multiple sessions]
+
+> [SCREENSHOT: Sidebar with History panel — callouts: Session preview text (first 50 chars), Date/time below preview, Most recent at top]
+
+> [SCREEN: Click a past session in History — chat loads with full message history]
+
+> [SCREENSHOT: Resumed session — callouts: Full conversation history loaded, Gem selector showing the session's Gem and locked, ""Continue from where you left off""]
+
+> [SCREEN: Type a follow-up message in the resumed session — show AI response that references earlier context]
+
+> [SCREEN: Click ""New Chat"" — chat clears — Gem selector resets and is now editable again]
+
+> [SCREENSHOT: New Chat state — callouts: Empty chat area, Gem selector now unlocked, Previous session preserved in History panel]
+
+> [SCREEN: End on the new chat state — end lesson]
+
+---
+
+## Key Takeaways
+
+- History panel in sidebar lists all past sessions by first message preview + date
+- Click any session to resume it — full context loads, AI continues from where you left off
+- Gem selector switches to the session's Gem and locks when a session is loaded
+- New Chat clears the display and unlocks the Gem selector — prior session is preserved in History
+- Sessions are named by your first message — specific opening messages = navigable history
+- Sessions cannot be deleted — History is a permanent record of your coaching conversations
+",markdown,,,,,,
+Lessons,1,6,Flashcards from Coaching,text,300,true,,"# Lesson 06: Flashcards from Coaching
+
+**Course:** Mastering Coach & Gems
+**Module:** Advanced Features
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+One of the most useful features in the Coach is something that happens automatically in the background: flashcard generation. When a Gem is designed to include flashcards in its responses, those cards are extracted and saved to your flashcard library without any action from you. This lesson covers how to set it up and what it's best used for.
+
+---
+
+### What Flashcard Generation Does
+
+When the AI generates a response, the system scans the response for a specific syntax block. If it finds one, it automatically creates a flashcard set from the cards inside. This happens asynchronously — it doesn't delay the chat response you see, and you don't have to trigger it manually.
+
+The flashcards are saved to your account and available for review in the Flashcards section of the Academy.
+
+---
+
+### The Syntax
+
+To trigger flashcard creation, the AI's response must contain:
+
+```
+[START_FLASHCARDS]
+F::front of the card
+B::back of the card
+F::another question or concept
+B::the answer or definition
+[END_FLASHCARDS]
+```
+
+- `[START_FLASHCARDS]` — begins the flashcard block
+- `F::` — the front of a flashcard (the question, term, or prompt)
+- `B::` — the back of a flashcard (the answer, definition, or explanation)
+- `[END_FLASHCARDS]` — ends the block
+- F and B lines are paired: each F is immediately followed by its corresponding B
+
+The AI only includes this block when its system prompt instructs it to. Nothing happens automatically — you have to design the Gem to produce this output.
+
+---
+
+### Adding Flashcard Instructions to a System Prompt
+
+To make a Gem generate flashcards, include instructions in the system prompt. Here's an example section to add:
+
+```
+When you explain a concept that the user should memorize — a mechanism, a protocol, a clinical threshold, a terminology definition — include a flashcard block at the end of your response using this exact format:
+
+[START_FLASHCARDS]
+F::Question or term (front of card)
+B::Answer or explanation (back of card)
+[END_FLASHCARDS]
+
+Generate 2–5 flashcards per response when relevant. Not every response needs flashcards — only include them when you've explained something worth memorizing. For conversational questions or planning discussions, omit the flashcard block.
+```
+
+Add this section to any Gem where knowledge retention matters: a nutrition coach explaining longevity mechanisms, a recovery coach explaining HRV physiology, a language learning coach, or a study assistant.
+
+---
+
+### What Makes Good Flashcard Content
+
+The AI determines what to create flashcards for based on your system prompt instructions. The best flashcards come from:
+
+**Mechanisms and processes** — How does HRV work? What is the relationship between cortisol and muscle protein synthesis? These are high-value memorization targets.
+
+**Thresholds and reference values** — SpO2 below what percentage is clinically significant? What's a normal resting HRV range? Specific numbers are worth memorizing.
+
+**Protocol steps** — The phases of a deload week, the structure of a periodized training block, the components of an evidence-based sleep protocol.
+
+**Terminology** — Medical, nutrition, or performance science terms you want to retain.
+
+---
+
+### Viewing Generated Flashcards
+
+Flashcards generated by Gems are saved as sets in your Academy Flashcard library. Each set is titled with the date and the Gem that created it. Navigate to the Academy section to find and review them.
+
+Flashcards created this way go into the spaced repetition queue like any other flashcard — you'll be prompted to review them at scheduled intervals.
+
+---
+
+### Controlling Flashcard Frequency
+
+If a Gem is generating too many flashcards (one per response becomes overwhelming), update the system prompt to be more selective: ""Only generate flashcards for genuinely high-value memorization targets, not for every concept mentioned. Maximum 3 cards per response.""
+
+If it's generating too few or none, check that:
+1. The flashcard syntax instructions are in the system prompt
+2. The AI is responding to questions where flashcard content would make sense
+3. The syntax in your prompt exactly matches the required format
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/gems — click Edit on a Gem]
+
+> [SCREEN: Show the system prompt field — scroll to the end or an empty area]
+
+> [SCREENSHOT: System prompt textarea with flashcard syntax instructions added — callout: ""Add this section to any Gem where knowledge retention matters""]
+
+> [SCREEN: Click Save Changes — navigate to /dashboard/coach — select this Gem]
+
+> [SCREEN: Type a message that should trigger flashcards: ""Explain the physiological mechanism of how HRV reflects autonomic nervous system state, and specifically what a below-baseline HRV reading indicates about recovery status.""]
+
+> [SCREEN: Send — wait for response — AI response appears with a [START_FLASHCARDS]...[END_FLASHCARDS] block visible at the bottom]
+
+> [SCREENSHOT: AI response with flashcard block highlighted — callout: ""System detects this block and creates cards automatically in the background""]
+
+> [SCREEN: Navigate to Academy → Flashcards — show the newly created flashcard set]
+
+> [SCREENSHOT: Flashcard set listing — callout: Set title (date + Gem name), individual cards visible]
+
+> [SCREEN: Click a flashcard to show front and back — briefly show the review interface]
+
+> [SCREEN: End on the flashcard library — end lesson]
+
+---
+
+## Key Takeaways
+
+- Flashcards are generated automatically when AI responses include the `[START_FLASHCARDS]...[END_FLASHCARDS]` syntax block
+- The system scans responses in the background — no manual action required, no delay to the chat response
+- To activate: add flashcard format instructions to the Gem's system prompt
+- Format: `F::front` paired with `B::back` inside the delimiters
+- Best content: mechanisms, thresholds, protocols, terminology — things worth memorizing
+- Generated flashcard sets appear in Academy → Flashcards and enter the spaced repetition queue
+- Control frequency via system prompt: instruct the AI on how selective to be with card generation
+",markdown,,,,,,
+Lessons,1,7,Gem Ideas for High Performers,text,420,true,,"# Lesson 07: Gem Ideas for High Performers
+
+**Course:** Mastering Coach & Gems
+**Module:** Advanced Features
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The best Gems are purpose-built for recurring conversations you're already having — just without expert-level guidance. This lesson gives you seven practical Gem templates designed for executives, founders, and professionals working on longevity and performance.
+
+Each one includes a ready-to-use system prompt you can copy into your Gem Manager and customize.
+
+---
+
+### 1. Longevity Strategist
+
+**When to use:** Planning your overall health trajectory, reviewing biomarker trends, discussing your 5–10 year health strategy.
+
+**System prompt:**
+```
+You are a longevity strategist with deep knowledge of longevity medicine, healthspan research, and evidence-based interventions for extending healthy years. Your expertise covers: cardiovascular health optimization, metabolic health, muscle mass retention, cognitive longevity, sleep science, and preventive biomarker management.
+
+The user is a high-output professional prioritizing long-term health performance over short-term optimization. When reviewing data or strategies, contextualize within longevity research — not just performance benchmarks.
+
+Be direct. Prioritize the interventions with the highest evidence quality and highest impact. When something is speculative or poorly evidenced, say so. Give specific actionable recommendations, not a list of considerations.
+```
+
+---
+
+### 2. Nutrition Auditor
+
+**When to use:** Reviewing what you've been eating, troubleshooting nutrition gaps, evaluating a new eating approach, optimizing protein intake.
+
+**System prompt:**
+```
+You are a precision nutrition coach specializing in longevity-focused eating patterns. Your expertise covers: protein optimization for muscle retention, anti-inflammatory dietary patterns, metabolic health, and evidence-based longevity nutrition interventions (including caloric restriction research, fasting protocols, and nutrient density).
+
+The user will describe meals, eating patterns, or nutrition questions. Evaluate everything against evidence-based longevity nutrition principles. Be specific and direct — identify the most significant gap or problem first, then address secondary issues. Don't soften feedback.
+
+When the user describes a meal, rate it as Green (longevity-aligned), Yellow (acceptable with specific modifications), or Red (actively counterproductive) and explain why.
+```
+
+---
+
+### 3. Recovery Coach
+
+**When to use:** Interpreting HRV data, adjusting training load, managing overtraining or fatigue, planning deloads and recovery weeks.
+
+**System prompt:**
+```
+You are a high-performance recovery specialist. Your expertise covers sleep architecture optimization, heart rate variability (HRV) interpretation, training load management, and evidence-based recovery modalities.
+
+The user tracks HRV with a wearable device and trains 4–5 days per week. When interpreting HRV data: always contextualize against the user's personal baseline, not population averages. A 10–15% drop below rolling 30-day baseline is significant.
+
+Give one specific recommendation, not a list of options. When the data indicates a recovery day, say so directly. The user understands sports science and doesn't need basic concepts explained.
+
+When relevant, generate flashcards for physiological mechanisms worth memorizing using this format:
+[START_FLASHCARDS]
+F::concept or question
+B::explanation or answer
+[END_FLASHCARDS]
+```
+
+---
+
+### 4. Training Programmer
+
+**When to use:** Designing training blocks, building periodized programs, modifying training around injuries or schedule constraints, progressive overload planning.
+
+**System prompt:**
+```
+You are a certified strength and conditioning specialist with expertise in periodization, progressive overload, and evidence-based training for general population high performers (not elite athletes).
+
+The user's priorities are: muscle mass retention and development, cardiovascular fitness (VO₂ max improvement), and longevity-focused movement quality. They have access to a full commercial gym and can train 4 days per week.
+
+Important constraints: [the user will inform you of injuries or limitations in each session — ask if not provided].
+
+When designing sessions: be specific. Give exact exercises, sets, rep ranges, rest periods, and RPE targets. Don't give general program frameworks — give actionable workout plans.
+```
+
+---
+
+### 5. Cognitive Performance Coach
+
+**When to use:** Managing focus, designing deep work environments, troubleshooting mental clarity issues, building sustainable cognitive output habits.
+
+**System prompt:**
+```
+You are a cognitive performance coach with expertise in: focus optimization, attention management, sleep's role in cognitive function, nutrition for brain health, and sustainable high-output work practices.
+
+The user is a high-output professional who relies on sustained cognitive performance. Their primary concerns are: maintaining sharp executive function throughout the day, protecting deep work time, and avoiding the cognitive decline that often accompanies high-stress professional environments.
+
+Advise based on behavioral neuroscience and cognitive science. Distinguish between interventions with strong evidence and those that are popular but weakly supported. Be direct about what the research actually supports.
+```
+
+---
+
+### 6. Stress Architect
+
+**When to use:** Managing a high-stress period, building resilience protocols, structuring recovery around a demanding schedule, designing a sustainable work-life operating system.
+
+**System prompt:**
+```
+You are a stress management specialist with expertise in: allostatic load, autonomic nervous system regulation, resilience building, and sustainable performance under high demand.
+
+The user is a high-performer who regularly operates under significant stress load. Your role is not to reduce ambition — it's to build the physiological and behavioral infrastructure that makes high performance sustainable over decades rather than years.
+
+Avoid platitudes (""take breaks"", ""practice self-care""). Give specific, mechanistic advice: what interventions at what timing with what expected physiological effect. Reference the HRV and daily energy data the user tracks when relevant.
+```
+
+---
+
+### 7. Protocol Builder
+
+**When to use:** Designing a new morning routine, sleep protocol, nutrition framework, training template, or any systematic daily/weekly health behavior.
+
+**System prompt:**
+```
+You are a protocol design specialist. Your role is to help the user design clear, actionable, sustainable health and performance protocols.
+
+A protocol is a specific, repeatable procedure: morning routine, sleep optimization protocol, nutrition framework, training session template, recovery process. Good protocols are: specific (clear steps, not vague intentions), evidence-based, sustainable given the user's real schedule, and measurable.
+
+When building a protocol: ask for constraints first (schedule, access, existing habits). Design for the real life, not the ideal one. Output the protocol in a clear numbered or structured format the user can reference and use directly.
+```
+
+---
+
+### Adapting These Gems
+
+These are starting points, not final prompts. Customize each one by adding:
+
+- **Your specific constraints** (""I travel 2 weeks per month, have no kitchen access during travel..."")
+- **Your known history** (""I have a history of L3-L4 disc herniation..."")
+- **Your baseline data** (""My 30-day average HRV baseline is 58ms..."")
+- **Your preferences** (""Give recommendations in bullet points, not paragraphs..."")
+
+The more context in the prompt, the more precisely the AI can respond to your actual situation rather than a hypothetical one.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/gems — click ""New Gem""]
+
+> [SCREEN: Paste the Longevity Strategist system prompt from this lesson into the form — fill in name and description]
+
+> [SCREENSHOT: Filled Gem creation modal with the Longevity Strategist prompt — callout: ""Copy any of these templates and customize for your situation""]
+
+> [SCREEN: Click Create Gem — navigate to /dashboard/coach — select the new Gem]
+
+> [SCREEN: Send an opening message: ""I want to design my longevity health priorities for this year. My current data: average sleep 7.2h, average RHR 58bpm, HRV 54ms (my baseline is 61ms), no active injuries. I'm 42, male, training 4x/week. What should be my top 3 focus areas?""]
+
+> [SCREEN: Show AI response — point out how it reflects the specific expert framing from the system prompt]
+
+> [SCREENSHOT: AI response — callout: ""Response reflects the longevity-focused expert framing defined in the system prompt""]
+
+> [SCREEN: End on the chat — end lesson and course]
+
+---
+
+## Key Takeaways
+
+- Seven ready-to-use Gem templates: Longevity Strategist, Nutrition Auditor, Recovery Coach, Training Programmer, Cognitive Performance Coach, Stress Architect, Protocol Builder
+- Each template covers a specific recurring conversation type for high performers
+- Customize by adding: your constraints, health history, baseline data, and communication preferences
+- The more specific context in the prompt, the more precise the responses
+- Recovery Coach template includes flashcard syntax — activates automatic flashcard generation for physiological concepts
+- Start with 2–3 of these and add more as you identify new recurring coaching needs
+",markdown,,,,,,

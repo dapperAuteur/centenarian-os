@@ -1,0 +1,541 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+Lessons,1,1,What Are Life Categories?,text,240,true,,"# Lesson 1: What Are Life Categories?
+
+**Course:** Life Categories Guide
+**Module:** Getting Started
+**Duration:** ~4 min
+**Lesson type:** text
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+You track transactions in Finance, trips in Travel, workouts in Workouts, and tasks in Planner. Each module has its own internal categories — budget categories for transactions, equipment categories for gear. But what if you want to see everything related to ""Health"" in one place, regardless of which module it lives in? That's what Life Categories are for.
+
+---
+
+### The Problem: Siloed Categories
+
+Each module organizes data its own way:
+
+| Module | Internal Categories |
+|--------|-------------------|
+| Finance | Budget categories (Groceries, Rent, Gas, etc.) |
+| Equipment | Equipment categories (Electronics, Furniture, etc.) |
+| Travel | Trip types (commute, business, fitness, etc.) |
+| Workouts | Exercise types |
+
+These work great within their modules. But they can't answer cross-module questions like:
+- ""How much do I spend on **Health** across gym memberships, supplements, and medical visits?""
+- ""What **Career** activities did I do this month — courses, work trips, invoices?""
+- ""Show me everything related to my **Home** — maintenance, equipment purchases, cleaning tasks.""
+
+---
+
+### The Solution: Life Categories
+
+Life Categories are a tagging layer that sits on top of every module. They let you assign high-level life areas to any item:
+
+| Category | Color | Example Items |
+|----------|-------|---------------|
+| Health | Red | Doctor appointment (task), gym membership (transaction), morning run (workout) |
+| Finance | Green | Tax prep (task), invoice payment (transaction), budgeting session (focus) |
+| Career | Blue | Client meeting (task), business trip (trip), freelance invoice (invoice) |
+| Home | Amber | Lawn mowing (task), furniture purchase (equipment), plumber visit (maintenance) |
+| Fitness | Pink | Gym session (workout), protein powder (transaction), running shoes (equipment) |
+| Travel | Cyan | Road trip (trip), travel gear (equipment), hotel booking (transaction) |
+| Learning | Violet | Online course (task), textbook (transaction), study session (focus) |
+| Social | Orange | Dinner with friends (transaction), group hike (trip), party planning (task) |
+
+---
+
+### How They Work
+
+- **Any entity can be tagged** — tasks, trips, transactions, workouts, equipment, invoices, recipes, fuel logs, maintenance records, routes, and focus sessions
+- **Multiple tags per item** — a gym membership transaction could be tagged both ""Health"" and ""Fitness""
+- **Tags are personal** — your categories are yours; they don't affect the underlying data
+- **Auto-seeded defaults** — 8 categories are created automatically the first time you access the feature
+- **Fully customizable** — rename, recolor, reorder, delete, or create new categories
+
+---
+
+### Where to Find Them
+
+Life Categories appear in two places:
+
+1. **Edit modals** — below Activity Links on every entity edit modal (tasks, workouts, invoices, trips, etc.)
+2. **Categories dashboard** — `/dashboard/categories` in the Life nav group
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Open any task in the Planner — show the Life Categories section below Activity Links]
+
+> [SCREENSHOT: A transaction tagged with ""Health"" and ""Fitness"" — show the colored chips]
+
+> [SCREEN: Navigate to Dashboard > Life > Categories — show the dashboard overview]
+
+> [SCREENSHOT: Side-by-side comparison — Finance budget categories (module-specific) vs Life Categories (cross-module)]
+
+---
+
+## Key Takeaways
+
+- Life Categories are cross-module tags — they work across all 11 entity types
+- They answer questions that module-specific categories can't (e.g., ""all Health spending"")
+- 8 defaults are auto-created: Health, Finance, Career, Home, Fitness, Travel, Learning, Social
+- Items can have multiple life categories
+- Find them in entity edit modals and the Categories dashboard
+",markdown,,,,,,
+Lessons,1,2,Tagging Items with Life Categories,text,240,true,,"# Lesson 2: Tagging Items with Life Categories
+
+**Course:** Life Categories Guide
+**Module:** Getting Started
+**Duration:** ~4 min
+**Lesson type:** text
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Now that you know what Life Categories are, let's tag some items. Tagging is fast — a couple of clicks from any edit modal. This lesson shows you exactly where to find the tagger and how to add or remove categories.
+
+---
+
+### Finding the Tagger
+
+The Life Categories tagger appears automatically in every entity edit modal. Look for the **""Life Categories""** section with a tag icon below the Activity Links section:
+
+- **Tasks** — open any task in the Planner, click to edit
+- **Workouts** — click the link/detail icon on any workout log
+- **Invoices** — click the link icon on any invoice row
+- **Trips** — click the link icon on any trip
+- **Fuel Logs** — click the link icon on any fuel entry
+- **Maintenance** — click the link icon on any service record
+- **Recipes** — click the link icon on any recipe
+- **Equipment** — scroll down on any equipment detail page
+- **Focus Sessions** — open the edit modal for any session
+
+---
+
+### Adding a Tag
+
+1. Find the **Life Categories** section in the edit modal
+2. Click the **+ Tag** button with the dropdown arrow
+3. The dropdown shows all available categories (ones not already assigned)
+4. Click a category — the tag appears instantly as a colored chip
+
+The tag is saved immediately. No need to click a separate save button.
+
+---
+
+### Removing a Tag
+
+Each tag chip shows a small **X** button on the right side. Click it to remove the tag. Like adding, removal is instant.
+
+---
+
+### Multiple Tags
+
+Items can have as many life category tags as you want. A grocery trip could be tagged:
+- **Health** (buying healthy food)
+- **Home** (household supplies)
+- **Finance** (part of your grocery budget)
+
+Each tag shows as a separate colored chip with the category's color.
+
+---
+
+### Compact Mode (Uncategorized Items View)
+
+On the Categories dashboard's uncategorized items list, you'll see a compact version of the tagger:
+
+- Tags appear as **small colored dots** instead of full chips
+- A dashed **+** circle lets you add a tag
+- Hover over a dot to see the category name
+- Click a dot to remove it
+
+This compact mode lets you tag many items quickly without the full modal.
+
+---
+
+### Managing Categories
+
+If the 8 default categories don't fit your needs, you can customize them from the Categories dashboard:
+
+1. Go to **Dashboard > Life > Categories** (`/dashboard/categories`)
+2. Click the **Manage** button in the header
+3. From here you can:
+   - **Rename** a category — click the name to edit
+   - **Recolor** — pick a new color from the palette
+   - **Reorder** — change the sort order
+   - **Delete** — removes the category and all its tags (items return to uncategorized)
+   - **Add new** — create a custom category with any name and color
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Open a task in the Planner — scroll to Life Categories section]
+
+> [SCREEN: Click ""+ Tag"" — show dropdown with available categories]
+
+> [SCREEN: Select ""Health"" — show the chip appear instantly]
+
+> [SCREEN: Add a second tag ""Fitness"" — show both chips]
+
+> [SCREEN: Click X on the ""Fitness"" chip — show it removed]
+
+> [SCREEN: Navigate to Categories dashboard — click Manage — show category CRUD panel]
+
+> [SCREEN: Rename a category, change its color, click Save]
+
+---
+
+## Key Takeaways
+
+- The Life Categories tagger appears in every entity edit modal, below Activity Links
+- Click ""+ Tag"" to add, click X to remove — changes save instantly
+- Items can have multiple life category tags
+- Compact mode (colored dots) is used in the uncategorized items view for quick tagging
+- Manage categories from the Categories dashboard — rename, recolor, reorder, delete, or create new
+",markdown,,,,,,
+Lessons,1,3,The Categories Dashboard,text,180,true,,"# Lesson 3: The Categories Dashboard
+
+**Course:** Life Categories Guide
+**Module:** The Dashboard
+**Duration:** ~5 min
+**Lesson type:** text
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The Categories dashboard is where life categories come together into a single view. It shows what you've tagged, how your spending breaks down by life area, and which items still need attention. Let's walk through each section.
+
+---
+
+### Getting There
+
+Navigate to **Dashboard > Life > Categories** or go directly to `/dashboard/categories`. You'll see it in the sidebar under the Life group, right after Data Hub.
+
+---
+
+### Period Selector
+
+At the top of the page, you can choose a time window:
+
+- **7 days** — this week's activity
+- **30 days** — the last month (default)
+- **90 days** — the last quarter
+
+This controls what data appears in the summary cards, charts, and uncategorized items section.
+
+---
+
+### Summary Cards
+
+Below the header, a grid of cards shows one card per life category:
+
+| Card Element | What It Shows |
+|-------------|--------------|
+| **Category icon** | The category's assigned icon |
+| **Category name** | e.g., ""Health"", ""Finance"" |
+| **Item count** | Total tagged items in the selected period |
+| **Spending** | Sum of tagged financial transactions (income and expense types) |
+| **Color bar** | The category's color as a left border accent |
+
+Cards with zero items in the current period still appear but are dimmed.
+
+---
+
+### Spending by Category (Pie Chart)
+
+The first chart is a pie chart that breaks down your spending by life category. Only categories with tagged financial transactions appear. Each slice uses the category's color.
+
+Hover over a slice to see the exact dollar amount and percentage.
+
+---
+
+### Activity by Category (Bar Chart)
+
+The second chart shows how many items are tagged in each category, broken down by entity type. Each bar represents a category, and the segments within show the mix of tasks, trips, transactions, workouts, etc.
+
+This helps you see which life areas you're most active in and what types of activities dominate each area.
+
+---
+
+### Manage Panel
+
+Click the **Manage** button in the page header to open an inline panel where you can:
+
+1. **Add a new category** — enter a name, pick a color
+2. **Edit existing categories** — change name, color, or sort order
+3. **Delete a category** — removes it and all its entity tags
+
+Changes take effect immediately. The summary cards and charts update when you close the manage panel.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to Dashboard > Life > Categories]
+
+> [SCREENSHOT: Full dashboard — summary cards grid at top, charts below]
+
+> [SCREEN: Change period selector from 30 days to 7 days — show cards update]
+
+> [SCREEN: Hover over a pie chart slice — show tooltip with amount and percentage]
+
+> [SCREEN: Point out the bar chart — show the entity type breakdown within each bar]
+
+> [SCREEN: Click Manage — show the inline category management panel]
+
+> [SCREEN: Add a new category ""Side Projects"" with purple color — show it appear in the grid]
+
+---
+
+## Key Takeaways
+
+- The Categories dashboard lives at `/dashboard/categories` in the Life nav group
+- Period selector controls the data window: 7, 30, or 90 days
+- Summary cards show item count and spending per category
+- Pie chart breaks down spending by life area
+- Bar chart shows activity counts by category with entity type segments
+- Use the Manage panel to add, edit, or delete categories
+",markdown,,,,,,
+Lessons,1,4,Finding & Tagging Uncategorized Items,text,300,true,,"# Lesson 4: Finding & Tagging Uncategorized Items
+
+**Course:** Life Categories Guide
+**Module:** The Dashboard
+**Duration:** ~5 min
+**Lesson type:** text
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The most powerful part of the Categories dashboard is the uncategorized items view. It scans all your modules and shows you every recent item that hasn't been tagged with a life category yet. This is especially useful after bulk imports, when you might have dozens or hundreds of new items that need categorizing.
+
+---
+
+### The Uncategorized Items Section
+
+Scroll past the charts on the Categories dashboard and you'll find the **Uncategorized Items** section. It shows:
+
+- A **count badge** — e.g., ""42 uncategorized items""
+- Items **grouped by module** — Finance, Tasks, Travel, Workouts, etc.
+- Each group is **collapsible** — click the module header to expand or collapse
+
+---
+
+### What Each Item Row Shows
+
+| Element | Description |
+|---------|-------------|
+| **Display name** | A readable description (e.g., ""Whole Foods -$47.23"" for a transaction, ""Morning Run"" for a workout) |
+| **Date** | When the item was created or occurred |
+| **Module badge** | Which module the item belongs to (Finance, Travel, etc.) |
+| **Compact tagger** | Small colored dots for existing tags + a ""+"" button to add tags |
+
+---
+
+### Quick Tagging Individual Items
+
+1. Find the item in the uncategorized list
+2. Click the **+** button (dashed circle) on the right side of the row
+3. Select a category from the dropdown
+4. The item is tagged and **disappears from the uncategorized list**
+5. The count badge decrements
+
+This is fast enough to tag items one at a time as you review them.
+
+---
+
+### Batch Tagging Multiple Items
+
+For bulk operations (especially after a large CSV import):
+
+1. Use the **checkboxes** on the left side of each item row
+2. Select as many items as you want — even across different modules
+3. A floating action bar appears at the bottom: **""Tag N selected as...""**
+4. Click it and choose a category from the dropdown
+5. All selected items are tagged at once and removed from the list
+
+---
+
+### Period Control
+
+The uncategorized items list respects the same period selector at the top of the page. If you set it to 90 days, you'll see untagged items from the last 3 months. Set it to 7 days to focus on just this week.
+
+---
+
+### After Bulk Imports
+
+Here's a recommended workflow after importing data via the Data Hub:
+
+1. **Import your data** — CSV or Google Sheets via the Data Hub
+2. **Go to Categories** — navigate to `/dashboard/categories`
+3. **Set period to 90 days** — to catch all recently imported items
+4. **Scroll to Uncategorized Items** — you'll see your imported items grouped by module
+5. **Batch tag** — select similar items and tag them together (e.g., all gym-related transactions as ""Fitness"")
+6. **Quick tag stragglers** — use the inline tagger for items that don't fit a batch
+
+---
+
+### Which Modules Are Scanned?
+
+The uncategorized items view checks all 11 entity types:
+
+| Module | What It Shows |
+|--------|--------------|
+| Finance | Recent transactions (vendor + amount) |
+| Tasks | Recent planner tasks (activity name) |
+| Trips | Recent trip logs (mode + origin → destination) |
+| Workouts | Recent workout logs (workout name) |
+| Equipment | Items in your equipment catalog |
+| Focus Sessions | Recent engine sessions (type + duration) |
+| Recipes | Your recipe collection |
+| Fuel Logs | Recent fuel entries (station name) |
+| Maintenance | Recent vehicle service records |
+| Invoices | Recent invoices (contact name) |
+| Routes | Multi-stop trip routes |
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to Categories dashboard — scroll down to Uncategorized Items]
+
+> [SCREENSHOT: Uncategorized section showing ""38 uncategorized items"" with module groups]
+
+> [SCREEN: Expand the Finance group — show transaction items with compact taggers]
+
+> [SCREEN: Click ""+"" on a transaction — select ""Health"" — show it disappear from the list]
+
+> [SCREEN: Check 5 items across Tasks and Finance — show the batch action bar appear]
+
+> [SCREEN: Click ""Tag 5 selected as..."" — select ""Career"" — show all 5 disappear]
+
+> [SCREEN: Change period to 90 days — show more items appear]
+
+---
+
+## Key Takeaways
+
+- The uncategorized items view shows every recent item without a life category tag
+- Items are grouped by module and shown with a readable display name and date
+- Quick-tag one at a time with the inline compact tagger
+- Batch-tag multiple items at once using checkboxes and the floating action bar
+- Use this view after bulk imports to categorize all your new data efficiently
+- The period selector (7/30/90 days) controls how far back the scan goes
+",markdown,,,,,,
+Lessons,1,5,Analytics & Insights,text,240,true,,"# Lesson 5: Analytics & Insights
+
+**Course:** Life Categories Guide
+**Module:** The Dashboard
+**Duration:** ~4 min
+**Lesson type:** text
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Once you've tagged a good portion of your data, the Categories dashboard becomes a powerful lens for understanding your life. This lesson covers the analytical features — how to read the charts, spot trends, and use the data to make better decisions.
+
+---
+
+### Spending Breakdown
+
+The pie chart on the Categories dashboard aggregates all tagged financial transactions:
+
+- **Expenses** show as negative amounts per category
+- **Income** shows as positive amounts
+- **Net** is calculated per category
+
+This tells you at a glance how your money flows across life areas. If ""Health"" is taking 40% of your spending, you can see that immediately — even though the underlying transactions are spread across groceries, gym memberships, supplements, and medical bills in the Finance module.
+
+---
+
+### Activity Distribution
+
+The bar chart shows entity counts per category. A tall ""Career"" bar with a lot of task segments means you're spending most of your logged activity time on work. A tall ""Fitness"" bar with workout and trip segments means you're active and tracking it well.
+
+Use this to spot imbalances. If ""Social"" has zero items for the last 30 days, that might be worth noticing.
+
+---
+
+### Combining with Module Analytics
+
+Life Categories don't replace module-specific analytics — they complement them:
+
+| Question | Where to Look |
+|----------|--------------|
+| ""How much did I spend on Health?"" | Categories dashboard — pie chart |
+| ""What were the specific Health transactions?"" | Finance dashboard — filter by budget category |
+| ""How many Health-related workouts vs trips?"" | Categories dashboard — bar chart segments |
+| ""What's my MPG trend?"" | Travel dashboard — fuel analytics |
+| ""Which life areas am I most active in?"" | Categories dashboard — summary cards |
+
+---
+
+### Tips for Better Analytics
+
+1. **Tag consistently** — the analytics are only as good as your tagging. Make it a habit to tag items as you create them.
+2. **Use the uncategorized view weekly** — a quick 5-minute session to tag anything you missed keeps your data clean.
+3. **Adjust the period** — compare 7-day vs 30-day vs 90-day views to spot short-term vs long-term trends.
+4. **Create specific categories** — if ""Health"" is too broad, create sub-categories like ""Medical"", ""Nutrition"", ""Gym"" for more granular analysis.
+5. **Review after imports** — bulk-imported data won't have life category tags. The uncategorized view makes catching up fast.
+
+---
+
+### Cross-Module Questions You Can Answer
+
+With life categories in place, you can now answer questions that were impossible before:
+
+- ""How much of my time and money goes to Fitness each month?""
+- ""What percentage of my spending is Career-related?""
+- ""Am I investing more in Learning or Social activities this quarter?""
+- ""Which life area generates the most activity links?""
+- ""How does my Home spending compare to my Travel spending?""
+
+These are the kinds of high-level life questions that CentenarianOS was built to answer — and Life Categories make them visible.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Categories dashboard — focus on the pie chart]
+
+> [SCREEN: Hover over slices — show spending amounts per category]
+
+> [SCREEN: Scroll to bar chart — point out entity type segments within each bar]
+
+> [SCREEN: Change period from 30 days to 90 days — show how the charts shift]
+
+> [SCREEN: Navigate to Finance dashboard — show how budget categories and life categories work together]
+
+> [SCREEN: Return to Categories dashboard — show summary cards with item counts and spending]
+
+---
+
+## Key Takeaways
+
+- The spending pie chart aggregates all tagged financial transactions by life area
+- The activity bar chart shows entity counts with entity type breakdowns
+- Life Categories complement module-specific analytics — use both together
+- Tag consistently and use the uncategorized view weekly for clean data
+- Adjust the period selector to compare short-term vs long-term trends
+- Create specific categories if the defaults are too broad for your needs
+",markdown,,,,,,

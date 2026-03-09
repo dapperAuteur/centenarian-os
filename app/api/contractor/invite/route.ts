@@ -100,11 +100,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: insertErr.message }, { status: 500 });
   }
 
-  // Send magic link
+  // Send magic link — redirect to the appropriate subdomain via auth callback
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-  const redirectTo = product === 'lister'
-    ? `${siteUrl}/dashboard/contractor/lister`
-    : `${siteUrl}/dashboard/contractor`;
+  const subdomainUrl = product === 'lister'
+    ? siteUrl.replace('://', '://lister.')
+    : siteUrl.replace('://', '://contractor.');
+  const destination = product === 'lister'
+    ? '/dashboard/contractor/lister'
+    : '/dashboard/contractor';
+  const redirectTo = `${subdomainUrl}/auth/callback?next=${encodeURIComponent(destination)}`;
 
   const ac = authClient();
   const { error: inviteErr } = await ac.auth.admin.inviteUserByEmail(email.trim().toLowerCase(), {
@@ -112,6 +116,7 @@ export async function POST(request: NextRequest) {
   });
 
   if (inviteErr) {
+    console.error('[contractor/invite] inviteUserByEmail error:', inviteErr.message, inviteErr);
     const alreadyExists =
       inviteErr.message.toLowerCase().includes('already') ||
       (inviteErr as { status?: number }).status === 422;

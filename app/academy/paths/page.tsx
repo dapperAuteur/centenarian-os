@@ -8,6 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Layers, BookOpen, Sparkles, Lock, ChevronRight } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import { useAppMode } from '@/lib/hooks/useAppMode';
 
 interface CourseStub {
   id: string;
@@ -35,7 +36,63 @@ interface LearningPath {
   reason?: string | null;
 }
 
-function PathCard({ path }: { path: LearningPath }) {
+function getTheme(mode: 'main' | 'contractor' | 'lister') {
+  if (mode === 'main') {
+    return {
+      pageBg: '',
+      heading: 'text-gray-900',
+      body: 'text-gray-600',
+      secondary: 'text-gray-500',
+      tertiary: 'text-gray-500',
+      accent: 'text-fuchsia-600',
+      accentLight: 'text-fuchsia-500',
+      accentHover: 'hover:text-fuchsia-700',
+      cardBg: 'bg-white border-gray-200 hover:border-fuchsia-300 hover:shadow-md',
+      cardHeadingHover: 'group-hover:text-fuchsia-700',
+      coverBg: 'bg-gray-100',
+      iconPlaceholder: 'text-gray-400',
+      numberBg: 'bg-gray-100 text-gray-500',
+      reasonBg: 'text-fuchsia-600 bg-fuchsia-50 border-fuchsia-100',
+      ctaBg: 'bg-fuchsia-50 border-fuchsia-100 text-fuchsia-700',
+      spinnerBorder: 'border-fuchsia-500',
+      spinnerBorderLg: 'border-fuchsia-600',
+      linkColor: 'text-fuchsia-600 hover:text-fuchsia-700',
+    };
+  }
+  const isContractor = mode === 'contractor';
+  return {
+    pageBg: 'bg-neutral-950 text-neutral-100',
+    heading: 'text-neutral-100',
+    body: 'text-neutral-300',
+    secondary: 'text-neutral-400',
+    tertiary: 'text-neutral-500',
+    accent: isContractor ? 'text-amber-400' : 'text-indigo-400',
+    accentLight: isContractor ? 'text-amber-400' : 'text-indigo-400',
+    accentHover: isContractor ? 'hover:text-amber-300' : 'hover:text-indigo-300',
+    cardBg: isContractor
+      ? 'bg-neutral-900 border-neutral-700 hover:border-amber-500 hover:shadow-md'
+      : 'bg-neutral-900 border-neutral-700 hover:border-indigo-500 hover:shadow-md',
+    cardHeadingHover: isContractor ? 'group-hover:text-amber-400' : 'group-hover:text-indigo-400',
+    coverBg: 'bg-neutral-800',
+    iconPlaceholder: 'text-neutral-500',
+    numberBg: 'bg-neutral-800 text-neutral-400',
+    reasonBg: isContractor
+      ? 'text-amber-300 bg-amber-950 border-amber-800'
+      : 'text-indigo-300 bg-indigo-950 border-indigo-800',
+    ctaBg: isContractor
+      ? 'bg-amber-950 border-amber-800 text-amber-300'
+      : 'bg-indigo-950 border-indigo-800 text-indigo-300',
+    spinnerBorder: isContractor ? 'border-amber-500' : 'border-indigo-500',
+    spinnerBorderLg: isContractor ? 'border-amber-500' : 'border-indigo-500',
+    linkColor: isContractor
+      ? 'text-amber-400 hover:text-amber-300'
+      : 'text-indigo-400 hover:text-indigo-300',
+  };
+}
+
+type Theme = ReturnType<typeof getTheme>;
+
+function PathCard({ path, theme }: { path: LearningPath; theme: Theme }) {
   const courses = (path.learning_path_courses || [])
     .sort((a, b) => a.order_index - b.order_index)
     .map((lpc) => lpc.courses)
@@ -44,10 +101,10 @@ function PathCard({ path }: { path: LearningPath }) {
   return (
     <Link
       href={`/academy/paths/${path.id}`}
-      className="group block bg-white rounded-2xl border border-gray-200 hover:border-fuchsia-300 hover:shadow-md transition overflow-hidden"
+      className={`group block rounded-2xl border transition overflow-hidden ${theme.cardBg}`}
     >
       {/* Cover */}
-      <div className="aspect-video bg-gray-100 overflow-hidden">
+      <div className={`aspect-video overflow-hidden ${theme.coverBg}`}>
         {path.cover_image_url ? (
           <Image
             src={path.cover_image_url}
@@ -58,24 +115,24 @@ function PathCard({ path }: { path: LearningPath }) {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Layers className="w-10 h-10 text-gray-300" />
+            <Layers className={`w-10 h-10 ${theme.iconPlaceholder}`} />
           </div>
         )}
       </div>
 
       <div className="p-5">
-        <h3 className="font-semibold text-gray-900 text-lg leading-snug mb-1 group-hover:text-fuchsia-700 transition">
+        <h3 className={`font-semibold text-lg leading-snug mb-1 transition ${theme.heading} ${theme.cardHeadingHover}`}>
           {path.title}
         </h3>
         {path.description && (
-          <p className="text-sm text-gray-500 line-clamp-2 mb-3">{path.description}</p>
+          <p className={`text-sm line-clamp-2 mb-3 ${theme.secondary}`}>{path.description}</p>
         )}
         {path.reason && (
-          <p className="text-xs text-fuchsia-600 bg-fuchsia-50 border border-fuchsia-100 rounded-lg px-3 py-1.5 mb-3 leading-relaxed">
+          <p className={`text-xs border rounded-lg px-3 py-1.5 mb-3 leading-relaxed ${theme.reasonBg}`}>
             {path.reason}
           </p>
         )}
-        <div className="flex items-center justify-between text-xs text-gray-400">
+        <div className={`flex items-center justify-between text-xs ${theme.tertiary}`}>
           <span className="flex items-center gap-1">
             <BookOpen className="w-3.5 h-3.5" />
             {courses.length} course{courses.length !== 1 ? 's' : ''}
@@ -88,15 +145,15 @@ function PathCard({ path }: { path: LearningPath }) {
         {courses.length > 0 && (
           <div className="mt-3 space-y-1">
             {courses.slice(0, 3).map((c, i) => (
-              <div key={c.id} className="flex items-center gap-2 text-xs text-gray-500">
-                <span className="w-4 h-4 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center font-medium shrink-0">
+              <div key={c.id} className={`flex items-center gap-2 text-xs ${theme.secondary}`}>
+                <span className={`w-4 h-4 rounded-full flex items-center justify-center font-medium shrink-0 ${theme.numberBg}`}>
                   {i + 1}
                 </span>
                 <span className="truncate">{c.title}</span>
               </div>
             ))}
             {courses.length > 3 && (
-              <p className="text-xs text-gray-400 pl-6">+{courses.length - 3} more</p>
+              <p className={`text-xs pl-6 ${theme.tertiary}`}>+{courses.length - 3} more</p>
             )}
           </div>
         )}
@@ -106,6 +163,8 @@ function PathCard({ path }: { path: LearningPath }) {
 }
 
 export default function LearningPathsPage() {
+  const mode = useAppMode();
+  const theme = getTheme(mode);
   const [paths, setPaths] = useState<LearningPath[]>([]);
   const [recommended, setRecommended] = useState<LearningPath[]>([]);
   const [loading, setLoading] = useState(true);
@@ -147,82 +206,84 @@ export default function LearningPathsPage() {
   }, []);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-12 space-y-12">
-      {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold text-gray-900 flex items-center gap-3">
-          <Layers className="w-9 h-9 text-fuchsia-600" />
-          Learning Paths
-        </h1>
-        <p className="text-gray-500 mt-2 max-w-2xl">
-          Structured sequences of courses that build expertise in a topic.
-          Complete a path to earn a credential and add it to your profile.
-        </p>
-      </div>
-
-      {/* AI Recommendations (logged-in only) */}
-      {isAuth && (
-        <section>
-          <h2 className="text-xl font-semibold text-gray-900 mb-1 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-fuchsia-500" />
-            Recommended for You
-          </h2>
-          <p className="text-sm text-gray-500 mb-5">
-            Personalized based on your enrollment history.
+    <div className={`min-h-screen ${theme.pageBg}`}>
+      <div className="max-w-6xl mx-auto px-4 py-12 space-y-12">
+        {/* Header */}
+        <div>
+          <h1 className={`text-4xl font-bold flex items-center gap-3 ${theme.heading}`}>
+            <Layers className={`w-9 h-9 ${theme.accent}`} />
+            Learning Paths
+          </h1>
+          <p className={`mt-2 max-w-2xl ${theme.secondary}`}>
+            Structured sequences of courses that build expertise in a topic.
+            Complete a path to earn a credential and add it to your profile.
           </p>
-          {recLoading ? (
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <div className="animate-spin h-4 w-4 border-2 border-fuchsia-500 border-t-transparent rounded-full" />
-              Personalizing recommendations…
-            </div>
-          ) : recommended.length > 0 ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {recommended.map((p) => <PathCard key={p.id} path={p} />)}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-400">
-              Enroll in a course to get personalized path recommendations.
-            </p>
-          )}
-        </section>
-      )}
-
-      {/* Login CTA for guests */}
-      {!isAuth && !loading && (
-        <div className="flex items-center gap-3 bg-fuchsia-50 border border-fuchsia-100 rounded-xl px-5 py-4 text-sm text-fuchsia-700">
-          <Lock className="w-4 h-4 shrink-0" />
-          <span>
-            <Link href="/login" className="font-semibold underline">Sign in</Link>{' '}
-            to get AI-personalized path recommendations based on your learning history.
-          </span>
         </div>
-      )}
 
-      {/* All paths */}
-      <section>
-        <h2 className="text-xl font-semibold text-gray-900 mb-5">All Learning Paths</h2>
-        {loading ? (
-          <div className="flex justify-center py-16">
-            <div className="animate-spin h-8 w-8 border-4 border-fuchsia-600 border-t-transparent rounded-full" />
-          </div>
-        ) : paths.length === 0 ? (
-          <p className="text-gray-400 text-sm">No learning paths published yet. Check back soon.</p>
-        ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {paths.map((p) => <PathCard key={p.id} path={p} />)}
+        {/* AI Recommendations (logged-in only) */}
+        {isAuth && (
+          <section>
+            <h2 className={`text-xl font-semibold mb-1 flex items-center gap-2 ${theme.heading}`}>
+              <Sparkles className={`w-5 h-5 ${theme.accentLight}`} />
+              Recommended for You
+            </h2>
+            <p className={`text-sm mb-5 ${theme.secondary}`}>
+              Personalized based on your enrollment history.
+            </p>
+            {recLoading ? (
+              <div className={`flex items-center gap-2 text-sm ${theme.tertiary}`}>
+                <div className={`animate-spin h-4 w-4 border-2 border-t-transparent rounded-full ${theme.spinnerBorder}`} />
+                Personalizing recommendations…
+              </div>
+            ) : recommended.length > 0 ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {recommended.map((p) => <PathCard key={p.id} path={p} theme={theme} />)}
+              </div>
+            ) : (
+              <p className={`text-sm ${theme.tertiary}`}>
+                Enroll in a course to get personalized path recommendations.
+              </p>
+            )}
+          </section>
+        )}
+
+        {/* Login CTA for guests */}
+        {!isAuth && !loading && (
+          <div className={`flex items-center gap-3 border rounded-xl px-5 py-4 text-sm ${theme.ctaBg}`}>
+            <Lock className="w-4 h-4 shrink-0" />
+            <span>
+              <Link href="/login" className="font-semibold underline">Sign in</Link>{' '}
+              to get AI-personalized path recommendations based on your learning history.
+            </span>
           </div>
         )}
-      </section>
 
-      {/* CTA to academy */}
-      <div className="flex items-center gap-2 text-sm text-gray-500">
-        <Link
-          href="/academy"
-          className="flex items-center gap-1.5 text-fuchsia-600 hover:text-fuchsia-700 font-medium transition"
-        >
-          Browse individual courses
-          <ChevronRight className="w-4 h-4" />
-        </Link>
+        {/* All paths */}
+        <section>
+          <h2 className={`text-xl font-semibold mb-5 ${theme.heading}`}>All Learning Paths</h2>
+          {loading ? (
+            <div className="flex justify-center py-16">
+              <div className={`animate-spin h-8 w-8 border-4 border-t-transparent rounded-full ${theme.spinnerBorderLg}`} />
+            </div>
+          ) : paths.length === 0 ? (
+            <p className={`text-sm ${theme.tertiary}`}>No learning paths published yet. Check back soon.</p>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {paths.map((p) => <PathCard key={p.id} path={p} theme={theme} />)}
+            </div>
+          )}
+        </section>
+
+        {/* CTA to academy */}
+        <div className={`flex items-center gap-2 text-sm ${theme.secondary}`}>
+          <Link
+            href="/academy"
+            className={`flex items-center gap-1.5 font-medium transition ${theme.linkColor}`}
+          >
+            Browse individual courses
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
     </div>
   );
