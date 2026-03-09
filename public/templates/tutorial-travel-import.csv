@@ -1,0 +1,1843 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+Getting Started,1,1,Welcome to Travel Tracking,text,240,true,,"# Lesson 01: Welcome to Travel Tracking
+
+**Course:** Mastering Travel Tracking
+**Module:** Getting Started
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** linear (flows to Lesson 02)
+
+---
+
+## Narrator Script
+
+Welcome to Mastering Travel Tracking — a free tutorial course for CentenarianOS.
+
+Whether you drive a car, ride a bike, or mix both, this module is designed to turn your daily movement into meaningful data. By the time you finish this course, you'll know how to track every fuel fill-up, log trips, stay on top of vehicle maintenance, and even pull in activity data directly from your Garmin device.
+
+Let's start with a quick tour of the Travel dashboard so you know where everything lives.
+
+---
+
+### What is the Travel Module?
+
+The Travel module is one of CentenarianOS's data-tracking tools, sitting inside your main dashboard. It has four core areas:
+
+**Fuel Logs** — Every time you fill up your tank, you can log the cost, gallons, and odometer reading. Over time, you get automatic MPG calculations and cost trend charts. If you hate typing numbers, you can photograph your receipt and let the AI extract the data for you.
+
+**Trips** — A trip is any journey you want to remember or analyze: a road trip, a daily commute, a bike ride to work. You can log trips manually or import them directly from Garmin. The module tracks distance by mode of transport — car miles vs. bike miles — so you can see how much money you're saving by cycling instead of driving.
+
+**Vehicle Maintenance** — Oil changes, tire rotations, brake jobs — everything logged with date, cost, and mileage. Over time, this gives you a full service history for every vehicle you own.
+
+**Import** — If you use a Garmin device, you can export your activity files and upload them here. Cycling, walking, running, and hiking activities are automatically converted into trips. Gym workouts are skipped, since those don't involve travel.
+
+---
+
+### Why Track This Data?
+
+Most people have no idea what their vehicle actually costs them per mile. They know the sticker price of gas, but they don't factor in how many miles per gallon they're getting, how that's trending over time, or what maintenance is adding up to.
+
+CentenarianOS gives you that full picture. And when you pair vehicle costs with bike ride data, you start to see real dollar savings from choosing two wheels over four.
+
+This course will teach you every feature in the module, step by step. You'll be up and running in under an hour.
+
+---
+
+### What's Next
+
+In the next lesson, we'll set up your first vehicle. That's the foundation everything else is built on — your fuel logs, your maintenance records, and your trip history are all tied to a vehicle profile.
+
+After that, you'll have four topic areas to explore in any order you choose: Fuel Logs, Trips & Activities, and Vehicle Maintenance. The course is designed with branching navigation, so once you finish Getting Started, you can jump to whatever topic interests you most.
+
+Let's move on.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Open browser, navigate to /dashboard/travel — show the full Travel dashboard on a clean account]
+
+> [SCREEN: Point to the four navigation tabs or sections: Fuel, Trips, Maintenance, Import — hover over each briefly]
+
+> [SCREENSHOT: Full Travel dashboard with a callout box labeling each section: ""Fuel Logs"", ""Trips"", ""Maintenance"", ""Import""]
+
+> [SCREEN: Click on /dashboard/travel/fuel — show the fuel logs list (empty state)]
+
+> [SCREEN: Click back, then /dashboard/travel/trips — show trips list (empty state)]
+
+> [SCREEN: Click back, then /dashboard/travel/maintenance — show maintenance list (empty state)]
+
+> [SCREEN: Click back, then /dashboard/travel/import — show import page]
+
+> [SCREEN: Navigate back to /dashboard/travel main page to end the lesson]
+
+---
+
+## Key Takeaways
+
+- The Travel module has four areas: Fuel Logs, Trips, Maintenance, and Import
+- All data is tied to a vehicle profile (you'll create yours in the next lesson)
+- Garmin activity imports are supported for Cycling, Walking, Running, and Hiking
+- The module tracks bike savings vs. car costs automatically
+",markdown,,,,,,
+Getting Started,1,2,Setting Up Your Vehicle,text,420,true,,"# Lesson 02: Setting Up Your Vehicle
+
+**Course:** Mastering Travel Tracking
+**Module:** Getting Started
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** linear → first CYOA crossroads after this lesson
+
+---
+
+## Narrator Script
+
+Before you can log a single fuel fill-up or maintenance record, you need to create a vehicle profile. This is the anchor for all your travel data — every trip, every oil change, every gallon of gas is linked to a specific vehicle.
+
+In this lesson, we'll add your first vehicle from scratch. I'll show you every field in the form, which ones matter most, and how to edit or delete a vehicle later.
+
+---
+
+### Opening the Vehicle Setup
+
+Head to your Travel dashboard at `/dashboard/travel`. At the top of the page, you'll see your vehicles listed — or, if this is your first time, a prompt to add one.
+
+Click the **Add Vehicle** button. This opens the vehicle creation form.
+
+---
+
+### Filling In the Vehicle Form
+
+The form has several fields. Let me walk you through each one.
+
+**Make** — The manufacturer. For example: Toyota, Honda, Ford, Subaru. Type it in — it's a free text field, not a dropdown.
+
+**Model** — The specific model. For example: Camry, Civic, F-150, Outback.
+
+**Year** — The model year. Four digits, like 2019.
+
+**Fuel type** — You'll select from a dropdown: Gasoline, Diesel, Electric, or Hybrid. This affects how the MPG calculations are labeled in your fuel logs.
+
+**Current odometer** — This is important. Enter the current mileage on your vehicle's odometer right now. This establishes your baseline — future fuel logs and maintenance records will reference this number. If you're not sure, go check your dashboard and come back. It's worth getting right.
+
+**Nickname** (optional) — If you have multiple vehicles, a nickname helps you tell them apart quickly. For example: ""Daily Driver"", ""Road Trip Truck"", ""My Bike"" (yes, you can add bikes too, even though they don't take fuel).
+
+---
+
+### Saving the Vehicle
+
+Once you've filled in all the required fields — Make, Model, Year, Fuel Type, and Odometer — click **Save**. The vehicle card will appear on your Travel dashboard.
+
+Each vehicle card shows you a summary: the make, model, year, and current mileage. As you add fuel logs, the mileage will update automatically based on your entries.
+
+---
+
+### Adding Multiple Vehicles
+
+You can have as many vehicles as you need. Click **Add Vehicle** again to add a second one. If you have a car and a bike, add both. Each one has its own fuel logs, trips, and maintenance records — completely separate.
+
+---
+
+### Editing or Deleting a Vehicle
+
+If you made a typo or need to update the odometer baseline, click the **Edit** button on the vehicle card. The same form opens with your current values pre-filled. Make your changes and save.
+
+To delete a vehicle, click **Delete** on the card. You'll see a confirmation prompt — this is permanent, so be sure before you confirm. Deleting a vehicle removes all its associated fuel logs and maintenance records.
+
+---
+
+### Rental and Borrowed Vehicles
+
+Not every vehicle you track is one you own. Maybe you rented a car for a road trip, borrowed a friend's truck to move furniture, or picked up a moving van for a week. You still want to log the fuel and trips — but you don't want that data mixed into your personal savings stats.
+
+When you add a vehicle, the form has an **Ownership type** field:
+- **Owned** (default) — Your vehicle. Its fuel spend counts toward your cost-per-mile calculation and bike savings comparison.
+- **Rental** — A temporary vehicle you're paying for. Fuel is logged normally, but its costs are excluded from your personal averages.
+- **Borrowed** — Someone else's vehicle. Same exclusion as rental.
+
+Rental and borrowed vehicles show an amber badge on their card so you can tell them apart at a glance. You can still log fuel fill-ups and trips against a rental — it's useful to have the record — but the numbers won't inflate your personal car cost per mile.
+
+When a rental period ends and you no longer need the vehicle in your list, you can retire it (more on that below).
+
+---
+
+### Retiring a Vehicle
+
+If you sell a car, donate a bike, or simply stop using a vehicle, you don't have to delete it and lose all your data. Instead, you can **retire** it.
+
+Click the **Retire** button on the vehicle card. You'll be asked to confirm. Once retired:
+- The vehicle moves to a ""Retired vehicles"" section below your active fleet
+- Its card is shown in grayscale with a ""Retired"" badge
+- All fuel logs, trips, and maintenance records tied to it are fully preserved
+- The vehicle no longer appears in dropdowns when logging new fuel, trips, or maintenance entries
+
+If you ever need to bring a vehicle back — say you sold a car but got it back, or reactivated a seasonal bike — click **Reactivate** on the retired card. It returns to your active fleet immediately.
+
+The retired section is collapsed by default, so it stays out of the way. Click ""Show retired vehicles"" to expand it.
+
+---
+
+### After This Lesson: Your First Crossroads
+
+Now that your vehicle is set up, you're ready to explore the module. After you mark this lesson complete, you'll see a branching menu — your first Choose Your Own Adventure moment in this course.
+
+From there, you can go in any direction:
+- **Fuel Logs** — Learn to log fill-ups and use the OCR receipt scanner
+- **Trips & Activities** — Log trips manually or import from Garmin
+- **Vehicle Maintenance** — Track service records and maintenance history
+
+There's no wrong order. Most people start with Fuel Logs since that's the most frequent activity, but jump wherever makes the most sense for how you plan to use the module.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/travel — show the empty vehicles section]
+
+> [SCREEN: Click ""Add Vehicle"" button — form slides in or modal opens]
+
+> [SCREENSHOT: Full vehicle form with labels pointing to each field: Make, Model, Year, Fuel Type, Odometer, Nickname]
+
+> [SCREEN: Type in ""Toyota"" for Make, ""Camry"" for Model, ""2020"" for Year]
+
+> [SCREEN: Click the Fuel Type dropdown — show the options (Gasoline, Diesel, Electric, Hybrid) — select ""Gasoline""]
+
+> [SCREEN: Type ""42,350"" in the Odometer field]
+
+> [SCREEN: Type ""Daily Driver"" in the Nickname field]
+
+> [SCREEN: Click Save — vehicle card appears on dashboard]
+
+> [SCREENSHOT: Vehicle card showing the completed profile with callout highlighting the odometer reading]
+
+> [SCREEN: Click ""Add Vehicle"" again — show that a second vehicle can be added]
+
+> [SCREEN: Click Cancel/X to close that form]
+
+> [SCREEN: Click Edit on the first vehicle — show the pre-filled form]
+
+> [SCREEN: Click Cancel — return to dashboard]
+
+> [SCREEN: Add a second vehicle — this time open the Ownership type dropdown — highlight the three options: Owned, Rental, Borrowed — select ""Rental""]
+
+> [SCREENSHOT: Two vehicle cards side by side — the Rental card has an amber ""Rental"" badge; the Owned card has no badge]
+
+> [SCREEN: Click the Retire button on the owned vehicle card — show the confirmation dialog]
+
+> [SCREEN: Confirm retire — card moves to the collapsed ""Retired vehicles"" section below]
+
+> [SCREEN: Click ""Show retired vehicles"" to expand the section — show the grayscale card with ""Retired"" badge and Reactivate button]
+
+> [SCREEN: Click Reactivate — card returns to active fleet]
+
+> [SCREEN: Pause on the active vehicles section — end lesson here]
+
+---
+
+## Key Takeaways
+
+- Every vehicle needs: Make, Model, Year, Fuel Type, and current Odometer reading
+- The odometer baseline is critical — it's used to calculate MPG and track mileage over time
+- You can add multiple vehicles (cars, bikes, trucks — anything)
+- **Ownership type** distinguishes your personal vehicles from rentals/borrowed — rental data is excluded from your personal savings stats
+- **Retire** a vehicle to preserve its history without cluttering your active fleet; **Reactivate** it any time
+- Edit or delete vehicles from the vehicle card on the Travel dashboard
+- After this lesson, you'll choose which topic to explore next: Fuel Logs, Trips, or Maintenance
+",markdown,,,,,,
+Fuel Logs,2,3,Logging a Fuel Fill-Up,text,300,true,,"# Lesson 03: Logging a Fuel Fill-Up
+
+**Course:** Mastering Travel Tracking
+**Module:** Fuel Logs
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Every time you fill up your tank, you have a small window of opportunity: you're standing at the pump, the receipt is in your hand, and all the data you need is right there. This lesson teaches you how to capture that data in CentenarianOS — either by typing it in manually or by photographing your receipt (we'll cover the photo option in the next lesson).
+
+Let's walk through a manual fuel log entry from start to finish.
+
+---
+
+### Navigating to Fuel Logs
+
+From your Travel dashboard, click **Fuel** in the navigation, or go directly to `/dashboard/travel/fuel`. This is your fuel log history — every fill-up you've ever logged, sorted by date, newest first.
+
+At the top right, you'll see the **Log Fill-Up** button. Click it.
+
+---
+
+### The Fuel Log Form
+
+The form has several fields. I'll go through each one and explain what it's asking for.
+
+**Vehicle** — A dropdown of your vehicles. Select the one you just filled up. If you only have one vehicle, it'll be pre-selected.
+
+**Date** — Defaults to today. If you're logging a fill-up from yesterday or last week, change it here.
+
+**Odometer reading** — This is the number on your odometer *at the time of the fill-up*, not the miles since your last fill-up. For example, if your odometer reads 42,710 miles, enter 42,710.
+
+This number is used to calculate how many miles you drove since your last fill-up, which is then divided by gallons to give you your MPG. So accuracy here matters.
+
+**Gallons** — How many gallons you pumped. This is always on your receipt — look for the ""Gallons"" or ""Volume"" line.
+
+**Price per gallon** — The pump price per gallon. Also on your receipt.
+
+**Total cost** — The total dollar amount you paid. Most forms will auto-calculate this from gallons × price, but you can override it if the numbers don't match your receipt exactly.
+
+**Trip A** (optional) — Some vehicles have a resettable trip odometer called Trip A. If you reset it at every fill-up, enter that reading here. Trip A represents the miles driven since your last fill-up — a slightly different way to measure distance than subtracting odometer readings.
+
+**Trip B** (optional) — A second resettable trip odometer, often used to track miles over a longer period like a month. Enter it if you track it.
+
+**Notes** (optional) — Free text. Useful for things like ""topped off for road trip"" or ""E85 blend"" or ""used premium by mistake.""
+
+---
+
+### Saving the Entry
+
+Once you've filled in the required fields — Vehicle, Date, Odometer, Gallons — click **Save**.
+
+The entry appears in your fuel log history immediately. You'll see the MPG calculated automatically based on this fill-up's odometer reading vs. your previous one.
+
+On your first ever fuel log, MPG won't be shown — there's no previous data point to compare against. After your second log, you'll start seeing the calculation.
+
+---
+
+### Reading Your Fuel Log History
+
+Each row in the fuel log shows:
+- Date of fill-up
+- Vehicle
+- Odometer at fill-up
+- Gallons and price per gallon
+- Total cost
+- **Calculated MPG** — the star of the show
+
+Over time, a drop in MPG might signal it's time for an air filter or oil change. An unusually high cost per mile might mean it's worth evaluating whether you're driving more than you need to.
+
+---
+
+### A Note on Consistency
+
+For MPG calculations to be accurate, log every fill-up — not just some of them. If you skip a fill-up, the system doesn't know the gap exists and will calculate a wildly incorrect MPG. Think of it like a habit: every pump → open the app, log the fill-up. The next lesson will make this even faster using receipt scanning.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/travel/fuel — show empty fuel log or existing logs]
+
+> [SCREEN: Click ""Log Fill-Up"" button — form opens]
+
+> [SCREENSHOT: Full fuel log form with all fields labeled: Vehicle, Date, Odometer, Gallons, Price/gallon, Total, Trip A, Trip B, Notes]
+
+> [SCREEN: Click the Vehicle dropdown — show vehicle options — select ""Daily Driver""]
+
+> [SCREEN: The date field — leave as today]
+
+> [SCREEN: Click into Odometer field — type ""42,710""]
+
+> [SCREEN: Click into Gallons field — type ""11.4""]
+
+> [SCREEN: Click into Price per gallon — type ""3.89""]
+
+> [SCREEN: Show Total auto-populate to ""$44.35"" or similar]
+
+> [SCREEN: Click into Trip A — type ""341.2""]
+
+> [SCREEN: Leave Trip B and Notes empty]
+
+> [SCREEN: Click Save — entry appears in log list]
+
+> [SCREENSHOT: Fuel log row showing the entry with calculated MPG highlighted in a callout]
+
+> [SCREEN: Show the log list with 2+ entries so MPG is visible on the newer entry]
+
+> [SCREEN: Hover over or click on a log entry to show detail/edit options]
+
+---
+
+## Key Takeaways
+
+- Log fill-ups consistently for accurate MPG calculations — skipping one skews the math
+- The odometer reading is the full odometer number, not miles since last fill-up
+- Trip A and Trip B are optional resettable odometers — enter them if your vehicle has them
+- MPG is auto-calculated once you have two data points
+- The next lesson covers the OCR receipt scanner — a faster way to enter this same data
+",markdown,,,,,,
+Fuel Logs,2,4,Fuel Receipt OCR — Photo to Data,text,360,true,,"# Lesson 04: Fuel Receipt OCR — Photo to Data
+
+**Course:** Mastering Travel Tracking
+**Module:** Fuel Logs
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+In the last lesson, you learned how to manually enter a fuel fill-up. That works well, but there's a faster path: photograph your receipt and let the AI read it for you.
+
+CentenarianOS uses Gemini Vision — Google's AI model — to extract key data from fuel receipts. You upload a photo, the AI reads the odometer, gallons, price, and trip meter readings, and pre-fills the form for you. You review, adjust if needed, and save.
+
+This lesson covers the OCR workflow from start to finish, including tips for getting reliable results.
+
+---
+
+### When to Use OCR vs. Manual Entry
+
+OCR is best when:
+- You have a clear photo of your receipt
+- The receipt shows all the data: odometer, gallons, price, cost
+- You're logging in real time at the pump
+
+Manual entry is better when:
+- You don't have a receipt photo
+- The receipt is faded, crumpled, or partially obscured
+- You need to log a historical fill-up from memory or a note
+
+Most people end up using OCR 90% of the time once they get the hang of it.
+
+---
+
+### Opening the OCR Tool
+
+Navigate to `/dashboard/travel/fuel`. Click **Log Fill-Up**, then look for the **Scan Receipt** tab or button at the top of the form. Clicking it switches the form to OCR mode.
+
+You'll see an image upload area. You can upload up to **four images** per scan — useful if your receipt is long and you need multiple shots to capture everything.
+
+---
+
+### Taking a Good Photo
+
+Before we walk through the upload, a quick word on photo quality — because this is where most people run into issues.
+
+**Lighting matters.** A receipt photographed in bright, even light scans much better than one shot in dim or harsh overhead lighting. Natural light near a window is ideal.
+
+**Fill the frame.** Get close enough that the receipt text fills most of your camera frame. Don't shoot the entire dashboard from three feet away with the receipt somewhere in the middle.
+
+**Flat surface.** Lay the receipt flat on a contrasting surface — a dark phone case or table works well against the white paper.
+
+**Check for glare.** Gas station lighting causes glare on shiny thermal receipts. Tilt the receipt slightly until the glare moves off the text before shooting.
+
+Four images is the maximum, but for a typical fill-up receipt, one clear shot is enough. Use multiple images only if the receipt is too long to capture in one frame.
+
+---
+
+### Uploading and Scanning
+
+Click or drag your image into the upload area. You'll see a thumbnail of the uploaded image. If you have multiple images, upload them all before clicking **Scan**.
+
+Click the **Scan Receipt** button. This sends your images to Gemini Vision. The scan typically takes 5–10 seconds.
+
+When it finishes, the form fields will auto-populate with the extracted data:
+- Odometer reading
+- Trip A (if visible on receipt)
+- Trip B (if visible on receipt)
+- Gallons pumped
+- Price per gallon
+- Total cost
+- Calculated MPG (if the previous odometer reading is available)
+
+---
+
+### Reviewing the Extracted Data
+
+**Always review before saving.** The AI is accurate most of the time, but it can occasionally misread a digit — especially on faded or wrinkled receipts. A misread in the odometer (say, 42,710 read as 42,170) will throw off your MPG calculation for that entry.
+
+Check each field against the receipt. If something looks off, tap into that field and correct it. Once everything looks good, click **Save** — same as manual entry.
+
+---
+
+### What If the Scan Fails?
+
+If the AI can't extract reliable data from your photo, it will either return empty fields or show a partial extraction with low confidence. In that case:
+- Try a better-lit, closer photo
+- Or fall back to manual entry — it only takes 30 seconds
+
+OCR quality improves with better input. If you're consistently getting poor results, the issue is almost always the photo rather than the model.
+
+---
+
+### Gas Station Pump Screens vs. Paper Receipts
+
+Some gas stations don't print receipts (or the printer is out of paper). If you have a pump screen showing your total and gallons, you can photograph that instead — the AI can read screen text too. Results are slightly less reliable than paper, but usually workable.
+
+Alternatively, if your vehicle has a digital Trip A readout visible through the window, you can photograph that for the odometer component and enter the rest manually.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/travel/fuel — click ""Log Fill-Up""]
+
+> [SCREEN: Inside the form, click the ""Scan Receipt"" tab or button to switch to OCR mode]
+
+> [SCREENSHOT: OCR upload area with upload zone labeled — point out the ""up to 4 images"" note]
+
+> [SCREEN: Drag or click to upload a sample receipt photo (prepare a clear example receipt photo ahead of time)]
+
+> [SCREENSHOT: Uploaded thumbnail appearing in the upload area]
+
+> [SCREEN: Click ""Scan Receipt"" — show loading spinner for 5–10 seconds]
+
+> [SCREEN: Form fields auto-populate — show the filled values in Odometer, Gallons, Price/Gallon, Total]
+
+> [SCREENSHOT: Filled form with callout highlighting ""AI extracted these values — review before saving""]
+
+> [SCREEN: Click into the Odometer field and show correcting a digit if needed — type correction]
+
+> [SCREEN: Click Save — entry appears in fuel log history]
+
+> [SCREENSHOT: Fuel log list with the new OCR-logged entry, MPG column populated]
+
+> [SCREEN: Try a second scan with a deliberately blurry/poor image to show failure behavior — fields stay empty or partial]
+
+> [SCREEN: Show the fallback: click the ""Manual Entry"" tab and enter data by hand]
+
+---
+
+## Key Takeaways
+
+- OCR mode extracts odometer, gallons, price, and trip meter readings from a receipt photo
+- Up to 4 images per scan — use multiple only for long receipts
+- Always review auto-extracted values before saving — check the odometer especially
+- Good photo = flat receipt, good lighting, close up, no glare
+- If OCR fails, fall back to manual entry on the same form
+",markdown,,,,,,
+Fuel Logs,2,5,Reading Your Fuel Dashboard,text,300,true,,"# Lesson 05: Reading Your Fuel Dashboard
+
+**Course:** Mastering Travel Tracking
+**Module:** Fuel Logs
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+You've logged a few fill-ups. Now let's talk about what all that data is telling you.
+
+The Fuel dashboard takes your raw log entries and surfaces them as trends and summaries. This is where the data becomes insight — not just ""I paid $44 for gas"" but ""my MPG has dropped 3 miles per gallon over the last two months.""
+
+Let's walk through everything you'll see on this page.
+
+---
+
+### The Fuel Dashboard Overview
+
+Navigate to `/dashboard/travel/fuel`. At the top, you'll see summary cards — a quick snapshot of your current fuel performance.
+
+**Average MPG** — Your fuel efficiency averaged across all logged fill-ups for the selected vehicle. This is a rolling average, so it updates with every new entry.
+
+**Total fuel spend** — How much you've spent on gas in the current month, or over your selected date range. Useful for budgeting.
+
+**Cost per mile** — Total fuel spend divided by total miles driven. This is one of the most useful numbers in the module — it lets you compare true driving cost against, say, the cost of biking or public transit.
+
+**Total miles tracked** — The cumulative miles logged across all your fill-ups.
+
+---
+
+### The MPG Trend Chart
+
+Below the summary cards, you'll see a line chart showing your MPG over time. Each data point represents one fill-up.
+
+What to look for:
+
+**Steady flatline** — Your vehicle is performing consistently. Normal.
+
+**Gradual downward trend** — MPG creeping down over weeks or months often signals that maintenance is overdue: dirty air filter, degraded spark plugs, or tires that need air.
+
+**Sharp one-time drop** — A single outlier usually means a data entry error. Check that fill-up's odometer reading — you may have entered a wrong digit.
+
+**Seasonal dips** — In cold climates, MPG naturally drops in winter. Cold air is denser, engines take longer to warm up, and road conditions increase rolling resistance. Don't panic over a winter dip.
+
+---
+
+### The Cost Trend Chart
+
+Below or alongside the MPG chart, you'll see fuel cost tracked over time — either cost per fill-up or cost per month, depending on your view.
+
+This chart is useful for noticing when gas prices in your area spike, and for projecting monthly fuel budgets.
+
+---
+
+### Filtering by Vehicle and Date Range
+
+If you have multiple vehicles, use the vehicle selector at the top of the dashboard to switch between them. Each vehicle has its own independent data.
+
+The date range filter lets you zoom in on a specific period. Want to see MPG for the last 90 days vs. the whole year? Adjust the range.
+
+---
+
+### The Fuel Log Table
+
+Below the charts is the full log table — every fill-up, in reverse chronological order. Each row shows:
+- Date
+- Odometer at fill-up
+- Gallons
+- Price per gallon
+- Total cost
+- MPG for that fill-up
+
+You can click **Edit** on any row to correct a mistake, or **Delete** to remove an entry entirely.
+
+---
+
+### Using the Data
+
+Here's a practical way to use this dashboard every month:
+
+1. Check your average MPG — is it holding steady or trending down?
+2. Check your monthly fuel spend — does it match what you expected?
+3. Look for outlier MPG entries — fix data errors before they distort the trend
+4. Compare cost per mile against your bike savings (we'll cover that in the Trips section)
+
+A few minutes reviewing this data monthly is enough to catch maintenance issues before they become expensive repairs.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/travel/fuel — show the full dashboard with data populated (use a demo account with several fill-ups)]
+
+> [SCREENSHOT: Summary cards section with callouts labeling Average MPG, Total Spend, Cost Per Mile, Total Miles]
+
+> [SCREEN: Scroll to MPG trend chart — highlight the line and explain the x-axis (time) and y-axis (MPG)]
+
+> [SCREENSHOT: MPG chart with a callout circle around a sharp drop, labeled ""Possible data entry error — check this fill-up""]
+
+> [SCREEN: Hover over a data point on the chart to show the tooltip with date, fill-up details, and MPG]
+
+> [SCREEN: Scroll to cost chart — show monthly cost bars or line]
+
+> [SCREEN: Click the vehicle selector dropdown — show switching between two vehicles]
+
+> [SCREEN: Click the date range selector — change from ""All time"" to ""Last 90 days"" — show chart update]
+
+> [SCREEN: Scroll to fuel log table at bottom — show rows with all columns]
+
+> [SCREEN: Click Edit on a row — show the pre-filled edit form]
+
+> [SCREEN: Click Cancel — return to dashboard]
+
+> [SCREENSHOT: Full dashboard annotated with all three sections labeled: Summary Cards, Trend Charts, Log Table]
+
+---
+
+## Key Takeaways
+
+- Summary cards show average MPG, total spend, cost per mile, and total miles at a glance
+- The MPG trend chart reveals maintenance issues before they become serious
+- Sharp single-point MPG drops usually mean a data entry error — check the odometer
+- Seasonal MPG dips in winter are normal in cold climates
+- Filter by vehicle and date range to isolate specific periods for analysis
+",markdown,,,,,,
+Trips & Activities,3,6,Recording a Trip,text,480,true,,"# Lesson 06: Recording a Trip
+
+**Course:** Mastering Travel Tracking
+**Module:** Trips & Activities
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+A fuel fill-up tells you how efficient your vehicle is. A trip tells you where you went and how far. Together, these two data streams give you a complete picture of how you're using your vehicle — and how much each journey actually costs.
+
+This lesson covers manual trip logging: entering a trip directly into CentenarianOS after you've completed it.
+
+---
+
+### What Counts as a Trip?
+
+A trip is any journey you want to remember, analyze, or track. It could be:
+- A 1,500-mile road trip across three states
+- A 4-mile bike commute to the office
+- A weekly errand run around town
+- A hiking trail you drove to
+
+The key fields are mode of transport, distance, and date. Everything else is optional but adds useful context.
+
+---
+
+### Navigating to Trips
+
+Go to `/dashboard/travel/trips`. You'll see your trip history — or an empty state if this is your first trip.
+
+Click **Log Trip** to open the trip entry form.
+
+---
+
+### The Trip Entry Form
+
+Let me walk through the fields:
+
+**Vehicle** — Select which vehicle (or mode of transport) you used. If you were on a bike, select your bike entry from the vehicle list. If it's a vehicle that doesn't take fuel, that's fine — trips work for any vehicle.
+
+**Date** — The date of the trip. Defaults to today.
+
+**Mode** — A dropdown: Car, Bike, Walk, Run, Hike. This determines how the trip is categorized in your analytics. Bike trips contribute to your bike savings calculation. Car trips contribute to your vehicle cost totals.
+
+**Distance** — In miles (or kilometers, depending on your settings). Enter the total distance of the trip.
+
+**Start location** (optional) — A text field for the starting point. For example: ""Home"", ""Office"", ""Denver, CO"". This is free text — it's not a map integration.
+
+**End location** (optional) — Same format as start.
+
+**Route name** (optional) — A short label for the trip. For example: ""Morning commute"", ""I-70 mountain drive"", ""Sunday trail ride"".
+
+**Notes** (optional) — Anything else you want to remember about this trip. Road conditions, highlights, stops made.
+
+**Duration** (optional) — How long the trip took in hours and minutes. Used to calculate average speed when you're curious about that.
+
+---
+
+### Saving the Trip
+
+Fill in the required fields — Vehicle, Date, Mode, and Distance — and click **Save**.
+
+The trip appears in your history immediately. You'll see the distance, mode, and date in the list view.
+
+---
+
+### How Trip Data Powers Your Analytics
+
+Here's why logging trips matters beyond just having a record:
+
+**Bike savings** — Every bike trip you log gets compared against your car's cost per mile. If your car costs $0.18 per mile to fuel, and you rode your bike 8 miles instead of driving, the system shows you saved $1.44 on that trip. Small amounts, but they add up over a year.
+
+**Miles by mode** — Over time, you'll see a breakdown of how many miles you drove vs. biked vs. walked in a given period. This is motivating data for people trying to drive less.
+
+**Route patterns** — If you log the same route regularly (your commute, a favorite trail), you'll see it appear repeatedly in your history, making it easy to filter and analyze that specific journey.
+
+---
+
+### Logging vs. Importing
+
+Manual trip logging is great for ad-hoc trips or routes your Garmin doesn't cover (like a car journey). For recurring activities like bike commutes, runs, and hikes that you already track with a Garmin device, the import feature is a much faster option — we'll cover that in the next lesson.
+
+Most users end up using a combination: import Garmin activities weekly, and manually log car trips that don't show up in Garmin data.
+
+---
+
+### Tax Tagging
+
+The trip form includes a **Tax purpose** field. This is optional, but it's useful if you ever need to document mileage for tax purposes.
+
+The four options are:
+- **Personal** (default) — Most trips. No special treatment.
+- **Business** — Driving to a client site, a work conference, a job interview. The IRS allows a standard mileage deduction for business use of a personal vehicle. Tagging these trips makes it easy to pull a mileage report at year's end.
+- **Medical** — Driving to doctor's appointments, physical therapy, etc. Also potentially deductible.
+- **Charitable** — Mileage driven for volunteer work.
+
+Most trips are Personal, so it defaults to that and stays out of your way. But if you do any business driving, get in the habit of tagging those trips as Business from the start. At tax time, you can filter the trip list to ""Business"" and get a clean mileage log without any extra work.
+
+---
+
+### Travel vs. Fitness
+
+If your mode is Bike, Walk, Run, or another human-powered option, the trip form shows one additional field: **Travel or Fitness**.
+
+This distinction matters for the bike savings calculation:
+
+- **Travel** — You chose the bike (or your feet) instead of driving. A commute to work on your bike, a grocery run on foot, biking to a friend's house. These trips represent real car-trip substitutions — they count toward your savings.
+- **Fitness** — A workout. A Saturday trail ride, a training run, an evening walk for exercise. These trips have health value, but they're not replacing a car trip. Counting them as ""savings"" would be misleading.
+
+When you log a bike trip and mark it Travel, the system adds it to your bike savings total. Mark it Fitness, and it's logged for your activity history but doesn't affect the savings number.
+
+Car, bus, train, plane, ferry, and rideshare trips don't show this toggle — they're always Travel by definition.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/travel/trips — show trip list (empty or with existing trips)]
+
+> [SCREEN: Click ""Log Trip"" — trip form opens]
+
+> [SCREENSHOT: Full trip form with all fields labeled: Vehicle, Date, Mode, Distance, Start, End, Route Name, Notes, Duration]
+
+> [SCREEN: Click the Vehicle dropdown — show vehicle list — select the car vehicle]
+
+> [SCREEN: Click the Mode dropdown — show options: Car, Bike, Walk, Run, Hike — select ""Car""]
+
+> [SCREEN: Type ""284"" in the Distance field]
+
+> [SCREEN: Type ""Denver, CO"" in Start and ""Salt Lake City, UT"" in End]
+
+> [SCREEN: Type ""I-70 West"" in Route Name]
+
+> [SCREEN: Type ""Mountain passes, light traffic"" in Notes]
+
+> [SCREEN: Click Save — trip appears in list]
+
+> [SCREENSHOT: Trip list row showing the logged trip with distance and mode icon highlighted]
+
+> [SCREEN: Log a second trip — this time select Mode: Car — scroll down to show the Tax purpose dropdown — click it — show all four options: Personal, Business, Medical, Charitable — select ""Business""]
+
+> [SCREENSHOT: Tax purpose dropdown with all four options visible]
+
+> [SCREEN: Save the car trip — it appears in the list with a ""Business"" badge in the Tags column]
+
+> [SCREEN: Log a third trip — select Mode: Bike, Distance: 4.2]
+
+> [SCREENSHOT: Bike trip form showing the Travel / Fitness toggle appearing below the mode selector — highlight the helper text ""Travel counts toward commute savings. Fitness is for workouts.""]
+
+> [SCREEN: Select ""Travel"" on the toggle — fill in Route: ""Morning commute"" — save]
+
+> [SCREEN: Log a fourth trip — Mode: Bike, Distance: 12 — this time select ""Fitness"" on the toggle — Route: ""Saturday trail ride"" — save]
+
+> [SCREEN: Show trip list — the morning commute bike trip shows a savings amount; the Saturday ride shows an orange ""Fitness"" badge and no savings amount]
+
+> [SCREENSHOT: Trip list with all four trips — callouts labeling: Business badge (car trip), no badge (personal car trip), savings amount (travel bike trip), Fitness badge (fitness bike trip)]
+
+> [SCREEN: Click on a trip row to show the detail/edit view]
+
+---
+
+## Key Takeaways
+
+- A trip needs: vehicle, date, mode of transport, and distance — everything else is optional
+- Mode selection (Car vs. Bike) determines which analytics bucket the trip goes into
+- **Tax purpose** (Personal / Business / Medical / Charitable) tags trips for IRS mileage logs — default is Personal
+- **Travel vs. Fitness** toggle (shown for bike, walk, run): only Travel trips count toward bike savings — Fitness trips are for workouts, not commute savings
+- Bike trips marked Fitness appear in your history but don't inflate your savings calculation
+- Log car trips manually; use the Garmin import for fitness activities (next lesson)
+- Start/end locations and notes are free text — use them for context you'll want later
+",markdown,,,,,,
+Trips & Activities,3,7,Importing Activities from Garmin,text,360,true,,"# Lesson 07: Importing Activities from Garmin
+
+**Course:** Mastering Travel Tracking
+**Module:** Trips & Activities
+**Duration:** ~7 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+If you use a Garmin device, you're already tracking a lot of activity data — bike rides, runs, walks, hikes. The import feature in CentenarianOS lets you bring that data in and convert it into trips automatically.
+
+Instead of manually logging every bike commute, you export a week's worth of activities from Garmin, upload the file here, and CentenarianOS does the rest.
+
+This lesson walks you through the full process: exporting from Garmin, uploading here, and understanding what gets imported and what gets skipped.
+
+---
+
+### What Gets Imported
+
+CentenarianOS imports four activity types from Garmin:
+
+- **Cycling** — becomes a Bike trip
+- **Walking** — becomes a Walk trip
+- **Running** — becomes a Run trip
+- **Hiking** — becomes a Hike trip
+
+Everything else is intentionally skipped: Strength Training, HIIT, Yoga, Indoor Cycling, Swimming, and other gym-based activities. These don't involve travel or distance in a meaningful way, so they don't belong in the Travel module.
+
+This is a deliberate design choice — the Travel module is about movement through the world, not exercise sessions.
+
+---
+
+### Step 1: Export Your Activities from Garmin Connect
+
+Open Garmin Connect — either the mobile app or the website at connect.garmin.com.
+
+**On the website:**
+1. Go to **Activities** in the left sidebar
+2. Find the activity you want to export, or use the bulk export option
+3. For a single activity: click the activity → click the gear icon → **Export to GPX** or **Export Original**
+4. For a bulk export: go to **Account Settings** → **Data Export** → **Export Your Data**
+
+The bulk export option generates a ZIP file containing all your activity files. This can take a few minutes to generate and will arrive by email or be downloadable from the account settings page.
+
+**What format to use:**
+CentenarianOS accepts the standard Garmin export format. The bulk export ZIP works best for importing multiple activities at once.
+
+**On the mobile app:**
+The mobile app has a more limited export interface. For importing multiple activities, the website export is recommended.
+
+---
+
+### Step 2: Navigate to the Import Page
+
+In CentenarianOS, go to `/dashboard/travel/import`.
+
+You'll see the Garmin import interface: a file upload area and some information about supported formats.
+
+---
+
+### Step 3: Upload Your File
+
+Click or drag your exported file into the upload zone. You can upload either:
+- A single activity file
+- The full Garmin export ZIP (recommended for bulk imports)
+
+Click **Import Activities**. The system processes the file, identifies all supported activity types, and converts them to trips.
+
+---
+
+### Step 4: Review the Import Results
+
+After processing, you'll see a summary of what was imported:
+
+- **Activities imported** — the count of trips successfully created
+- **Activities skipped** — the count of activities that were ignored (Strength, HIIT, etc.)
+- **New trips** — a list of the individual trips just created
+
+Each imported activity becomes a trip in your trip history with:
+- Date from the activity timestamp
+- Mode based on activity type (Cycling → Bike, Running → Run, etc.)
+- Distance from the GPS track data
+- Duration from the activity's elapsed time
+
+---
+
+### After Import: Checking Your Trips
+
+Navigate to `/dashboard/travel/trips` to see the newly imported trips in your history. They'll show up mixed in with any manually logged trips, sorted by date.
+
+You can edit any imported trip to add notes, a route name, or start/end locations that the GPS data didn't capture.
+
+---
+
+### Dealing with Duplicates
+
+If you import the same Garmin export file twice, CentenarianOS checks for duplicate activities before inserting. Activities with the same date, type, distance, and duration won't be imported a second time.
+
+If you're not sure whether an activity was already imported, check your trip history for that date before re-importing.
+
+---
+
+### Keeping Up With Imports
+
+Most Garmin users find a weekly import cadence works well: every Sunday, export the past week's activities and import them. This keeps your trip history current without requiring daily manual logging.
+
+You could also do a one-time bulk import for the entire year's Garmin history when you first set up the module, then switch to a weekly cadence going forward.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Open a browser tab and navigate to connect.garmin.com — show the Activities page]
+
+> [SCREENSHOT: Garmin Connect Activities page with the Export button/gear icon highlighted on a single activity]
+
+> [SCREEN: Show the Account Settings → Data Export option on the Garmin website]
+
+> [SCREENSHOT: Data Export page with ""Export Your Data"" button labeled — add callout: ""This generates a ZIP of all activities""]
+
+> [SCREEN: Switch back to CentenarianOS — navigate to /dashboard/travel/import]
+
+> [SCREENSHOT: Import page with the upload zone highlighted and ""Supported: Garmin export ZIP"" labeled]
+
+> [SCREEN: Drag a sample Garmin export ZIP into the upload zone — show it populating]
+
+> [SCREEN: Click ""Import Activities"" — show processing spinner]
+
+> [SCREEN: Import results summary appears — highlight ""Activities imported: 12"", ""Activities skipped: 4 (Strength, HIIT)""]
+
+> [SCREENSHOT: Results screen with callouts: ""Imported"" (green) vs. ""Skipped"" (gray) categories listed]
+
+> [SCREEN: Click ""View Trips"" or navigate to /dashboard/travel/trips — show the newly imported trips in the list]
+
+> [SCREENSHOT: Trip list with several imported trips, mode icons (bike, run, walk) visible — label ""Imported from Garmin""]
+
+> [SCREEN: Click on one imported trip — show the detail view, point out that GPS distance and duration were auto-populated]
+
+> [SCREEN: Click Edit on that trip — show adding a route name and notes — save]
+
+---
+
+## Key Takeaways
+
+- Garmin exports Cycling, Walking, Running, and Hiking activities — all become trips in CentenarianOS
+- Strength Training, HIIT, Yoga, and indoor activities are intentionally skipped
+- Use the bulk ZIP export from connect.garmin.com for importing multiple activities at once
+- Duplicate detection prevents the same activity from being imported twice
+- A weekly import cadence (every Sunday) keeps trip history current with minimal effort
+",markdown,,,,,,
+Trips & Activities,3,8,Trip History and Bike Savings,text,420,true,,"# Lesson 08: Trip History and Bike Savings
+
+**Course:** Mastering Travel Tracking
+**Module:** Trips & Activities
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+You've logged some trips — either manually or via Garmin import. Now let's look at what all that trip data can tell you, with a special focus on one of the most interesting calculations in the module: bike savings.
+
+---
+
+### Navigating to Trip History
+
+Go to `/dashboard/travel/trips`. Your trip history is sorted by date, newest first. Each row shows:
+- Date
+- Mode of transport (with an icon: car, bike, run, walk, hike)
+- Route name (if you added one)
+- Distance
+- Duration (if logged)
+- For bike trips: a savings amount
+
+---
+
+### Filtering Your Trips
+
+At the top of the trip list, you'll find filter controls arranged in two rows of chips:
+
+**Mode row** — Show only a specific type of trip. Click ""Bike"" to see all your bike trips, ""Car"" for car trips, and so on. Useful when you want to analyze just one mode.
+
+**Tag row** — Additional filters for specific use cases:
+- **Business** — Shows only trips tagged with the Business tax purpose. Great for pulling your IRS mileage log: filter to Business, set a date range for the tax year, and you have your deductible mileage.
+- **Medical** — Same idea, for medical mileage deductions.
+- **Fitness** — Shows only bike/walk/run trips that were marked as fitness activities (workouts), as opposed to commutes or errands. Useful for reviewing your training volume.
+
+**Date range** — Filter to a specific period: last 7 days, last 30 days, this month, this year, or a custom range.
+
+**Vehicle filter** — If you have multiple vehicles, filter to see trips associated with a specific one.
+
+These filters work together — you can show only Bike trips tagged Fitness from the last 30 days, for example. A ""Clear filters"" link resets everything.
+
+---
+
+### Understanding the Bike Savings Calculation
+
+Here's the idea behind bike savings: every mile you ride a bike as a trip substitute is a mile you didn't drive a car. CentenarianOS calculates what that drive would have cost you based on your actual fuel data.
+
+**The formula:**
+
+`savings = bike travel miles × car cost per mile`
+
+Where `car cost per mile` is calculated as:
+
+`car cost per mile = owned vehicle fuel spend ÷ owned vehicle car miles`
+
+For example: if you spent $200 on gas over 1,000 car miles in your personal vehicle, your car costs you $0.20 per mile to fuel. Ride your bike 10 miles on a commute (marked Travel), and you saved $2.00 in fuel.
+
+Two important qualifiers:
+
+**Only ""Travel"" bike trips count.** If you marked a bike trip as Fitness (a workout), it's excluded from the savings calculation. A Saturday trail ride is exercise — it's not a substituted car trip. Only trips where you chose the bike over a car — commutes, errands, trips around town — count toward savings.
+
+**Only your owned vehicles count.** If you log fuel for a rental car or a borrowed vehicle, that data is excluded from the cost-per-mile calculation. The savings comparison should reflect your personal cost of owning and fueling your car, not a one-off rental.
+
+---
+
+### Why This Number Is Useful
+
+Most people dramatically underestimate how much they're saving by cycling. A $2 savings sounds small, but across a year of regular commuting:
+
+- 3 bike commutes per week × 8 miles per commute = 24 bike miles per week
+- 24 miles × $0.20/mile = $4.80 per week
+- $4.80 × 52 weeks = **$249.60 saved per year in fuel alone**
+
+And that's just the direct fuel cost. When you factor in reduced wear on tires, brakes, and engine, the real savings are higher.
+
+CentenarianOS shows you this calculation per trip and in aggregate on your dashboard — so you can watch the number grow over time.
+
+---
+
+### The Trips Dashboard Summary
+
+At the top of the trips page, summary cards show:
+
+**Total car miles** — All logged car trips combined.
+**Total bike miles** — All logged bike trips combined.
+**Total bike savings** — Cumulative fuel savings from all bike trips.
+**Trips this month** — Count of trips logged in the current calendar month.
+
+These numbers update every time you log or import a new trip.
+
+---
+
+### Trip Detail View
+
+Click any trip row to open the detail view. Here you'll see everything about that trip:
+- Full start and end locations
+- Route name and notes
+- Duration and average speed (if duration was logged)
+- Savings amount (for bike trips)
+- The Garmin activity it was imported from (if applicable)
+
+From the detail view, you can click **Edit** to update any field, or **Delete** to remove the trip.
+
+---
+
+### Looking for Patterns
+
+A good habit: at the end of each month, filter to ""this month"" and review:
+1. How many car trips vs. bike trips?
+2. Is the ratio trending toward more bike and less car over time?
+3. What's the cumulative bike savings this year?
+
+For people who commute by bike even occasionally, this data is surprisingly motivating. Seeing ""$312 saved this year"" on screen has a way of making you reach for the bike helmet a bit more often.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/travel/trips — show a populated trip list with mixed modes]
+
+> [SCREENSHOT: Trip list with callouts labeling: Date column, Mode icon column, Distance column, Savings column (bike trips only)]
+
+> [SCREEN: Click the ""Bike"" mode chip — show list filtering to only bike trips]
+
+> [SCREEN: Click the ""Fitness"" tag chip — show list filtering to only fitness bike trips — note that none of these show a savings amount]
+
+> [SCREENSHOT: Fitness-only filtered view — callout on orange Fitness badges, callout noting ""no savings column for fitness trips""]
+
+> [SCREEN: Clear the Fitness filter — click the ""Business"" tag chip — show only business-tagged trips]
+
+> [SCREENSHOT: Business filter active — callout: ""Use this view for your IRS mileage log""]
+
+> [SCREEN: Click ""Clear filters"" to reset]
+
+> [SCREEN: Click the date range selector — select ""Last 30 days"" — show filtered results]
+
+> [SCREEN: Click back to ""All"" mode and ""All time"" date range]
+
+> [SCREENSHOT: Summary cards at top — label each: Total Car Miles, Total Bike Miles, Total Bike Savings, Trips This Month]
+
+> [SCREEN: Click on a bike trip row — show the detail view]
+
+> [SCREENSHOT: Trip detail view with callout on the savings amount, explaining the formula: ""Bike miles × car cost/mile""]
+
+> [SCREEN: Click on a car trip row — show the detail view — note that savings is not shown for car trips]
+
+> [SCREEN: Click Edit on a trip — show the pre-filled form — update the route name — save]
+
+> [SCREEN: Filter to ""This month"", mode ""Bike"" — show the summary updating to reflect the filter]
+
+> [SCREENSHOT: Filtered view showing only bike trips this month, with a running total of savings for the period]
+
+---
+
+## Key Takeaways
+
+- Bike savings = **Travel** bike miles × (owned vehicle fuel spend ÷ owned vehicle car miles) — calculated from your real data
+- Only trips marked **Travel** count toward savings — Fitness trips (workouts) are excluded so they don't inflate the number
+- Only **owned vehicles** feed the cost-per-mile calculation — rental and borrowed vehicles are excluded
+- Filter by mode chips (Bike, Car, etc.) or tag chips (**Business**, **Medical**, **Fitness**) to slice your data
+- Business filter = your IRS mileage log — use it at tax time for your deduction
+- Summary cards show total car miles, total bike miles, cumulative savings, and trips this month
+- Click any trip row to view details, edit fields, or delete the entry
+- Review monthly: track whether you're shifting toward more bike trips over time
+",markdown,,,,,,
+Vehicle Maintenance,4,9,Logging Vehicle Maintenance,text,300,true,,"# Lesson 09: Logging Vehicle Maintenance
+
+**Course:** Mastering Travel Tracking
+**Module:** Vehicle Maintenance
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Every vehicle needs maintenance. Oil changes, tire rotations, brake inspections, air filters, timing belts — over the life of a vehicle, you'll spend thousands of dollars on upkeep. The question is: do you have a record of it?
+
+Most people don't. They rely on the windshield sticker from the last oil change, a vague memory of when the brakes were done, or whatever the shop told them last time.
+
+CentenarianOS's maintenance tracker gives you a complete, searchable log of every service record for every vehicle you own. This lesson covers how to add a record.
+
+---
+
+### Navigating to Maintenance
+
+Go to `/dashboard/travel/maintenance`. You'll see the maintenance history for your vehicles, grouped or sorted by date. At the top right, click **Log Maintenance**.
+
+---
+
+### The Maintenance Form
+
+**Vehicle** — Select the vehicle this maintenance was performed on.
+
+**Date** — When the service was done. Default is today; change it if you're logging something from last week.
+
+**Service type** — A dropdown of common maintenance types:
+- Oil Change
+- Tire Rotation
+- Air Filter
+- Cabin Filter
+- Spark Plugs
+- Brake Inspection
+- Brake Pads/Rotors
+- Battery
+- Transmission Service
+- Coolant Flush
+- Timing Belt / Chain
+- Wiper Blades
+- Other
+
+If your service isn't on the list, select **Other** and describe it in the notes field.
+
+**Mileage at service** — The odometer reading when this work was done. This is the most important field — it's what tells you when the next service is due.
+
+For example, if you got an oil change at 42,000 miles and the shop recommends every 5,000 miles, your next oil change is at 47,000. When your odometer crosses that number (visible on your vehicle profile), you'll know you're due.
+
+**Cost** — What you paid. Include parts and labor if it was at a shop.
+
+**Shop / Performed by** — Where or who did the work. Examples: ""Quick Lube on Main St"", ""Self — driveway"", ""Dealer service dept.""
+
+**Notes** — Any additional details. Brand of oil used, which tires were rotated, what the shop recommended for next time.
+
+---
+
+### Saving the Record
+
+Fill in the required fields — Vehicle, Date, Service Type, and Mileage — then click **Save**. The record appears in your maintenance history.
+
+---
+
+### The Value of Detailed Notes
+
+When you bring your vehicle to a new shop, they always ask: ""When was the last time you changed the oil? When were the brakes done?"" Most people guess. With CentenarianOS, you can pull up your phone and tell them exactly — date, mileage, shop, and what was done.
+
+Good notes also help you notice patterns. If your air filter needs replacement every 12,000 miles but you're replacing it at 9,000, something is wrong — unusual dust exposure, or you're getting upsold at the shop.
+
+---
+
+### What About Service Reminders?
+
+CentenarianOS doesn't send automatic maintenance reminders (no push notifications), but the maintenance history page makes it easy to see at a glance when something was last done. In the next lesson, we'll look at how to read the maintenance history and spot what's coming due.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/travel/maintenance — show maintenance list (empty or with a few entries)]
+
+> [SCREEN: Click ""Log Maintenance"" — form opens]
+
+> [SCREENSHOT: Full maintenance form with all fields labeled: Vehicle, Date, Service Type, Mileage, Cost, Shop, Notes]
+
+> [SCREEN: Click Vehicle dropdown — select the car]
+
+> [SCREEN: Click Service Type dropdown — show the full list of options — select ""Oil Change""]
+
+> [SCREEN: Type ""42,710"" in the Mileage field]
+
+> [SCREEN: Type ""42.50"" in the Cost field]
+
+> [SCREEN: Type ""Quick Lube — 5th Ave"" in the Shop field]
+
+> [SCREEN: Type ""5W-30 synthetic, next due at 47,710 miles"" in the Notes field]
+
+> [SCREEN: Click Save — record appears in maintenance list]
+
+> [SCREENSHOT: Maintenance list row showing the oil change entry with mileage highlighted in a callout]
+
+> [SCREEN: Log a second entry — select ""Tire Rotation"", same vehicle, mileage 42,710, cost $25, notes ""Full rotation, all 4 tires""]
+
+> [SCREEN: Save — show both records in the list]
+
+> [SCREENSHOT: Maintenance list with two entries, service type icons visible if applicable]
+
+> [SCREEN: Click Edit on the oil change record — show pre-filled form — click Cancel]
+
+---
+
+## Key Takeaways
+
+- Log every service with: Vehicle, Date, Service Type, and Mileage at service
+- Mileage at service is the key field — it tells you when the next service is due
+- Use the Notes field for shop recommendations, product details, and next-due mileage
+- The maintenance log is your vehicle's history document — useful at trade-in and with new shops
+- Service reminders are manual — check the history page to see what's coming due next
+",markdown,,,,,,
+Vehicle Maintenance,4,10,Maintenance History and What's Due Next,text,300,true,,"# Lesson 10: Maintenance History and What's Due Next
+
+**Course:** Mastering Travel Tracking
+**Module:** Vehicle Maintenance
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa (final lesson — crossroads will offer a recap or explore other modules)
+
+---
+
+## Narrator Script
+
+You've been logging maintenance records. This final lesson shows you how to read your maintenance history and use it to stay ahead of what's coming due.
+
+---
+
+### Navigating to Maintenance History
+
+Go to `/dashboard/travel/maintenance`. This is your full maintenance log — every service record you've entered, sorted by date (newest first by default).
+
+---
+
+### Reading the History List
+
+Each row in the list shows:
+- **Date** — When the service was performed
+- **Vehicle** — Which vehicle
+- **Service type** — Oil Change, Tire Rotation, etc.
+- **Mileage** — Odometer at service
+- **Cost** — What you paid
+- **Shop** — Where the work was done
+
+You can click any row to see the full details, including your notes.
+
+---
+
+### Filtering the History
+
+At the top of the list, you'll find filters:
+
+**Vehicle filter** — Show maintenance for only one vehicle. Essential if you have multiple.
+
+**Service type filter** — Show only a specific type. Want to see all your oil changes and nothing else? Select Oil Change from the dropdown.
+
+**Date range** — Filter to a specific period.
+
+These filters help you answer questions like: ""When was the last time I rotated these tires?"" — filter to Tire Rotation, newest first, and the answer is the first entry.
+
+---
+
+### Tracking What's Due Next
+
+CentenarianOS doesn't automatically calculate due dates (different vehicles have different service intervals based on manufacturer specs, driving conditions, and oil type). But here's a practical workflow for manual tracking:
+
+**Step 1: Find the last service date and mileage**
+
+Filter to the service type you're checking. Look at the most recent entry — note the mileage.
+
+**Step 2: Add the service interval**
+
+Use the standard intervals as a starting point:
+- Oil Change: every 5,000–7,500 miles (synthetic oil) or 3,000 miles (conventional)
+- Tire Rotation: every 5,000–7,500 miles
+- Air Filter: every 12,000–15,000 miles
+- Cabin Filter: every 12,000–15,000 miles
+- Brake Inspection: every 10,000–15,000 miles
+- Spark Plugs: every 30,000–100,000 miles (varies widely)
+
+Your shop's recommendations (which you saved in the Notes field) take priority over these general numbers.
+
+**Step 3: Compare to current odometer**
+
+Check your vehicle profile on the Travel dashboard — it shows the current odometer reading (updated from your latest fuel log). If your current mileage is within 500 miles of the next service point, schedule it.
+
+---
+
+### The Full Vehicle Service View
+
+Click on a specific vehicle from your Travel dashboard (or filter the maintenance history to one vehicle). You'll see all maintenance for that vehicle in chronological order — essentially the complete service history.
+
+This view is useful when:
+- Buying or selling a vehicle — print or export the history
+- Taking the vehicle to a new shop — pull up the history on your phone
+- Comparing service costs over time — is one vehicle getting more expensive to maintain?
+
+---
+
+### Editing and Deleting Records
+
+Click **Edit** on any record to correct a date, cost, mileage, or note. Click **Delete** to remove a record that was logged in error.
+
+There's no bulk delete — records are removed one at a time to prevent accidental data loss.
+
+---
+
+### You've Completed the Travel Module
+
+Congratulations — you've covered the entire Travel module:
+
+- Setting up vehicles
+- Logging fuel fill-ups manually and via OCR
+- Reading your MPG and cost trends
+- Recording trips manually and importing from Garmin
+- Understanding bike savings
+- Logging maintenance and reviewing service history
+
+The Travel module is a long-game tool. The more consistently you log data, the more useful it becomes. MPG trends that take six months to appear can reveal maintenance issues before they turn into expensive repairs. Bike savings that build up over a year become genuinely motivating.
+
+Start logging, stay consistent, and let the data work for you.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/travel/maintenance — show a populated list with 5+ entries across different service types]
+
+> [SCREENSHOT: Maintenance list with all columns labeled: Date, Vehicle, Service Type, Mileage, Cost, Shop]
+
+> [SCREEN: Click the Service Type filter dropdown — select ""Oil Change"" — list filters to only oil changes]
+
+> [SCREENSHOT: Filtered list showing only oil change records, newest first — add callout: ""Last oil change: 42,710 miles""]
+
+> [SCREEN: Click the Vehicle filter — show filtering to a single vehicle when multiple exist]
+
+> [SCREEN: Clear filters to show all maintenance again]
+
+> [SCREEN: Click on one maintenance record — show the detail view with notes visible]
+
+> [SCREEN: Navigate to /dashboard/travel — show the vehicle card with current odometer]
+
+> [SCREENSHOT: Vehicle card with odometer highlighted, plus a side callout showing the math: ""Last oil change: 42,710 → Next due: 47,710 → Current: 44,200 → 3,510 miles to go""]
+
+> [SCREEN: Navigate back to /dashboard/travel/maintenance — click Edit on a record — update the Notes field — save]
+
+> [SCREEN: Show the Delete option on a record — click Delete — show the confirmation dialog — click Cancel (don't actually delete)]
+
+> [SCREEN: End on the full maintenance history list — pause on a well-populated list to show what consistent logging looks like]
+
+> [SCREENSHOT: Full view of a populated maintenance history — label it ""Your vehicle's complete service history""]
+
+---
+
+## Key Takeaways
+
+- Filter by vehicle and service type to quickly find when something was last done
+- Use the Notes field to record shop recommendations for next-due mileage
+- Compare the most recent service mileage + interval against your current odometer to know what's due
+- The maintenance history is your vehicle's service document — valuable at trade-in and with new shops
+- Consistent logging over time is where the real value emerges
+",markdown,,,,,,
+Advanced Trips,5,11,Multi-Stop Routes,text,300,true,,"# Lesson 11: Multi-Stop Routes
+
+**Course:** Mastering Travel Tracking
+**Module:** Advanced Trips
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+A multi-stop route is a trip with intermediate stops — not just A to B, but A to B to C to D. Each leg of the route is its own trip record with independent distance, cost, and mode of transport. The route ties them together as a single journey.
+
+---
+
+### When to Use Multi-Stop Routes
+
+Use a route when:
+- You're taking a road trip with planned stops (SF → Fresno → Vegas)
+- You commute through multiple waypoints
+- You combine transport modes on one journey (drive to train station, train to city, walk to office)
+
+Single-leg trips (A to B with no stops) don't need routes — just log them as regular trips.
+
+---
+
+### Creating a Multi-Stop Route
+
+Navigate to `/dashboard/travel` and look for the **Routes** section. Click **+ New Route**.
+
+A route has:
+- **Name** — a descriptive label (e.g., ""SF to Vegas Road Trip"")
+- **Date** — the date of the journey
+- **Notes** — optional context
+
+After creating the route, you add legs.
+
+---
+
+### Adding Legs
+
+Each leg is a trip that belongs to the route. For each leg, you fill in the standard trip form:
+
+- **Origin** — starting point for this leg (can use saved contact locations)
+- **Destination** — endpoint for this leg
+- **Mode** — car, bike, walk, bus, train, etc.
+- **Distance** — miles for this leg
+- **Cost** — fuel/ticket/fare cost for this leg (optional)
+- **Vehicle** — which vehicle was used (if applicable)
+
+Legs are ordered by `leg_order` within the route. The first leg starts from the route origin, and each subsequent leg starts where the previous one ended.
+
+---
+
+### Cost Tracking Per Leg
+
+If a leg has a cost greater than $0, the system can create a linked financial transaction for that leg. This means each stop-to-stop segment has its own expense record in your Finance module.
+
+This is useful for multi-modal trips where each leg has a different cost structure — gas for the driving segment, a train ticket for the rail segment, etc.
+
+---
+
+### Viewing a Route
+
+The route detail page at `/dashboard/travel/routes/[id]` shows:
+- Route summary: name, date, total distance (sum of all legs), total cost
+- A map of the route (if map content is available)
+- Each leg listed in order with distance, mode, cost, and origin/destination
+- Links to individual trip records for each leg
+
+---
+
+### Example Route Data
+
+Here's what a 3-stop route looks like:
+
+**Route:**
+```json
+{
+  ""name"": ""SF to Vegas Road Trip"",
+  ""date"": ""2026-03-15"",
+  ""notes"": ""Spring break road trip — overnight in Fresno""
+}
+```
+
+**Legs:**
+```json
+[
+  { ""leg_order"": 1, ""origin"": ""San Francisco, CA"", ""destination"": ""Fresno, CA"", ""mode"": ""car"", ""distance_miles"": 185, ""cost"": 32.50 },
+  { ""leg_order"": 2, ""origin"": ""Fresno, CA"", ""destination"": ""Bakersfield, CA"", ""mode"": ""car"", ""distance_miles"": 112, ""cost"": 19.00 },
+  { ""leg_order"": 3, ""origin"": ""Bakersfield, CA"", ""destination"": ""Las Vegas, NV"", ""mode"": ""car"", ""distance_miles"": 283, ""cost"": 48.00 }
+]
+```
+
+**Total: 580 miles, $99.50 in fuel**
+
+---
+
+### Map Content for Routes
+
+A route can include map data to visualize the journey:
+
+```json
+{
+  ""center"": [36.5, -118.5],
+  ""zoom"": 6,
+  ""markers"": [
+    { ""lat"": 37.7749, ""lng"": -122.4194, ""title"": ""San Francisco"", ""description"": ""Starting point"" },
+    { ""lat"": 36.7378, ""lng"": -119.7871, ""title"": ""Fresno"", ""description"": ""Overnight stop"" },
+    { ""lat"": 35.3733, ""lng"": -119.0187, ""title"": ""Bakersfield"", ""description"": ""Fuel stop"" },
+    { ""lat"": 36.1699, ""lng"": -115.1398, ""title"": ""Las Vegas"", ""description"": ""Final destination"" }
+  ],
+  ""lines"": [
+    { ""coordinates"": [[37.7749, -122.4194], [36.7378, -119.7871]], ""color"": ""#3B82F6"", ""label"": ""Leg 1: SF → Fresno (185 mi)"" },
+    { ""coordinates"": [[36.7378, -119.7871], [35.3733, -119.0187]], ""color"": ""#10B981"", ""label"": ""Leg 2: Fresno → Bakersfield (112 mi)"" },
+    { ""coordinates"": [[35.3733, -119.0187], [36.1699, -115.1398]], ""color"": ""#EF4444"", ""label"": ""Leg 3: Bakersfield → Vegas (283 mi)"" }
+  ]
+}
+```
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/travel — show the Routes section]
+
+> [SCREEN: Click ""+ New Route"" — fill in name, date, notes — save]
+
+> [SCREEN: Add Leg 1: SF → Fresno, car, 185 miles, $32.50]
+
+> [SCREEN: Add Leg 2: Fresno → Bakersfield, car, 112 miles, $19.00]
+
+> [SCREEN: Add Leg 3: Bakersfield → Vegas, car, 283 miles, $48.00]
+
+> [SCREENSHOT: Route detail page — callouts: Route summary (total 580 mi, $99.50), Legs in order, Map visualization]
+
+> [SCREEN: Click into Leg 1 — show the individual trip record with finance link]
+
+---
+
+## Key Takeaways
+
+- Multi-stop routes group sequential trip legs under one journey name
+- Each leg is its own trip record with independent distance, cost, and mode
+- Legs with costs can create linked financial transactions
+- Route detail page shows total distance/cost and an ordered leg list
+- Use for road trips, multi-modal commutes, and any journey with waypoints
+",markdown,,,,,,
+Advanced Trips,5,12,Trip Templates & Quick Logging,text,180,true,,"# Lesson 12: Trip Templates & Quick Logging
+
+**Course:** Mastering Travel Tracking
+**Module:** Advanced Trips
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+If you take the same trip regularly — a daily commute, a weekly grocery run, a recurring bike route — trip templates let you save the details once and log it again with one click. Templates support both single-leg and multi-stop trips.
+
+---
+
+### What Is a Trip Template?
+
+A trip template is a saved trip configuration. It stores:
+- Origin and destination
+- Mode of transport
+- Distance
+- Vehicle (if applicable)
+- Trip category (travel/fitness)
+- Tax category (personal/business/medical/charitable)
+- Whether it's a round trip
+- Notes
+
+For multi-stop templates, it also stores all intermediate stops.
+
+---
+
+### Creating a Template
+
+Navigate to `/dashboard/travel` and find the **Templates** section. Click **+ New Template**.
+
+Fill in the template form with the trip details you want to reuse. The form is identical to the regular trip form, with one addition: a **Template Name** field at the top.
+
+Give it a descriptive name like ""Weekday Commute"" or ""Saturday Bike Loop.""
+
+---
+
+### Multi-Stop Templates
+
+Toggle **Multi-Stop** on the template form to define intermediate stops. Each stop has:
+- Location name
+- Distance from previous stop
+- Mode of transport
+
+The `is_multi_stop` flag on the template tells the system to create a route (with multiple legs) instead of a single trip when you use the template.
+
+---
+
+### Using a Template
+
+From the trip creation form, you'll see a **From Template** dropdown. Select a template, and all fields auto-fill with the saved values. Adjust the date (and optionally the cost, if fuel prices have changed), then save.
+
+For multi-stop templates, the system creates:
+1. A new route with the template name + today's date
+2. Individual trip legs for each stop in the template
+
+---
+
+### Editing and Deleting Templates
+
+Templates are managed from the Templates section:
+- **Edit** — update any field. Changes only affect future uses, not past trips created from the template.
+- **Delete** — removes the template. Past trips created from it are unaffected.
+
+---
+
+### Example Template Data
+
+**Single-leg template:**
+```json
+{
+  ""name"": ""Weekday Commute"",
+  ""origin"": ""Home"",
+  ""destination"": ""Office"",
+  ""mode"": ""car"",
+  ""distance_miles"": 12.5,
+  ""is_round_trip"": true,
+  ""trip_category"": ""travel"",
+  ""tax_category"": ""business"",
+  ""vehicle_id"": ""vehicle-crv-2020"",
+  ""is_multi_stop"": false
+}
+```
+
+**Multi-stop template:**
+```json
+{
+  ""name"": ""Saturday Errands"",
+  ""is_multi_stop"": true,
+  ""stops"": [
+    { ""location"": ""Home"", ""distance_from_previous"": 0 },
+    { ""location"": ""Grocery Store"", ""distance_from_previous"": 3.2 },
+    { ""location"": ""Hardware Store"", ""distance_from_previous"": 1.8 },
+    { ""location"": ""Home"", ""distance_from_previous"": 4.5 }
+  ]
+}
+```
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/travel — show the Templates section]
+
+> [SCREEN: Click ""+ New Template"" — fill in: name ""Weekday Commute"", origin ""Home"", destination ""Office"", mode car, distance 12.5, round trip ON]
+
+> [SCREEN: Save the template — show it appear in the templates list]
+
+> [SCREEN: Navigate to trip creation — click ""From Template"" dropdown — select ""Weekday Commute""]
+
+> [SCREENSHOT: Trip form with auto-filled fields from template — callout: ""All fields populated from template""]
+
+> [SCREEN: Adjust the date — save the trip]
+
+> [SCREEN: Create a multi-stop template with 3 stops — save]
+
+---
+
+## Key Takeaways
+
+- Templates save trip configurations for repeated journeys
+- Single-leg and multi-stop templates are supported
+- Use ""From Template"" on the trip form to auto-fill all fields
+- Multi-stop templates create routes with per-leg trip records
+- Edit/delete templates without affecting past trips
+",markdown,,,,,,
+Advanced Trips,5,13,Round Trips & Contact Locations,text,240,true,,"# Lesson 13: Round Trips & Contact Locations
+
+**Course:** Mastering Travel Tracking
+**Module:** Advanced Trips
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Two features that simplify trip logging: round trips (so you don't have to log the same route twice) and contact locations (so your saved vendors and customers provide trip endpoints automatically).
+
+---
+
+### Round Trips
+
+Toggle **Round Trip** on the trip form. When enabled:
+- You enter the one-way distance only
+- The system stores `distance_miles` as the one-way value
+- CO2 calculations and summary stats automatically multiply by 2
+- The trip displays as ""12.5 mi (round trip)"" instead of ""12.5 mi""
+
+This is useful for commutes, errands, and any trip where you return to the starting point.
+
+The `is_round_trip` flag is stored on the trip record. You can toggle it on or off when editing an existing trip.
+
+---
+
+### Contact Locations
+
+The Travel module integrates with the Saved Contacts system. When you enter an origin or destination, you can select from your saved contacts' locations instead of typing an address manually.
+
+**How it works:**
+
+1. In the trip form, click the origin or destination field
+2. Start typing a contact name
+3. The ContactAutocomplete component shows matching contacts
+4. If the contact has locations (sub-addresses), a location dropdown appears
+5. Select the location — it fills in the address automatically
+
+---
+
+### Setting Up Contact Locations
+
+Contact locations are managed from the Contacts module:
+
+1. Navigate to `/api/contacts` or the contacts management area
+2. Create or edit a contact
+3. Add locations with: label, address, lat/lng (optional), and notes
+4. Set one as the default location
+
+Each contact can have multiple locations. For example:
+- **Costco** → ""Main Store"" (123 Main St), ""Gas Station"" (123 Main St, Pump Area)
+- **Office** → ""Downtown HQ"" (456 Market St), ""Satellite Office"" (789 Oak Ave)
+
+---
+
+### Contact Locations in Trip Logging
+
+When you select a contact with locations as your origin or destination:
+- If the contact has a default location, it auto-fills
+- If the contact has multiple locations, a sub-select appears so you can pick the right one
+- The selected location's label and address are stored with the trip
+
+This means you never have to retype ""456 Market St"" — just pick ""Office → Downtown HQ.""
+
+---
+
+### Combining Round Trips + Contact Locations
+
+The most efficient workflow:
+1. Save your frequently visited places as contact locations
+2. Create trip templates using those contacts
+3. Toggle round trip on the template
+4. Log daily trips in seconds: From Template → adjust date → save
+
+---
+
+### Example Contact Location Data
+
+```json
+{
+  ""contact"": {
+    ""name"": ""Costco"",
+    ""contact_type"": ""vendor"",
+    ""default_category_id"": ""cat-groceries""
+  },
+  ""locations"": [
+    {
+      ""label"": ""Main Store"",
+      ""address"": ""123 Main St, San Francisco, CA 94105"",
+      ""lat"": 37.7899,
+      ""lng"": -122.3969,
+      ""is_default"": true,
+      ""notes"": ""Enter from 2nd St""
+    },
+    {
+      ""label"": ""Gas Station"",
+      ""address"": ""123 Main St, San Francisco, CA 94105"",
+      ""lat"": 37.7895,
+      ""lng"": -122.3972,
+      ""is_default"": false,
+      ""notes"": ""Pump area on north side""
+    }
+  ]
+}
+```
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Open the trip form — toggle Round Trip ON]
+
+> [SCREENSHOT: Trip form with Round Trip toggle — callout: ""Enter one-way distance; CO2 and totals auto-double""]
+
+> [SCREEN: Enter a distance of 12.5 miles — save — show trip displayed as ""12.5 mi (round trip)""]
+
+> [SCREEN: Open a new trip form — click the destination field]
+
+> [SCREEN: Type ""Costco"" — show the contact autocomplete dropdown with matching contacts]
+
+> [SCREEN: Select ""Costco"" — show the location sub-select with ""Main Store"" and ""Gas Station""]
+
+> [SCREENSHOT: Contact location sub-select — callout: ""Pick a specific location from the contact's saved addresses""]
+
+> [SCREEN: Select ""Main Store"" — show the address auto-fill in the destination field]
+
+---
+
+## Key Takeaways
+
+- Round Trip toggle: enter one-way distance, CO2 and totals auto-multiply by 2
+- Contact Locations: select saved contacts with addresses as trip origins/destinations
+- Contacts can have multiple locations — the sub-select lets you pick the right one
+- Combine templates + round trips + contact locations for fastest logging
+- Contact locations are managed in the Contacts module and shared across Travel and Planner
+",markdown,,,,,,

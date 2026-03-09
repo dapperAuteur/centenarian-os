@@ -1,0 +1,704 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+Lessons,1,1,Welcome to Correlations & Analytics,text,240,true,,"# Lesson 01: Welcome to Correlations & Analytics
+
+**Course:** Mastering Correlations & Analytics
+**Module:** Introduction
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+You've been logging data for weeks — health metrics, meals, focus sessions, tasks. Each module gives you useful information about its own domain. But the most powerful insights come from the spaces between modules. What happens to your focus when your sleep is poor? Does your task completion change on days you eat out? Does pain level affect your deep work output?
+
+These cross-module patterns are exactly what Correlations and Analytics are designed to surface.
+
+---
+
+### Two Pages, Different Approaches
+
+CentenarianOS has two separate insight pages. They approach the same goal — understanding your data — from different angles.
+
+---
+
+### The Correlations Page (`/dashboard/correlations`)
+
+The Correlations page runs statistical analysis on your logged data and visualizes the results as scatter plots. Each chart shows the relationship between two specific metrics across all the days you've logged both.
+
+For example: a scatter plot of ""Sleep Hours vs. Energy Rating"" puts a dot for every day you've logged both values — the dot's x-position represents sleep hours, the y-position represents energy. If the dots trend upward left-to-right, sleep and energy are positively correlated.
+
+The math behind each chart is a **Pearson correlation coefficient** — a number between -1 and +1 that measures how strongly two metrics move together. The page shows this coefficient alongside the chart.
+
+Above the charts, **AI Insights** from Gemini translate the strongest correlations into plain-language takeaways: ""On days when you slept 7+ hours, your energy was 23% higher. Consider setting a consistent bedtime to maximize your alertness.""
+
+Six metric pairs are analyzed:
+- Sleep Hours ↔ Energy Rating
+- Daily Steps ↔ Energy Rating
+- Pain Intensity ↔ Focus Minutes
+- Green Meal % ↔ Energy Rating
+- Sleep Hours ↔ Focus Minutes
+- Resting HR ↔ Energy Rating
+
+---
+
+### The Analytics Page (`/dashboard/analytics`)
+
+The Analytics page takes a different approach. Instead of scatter plots and raw statistics, it shows:
+
+1. **Discovered Correlations** — four pre-defined behavioral patterns, checked against your data and reported if the pattern holds (with a confidence score based on sample size)
+2. **Module stat cards** — headline numbers for Planner, Fuel, Engine, and Body tracking over a selected time range
+
+The four behavioral correlations it checks:
+- Green NCV days → higher energy
+- High focus (3+ hours) → higher task completion
+- High pain (4+/10) → reduced focus capacity
+- Restaurant meals → lower task completion
+
+These are hypothesis-based: the system asks ""does this known pattern show up in your data?"" If yes, it reports the finding with specifics (""Green NCV days average 4.2/5 energy vs. 3.6/5 on other days"") and a suggestion.
+
+---
+
+### When to Use Each
+
+**Use Correlations** when you want to explore the data mathematically — look at the scatter plots, check the coefficient strength, and see what Gemini says about the strongest relationships. Good for: understanding your personal patterns and validating or surprising your assumptions.
+
+**Use Analytics** when you want a quick summary — ""how did this period go across all modules?"" and ""are the well-known health patterns showing up in my data?"" Good for: weekly or monthly review, getting a dashboard-level read on where you stand.
+
+Many users check Analytics weekly and Correlations monthly.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/correlations — show the full page with scatter plots and AI insights]
+
+> [SCREENSHOT: Correlations page — callouts: AI Insights section (3 plain-language insight cards), Metric Correlations section (scatter plot grid), Time range buttons (7d/30d/90d)]
+
+> [SCREEN: Navigate to /dashboard/analytics — show the full page]
+
+> [SCREENSHOT: Analytics page — callouts: Discovered Correlations section (correlation cards), four Module Stat cards (Planner/Fuel/Engine/Body), Time range selector, Export button]
+
+> [SCREEN: End on the analytics page — end lesson]
+
+---
+
+## Key Takeaways
+
+- Two insight pages with complementary approaches: Correlations (statistical) and Analytics (behavioral + summaries)
+- Correlations: 6 metric pairs, scatter plots, Pearson coefficient, Gemini language insights
+- Analytics: 4 pre-defined behavioral correlations + module stat cards for Planner, Fuel, Engine, Body
+- Use Correlations for data exploration; use Analytics for periodic summaries
+- Both require consistent logging across multiple modules — minimum 5–14 days before results appear
+",markdown,,,,,,
+Lessons,1,2,Reading the Correlations Page,text,360,true,,"# Lesson 02: Reading the Correlations Page
+
+**Course:** Mastering Correlations & Analytics
+**Module:** Correlations
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The Correlations page is where your data becomes visual. This lesson walks through every element of the page and explains what you're looking at.
+
+---
+
+### Time Range Filter
+
+At the top right of the Correlations page, three buttons let you set the analysis window: **7d**, **30d**, **90d**.
+
+- **7 days** — the most recent week. Very small sample (7 data points max per metric pair). Coefficients will be unreliable but useful for spotting very recent pattern shifts.
+- **30 days** — one month. The most useful default for most users. Enough data to produce meaningful coefficients while remaining recent enough to be actionable.
+- **90 days** — three months. The strongest statistical reliability. Best for understanding your longer-term patterns.
+
+When you change the range, the page re-fetches data and all scatter plots update. The AI insights also regenerate based on the new range.
+
+---
+
+### AI Insights Section
+
+At the top of the page, before the scatter plots, up to three AI Insight cards are shown — but only if the analysis found correlations worth reporting. Each card:
+
+- Has a teal left border accent
+- Contains a single plain-language insight generated by Gemini from the strongest correlations found in your data
+- Includes a specific actionable suggestion
+
+Example: *""On days when you slept 7+ hours, your energy was 23% higher. Consider setting a consistent bedtime to maximize your alertness.""*
+
+These insights are generated fresh each time you load the page or change the time range. They describe your data specifically — not generic health advice. If you see advice that matches a pattern you've already noticed, that's validation. If it surprises you, that's a discovery worth acting on.
+
+If the analysis finds fewer than 3 noteworthy correlations, fewer than 3 insight cards will appear. If there's not enough data, the section is hidden entirely.
+
+---
+
+### Metric Correlations — The Scatter Plot Grid
+
+Below the insights, a grid of scatter plot cards shows every metric pair that had enough data to analyze. Each card:
+
+**Header:**
+- Left: ""{Metric A} vs {Metric B}"" — the two metrics being compared
+- Right: The correlation coefficient in large bold text (e.g., **+0.65**), color-coded by strength:
+  - **Green** — Strong (r ≥ 0.70)
+  - **Amber** — Moderate (r ≥ 0.40)
+  - **Gray** — Weak (r < 0.40)
+- Below the coefficient: the strength label (""Strong"", ""Moderate"", ""Weak"") and the sample size (""14 days"")
+
+**The Chart:**
+- Each dot represents one day where both metrics were logged
+- **X-axis** — Metric A (labeled at the bottom)
+- **Y-axis** — Metric B (labeled on the left, rotated)
+- **Hover over any dot** — a tooltip shows the exact values for that day
+
+**Reading the pattern:**
+- Dots trending up-right → positive correlation (more A = more B)
+- Dots trending down-right → negative correlation (more A = less B)
+- Dots scattered randomly → weak or no correlation
+
+---
+
+### The Six Metric Pairs
+
+The system tests these six specific combinations:
+
+| Metric A | Metric B | What a strong positive r means |
+|----------|----------|-------------------------------|
+| Sleep Hours | Energy Rating | More sleep → higher daily energy |
+| Daily Steps | Energy Rating | More movement → higher energy |
+| Pain Intensity | Focus Minutes | Higher pain → less focused work (negative r expected) |
+| Green Meal % | Energy Rating | Better nutrition → higher energy |
+| Sleep Hours | Focus Minutes | More sleep → more focused work |
+| Resting HR | Energy Rating | Lower RHR → higher energy (negative r expected) |
+
+Not all six will appear every time — a pair is only shown if there are at least 5 days where both metrics were logged on the same day. If you've been logging health metrics but not the Engine daily debrief, Energy Rating pairs won't have data.
+
+---
+
+### Empty State
+
+If you have fewer than 5 days of overlapping logged data across any metric pair, you'll see an empty state: ""Not enough data yet. Continue logging health metrics, focus sessions, and meals for at least 5 days to detect patterns.""
+
+This is the only reason the page shows nothing — it's not a technical error. Keep logging consistently and check back.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/correlations — show the 30d view by default]
+
+> [SCREENSHOT: Full correlations page — callouts: Time range buttons (7d/30d/90d selected), AI Insights section (3 cards), Metric Correlations grid (scatter plots)]
+
+> [SCREEN: Click the 90d button — page refreshes — show updated data]
+
+> [SCREEN: Hover over a scatter plot card header — show the coefficient and sample size]
+
+> [SCREENSHOT: Single scatter plot card close-up — callouts: Title (Metric A vs Metric B), Correlation coefficient (r value), Strength label (Strong/Moderate/Weak), Sample size (""X days""), Chart with data points]
+
+> [SCREEN: Hover over a data point on the scatter plot — show the tooltip with exact values]
+
+> [SCREENSHOT: Scatter plot with hover tooltip — callout: ""Hover any dot for exact values on that day""]
+
+> [SCREEN: Click 7d — show how with fewer data points the chart is sparser and coefficient may change]
+
+> [SCREENSHOT: 7d view vs 30d view comparison callout — ""Smaller range = fewer points = less reliable coefficient""]
+
+> [SCREEN: Show an AI Insight card close-up]
+
+> [SCREENSHOT: AI Insight card — callouts: Teal left border, Insight text (references specific metric and %), Actionable suggestion]
+
+> [SCREEN: End on the correlations page — end lesson]
+
+---
+
+## Key Takeaways
+
+- Time range: 7d (recent, small sample), 30d (best default), 90d (most reliable)
+- AI Insights: up to 3 Gemini-generated plain-language findings from the strongest correlations
+- Each scatter plot card shows: metric pair title, r coefficient (color-coded), strength label, sample size, interactive chart
+- Hover any data point for exact values on that day
+- Six metric pairs tested: sleep↔energy, steps↔energy, pain↔focus, green meals↔energy, sleep↔focus, RHR↔energy
+- A pair only shows if both metrics were logged on the same day — at least 5 overlapping days required
+",markdown,,,,,,
+Lessons,1,3,Understanding Correlation Strength,text,360,true,,"# Lesson 03: Understanding Correlation Strength
+
+**Course:** Mastering Correlations & Analytics
+**Module:** Correlations
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The correlation coefficient is the most important number on the Correlations page. Understanding what it means — and what it doesn't mean — is the difference between acting on real insight and chasing statistical noise.
+
+---
+
+### What the Correlation Coefficient Means
+
+The correlation coefficient (written as **r**) measures how consistently two metrics move together. It ranges from **-1 to +1**:
+
+- **r = +1.0** — Perfect positive correlation. Every time Metric A goes up, Metric B goes up by a predictable amount. This never happens with real biological data.
+- **r = +0.7 or higher** — Strong positive correlation. A clear, consistent relationship. When Metric A is higher, Metric B tends to be noticeably higher. Actionable.
+- **r = +0.4 to +0.7** — Moderate positive correlation. A real relationship exists but other factors are also in play. Worth noting, but act with some caution.
+- **r = +0.1 to +0.4** — Weak positive correlation. There may be a slight relationship, but it's not strong enough to base decisions on.
+- **r ≈ 0** — No relationship. The two metrics appear to be independent.
+- **r = -0.4 to -0.7** — Moderate negative correlation. When A goes up, B tends to go down.
+- **r = -0.7 or lower** — Strong negative correlation. A clear inverse relationship. Expected for pairs like pain↔focus (more pain = less focused work) or RHR↔energy (higher RHR = lower energy).
+
+The system uses these thresholds:
+- **r ≥ 0.70** → ""Strong"" (green)
+- **r ≥ 0.40** → ""Moderate"" (amber)
+- **r < 0.40** → ""Weak"" (gray)
+
+---
+
+### Sample Size: Why It Matters
+
+The coefficient alone doesn't tell you if the correlation is reliable. A **+0.80** from 6 data points is much less trustworthy than a **+0.65** from 45 data points. Small samples can produce dramatic-looking coefficients by chance.
+
+The sample size is shown on every scatter plot card (""14 days"", ""31 days""). When interpreting:
+
+- **< 10 days** — treat with significant skepticism. One unusual day can swing the coefficient dramatically.
+- **10–20 days** — real signal starting to emerge, but still early.
+- **20–30 days** — a month of data. Correlations at this level are meaningful.
+- **30+ days** — reliable. Patterns you see at this sample size are likely real for your data.
+
+A ""Moderate"" correlation at 45 days is worth acting on. A ""Strong"" correlation at 7 days may be noise.
+
+---
+
+### Correlation vs. Causation
+
+This is the most important caveat to understand. A correlation tells you that two metrics move together. It doesn't tell you why.
+
+Example: you might see a strong positive correlation between daily steps and energy rating. This could mean:
+- More walking causes higher energy (movement → energy production)
+- Higher energy causes more walking (energized people move more)
+- A third factor causes both (good weather → more energy and more walking)
+- All three simultaneously
+
+The correlation page doesn't distinguish between these explanations. It reports the statistical relationship and the AI suggests interpretations based on likelihood, but only you can investigate the true mechanism.
+
+The right response to a correlation isn't ""I'll walk more and my energy will increase."" The right response is ""There's a pattern worth exploring — let me consciously vary my walking on days when energy feels low and see if the relationship holds.""
+
+---
+
+### Correlations That Should Exist vs. Ones That Surprise You
+
+Some correlations are expected from the research literature:
+- Sleep hours positively correlating with energy — well established
+- Pain negatively correlating with focus — intuitive
+- Resting HR negatively correlating with energy — known
+
+These aren't revelations, but seeing them in your own data is valuable confirmation that your data is being logged accurately and the system is working.
+
+The more interesting correlations are the ones that surprise you or that don't match the expected direction. A negative correlation between steps and energy (more walking → lower energy) might indicate overtraining. A very weak sleep↔energy correlation might suggest sleep quality (rather than duration) is the real variable — check your sleep score data.
+
+---
+
+### What to Do with a Strong Correlation
+
+1. **Check the sample size** — is it ≥ 20 days?
+2. **Read the AI insight** — does the interpretation match what you'd expect?
+3. **Look at the scatter plot visually** — are there obvious outlier points pulling the coefficient in one direction?
+4. **Test it deliberately** — change one variable intentionally for 2–3 weeks and track the other
+5. **Update your protocol** — if the correlation holds under intentional testing, build it into your health behavior
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/correlations — show a scatter plot with a strong positive correlation]
+
+> [SCREENSHOT: Strong correlation chart — callouts: r coefficient (green, ≥0.70), strength label ""Strong"", sample size ""28 days"", dots trending upward clearly]
+
+> [SCREEN: Compare with a weak correlation scatter plot]
+
+> [SCREENSHOT: Weak correlation chart — callouts: r coefficient (gray, <0.40), dots scattered randomly with no clear trend, ""Weak"" label]
+
+> [SCREEN: Point to the sample size on both charts — discuss why sample size matters]
+
+> [SCREENSHOT: Two charts side by side showing same r value but different sample sizes — callout: ""Same coefficient, very different reliability based on sample size""]
+
+> [SCREEN: Show a negative correlation (e.g., pain vs focus)]
+
+> [SCREENSHOT: Negative correlation chart — callouts: Negative r value, dots trending down-right, ""This is expected — more pain → less focus""]
+
+> [SCREEN: End on the correlations page — end lesson]
+
+---
+
+## Key Takeaways
+
+- r ranges from -1 to +1: Strong (≥0.70, green), Moderate (≥0.40, amber), Weak (<0.40, gray)
+- Sample size is critical: <10 days = treat as noise; 30+ days = reliable signal
+- Correlation ≠ causation — the page shows what moves together, not why
+- Expected correlations (sleep↔energy) confirm your data quality; unexpected ones are discoveries
+- Strong correlation → check sample size → read AI insight → test deliberately → update protocol if it holds
+",markdown,,,,,,
+Lessons,1,4,The Analytics Dashboard,text,360,true,,"# Lesson 04: The Analytics Dashboard
+
+**Course:** Mastering Correlations & Analytics
+**Module:** Analytics
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The Analytics page is a different kind of insight layer. Instead of asking ""how do any two metrics relate statistically?"", it asks ""do the known health and productivity patterns show up in my data?"" It also shows you module-level headline stats in one place.
+
+---
+
+### Navigating to Analytics
+
+Navigate to `/dashboard/analytics`. The page has a time range selector (30, 60, or 90 days) and two sections below: Discovered Correlations and Module Stats.
+
+---
+
+### Time Range
+
+The selector at the top controls both the correlation analysis and the module stats. **30 days** is the default. Switch to 60 or 90 for longer-trend analysis.
+
+---
+
+### Discovered Correlations Section
+
+This section shows up to four behavioral correlations — pre-defined patterns that the system checks against your data. Unlike the Correlations page (which tests all metric pairs statistically), the Analytics engine checks four specific hypotheses:
+
+---
+
+#### 1. Green NCV Days → Energy
+
+**What it checks:** On days when you logged Green-rated meals, was your energy rating higher than on non-green days?
+
+**What it shows if found:** ""Green NCV days average 4.2/5 energy vs. 3.6/5 on other days — a **+17% difference**.""
+
+**Confidence:** Based on how many green days you've logged. Requires ≥5 green days in the window.
+
+---
+
+#### 2. High Focus (3+ hours) → Task Completion
+
+**What it checks:** On days when you logged 3+ hours of focused work in the Engine, was your task completion rate in the Planner higher?
+
+**What it shows if found:** ""Days with 3+ hours focused work show **34% higher task completion** (87% vs 65%).""
+
+**Why it matters:** Validates whether your deep work is actually translating into plan execution, or whether focus sessions and task completion are disconnected.
+
+---
+
+#### 3. High Pain (4+/10) → Reduced Focus
+
+**What it checks:** On days with pain intensity ≥4 logged in the Engine pain log, was your focused work output lower?
+
+**What it shows if found:** ""High pain days (4+) reduce focus capacity by **28%** (34 vs 47 minutes average).""
+
+**Why it matters:** If this pattern shows up in your data, it quantifies the cognitive cost of unmanaged pain — a compelling argument for prioritizing corrective protocols.
+
+---
+
+#### 4. Restaurant Meals → Task Completion
+
+**What it checks:** On days with restaurant meals logged, is your task completion rate different from days with only home-cooked meals?
+
+**What it shows if found:** ""Days without restaurant meals show **18% higher task completion** (82% vs 67%).""
+
+**Why it matters:** One of the less intuitive findings. If this pattern appears in your data, it may reflect decision fatigue, post-meal energy dips, or scheduling patterns (restaurant days = busier days with more disruptions).
+
+---
+
+### Correlation Cards — What You See
+
+Each discovered correlation displays as a card with:
+
+- **Category badge** (top left) — color-coded: Nutrition (lime), Focus (sky), Pain (red), Completion (amber), Energy (fuchsia)
+- **Confidence score** (top right) — percentage based on sample size:
+  - 5–9 days: ~30% confidence
+  - 10–14 days: ~50%
+  - 15–19 days: ~70%
+  - 20+ days: up to 95%
+  - Color: green ≥70%, amber ≥50%, red <50%
+- **Main insight text** — the specific numbers from your data
+- **Sample Size and Impact** — at the bottom: how many days, and the % difference
+- **Suggestion box** — one actionable recommendation based on the pattern's direction
+
+A correlation card only appears if the pattern meets the minimum data threshold (≥5 qualifying days) and the effect size is >10–15% (a weak effect that could be noise isn't shown).
+
+---
+
+### Module Stats Cards
+
+Four stat cards below the correlations show headline metrics across all modules for the selected time range:
+
+**Planner Performance** (sky blue)
+- Completion Rate — % of scheduled tasks completed
+- Tasks Completed — total count
+- Current Streak — consecutive days at 90%+ completion
+
+**Fuel Quality** (lime green)
+- Green Days % — days where all logged meals were Green NCV
+- Total Meals — count of meals logged
+- Weekly Cost — average weekly food spend
+
+**Focus & Energy** (amber)
+- Total Focus Hours — sum of all session minutes
+- Avg Energy Rating — your Engine debrief average (x/5)
+- Sessions/Day — average number of focus sessions per day
+
+**Body Tracking** (red)
+- Avg Pain Score — average intensity across all pain log entries
+- Pain-Free Days % — days with pain ≤1/10
+- Total Logged — combined body tracking entries
+
+---
+
+### Data Export
+
+At the bottom of the Analytics page, a **Export JSON** button downloads a file containing all your correlation data and module stats for the current time range. The filename includes the date: `analytics-2026-02-25.json`.
+
+Use this for: personal records, sharing with a coach or doctor, or importing into a spreadsheet for custom analysis.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/analytics — show the full page]
+
+> [SCREENSHOT: Analytics page — callouts: Time range selector (30/60/90d), Discovered Correlations section header, Module Stats cards row]
+
+> [SCREEN: Zoom into a correlation card — show all its elements]
+
+> [SCREENSHOT: Single correlation card close-up — callouts: Category badge (colored), Confidence score (%), Main insight text (specific numbers), Sample Size, Impact %, Suggestion box]
+
+> [SCREEN: Change time range from 30d to 90d — show how confidence scores change]
+
+> [SCREENSHOT: Same correlation at 30d vs 90d — confidence increases with more data — callout: ""More data = higher confidence""]
+
+> [SCREEN: Scroll to module stats cards]
+
+> [SCREENSHOT: Four module stat cards — callouts: Planner (completion rate, tasks, streak), Fuel (green days, meals, cost), Engine (focus hours, energy, sessions/day), Body (pain score, pain-free %, logged)]
+
+> [SCREEN: Click Export JSON — show download]
+
+> [SCREEN: End on the module stats section — end lesson]
+
+---
+
+## Key Takeaways
+
+- Analytics checks 4 pre-defined behavioral hypotheses: Green meals→energy, High focus→completion, High pain→focus, Restaurant meals→completion
+- Correlation cards show: category, confidence %, specific numbers from your data, sample size, impact %, and one suggestion
+- Confidence scoring: 5 days = ~30%, 20+ days = up to 95% — only trust high-confidence findings
+- Cards only appear when effect size is >10–15% — weak effects are filtered out
+- Module stats give you a single-view summary of Planner, Fuel, Engine, and Body performance for the period
+- Export JSON downloads all correlation and stats data for external use
+",markdown,,,,,,
+Lessons,1,5,Acting on What You Find,text,300,true,,"# Lesson 05: Acting on What You Find
+
+**Course:** Mastering Correlations & Analytics
+**Module:** Putting It Together
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Insight without action is just interesting data. This lesson covers how to take the patterns you find in Correlations and Analytics and turn them into real protocol changes — systematically, not impulsively.
+
+---
+
+### The Two Types of Findings
+
+**Confirming findings** — the correlation matches what you'd expect and what the research says. Sleep correlates with energy. Green meals correlate with higher energy. High pain reduces focus.
+
+These are useful for two reasons: they validate that your logging is accurate (the data is behaving as biology predicts), and they give you quantified motivation. ""I know I should sleep more"" is easier to ignore than ""My data shows that days under 7 hours have 31% lower energy ratings — here's the scatter plot.""
+
+**Surprising findings** — the correlation is unexpected, missing, or reversed. Sleep and energy barely correlate. Green meals are uncorrelated with energy. High focus days don't improve task completion.
+
+These are where the real discoveries live. A weak sleep↔energy correlation when you'd expect a strong one points to something else being the limiting factor — maybe sleep quality (not hours), or something post-sleep like meal timing or activity load. A missing focus↔completion correlation might mean your focus sessions are on low-priority tasks.
+
+---
+
+### The Protocol Change Framework
+
+When you find a pattern worth acting on, use this process:
+
+**Step 1: Verify the sample size.** A finding at 8 days is not reliable enough to change your behavior. Wait until you have 20+ days before making protocol changes based on a correlation.
+
+**Step 2: Identify the most actionable variable.** For a sleep↔energy correlation, you can control sleep hours — so that's the variable to change. For a pain↔focus correlation, the actionable variable is pain management, not focus technique.
+
+**Step 3: Make one change at a time.** Change multiple variables simultaneously and you won't know which one drove the outcome. Choose the single highest-impact variable and change it deliberately for 4–6 weeks.
+
+**Step 4: Re-check after 30 more days.** Return to the Correlations page after your protocol change. Did the correlation strengthen? Did the effect size in Analytics increase? This is how you validate that your intervention worked.
+
+**Step 5: Update your protocols.** If the change produced the expected result in the data, codify it into a protocol: a new nutrition rule, a new sleep policy, a training load adjustment.
+
+---
+
+### Practical Examples
+
+**Finding:** Sleep Hours ↔ Energy Rating shows r = +0.71 at 30 days. ""Strong."" AI insight: ""Days with 7+ hours average 4.1/5 energy vs 2.8/5 on under-7 hours.""
+
+**Action:** Set a hard sleep target: in bed by 10:30 PM every night for the next 30 days. Log it consistently. Return to Correlations at day 30 and check if the scatter plot has tightened and the average energy on 7+ hour nights has increased.
+
+---
+
+**Finding:** Green Meal % ↔ Energy shows r = +0.28 at 30 days. ""Weak."" Analytics shows 65% confidence.
+
+**Action:** Don't change anything yet. This isn't strong enough to act on. Wait until you have more data (60+ days) and see if the coefficient strengthens. If it stays weak, nutrition quality may not be the primary energy driver for you — investigate sleep quality or training load instead.
+
+---
+
+**Finding:** Analytics shows ""High Pain (4+) → Reduced Focus: 28% less focused work on high-pain days"" with 82% confidence.
+
+**Action:** Start the corrective exercise protocol from your CES assessment. Log pain intensity consistently. Return in 60 days and check whether the pain log average has dropped and whether the correlation card's impact figure has decreased.
+
+---
+
+### What Not to Do
+
+**Don't over-act on weak correlations.** Gray ""Weak"" cards and low-confidence Analytics findings are noise until proven otherwise.
+
+**Don't change multiple variables at once.** If you improve sleep, switch to all-green meals, and start a corrective exercise program simultaneously, you won't know what moved the needle.
+
+**Don't ignore expected correlations.** If sleep and energy are strongly correlated in your data, treat that as the most important finding on the page — not the least interesting because it's ""obvious.""
+
+**Don't stop logging.** The data is only as good as the consistency of what goes in. A week of gaps in health metrics or meal logging creates missing data points that weaken every correlation on the page.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/correlations — point to a strong correlation]
+
+> [SCREENSHOT: Strong correlation with AI insight — callouts: r value, sample size, the specific AI insight text, suggestion]
+
+> [SCREEN: Navigate to /dashboard/analytics — point to a high-confidence discovered correlation card]
+
+> [SCREENSHOT: High-confidence correlation card — callouts: Confidence %, specific impact numbers, suggestion]
+
+> [SCREEN: Navigate to /dashboard/coach — select a Gem — show how you'd use the Coach to develop a protocol based on the finding: ""My correlations page shows sleep hours correlating +0.71 with energy at 30 days. I need a practical sleep protocol designed around my schedule as an executive who travels 2 weeks/month.""]
+
+> [SCREENSHOT: Coach chat showing correlation-driven protocol request — callout: ""Use Coach to turn findings into actionable protocols""]
+
+> [SCREEN: End on the coach chat — end lesson]
+
+---
+
+## Key Takeaways
+
+- Confirming findings validate your data quality; surprising or missing findings are where discoveries are
+- Protocol change framework: verify sample size (≥20 days) → identify actionable variable → one change at a time → re-check after 30 days → codify if validated
+- Don't act on Weak correlations or <50% confidence findings — wait for more data
+- Don't change multiple variables simultaneously — you won't know what worked
+- The Coach is a natural companion to Correlations: bring your findings to a coaching session to develop protocols
+- Consistency of logging is the foundation — gaps weaken every correlation on the page
+",markdown,,,,,,
+Lessons,1,6,Data Export,text,240,true,,"# Lesson 06: Data Export
+
+**Course:** Mastering Correlations & Analytics
+**Module:** Data Management
+**Duration:** ~3 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Your data belongs to you. CentenarianOS gives you a direct export of everything the Analytics engine has computed — correlation findings, module stats, sample sizes, confidence scores — in a structured JSON file you can use anywhere.
+
+---
+
+### Exporting from the Analytics Page
+
+Navigate to `/dashboard/analytics`. At the bottom of the page, there's a **Data Export** section with an **Export JSON** button.
+
+Click **Export JSON**. A file named `analytics-YYYY-MM-DD.json` downloads immediately — the filename includes today's date so multiple exports stay organized.
+
+The export reflects whatever time range you currently have selected (30, 60, or 90 days). To export a specific period, set the time range first, then click Export JSON.
+
+---
+
+### What's in the Export
+
+The JSON file contains everything the Analytics engine computed for the selected period:
+
+**Correlation findings:**
+- All discovered correlations that met the threshold (category, insight text, sample size, confidence %, impact %)
+- The raw metric averages behind each finding (e.g., green day avg energy: 4.2, non-green avg: 3.6)
+
+**Module stats:**
+- Planner: completion rate, total tasks completed, current streak
+- Fuel: green days %, total meals, restaurant %, total cost
+- Engine: total focus hours, avg energy rating, sessions per day
+- Body: avg pain score, pain-free days %, total logged entries
+
+**Metadata:**
+- Time range
+- Export date
+
+---
+
+### What You Can Do With It
+
+**Share with a coach or physician.** If you're working with a health professional, the JSON export gives them a concise, structured view of your patterns and performance over the selected period. More useful than a verbal summary.
+
+**Import into a spreadsheet.** Use `JSON to CSV` tools (free web utilities) to convert the export into a spreadsheet for custom calculations or visualization.
+
+**Track over time.** Export monthly and keep the files. Over six months, you can compare exports and see how your correlation strengths and module stats have changed — a longitudinal record of your protocol changes and their effects.
+
+**Personal archive.** Your data is stored in Supabase, but having local copies is good practice. Monthly exports ensure you have an offline record.
+
+---
+
+### CSV Export
+
+The Analytics page also has a **CSV Export** button. This is currently in development — the button is visible but disabled. When released, it will provide a flat spreadsheet format directly from the page without requiring a JSON-to-CSV conversion step.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/analytics — scroll to the Data Export section at the bottom]
+
+> [SCREENSHOT: Data Export section — callouts: Export JSON button, disabled CSV button with ""coming soon"" note]
+
+> [SCREEN: Set time range to 90d — click Export JSON — file downloads]
+
+> [SCREENSHOT: Downloaded file in browser or Finder — filename shows today's date]
+
+> [SCREEN: Open the JSON file in a text editor or JSON viewer — show the structure]
+
+> [SCREENSHOT: JSON file structure — callouts: ""correlations"" array (with category, text, confidence, impact), ""moduleStats"" object (planner, fuel, engine, body sections), ""exportedAt"" timestamp]
+
+> [SCREEN: End on the JSON viewer — end lesson and the course]
+
+---
+
+## Key Takeaways
+
+- Export JSON button at the bottom of /dashboard/analytics — exports the current time range selection
+- Filename includes today's date: `analytics-YYYY-MM-DD.json`
+- Export contains: discovered correlations (with raw averages), all four module stats, time range metadata
+- Use cases: sharing with coaches/physicians, spreadsheet analysis, monthly archiving, longitudinal tracking
+- CSV export is in development (visible but disabled on the page)
+- Export before changing your time range if you want a specific period archived
+",markdown,,,,,,

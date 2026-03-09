@@ -1,0 +1,418 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+Lessons,1,1,Your Subscription,text,300,true,,"# Lesson 01: Your Subscription
+
+**Course:** Settings & Billing
+**Module:** Billing
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The Billing page is where you see your current plan, your next renewal date, and access the Stripe Customer Portal for payment management. This lesson walks through everything on the page.
+
+---
+
+### Navigating to Billing
+
+Click **Billing** in the dashboard sidebar. The page is at `/dashboard/billing`. Billing is one of the free-access routes — you can reach it regardless of your subscription status.
+
+---
+
+### The Current Plan Section
+
+A card at the top of the page shows your current plan. There are four possible states:
+
+**Free**
+You have an account but no active subscription. Access is limited to Blog and Recipes. An **Upgrade** button links to `/pricing`.
+
+**Monthly**
+Active monthly subscriber. Shows:
+- **""Monthly — $10/month""** in fuchsia
+- Your **renewal date** — ""Renews on [date]"" in gray, or ""Cancels on [date]"" in amber if you've canceled and are in the wind-down period
+- **Manage Subscription** button (CreditCard icon) — opens the Stripe Customer Portal
+
+**Lifetime Member**
+Paid once for permanent access. Shows:
+- **""Lifetime Member""** in lime green
+- **""Full access forever. No recurring charges.""**
+- No manage button — there's nothing to manage for a one-time purchase
+
+**Admin**
+Full access without a subscription. Shows a shield icon and ""Admin — Full Access.""
+
+---
+
+### The Manage Subscription Button
+
+Click **Manage Subscription**. This calls the platform's Stripe portal API, which returns a secure Stripe-hosted URL and redirects you there.
+
+In the Stripe Customer Portal you can:
+- **Update your payment method** — change the card on file
+- **View invoice history** — download past receipts
+- **Cancel your subscription** — sets a cancellation date at the end of the current billing period
+
+After taking action in the portal, Stripe redirects you back to `/dashboard/billing`. Your subscription status updates automatically.
+
+---
+
+### Renewal Date
+
+For monthly subscribers, the page shows your next renewal date: **""Renews on [date].""**
+
+If you've canceled through the Stripe portal but your period hasn't ended yet, it shows: **""Cancels on [date]""** in amber. You keep full access until that date.
+
+---
+
+### The Lifetime Upgrade CTA
+
+If you're on a monthly plan, a dark card below the current plan section shows:
+
+> ""Upgrade to Lifetime for $100 — Pay once, own it forever — plus get a free CentenarianOS shirt.""
+
+Click **View Lifetime Plan** to go to `/pricing` and start the Lifetime checkout.
+
+---
+
+### The Shirt Promo Code (Lifetime Members)
+
+If you're a Lifetime member, a lime-green card shows your unique shirt promo code — a discount code for a free CentenarianOS shirt from AwesomeWebStore.com.
+
+- The code appears in a bold monospace box
+- **Copy** button — copies the code to your clipboard; the button text briefly changes to ""Copied!""
+
+If the card shows **""Shirt Promo Code Pending""** instead of the actual code, the code is still being generated. Wait a moment and refresh the page.
+
+---
+
+### After Checkout: Payment Confirmation
+
+When you complete checkout on `/pricing` and Stripe redirects you back to `/dashboard/billing`, the page briefly shows: **""Confirming your payment…""** while it verifies your transaction with Stripe. After confirmation:
+- A green banner: **""Payment successful — welcome to CentenarianOS!""**
+- Your plan badge updates to Monthly or Lifetime
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/billing — show the page for a monthly subscriber]
+
+> [SCREENSHOT: Billing page — callouts: ""CURRENT PLAN"" label, ""Monthly — $10/month"" (fuchsia), renewal date, ""Manage Subscription"" button]
+
+> [SCREEN: Click ""Manage Subscription"" — show the redirect to Stripe portal]
+
+> [SCREENSHOT: Stripe Customer Portal — callouts: ""Update payment method"", ""Cancel subscription"", ""Invoice history""]
+
+> [SCREEN: Cancel from the portal — redirect back — show ""Cancels on [date]"" in amber]
+
+> [SCREENSHOT: Billing page after canceling — callout: Amber ""Cancels on [date]"" text instead of renewal date]
+
+> [SCREEN: Show the Lifetime Member state — lime ""Shirt Promo Code"" card]
+
+> [SCREENSHOT: Shirt promo code card — callouts: Code in monospace box, ""Copy"" button]
+
+> [SCREEN: Click Copy — show ""Copied!"" state for 2 seconds]
+
+> [SCREEN: Show the Lifetime Upgrade CTA (on monthly plan view)]
+
+> [SCREENSHOT: Dark lifetime CTA card — callouts: ""$100 one-time"", ""View Lifetime Plan"" button, shirt mention]
+
+> [SCREEN: End on the billing page — end lesson]
+
+---
+
+## Key Takeaways
+
+- Billing at /dashboard/billing — four plan states: Free, Monthly, Lifetime, Admin
+- Monthly: shows renewal date (""Renews on"") or cancellation date (""Cancels on [date]"" in amber)
+- Manage Subscription → Stripe Customer Portal: update payment, view invoices, cancel
+- Cancellation takes effect at period end — you keep access until then
+- Lifetime: lime ""Lifetime Member"" badge, no manage button, shirt promo code card with Copy button
+- After Stripe checkout redirect: page confirms payment automatically then shows success banner
+",markdown,,,,,,
+Lessons,1,2,Wearable Connections,text,300,true,,"# Lesson 02: Wearable Connections
+
+**Course:** Settings & Billing
+**Module:** Settings
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+CentenarianOS can pull health data automatically from wearable devices, or you can import it manually via CSV. The Wearable Connections page manages both. This lesson covers every provider, what each one syncs, and how to connect and disconnect them.
+
+---
+
+### Navigating to Wearable Connections
+
+Click **Settings** → **Wearables** in the dashboard sidebar. The page is at `/dashboard/settings/wearables`.
+
+---
+
+### Two Types of Providers
+
+The page shows seven provider cards, split into two types:
+
+**OAuth providers** — connect once and data syncs automatically on a schedule. You authenticate with the provider's own login.
+
+**CSV providers** — no persistent connection. You export data from the source app or device, then import the CSV file manually.
+
+---
+
+### OAuth Providers (Auto-Sync)
+
+**Oura Ring**
+Syncs sleep, activity, and readiness scores. Connect using your Oura account credentials.
+
+**WHOOP**
+Syncs recovery scores, strain, and sleep performance. Connect using your WHOOP account.
+
+**Garmin**
+Syncs steps, sleep, heart rate, and stress. Connect using your Garmin Connect account.
+
+**Connecting an OAuth Provider:**
+Click **Connect** on the provider card. You're redirected to that provider's authorization page — log in with your account there and grant CentenarianOS read access. After authorization, you're redirected back to `/dashboard/settings/wearables?connected={provider}` and a green success banner appears.
+
+Once connected, each card shows:
+- A green **Connected** badge with a checkmark
+- **Last synced: [date/time]** — when data was last pulled
+- A sync error message (in red) if the last sync attempt failed
+
+**Syncing Manually:**
+Click **Sync** (teal button) on any connected card to trigger an immediate data pull instead of waiting for the automatic schedule. A spinner shows while syncing.
+
+**Disconnecting:**
+Click **Disconnect** (red button). A confirmation dialog appears:
+
+> ""Disconnect [provider]? Your synced health data will be preserved.""
+
+Your historical data from that provider stays in your health metrics — disconnecting only stops future syncs. You can reconnect at any time.
+
+---
+
+### CSV Providers (Manual Import)
+
+**Apple Health**
+Export data from the iPhone Health app and import via CSV.
+
+**Google Health**
+Export from Google Health on Android and import via CSV.
+
+**InBody**
+Body composition scan results — import the InBody-exported CSV.
+
+**Hume Health**
+Emotional wellness data — import via Hume's CSV export.
+
+**Importing CSV Data:**
+Click **Import CSV** on any CSV provider card. This links to `/dashboard/metrics/import?source={provider}` — the health metrics import page, pre-filtered to that provider's format.
+
+The import page accepts the provider's standard CSV format and maps columns to your health metrics automatically. Multiple imports from the same provider are additive — they add new data points without overwriting existing ones.
+
+---
+
+### Status Messages
+
+After connecting or disconnecting, a flash banner appears at the top of the page:
+- **Green** (success): ""Connected"" or disconnect confirmed
+- **Red** (error): Describes what went wrong
+
+Banners auto-dismiss after 5 seconds.
+
+---
+
+### Bulk Import
+
+At the bottom of the Wearables page, a gray callout box:
+
+> ""Bulk Import — Have historical data from any source? Import it via CSV to backfill your health metrics. → Go to Import""
+
+The **Go to Import** link opens `/dashboard/metrics/import` without a pre-selected source — useful if you have data from a device not listed as a provider.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/settings/wearables — show the full page]
+
+> [SCREENSHOT: Wearables page — callouts: OAuth providers section (Oura, WHOOP, Garmin) with Connect buttons, CSV providers section (Apple Health, Google Health, InBody, Hume) with Import CSV buttons]
+
+> [SCREEN: Click ""Connect"" on Oura — redirect to Oura authorization page]
+
+> [SCREENSHOT: Oura authorization page — callout: ""Authorize CentenarianOS to read your data""]
+
+> [SCREEN: Authorize — redirect back — green success banner — Oura card now shows Connected badge]
+
+> [SCREENSHOT: Connected Oura card — callouts: Green ""Connected"" badge, ""Last synced: [timestamp]"", Sync button (teal), Disconnect button (red)]
+
+> [SCREEN: Click ""Sync"" — spinner appears — sync completes]
+
+> [SCREEN: Click ""Disconnect"" — confirmation dialog appears]
+
+> [SCREENSHOT: Disconnect dialog — callout: ""Your synced health data will be preserved"" — reassurance message]
+
+> [SCREEN: Show a CSV provider card — click ""Import CSV"" — show the import page redirect]
+
+> [SCREENSHOT: CSV provider card — callout: ""Import CSV"" button, ""Import via CSV export from iPhone"" description]
+
+> [SCREEN: Scroll to Bulk Import callout at the bottom]
+
+> [SCREENSHOT: Bulk import callout — callout: ""Go to Import"" link]
+
+> [SCREEN: End on the wearables page — end lesson]
+
+---
+
+## Key Takeaways
+
+- Wearables page at /dashboard/settings/wearables — 7 providers in two types
+- OAuth (Oura, WHOOP, Garmin): Connect → authorize on provider's site → auto-sync; Sync button for manual trigger; Disconnect preserves historical data
+- CSV (Apple Health, Google Health, InBody, Hume Health): Import CSV → opens metrics import page pre-filtered to that provider
+- Connected cards show: green badge, last synced timestamp, and sync errors in red
+- Disconnect dialog confirms data is preserved before removing the connection
+- Bulk Import callout at the bottom links to /dashboard/metrics/import for unlisted sources
+",markdown,,,,,,
+Lessons,1,3,Upgrading and Canceling,text,300,true,,"# Lesson 03: Upgrading and Canceling
+
+**Course:** Settings & Billing
+**Module:** Billing
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+This lesson covers two billing transitions: upgrading from Monthly to Lifetime, and canceling a Monthly subscription. Both are handled through Stripe — either the checkout flow or the Customer Portal.
+
+---
+
+### Upgrading to Lifetime
+
+Lifetime membership is a one-time $100 payment that replaces your monthly subscription permanently.
+
+**How to upgrade:**
+
+1. Navigate to `/dashboard/billing`
+2. In the dark **Upgrade to Lifetime** card, click **View Lifetime Plan**
+3. You're taken to `/pricing` where the Lifetime card is highlighted
+4. Click **Get Lifetime Access** on the Lifetime plan
+5. Stripe Checkout opens — pay $100 one-time
+6. After payment, Stripe redirects you to `/dashboard/billing?success=true`
+7. The page confirms the payment (""Confirming your payment…"") and your plan badge updates to **""Lifetime Member""** (lime green)
+
+Your monthly subscription ends immediately when the Lifetime payment is processed. You won't be charged again for the monthly plan.
+
+**What you get with Lifetime:**
+- Everything included in Monthly
+- No recurring fees — ever
+- All future features as they're added
+- A unique free shirt promo code for AwesomeWebStore.com (appears on the Billing page after payment — may take a moment to generate)
+
+---
+
+### Using the Shirt Promo Code
+
+After upgrading to Lifetime, a lime-green card appears on your Billing page with a unique code. Copy it and use it at checkout on AwesomeWebStore.com to claim your free CentenarianOS shirt.
+
+The code is generated once and stored permanently on your account — it won't expire. If you see ""Shirt Promo Code Pending,"" refresh the page after a few seconds.
+
+---
+
+### Canceling a Monthly Subscription
+
+You can cancel at any time. Cancellations are processed through the Stripe Customer Portal.
+
+**How to cancel:**
+
+1. Navigate to `/dashboard/billing`
+2. Click **Manage Subscription**
+3. In the Stripe Customer Portal, find the cancellation option
+4. Confirm cancellation
+
+After canceling:
+- Your plan status on the Billing page changes from ""Renews on [date]"" to **""Cancels on [date]""** (shown in amber)
+- You keep **full access** to all features until the end of your current billing period
+- On the cancellation date, your account downgrades to free — blog and recipes access only
+
+**You won't be charged again** once you cancel. The final charge was the last monthly payment you already made.
+
+---
+
+### Resubscribing After Cancellation
+
+If you cancel and later want to come back:
+- Navigate to `/pricing` and click **Start Monthly**
+- Complete the Stripe Checkout flow
+- Access is restored immediately upon payment
+
+Your data (all logged health metrics, meals, trips, tasks, etc.) is preserved — canceling doesn't delete anything. Your history is waiting when you return.
+
+---
+
+### What Happens to Your Data on Downgrade?
+
+When your subscription ends and you downgrade to free:
+- All your logged data remains in your account
+- You lose access to paid dashboard routes (Planner, Fuel, Engine, etc.)
+- Your data is still there — it's just inaccessible until you resubscribe
+
+Nothing is deleted. CentenarianOS doesn't purge data on downgrade.
+
+---
+
+### Refund Policy
+
+The platform's policy is **no refunds**. Monthly fees are not transferable to Lifetime membership. This is shown in the policy footer on both the Billing page and the Pricing page.
+
+If you have a billing issue not covered by self-service (duplicate charges, technical errors), contact support at support@centenarianos.com.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/billing — show the Lifetime upgrade CTA on a monthly plan]
+
+> [SCREENSHOT: Billing page — callout: Dark ""Upgrade to Lifetime for $100"" card, ""View Lifetime Plan"" button]
+
+> [SCREEN: Click ""View Lifetime Plan"" → /pricing — show Lifetime card]
+
+> [SCREEN: Click ""Get Lifetime Access"" → Stripe Checkout]
+
+> [SCREENSHOT: Stripe Checkout for Lifetime — callout: ""$100 — one-time payment"" clearly shown]
+
+> [SCREEN: After payment — redirect back — ""Confirming your payment…"" → success banner]
+
+> [SCREENSHOT: Billing page post-upgrade — callouts: ""Lifetime Member"" in lime, shirt promo code card]
+
+> [SCREEN: Navigate to Manage Subscription → Stripe portal → show cancel option]
+
+> [SCREENSHOT: Stripe Customer Portal — callout: Cancel subscription option]
+
+> [SCREEN: After canceling — redirect back to billing — show ""Cancels on [date]"" in amber]
+
+> [SCREENSHOT: Billing page after cancellation — callout: Amber ""Cancels on [date]"" text]
+
+> [SCREEN: End on the billing page — end lesson and end course]
+
+---
+
+## Key Takeaways
+
+- Upgrade to Lifetime: Billing page → ""View Lifetime Plan"" → Pricing → ""Get Lifetime Access"" → $100 Stripe checkout → lifetime badge + shirt promo code
+- Monthly ends immediately when Lifetime payment processes — no prorated refund
+- Cancel monthly: Billing → Manage Subscription → Stripe Customer Portal → cancel; access continues until period-end date
+- After cancellation: ""Cancels on [date]"" in amber on billing page; full access until that date, then downgrade to free
+- Resubscribing after cancellation: /pricing → Start Monthly → immediate access restoration
+- Data is never deleted on downgrade — history preserved, just inaccessible until resubscription
+- No refunds — contact support@centenarianos.com for billing errors
+",markdown,,,,,,

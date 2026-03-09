@@ -1,0 +1,54 @@
+<!-- Supabase Auth Template: Confirm Signup -->
+<!-- Paste into: Supabase Dashboard → Authentication → Email Templates → Confirm signup -->
+<!-- Subject: Confirm Your Email -->
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1);">
+          <tr>
+            <td style="background:linear-gradient(135deg,#c026d3,#0284c7);padding:32px 40px;">
+              <p style="margin:0;color:#fff;font-size:22px;font-weight:700;">CentenarianOS</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px 40px 0;">
+              <h1 style="margin:0;font-size:20px;font-weight:700;color:#111827;">Welcome to CentenarianOS</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 40px 24px;color:#374151;font-size:15px;line-height:1.6;">
+              <p style="margin:0 0 16px;">Thanks for signing up! Please confirm your email address to get started.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 40px 32px;">
+              <a href="{{ .ConfirmationURL }}"
+                 style="display:inline-block;padding:14px 28px;background:#c026d3;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">
+                Confirm Email Address
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 40px 32px;color:#9ca3af;font-size:13px;">
+              Or copy and paste this link into your browser:<br>
+              <a href="{{ .ConfirmationURL }}" style="color:#0284c7;word-break:break-all;">{{ .ConfirmationURL }}</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 40px;border-top:1px solid #f3f4f6;color:#9ca3af;font-size:12px;">
+              If you did not create an account, you can safely ignore this email.
+              <br>&copy; 2025 CentenarianOS. All rights reserved.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

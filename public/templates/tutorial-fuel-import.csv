@@ -1,0 +1,1517 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+Lessons,1,1,Welcome to the Fuel Module,text,300,true,,"# Lesson 01: Welcome to the Fuel Module
+
+**Course:** Mastering Your Fuel
+**Module:** Getting Started
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** linear → lesson 02 next
+
+---
+
+## Narrator Script
+
+The Fuel module is your personal nutrition operating system. It tracks what you eat, how much it costs, and most importantly — how nutrient-dense your diet is. It's not a calorie counter. It's a food quality tracker built around a simple but powerful framework: the NCV score.
+
+In this welcome lesson, we'll take a quick tour of every section in the module so you know what's available before you start building anything.
+
+---
+
+### The Philosophy
+
+Most nutrition apps focus on hitting macros or staying under a calorie budget. CentenarianOS takes a different angle: it asks how nutrient-dense your food is relative to its calorie load.
+
+The idea comes from longevity research. People who live well into their 90s and beyond tend to eat food that delivers a lot of nutritional value for relatively few calories — vegetables, legumes, whole grains, lean proteins. The Fuel module is designed to make that kind of eating easy to track and understand over time.
+
+You'll hear more about the NCV framework in the next lesson. For now, let's walk the map.
+
+---
+
+### Module Overview
+
+Navigate to `/dashboard/fuel`. You'll see the Fuel dashboard — a summary page with live stats and navigation cards for each sub-module.
+
+**Ingredient Library** (`/dashboard/fuel/ingredients`) — Your personal database of foods and their nutritional data. Every ingredient you use in a protocol must first exist here. You can add ingredients manually, look them up in the USDA database, or scan a barcode using Open Food Facts data.
+
+**Protocols** (`/dashboard/fuel/protocols`) — Your personal meal templates. A protocol is like a recipe you use repeatedly: a smoothie, a standard lunch bowl, a favorite dinner. Each protocol lists its ingredients, calculates nutrition totals automatically, and assigns an NCV score.
+
+**Meal Log** (`/dashboard/fuel/meals`) — Your daily eating record. Log what you ate and when — either by selecting a protocol you made, or logging a restaurant meal with location details. The meal log is where your daily nutrition story gets written.
+
+**Inventory** (`/dashboard/fuel/inventory`) — Track how much of each ingredient you have on hand. When you log a meal using a protocol, the system automatically subtracts the ingredients used. When you're running low on something, you'll get an alert.
+
+**Meal Prep** (`/dashboard/fuel/meal-prep`) — For batch cooks. If you make a large pot of soup on Sunday for the whole week, log it here as a batch. Track how many servings you made and how many you have left.
+
+**Recipe Ideas** (`/dashboard/fuel/recipe-ideas`) — An AI-powered feature that looks at your current inventory and suggests three recipes you could make right now using what you have. Powered by Gemini, optimized for longevity nutrition.
+
+---
+
+### How It All Connects
+
+Here's the typical workflow:
+
+1. Add your staple ingredients to the **Ingredient Library**
+2. Create a **Protocol** for each meal you eat regularly
+3. Set up **Inventory** for the ingredients you stock
+4. Each week, **Log your meals** — protocol-based for home cooking, restaurant entries for eating out
+5. When you batch cook, record it in **Meal Prep**
+6. When you want inspiration, hit **Recipe Ideas**
+
+Over time, the Fuel dashboard shows you your average NCV score, how many meals you've logged, your weekly food cost, and trends that tell you whether your diet is improving.
+
+---
+
+### Who This Is For
+
+The Fuel module works best for people who cook at home at least a few times a week and want more clarity on food quality — not just calories. If you eat out exclusively, the restaurant logging feature still lets you keep a record, though the nutrition depth is reduced.
+
+Ready to understand the scoring system that ties everything together? The next lesson covers the NCV framework — and it will make everything you build here more meaningful.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/fuel — show the full dashboard with stats cards and module navigation]
+
+> [SCREENSHOT: Full fuel dashboard with callouts labeling: Ingredient Library card, Protocols card, Meal Log card, Inventory card, Meal Prep card, Recipe Ideas card]
+
+> [SCREEN: Click through each nav card briefly — show the empty state of each sub-page (about 3 seconds each)]
+
+> [SCREEN: Return to /dashboard/fuel — pause on the stats cards at the top (Meals logged, Week cost, Active batches, Protocols)]
+
+> [SCREENSHOT: Stats cards area with labels pointing to each metric]
+
+> [SCREEN: End on the dashboard home — transition to ""Next: The NCV Framework""]
+
+---
+
+## Key Takeaways
+
+- Fuel tracks food quality (NCV score), not just calories — the focus is nutrient density
+- Six sub-modules: Ingredient Library, Protocols, Meal Log, Inventory, Meal Prep, Recipe Ideas
+- The workflow: add ingredients → create protocols → log meals → track inventory → batch cook
+- The NCV framework is the scoring system that connects it all — covered in the next lesson
+",markdown,,,,,,
+Lessons,1,2,The NCV Framework,text,360,true,,"# Lesson 02: The NCV Framework
+
+**Course:** Mastering Your Fuel
+**Module:** Getting Started
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** linear → CYOA crossroads after this lesson
+
+---
+
+## Narrator Script
+
+Before you start adding ingredients and building protocols, you need to understand the NCV framework. It's a three-tier scoring system that classifies food by how much nutritional value it delivers per calorie — and it's the foundation of everything the Fuel module shows you.
+
+---
+
+### What NCV Stands For
+
+NCV stands for **Nutrient vs. Calorie Value**.
+
+The name says it all: it's a ratio of nutritional benefit to caloric cost. Food that packs a lot of vitamins, minerals, fiber, and protein into a relatively small calorie load scores high. Food that delivers primarily calories with little nutritional complexity scores low.
+
+This is sometimes called ""nutrient density"" in nutrition science. The NCV framework translates that concept into a simple three-level color system you can apply to every ingredient and meal.
+
+---
+
+### The Three Tiers
+
+**Green — High nutrient density**
+
+These are foods where the nutritional value is high relative to the caloric load. Think leafy greens, cruciferous vegetables, berries, legumes, fish, eggs, whole grains, nuts, and seeds. When you eat Green foods, you're getting a lot for each calorie.
+
+In the Fuel module, Green-scored ingredients and protocols are the target. A meal with a high proportion of Green ingredients gets a Green NCV score overall.
+
+**Yellow — Moderate nutrient density**
+
+These foods provide a reasonable mix of nutrition and calories. Starchy vegetables, whole grain bread, lean meats, dairy products, and many whole foods fall here. They're not as nutrient-dense per calorie as Green foods, but they're a normal, healthy part of eating.
+
+A diet with lots of Yellow and some Green is perfectly healthy — Yellow foods are not a warning, just a marker that the item is less nutrient-dense than Green-tier foods.
+
+**Red — Low nutrient density / high caloric load**
+
+Red foods are calorie-dense with relatively low nutritional return: refined sugars, processed snacks, white flour products, fried foods, candy, and most fast food. Eating Red foods occasionally is fine — the concern is when they dominate your intake.
+
+The Fuel module doesn't restrict or block Red foods. It just makes them visible so you can make informed decisions. If you're eating mostly Green and Yellow with occasional Red, you're doing well.
+
+---
+
+### How NCV Scores Are Calculated
+
+When you add an ingredient to your library, you assign it a Green, Yellow, or Red score based on its nutritional profile. The system doesn't calculate this automatically — you make the call based on your understanding of the food.
+
+A rough guide:
+- If the food is mostly vegetables, legumes, fruit, fish, or eggs → **Green**
+- If it's a whole grain product, lean protein, dairy, or starchy vegetable → **Yellow**
+- If it's a processed snack, sugar, refined grain, or fried food → **Red**
+
+When you create a protocol (a meal template), the system calculates an overall NCV score based on the calorie-weighted average of all the ingredients in that meal. A smoothie with mostly Green ingredients gets a Green protocol score. A pasta dish with a red-scored sauce and a green salad might average out to Yellow.
+
+---
+
+### Why NCV Instead of Macros?
+
+Macro tracking (calories, protein, carbs, fat) is useful but incomplete. Two foods can have identical macros and wildly different health impacts because of what the numbers don't capture: micronutrients, fiber, phytonutrients, inflammatory load.
+
+NCV is a simplification, but it points in the right direction. The goal isn't perfection — it's a system that makes ""mostly nutrient-dense food"" the path of least resistance. If your weekly Fuel dashboard shows a consistently Green NCV average, you're eating well, regardless of whether you hit some macro target.
+
+Longevity research consistently shows that diet quality matters more than any specific nutrient ratio. NCV is built to track quality.
+
+---
+
+### NCV in Practice
+
+Once you're up and running, you'll see NCV scores everywhere in the module:
+- Ingredient cards show a Green, Yellow, or Red badge
+- Protocol cards show the overall NCV score for that meal
+- The Fuel dashboard shows your average NCV score for the week
+
+Over time, you can track whether your diet is trending greener. Most people find that once they start seeing the score, they gradually shift their ingredient choices without any conscious effort — the feedback loop does the work.
+
+---
+
+### After This Lesson: Choose Your Path
+
+You now have the context to build meaningfully in the Fuel module. From here, the course opens up. Choose the topic that matches where you want to start:
+
+- **Build my ingredient library** — Before anything else, you need ingredients. Start here if you're new.
+- **Create a protocol (meal template)** — If you already have ingredients, build your first meal template.
+- **Log a meal** — Jump straight to meal logging if you want to see the workflow end-to-end.
+- **Manage inventory and meal prep** — For batch cookers and grocery planners.
+- **Try AI recipe ideas** — See what Gemini suggests based on your current inventory.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/fuel/ingredients — show the ingredient list with Green/Yellow/Red NCV badges visible on several cards]
+
+> [SCREENSHOT: Three ingredient cards side by side — one Green (e.g., spinach), one Yellow (e.g., brown rice), one Red (e.g., white sugar) — callouts labeling each tier]
+
+> [SCREEN: Click on a Green ingredient — show the NCV score badge clearly]
+
+> [SCREEN: Navigate to /dashboard/fuel/protocols — show protocol cards with NCV scores]
+
+> [SCREENSHOT: Protocol card with NCV score badge and callout explaining ""Calorie-weighted average of all ingredients""]
+
+> [SCREEN: Navigate back to /dashboard/fuel — show the weekly NCV average stat card]
+
+> [SCREENSHOT: Dashboard stats area with callout on the ""Avg NCV"" or similar metric]
+
+> [SCREEN: Pause on the NCV section — show the CYOA crossroads menu appearing — end lesson]
+
+---
+
+## Key Takeaways
+
+- NCV = Nutrient vs. Calorie Value — a measure of food quality, not just quantity
+- **Green** = high nutrient density (vegetables, legumes, fish, eggs, whole foods)
+- **Yellow** = moderate (lean proteins, dairy, starchy vegetables, whole grains)
+- **Red** = low nutrient density / calorie-dense (processed foods, sugar, refined grains)
+- You assign NCV scores when adding ingredients; protocols calculate a weighted average automatically
+- The goal: weekly dashboard showing a consistently Green average NCV score
+- No foods are restricted — NCV makes diet quality visible so you can make informed choices
+",markdown,,,,,,
+Lessons,1,3,Building Your Ingredient Library,text,360,true,,"# Lesson 03: Building Your Ingredient Library
+
+**Course:** Mastering Your Fuel
+**Module:** Ingredients
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Your ingredient library is the foundation of the entire Fuel module. Every protocol you write, every meal you log with nutrition data, every inventory item you track — all of it references ingredients from this library.
+
+Getting a solid ingredient library set up is the most time-intensive part of getting started. But once you have your staples in place, you'll rarely need to add new ingredients — you just use them.
+
+---
+
+### Navigating to the Ingredient Library
+
+Go to `/dashboard/fuel/ingredients`. You'll see your ingredient list — cards or a list view of everything you've added so far, each with its NCV badge.
+
+Click **Add Ingredient** to open the ingredient form.
+
+---
+
+### The Ingredient Form
+
+**Name** — What you call this ingredient. Be specific enough to be useful. ""Chicken"" is okay, but ""Chicken breast, boneless skinless"" is better — it makes the nutritional data more accurate and the protocol ingredient lists clearer.
+
+**NCV score** — Green, Yellow, or Red. This is your judgment call based on the NCV framework from the previous lesson. For most whole foods, this is straightforward: spinach is Green, brown rice is Yellow, white bread is Red.
+
+**Serving unit** — Choose the unit you'll use when measuring this ingredient: grams, milliliters, oz, lb, kg, cup, tablespoon, teaspoon, or ""whole"" (for things like eggs or apples). Pick the unit that matches how you actually measure this ingredient when you cook.
+
+**Calories per 100g** — Calories per 100 grams. This is the standard nutrition reporting unit. You can find it on any food label or nutrition database.
+
+**Macros (optional but useful):**
+- Protein per 100g
+- Carbs per 100g
+- Fat per 100g
+- Fiber per 100g
+
+You don't have to fill in all macros. If you only care about NCV scores and not detailed macro breakdowns, you can add just calories and skip the rest.
+
+**Cost per unit** — How much this ingredient costs per unit (matching the serving unit you chose). For example: if your serving unit is ""cup"" and a bag of oats costs $4.50 and yields about 15 cups, your cost per cup is $0.30. This feeds the per-meal cost calculation in protocols.
+
+**Brand, store, vendor notes** (all optional) — Track where you buy an ingredient, what brand you prefer, or notes like ""organic preferred"" or ""buy in bulk at Costco."" This is reference data for your grocery habits.
+
+---
+
+### Looking Up Nutrition Data
+
+You have two options for finding accurate nutritional data:
+
+**USDA database search** — The ingredient form includes a search field for the USDA FoodData Central database. Type the ingredient name and select from the results. The system pre-fills the calorie and macro fields automatically. This is the fastest way to get accurate data for whole foods.
+
+**Open Food Facts (barcode)** — For packaged products, you can enter a barcode number and pull nutrition data from the Open Food Facts database. Useful for brand-name items where the exact nutrition varies by product.
+
+If neither database has what you need, type the numbers in manually from the package label or a trusted nutrition source.
+
+---
+
+### Starting Your Library
+
+Rather than adding every ingredient you've ever used, start with what you actually eat regularly. A practical approach:
+
+1. Think of 5–10 meals you eat most often
+2. List the main ingredients in each
+3. Add those to your library first
+
+For a typical home cook, the core library might be 30–50 ingredients. That's enough to build protocols for your standard meals, and it takes 20–30 minutes to set up.
+
+You can always add more later. The library grows naturally as you build new protocols.
+
+---
+
+### Editing and Organizing
+
+To edit an ingredient, click the **Edit** button on its card. You can update any field — NCV score, cost, nutrition data, notes.
+
+To delete an ingredient, click **Delete**. Note: if the ingredient is used in any protocols, deleting it will remove it from those protocols. Be careful with deletions if you have active protocols.
+
+You can filter your library by NCV category using the filter chips at the top: All / Green / Yellow / Red. This is useful for a quick audit of how your ingredient mix looks across the three tiers.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/fuel/ingredients — show the ingredient list with NCV filter chips at the top]
+
+> [SCREEN: Click ""Add Ingredient"" — form opens]
+
+> [SCREENSHOT: Full ingredient form with all fields labeled: Name, NCV score, Unit, Calories, Protein, Carbs, Fat, Fiber, Cost per unit, Brand, Store, Notes]
+
+> [SCREEN: Type ""Chicken breast"" in the Name field]
+
+> [SCREEN: Click the NCV dropdown — show the three options (Green / Yellow / Red) — select ""Green""]
+
+> [SCREEN: Click the USDA search field — type ""chicken breast"" — show search results appearing]
+
+> [SCREEN: Click on a result — show the calorie and macro fields auto-populate]
+
+> [SCREEN: Fill in the cost field: ""$0.45"" per oz (as an example)]
+
+> [SCREEN: Click Save — ingredient card appears in the library with a Green badge]
+
+> [SCREENSHOT: Chicken breast ingredient card with callouts: NCV badge (Green), Calories/100g, Protein, Cost]
+
+> [SCREEN: Add a second ingredient — this time use the barcode field (type a barcode number) — show it auto-filling from Open Food Facts]
+
+> [SCREEN: Click the ""Green"" filter chip — show library filtering to only Green ingredients]
+
+> [SCREEN: Click the ""Red"" filter chip — show Red ingredients]
+
+> [SCREEN: Click ""All"" to reset — end lesson]
+
+---
+
+## Key Takeaways
+
+- Every ingredient needs: Name, NCV score, serving unit, and calories — macros and cost are optional but useful
+- Use USDA database search to auto-fill nutrition data for most whole foods
+- Use the barcode field for packaged products (Open Food Facts)
+- Start with the ingredients in your 5–10 most common meals — add more as you build protocols
+- Cost data feeds the per-meal cost calculation in protocols
+- Filter by NCV tier (Green/Yellow/Red) to audit your ingredient library at a glance
+",markdown,,,,,,
+Lessons,1,4,Creating a Protocol,text,360,true,,"# Lesson 04: Creating a Protocol
+
+**Course:** Mastering Your Fuel
+**Module:** Protocols
+**Duration:** ~7 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+A protocol is a meal template. If you make the same smoothie every morning, the same grain bowl for lunch most days, or rotate through a handful of go-to dinners — each of those is a protocol.
+
+Protocols do three things:
+1. They let you log a meal in seconds by just selecting the protocol instead of listing every ingredient
+2. They automatically calculate the nutrition totals and NCV score for that meal
+3. They feed into your inventory tracking, decrementing ingredient stock each time you log the meal
+
+Let's build one from scratch.
+
+---
+
+### Navigating to Protocols
+
+Go to `/dashboard/fuel/protocols`. You'll see your protocol cards, or an empty state if this is your first one.
+
+Click **New Protocol** to open the protocol builder.
+
+---
+
+### Protocol Name and Metadata
+
+**Name** — What you call this meal. Something descriptive and personal: ""Morning green smoothie"", ""Standard lunch bowl"", ""Tuesday salmon"". You'll be selecting this by name when you log meals, so make it recognizable.
+
+**Description** (optional) — A short description of the meal. Useful if you ever want to publish it as a public recipe later — give it a few words of context.
+
+**Servings** — How many servings this protocol makes. If your smoothie makes one serving, put 1. If your soup batch makes four portions, put 4. The nutrition and cost totals are shown per serving based on this number.
+
+**Prep time / Cook time** (optional) — In minutes. Not used in calculations, but useful for your own reference.
+
+---
+
+### Building the Ingredient List
+
+This is where the protocol gets its nutritional content. Click **Add Ingredient** to start.
+
+A search field appears — type the name of an ingredient from your library and select it. Then specify:
+
+**Quantity** — How much of this ingredient goes into the recipe. For example: 100 (if your unit is grams), 1.5 (if your unit is cups), 2 (if your unit is ""whole"" for eggs).
+
+**Unit** — The unit for this ingredient in this recipe. It defaults to the unit you set when you added the ingredient to your library, but you can change it here if needed.
+
+Once you add the ingredient, the form shows its contribution to the total: calories, protein, carbs, fat, and how much it adds to the cost.
+
+Add as many ingredients as the recipe needs. The totals update live as you add each one.
+
+---
+
+### Understanding the NCV Score
+
+As you build the ingredient list, watch the NCV score indicator in the form. It calculates the overall score for the protocol based on a calorie-weighted average of all ingredient NCV scores.
+
+If most of your ingredients are Green and the calories are primarily from Green-scored items, the protocol scores Green. Mix in significant Yellow or Red ingredients and the score shifts accordingly.
+
+The NCV score is a useful signal for building meals. If a protocol you thought was healthy shows up as Yellow, look at which ingredients are pulling the score down — often it's a sauce, a dressing, or a grain that can be swapped for a higher-quality version.
+
+---
+
+### Saving the Protocol
+
+Once your ingredient list is complete, click **Save**. The protocol card appears in your library with:
+- Name and description
+- NCV badge (Green / Yellow / Red)
+- Total calories per serving
+- Total protein per serving
+- Estimated cost per serving
+
+All of these are calculated automatically from the ingredients you added.
+
+---
+
+### Editing Protocols
+
+To update a protocol, click **Edit** on its card. The builder reopens with all your current ingredients pre-filled. You can add, remove, or adjust quantities.
+
+If the cost of an ingredient changes (you buy a different brand, or prices shift), update the cost in your ingredient library — the protocol costs will recalculate automatically the next time you open them.
+
+---
+
+### Protocols vs. Public Recipes
+
+A protocol is private — it's for your personal meal logging. It doesn't have cooking instructions, just an ingredient list with quantities.
+
+If you want to share a protocol with others, you can publish it as a public recipe. The publish feature converts your protocol into a full recipe that can have instructions, a cover photo, tags, and a visibility setting (public, authenticated-only, etc.). We cover that in Lesson 11.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/fuel/protocols — show existing protocol cards or empty state]
+
+> [SCREEN: Click ""New Protocol"" — protocol builder modal opens]
+
+> [SCREENSHOT: Full protocol form with all fields labeled: Name, Description, Servings, Prep Time, Cook Time, Ingredient list area]
+
+> [SCREEN: Type ""Morning Green Smoothie"" in the Name field, ""1"" in Servings]
+
+> [SCREEN: Click ""Add Ingredient"" — search field appears — type ""spinach"" — select from library]
+
+> [SCREEN: Enter quantity: 60, unit: grams — show the calories and NCV contribution appear]
+
+> [SCREEN: Add a second ingredient: ""Banana"", quantity: 1, unit: whole — show totals updating]
+
+> [SCREEN: Add a third ingredient: ""Greek yogurt"", quantity: 150, unit: grams]
+
+> [SCREENSHOT: Ingredient list with three items — callouts: each ingredient's calorie contribution, NCV badge per ingredient, total at the bottom]
+
+> [SCREEN: Point to the NCV score indicator — show it displaying ""Green""]
+
+> [SCREEN: Click Save — protocol card appears in the list]
+
+> [SCREENSHOT: Protocol card with callouts: NCV badge (Green), Total calories, Protein, Cost per serving]
+
+> [SCREEN: Click Edit on the card — show the pre-filled form — add one more ingredient — save]
+
+> [SCREEN: End on the protocol card — end lesson]
+
+---
+
+## Key Takeaways
+
+- A protocol is a private meal template — ingredient list + quantities for a meal you eat regularly
+- Protocols auto-calculate nutrition totals and NCV score from the ingredients you add
+- Cost per serving is calculated from ingredient costs you entered in the library
+- The NCV score is a calorie-weighted average of all ingredient NCV tiers
+- Protocols are used when logging meals — select the protocol, and nutrition is auto-filled
+- To share with others, publish a protocol as a public recipe (Lesson 11)
+",markdown,,,,,,
+Lessons,1,5,Logging a Meal,text,300,true,,"# Lesson 05: Logging a Meal
+
+**Course:** Mastering Your Fuel
+**Module:** Meal Log
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+You've built your ingredient library and created your protocols. Now comes the daily habit that makes the Fuel module useful: logging what you eat.
+
+Meal logging in CentenarianOS is designed to be fast. If you're eating a protocol you already built, logging takes about fifteen seconds.
+
+---
+
+### Navigating to the Meal Log
+
+Go to `/dashboard/fuel/meals`. Your meals are grouped by date — today's meals at the top, older entries below. Each entry shows the protocol name, meal type, time, and a summary of calories and cost.
+
+Click **Log Meal** to add a new entry.
+
+---
+
+### The Meal Log Form
+
+**Date** — When you ate this meal. Defaults to today. Change it if you're logging something from yesterday.
+
+**Time** — What time you ate. Useful for tracking meal timing patterns over time.
+
+**Meal type** — Breakfast, Lunch, Dinner, or Snack. This categorizes the entry in your history and in analytics.
+
+**Protocol** — Select from your protocol library. Start typing the protocol name and pick it from the dropdown. Once selected, the form shows you the nutrition summary for that meal: calories, protein, NCV score, and estimated cost.
+
+That's it for the required fields. Click **Save** and the meal is logged.
+
+---
+
+### What Happens When You Log a Meal
+
+When you log a meal linked to a protocol, two things happen automatically:
+
+**1. Inventory is decremented.** Each ingredient in the protocol is subtracted from your inventory by the quantity used. If your smoothie protocol uses 60g of spinach and you have 240g in inventory, after logging the smoothie you'll have 180g remaining.
+
+If an ingredient is below its low-stock threshold after the deduction, it gets flagged on your dashboard.
+
+**2. Nutrition is recorded.** The meal log entry stores the nutrition data from the protocol at the time you logged it — even if you edit the protocol later, your historical logs reflect what you actually ate.
+
+---
+
+### Optional: Adding a Note
+
+The **Notes** field lets you add any extra context. Did you make a substitution? Eat only half a portion? Add a note so your log reflects reality. For example: ""Used almond milk instead of Greek yogurt"" or ""Half serving — not very hungry.""
+
+Notes don't affect the nutrition calculation — they're just your written record.
+
+---
+
+### Reviewing Your Meal History
+
+Back on the meal log page, your entries are grouped by date. Each day shows all meals logged for that day with a running total of calories at the bottom.
+
+Click any entry to view the full detail: protocol name, ingredients, nutrition breakdown, NCV score, and your note if you added one.
+
+From the detail view, you can edit the entry (change meal type, adjust notes) or delete it if you logged something in error.
+
+---
+
+### Logging Meals Without a Protocol
+
+What if you ate something you don't have a protocol for? You have two options:
+
+1. **Create a protocol first** — takes a few minutes but makes future logging faster if you'll eat it again
+2. **Log a restaurant meal** — if you ate out, the restaurant meal format is designed for that (covered in the next lesson)
+
+For home-cooked one-off meals that you don't plan to repeat, creating a quick protocol with just the main ingredients is still the best approach. The nutrition data will be more complete than skipping it.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/fuel/meals — show the meal log with grouped dates]
+
+> [SCREEN: Click ""Log Meal"" — form opens]
+
+> [SCREENSHOT: Full meal log form with all fields labeled: Date, Time, Meal type, Protocol selector, Notes]
+
+> [SCREEN: Click the Meal type dropdown — show the four options: Breakfast, Lunch, Dinner, Snack — select ""Breakfast""]
+
+> [SCREEN: Click the Protocol dropdown — type ""smoothie"" — show ""Morning Green Smoothie"" appearing — select it]
+
+> [SCREEN: Show the nutrition preview that appears: calories, protein, NCV score, cost]
+
+> [SCREENSHOT: Form with protocol selected — callout on the auto-populated nutrition summary below the protocol dropdown]
+
+> [SCREEN: Add a note: ""Added extra banana today""]
+
+> [SCREEN: Click Save — the meal appears in the log under today's date]
+
+> [SCREENSHOT: Meal log entry with callouts: Meal type, Protocol name, Time, Calories, NCV badge]
+
+> [SCREEN: Log a second meal — select ""Lunch"" — select a different protocol — save]
+
+> [SCREEN: Show both meals grouped under today with a calorie total for the day]
+
+> [SCREEN: Click on one meal entry — show the detail view]
+
+> [SCREENSHOT: Meal detail view showing protocol name, nutrition breakdown, NCV score, and note]
+
+---
+
+## Key Takeaways
+
+- Log a protocol-based meal: select Date, Meal type, Protocol → Save — takes about 15 seconds
+- Logging automatically decrements ingredient quantities from your inventory
+- Nutrition data is stored at log time — historical entries don't change if you edit the protocol later
+- Notes are free text — useful for substitutions, partial portions, or anything that doesn't fit the form
+- No protocol? Either create one first (recommended) or use the restaurant meal format (next lesson)
+",markdown,,,,,,
+Lessons,1,6,Logging a Restaurant Meal,text,300,true,,"# Lesson 06: Logging a Restaurant Meal
+
+**Course:** Mastering Your Fuel
+**Module:** Meal Log
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Not every meal happens in your kitchen. When you eat out, there's no protocol to select — you're eating someone else's food and you probably don't have exact nutrition data. The restaurant meal format is designed for this: it lets you keep a record of eating out without needing to build a protocol or enter detailed nutrition.
+
+---
+
+### When to Use Restaurant Logging
+
+Use the restaurant meal format any time you eat somewhere other than home:
+- Sit-down restaurants
+- Fast food
+- Coffee shop pastries
+- Food trucks
+- Work catering
+- Meals at a friend's or family member's house (if you didn't cook)
+
+The restaurant format is for capturing *that you ate out* and *where*, not for tracking precise nutrition. It keeps your meal log complete without requiring you to build a protocol for a meal you'll likely never repeat.
+
+---
+
+### Logging the Restaurant Meal
+
+Go to `/dashboard/fuel/meals` and click **Log Meal**. Toggle on the **Restaurant meal** switch (or check the ""Eating out"" option — it depends on how the form renders).
+
+When you enable restaurant mode, the Protocol selector disappears and is replaced with location fields:
+
+**Restaurant name** — The name of the place. ""Chipotle"", ""Le Bernardin"", ""Mom's kitchen"". Free text.
+
+**Address / City / State / Country** (all optional) — As much location detail as you want. City is usually enough for your own reference.
+
+**Website** (optional) — If you want to link to the restaurant for future reference.
+
+**Meal type** — Same as always: Breakfast, Lunch, Dinner, Snack.
+
+**Date and time** — When you ate.
+
+**Notes** — What you ordered, how it was, anything worth remembering. This is where most of the useful information goes for restaurant meals. For example: ""Grilled salmon, side salad, no dressing. Good portion size.""
+
+---
+
+### What Restaurant Meals Don't Do
+
+Restaurant meals don't:
+- Affect your inventory (nothing to decrement — you didn't cook from your ingredients)
+- Calculate precise nutrition totals (you can add a rough calorie estimate in notes, but there's no macro breakdown)
+- Contribute a calculated NCV score (the system records these as unscored)
+
+This means restaurant meals show up in your meal log count but don't affect your NCV average or precise calorie totals. That's intentional — partially estimated data would distort the metrics.
+
+You'll see your total meal log count on the dashboard, and you can filter to see only restaurant meals or only home-cooked meals. Over time, the ratio of home meals to restaurant meals is itself a useful signal.
+
+---
+
+### Editing and Reviewing Restaurant Meals
+
+Restaurant meals appear in your log just like protocol-based meals. They're marked with a restaurant icon so you can tell them apart at a glance.
+
+Click any restaurant meal entry to view or edit the details. You can update the location, notes, or meal type at any time.
+
+---
+
+### A Note on Nutrition Estimation
+
+Some users want more than just a restaurant name — they want a rough calorie estimate. The best approach is to add the estimate in your Notes field: ""~800 cal burger + fries, high fat, probably Red NCV"". That information is there for your reference without distorting the calculated metrics.
+
+If you eat at a specific restaurant frequently (a regular lunch spot, for example), you might create a rough protocol with approximate nutrition data for your usual order. It won't be perfectly accurate, but it'll be closer than nothing, and it keeps inventory and NCV scoring consistent.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/fuel/meals — show the meal log]
+
+> [SCREEN: Click ""Log Meal"" — form opens]
+
+> [SCREEN: Toggle on the ""Restaurant meal"" switch — show the form change: protocol selector disappears, location fields appear]
+
+> [SCREENSHOT: Restaurant meal form with callouts: Restaurant meal toggle, Restaurant name, City, State, Website, Notes — protocol selector is gone]
+
+> [SCREEN: Fill in: Restaurant name ""Nobu"", City ""New York"", State ""NY""]
+
+> [SCREEN: Select Meal type: ""Dinner""]
+
+> [SCREEN: Type in Notes: ""Omakase tasting menu. Light portions, mostly fish, excellent quality. Probably Green-Yellow NCV overall.""]
+
+> [SCREEN: Click Save — entry appears in the meal log with a restaurant icon]
+
+> [SCREENSHOT: Meal log with both a protocol-based meal and a restaurant meal — callout on the restaurant icon differentiating the two types]
+
+> [SCREEN: Click the restaurant entry — show the detail view with location info and notes visible]
+
+> [SCREEN: End on the detail view — end lesson]
+
+---
+
+## Key Takeaways
+
+- Restaurant meals skip the protocol selector — log by location and notes instead
+- Inventory is not affected by restaurant meals (nothing was cooked from your ingredients)
+- No NCV score or precise nutrition is calculated — restaurant meals log the *fact* of eating out, not the detail
+- Notes field is where the useful info goes: what you ordered, portion size, quality observations
+- Restaurant meals appear in your total meal count and are filterable in the log view
+- For a regular restaurant order, consider building a rough protocol for better nutrition tracking
+",markdown,,,,,,
+Lessons,1,7,Managing Inventory,text,360,true,,"# Lesson 07: Managing Inventory
+
+**Course:** Mastering Your Fuel
+**Module:** Inventory
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The inventory system tracks how much of each ingredient you have on hand. When you log a meal using a protocol, the ingredients used are automatically subtracted. When you restock, you add quantities back. Low-stock alerts tell you when something is running low before you run out mid-meal-prep.
+
+Used well, inventory makes the Fuel module feel like it's running your kitchen with you — not just after the fact.
+
+---
+
+### Navigating to Inventory
+
+Go to `/dashboard/fuel/inventory`. You'll see your inventory list — each item shows the ingredient name, current quantity, unit, and whether it's below the low-stock threshold.
+
+Low-stock items are flagged prominently — both in the inventory list and on the Fuel dashboard home page, where they appear in an alert panel at the top.
+
+---
+
+### Adding an Inventory Item
+
+Click **Add to Inventory** to create a new inventory entry.
+
+**Ingredient** — Select from your ingredient library. You must add the ingredient to your library first before you can track its inventory.
+
+**Quantity** — How much you currently have. For example: 500 (if your unit is grams), 2 (if your unit is ""whole"" for eggs × 12 = a dozen, or however you've set it up).
+
+**Unit** — Should match the unit you set in your ingredient library. The system typically pre-fills this.
+
+**Low stock threshold** — The quantity at which you want to be alerted. For example: if you set a threshold of 100g for spinach, you'll get a low-stock alert when you drop to 100g or below. Set this to a practical number — enough for at least one meal, so you have time to restock before you run out.
+
+Click **Save** and the item appears in your inventory.
+
+---
+
+### How Inventory Depletes
+
+Every time you log a meal that uses a protocol, the system subtracts each ingredient's quantity from your inventory automatically.
+
+Example: Your ""Morning Green Smoothie"" protocol uses 60g of spinach. Each time you log that smoothie as a meal, your spinach inventory goes down by 60g. After four smoothies (240g total), you're getting close to your threshold.
+
+This happens in the background — you don't have to think about it. Just log your meals normally and your inventory reflects reality.
+
+---
+
+### Restocking
+
+When you buy more of something, update the inventory:
+
+1. Find the item in your inventory list
+2. Click the **Restock** button (or the + icon)
+3. Enter how much you're adding
+4. Click Confirm
+
+The quantity updates immediately. The low-stock alert clears if the new quantity is above the threshold.
+
+You can also click **Edit** on any inventory item to adjust the quantity directly, update the threshold, or change any field.
+
+---
+
+### Manual Adjustments
+
+Sometimes inventory won't match reality — you used an ingredient in a meal you didn't log, you threw something away, or you added an ingredient manually that was already half-used.
+
+Use the **Edit** button to set the quantity to whatever it actually is. Inventory accuracy is only as good as your logging habits — if you log meals consistently, the automatic deductions will keep things mostly accurate with occasional manual corrections for outliers.
+
+---
+
+### Low Stock Alerts on the Dashboard
+
+The Fuel dashboard home page shows a **Low Stock** panel with any ingredients at or below their threshold. This is the first thing you see when you open the Fuel module — a quick scan before meal prep or grocery shopping.
+
+The list shows: ingredient name, current quantity, and threshold. Use it as your grocery list prompt: if spinach is flagged, add it to your shopping list.
+
+---
+
+### Inventory Threshold Tips
+
+Setting thresholds well makes the alerts useful instead of noisy:
+
+- Set the threshold to roughly two servings' worth. If one smoothie uses 60g of spinach, set the threshold at 120g — you'll get the alert with enough stock for one more meal, giving you time to buy more.
+- For items you use in large batches (like cooking oils), set a higher threshold so you don't run out mid-batch-cook.
+- For rarely-used specialty ingredients, a very low threshold (or none) avoids constant false alerts.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/fuel — show the Low Stock alerts panel on the dashboard (or show it empty with a note that alerts appear here)]
+
+> [SCREEN: Navigate to /dashboard/fuel/inventory — show the inventory list]
+
+> [SCREEN: Click ""Add to Inventory"" — form opens]
+
+> [SCREENSHOT: Inventory form with callouts: Ingredient selector, Quantity, Unit, Low stock threshold]
+
+> [SCREEN: Click the Ingredient dropdown — select ""Spinach"" from library]
+
+> [SCREEN: Enter Quantity: 400, Unit: grams auto-fills]
+
+> [SCREEN: Enter Low stock threshold: 120]
+
+> [SCREEN: Click Save — item appears in inventory list]
+
+> [SCREENSHOT: Inventory item card showing current quantity, unit, and threshold — callout on the threshold value]
+
+> [SCREEN: Click the Restock button on an item that's below threshold — enter quantity: 300 — confirm]
+
+> [SCREEN: Show the quantity updating and the low-stock alert clearing]
+
+> [SCREENSHOT: Before/after inventory restock — quantity updates from 80g to 380g, alert badge disappears]
+
+> [SCREEN: Navigate back to /dashboard/fuel — show the Low Stock panel (now empty or updated)]
+
+> [SCREEN: Click Edit on an inventory item — show the edit form — update the threshold — save]
+
+> [SCREEN: End on the inventory list — end lesson]
+
+---
+
+## Key Takeaways
+
+- Inventory tracks quantity on hand for each ingredient; depletes automatically when you log protocol-based meals
+- Low-stock alerts appear both in the inventory list and on the Fuel dashboard home
+- Set thresholds at roughly two servings' worth — enough to alert you before you actually run out
+- Restock by clicking the Restock button and entering the quantity added
+- Manually edit quantities when reality doesn't match the logged record
+- Inventory only depletes for protocol-based meals — restaurant meals don't affect it
+",markdown,,,,,,
+Lessons,1,8,Meal Prep Batches,text,360,true,,"# Lesson 08: Meal Prep Batches
+
+**Course:** Mastering Your Fuel
+**Module:** Meal Prep
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Meal prep is one of the most effective strategies for eating consistently well. Cook in bulk on Sunday, and healthy food is ready to grab for the rest of the week. The Meal Prep module tracks your batches — what you made, when, how many servings, and how many are left.
+
+---
+
+### What a Meal Prep Batch Is
+
+A meal prep batch ties a protocol to a specific cooking session. Instead of logging a single serving of your ""Chicken and Roasted Vegetables"" protocol, you record that you cooked eight servings on Sunday. The batch tracks how many servings remain. Each time you log a meal from that batch, the count goes down.
+
+This is different from logging individual meals. Batch tracking answers: *how much of this do I have left before I need to cook again?*
+
+---
+
+### Navigating to Meal Prep
+
+Go to `/dashboard/fuel/meal-prep`. You'll see your batches — active batches (still have servings remaining) and finished batches (empty or marked done).
+
+The Fuel dashboard also shows an **Active Batches** count so you can see at a glance how many prepared meals you have waiting.
+
+---
+
+### Starting a New Batch
+
+Click **New Batch**.
+
+**Protocol** — Which protocol did you cook? Select from your library. The batch is linked to that protocol, so its nutrition data (calories, NCV score, cost) applies to each serving.
+
+**Date made** — When you cooked it. Defaults to today.
+
+**Servings made** — How many portions did you make? This is the number you'll eat across the week. If you cooked a big pot of soup that yields 6 portions, enter 6.
+
+**Storage location** (optional) — Where it's stored: Fridge, Freezer, Pantry, Work fridge. Useful when you prep multiple batches and want to know where to look.
+
+**Notes** (optional) — Any variations from the standard protocol. ""Added extra garlic"", ""Used sweet potato instead of regular"", ""Portioned into meal prep containers.""
+
+Click **Save**. The batch appears as active with its servings count.
+
+---
+
+### Tracking Servings
+
+Each batch shows how many servings remain out of how many you made. When you eat a portion, you mark it:
+
+Click the **Consume Serving** button (or the − icon) on the batch card. The count goes down by one.
+
+When servings reach zero, the batch is automatically marked as finished. It moves from the Active view to the Finished view.
+
+You can also manually click **Mark as Finished** on a batch if you finished it, gave some away, or the batch went bad.
+
+---
+
+### The Relationship Between Batches and Meal Logs
+
+Meal prep batches and the meal log work together but are separate records:
+
+- The **batch** tracks how much food you have prepared
+- The **meal log** tracks what you ate and when
+
+When you log a meal from a batch, you're recording the consumption in your meal history. The batch tracking is separate — you update the serving count when you eat from it.
+
+This does mean two taps instead of one: mark a serving consumed in the batch, and log the meal in your meal log. Some users do both; others only do one or the other depending on which data they care about more.
+
+---
+
+### Filtering Active vs. Finished Batches
+
+Use the filter tabs at the top of the Meal Prep page:
+
+**Active** — Batches with servings remaining. This is your default view — what's in the fridge right now.
+
+**Finished** — Completed batches. Your prep history. Useful for seeing how often you batch-cook, which protocols you make most often, and roughly how long each batch lasts.
+
+---
+
+### Batch Size and Planning
+
+How big should your batches be? A useful rule of thumb: prep enough for 3–5 days of a given meal. More than that risks food going bad before you eat it; less than that defeats the purpose of batch cooking.
+
+For most people, a Sunday prep session with 2–3 batches (lunch, dinner, snacks) covers a full week. The Fuel dashboard's Active Batches count helps you know whether you're running low on prepared food before the week ends.
+
+---
+
+### A Practical Workflow
+
+Here's a typical batch-cooking weekend workflow in CentenarianOS:
+
+1. Check **Inventory** for low stock — go shopping if needed
+2. Check **Recipe Ideas** for inspiration from what you have
+3. Cook 2–3 protocols in bulk
+4. Create a **New Batch** for each one, entering servings made
+5. Throughout the week: mark servings consumed as you eat
+6. Log individual meals in the **Meal Log** if you want detailed nutrition tracking
+7. Repeat next weekend
+
+Once the habit is set, steps 4–5 take about two minutes per batch.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/fuel — show the Active Batches stat card (e.g., ""2 active batches"")]
+
+> [SCREEN: Navigate to /dashboard/fuel/meal-prep — show active batches with serving counts]
+
+> [SCREEN: Click ""New Batch"" — form opens]
+
+> [SCREENSHOT: Meal prep batch form with all fields labeled: Protocol selector, Date made, Servings made, Storage location, Notes]
+
+> [SCREEN: Select a protocol — e.g., ""Chicken & Roasted Veg""]
+
+> [SCREEN: Set Servings made: 6, Storage location: Fridge, Note: ""Added extra thyme this batch""]
+
+> [SCREEN: Click Save — batch card appears with ""6 / 6 servings remaining"" displayed]
+
+> [SCREENSHOT: Batch card with callouts: Protocol name, Servings remaining (6/6), Storage location badge, Date made]
+
+> [SCREEN: Click the ""Consume Serving"" button — show the count go from 6 to 5]
+
+> [SCREEN: Click it again — 4 remaining]
+
+> [SCREENSHOT: Batch card now showing 4/6 servings remaining]
+
+> [SCREEN: Click ""Mark as Finished"" on a different batch — show it move to Finished view]
+
+> [SCREEN: Click the ""Finished"" filter tab — show completed batches in a muted/archived style]
+
+> [SCREEN: Click ""Active"" to return to active view]
+
+> [SCREEN: End on the active batch list — end lesson]
+
+---
+
+## Key Takeaways
+
+- A meal prep batch records a bulk cooking session: protocol + date + servings made
+- Track servings consumed by clicking the Consume Serving button — count depletes until the batch is finished
+- Active batches are shown on the Fuel dashboard; filter Active vs. Finished in the Meal Prep view
+- Batches and Meal Logs are separate — batches track quantity; meal logs track what you ate and when
+- Storage location notes tell you where to find each batch in your fridge/freezer
+- Prep 3–5 days' worth per batch; aim for 2–3 batches per prep session to cover a full week
+",markdown,,,,,,
+Lessons,1,9,Importing Recipes from the Web,text,300,true,,"# Lesson 09: Importing Recipes from the Web
+
+**Course:** Mastering Your Fuel
+**Module:** Recipes
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Found a recipe online you want to try? Instead of copying it manually, CentenarianOS can scrape the recipe directly from most food websites and import it into your recipe library in seconds.
+
+---
+
+### Where This Feature Lives
+
+The recipe import feature is part of the **Recipes** section — the public recipe library, separate from your private Fuel protocols. You'll find it at `/dashboard/recipes` or through the Recipes section of the app.
+
+This is worth clarifying: importing a recipe from the web brings it into your *public recipe library*, not your private Fuel protocols. From there, you can adapt it into a protocol if you want to use it for meal logging (covered in Lesson 11).
+
+---
+
+### How the Import Works
+
+The import uses a web standard called **JSON-LD with schema.org/Recipe markup**. Most major recipe websites use this format to make their recipes machine-readable — it's the same data that shows up in Google search snippets with cooking times and star ratings.
+
+CentenarianOS fetches the page at the URL you provide, finds the structured recipe data embedded in the page, and creates a new recipe record with the title, ingredients, instructions, servings, prep time, and cook time all pre-populated.
+
+No copy-paste required.
+
+---
+
+### Using the Import Feature
+
+Navigate to your Recipes section and find the **Import from URL** button.
+
+Paste in the URL of the recipe page. Click **Import**.
+
+The system fetches the page and extracts the recipe. If the import succeeds, you'll see a preview of the imported data:
+- Recipe title
+- Ingredient list (name + quantity for each ingredient)
+- Instructions
+- Servings, prep time, cook time
+
+Review the import. Most of the time it's accurate, but sometimes a poorly formatted site produces incomplete data — double-check the ingredient list especially.
+
+Click **Save** to add the recipe to your library. It's saved as a private draft by default — only you can see it.
+
+---
+
+### What Happens After Import
+
+The imported recipe is now in your library like any other recipe. You can:
+
+- **Edit it** — Clean up any formatting issues, adjust ingredient quantities, add notes
+- **Change visibility** — Set it to Public if you want to share it with other CentenarianOS users
+- **Add a cover photo** — Upload a photo or keep the default
+- **Add nutrition data** — If you want NCV scoring, add nutrition info to the ingredients manually (imported recipes don't automatically connect to your ingredient library)
+
+---
+
+### When Import Doesn't Work
+
+Not every website uses the standard recipe markup. Some sites encode their recipes in a way the scraper can't parse. If an import fails:
+
+- You'll see an error message indicating no recipe data was found
+- Try a different URL for the same recipe (some sites have multiple pages)
+- If the recipe is on a non-standard site, you'll need to create it manually
+
+Sites that work reliably: AllRecipes, Food Network, Serious Eats, NYT Cooking, Bon Appétit, BBC Good Food, Minimalist Baker, Cookie and Kate, most popular food blogs. Sites that sometimes fail: paywalled publications, personal blogs without proper markup, aggregator sites.
+
+---
+
+### Import vs. Manual Creation
+
+For well-known recipe sites: always try the import first — it's much faster.
+
+For recipes you found in a book, a newsletter, or a site that doesn't use standard markup: create the recipe manually using the recipe editor.
+
+For meal protocols (recipes you plan to log for nutrition tracking): you'll still need to create a Fuel protocol with your library ingredients — the imported recipe won't automatically have NCV scores or inventory integration. Think of the import as a quick way to save a recipe for reference; building a protocol is how you activate it for tracking.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to the Recipes section (e.g., /dashboard/recipes or wherever the public recipe library is)]
+
+> [SCREEN: Find and click the ""Import from URL"" button]
+
+> [SCREENSHOT: Import dialog with URL input field — callout: ""Works with AllRecipes, Food Network, Serious Eats, and most major recipe sites""]
+
+> [SCREEN: Paste in a URL from a known recipe site (e.g., an AllRecipes URL)]
+
+> [SCREEN: Click Import — show a loading spinner]
+
+> [SCREEN: Show the import preview: title, ingredients list, instructions, servings, prep time]
+
+> [SCREENSHOT: Import preview with callouts: Title, Ingredient count, First few ingredients listed, Prep/Cook time, Servings]
+
+> [SCREEN: Click Save — recipe appears in the library as a draft]
+
+> [SCREEN: Click on the imported recipe to open it — show the full recipe view with ingredients and instructions]
+
+> [SCREEN: Click Edit on the recipe — show the editor with pre-filled fields]
+
+> [SCREENSHOT: Recipe editor showing imported data — callout: ""Imported recipes save as private drafts — change visibility to share""]
+
+> [SCREEN: Change visibility to ""Public"" — show the toggle/selector]
+
+> [SCREEN: Click Save — end lesson]
+
+---
+
+## Key Takeaways
+
+- Import a recipe from any URL using the ""Import from URL"" feature in the Recipes section
+- Uses schema.org/Recipe structured data — works on AllRecipes, Food Network, Serious Eats, and most major food sites
+- Imported recipes land in your library as private drafts — edit, add a photo, and publish when ready
+- Import doesn't create a Fuel protocol — to use it for meal logging + NCV tracking, build a protocol manually
+- If import fails, the site doesn't use standard recipe markup — create the recipe manually instead
+",markdown,,,,,,
+Lessons,1,10,AI Recipe Ideas,text,300,true,,"# Lesson 10: AI Recipe Ideas
+
+**Course:** Mastering Your Fuel
+**Module:** Recipe Ideas
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+One of the most common friction points in healthy eating: you open the fridge, you have ingredients, but you don't know what to make. The AI Recipe Ideas feature solves exactly that. It looks at what you currently have in inventory and suggests three recipes you could cook right now.
+
+---
+
+### Navigating to Recipe Ideas
+
+Go to `/dashboard/fuel/recipe-ideas`. You'll see a button to generate ideas and, if you've generated them before, your most recent suggestions.
+
+---
+
+### Generating Ideas
+
+Click **Generate Recipe Ideas**. The system sends your current inventory state to Gemini (Google's AI model) and asks for recipe suggestions that:
+
+1. Use at least 5 ingredients you currently have on hand
+2. Prioritize ingredients with Green NCV scores
+3. Align with longevity nutrition principles — nutrient-dense, minimally processed
+4. Are practical to make with a standard kitchen
+
+In a few seconds, three suggestions appear. Each one includes:
+- A recipe name
+- A brief description of the dish
+- The key ingredients it uses from your inventory
+- Why it fits the longevity nutrition approach
+
+---
+
+### How the AI Uses Your Inventory
+
+The AI doesn't just randomly generate recipes — it specifically anchors on what you have. If your inventory shows a lot of spinach, chickpeas, and olive oil, you'll see Mediterranean-inspired suggestions that use those. If you have sweet potatoes and black beans running low and chicken at high stock, it'll lean toward chicken-forward dishes.
+
+This makes the feature most useful when your inventory is well-maintained. The better your inventory data, the more relevant the suggestions.
+
+---
+
+### Saving a Recipe Idea as a Draft
+
+If one of the suggestions looks worth trying, click **Save as Draft**. This creates a new recipe record in your recipe library with the AI's title and description. It starts as a draft — you can flesh it out with exact ingredient quantities, instructions, and a photo before sharing it.
+
+Saving as a draft is a good starting point for building a new protocol:
+1. AI suggests the recipe
+2. You save as draft
+3. You cook it and refine the quantities
+4. You build a Fuel protocol from the final version
+5. You log it going forward with full nutrition tracking
+
+---
+
+### Regenerating
+
+Not happy with the three suggestions? Click **Generate Recipe Ideas** again. The AI generates a fresh set each time — it won't repeat the same suggestions from the previous run (though it might suggest similar dishes if your inventory hasn't changed).
+
+Inventory changes affect the suggestions. If you just restocked a different set of ingredients, the new ideas will reflect that.
+
+---
+
+### What the AI Is Optimized For
+
+The prompt sent to the AI explicitly asks for longevity-focused, nutrient-dense suggestions. This means:
+
+- It prefers whole foods over processed ones
+- It biases toward vegetables, legumes, and lean proteins
+- It avoids suggesting dishes that are primarily high-calorie, low-nutrient
+- It's not going to suggest ""use your leftover chips to make nachos"" even if chips are in your inventory
+
+This makes the feature different from a generic ""what can I make with these ingredients"" tool. The bias is toward the kind of eating that CentenarianOS is built around.
+
+---
+
+### Limitations
+
+A few things to keep in mind:
+
+- The AI doesn't know your cooking skill level or equipment — suggestions may occasionally involve techniques or tools you don't have
+- Ingredient quantities in suggestions are approximate — treat them as a starting point, not a precise recipe
+- The AI doesn't know your taste preferences — some suggestions will miss the mark; regenerate if needed
+- This feature requires an active internet connection to call the Gemini API
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/fuel/recipe-ideas — show the empty state or previous suggestions]
+
+> [SCREEN: Click ""Generate Recipe Ideas"" — show a loading spinner]
+
+> [SCREEN: Three recipe suggestions appear — pan down to show all three]
+
+> [SCREENSHOT: Three recipe cards with callouts: Recipe name, Description, Key ingredients used, ""Longevity note"" or nutrition rationale]
+
+> [SCREEN: Click on one suggestion to expand or view details — show the full description and ingredient list]
+
+> [SCREEN: Click ""Save as Draft"" on one suggestion — show confirmation message]
+
+> [SCREEN: Navigate to the Recipes section — show the saved draft appears in the library]
+
+> [SCREENSHOT: Recipe library with the new AI-generated draft visible, marked as ""Draft""]
+
+> [SCREEN: Return to /dashboard/fuel/recipe-ideas — click ""Generate Recipe Ideas"" again — show a new set of three suggestions]
+
+> [SCREENSHOT: New set of suggestions — point out they're different from the first set]
+
+> [SCREEN: End on the suggestions page — end lesson]
+
+---
+
+## Key Takeaways
+
+- AI Recipe Ideas generates three recipe suggestions based on your current inventory using Gemini
+- Suggestions prioritize Green NCV ingredients and longevity nutrition principles
+- The better your inventory data, the more relevant the suggestions
+- Save any suggestion as a draft to your recipe library — edit it, add a photo, then publish or build into a protocol
+- Regenerate for a fresh set any time — suggestions change with each generation
+- Optimized for nutrient-dense, whole-food cooking — won't suggest junk food even if you have junk food in inventory
+",markdown,,,,,,
+Lessons,1,11,Publishing a Protocol as a Public Recipe,text,360,true,,"# Lesson 11: Publishing a Protocol as a Public Recipe
+
+**Course:** Mastering Your Fuel
+**Module:** Protocols / Recipes
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Your protocols are private — meal templates you've built for your own tracking. But if you've created something worth sharing, you can publish any protocol as a public recipe. This bridges your personal Fuel module to the community recipe library where other CentenarianOS users can find, save, and cook your recipes.
+
+---
+
+### The Difference Between a Protocol and a Public Recipe
+
+A **protocol** is a private meal template. It has an ingredient list, quantities, and nutrition calculations — but no instructions, no story, no photo. It's built for speed: you created it to log meals quickly, not to share.
+
+A **public recipe** is a full recipe record: title, description, rich cooking instructions (with formatting), a cover photo, ingredient list with nutritional data, tags, and visibility controls. It's built for sharing.
+
+Publishing converts your protocol into a starting point for a public recipe. It copies the ingredient list and basic metadata, then opens the recipe editor so you can add the details a shared recipe needs.
+
+---
+
+### How to Publish a Protocol
+
+Navigate to `/dashboard/fuel/protocols`. Find the protocol you want to publish and click the **Publish** button on its card.
+
+This sends the protocol data to the recipe creation system and opens the recipe editor with:
+- The protocol name pre-filled as the recipe title
+- The ingredient list imported (names and quantities)
+- A blank description and blank instructions
+
+From here, treat it like writing a new recipe:
+
+1. **Write a description** — A few sentences about the dish. What makes it special? Who would enjoy it? When do you make it?
+
+2. **Add instructions** — Step-by-step directions for actually cooking the recipe. Protocols don't have instructions (they're meal templates, not recipe cards), so you'll need to write these fresh. Be specific: temperatures, timing, technique.
+
+3. **Set tags** — Tag the recipe with relevant categories: #breakfast, #high-protein, #meal-prep, #vegetarian, etc. Tags make it discoverable in the recipe library.
+
+4. **Add a cover photo** — Upload a photo of the finished dish. Recipes with photos get significantly more engagement. You can upload from your device or take a photo directly from your phone.
+
+5. **Set visibility** — Choose who can see it:
+   - **Draft** — Only you can see it (good for work-in-progress)
+   - **Private** — Only accessible via direct link
+   - **Authenticated only** — Any logged-in CentenarianOS user
+   - **Public** — Anyone, including search engines
+
+Click **Save** to publish.
+
+---
+
+### Nutrition Data on Public Recipes
+
+When a protocol is published as a recipe, the system attempts to carry over the nutritional calculations from the protocol. The NCV score and macro totals from your ingredient library are shown on the recipe card.
+
+However, the public recipe's ingredient list is denormalized — it doesn't link back to your private ingredient library. This means if you update your ingredient costs or nutrition data later, the published recipe won't automatically update. If you edit the recipe's ingredient list directly, you can update the nutrition data there.
+
+---
+
+### Managing Your Published Recipes
+
+After publishing, the recipe lives in your recipe library at `/dashboard/recipes` (or wherever recipes are accessible from your dashboard). You can:
+
+- **Edit** it any time — update instructions, swap photos, change visibility
+- **Unpublish** it by changing visibility back to Draft or Private
+- **See engagement stats** — view count, likes, saves from other users
+- **Delete** it if you no longer want it in the library
+
+The original protocol in your Fuel module is unaffected by publishing. It continues to work for meal logging exactly as before — publishing creates a copy, it doesn't move the protocol.
+
+---
+
+### Why Publish?
+
+A few reasons users publish their protocols:
+
+- **Community contribution** — Your healthy meal templates can help others with similar nutrition goals
+- **Sharing with friends and family** — Send a direct link to a recipe you love
+- **Building a personal recipe collection** — Public recipes are searchable and shareable; private protocols aren't
+- **Teacher-created content** — If you're a teacher on the platform, publishing recipes builds your public presence and can earn engagement metrics
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/fuel/protocols — show a protocol card with the Publish button visible]
+
+> [SCREENSHOT: Protocol card with callout on the ""Publish"" button — note: ""This creates a public recipe from your private protocol""]
+
+> [SCREEN: Click the Publish button on a protocol — transition to the recipe editor with pre-filled data]
+
+> [SCREENSHOT: Recipe editor with the imported ingredient list, blank description field, and blank instructions — callouts showing which fields are pre-filled vs. need to be written]
+
+> [SCREEN: Type a description: ""My go-to post-workout smoothie. High protein, loaded with greens, takes 2 minutes to make.""]
+
+> [SCREEN: Add instructions in the rich text editor — a few simple steps]
+
+> [SCREEN: Click the Tags field — add tags: breakfast, smoothie, high-protein]
+
+> [SCREEN: Click the cover photo uploader — show the upload interface]
+
+> [SCREEN: Set visibility to ""Public"" using the visibility selector]
+
+> [SCREEN: Click Save — recipe is published]
+
+> [SCREEN: Navigate to the recipe library — find the newly published recipe]
+
+> [SCREENSHOT: Published recipe card showing: title, cover photo, NCV badge, tags, like/save buttons]
+
+> [SCREEN: Click on the recipe — show the full public recipe view with description, ingredients, and instructions]
+
+> [SCREEN: Return to /dashboard/fuel/protocols — show the original protocol is still there, unchanged]
+
+> [SCREEN: End — end lesson]
+
+---
+
+## Key Takeaways
+
+- Publishing converts a private Fuel protocol into a shareable public recipe
+- The protocol's ingredient list is copied to the recipe — you add description, instructions, tags, and a photo
+- Visibility controls who can see it: Draft → Private → Authenticated only → Public
+- The original protocol is unaffected — publishing creates a copy, not a transfer
+- Nutrition data from the protocol carries over; update it in the recipe editor if the ingredient list changes
+- Public recipes are visible in the community recipe library and support likes, saves, and engagement stats
+",markdown,,,,,,
+Lessons,1,12,Reading the Fuel Dashboard,text,360,true,,"# Lesson 12: Reading the Fuel Dashboard
+
+**Course:** Mastering Your Fuel
+**Module:** Analytics
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The Fuel dashboard is your daily landing page for the nutrition module. It surfaces the numbers that matter most — at a glance, without having to dig into any sub-page. In this final lesson, we'll walk through every section and explain what each metric is telling you.
+
+---
+
+### Navigating to the Dashboard
+
+Go to `/dashboard/fuel`. This is the home screen for the entire Fuel module. If you've been logging meals and building protocols, you should start to see real data here.
+
+---
+
+### The Stats Cards
+
+At the top of the dashboard, a row of summary cards shows your current activity snapshot:
+
+**Meals logged** — Total meals recorded in your history. This number grows every time you log a home-cooked or restaurant meal. It's a simple accountability metric: are you actually tracking?
+
+**Week cost** — Your estimated food cost for the current calendar week, based on the cost data from your protocols. Every logged protocol-based meal adds its cost-per-serving to this total. Restaurant meals don't contribute (no cost data). Use this as a rough gauge of your weekly food spend.
+
+**Active batches** — How many meal prep batches currently have servings remaining. A quick answer to ""do I have anything ready to eat?"" If this is zero, it might be time to batch cook.
+
+**Protocols** — The total number of protocols in your library. Not a performance metric — just a count of how many meal templates you've built.
+
+---
+
+### Low Stock Alerts
+
+Below the stats cards (or alongside them), you'll see a **Low Stock** panel. Any ingredient at or below its threshold appears here with its current quantity.
+
+This panel is meant to be your grocery list trigger. Before you close the app, glance at this section. If spinach is flagged, it goes on the shopping list. It's a simple feedback loop that keeps your inventory useful.
+
+If all your ingredients are above threshold, the panel shows empty (or is hidden). That's the goal.
+
+---
+
+### Weekly NCV Average
+
+If your analytics data is available, the dashboard shows your average NCV score for the current week. This is calculated from all logged protocol-based meals — each meal's NCV score is weighted by calories and averaged across the week.
+
+A Green weekly average means most of your calories this week came from high-nutrient foods. Yellow means a mixed week. Red is a signal to look at what's pulling the score down.
+
+This single number is the most useful output of the entire Fuel module. Track it week over week. A gradual trend toward Green is the goal — not perfection on any single day, but consistent progress over months.
+
+---
+
+### Navigation Cards
+
+The lower section of the dashboard shows navigation cards linking to each sub-module. This is a visual menu — click any card to jump directly to Ingredients, Protocols, Meal Log, Inventory, Meal Prep, or Recipe Ideas.
+
+For users who are just getting started, these cards double as orientation: they remind you what tools are available and suggest workflows.
+
+---
+
+### How the Pieces Fit Together: The Full Picture
+
+After completing this course, you have the full picture of how the Fuel module works end to end:
+
+1. **Ingredient Library** — Your food database. Every item you eat regularly is defined here with nutrition data and an NCV score.
+
+2. **Protocols** — Your meal templates. Each meal you cook repeatedly has a protocol that lists its ingredients, calculates nutrition, and gives it an NCV score.
+
+3. **Meal Log** — Your daily record. Protocol-based meals log in seconds; restaurant meals are noted with location.
+
+4. **Inventory** — Tracks what you have on hand. Depletes automatically when you log meals. Alerts you when you're running low.
+
+5. **Meal Prep** — Tracks batch cooking sessions. Tells you how many servings of prepared food you have left.
+
+6. **Recipe Ideas** — AI-powered inspiration from your current inventory. Suggests what to cook based on what you have.
+
+7. **Dashboard** — Pulls it all together: meals logged, weekly cost, active batches, low stock alerts, and NCV average.
+
+The more consistently you log, the more useful the dashboard becomes. A week of consistent meal logging produces a NCV score you can actually act on. A month produces a trend.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /dashboard/fuel — show the full dashboard with real data in the stats cards]
+
+> [SCREENSHOT: Full dashboard with callouts labeling every section: Stats cards (Meals logged, Week cost, Active batches, Protocols), Low Stock panel, Weekly NCV average, Navigation cards]
+
+> [SCREEN: Hover over each stats card to show any tooltip or detail]
+
+> [SCREEN: Point to the Low Stock panel — show an item flagged — explain the threshold concept briefly]
+
+> [SCREENSHOT: Low Stock panel with one or two items flagged — callout: ""Ingredient name | Current qty / Threshold""]
+
+> [SCREEN: Point to the Weekly NCV average — show the Green/Yellow/Red indicator]
+
+> [SCREENSHOT: NCV average section — callout: ""Calorie-weighted average of all logged protocol meals this week""]
+
+> [SCREEN: Click each navigation card briefly — show each sub-module opening]
+
+> [SCREEN: Return to /dashboard/fuel — end on the full dashboard view]
+
+> [SCREENSHOT: Final full dashboard screenshot — label it ""Your Fuel Command Center""]
+
+---
+
+## Key Takeaways
+
+- **Meals logged** — your tracking consistency; **Week cost** — estimated food spend from protocol data
+- **Active batches** — prepared food still available; **Protocols** — size of your meal template library
+- **Low Stock panel** — your at-a-glance grocery list trigger; clear it before shopping
+- **Weekly NCV average** — the most important metric: are you eating nutrient-dense food this week?
+- Track NCV average week over week — a consistent Green trend is the long-term goal
+- The dashboard is most useful when meal logging is consistent — one week of data is a snapshot; months of data is a trend
+",markdown,,,,,,

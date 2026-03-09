@@ -1,0 +1,672 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+Welcome,1,1,What Is CentenarianOS?,text,240,true,,"# Lesson 01: What Is CentenarianOS?
+
+**Course:** Getting Started with CentenarianOS
+**Module:** Welcome
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** linear (flows to Lesson 02)
+
+---
+
+## Narrator Script
+
+CentenarianOS is a personal operating system designed to help you track, plan, and optimize the things that matter — your time, money, health, travel, nutrition, and learning. Everything lives in one platform, and everything connects.
+
+This lesson gives you a high-level overview of what the platform does and how it's organized.
+
+---
+
+### The Philosophy
+
+Most productivity tools do one thing well but force you to jump between apps. CentenarianOS brings everything under one roof. Your financial data connects to your travel logs. Your health metrics connect to your focus sessions. Your meal tracking connects to your recipes. The idea is that cross-referencing your own data reveals patterns you'd never see in isolated apps.
+
+The name comes from the goal of living well past 100 — and the operating system metaphor reflects how every module in the platform works together, like subsystems in an OS.
+
+---
+
+### The Five Navigation Groups
+
+Your dashboard sidebar organizes every module into five groups:
+
+**Operate** — the productivity core.
+- Daily Tasks — your daily planner with week/3-day/daily views
+- Engine — focus timer, daily debrief, pain tracking
+- Weekly Review — AI-generated summaries of your week
+- Roadmap — multi-level goal hierarchy (Roadmap → Goal → Milestone → Task)
+
+**Health** — your body and performance data.
+- Fuel — ingredient library, meal logging, NCV (Nutrient Cost Value) framework
+- Metrics — resting heart rate, steps, sleep, activity minutes, body composition
+- Wearables — Oura, WHOOP, Garmin OAuth sync + CSV imports (Apple Health, Google Health, InBody, Hume)
+- Workouts — exercise tracking
+- Correlations — cross-metric analysis
+- Analytics — trends and insights
+
+**Life** — money, movement, and gear.
+- Finance — accounts, transactions, budgets, brands, CSV import/export
+- Travel — vehicles, fuel logs, trips, maintenance, Garmin imports, bike savings
+- Equipment — catalog your gear, track value, link purchases, cross-module connections
+
+**Learn** — knowledge and community.
+- Blog — write and publish articles
+- Recipes — create, import, and share recipes
+- Academy — take courses, track progress, CYOA navigation
+- Live — streaming sessions
+
+**AI** — intelligent assistants (admin-only for now).
+- Coach — AI-powered coaching
+- Gems — AI data consultant
+
+---
+
+### Free vs. Paid
+
+Some parts of CentenarianOS are free for everyone:
+- Blog and recipes (reading and publishing)
+- Academy courses (browsing and taking free courses)
+- Live sessions
+
+Everything else requires a paid plan — Monthly ($10/mo) or Lifetime ($100 one-time). The next lesson covers pricing in detail.
+
+---
+
+### Open Source
+
+CentenarianOS is open source under the MIT License. The code is on GitHub, and contributions are welcome. The `/tech-roadmap` page shows the full product roadmap with completed, in-progress, and planned phases.
+
+---
+
+### What's Next
+
+The next lesson walks through the pricing page — what each plan includes, how the signup flow works, and what free access you get without paying.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Open the CentenarianOS home page — show the hero section]
+
+> [SCREEN: Navigate to /dashboard — show the sidebar with all five nav groups expanded]
+
+> [SCREENSHOT: Dashboard sidebar — callouts: Operate group (4 items), Health group (6 items), Life group (3 items), Learn group (4 items), AI group (2 items)]
+
+> [SCREEN: Click through each nav group — briefly hover over each module name]
+
+> [SCREEN: Navigate to /tech-roadmap — show the product roadmap page with phase progress bars]
+
+> [SCREEN: Navigate back to the dashboard to end]
+
+---
+
+## Key Takeaways
+
+- CentenarianOS is a personal operating system — productivity, health, finance, travel, learning, and AI in one platform
+- Five nav groups: Operate, Health, Life, Learn, AI
+- Cross-module connections let you link data between modules for deeper insights
+- Blog, recipes, academy, and live sessions are free; everything else requires a paid plan
+- Open source on GitHub with a public tech roadmap at /tech-roadmap
+
+---
+
+## Audio Chapters (if recorded as video)
+
+```json
+[
+  { ""id"": ""ch1"", ""title"": ""Introduction & Philosophy"", ""startTime"": 0, ""endTime"": 90 },
+  { ""id"": ""ch2"", ""title"": ""The Five Navigation Groups"", ""startTime"": 90, ""endTime"": 210 },
+  { ""id"": ""ch3"", ""title"": ""Free vs. Paid Access"", ""startTime"": 210, ""endTime"": 260 },
+  { ""id"": ""ch4"", ""title"": ""Open Source & Roadmap"", ""startTime"": 260, ""endTime"": 300 }
+]
+```
+",markdown,,,,,,
+Welcome,1,2,Understanding Pricing & Plans,text,240,true,,"# Lesson 02: Understanding Pricing & Plans
+
+**Course:** Getting Started with CentenarianOS
+**Module:** Welcome
+**Duration:** ~4 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** linear → first CYOA crossroads after this lesson
+
+---
+
+## Narrator Script
+
+CentenarianOS has two paid plans and a set of features that are free without any subscription. This lesson breaks down what each plan includes, how the checkout flow works, and what you can do without paying.
+
+---
+
+### The Two Plans
+
+Navigate to `/pricing` to see the pricing page. Two cards are displayed:
+
+**Monthly — $10/month** (marked ""Popular"")
+- Full access to every paid module
+- Cancel anytime through the Stripe Customer Portal
+- Billed monthly — no annual commitment required
+
+**Lifetime — $100 one-time** (marked ""Best Value"")
+- Everything in Monthly
+- No recurring fees ever
+- Free CentenarianOS shirt shipped from AwesomeWebStore.com
+
+Both plans include every current feature and all future features. There's no tier gating — Monthly and Lifetime have identical access.
+
+---
+
+### What's Included in Both Plans
+
+Here's the full feature list shown on the pricing page:
+
+- Roadmap & goal hierarchy
+- Daily task planner (week/3-day/daily views)
+- Fuel & nutrition tracking (NCV framework)
+- Focus Engine (timer, debrief, pain log)
+- Travel & vehicle tracking with fuel OCR
+- Financial dashboard (accounts, budgets, brands)
+- Health metrics & wearable sync
+- Equipment & asset tracking with valuation history
+- Academy courses & tutorial guides
+- Blog & recipe publishing
+- AI-powered weekly reviews
+- Cross-module activity linking
+
+---
+
+### What's Free (No Subscription Required)
+
+You can access these without a paid plan:
+
+- **Blog** — read and publish articles
+- **Recipes** — browse, create, and share recipes
+- **Academy** — browse course catalog, take free courses, and watch all tutorial lessons
+- **Live** — access live streaming sessions
+- **Billing** — manage your subscription (obviously)
+- **Messages & Feedback** — communicate with teachers and submit feedback
+
+If you try to navigate to a paid module (like Finance or Travel) without an active subscription, you'll be redirected to the pricing page.
+
+---
+
+### The Signup → Pricing Flow
+
+Here's how new users onboard:
+
+1. **Sign up** at `/signup` — create your account (email + password, with Cloudflare Turnstile bot check)
+2. **Redirect to /pricing** — after signup, you're automatically sent to the pricing page with a banner: ""Account created! Choose a plan below to access your dashboard.""
+3. **Choose a plan** — click ""Start Monthly"" or ""Get Lifetime Access""
+4. **Stripe checkout** — you're redirected to Stripe's hosted checkout page
+5. **Return to billing** — after payment, you're sent to `/dashboard/billing` where a sync confirms your subscription
+6. **Dashboard access** — all paid modules are now unlocked
+
+---
+
+### Buying Without an Account
+
+If you land on the pricing page without being logged in and click a plan button, a login/signup modal appears inline — no redirect away from the page. After you authenticate, the checkout flow continues automatically.
+
+---
+
+### Policies
+
+Displayed at the bottom of the pricing page:
+
+> No Refunds. Cancel Anytime. Monthly fees are not transferable to lifetime membership.
+
+Cancel your monthly plan anytime via the Stripe Customer Portal (accessed from `/dashboard/billing`). You keep access until the end of your current billing period.
+
+---
+
+### The Demo Alternative
+
+Below the pricing cards, a link reads: ""Want to try before you buy? Explore the demo account."" This takes you to `/demo` — a one-click login to a fully loaded demo account. The next lesson covers the demo in detail.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /pricing — show the full pricing page]
+
+> [SCREENSHOT: Pricing page — callouts: Monthly card ($10/mo, ""Popular""), Lifetime card ($100, ""Best Value""), Feature list, ""Explore the demo account"" link]
+
+> [SCREEN: Hover over the Monthly plan features — show the check marks]
+
+> [SCREEN: Click ""Start Monthly"" (without being logged in) — show the PurchaseModal appear]
+
+> [SCREENSHOT: PurchaseModal — callout: ""Login or create an account to continue checkout""]
+
+> [SCREEN: Close the modal — scroll to the ""Explore the demo account"" link]
+
+> [SCREEN: Scroll to the policies text at the bottom]
+
+---
+
+## Key Takeaways
+
+- Two plans: Monthly ($10/mo, cancel anytime) and Lifetime ($100 one-time, includes free shirt)
+- Both plans have identical feature access — no tier gating
+- Free without subscription: blog, recipes, academy, live, billing, messages
+- New users: signup → redirect to /pricing → choose plan → Stripe checkout → dashboard
+- Demo account available for trying the platform before buying
+",markdown,,,,,,
+Platform Tour,2,3,Exploring the Demo Account,text,300,true,,"# Lesson 03: Exploring the Demo Account
+
+**Course:** Getting Started with CentenarianOS
+**Module:** Platform Tour
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+The demo account is the fastest way to see CentenarianOS in action. One click, no signup, full dashboard with realistic pre-loaded data. This lesson walks through what's inside and where to look.
+
+---
+
+### Accessing the Demo
+
+Navigate to `/demo`. The page has one big button: **Login as Demo User**. Click it. You'll be logged into a shared demo account and redirected to the dashboard.
+
+Important notes:
+- The demo is a shared account — anyone can access it at the same time
+- Data resets daily — anything you add or change will be gone tomorrow
+- Do not enter personal information (real finances, health data, etc.)
+
+---
+
+### What's Pre-Loaded
+
+The demo account comes with realistic data across several modules:
+
+**Financial Dashboard**
+- 4 accounts: checking account, savings account, and two credit cards
+- 50+ transactions spanning the last 90 days
+- Budget categories with spending charts showing actual vs. target
+- A consulting brand (""Demo Consulting LLC"") with income and expense tracking for P&L
+
+**Travel & Vehicles**
+- 2 vehicles: a 2020 Honda CR-V (car) and a 2022 Trek Domane SL5 (bike)
+- 12 fuel logs with MPG trend data and cost-per-gallon tracking
+- A road trip from San Francisco to Las Vegas with distance and cost data
+- Bike fitness rides showing savings calculations (bike miles × car cost-per-mile)
+
+**Saved Contacts**
+- 8 pre-populated vendors and customers
+- Selecting a saved vendor when logging a transaction auto-fills the category — try it to see the autocomplete workflow in action
+
+**Vehicle Maintenance**
+- 5 service records: oil changes, tire rotations, inspections
+- Linked to the finance module for cost tracking
+
+---
+
+### Where to Start Exploring
+
+If you have limited time, here's a suggested order:
+
+1. **Finance** (`/dashboard/finance`) — see the dashboard summary cards, budget bars, and transaction list
+2. **Travel** (`/dashboard/travel`) — check the vehicle list, fuel logs with MPG chart, and the SF-to-Vegas trip
+3. **Planner** (`/dashboard/planner`) — look at the daily task view and how tasks connect to the roadmap
+4. **Academy** (`/academy`) — browse tutorial courses — all are free with CYOA navigation
+
+If you want to test creating data, try logging a transaction or adding a fuel entry. It will all reset tomorrow.
+
+---
+
+### Academy Tutorials in the Demo
+
+The demo account has full access to all tutorial course series. These cover every module step by step:
+
+- Travel (11 lessons) — vehicles, fuel, trips, maintenance, Garmin imports
+- Fuel & Nutrition (13 lessons) — ingredients, meals, NCV framework
+- Planner (14 lessons) — roadmaps, goals, milestones, tasks, contacts, activity links
+- Engine (10 lessons) — focus timer, pomodoro, debrief, pain log, analytics
+- Health Metrics (8 lessons) — daily logs, wearable sync, body composition
+- Finance (10 lessons) — accounts, transactions, budgets, contacts, autocomplete
+- Coach & Gems (8 lessons) — AI coaching and data consultant (admin only)
+- Correlations (7 lessons) — cross-metric analysis and insights
+- Academy (14 lessons) — student guide with rich media, quizzes, discussions
+- Teaching (15 lessons) — teacher dashboard, content creation, sequential locking
+- Settings & Billing (4 lessons) — subscription, wearables, upgrading
+- Equipment (8 lessons) — categories, items, valuations, activity links
+- Getting Started (this course, 5 lessons) — pricing, demo, dashboard tour
+
+All tutorial lessons are free and use CYOA navigation, so you can jump to any topic.
+
+---
+
+### From Demo to Your Own Account
+
+When you're ready for your own data, click the pricing link at the bottom of the demo page or navigate to `/pricing`. Create an account, choose a plan, and start fresh with your own data.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Navigate to /demo — show the demo landing page]
+
+> [SCREENSHOT: Demo page — callouts: ""Login as Demo User"" button, ""What You'll Explore"" cards (Financial, Travel, Contacts, Maintenance), Academy section]
+
+> [SCREEN: Click ""Login as Demo User"" — show the redirect to the dashboard]
+
+> [SCREEN: Navigate to /dashboard/finance — show the financial dashboard with summary cards, charts, and transaction list]
+
+> [SCREENSHOT: Finance dashboard — callout: ""50+ pre-loaded transactions with budget tracking""]
+
+> [SCREEN: Navigate to /dashboard/travel — show vehicles, click into fuel logs]
+
+> [SCREEN: Navigate to /dashboard/travel/fuel — show MPG trend chart]
+
+> [SCREEN: Navigate to /academy — show the tutorial course catalog]
+
+> [SCREEN: Navigate to /pricing to show the path from demo to own account]
+
+---
+
+## Key Takeaways
+
+- Demo at /demo — one-click login, no signup needed
+- Pre-loaded: 4 financial accounts, 50+ transactions, 2 vehicles, 12 fuel logs, 8 contacts, 5 maintenance records
+- Data resets daily — explore freely but don't enter personal info
+- Start with Finance and Travel to see the richest demo data
+- All tutorial courses are free and accessible from the demo
+",markdown,,,,,,
+Platform Tour,2,4,Your Dashboard Tour,text,240,true,,"# Lesson 04: Your Dashboard Tour
+
+**Course:** Getting Started with CentenarianOS
+**Module:** Platform Tour
+**Duration:** ~6 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+Once you're logged in, everything happens inside the dashboard. This lesson walks through the layout — the sidebar, the top bar, module pages, and settings — so you always know where you are.
+
+---
+
+### The Sidebar
+
+The left sidebar is your main navigation. It's organized into five collapsible groups:
+
+**Operate** — Daily Tasks, Engine, Weekly Review, Roadmap
+
+**Health** — Fuel, Metrics, Wearables, Workouts, Correlations, Analytics
+
+**Life** — Finance, Travel, Equipment
+
+**Learn** — Blog, Recipes, Academy, Live
+
+**AI** — Coach, Gems (admin only — hidden for regular users)
+
+Each module name is a link. Click it to navigate to that module's main page. The active page is highlighted in the sidebar.
+
+On mobile, the sidebar collapses into a hamburger menu at the top left. All the same groups and links are available — tap the menu icon to expand.
+
+---
+
+### The Top Bar
+
+At the top of every dashboard page:
+
+- **Module title** — shows where you are (e.g., ""Finance"", ""Travel"")
+- **User menu** — your avatar or initials in the top right. Click for: Settings, Billing, Log Out
+- **Offline indicator** — if you lose connection, a status bar appears at the very top showing offline/syncing/synced state
+
+---
+
+### Module Pages
+
+Each module follows a similar pattern:
+
+**Hub page** — the main landing page for the module. Shows summary cards, charts, and a list or grid of your data. Examples:
+- Finance hub: summary cards + budget bars + recent transactions
+- Travel hub: vehicle cards + fuel stats + trip summary
+- Equipment hub: summary cards + category filters + item grid
+
+**Sub-pages** — deeper views within a module. Accessed via tabs, links, or sidebar sub-items. Examples:
+- Finance → Transaction History (`/dashboard/finance/transactions`)
+- Travel → Fuel Logs (`/dashboard/travel/fuel`)
+- Equipment → Manage (`/dashboard/equipment/manage`)
+
+**Detail pages** — individual record views. Click any item to see its full details. Examples:
+- Equipment → Item Detail (`/dashboard/equipment/[id]`)
+- Travel → Trip Detail
+
+**Forms** — modals or inline forms for creating and editing data. Most modules use modal forms that open over the current page.
+
+---
+
+### Settings & Billing
+
+Access settings from the user menu (top right avatar):
+
+**Billing** (`/dashboard/billing`) — your current plan, renewal date, and a link to the Stripe Customer Portal for managing payment methods, canceling, or upgrading.
+
+**Wearables** (`/dashboard/settings/wearables`) — connect Oura, WHOOP, or Garmin via OAuth. Import CSV data from Apple Health, Google Health, InBody, or Hume Health.
+
+---
+
+### Quick Navigation Tips
+
+- **Sidebar is always visible** on desktop — use it to jump between modules
+- **Browser back/forward** works as expected — the app uses standard URL routing
+- **Direct URLs** work — bookmark `/dashboard/finance` or share a course link like `/academy/[courseId]`
+- **Offline support** — most pages cache data locally via IndexedDB. If you go offline, you can still browse cached data and queue mutations that sync when you reconnect.
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Show the full dashboard with sidebar expanded — hover over each group label]
+
+> [SCREENSHOT: Dashboard layout — callouts: Sidebar (5 groups), Top bar (module title, user menu), Main content area]
+
+> [SCREEN: Click through three modules — Finance hub, Travel hub, Equipment hub — show the consistent hub pattern]
+
+> [SCREEN: Click into a sub-page — e.g., Finance → Transaction History — show the sub-navigation]
+
+> [SCREEN: Click the user avatar in the top right — show the dropdown (Settings, Billing, Log Out)]
+
+> [SCREEN: Navigate to /dashboard/billing — show the billing page with plan info]
+
+> [SCREEN: Resize browser to mobile width — show the sidebar collapse into hamburger menu]
+
+> [SCREEN: Tap the hamburger icon — show the mobile sidebar expand]
+
+---
+
+## Key Takeaways
+
+- Sidebar: 5 groups (Operate, Health, Life, Learn, AI) — always visible on desktop, hamburger on mobile
+- Top bar: module title + user menu (Settings, Billing, Log Out) + offline indicator
+- Module pattern: Hub page → Sub-pages → Detail pages → Forms (modals)
+- Billing at /dashboard/billing — plan management via Stripe portal
+- Wearables at /dashboard/settings/wearables — OAuth + CSV imports
+- Direct URLs and browser navigation work everywhere — bookmarkable
+",markdown,,,,,,
+Platform Tour,2,5,The Module Map — What Lives Where,text,480,true,,"# Lesson 05: The Module Map — What Lives Where
+
+**Course:** Getting Started with CentenarianOS
+**Module:** Platform Tour
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+This lesson is a reference. It lists every module in CentenarianOS, what it does, and where to find it. Bookmark this lesson and come back whenever you need to find something.
+
+---
+
+### Operate Group
+
+| Module | Path | What It Does | Paid? |
+|--------|------|-------------|-------|
+| **Daily Tasks** | `/dashboard/planner` | Daily planner with week, 3-day, and daily views. Create one-off and recurring tasks. Assign contacts, locations, and financial tracking to tasks. | Yes |
+| **Engine** | `/dashboard/engine` | Focus timer (simple + Pomodoro), session templates, daily debrief (energy, wins, challenges), pain/body check logging. Analytics across all sessions. | Yes |
+| **Weekly Review** | `/dashboard/weekly-review` | AI-generated summary of your week — tasks completed, focus hours, spending, health data. Powered by Gemini. | Yes |
+| **Roadmap** | `/dashboard/roadmap` | Multi-level goal hierarchy: Roadmap → Goal → Milestone → Task. Archive/restore with 30-day retention. Category tags and target dates. | Yes |
+
+---
+
+### Health Group
+
+| Module | Path | What It Does | Paid? |
+|--------|------|-------------|-------|
+| **Fuel** | `/dashboard/fuel` | Ingredient library with NCV (Nutrient Cost Value) framework. Meal logging, cost tracking, USDA and Open Food Facts API integration. Auto inventory management. | Yes |
+| **Metrics** | `/dashboard/metrics` | Daily health log — resting heart rate, steps, sleep hours, activity minutes. 3-tier system: Core, Enrichment (per-metric unlock), Body Composition (locked, requires disclaimer). | Yes |
+| **Wearables** | `/dashboard/settings/wearables` | OAuth connections: Oura, WHOOP, Garmin (auto-sync daily). CSV imports: Apple Health, Google Health, InBody, Hume Health. | Yes |
+| **Workouts** | `/dashboard/workouts` | Exercise tracking and logging. | Yes |
+| **Correlations** | `/dashboard/correlations` | Cross-metric analysis — find relationships between nutrition, sleep, focus, and other tracked data. | Yes |
+| **Analytics** | `/dashboard/analytics` | Trends and insights across all health and performance data. | Yes |
+
+---
+
+### Life Group
+
+| Module | Path | What It Does | Paid? |
+|--------|------|-------------|-------|
+| **Finance** | `/dashboard/finance` | Financial accounts (checking, savings, credit card, loan, cash). Transaction tracking with vendors, categories, and account assignment. Budget categories with monthly limits. Brand/business P&L tracking. CSV import/export. Saved contacts with autocomplete. | Yes |
+| **Travel** | `/dashboard/travel` | Vehicle profiles, fuel logs with MPG calculation, receipt OCR (Gemini Vision), trip logging (manual + Garmin import), multi-stop routes, trip templates, round trips, vehicle maintenance, bike savings calculator. | Yes |
+| **Equipment** | `/dashboard/equipment` | Catalog gear and possessions. Categories, purchase price, current value, valuation history with charts. Link to financial transactions. Cross-module activity links. Summary dashboard with depreciation and ROI. | Yes |
+| **Categories** | `/dashboard/categories` | Life Categories — tag any item across all modules with high-level life areas (Health, Finance, Career, Fitness, etc.). Analytics dashboard with spending breakdown, activity charts, and uncategorized items view for quick batch tagging. | Yes |
+| **Data Hub** | `/dashboard/data` | Centralized import/export hub for all modules. CSV templates, Google Sheets integration, date-range exports. | Yes |
+
+---
+
+### Learn Group
+
+| Module | Path | What It Does | Paid? |
+|--------|------|-------------|-------|
+| **Blog** | `/dashboard/blog` | Write, edit, and publish articles with rich text editor and Cloudinary media. Public blog pages with likes, saves, and sharing. | Free |
+| **Recipes** | `/dashboard/recipes` | Create and publish recipes. Import recipes from any URL (JSON-LD scraping). Public recipe pages with likes and saves. | Free |
+| **Academy** | `/academy` | Course catalog with search, filters, and sorting. Enroll in courses (free or paid). Lesson types: video, audio, text, slides, quiz. Rich media: chapter markers, transcripts, maps, documents, podcast links. CYOA navigation. Progress tracking, assignments, discussions, and learning paths. | Free (catalog + free courses) |
+| **Live** | `/live` | Live streaming sessions — scheduled events with embedded video. | Free |
+
+---
+
+### AI Group (Admin Only)
+
+| Module | Path | What It Does | Paid? |
+|--------|------|-------------|-------|
+| **Coach** | `/dashboard/coach` | AI-powered coaching assistant. Uses your data to provide personalized guidance. | Admin |
+| **Gems** | `/dashboard/gems` | AI data consultant — query your data with natural language. | Admin |
+
+---
+
+### Cross-Module Features
+
+These features work across multiple modules:
+
+**Saved Contacts** — a shared vendor/customer/location directory. Used in Finance (vendor autocomplete), Travel (trip origin/destination), and Planner (task contacts). Contacts can have multiple sub-locations.
+
+**Activity Links** — bidirectional connections between records in different modules. Link a task to a trip, a transaction to equipment, a recipe to a workout. Available on equipment detail pages, task edit modals, and other module detail views.
+
+**Life Categories** — a cross-module tagging layer. Assign high-level life areas (Health, Finance, Career, Fitness, etc.) to any item in any module. The Categories dashboard shows spending breakdown, activity charts, and an uncategorized items view for quickly tagging items after bulk imports.
+
+**Contact Locations** — sub-locations within a saved contact. A vendor can have multiple addresses (e.g., ""Main Office"", ""Warehouse""). Used in Travel for trip endpoints and in Planner for task locations.
+
+---
+
+### Quick Reference: All Nav Paths
+
+```
+/dashboard/planner       — Daily Tasks
+/dashboard/engine        — Focus Engine
+/dashboard/weekly-review — Weekly Review
+/dashboard/roadmap       — Roadmap & Goals
+/dashboard/fuel          — Fuel & Nutrition
+/dashboard/metrics       — Health Metrics
+/dashboard/settings/wearables — Wearable Connections
+/dashboard/workouts      — Workouts
+/dashboard/correlations  — Correlations
+/dashboard/analytics     — Analytics
+/dashboard/finance       — Financial Dashboard
+/dashboard/travel        — Travel & Vehicles
+/dashboard/equipment     — Equipment Tracker
+/dashboard/categories    — Life Categories
+/dashboard/data          — Data Hub
+/dashboard/blog          — Blog
+/dashboard/recipes       — Recipes
+/academy                 — Academy
+/live                    — Live Sessions
+/dashboard/billing       — Billing & Subscription
+/pricing                 — Pricing Plans
+/demo                    — Demo Account
+/tech-roadmap            — Product Roadmap
+```
+
+---
+
+## Screen Recording Notes
+
+> [SCREEN: Show the dashboard sidebar with all groups expanded]
+
+> [SCREEN: Click through one module from each group — Daily Tasks, Fuel, Finance, Academy, Coach — show each hub page briefly]
+
+> [SCREENSHOT: Sidebar with all groups labeled — callout per group: ""Operate (4)"", ""Health (6)"", ""Life (5)"", ""Learn (4)"", ""AI (2)""]
+
+> [SCREEN: Navigate to /dashboard/finance — show a saved contact autocomplete in action]
+
+> [SCREEN: Navigate to /dashboard/equipment/[id] — show the ActivityLinker component with cross-module links]
+
+> [SCREEN: End on the dashboard main page]
+
+---
+
+## Key Takeaways
+
+- 5 nav groups: Operate (4 modules), Health (6), Life (5), Learn (4), AI (2 admin-only)
+- Free modules: Blog, Recipes, Academy, Live
+- Everything else requires Monthly ($10/mo) or Lifetime ($100)
+- Cross-module features: Saved Contacts, Activity Links, Life Categories, Contact Locations
+- All paths are bookmarkable — use the quick reference list above
+
+---
+
+## Map Content (conceptual module map)
+
+If this lesson is rendered with the MapViewer, use this `map_content` JSON to show modules as markers clustered by nav group:
+
+```json
+{
+  ""center"": [39.8283, -98.5795],
+  ""zoom"": 4,
+  ""markers"": [
+    { ""lat"": 47.6062, ""lng"": -122.3321, ""title"": ""Operate: Daily Tasks"", ""description"": ""Planner with week/3-day/daily views"" },
+    { ""lat"": 47.6162, ""lng"": -122.3121, ""title"": ""Operate: Engine"", ""description"": ""Focus timer, debrief, pain log"" },
+    { ""lat"": 47.5962, ""lng"": -122.3521, ""title"": ""Operate: Weekly Review"", ""description"": ""AI-generated weekly summaries"" },
+    { ""lat"": 47.6262, ""lng"": -122.3421, ""title"": ""Operate: Roadmap"", ""description"": ""Goal hierarchy: Roadmap → Goal → Milestone → Task"" },
+    { ""lat"": 37.7749, ""lng"": -122.4194, ""title"": ""Health: Fuel"", ""description"": ""Nutrition tracking with NCV framework"" },
+    { ""lat"": 37.7649, ""lng"": -122.4094, ""title"": ""Health: Metrics"", ""description"": ""RHR, steps, sleep, activity minutes"" },
+    { ""lat"": 37.7849, ""lng"": -122.4294, ""title"": ""Health: Wearables"", ""description"": ""Oura, WHOOP, Garmin sync"" },
+    { ""lat"": 33.4484, ""lng"": -112.0740, ""title"": ""Life: Finance"", ""description"": ""Accounts, transactions, budgets, brands"" },
+    { ""lat"": 33.4384, ""lng"": -112.0640, ""title"": ""Life: Travel"", ""description"": ""Vehicles, fuel, trips, maintenance"" },
+    { ""lat"": 33.4584, ""lng"": -112.0840, ""title"": ""Life: Equipment"", ""description"": ""Gear catalog, valuations, activity links"" },
+    { ""lat"": 33.4684, ""lng"": -112.0740, ""title"": ""Life: Categories"", ""description"": ""Cross-module life category tagging and analytics"" },
+    { ""lat"": 33.4284, ""lng"": -112.0540, ""title"": ""Life: Data Hub"", ""description"": ""Centralized import/export for all modules"" },
+    { ""lat"": 25.7617, ""lng"": -80.1918, ""title"": ""Learn: Academy"", ""description"": ""Course catalog, enrollment, CYOA navigation"" },
+    { ""lat"": 25.7717, ""lng"": -80.1818, ""title"": ""Learn: Blog"", ""description"": ""Write and publish articles"" },
+    { ""lat"": 25.7517, ""lng"": -80.2018, ""title"": ""Learn: Recipes"", ""description"": ""Create, import, share recipes"" }
+  ],
+  ""polygons"": [
+    { ""coordinates"": [[47.59, -122.36], [47.63, -122.36], [47.63, -122.30], [47.59, -122.30]], ""color"": ""#8B5CF6"", ""fillColor"": ""#8B5CF620"", ""label"": ""Operate Cluster"" },
+    { ""coordinates"": [[37.76, -122.44], [37.79, -122.44], [37.79, -122.40], [37.76, -122.40]], ""color"": ""#10B981"", ""fillColor"": ""#10B98120"", ""label"": ""Health Cluster"" },
+    { ""coordinates"": [[33.43, -112.09], [33.46, -112.09], [33.46, -112.06], [33.43, -112.06]], ""color"": ""#F59E0B"", ""fillColor"": ""#F59E0B20"", ""label"": ""Life Cluster"" },
+    { ""coordinates"": [[25.74, -80.21], [25.78, -80.21], [25.78, -80.17], [25.74, -80.17]], ""color"": ""#3B82F6"", ""fillColor"": ""#3B82F620"", ""label"": ""Learn Cluster"" }
+  ]
+}
+```
+",markdown,,,,,,
