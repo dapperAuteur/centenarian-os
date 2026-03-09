@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createLinkedTransaction } from '@/lib/finance/linked-transaction';
 import { CO2_PER_MILE, HUMAN_POWERED } from '@/lib/travel/constants';
+import { getRoute } from '@/lib/geo/route';
 
 function getDb() {
   return createServiceClient(
@@ -71,6 +72,10 @@ interface LegInput {
   trip_category?: string;
   notes?: string | null;
   finance_category_id?: string | null;
+  origin_lat?: number | null;
+  origin_lng?: number | null;
+  dest_lat?: number | null;
+  dest_lng?: number | null;
 }
 
 export async function POST(request: NextRequest) {
@@ -112,8 +117,25 @@ export async function POST(request: NextRequest) {
 
   for (let i = 0; i < legs.length; i++) {
     const leg: LegInput = legs[i];
-    const dist = leg.distance_miles ? Number(leg.distance_miles) : null;
-    const dur = leg.duration_min ? Number(leg.duration_min) : null;
+    let dist = leg.distance_miles ? Number(leg.distance_miles) : null;
+    let dur = leg.duration_min ? Number(leg.duration_min) : null;
+    let distanceSource: string = 'manual';
+    let routeGeometry: string | null = null;
+
+    // Auto-calculate via OSRM if coordinates provided and no manual distance
+    const hasCoords = typeof leg.origin_lat === 'number' && typeof leg.origin_lng === 'number'
+      && typeof leg.dest_lat === 'number' && typeof leg.dest_lng === 'number';
+    if (hasCoords && !dist) {
+      const routeResult = await getRoute(
+        { lat: leg.origin_lat!, lng: leg.origin_lng! },
+        { lat: leg.dest_lat!, lng: leg.dest_lng! },
+      );
+      dist = routeResult.distance_miles;
+      dur = dur ?? routeResult.duration_min;
+      distanceSource = routeResult.source;
+      routeGeometry = routeResult.geometry;
+    }
+
     const cost = leg.cost ? Number(leg.cost) : null;
     const factor = CO2_PER_MILE[leg.mode] ?? 0;
     const co2 = dist && dist > 0 ? parseFloat((factor * dist).toFixed(3)) : null;
@@ -132,6 +154,8 @@ export async function POST(request: NextRequest) {
         destination: leg.destination || null,
         distance_miles: dist,
         duration_min: dur,
+        distance_source: distanceSource,
+        route_geometry: routeGeometry,
         calories_burned: leg.calories_burned ? Number(leg.calories_burned) : null,
         cost,
         co2_kg: co2,
