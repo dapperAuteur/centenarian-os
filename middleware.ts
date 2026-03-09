@@ -104,6 +104,11 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
 
+  // ── Bare badcba.com → contractor.badcba.com ────────────────────────
+  if (hostname === 'badcba.com' || hostname === 'www.badcba.com') {
+    return NextResponse.redirect(new URL(`https://contractor.badcba.com${pathname}`, request.url));
+  }
+
   // ── Subdomain handling ────────────────────────────────────────────
   const isListerMode = hostname.startsWith('lister.');
 
@@ -224,5 +229,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/dashboard/:path*', '/login', '/signup', '/blog/:path*', '/recipes', '/recipes/:path*'],
+  matcher: ['/', '/pricing', '/admin/:path*', '/dashboard/:path*', '/login', '/signup', '/blog/:path*', '/recipes', '/recipes/:path*', '/contractor-landing', '/contractor-pricing', '/lister-landing', '/lister-pricing'],
 };
