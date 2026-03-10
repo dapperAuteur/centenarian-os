@@ -344,6 +344,104 @@ export async function seedTutorial(supabase: SupabaseClient, userId: string): Pr
     content: `## Health & Recovery\nResting heart rate averaged 61 bpm this week — consistent. Sleep averaged 7.2 hours with one rough night at 5.5 hours. Completed 3 out of 4 planned workouts including a push session and yoga flow.\n\n## Finance\nTotal spending this week: $412. Groceries accounted for the largest share at $225 between Trader Joes and Whole Foods. Stayed within the monthly gas budget.\n\n## Movement\nLogged 8 trips this week — 4 by car, 1 bike ride to the park (8.2 miles). Daily steps averaged around 8,500.\n\n## Focus for Next Week\nPrioritize sleep consistency — aim for 7+ hours every night. Complete all 4 planned workouts and start tracking active calories.`,
   }]);
   if (tutWrErr) throw new Error(`Tutorial weekly review: ${tutWrErr.message}`);
+
+  // ── Contacts ──
+  const { error: contactErr } = await supabase.from('user_contacts').insert([
+    { user_id: userId, name: 'Trader Joes', contact_type: 'vendor', notes: 'Weekly grocery store' },
+    { user_id: userId, name: 'Dr. Smith Family Medicine', contact_type: 'vendor', notes: 'Primary care physician' },
+    { user_id: userId, name: 'Costco Gas', contact_type: 'vendor', notes: 'Regular fuel stop' },
+  ]);
+  if (contactErr) throw new Error(`Tutorial contacts: ${contactErr.message}`);
+
+  // ── Recipes ──
+  const { data: recipeData, error: recipeErr } = await supabase.from('recipes').insert([
+    {
+      user_id: userId,
+      title: 'Overnight Protein Oats',
+      slug: 'overnight-protein-oats',
+      description: 'High-protein overnight oats with Greek yogurt and berries.',
+      content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: '1. Mix oats, Greek yogurt, milk, and protein powder in a jar.\n2. Add chia seeds and stir.\n3. Refrigerate overnight (or at least 4 hours).\n4. Top with fresh berries and a drizzle of honey before serving.' }] }] },
+      visibility: 'public',
+      tags: ['breakfast', 'high-protein', 'meal-prep'],
+      total_calories: 420,
+      total_protein_g: 35,
+      total_carbs_g: 48,
+      total_fat_g: 10,
+      total_fiber_g: 8,
+      ncv_score: 'Green',
+      servings: 1,
+      prep_time_minutes: 10,
+      cook_time_minutes: 0,
+      published_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+    },
+    {
+      user_id: userId,
+      title: 'Simple Green Smoothie',
+      slug: 'simple-green-smoothie',
+      description: 'Quick nutrient-dense smoothie with spinach, banana, and almond butter.',
+      content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: '1. Add spinach, banana, almond butter, and almond milk to blender.\n2. Blend until smooth.\n3. Add ice if desired.\n4. Pour and serve immediately.' }] }] },
+      visibility: 'public',
+      tags: ['smoothie', 'green', 'quick'],
+      total_calories: 310,
+      total_protein_g: 12,
+      total_carbs_g: 38,
+      total_fat_g: 14,
+      total_fiber_g: 6,
+      ncv_score: 'Green',
+      servings: 1,
+      prep_time_minutes: 5,
+      cook_time_minutes: 0,
+      published_at: new Date(Date.now() - 12 * 86400000).toISOString(),
+    },
+  ]).select('id, title');
+  if (recipeErr) throw new Error(`Tutorial recipes: ${recipeErr.message}`);
+
+  // Recipe ingredients
+  const oatsId = recipeData?.find(r => r.title === 'Overnight Protein Oats')?.id;
+  const smoothieId = recipeData?.find(r => r.title === 'Simple Green Smoothie')?.id;
+  const ingredientRows = [
+    ...(oatsId ? [
+      { recipe_id: oatsId, name: 'Rolled oats', quantity: 0.5, unit: 'cup', calories: 150, protein_g: 5, carbs_g: 27, fat_g: 3, fiber_g: 4, sort_order: 1 },
+      { recipe_id: oatsId, name: 'Greek yogurt (plain, nonfat)', quantity: 0.5, unit: 'cup', calories: 65, protein_g: 12, carbs_g: 5, fat_g: 0, fiber_g: 0, sort_order: 2 },
+      { recipe_id: oatsId, name: 'Whole milk', quantity: 0.5, unit: 'cup', calories: 75, protein_g: 4, carbs_g: 6, fat_g: 4, fiber_g: 0, sort_order: 3 },
+      { recipe_id: oatsId, name: 'Whey protein powder', quantity: 1, unit: 'scoop', calories: 120, protein_g: 24, carbs_g: 3, fat_g: 1, fiber_g: 0, sort_order: 4 },
+      { recipe_id: oatsId, name: 'Chia seeds', quantity: 1, unit: 'tbsp', calories: 60, protein_g: 2, carbs_g: 5, fat_g: 4, fiber_g: 5, sort_order: 5 },
+      { recipe_id: oatsId, name: 'Mixed berries', quantity: 0.25, unit: 'cup', calories: 20, protein_g: 0.5, carbs_g: 5, fat_g: 0, fiber_g: 1, sort_order: 6 },
+    ] : []),
+    ...(smoothieId ? [
+      { recipe_id: smoothieId, name: 'Baby spinach', quantity: 2, unit: 'cups', calories: 14, protein_g: 2, carbs_g: 2, fat_g: 0, fiber_g: 1, sort_order: 1 },
+      { recipe_id: smoothieId, name: 'Banana (frozen)', quantity: 1, unit: 'medium', calories: 105, protein_g: 1, carbs_g: 27, fat_g: 0, fiber_g: 3, sort_order: 2 },
+      { recipe_id: smoothieId, name: 'Almond butter', quantity: 1, unit: 'tbsp', calories: 98, protein_g: 3, carbs_g: 3, fat_g: 9, fiber_g: 2, sort_order: 3 },
+      { recipe_id: smoothieId, name: 'Almond milk (unsweetened)', quantity: 1, unit: 'cup', calories: 30, protein_g: 1, carbs_g: 1, fat_g: 2.5, fiber_g: 0, sort_order: 4 },
+    ] : []),
+  ];
+  if (ingredientRows.length > 0) {
+    const { error: ingErr } = await supabase.from('recipe_ingredients').insert(ingredientRows);
+    if (ingErr) throw new Error(`Tutorial recipe ingredients: ${ingErr.message}`);
+  }
+
+  // ── Blog Posts ──
+  const { error: blogErr } = await supabase.from('blog_posts').insert([{
+    user_id: userId,
+    title: 'My First Week Tracking Everything',
+    slug: 'first-week-tracking',
+    excerpt: 'What I learned from logging meals, workouts, finances, and health metrics for seven days straight.',
+    content: {
+      type: 'doc',
+      content: [
+        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'The Experiment' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'I decided to track everything for one week — every meal, workout, transaction, and health metric. Here is what I learned.' }] },
+        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Key Insights' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'The biggest surprise was seeing how my sleep quality directly affected my spending. On nights with less than 6 hours of sleep, I spent 40% more on food the next day — mostly on convenience meals and coffee.' }] },
+        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'What I Will Keep Doing' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'Meal prep on Sundays, logging workouts immediately after finishing, and reviewing my budget categories weekly. These three habits had the highest return on effort.' }] },
+      ],
+    },
+    visibility: 'public',
+    tags: ['tracking', 'habits', 'health'],
+    published_at: new Date(Date.now() - 3 * 86400000).toISOString(),
+  }]);
+  if (blogErr) throw new Error(`Tutorial blog: ${blogErr.message}`);
 }
 
 // ─── VISITOR ACCOUNT ────────────────────────────────────────────────────────

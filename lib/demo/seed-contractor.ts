@@ -2,6 +2,7 @@
 // Seeds a realistic contractor account with real venues and sports schedules.
 
 import { SupabaseClient } from '@supabase/supabase-js';
+import { daysAgo } from './seed';
 
 // ─── Real Venues ──────────────────────────────────────────────────────────
 const VENUES = [
@@ -379,4 +380,166 @@ export async function seedContractor(db: SupabaseClient, userId: string): Promis
       if (liErr) throw new Error(`Invoice line items: ${liErr.message}`);
     }
   }
+
+  // 10. Financial Accounts + Transactions
+  const { data: accts, error: acctErr } = await db
+    .from('financial_accounts')
+    .insert([
+      { user_id: userId, name: 'Business Checking', account_type: 'checking', opening_balance: 12500.00, is_active: true },
+      { user_id: userId, name: 'Business Credit Card', account_type: 'credit_card', opening_balance: 0, credit_limit: 15000, is_active: true },
+    ])
+    .select('id, name');
+  if (acctErr) throw new Error(`Contractor accounts: ${acctErr.message}`);
+
+  const bizCheckingId = accts?.find(a => a.name === 'Business Checking')?.id;
+  const bizCreditId = accts?.find(a => a.name === 'Business Credit Card')?.id;
+
+  const { data: cats, error: catErr } = await db
+    .from('budget_categories')
+    .insert([
+      { user_id: userId, name: 'Equipment', color: '#f59e0b', monthly_budget: 500, sort_order: 1 },
+      { user_id: userId, name: 'Travel', color: '#3b82f6', monthly_budget: 400, sort_order: 2 },
+      { user_id: userId, name: 'Meals', color: '#ef4444', monthly_budget: 300, sort_order: 3 },
+      { user_id: userId, name: 'Union Dues', color: '#6366f1', monthly_budget: 150, sort_order: 4 },
+    ])
+    .select('id, name');
+  if (catErr) throw new Error(`Contractor budget categories: ${catErr.message}`);
+
+  const catId = (name: string) => cats?.find(c => c.name === name)?.id ?? null;
+
+  const { error: txErr } = await db.from('financial_transactions').insert([
+    { user_id: userId, amount: 349.99, type: 'expense', description: 'Pelican 1650 case for camera', vendor: 'B&H Photo', transaction_date: daysAgo(5), source: 'manual', category_id: catId('Equipment'), account_id: bizCreditId },
+    { user_id: userId, amount: 89.00, type: 'expense', description: 'BNC cables and adapters', vendor: 'B&H Photo', transaction_date: daysAgo(8), source: 'manual', category_id: catId('Equipment'), account_id: bizCreditId },
+    { user_id: userId, amount: 67.20, type: 'expense', description: 'Fuel — drive to Lucas Oil', vendor: 'Costco Gas', transaction_date: daysAgo(10), source: 'manual', category_id: catId('Travel'), account_id: bizCreditId },
+    { user_id: userId, amount: 42.50, type: 'expense', description: 'Dinner after Colts game', vendor: 'St. Elmo Steak House', transaction_date: daysAgo(10), source: 'manual', category_id: catId('Meals'), account_id: bizCreditId },
+    { user_id: userId, amount: 125.00, type: 'expense', description: 'IATSE 317 quarterly dues', vendor: 'IATSE Local 317', transaction_date: daysAgo(15), source: 'manual', category_id: catId('Union Dues'), account_id: bizCheckingId },
+    { user_id: userId, amount: 95.00, type: 'expense', description: 'IBEW 1220 quarterly dues', vendor: 'IBEW Local 1220', transaction_date: daysAgo(15), source: 'manual', category_id: catId('Union Dues'), account_id: bizCheckingId },
+    { user_id: userId, amount: 38.75, type: 'expense', description: 'Lunch at stadium — B1G Tourney', vendor: 'Gainbridge Fieldhouse Catering', transaction_date: daysAgo(6), source: 'manual', category_id: catId('Meals'), account_id: bizCreditId },
+    { user_id: userId, amount: 54.30, type: 'expense', description: 'Fuel — drive to Bloomington', vendor: 'Shell', transaction_date: daysAgo(20), source: 'manual', category_id: catId('Travel'), account_id: bizCreditId },
+  ]);
+  if (txErr) throw new Error(`Contractor transactions: ${txErr.message}`);
+
+  // 11. Vehicle + Fuel Logs + Trips
+  const { data: veh, error: vehErr } = await db
+    .from('vehicles')
+    .insert([{ user_id: userId, nickname: 'Work Truck', type: 'truck', make: 'Ford', model: 'F-150', year: 2021, ownership_type: 'owned', active: true }])
+    .select('id');
+  if (vehErr) throw new Error(`Contractor vehicle: ${vehErr.message}`);
+  const vehicleId = veh?.[0]?.id;
+
+  if (vehicleId) {
+    const { error: fuelErr } = await db.from('fuel_logs').insert([
+      { user_id: userId, vehicle_id: vehicleId, date: daysAgo(3), odometer_miles: 48720, miles_since_last_fill: 280, gallons: 16.2, total_cost: 55.89, cost_per_gallon: 3.45, mpg_display: 17.3, station: 'Costco Gas', fuel_grade: 'regular', source: 'manual' },
+      { user_id: userId, vehicle_id: vehicleId, date: daysAgo(10), odometer_miles: 48440, miles_since_last_fill: 265, gallons: 15.8, total_cost: 54.51, cost_per_gallon: 3.45, mpg_display: 16.8, station: 'Shell', fuel_grade: 'regular', source: 'manual' },
+      { user_id: userId, vehicle_id: vehicleId, date: daysAgo(20), odometer_miles: 48175, miles_since_last_fill: 290, gallons: 16.5, total_cost: 57.09, cost_per_gallon: 3.46, mpg_display: 17.6, station: 'Chevron', fuel_grade: 'regular', source: 'manual' },
+    ]);
+    if (fuelErr) throw new Error(`Contractor fuel logs: ${fuelErr.message}`);
+  }
+
+  const { error: tripErr } = await db.from('trips').insert([
+    { user_id: userId, vehicle_id: vehicleId, date: daysAgo(3), mode: 'car', origin: 'Home', destination: 'Lucas Oil Stadium', distance_miles: 48.5, duration_min: 55, trip_category: 'travel', tax_category: 'business', source: 'manual' },
+    { user_id: userId, vehicle_id: vehicleId, date: daysAgo(6), mode: 'car', origin: 'Home', destination: 'Gainbridge Fieldhouse', distance_miles: 45.2, duration_min: 50, trip_category: 'travel', tax_category: 'business', source: 'manual' },
+  ]);
+  if (tripErr) throw new Error(`Contractor trips: ${tripErr.message}`);
+
+  // 12. Equipment
+  const { data: eqCats, error: eqCatErr } = await db
+    .from('equipment_categories')
+    .insert([
+      { user_id: userId, name: 'Broadcast', sort_order: 1 },
+      { user_id: userId, name: 'Electronics', sort_order: 2 },
+    ])
+    .select('id, name');
+  if (eqCatErr) throw new Error(`Contractor equipment categories: ${eqCatErr.message}`);
+  const eqCatIdFn = (name: string) => eqCats?.find(c => c.name === name)?.id ?? null;
+
+  const { error: eqErr } = await db.from('equipment').insert([
+    { user_id: userId, name: 'Sony PXW-FX9', category_id: eqCatIdFn('Broadcast'), brand: 'Sony', purchase_date: daysAgo(365), purchase_price: 5500, current_value: 4800, condition: 'excellent' },
+    { user_id: userId, name: 'Sachtler Video 18 Tripod', category_id: eqCatIdFn('Broadcast'), brand: 'Sachtler', purchase_date: daysAgo(300), purchase_price: 1800, current_value: 1500, condition: 'good' },
+    { user_id: userId, name: 'Teradek Bolt 4K', category_id: eqCatIdFn('Broadcast'), brand: 'Teradek', purchase_date: daysAgo(180), purchase_price: 2200, current_value: 2000, condition: 'excellent' },
+    { user_id: userId, name: 'iPad Pro 12.9"', category_id: eqCatIdFn('Electronics'), brand: 'Apple', purchase_date: daysAgo(120), purchase_price: 1099, current_value: 950, condition: 'good' },
+  ]);
+  if (eqErr) throw new Error(`Contractor equipment: ${eqErr.message}`);
+
+  // 13. Exercise Categories + Exercises
+  const { data: exCats, error: exCatErr } = await db
+    .from('exercise_categories')
+    .insert([
+      { user_id: userId, name: 'Mobility', sort_order: 1 },
+      { user_id: userId, name: 'Strength', sort_order: 2 },
+      { user_id: userId, name: 'Cardio', sort_order: 3 },
+    ])
+    .select('id, name');
+  if (exCatErr) throw new Error(`Contractor exercise categories: ${exCatErr.message}`);
+  const exCatId = (name: string) => exCats?.find(c => c.name === name)?.id ?? null;
+
+  const { data: exerciseData, error: exErr } = await db
+    .from('exercises')
+    .insert([
+      { user_id: userId, name: 'Shoulder Mobility Circles', category_id: exCatId('Mobility'), default_sets: 2, default_reps: 10, primary_muscles: ['shoulders', 'rotator cuff'] },
+      { user_id: userId, name: 'Goblet Squats', category_id: exCatId('Strength'), default_sets: 3, default_reps: 12, primary_muscles: ['quads', 'glutes', 'core'], instructions: 'Hold kettlebell at chest for camera-stability training' },
+      { user_id: userId, name: 'Farmer\'s Walks', category_id: exCatId('Strength'), default_sets: 3, default_duration_sec: 60, primary_muscles: ['forearms', 'traps', 'core'], instructions: 'Grip strength for handheld camera work' },
+      { user_id: userId, name: 'Treadmill Intervals', category_id: exCatId('Cardio'), default_duration_sec: 1200, primary_muscles: ['legs', 'cardio'] },
+    ])
+    .select('id, name');
+  if (exErr) throw new Error(`Contractor exercises: ${exErr.message}`);
+
+  // 14. Workout Log
+  const { data: logData, error: logErr } = await db
+    .from('workout_logs')
+    .insert([{ user_id: userId, name: 'Pre-Show Warm-up', date: daysAgo(3), duration_min: 35, overall_feeling: 4, purpose: ['mobility', 'strength'] }])
+    .select('id');
+  if (logErr) throw new Error(`Contractor workout log: ${logErr.message}`);
+  const logId = logData?.[0]?.id;
+
+  if (logId && exerciseData) {
+    const exId = (name: string) => exerciseData.find(e => e.name === name)?.id ?? null;
+    const { error: logExErr } = await db.from('workout_log_exercises').insert([
+      { log_id: logId, name: 'Shoulder Mobility Circles', exercise_id: exId('Shoulder Mobility Circles'), sets_completed: 2, reps_completed: 10, sort_order: 1, phase: 'warmup', rpe: 4 },
+      { log_id: logId, name: 'Goblet Squats', exercise_id: exId('Goblet Squats'), sets_completed: 3, reps_completed: 12, weight_lbs: 45, sort_order: 2, phase: 'working', rpe: 7 },
+      { log_id: logId, name: 'Farmer\'s Walks', exercise_id: exId('Farmer\'s Walks'), sets_completed: 3, duration_sec: 60, weight_lbs: 70, sort_order: 3, phase: 'working', rpe: 8 },
+    ]);
+    if (logExErr) throw new Error(`Contractor workout log exercises: ${logExErr.message}`);
+  }
+
+  // 15. Health Metrics (7 days)
+  const healthRows = Array.from({ length: 7 }, (_, i) => ({
+    user_id: userId,
+    logged_date: daysAgo(i),
+    resting_hr: 62 + Math.floor(Math.random() * 8),
+    steps: 5000 + Math.floor(Math.random() * 7000),
+    sleep_hours: +(6 + Math.random() * 2.5).toFixed(1),
+    source: 'manual' as const,
+  }));
+  const { error: hmErr } = await db.from('user_health_metrics').insert(healthRows);
+  if (hmErr) throw new Error(`Contractor health metrics: ${hmErr.message}`);
+
+  // 16. Life Categories
+  const { error: lcErr } = await db.from('life_categories').insert([
+    { user_id: userId, name: 'Career', icon: 'briefcase', color: '#f59e0b', sort_order: 1 },
+    { user_id: userId, name: 'Health', icon: 'heart', color: '#ef4444', sort_order: 2 },
+    { user_id: userId, name: 'Finance', icon: 'dollar-sign', color: '#10b981', sort_order: 3 },
+    { user_id: userId, name: 'Travel', icon: 'map-pin', color: '#3b82f6', sort_order: 4 },
+  ]);
+  if (lcErr) throw new Error(`Contractor life categories: ${lcErr.message}`);
+
+  // 17. Focus Sessions
+  const { error: fsErr } = await db.from('focus_sessions').insert([
+    { user_id: userId, start_time: new Date(Date.now() - 86400000 - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 86400000 - 60 * 60000).toISOString(), duration: 30, notes: 'Reviewing call sheets for B1G Tournament', session_type: 'work' },
+    { user_id: userId, start_time: new Date(Date.now() - 172800000 - 60 * 60000).toISOString(), end_time: new Date(Date.now() - 172800000 - 35 * 60000).toISOString(), duration: 25, notes: 'Logging time entries for completed Colts games', session_type: 'work' },
+  ]);
+  if (fsErr) throw new Error(`Contractor focus sessions: ${fsErr.message}`);
+
+  // 18. Blog Post
+  const { error: blogErr } = await db.from('blog_posts').insert([
+    {
+      user_id: userId, title: 'A Day in the Life of a Freelance Camera Operator',
+      slug: 'day-in-the-life-freelance-camera-operator',
+      excerpt: 'From call sheets to camera platforms — what a typical game day looks like for a freelance broadcast camera op.',
+      content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'My alarm goes off at 4:30 AM on game day. By 5:15 I\'m loading the truck with my FX9, Sachtler tripod, and a Pelican case full of cables. The call time is usually 6 hours before kickoff for NFL games, 4 hours for NBA. Once I arrive at the venue, I check in at security, grab my credential, and head to my assigned camera position. The next few hours are a blur of cable runs, lens checks, white balance, and rehearsals with the director. When the red light goes on, all that prep pays off. After wrap, I break down my gear, drive home, log my hours in CentenarianOS, and start prepping for the next show.' }] }] },
+      visibility: 'public', tags: ['freelance', 'camera', 'broadcast', 'behind-the-scenes'],
+      published_at: new Date(Date.now() - 7 * 86400000).toISOString(),
+    },
+  ]);
+  if (blogErr) throw new Error(`Contractor blog post: ${blogErr.message}`);
 }
