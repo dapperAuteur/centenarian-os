@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import Modal from '@/components/ui/Modal';
 import CloudinaryUploader from './CloudinaryUploader';
-import { Youtube, Code2, ImageIcon, Video } from 'lucide-react';
+import { Play, Code2, ImageIcon, Video } from 'lucide-react';
 
-type Tab = 'youtube' | 'social' | 'image' | 'video';
+type Tab = 'videoUrl' | 'social' | 'image' | 'video';
 
 type MediaPayload =
-  | { type: 'youtube'; url: string }
+  | { type: 'videoUrl'; url: string }
   | { type: 'social'; html: string; platform: string }
   | { type: 'image'; url: string; publicId: string }
   | { type: 'video'; url: string; publicId: string };
@@ -20,39 +20,40 @@ interface MediaEmbedModalProps {
 }
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: 'youtube', label: 'YouTube', icon: <Youtube className="w-4 h-4" /> },
+  { id: 'videoUrl', label: 'Video URL', icon: <Play className="w-4 h-4" /> },
   { id: 'social', label: 'Social embed', icon: <Code2 className="w-4 h-4" /> },
   { id: 'image', label: 'Image', icon: <ImageIcon className="w-4 h-4" /> },
-  { id: 'video', label: 'Video', icon: <Video className="w-4 h-4" /> },
+  { id: 'video', label: 'Upload Video', icon: <Video className="w-4 h-4" /> },
 ];
 
 const PLATFORMS = ['Twitter / X', 'Instagram', 'TikTok', 'Facebook', 'Other'];
 
 export default function MediaEmbedModal({ isOpen, onClose, onInsert }: MediaEmbedModalProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('youtube');
-  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [activeTab, setActiveTab] = useState<Tab>('videoUrl');
+  const [videoUrl, setVideoUrl] = useState('');
   const [embedCode, setEmbedCode] = useState('');
   const [platform, setPlatform] = useState('Twitter / X');
   const [error, setError] = useState('');
 
   const handleClose = () => {
-    setYoutubeUrl('');
+    setVideoUrl('');
     setEmbedCode('');
     setError('');
     onClose();
   };
 
-  const handleYouTubeInsert = () => {
-    if (!youtubeUrl.trim()) {
-      setError('Please enter a YouTube URL');
+  const handleVideoUrlInsert = () => {
+    if (!videoUrl.trim()) {
+      setError('Please enter a video URL');
       return;
     }
-    const isYoutube = /youtube\.com|youtu\.be/.test(youtubeUrl);
-    if (!isYoutube) {
-      setError('Please enter a valid YouTube URL');
+    try {
+      new URL(videoUrl.trim());
+    } catch {
+      setError('Please enter a valid URL');
       return;
     }
-    onInsert({ type: 'youtube', url: youtubeUrl.trim() });
+    onInsert({ type: 'videoUrl', url: videoUrl.trim() });
     handleClose();
   };
 
@@ -91,21 +92,24 @@ export default function MediaEmbedModal({ isOpen, onClose, onInsert }: MediaEmbe
           <p className="text-sm text-red-500">{error}</p>
         )}
 
-        {/* YouTube tab */}
-        {activeTab === 'youtube' && (
+        {/* Video URL tab */}
+        {activeTab === 'videoUrl' && (
           <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-700">YouTube URL</label>
+            <label className="block text-sm font-medium text-gray-700">Video URL</label>
+            <p className="text-xs text-gray-500">
+              Supports YouTube, Viloud.tv, Mux, and direct video links.
+            </p>
             <input
               type="url"
-              value={youtubeUrl}
-              onChange={(e) => setYoutubeUrl(e.target.value)}
-              placeholder="https://www.youtube.com/watch?v=..."
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=... or any video URL"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
-              onKeyDown={(e) => e.key === 'Enter' && handleYouTubeInsert()}
+              onKeyDown={(e) => e.key === 'Enter' && handleVideoUrlInsert()}
             />
             <button
               type="button"
-              onClick={handleYouTubeInsert}
+              onClick={handleVideoUrlInsert}
               className="w-full px-4 py-2 bg-sky-600 text-white rounded-lg text-sm font-medium hover:bg-sky-700 transition"
             >
               Embed video

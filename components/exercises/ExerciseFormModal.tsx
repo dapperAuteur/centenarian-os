@@ -36,6 +36,7 @@ interface ExerciseData {
   default_duration_sec: number | null;
   default_rest_sec: number | null;
   notes: string;
+  visibility: string;
   equipment_ids: string[];
   is_bodyweight_default: boolean;
   is_timed_default: boolean;
@@ -69,6 +70,7 @@ const EMPTY: ExerciseData = {
   default_duration_sec: null,
   default_rest_sec: 60,
   notes: '',
+  visibility: 'private',
   equipment_ids: [],
   is_bodyweight_default: false,
   is_timed_default: false,
@@ -123,6 +125,7 @@ export default function ExerciseFormModal({ isOpen, onClose, onSaved, initial, c
           default_duration_sec: initial.default_duration_sec ?? null,
           default_rest_sec: initial.default_rest_sec ?? 60,
           notes: initial.notes ?? '',
+          visibility: initial.visibility ?? 'private',
           equipment_ids: initial.exercise_equipment?.map((e) => e.equipment_id) || initial.equipment_ids || [],
           is_bodyweight_default: initial.is_bodyweight_default ?? false,
           is_timed_default: initial.is_timed_default ?? false,
@@ -436,6 +439,19 @@ export default function ExerciseFormModal({ isOpen, onClose, onSaved, initial, c
             </div>
           </div>
         )}
+
+        {/* Visibility */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
+          <select
+            value={form.visibility}
+            onChange={(e) => set('visibility', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="private">Private — only you can see</option>
+            <option value="public">Public — visible to everyone</option>
+          </select>
+        </div>
 
         {/* Notes */}
         <div>

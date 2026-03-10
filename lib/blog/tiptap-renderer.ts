@@ -12,6 +12,7 @@ import Image from '@tiptap/extension-image';
 import Youtube from '@tiptap/extension-youtube';
 import CodeBlock from '@tiptap/extension-code-block';
 import Heading from '@tiptap/extension-heading';
+import { VideoEmbedNode } from '@/lib/tiptap/video-embed-extension';
 
 // Extensions that work with generateHTML (no React, no DOM required)
 const serverExtensions = [
@@ -21,6 +22,7 @@ const serverExtensions = [
   Youtube.configure({ nocookie: true }),
   CodeBlock,
   Heading.configure({ levels: [1, 2, 3] }),
+  VideoEmbedNode,
 ];
 
 export function renderTiptapToHTML(content: object): string {
