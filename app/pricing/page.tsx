@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { Check, Shirt, Zap, ArrowLeft, HardHat, Users } from 'lucide-react';
+import { Check, Shirt, Zap, ArrowLeft } from 'lucide-react';
 import PurchaseModal from '@/components/PurchaseModal';
 import SiteFooter from '@/components/ui/SiteFooter';
 import PageViewTracker from '@/components/ui/PageViewTracker';
@@ -244,56 +244,6 @@ export default function PricingPage() {
         {/* Policies */}
         <div className="mt-12 text-center">
           <p className="text-sm text-gray-500 font-medium">{POLICIES}</p>
-        </div>
-
-        {/* Contractor & Lister Products */}
-        <div className="mt-16 max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">For Contractors & Crew Coordinators</h2>
-          <p className="text-sm text-gray-500 text-center mb-8">Separate products with their own subscriptions — independent from CentenarianOS.</p>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl border border-amber-200 p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                  <HardHat className="w-5 h-5 text-amber-600" aria-hidden="true" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900">JobHub</h3>
-                  <p className="text-xs text-gray-500">For independent contractors</p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-600 mb-3">Job tracking, time entries, invoices, rate cards, venue KB, city guides, union tools, and reports. Interactive walkthroughs for every feature.</p>
-              <p className="text-sm font-semibold text-amber-600 mb-3">$10/month or $100/year</p>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Link href="/contractor-pricing" className="text-xs text-amber-600 hover:underline font-medium min-h-11 flex items-center">
-                  View pricing &rarr;
-                </Link>
-                <Link href="/features/contractor" className="text-xs text-gray-500 hover:text-amber-600 hover:underline font-medium min-h-11 flex items-center sm:ml-3">
-                  Explore features &rarr;
-                </Link>
-              </div>
-            </div>
-            <div className="bg-white rounded-xl border border-indigo-200 p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-indigo-600" aria-hidden="true" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900">CrewOps</h3>
-                  <p className="text-xs text-gray-500">For crew coordinators & union leaders</p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-600 mb-3">Job listing, roster management, assignment dispatch, group messaging, availability, and reports. Try each feature with a guided demo login.</p>
-              <p className="text-sm font-semibold text-indigo-600 mb-3">From $10/month (intro)</p>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Link href="/lister-pricing" className="text-xs text-indigo-600 hover:underline font-medium min-h-11 flex items-center">
-                  View pricing &rarr;
-                </Link>
-                <Link href="/features/lister" className="text-xs text-gray-500 hover:text-indigo-600 hover:underline font-medium min-h-11 flex items-center sm:ml-3">
-                  Explore features &rarr;
-                </Link>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Try demo */}

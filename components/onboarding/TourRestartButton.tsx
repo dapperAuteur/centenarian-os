@@ -5,7 +5,7 @@ import { RotateCcw, Loader2 } from 'lucide-react';
 
 interface TourRestartButtonProps {
   /** Reset all tours for a specific app, or a single tour if moduleSlug provided */
-  app?: 'contractor' | 'lister' | 'main';
+  app?: 'main';
   moduleSlug?: string;
   label?: string;
   onReset?: () => void;

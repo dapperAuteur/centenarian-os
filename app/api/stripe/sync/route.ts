@@ -157,27 +157,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ status: 'teacher' });
   }
 
-  if (session.mode === 'subscription' && (plan === 'contractor' || plan === 'lister')) {
-    const { data: pData } = await db
-      .from('profiles')
-      .select('products')
-      .eq('id', user.id)
-      .maybeSingle();
-    const currentProducts: string[] = pData?.products ?? [];
-    if (!currentProducts.includes(plan)) {
-      const { error } = await db
-        .from('profiles')
-        .update({ products: [...currentProducts, plan] })
-        .eq('id', user.id);
-      if (error) {
-        logError({ source: 'sync', module: 'stripe', message: `Failed to add ${plan} product`, metadata: { error: error.message }, userId: user.id });
-        return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
-      }
-    }
-    logInfo({ source: 'sync', module: 'stripe', message: `${plan} subscription synced`, metadata: { sessionId: session_id }, userId: user.id });
-    return NextResponse.json({ status: plan });
-  }
-
   logInfo({ source: 'sync', module: 'stripe', message: 'No matching plan/mode handler', metadata: { mode: session.mode, plan }, userId: user.id });
   return NextResponse.json({ status: 'free' });
 }

@@ -62,24 +62,6 @@ export async function POST(request: NextRequest) {
             stripe_subscription_id: session.subscription as string,
           }, { onConflict: 'user_id' });
         if (tpErr) logError({ source: 'webhook', module: 'stripe', message: 'Failed to upsert teacher_profile', metadata: { error: tpErr.message }, userId });
-      } else if (session.mode === 'subscription' && (plan === 'contractor' || plan === 'lister')) {
-        // Add product to user's products array
-        const { data: pData } = await supabase
-          .from('profiles')
-          .select('products')
-          .eq('id', userId)
-          .maybeSingle();
-        const currentProducts: string[] = pData?.products ?? [];
-        if (!currentProducts.includes(plan)) {
-          const { error } = await supabase
-            .from('profiles')
-            .update({ products: [...currentProducts, plan] })
-            .eq('id', userId);
-          if (error) {
-            logError({ source: 'webhook', module: 'stripe', message: `Failed to add ${plan} product`, metadata: { error: error.message }, userId });
-          }
-        }
-        logInfo({ source: 'webhook', module: 'stripe', message: `${plan} subscription activated`, metadata: { subscriptionId: session.subscription }, userId });
       } else if (session.mode === 'subscription' && plan === 'monthly') {
         // Expand subscription to get current_period_end for renewal date.
         // In Stripe API 2024-09-30+ (acacia/clover), this field moved to SubscriptionItem.
@@ -138,23 +120,6 @@ export async function POST(request: NextRequest) {
       const customerId = subscription.customer as string;
 
       logInfo({ source: 'webhook', module: 'stripe', message: 'Subscription deleted', metadata: { subscriptionId: subscription.id, customerId } });
-
-      // Check if this is a contractor or lister subscription cancellation
-      const cancelledPlan = subscription.metadata?.plan;
-      if (cancelledPlan === 'contractor' || cancelledPlan === 'lister') {
-        const cancelUserId = subscription.metadata?.supabase_user_id;
-        if (cancelUserId) {
-          const { data: pData } = await supabase
-            .from('profiles')
-            .select('products')
-            .eq('id', cancelUserId)
-            .maybeSingle();
-          const updated = (pData?.products ?? []).filter((p: string) => p !== cancelledPlan);
-          await supabase.from('profiles').update({ products: updated }).eq('id', cancelUserId);
-          logInfo({ source: 'webhook', module: 'stripe', message: `${cancelledPlan} subscription cancelled`, metadata: { subscriptionId: subscription.id }, userId: cancelUserId });
-        }
-        break;
-      }
 
       // Check if this is a teacher subscription cancellation
       const isTeacherSub = await supabase

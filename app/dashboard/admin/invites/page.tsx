@@ -12,12 +12,12 @@ import { NAV_GROUPS } from '@/components/nav/NavConfig';
 interface Invite {
   id: string;
   email: string;
-  product: 'centos' | 'contractor' | 'lister';
+  product: 'centos';
   access_type: 'trial' | 'lifetime';
   expires_at: string | null;
   is_active: boolean;
   allowed_modules: string[] | null;
-  demo_profile: 'visitor' | 'tutorial' | 'contractor_demo' | 'lister_demo' | null;
+  demo_profile: 'visitor' | 'tutorial' | null;
   demo_seeded: boolean;
   demo_seeded_at: string | null;
   invite_token: string;
@@ -31,11 +31,6 @@ const MODULE_GROUPS = [
   {
     label: 'CentOS',
     items: NAV_GROUPS.filter((g) => ['operate', 'health', 'life'].includes(g.id))
-      .flatMap((g) => g.items.filter((i) => i.paid && !i.adminOnly).map((i) => ({ label: i.label, href: i.href }))),
-  },
-  {
-    label: 'Contractor & Lister',
-    items: NAV_GROUPS.filter((g) => g.id === 'work')
       .flatMap((g) => g.items.filter((i) => i.paid && !i.adminOnly).map((i) => ({ label: i.label, href: i.href }))),
   },
 ];
@@ -54,12 +49,12 @@ function fmtDate(d: string | null) {
 
 const EMPTY_FORM = {
   email: '',
-  product: 'centos' as 'centos' | 'contractor' | 'lister',
+  product: 'centos' as const,
   access_type: 'trial' as 'trial' | 'lifetime',
   expires_at: '',
   all_modules: true,
   allowed_modules: [] as string[],
-  demo_profile: '' as '' | 'visitor' | 'tutorial' | 'contractor_demo' | 'lister_demo',
+  demo_profile: '' as '' | 'visitor' | 'tutorial',
   notes: '',
 };
 
@@ -254,12 +249,8 @@ export default function AdminInvitesPage() {
                         {inv.notes && <div className="text-xs text-gray-400 mt-0.5 truncate max-w-48">{inv.notes}</div>}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                          inv.product === 'contractor' ? 'bg-amber-100 text-amber-700'
-                            : inv.product === 'lister' ? 'bg-indigo-100 text-indigo-700'
-                            : 'bg-fuchsia-100 text-fuchsia-700'
-                        }`}>
-                          {inv.product === 'centos' ? 'CentOS' : inv.product === 'contractor' ? 'Contractor' : 'Lister'}
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-fuchsia-100 text-fuchsia-700">
+                          CentOS
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -369,38 +360,8 @@ export default function AdminInvitesPage() {
               />
             </div>
 
-            {/* Product */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Product</label>
-              <div className="flex gap-2">
-                {([
-                  { value: 'centos', label: 'CentOS' },
-                  { value: 'contractor', label: 'Contractor' },
-                  { value: 'lister', label: 'Lister' },
-                ] as const).map((p) => (
-                  <button
-                    key={p.value}
-                    type="button"
-                    disabled={!!editId}
-                    onClick={() => setForm((f) => ({ ...f, product: p.value }))}
-                    className={`flex-1 py-2 rounded-lg border text-sm font-medium transition disabled:opacity-50 ${
-                      form.product === p.value
-                        ? p.value === 'contractor' ? 'bg-amber-600 text-white border-amber-600'
-                          : p.value === 'lister' ? 'bg-indigo-600 text-white border-indigo-600'
-                          : 'bg-fuchsia-600 text-white border-fuchsia-600'
-                        : 'border-gray-300 text-gray-700 hover:border-gray-400'
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-gray-400 mt-1">
-                {form.product === 'contractor' ? 'Invite link redirects to contractor.centenarianos.com'
-                  : form.product === 'lister' ? 'Invite link redirects to lister.centenarianos.com'
-                  : 'Invite link redirects to centenarianos.com'}
-              </p>
-            </div>
+            {/* Product (CentOS only — contractor/lister are separate apps) */}
+            <input type="hidden" name="product" value="centos" />
 
             {/* Access type */}
             <div>
@@ -508,7 +469,7 @@ export default function AdminInvitesPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Demo Data</label>
               <div className="flex gap-2">
-                {(['', 'visitor', 'tutorial', 'contractor_demo', 'lister_demo'] as const).map((p) => (
+                {(['', 'visitor', 'tutorial'] as const).map((p) => (
                   <button
                     key={p}
                     type="button"

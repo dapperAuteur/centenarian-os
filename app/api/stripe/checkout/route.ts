@@ -1,16 +1,11 @@
 // app/api/stripe/checkout/route.ts
-// Creates a Stripe Checkout session for monthly, lifetime, contractor, lister, or teacher plans
+// Creates a Stripe Checkout session for monthly, lifetime, or teacher plans
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe';
 
-const VALID_PLANS = [
-  'monthly', 'lifetime',
-  'teacher', 'teacher-annual',
-  'contractor-monthly', 'contractor-annual',
-  'lister-monthly', 'lister-annual',
-];
+const VALID_PLANS = ['monthly', 'lifetime', 'teacher', 'teacher-annual'];
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -34,11 +29,8 @@ export async function POST(request: NextRequest) {
 
   // Block redundant upgrades (only for main CentOS plans)
   const isTeacherPlan = plan === 'teacher' || plan === 'teacher-annual';
-  const isContractorPlan = plan.startsWith('contractor-');
-  const isListerPlan = plan.startsWith('lister-');
-  const isProductPlan = isContractorPlan || isListerPlan || isTeacherPlan;
 
-  if (!isProductPlan && profile?.subscription_status === 'lifetime') {
+  if (!isTeacherPlan && profile?.subscription_status === 'lifetime') {
     return NextResponse.json({ error: 'Already a lifetime member' }, { status: 400 });
   }
 
@@ -57,9 +49,7 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id);
   }
 
-  // Prefer the actual request origin so subdomain users (contractor.*, lister.*) get
-  // redirected back to their subdomain after Stripe checkout, not the main domain.
-  const baseUrl = request.headers.get('origin') ?? process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
   let session;
 
@@ -77,36 +67,6 @@ export async function POST(request: NextRequest) {
       success_url: `${baseUrl}/dashboard/teaching?onboarded=true`,
       cancel_url: `${baseUrl}/academy/teach`,
       metadata: { supabase_user_id: user.id, plan: 'teacher' },
-    });
-  } else if (isContractorPlan) {
-    const priceId = plan === 'contractor-annual'
-      ? process.env.STRIPE_CONTRACTOR_ANNUAL_PRICE_ID
-      : process.env.STRIPE_CONTRACTOR_MONTHLY_PRICE_ID;
-    if (!priceId) {
-      return NextResponse.json({ error: 'Contractor plan not configured' }, { status: 503 });
-    }
-    session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${baseUrl}/dashboard/contractor?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/contractor-pricing`,
-      metadata: { supabase_user_id: user.id, plan: 'contractor' },
-    });
-  } else if (isListerPlan) {
-    const priceId = plan === 'lister-annual'
-      ? process.env.STRIPE_LISTER_ANNUAL_PRICE_ID
-      : process.env.STRIPE_LISTER_MONTHLY_PRICE_ID;
-    if (!priceId) {
-      return NextResponse.json({ error: 'Lister plan not configured' }, { status: 503 });
-    }
-    session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${baseUrl}/dashboard/contractor/lister?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/lister-pricing`,
-      metadata: { supabase_user_id: user.id, plan: 'lister' },
     });
   } else if (plan === 'monthly') {
     session = await stripe.checkout.sessions.create({

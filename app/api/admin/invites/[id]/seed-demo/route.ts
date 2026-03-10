@@ -5,8 +5,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSessionClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { clearUserData, seedVisitor, seedTutorial } from '@/lib/demo/seed';
-import { seedContractor } from '@/lib/demo/seed-contractor';
-import { seedLister } from '@/lib/demo/seed-lister';
 
 function serviceDb() {
   return createClient(
@@ -45,10 +43,6 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
 
     if (invite.demo_profile === 'visitor') {
       await seedVisitor(db, invite.user_id);
-    } else if (invite.demo_profile === 'contractor_demo') {
-      await seedContractor(db, invite.user_id);
-    } else if (invite.demo_profile === 'lister_demo') {
-      await seedLister(db, invite.user_id);
     } else {
       await seedTutorial(db, invite.user_id);
     }

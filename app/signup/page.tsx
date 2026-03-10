@@ -9,9 +9,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Script from 'next/script';
-import { Menu, X, HardHat, Users } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import SiteFooter from '@/components/ui/SiteFooter';
-import { useAppMode } from '@/lib/hooks/useAppMode';
 
 declare global {
   interface Window {
@@ -42,18 +41,6 @@ export default function SignupPage() {
   const widgetIdRef = useRef<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
-  const appMode = useAppMode();
-
-  const isContractor = appMode === 'contractor';
-  const isLister = appMode === 'lister';
-  const isProduct = isContractor || isLister;
-
-  const brandName = isContractor ? 'JobHub' : isLister ? 'CrewOps' : 'CentenarianOS';
-  const accentClass = isContractor ? 'bg-amber-600 hover:bg-amber-500' : isLister ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-sky-600 hover:bg-sky-700';
-  const focusRing = isContractor ? 'focus:ring-amber-500' : isLister ? 'focus:ring-indigo-500' : 'focus:ring-sky-500';
-  const linkColor = isContractor ? 'text-amber-600 hover:underline' : isLister ? 'text-indigo-600 hover:underline' : 'text-sky-600 hover:underline';
-  const landingHref = isContractor ? '/contractor-landing' : isLister ? '/lister-landing' : '/';
-  const pricingHref = isContractor ? '/contractor-pricing' : isLister ? '/lister-pricing' : '/pricing';
 
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
@@ -118,10 +105,8 @@ export default function SignupPage() {
     }
 
     try {
-      // Build subdomain-aware callback so the confirmation email redirects to the correct app
-      const dashboardRedirect = isContractor ? '/dashboard/contractor' : isLister ? '/dashboard/contractor/lister' : '/dashboard/planner';
       const emailRedirectTo = typeof window !== 'undefined'
-        ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(dashboardRedirect)}`
+        ? `${window.location.origin}/auth/callback?next=${encodeURIComponent('/dashboard/planner')}`
         : undefined;
 
       const { error } = await supabase.auth.signUp({
@@ -131,8 +116,7 @@ export default function SignupPage() {
       });
       if (error) throw error;
 
-      const redirectAfterSignup = isContractor ? '/contractor-pricing?from=signup' : isLister ? '/lister-pricing?from=signup' : '/pricing?from=signup';
-      router.push(redirectAfterSignup);
+      router.push('/pricing?from=signup');
       router.refresh();
     } catch (err: any) {
       setError(err.message);
@@ -151,26 +135,8 @@ export default function SignupPage() {
         />
       )}
 
-      <div className={`min-h-screen flex flex-col ${isProduct ? 'bg-neutral-950 text-neutral-100 dark-input' : 'bg-gray-50'}`}>
+      <div className="min-h-screen flex flex-col bg-gray-50">
         {/* Header */}
-        {isProduct ? (
-          <nav className="border-b border-neutral-800 px-4 py-4">
-            <div className="mx-auto flex max-w-6xl items-center justify-between">
-              <Link href={landingHref} className="flex items-center gap-2">
-                {isContractor
-                  ? <HardHat size={24} className="text-amber-400" aria-hidden="true" />
-                  : <Users size={24} className="text-indigo-400" aria-hidden="true" />}
-                <span className="text-lg font-bold">{brandName}</span>
-              </Link>
-              <div className="flex items-center gap-3">
-                <Link href={pricingHref} className="text-sm text-neutral-400 hover:text-neutral-200">Pricing</Link>
-                <Link href="/login" className="rounded-lg border border-neutral-700 px-4 py-2 text-sm text-neutral-300 hover:bg-neutral-800">
-                  Log In
-                </Link>
-              </div>
-            </div>
-          </nav>
-        ) : (
         <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
           <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex justify-between items-center">
@@ -222,16 +188,13 @@ export default function SignupPage() {
             )}
           </nav>
         </header>
-        )}
 
         {/* Signup Form */}
         <main className="flex-1 flex items-center justify-center p-4">
-          <div className={`max-w-md w-full rounded-2xl p-8 ${isProduct ? 'border border-neutral-800 bg-neutral-900' : 'bg-white shadow-xl'}`}>
+          <div className="max-w-md w-full rounded-2xl p-8 bg-white shadow-xl">
             <header className="mb-8">
-              <h1 className={`text-3xl font-bold ${isProduct ? 'text-neutral-100' : 'text-gray-900'}`}>Create your account</h1>
-              <p className={isProduct ? 'text-neutral-400 mt-2' : 'text-gray-600 mt-2'}>
-                {isContractor ? 'Get started with JobHub' : isLister ? 'Get started with CrewOps' : 'Begin your multi-decade journey'}
-              </p>
+              <h1 className="text-3xl font-bold text-gray-900">Create your account</h1>
+              <p className="text-gray-600 mt-2">Begin your multi-decade journey</p>
             </header>
 
             <form onSubmit={handleSignup} className="space-y-6">
@@ -242,7 +205,7 @@ export default function SignupPage() {
               )}
 
               <div>
-                <label htmlFor="email" className={`block text-sm font-medium mb-1 ${isProduct ? 'text-neutral-300' : 'text-gray-700'}`}>
+                <label htmlFor="email" className="block text-sm font-medium mb-1 text-gray-700">
                   Email
                 </label>
                 <input
@@ -251,14 +214,14 @@ export default function SignupPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${isProduct ? 'border-neutral-700 bg-neutral-800 text-neutral-100 ' + focusRing : 'form-input border-gray-300 ' + focusRing}`}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent form-input border-gray-300 focus:ring-sky-500"
                   placeholder="you@example.com"
                   autoComplete="email"
                 />
               </div>
 
               <div>
-                <label htmlFor="password" className={`block text-sm font-medium mb-1 ${isProduct ? 'text-neutral-300' : 'text-gray-700'}`}>
+                <label htmlFor="password" className="block text-sm font-medium mb-1 text-gray-700">
                   Password
                 </label>
                 <input
@@ -268,7 +231,7 @@ export default function SignupPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={10}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${isProduct ? 'border-neutral-700 bg-neutral-800 text-neutral-100 ' + focusRing : 'form-input border-gray-300 ' + focusRing}`}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent form-input border-gray-300 focus:ring-sky-500"
                   placeholder="••••••••"
                   autoComplete="new-password"
                 />
@@ -281,16 +244,14 @@ export default function SignupPage() {
                       ['digit', 'Number'],
                       ['symbol', 'Symbol (!@#$…)'],
                     ] as const).map(([key, label]) => (
-                      <li key={key} className={pwChecks[key]
-                        ? (isProduct ? 'text-green-400' : 'text-green-600')
-                        : (isProduct ? 'text-red-400' : 'text-red-500')}>
+                      <li key={key} className={pwChecks[key] ? 'text-green-600' : 'text-red-500'}>
                         {pwChecks[key] ? '✓' : '✗'} {label}
                       </li>
                     ))}
                   </ul>
                 )}
                 {password.length === 0 && (
-                  <p className={`text-xs mt-1 ${isProduct ? 'text-neutral-500' : 'text-gray-500'}`} id="password-hint">Minimum 10 characters with upper, lower, digit, and symbol</p>
+                  <p className="text-xs mt-1 text-gray-500" id="password-hint">Minimum 10 characters with upper, lower, digit, and symbol</p>
                 )}
               </div>
 
@@ -300,15 +261,15 @@ export default function SignupPage() {
                   type="checkbox"
                   checked={agreedToTerms}
                   onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className={`mt-0.5 h-4 w-4 rounded shrink-0 ${isProduct ? 'border-neutral-600 bg-neutral-800' : 'border-gray-300'} ${focusRing}`}
+                  className="mt-0.5 h-4 w-4 rounded shrink-0 border-gray-300 focus:ring-sky-500"
                 />
-                <label htmlFor="agree-terms" className={`text-sm cursor-pointer ${isProduct ? 'text-neutral-400' : 'text-gray-600'}`}>
+                <label htmlFor="agree-terms" className="text-sm cursor-pointer text-gray-600">
                   I agree to the{' '}
-                  <Link href="/terms" className={`font-medium ${linkColor}`} target="_blank">
+                  <Link href="/terms" className="font-medium text-sky-600 hover:underline" target="_blank">
                     Terms of Use
                   </Link>
                   {' '}and{' '}
-                  <Link href="/privacy" className={`font-medium ${linkColor}`} target="_blank">
+                  <Link href="/privacy" className="font-medium text-sky-600 hover:underline" target="_blank">
                     Privacy Policy
                   </Link>
                 </label>
@@ -322,14 +283,14 @@ export default function SignupPage() {
               <button
                 type="submit"
                 disabled={loading || !agreedToTerms || !pwValid || (!!siteKey && !turnstileToken)}
-                className={`w-full text-white py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 ${accentClass}`}
+                className="w-full text-white py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 bg-sky-600 hover:bg-sky-700"
               >
                 {loading ? 'Creating account…' : 'Sign up'}
               </button>
 
-              <p className={`text-center text-sm ${isProduct ? 'text-neutral-400' : 'text-gray-600'}`}>
+              <p className="text-center text-sm text-gray-600">
                 Already have an account?{' '}
-                <Link href="/login" className={`font-medium ${linkColor}`}>
+                <Link href="/login" className="font-medium text-sky-600 hover:underline">
                   Login
                 </Link>
               </p>
@@ -337,13 +298,7 @@ export default function SignupPage() {
           </div>
         </main>
 
-        {isProduct ? (
-          <footer className="border-t border-neutral-800 px-4 py-8 text-center text-xs text-neutral-500">
-            <p>&copy; {new Date().getFullYear()} {brandName}. All rights reserved.</p>
-          </footer>
-        ) : (
-          <SiteFooter theme="light" />
-        )}
+        <SiteFooter theme="light" />
       </div>
     </>
   );

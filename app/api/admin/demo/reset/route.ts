@@ -6,11 +6,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { clearUserData, seedTutorial, seedVisitor } from '@/lib/demo/seed';
-import { seedContractor } from '@/lib/demo/seed-contractor';
-import { seedLister } from '@/lib/demo/seed-lister';
 import { syncAllKnowledge } from '@/lib/admin/syncKnowledge';
 
-type SeedType = 'tutorial' | 'visitor' | 'contractor' | 'lister';
+type SeedType = 'tutorial' | 'visitor';
 
 function db() {
   return createClient(
@@ -33,8 +31,6 @@ export async function GET(request: NextRequest) {
 
   const tutorialUserId = process.env.DEMO_TUTORIAL_USER_ID;
   const visitorUserId = process.env.DEMO_VISITOR_USER_ID;
-  const contractorUserId = process.env.DEMO_CONTRACTOR_USER_ID;
-  const listerUserId = process.env.DEMO_LISTER_USER_ID;
 
   if (!tutorialUserId || !visitorUserId) {
     return NextResponse.json({ error: 'Demo user IDs not configured' }, { status: 500 });
@@ -48,16 +44,6 @@ export async function GET(request: NextRequest) {
 
     await resetUser(supabase, visitorUserId, 'visitor');
     resetList.push('visitor');
-
-    if (contractorUserId) {
-      await resetUser(supabase, contractorUserId, 'contractor');
-      resetList.push('contractor');
-    }
-
-    if (listerUserId) {
-      await resetUser(supabase, listerUserId, 'lister');
-      resetList.push('lister');
-    }
 
     // Fire-and-forget: sync help articles + course embeddings + timestamp
     syncAllKnowledge().catch((e) => console.error('[cron] syncAllKnowledge failed:', e));
@@ -82,12 +68,5 @@ async function resetUser(supabase: ReturnType<typeof db>, userId: string, type: 
     case 'visitor':
       await seedVisitor(supabase, userId);
       break;
-    case 'contractor':
-      await seedContractor(supabase, userId);
-      break;
-    case 'lister':
-      await seedLister(supabase, userId);
-      break;
   }
 }
-

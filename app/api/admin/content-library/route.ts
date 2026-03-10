@@ -250,37 +250,6 @@ const TUTORIAL_SERIES = [
       { title: 'Using Coaching', order: 2, lessons: ['04', '05', '06', '07'] },
     ],
   },
-  {
-    slug: 'contractor',
-    title: 'Contractor Job Hub Guide',
-    description: 'Manage gigs, log hours, generate invoices, track union dues, and build your venue knowledge base.',
-    category: 'Platform Guide',
-    tags: ['tutorial', 'contractor', 'jobs', 'invoices', 'unions', 'venues'],
-    type: 'academy' as const,
-    modules: [
-      { title: 'Getting Started', order: 1, lessons: ['01', '02'] },
-      { title: 'Jobs & Time Entries', order: 2, lessons: ['03', '04', '05'] },
-      { title: 'Invoices & Rate Cards', order: 3, lessons: ['06', '07'] },
-      { title: 'Venues & City Guides', order: 4, lessons: ['08', '09'] },
-      { title: 'Union Tools', order: 5, lessons: ['10', '11'] },
-      { title: 'Reports & Collaboration', order: 6, lessons: ['12', '13', '14'] },
-    ],
-  },
-  {
-    slug: 'lister',
-    title: 'Lister & Crew Coordinator Guide',
-    description: 'List jobs, manage your contractor roster, dispatch assignments, and communicate with your crew.',
-    category: 'Platform Guide',
-    tags: ['tutorial', 'lister', 'crew', 'assignments', 'messaging', 'roster'],
-    type: 'academy' as const,
-    modules: [
-      { title: 'Getting Started', order: 1, lessons: ['01', '02'] },
-      { title: 'Jobs & Assignments', order: 2, lessons: ['03', '04', '05'] },
-      { title: 'Roster & Availability', order: 3, lessons: ['06', '07'] },
-      { title: 'Messaging', order: 4, lessons: ['08', '09', '10'] },
-      { title: 'Advanced', order: 5, lessons: ['11', '12'] },
-    ],
-  },
 ];
 
 // Parse front matter and extract content from a tutorial markdown file

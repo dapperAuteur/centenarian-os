@@ -217,7 +217,7 @@ Extract all available data and return ONLY valid JSON matching this schema exact
 
 Return only the JSON object, no markdown, no explanation.`;
 
-const PAY_STUB_PROMPT = `You are extracting data from a contractor pay stub, estimated pay screen, or work invoice screenshot.
+const PAY_STUB_PROMPT = `You are extracting data from a pay stub, estimated pay screen, or work invoice screenshot.
 
 This is commonly from broadcast/production staffing apps (e.g., ProCrewz, MasterMind) showing pay details for a work day.
 

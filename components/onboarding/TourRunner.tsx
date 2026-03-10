@@ -10,36 +10,16 @@ import { getTour } from '@/lib/onboarding/tour-steps';
 import type { TourStep } from '@/lib/onboarding/tour-steps';
 
 interface TourRunnerProps {
-  app: 'contractor' | 'lister';
+  app: 'main';
   onToursChanged?: () => void;
 }
 
 /** Map pathname segments to tour slugs */
-function slugFromPathname(pathname: string, app: 'contractor' | 'lister'): string | null {
-  const prefix = app === 'lister' ? '/dashboard/contractor/lister' : '/dashboard/contractor';
+function slugFromPathname(pathname: string): string | null {
+  const prefix = '/dashboard';
   const rest = pathname.replace(prefix, '').replace(/^\//, '').split('/')[0];
   if (!rest) return null;
-
-  // Map route segments to tour slugs
-  const routeToSlug: Record<string, string> = {
-    jobs: 'jobs',
-    assignments: 'offers',
-    board: 'board',
-    'rate-cards': 'rate-cards',
-    compare: 'compare',
-    reports: 'reports',
-    venues: 'venues',
-    cities: 'cities',
-    union: 'union',
-    invoices: 'invoices',
-    roster: 'roster',
-    assign: 'assign',
-    availability: 'availability',
-    messages: 'messages',
-    groups: 'groups',
-  };
-
-  return routeToSlug[rest] || rest;
+  return rest;
 }
 
 export default function TourRunner({ app, onToursChanged }: TourRunnerProps) {
@@ -53,7 +33,7 @@ export default function TourRunner({ app, onToursChanged }: TourRunnerProps) {
 
     // Determine module slug from ?module= param or pathname
     const moduleParam = searchParams.get('module');
-    const slug = moduleParam || slugFromPathname(pathname, app);
+    const slug = moduleParam || slugFromPathname(pathname);
     if (!slug) return;
 
     const tour = getTour(app, slug);

@@ -8,7 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Layers, BookOpen, Sparkles, Lock, ChevronRight } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
-import { useAppMode } from '@/lib/hooks/useAppMode';
+
 
 interface CourseStub {
   id: string;
@@ -36,57 +36,26 @@ interface LearningPath {
   reason?: string | null;
 }
 
-function getTheme(mode: 'main' | 'contractor' | 'lister') {
-  if (mode === 'main') {
-    return {
-      pageBg: '',
-      heading: 'text-gray-900',
-      body: 'text-gray-600',
-      secondary: 'text-gray-500',
-      tertiary: 'text-gray-500',
-      accent: 'text-fuchsia-600',
-      accentLight: 'text-fuchsia-500',
-      accentHover: 'hover:text-fuchsia-700',
-      cardBg: 'bg-white border-gray-200 hover:border-fuchsia-300 hover:shadow-md',
-      cardHeadingHover: 'group-hover:text-fuchsia-700',
-      coverBg: 'bg-gray-100',
-      iconPlaceholder: 'text-gray-400',
-      numberBg: 'bg-gray-100 text-gray-500',
-      reasonBg: 'text-fuchsia-600 bg-fuchsia-50 border-fuchsia-100',
-      ctaBg: 'bg-fuchsia-50 border-fuchsia-100 text-fuchsia-700',
-      spinnerBorder: 'border-fuchsia-500',
-      spinnerBorderLg: 'border-fuchsia-600',
-      linkColor: 'text-fuchsia-600 hover:text-fuchsia-700',
-    };
-  }
-  const isContractor = mode === 'contractor';
+function getTheme() {
   return {
-    pageBg: 'bg-neutral-950 text-neutral-100',
-    heading: 'text-neutral-100',
-    body: 'text-neutral-300',
-    secondary: 'text-neutral-400',
-    tertiary: 'text-neutral-500',
-    accent: isContractor ? 'text-amber-400' : 'text-indigo-400',
-    accentLight: isContractor ? 'text-amber-400' : 'text-indigo-400',
-    accentHover: isContractor ? 'hover:text-amber-300' : 'hover:text-indigo-300',
-    cardBg: isContractor
-      ? 'bg-neutral-900 border-neutral-700 hover:border-amber-500 hover:shadow-md'
-      : 'bg-neutral-900 border-neutral-700 hover:border-indigo-500 hover:shadow-md',
-    cardHeadingHover: isContractor ? 'group-hover:text-amber-400' : 'group-hover:text-indigo-400',
-    coverBg: 'bg-neutral-800',
-    iconPlaceholder: 'text-neutral-500',
-    numberBg: 'bg-neutral-800 text-neutral-400',
-    reasonBg: isContractor
-      ? 'text-amber-300 bg-amber-950 border-amber-800'
-      : 'text-indigo-300 bg-indigo-950 border-indigo-800',
-    ctaBg: isContractor
-      ? 'bg-amber-950 border-amber-800 text-amber-300'
-      : 'bg-indigo-950 border-indigo-800 text-indigo-300',
-    spinnerBorder: isContractor ? 'border-amber-500' : 'border-indigo-500',
-    spinnerBorderLg: isContractor ? 'border-amber-500' : 'border-indigo-500',
-    linkColor: isContractor
-      ? 'text-amber-400 hover:text-amber-300'
-      : 'text-indigo-400 hover:text-indigo-300',
+    pageBg: '',
+    heading: 'text-gray-900',
+    body: 'text-gray-600',
+    secondary: 'text-gray-500',
+    tertiary: 'text-gray-500',
+    accent: 'text-fuchsia-600',
+    accentLight: 'text-fuchsia-500',
+    accentHover: 'hover:text-fuchsia-700',
+    cardBg: 'bg-white border-gray-200 hover:border-fuchsia-300 hover:shadow-md',
+    cardHeadingHover: 'group-hover:text-fuchsia-700',
+    coverBg: 'bg-gray-100',
+    iconPlaceholder: 'text-gray-400',
+    numberBg: 'bg-gray-100 text-gray-500',
+    reasonBg: 'text-fuchsia-600 bg-fuchsia-50 border-fuchsia-100',
+    ctaBg: 'bg-fuchsia-50 border-fuchsia-100 text-fuchsia-700',
+    spinnerBorder: 'border-fuchsia-500',
+    spinnerBorderLg: 'border-fuchsia-600',
+    linkColor: 'text-fuchsia-600 hover:text-fuchsia-700',
   };
 }
 
@@ -163,8 +132,7 @@ function PathCard({ path, theme }: { path: LearningPath; theme: Theme }) {
 }
 
 export default function LearningPathsPage() {
-  const mode = useAppMode();
-  const theme = getTheme(mode);
+  const theme = getTheme();
   const [paths, setPaths] = useState<LearningPath[]>([]);
   const [recommended, setRecommended] = useState<LearningPath[]>([]);
   const [loading, setLoading] = useState(true);
