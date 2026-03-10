@@ -230,32 +230,46 @@ export default function LandingPage() {
       {/* For Contractors & Crew Coordinators */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="grid md:grid-cols-2 gap-6">
-          <Link href="/contractor-landing" className="rounded-2xl border border-amber-200 bg-linear-to-br from-amber-50 to-white p-6 sm:p-8 hover:border-amber-400 transition group">
+          <div className="rounded-2xl border border-amber-200 bg-linear-to-br from-amber-50 to-white p-6 sm:p-8">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
-                <HardHat className="w-6 h-6 text-amber-600" />
+                <HardHat className="w-6 h-6 text-amber-600" aria-hidden="true" />
               </div>
               <div>
                 <h3 className="text-xl font-bold text-gray-900">For Contractors</h3>
                 <p className="text-sm text-gray-500">Independent broadcast & production crews</p>
               </div>
             </div>
-            <p className="text-sm text-gray-600 mb-4">Track jobs, log hours, generate invoices, build venue knowledge bases, and manage union memberships — all in one place.</p>
-            <span className="text-sm font-semibold text-amber-600 group-hover:underline">Explore JobHub &rarr;</span>
-          </Link>
-          <Link href="/lister-landing" className="rounded-2xl border border-indigo-200 bg-linear-to-br from-indigo-50 to-white p-6 sm:p-8 hover:border-indigo-400 transition group">
+            <p className="text-sm text-gray-600 mb-4">Track jobs, log hours, generate invoices, build venue knowledge bases, and manage union memberships — all in one place. Interactive walkthroughs guide you through every feature.</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Link href="/features/contractor" className="text-sm font-semibold text-amber-600 hover:underline min-h-11 flex items-center">
+                Explore All Features &rarr;
+              </Link>
+              <Link href="/contractor-landing" className="text-sm font-semibold text-gray-500 hover:text-amber-600 hover:underline min-h-11 flex items-center sm:ml-4">
+                About JobHub
+              </Link>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-indigo-200 bg-linear-to-br from-indigo-50 to-white p-6 sm:p-8">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center">
-                <Users className="w-6 h-6 text-indigo-600" />
+                <Users className="w-6 h-6 text-indigo-600" aria-hidden="true" />
               </div>
               <div>
                 <h3 className="text-xl font-bold text-gray-900">For Crew Coordinators</h3>
                 <p className="text-sm text-gray-500">Staffing agencies & union leaders</p>
               </div>
             </div>
-            <p className="text-sm text-gray-600 mb-4">Create jobs, manage rosters, dispatch assignments, and communicate with your crew through individual and group messaging.</p>
-            <span className="text-sm font-semibold text-indigo-600 group-hover:underline">Explore CrewOps &rarr;</span>
-          </Link>
+            <p className="text-sm text-gray-600 mb-4">Create jobs, manage rosters, dispatch assignments, and communicate with your crew through individual and group messaging. Try each feature with a guided demo login.</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Link href="/features/lister" className="text-sm font-semibold text-indigo-600 hover:underline min-h-11 flex items-center">
+                Explore All Features &rarr;
+              </Link>
+              <Link href="/lister-landing" className="text-sm font-semibold text-gray-500 hover:text-indigo-600 hover:underline min-h-11 flex items-center sm:ml-4">
+                About CrewOps
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 

@@ -147,7 +147,7 @@ export default function AdminContractorUsersPage() {
                         </span>
                       ))}
                     </div>
-                    <div className="mt-1 text-xs text-neutral-600">
+                    <div className="mt-1 text-xs text-neutral-500">
                       Joined {new Date(u.created_at).toLocaleDateString()}
                       {u.lister_company_name && ` · ${u.lister_company_name}`}
                       {u.lister_union_local && ` · ${u.lister_union_local}`}

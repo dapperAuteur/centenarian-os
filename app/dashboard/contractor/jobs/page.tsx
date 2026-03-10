@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Plus, Loader2, Search, Filter } from 'lucide-react';
 import JobStatusBadge from '@/components/contractor/JobStatusBadge';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Job {
   id: string;
@@ -32,7 +33,7 @@ export default function JobsListPage() {
     const params = new URLSearchParams({ limit: '100' });
     if (statusFilter !== 'all') params.set('status', statusFilter);
 
-    fetch(`/api/contractor/jobs?${params}`)
+    offlineFetch(`/api/contractor/jobs?${params}`)
       .then((r) => r.json())
       .then((d) => setJobs(d.jobs ?? []))
       .finally(() => setLoading(false));

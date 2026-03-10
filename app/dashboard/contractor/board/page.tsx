@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Loader2, Search, MapPin, Calendar, DollarSign, Send, Check, Clock, Inbox } from 'lucide-react';
 import JobStatusBadge from '@/components/contractor/JobStatusBadge';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface BoardJob {
   id: string;
@@ -60,7 +61,7 @@ export default function JobBoardPage() {
 
   const loadBoard = useCallback(() => {
     setLoading(true);
-    fetch('/api/contractor/board')
+    offlineFetch('/api/contractor/board')
       .then((r) => r.json())
       .then((d) => setJobs(d.jobs ?? []))
       .finally(() => setLoading(false));
@@ -68,7 +69,7 @@ export default function JobBoardPage() {
 
   const loadRequests = useCallback((direction: 'incoming' | 'outgoing') => {
     setLoading(true);
-    fetch(`/api/contractor/requests?direction=${direction}`)
+    offlineFetch(`/api/contractor/requests?direction=${direction}`)
       .then((r) => r.json())
       .then((d) => setRequests(d.requests ?? []))
       .finally(() => setLoading(false));
@@ -81,7 +82,7 @@ export default function JobBoardPage() {
 
   async function sendRequest(jobId: string) {
     setSendingRequest(true);
-    const res = await fetch('/api/contractor/requests', {
+    const res = await offlineFetch('/api/contractor/requests', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ job_id: jobId, message: requestMessage.trim() || null }),
@@ -96,7 +97,7 @@ export default function JobBoardPage() {
 
   async function handleAction(reqId: string, status: string) {
     setActionLoading(reqId);
-    await fetch(`/api/contractor/requests/${reqId}`, {
+    await offlineFetch(`/api/contractor/requests/${reqId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),

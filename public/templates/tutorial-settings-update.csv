@@ -1,0 +1,46 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format
+Settings,1,4,Module Tours,text,180,true,,"Every major module in CentenarianOS has an interactive walkthrough — a guided tour that highlights key UI elements and explains how to use the feature step by step. If you dismissed a tour or want to re-take one, the Module Tours section in Settings is where you manage them.
+
+---
+
+### Where to Find Module Tours
+
+Go to **Dashboard > Settings** and scroll down to the **Module Tours** section. On the contractor dashboard, Module Tours appears in the contractor settings page with the amber theme.
+
+You will see a list of every available tour with a status badge:
+
+- **Completed** — you finished all steps
+- **In Progress** — you started but didn't finish
+- **Not Started** — you haven't taken this tour yet
+
+---
+
+### Re-Taking a Tour
+
+Click the **Restart** button next to any tour to reset it and start from step 1. The tour overlay opens immediately, highlighting the first UI element with a tooltip card showing a title, description, and progress bar.
+
+Each step, you can:
+
+- **Next** — advance to the next step
+- **Skip** — skip the current step and move on
+- **Exit** — close the tour and save your progress
+
+Your progress is persisted server-side, so if you exit mid-tour, you can resume later from where you left off.
+
+---
+
+### First-Time Module Picker
+
+When you first log in, a Module Picker modal appears offering to start a guided tour of whichever module you choose. You can select any module to begin its tour immediately, or dismiss the modal to explore on your own. The picker only appears once — after that, manage tours from Settings.
+
+---
+
+### What Tours Cover
+
+Tours are available for Planner, Finance, Travel, Health Metrics, Workouts, Equipment, Academy, Data Hub, and more. Each tour walks through the module's key screens — creating items, viewing dashboards, using filters, and understanding the data. Contractor and lister dashboards have their own tours with product-specific theming.
+
+---
+
+### Feature Pages
+
+You can also explore modules before taking a tour by visiting the public feature pages at **/features/contractor** (JobHub) or **/features/lister** (CrewOps). These pages describe each module in detail and offer a **Try Demo Login** button to explore with pre-loaded sample data.",markdown

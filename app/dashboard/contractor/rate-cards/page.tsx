@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Plus, Loader2, Trash2, Edit2, X, Save, CreditCard } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Benefit {
   name: string;
@@ -46,7 +47,7 @@ export default function RateCardsPage() {
   const [benefitAmount, setBenefitAmount] = useState('');
 
   async function load() {
-    const res = await fetch('/api/contractor/rate-cards');
+    const res = await offlineFetch('/api/contractor/rate-cards');
     const data = await res.json();
     setCards(data.rate_cards ?? []);
     setLoading(false);
@@ -123,7 +124,7 @@ export default function RateCardsPage() {
     const url = editId ? `/api/contractor/rate-cards/${editId}` : '/api/contractor/rate-cards';
     const method = editId ? 'PATCH' : 'POST';
 
-    await fetch(url, {
+    await offlineFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -135,7 +136,7 @@ export default function RateCardsPage() {
   }
 
   async function handleDelete(id: string) {
-    await fetch(`/api/contractor/rate-cards/${id}`, { method: 'DELETE' });
+    await offlineFetch(`/api/contractor/rate-cards/${id}`, { method: 'DELETE' });
     load();
   }
 

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Loader2, Upload, FileText, Trash2, Globe, Lock, AlertTriangle, CheckCircle, Clock, X, Send,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Submission {
   id: string;
@@ -79,8 +80,8 @@ export default function UnionDocumentsPage() {
   const load = useCallback(() => {
     setLoading(true);
     Promise.all([
-      fetch('/api/contractor/union/documents').then((r) => r.json()),
-      fetch('/api/contractor/union/submissions').then((r) => r.json()),
+      offlineFetch('/api/contractor/union/documents').then((r) => r.json()),
+      offlineFetch('/api/contractor/union/submissions').then((r) => r.json()),
     ])
       .then(([docData, subData]) => {
         setDocs(docData.documents ?? []);
@@ -103,7 +104,7 @@ export default function UnionDocumentsPage() {
     fd.append('is_shared', String(form.is_shared));
     if (form.union_local.trim()) fd.append('union_local', form.union_local.trim());
 
-    const res = await fetch('/api/contractor/union/documents', { method: 'POST', body: fd });
+    const res = await offlineFetch('/api/contractor/union/documents', { method: 'POST', body: fd });
     setUploading(false);
 
     if (res.ok) {
@@ -116,7 +117,7 @@ export default function UnionDocumentsPage() {
 
   async function deleteDoc(id: string) {
     setDeletingId(id);
-    await fetch(`/api/contractor/union/documents/${id}`, { method: 'DELETE' });
+    await offlineFetch(`/api/contractor/union/documents/${id}`, { method: 'DELETE' });
     setDeletingId(null);
     load();
   }
@@ -131,7 +132,7 @@ export default function UnionDocumentsPage() {
     if (submitForm.description.trim()) fd.append('description', submitForm.description.trim());
     if (submitForm.coverage_dates.trim()) fd.append('coverage_dates', submitForm.coverage_dates.trim());
 
-    const res = await fetch('/api/contractor/union/submissions', { method: 'POST', body: fd });
+    const res = await offlineFetch('/api/contractor/union/submissions', { method: 'POST', body: fd });
     setSubmitting(false);
     if (res.ok) {
       setShowSubmit(false);

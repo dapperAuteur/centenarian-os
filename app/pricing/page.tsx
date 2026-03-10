@@ -174,6 +174,7 @@ export default function PricingPage() {
                 'Academy courses & 15+ tutorial guides',
                 'Data Hub — bulk import/export for all modules',
                 'Cross-module linking, saved contacts & blog publishing',
+                'Interactive feature walkthroughs & guided onboarding',
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm text-gray-700">
                   <Check className="w-4 h-4 text-fuchsia-500 mt-0.5 shrink-0" />
@@ -250,34 +251,48 @@ export default function PricingPage() {
           <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">For Contractors & Crew Coordinators</h2>
           <p className="text-sm text-gray-500 text-center mb-8">Separate products with their own subscriptions — independent from CentenarianOS.</p>
           <div className="grid md:grid-cols-2 gap-6">
-            <Link href="/contractor-pricing" className="bg-white rounded-xl border border-amber-200 hover:border-amber-400 p-6 transition group">
+            <div className="bg-white rounded-xl border border-amber-200 p-6">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                  <HardHat className="w-5 h-5 text-amber-600" />
+                  <HardHat className="w-5 h-5 text-amber-600" aria-hidden="true" />
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900">JobHub</h3>
                   <p className="text-xs text-gray-500">For independent contractors</p>
                 </div>
               </div>
-              <p className="text-sm text-gray-600 mb-3">Job tracking, time entries, invoices, rate cards, venue KB, city guides, union tools, and reports.</p>
-              <p className="text-sm font-semibold text-amber-600">$10/month or $100/year</p>
-              <p className="text-xs text-amber-500 mt-1 group-hover:underline">View pricing &rarr;</p>
-            </Link>
-            <Link href="/lister-pricing" className="bg-white rounded-xl border border-indigo-200 hover:border-indigo-400 p-6 transition group">
+              <p className="text-sm text-gray-600 mb-3">Job tracking, time entries, invoices, rate cards, venue KB, city guides, union tools, and reports. Interactive walkthroughs for every feature.</p>
+              <p className="text-sm font-semibold text-amber-600 mb-3">$10/month or $100/year</p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Link href="/contractor-pricing" className="text-xs text-amber-600 hover:underline font-medium min-h-11 flex items-center">
+                  View pricing &rarr;
+                </Link>
+                <Link href="/features/contractor" className="text-xs text-gray-500 hover:text-amber-600 hover:underline font-medium min-h-11 flex items-center sm:ml-3">
+                  Explore features &rarr;
+                </Link>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl border border-indigo-200 p-6">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-indigo-600" />
+                  <Users className="w-5 h-5 text-indigo-600" aria-hidden="true" />
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900">CrewOps</h3>
                   <p className="text-xs text-gray-500">For crew coordinators & union leaders</p>
                 </div>
               </div>
-              <p className="text-sm text-gray-600 mb-3">Job listing, roster management, assignment dispatch, group messaging, availability, and reports.</p>
-              <p className="text-sm font-semibold text-indigo-600">From $10/month (intro)</p>
-              <p className="text-xs text-indigo-500 mt-1 group-hover:underline">View pricing &rarr;</p>
-            </Link>
+              <p className="text-sm text-gray-600 mb-3">Job listing, roster management, assignment dispatch, group messaging, availability, and reports. Try each feature with a guided demo login.</p>
+              <p className="text-sm font-semibold text-indigo-600 mb-3">From $10/month (intro)</p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Link href="/lister-pricing" className="text-xs text-indigo-600 hover:underline font-medium min-h-11 flex items-center">
+                  View pricing &rarr;
+                </Link>
+                <Link href="/features/lister" className="text-xs text-gray-500 hover:text-indigo-600 hover:underline font-medium min-h-11 flex items-center sm:ml-3">
+                  Explore features &rarr;
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
 

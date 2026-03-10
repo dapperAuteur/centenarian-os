@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   Loader2, MapPin, Building2, ChevronDown, ChevronUp, Save, X, ExternalLink, FileImage,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Venue {
   id: string;
@@ -48,7 +49,7 @@ export default function VenuesPage() {
 
   const load = useCallback(() => {
     setLoading(true);
-    fetch('/api/contractor/venues')
+    offlineFetch('/api/contractor/venues')
       .then((r) => r.json())
       .then((d) => setVenues(d.venues ?? []))
       .finally(() => setLoading(false));
@@ -64,7 +65,7 @@ export default function VenuesPage() {
 
   async function saveKb(venueId: string) {
     setSaving(true);
-    const res = await fetch('/api/contractor/venues', {
+    const res = await offlineFetch('/api/contractor/venues', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

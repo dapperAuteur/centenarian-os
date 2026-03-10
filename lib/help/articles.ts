@@ -391,4 +391,159 @@ export const HELP_ARTICLES: HelpArticle[] = [
     title: 'Union leader tools and capabilities',
     content: `Union leaders have all lister capabilities plus additional tools: union member directory (view members by union_local), seniority and skills tracking, job priority flags (mark mandatory union jobs), minimum rate enforcement (set floor rates for union jobs), and dispatch queue (seniority-ordered contact list for open calls). To become a union leader, an admin must set your contractor_role to union_leader via the admin contractor management page.`,
   },
+
+  // ─── VIDEO EMBEDDING ──────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to embed videos in blog posts',
+    content: `The blog editor supports embedding videos directly into your posts. In the Tiptap rich text editor, click the media embed button (or use the toolbar). Paste a video URL from YouTube, Viloud.tv, Mux, or a direct Cloudinary video link. The editor inserts a VideoEmbed node that renders as an embedded player. YouTube URLs are automatically converted to embed format. You can also upload a video file directly via the Cloudinary uploader in the media embed modal. Videos appear inline in your post and are playable by readers on any device.`,
+  },
+  {
+    role: 'all',
+    title: 'How to embed videos in recipes',
+    content: `Recipes support video embedding using the same VideoEmbed system as blog posts. In the recipe editor, use the media embed button to paste a YouTube, Viloud.tv, Mux, or Cloudinary video URL. The video appears at the top of your recipe content. This is great for cooking demonstrations, technique walkthroughs, or plating guides. Videos are responsive and work on mobile.`,
+  },
+  {
+    role: 'all',
+    title: 'Supported video providers for embedding',
+    content: `CentenarianOS supports embedding videos from these providers: YouTube (paste any youtube.com or youtu.be link — automatically converted to embed format), Viloud.tv (paste the Viloud stream URL), Mux (paste the Mux playback URL), and Cloudinary (upload directly or paste a Cloudinary video URL — rendered with native HTML5 video player). For other providers, use the social embed tab in the media modal to paste raw HTML embed code (iframes).`,
+  },
+
+  // ─── EXERCISE & WORKOUT VIDEO ─────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to add videos to exercises',
+    content: `Each exercise in your library has a video_url field. When creating or editing an exercise, paste a YouTube, Viloud, Mux, or direct video URL into the Video URL field. The video appears on the exercise detail page as an embedded player. You can also upload images via the Media field (Cloudinary) and audio cues via the Audio field. Exercises also support written instructions and form cues for text-based guidance. When you add an exercise to a workout template, the video is accessible from the workout view.`,
+  },
+  {
+    role: 'all',
+    title: 'How to share and like exercises and workouts',
+    content: `Exercises and workouts can be set to public visibility. When public, other users can view, like, copy to their own library, and mark them as done. Like counts, copy counts, and done counts are tracked. You can share exercises and workouts via a shareable link — the share URL uses a public alias (no personal info exposed). Browse public exercises and workouts in the Discover pages at Dashboard → Exercises → Discover and Dashboard → Workouts → Discover. Your liked items are at Dashboard → Profile → Likes.`,
+  },
+
+  // ─── MODULE WALKTHROUGH ONBOARDING ────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'What are interactive feature walkthroughs?',
+    content: `Every major module in CentenarianOS has an interactive walkthrough — a step-by-step guided tour that highlights key UI elements and explains how to use the feature. Walkthroughs are offered when you first visit a module. Each step shows a tooltip card with a title, description, and progress bar. You can advance with Next, skip individual steps with Skip, or exit anytime. Your progress is saved so you can resume where you left off. Walkthroughs cover the Planner, Finance, Travel, Health Metrics, Workouts, Equipment, Academy, and more.`,
+  },
+  {
+    role: 'all',
+    title: 'How to re-take a module tour',
+    content: `You can re-take any module walkthrough at any time. Go to Settings (Dashboard → Settings or the gear icon) and scroll to the Module Tours section. You will see a list of all available tours with their status (completed, in progress, or not started). Click the Restart button next to any tour to reset it and start from step 1. You can also access tours from the "Re-take Tours" option in your user menu. On the contractor dashboard, tours are in Settings with the amber theme.`,
+  },
+  {
+    role: 'all',
+    title: 'How to explore features before signing up',
+    content: `CentenarianOS has public feature pages where you can explore each module before creating an account. Visit /features/contractor to see all JobHub (Contractor Hub) features, or /features/lister to see all CrewOps (Lister) features. Each feature page shows detailed descriptions, screenshots, and a Try Demo Login button that lets you log in with a demo account to explore the module hands-on. These pages are accessible without signing up.`,
+  },
+
+  // ─── BLOG IMPORT ──────────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to bulk import blog posts via CSV',
+    content: `Admins can bulk import blog posts using CSV. Go to the admin blog management page and use the import function. The CSV format includes columns: title, slug, excerpt, visibility (draft/public/members/scheduled), tags (pipe-separated), video_url (optional YouTube/Viloud/Mux URL), and content (markdown body). If a video_url is provided, a VideoEmbed node is automatically inserted at the top of the post content. Download the template at /templates/blog-import-template.csv for the exact format. Each row creates one blog post.`,
+  },
+
+  // ─── OFFLINE SUPPORT ──────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How does offline mode work for contractor and lister pages?',
+    content: `Contractor (JobHub) and Lister (CrewOps) pages work offline. When you load any page while connected, data is automatically cached in your browser's IndexedDB. If you lose connectivity, cached data is displayed so you can still browse your jobs, roster, assignments, messages, and other content. Changes you make while offline (creating, editing, deleting) are queued and automatically replayed when your connection returns. Text-based pages like tutorials and academy lessons are also available offline once loaded. The offline system uses the offlineFetch wrapper around standard fetch calls.`,
+  },
+
+  // ─── WORKOUTS & NOMAD OS ──────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'What is Nomad Longevity OS?',
+    content: `Nomad Longevity OS is a built-in fitness protocol inside CentenarianOS designed for people who travel frequently and need flexible workout routines. It includes 28 pre-loaded exercises and 12 workout templates organized into four programs: AM (morning mobility), PM (evening recovery), Hotel (bodyweight-only for hotel rooms), and Gym (full equipment). The Friction Protocol helps you choose the right workout based on your available time, equipment, and energy. Access it at Dashboard → Workouts → Nomad OS. All exercises include detailed instructions and form cues.`,
+  },
+  {
+    role: 'all',
+    title: 'How to use the exercise library',
+    content: `The exercise library at Dashboard → Exercises stores all your exercises with detailed metadata: name, category (Push, Pull, Legs, Core, Cardio, etc.), instructions, form cues, video URL, images, audio cues, primary muscles, difficulty level, and equipment requirements. You start with 110+ system-seeded exercises and can add your own. Each exercise tracks usage count across your workouts. The library supports filtering by category, muscle group, difficulty, and equipment type. You can duplicate exercises to create variations and link equipment from your Equipment Tracker.`,
+  },
+  {
+    role: 'all',
+    title: 'How to use enhanced workout fields',
+    content: `Workout templates and logs support 16+ enhanced tracking fields per exercise: RPE (rate of perceived exertion 1-10), tempo (e.g., 3-1-2-0 for eccentric-pause-concentric-pause), superset grouping, circuit flag, negatives, isometrics, to-failure, unilateral (single-limb), balance work, percent of max, distance, hold time, and side (left/right/both). These fields appear in a collapsible Advanced section on each exercise row. Workout logs also track overall feeling (1-5), purpose, warmup notes, and cooldown notes.`,
+  },
+
+  // ─── SAVED CONTACTS ───────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to use saved contacts',
+    content: `Saved contacts let you store frequently-used vendors, customers, and locations across all modules. Go to Dashboard → Contacts or use the contact autocomplete on any form that supports it (finance transactions, travel trips, planner tasks). Contacts have a type (vendor, customer, or location), optional default budget category, and notes. When you select a saved vendor on a transaction, its default category auto-fills. Contacts also support sub-locations — for example, a venue contact can have multiple addresses (main entrance, loading dock, parking lot). Import contacts in bulk via the Data Hub.`,
+  },
+
+  // ─── COACHING GEMS ────────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to create and use Coaching Gems',
+    content: `Coaching Gems are custom AI personas you create for specific coaching needs. Go to Dashboard → Gems and click New Gem. Give it a name, system prompt (personality and instructions), and select which data sources it can access (health metrics, finance, workouts, recipes, planner, etc.). Then start a coaching session — the AI has access to your selected real data and can give personalized advice. Gems can also execute actions: create recipes, log workouts, create transactions, or generate flashcards from conversations. Upload files (CSV, images, PDFs) for the AI to analyze during sessions.`,
+  },
+
+  // ─── FOCUS ENGINE ─────────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to use the Focus Engine',
+    content: `The Focus Engine at Dashboard → Engine is a productivity timer with session tracking. Start a focus session with a task, duration, and optional template. Choose free-form timing or Pomodoro mode (25 min work / 5 min break cycles). After each session, complete a debrief rating your focus, energy, and mood. Log pain or body check data if relevant. View session history and analytics to identify your most productive times and patterns. Sessions can be linked to planner tasks and life categories. Templates let you save reusable session configurations.`,
+  },
+
+  // ─── SMART SCAN DETAILS ───────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How does receipt line item tracking work?',
+    content: `When you scan a receipt with Smart Scan, the AI extracts individual line items with prices. These are stored in the item_prices table, creating a price history per item per vendor over time. On subsequent scans from the same vendor, you can see how prices have changed. The receipt overview shows total, tax, and vendor. Each line item can be linked to a financial transaction. This is useful for tracking grocery price inflation, comparing vendor pricing, and maintaining expense records for tax purposes.`,
+  },
+
+  // ─── HEALTH METRICS WEARABLES ─────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to connect wearables and sync health data',
+    content: `CentenarianOS integrates with three wearable platforms via OAuth: Oura (ring), WHOOP (strap), and Garmin (watch). Go to Dashboard → Settings → Wearable Connections and click Connect next to your device. Complete the OAuth flow to authorize data sharing. Once connected, your daily metrics (resting heart rate, HRV, sleep duration, sleep score, steps, activity calories, respiratory rate) sync automatically each day. You can also import health data via CSV from Apple Health, Google Health, InBody, and Hume Health using the Data Hub import.`,
+  },
+
+  // ─── LIFE RETROSPECTIVE ───────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to use Life Retrospective with Google Calendar import',
+    content: `Life Retrospective lets you import your Google Calendar history and have AI analyze patterns in how you spend your time. Go to Dashboard → Planner → Retrospective. Export your Google Calendar as an .ics file and upload it. The system parses all events using a pure TypeScript ICS parser (no external dependencies). The AI then identifies patterns like meeting frequency, time allocation across categories, and schedule evolution over time. This gives you a bird's-eye view of how your life priorities have shifted.`,
+  },
+
+  // ─── FINANCIAL ACCOUNTS ───────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to manage financial accounts and bank linking',
+    content: `Go to Dashboard → Finance → Accounts to add and manage your financial accounts: checking, savings, credit card, loan, and cash accounts. Each account tracks institution name, last four digits, interest rate, credit limit, opening balance, monthly fees, and due/statement dates. Balance is calculated as opening balance plus income minus expenses. You can link bank accounts via the Teller API for automatic transaction syncing — click Connect Bank Account, complete the OAuth flow, and transactions import automatically. Deactivated accounts preserve transaction history but hide from active views.`,
+  },
+
+  // ─── PLANNER DETAILS ──────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to use the goal hierarchy and roadmap',
+    content: `The Planner uses a four-level hierarchy: Roadmaps → Goals → Milestones → Tasks. Start by creating a Roadmap (your big-picture vision, e.g., "Health Optimization 2026"). Add Goals under it (e.g., "Run a half marathon"). Break goals into Milestones (e.g., "Complete Couch to 5K"). Then create Tasks under milestones (e.g., "Run 2 miles today"). Tasks appear in your daily/weekly planner views. Each level shows completion progress based on child items. You can archive and restore items. The AI Weekly Review analyzes your task completion patterns.`,
+  },
+
+  // ─── TELLER BANK SYNC ─────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How does Teller bank account syncing work?',
+    content: `Teller is a bank account linking API that lets you automatically import transactions. Go to Dashboard → Finance → Accounts and click Connect Bank Account. Select your bank from the Teller enrollment flow and authorize access. Once connected, your transactions sync daily. Each synced transaction includes date, amount, description, and merchant. You can categorize synced transactions and link them to contacts. If you disconnect, historical synced transactions remain in your account. Teller supports most major US banks and credit unions.`,
+  },
 ];

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Loader2, ChevronLeft, ChevronRight, AlertTriangle, TrendingUp, Clock, Car, DollarSign } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface ClientEarnings {
   client_name: string;
@@ -72,7 +73,7 @@ export default function ContractorReportsPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/contractor/reports?year=${year}`)
+    offlineFetch(`/api/contractor/reports?year=${year}`)
       .then((r) => r.json())
       .then((d) => setData(d))
       .finally(() => setLoading(false));

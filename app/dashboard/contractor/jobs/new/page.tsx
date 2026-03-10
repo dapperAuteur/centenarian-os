@@ -6,6 +6,7 @@ import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import Link from 'next/link';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import RateCardSelect from '@/components/contractor/RateCardSelect';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 const RATE_TYPES = ['hourly', 'daily', 'flat'];
 const STATUSES = ['assigned', 'confirmed', 'in_progress', 'completed'];
@@ -59,7 +60,7 @@ export default function NewJobPage() {
     if (form.mileage_rate) travelBenefits.mileage_rate = parseFloat(form.mileage_rate);
     if (form.extra_pay) travelBenefits.extra_pay = parseFloat(form.extra_pay);
 
-    const res = await fetch('/api/contractor/jobs', {
+    const res = await offlineFetch('/api/contractor/jobs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

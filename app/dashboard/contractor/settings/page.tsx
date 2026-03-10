@@ -5,6 +5,7 @@ import {
   Loader2, MapPin, Save, CheckCircle, AlertTriangle, RotateCcw, Sparkles,
 } from 'lucide-react';
 import TourRestartButton from '@/components/onboarding/TourRestartButton';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface TravelSettings {
   home_address: string | null;
@@ -33,7 +34,7 @@ export default function ContractorSettingsPage() {
 
   const loadTours = useCallback(async () => {
     try {
-      const res = await fetch('/api/onboarding/status');
+      const res = await offlineFetch('/api/onboarding/status');
       if (res.ok) {
         const d = await res.json();
         setTours((d.tours ?? []).filter((t: TourStatus) => t.app === 'contractor'));
@@ -43,7 +44,7 @@ export default function ContractorSettingsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch('/api/travel/settings');
+    const res = await offlineFetch('/api/travel/settings');
     if (res.ok) {
       const d = await res.json();
       const s = d.settings;
@@ -65,7 +66,7 @@ export default function ContractorSettingsPage() {
     setSuccess('');
     setGeocoding(true);
 
-    const res = await fetch('/api/contractor/distance', {
+    const res = await offlineFetch('/api/contractor/distance', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -100,7 +101,7 @@ export default function ContractorSettingsPage() {
     setSuccess('');
 
     // Save just the distance unit via the travel settings API
-    const res = await fetch('/api/travel/settings', {
+    const res = await offlineFetch('/api/travel/settings', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ distance_unit: unit }),

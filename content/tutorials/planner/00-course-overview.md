@@ -33,6 +33,7 @@ The first two lessons are sequential (the hierarchy and how to build one). After
 | 11 | The AI Weekly Review | ~6 min | text/video |
 | 12 | Task Contacts & Locations | ~4 min | text/video |
 | 13 | Cross-Module Activity Links | ~4 min | text/video |
+| 14 | Life Retrospective & Calendar Import | ~5 min | text/video |
 
 ---
 
