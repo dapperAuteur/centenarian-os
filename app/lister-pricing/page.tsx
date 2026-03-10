@@ -1,5 +1,8 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
-import { Users, Check, ArrowRight } from 'lucide-react';
+import { Users, Check, ArrowRight, Loader2 } from 'lucide-react';
 
 const FEATURES = [
   'Unlimited job listings',
@@ -17,6 +20,37 @@ const FEATURES = [
 ];
 
 export default function ListerPricingPage() {
+  const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleCheckout(plan: 'lister-monthly' | 'lister-annual') {
+    setLoading(plan);
+    setError(null);
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 401) {
+          window.location.href = '/login?next=/lister-pricing';
+          return;
+        }
+        setError(data.error ?? 'Something went wrong');
+        return;
+      }
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(null);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100">
       {/* Nav */}
@@ -27,10 +61,10 @@ export default function ListerPricingPage() {
             <span className="text-lg font-bold">CrewOps</span>
           </Link>
           <div className="flex items-center gap-3">
-            <Link href="/login" className="rounded-lg border border-neutral-700 px-4 py-2 text-sm text-neutral-300 hover:bg-neutral-800">
+            <Link href="/login" className="rounded-lg border border-neutral-700 px-4 py-2 text-sm text-neutral-300 hover:bg-neutral-800 min-h-11 flex items-center">
               Log In
             </Link>
-            <Link href="/signup" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
+            <Link href="/signup" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 min-h-11 flex items-center">
               Get Started
             </Link>
           </div>
@@ -40,6 +74,12 @@ export default function ListerPricingPage() {
       <section className="mx-auto max-w-4xl px-4 py-16">
         <h1 className="text-center text-3xl font-extrabold sm:text-4xl">Lister Pricing</h1>
         <p className="mt-3 text-center text-neutral-400">Introductory pricing available for a limited time.</p>
+
+        {error && (
+          <div role="alert" className="mt-6 rounded-lg border border-red-800 bg-red-900/30 px-4 py-3 text-center text-sm text-red-300">
+            {error}
+          </div>
+        )}
 
         <div className="mt-12 grid gap-6 sm:grid-cols-2">
           {/* Monthly */}
@@ -54,12 +94,17 @@ export default function ListerPricingPage() {
             </div>
             <p className="mt-1 text-sm text-neutral-500 line-through">$50/month regular price</p>
             <p className="mt-1 text-sm text-neutral-500">Cancel anytime.</p>
-            <Link
-              href="/signup"
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 py-3 text-base font-medium text-white hover:bg-indigo-500 min-h-11"
+            <button
+              onClick={() => handleCheckout('lister-monthly')}
+              disabled={loading !== null}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 py-3 text-base font-medium text-white hover:bg-indigo-500 disabled:opacity-50 min-h-11"
             >
-              Get Started <ArrowRight size={16} aria-hidden="true" />
-            </Link>
+              {loading === 'lister-monthly' ? (
+                <><Loader2 size={16} className="animate-spin" aria-hidden="true" /> Processing…</>
+              ) : (
+                <>Subscribe <ArrowRight size={16} aria-hidden="true" /></>
+              )}
+            </button>
           </div>
 
           {/* Annual */}
@@ -74,12 +119,17 @@ export default function ListerPricingPage() {
             </div>
             <p className="mt-1 text-sm text-neutral-500 line-through">$500/year regular price</p>
             <p className="mt-1 text-sm text-neutral-500">$8.33/month, billed annually.</p>
-            <Link
-              href="/signup"
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 py-3 text-base font-medium text-white hover:bg-indigo-500 min-h-11"
+            <button
+              onClick={() => handleCheckout('lister-annual')}
+              disabled={loading !== null}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 py-3 text-base font-medium text-white hover:bg-indigo-500 disabled:opacity-50 min-h-11"
             >
-              Get Started <ArrowRight size={16} aria-hidden="true" />
-            </Link>
+              {loading === 'lister-annual' ? (
+                <><Loader2 size={16} className="animate-spin" aria-hidden="true" /> Processing…</>
+              ) : (
+                <>Subscribe <ArrowRight size={16} aria-hidden="true" /></>
+              )}
+            </button>
           </div>
         </div>
 
