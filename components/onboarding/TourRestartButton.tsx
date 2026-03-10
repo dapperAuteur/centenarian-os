@@ -55,6 +55,7 @@ export default function TourRestartButton({
 
       setDone(true);
       onReset?.();
+      window.dispatchEvent(new Event('tours-reset'));
       setTimeout(() => setDone(false), 2000);
     } finally {
       setLoading(false);

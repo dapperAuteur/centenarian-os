@@ -253,22 +253,22 @@ export async function seedContractor(db: SupabaseClient, userId: string): Promis
   // City guide entries
   const entries = [
     // Indianapolis
-    { city_guide_id: guideMap['Indianapolis'], category: 'restaurant', name: 'St. Elmo Steak House', address: '127 S Illinois St, Indianapolis', rating: 5, price_range: 4, notes: 'Famous shrimp cocktail. Make reservations.' },
-    { city_guide_id: guideMap['Indianapolis'], category: 'restaurant', name: 'Milktooth', address: '534 Virginia Ave, Indianapolis', rating: 5, price_range: 3, notes: 'Best brunch in the city. Get there early.' },
-    { city_guide_id: guideMap['Indianapolis'], category: 'hotel', name: 'JW Marriott Indianapolis', address: '10 S West St, Indianapolis', rating: 4, price_range: 3, notes: 'Connected to convention center. Walking distance to Lucas Oil.' },
-    { city_guide_id: guideMap['Indianapolis'], category: 'coffee', name: 'Coat Check Coffee', address: '401 E Michigan St, Indianapolis', rating: 5, price_range: 2, notes: 'Best espresso downtown.' },
-    { city_guide_id: guideMap['Indianapolis'], category: 'gym', name: 'The Fitness Center at IUPUI', address: '901 W New York St, Indianapolis', rating: 3, price_range: 1, notes: 'Day pass available. Basic but clean.' },
+    { user_id: userId, city_guide_id: guideMap['Indianapolis'], category: 'restaurant', name: 'St. Elmo Steak House', address: '127 S Illinois St, Indianapolis', rating: 5, price_range: 4, notes: 'Famous shrimp cocktail. Make reservations.' },
+    { user_id: userId, city_guide_id: guideMap['Indianapolis'], category: 'restaurant', name: 'Milktooth', address: '534 Virginia Ave, Indianapolis', rating: 5, price_range: 3, notes: 'Best brunch in the city. Get there early.' },
+    { user_id: userId, city_guide_id: guideMap['Indianapolis'], category: 'hotel', name: 'JW Marriott Indianapolis', address: '10 S West St, Indianapolis', rating: 4, price_range: 3, notes: 'Connected to convention center. Walking distance to Lucas Oil.' },
+    { user_id: userId, city_guide_id: guideMap['Indianapolis'], category: 'coffee', name: 'Coat Check Coffee', address: '401 E Michigan St, Indianapolis', rating: 5, price_range: 2, notes: 'Best espresso downtown.' },
+    { user_id: userId, city_guide_id: guideMap['Indianapolis'], category: 'gym', name: 'The Fitness Center at IUPUI', address: '901 W New York St, Indianapolis', rating: 3, price_range: 1, notes: 'Day pass available. Basic but clean.' },
     // Tempe
-    { city_guide_id: guideMap['Tempe'], category: 'restaurant', name: 'Four Peaks Brewing', address: '1340 E 8th St, Tempe', rating: 4, price_range: 2, notes: 'Great burgers and local beer.' },
-    { city_guide_id: guideMap['Tempe'], category: 'restaurant', name: 'Postino WineCafe', address: '615 N Scottsdale Rd, Tempe', rating: 4, price_range: 2, notes: '$6 wine and bruschetta before 5pm.' },
-    { city_guide_id: guideMap['Tempe'], category: 'hotel', name: 'Graduate Tempe', address: '225 E Apache Blvd, Tempe', rating: 4, price_range: 2, notes: 'Walking distance to stadium. Rooftop pool.' },
-    { city_guide_id: guideMap['Tempe'], category: 'coffee', name: 'Cartel Coffee Lab', address: '225 W University Dr, Tempe', rating: 5, price_range: 2, notes: 'Excellent pour-over and cold brew.' },
+    { user_id: userId, city_guide_id: guideMap['Tempe'], category: 'restaurant', name: 'Four Peaks Brewing', address: '1340 E 8th St, Tempe', rating: 4, price_range: 2, notes: 'Great burgers and local beer.' },
+    { user_id: userId, city_guide_id: guideMap['Tempe'], category: 'restaurant', name: 'Postino WineCafe', address: '615 N Scottsdale Rd, Tempe', rating: 4, price_range: 2, notes: '$6 wine and bruschetta before 5pm.' },
+    { user_id: userId, city_guide_id: guideMap['Tempe'], category: 'hotel', name: 'Graduate Tempe', address: '225 E Apache Blvd, Tempe', rating: 4, price_range: 2, notes: 'Walking distance to stadium. Rooftop pool.' },
+    { user_id: userId, city_guide_id: guideMap['Tempe'], category: 'coffee', name: 'Cartel Coffee Lab', address: '225 W University Dr, Tempe', rating: 5, price_range: 2, notes: 'Excellent pour-over and cold brew.' },
     // Tucson
-    { city_guide_id: guideMap['Tucson'], category: 'restaurant', name: 'El Charro Cafe', address: '311 N Court Ave, Tucson', rating: 4, price_range: 2, notes: 'Oldest Mexican restaurant in the US. Try the carne seca.' },
-    { city_guide_id: guideMap['Tucson'], category: 'hotel', name: 'Arizona Inn', address: '2200 E Elm St, Tucson', rating: 5, price_range: 3, notes: 'Beautiful old hotel. Great pool area.' },
+    { user_id: userId, city_guide_id: guideMap['Tucson'], category: 'restaurant', name: 'El Charro Cafe', address: '311 N Court Ave, Tucson', rating: 4, price_range: 2, notes: 'Oldest Mexican restaurant in the US. Try the carne seca.' },
+    { user_id: userId, city_guide_id: guideMap['Tucson'], category: 'hotel', name: 'Arizona Inn', address: '2200 E Elm St, Tucson', rating: 5, price_range: 3, notes: 'Beautiful old hotel. Great pool area.' },
     // Bloomington
-    { city_guide_id: guideMap['Bloomington'], category: 'restaurant', name: 'Nick\'s English Hut', address: '423 E Kirkwood Ave, Bloomington', rating: 4, price_range: 1, notes: 'Classic IU hangout. Sink the Biz game.' },
-    { city_guide_id: guideMap['Bloomington'], category: 'restaurant', name: 'FARMbloomington', address: '108 E Kirkwood Ave, Bloomington', rating: 5, price_range: 3, notes: 'Farm-to-table. Excellent cocktails.' },
+    { user_id: userId, city_guide_id: guideMap['Bloomington'], category: 'restaurant', name: 'Nick\'s English Hut', address: '423 E Kirkwood Ave, Bloomington', rating: 4, price_range: 1, notes: 'Classic IU hangout. Sink the Biz game.' },
+    { user_id: userId, city_guide_id: guideMap['Bloomington'], category: 'restaurant', name: 'FARMbloomington', address: '108 E Kirkwood Ave, Bloomington', rating: 5, price_range: 3, notes: 'Farm-to-table. Excellent cocktails.' },
   ];
 
   if (Object.keys(guideMap).length > 0) {

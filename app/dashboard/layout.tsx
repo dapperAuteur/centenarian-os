@@ -9,7 +9,7 @@ import { useUnreadCount } from '@/lib/hooks/useUnreadCount';
 import { useAppMode } from '@/lib/hooks/useAppMode';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DesktopNav from '@/components/nav/DesktopNav';
 import MobileBottomBar from '@/components/nav/MobileBottomBar';
 import ContractorLayout from '@/components/nav/ContractorLayout';
@@ -56,6 +56,7 @@ export default function DashboardLayout({
   const [adminUnread, setAdminUnread] = useState(0);
   const [isInvited, setIsInvited] = useState(false);
   const [inviteModules, setInviteModules] = useState<string[] | null>(null);
+  const [untoured, setUntoured] = useState<Set<string>>(new Set());
   const hasAccess = isPaid || isAdmin || isInvited;
   // Only apply module restrictions to invited users who aren't paying subscribers or admins
   const allowedModules = isInvited && !isPaid && !isAdmin ? inviteModules : null;
@@ -80,6 +81,54 @@ export default function DashboardLayout({
       })
       .catch(() => setAdminLoading(false));
   }, []);
+
+  // Fetch tour status for sparkle badges (auto-seed if no rows exist)
+  const refreshTours = useCallback(() => {
+    if (appMode !== 'contractor' && appMode !== 'lister') return;
+    offlineFetch('/api/onboarding/status')
+      .then((r) => r.json())
+      .then((d) => {
+        const appTours = (d.tours ?? []).filter((t: { app: string }) => t.app === appMode);
+        // Auto-seed tour rows if none exist for this app
+        if (appTours.length === 0) {
+          offlineFetch('/api/onboarding/tours/seed', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ app: appMode }),
+          })
+            .then(() => {
+              // Re-fetch after seeding
+              offlineFetch('/api/onboarding/status')
+                .then((r2) => r2.json())
+                .then((d2) => {
+                  const slugs = new Set<string>();
+                  for (const t of d2.tours ?? []) {
+                    if (t.status === 'available' && t.app === appMode) slugs.add(t.module_slug);
+                  }
+                  setUntoured(slugs);
+                })
+                .catch(() => {});
+            })
+            .catch(() => {});
+          return;
+        }
+        const slugs = new Set<string>();
+        for (const t of appTours) {
+          if (t.status === 'available') slugs.add(t.module_slug);
+        }
+        setUntoured(slugs);
+      })
+      .catch(() => {});
+  }, [appMode]);
+
+  useEffect(() => { refreshTours(); }, [refreshTours]);
+
+  // Listen for tour reset events (fired by TourRestartButton)
+  useEffect(() => {
+    const handler = () => refreshTours();
+    window.addEventListener('tours-reset', handler);
+    return () => window.removeEventListener('tours-reset', handler);
+  }, [refreshTours]);
 
   // Redirect free users who land directly on a paid route
   useEffect(() => {
@@ -121,6 +170,8 @@ export default function DashboardLayout({
           username={username}
           unreadMessages={unreadMessages}
           onLogout={handleLogout}
+          untoured={untoured}
+          onToursChanged={refreshTours}
         >
           {children}
         </ContractorLayout>
@@ -136,6 +187,8 @@ export default function DashboardLayout({
           username={username}
           unreadMessages={unreadMessages}
           onLogout={handleLogout}
+          untoured={untoured}
+          onToursChanged={refreshTours}
         >
           {children}
         </ListerLayout>
