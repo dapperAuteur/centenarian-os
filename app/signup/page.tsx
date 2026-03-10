@@ -27,6 +27,15 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const pwChecks = {
+    length: password.length >= 10,
+    upper: /[A-Z]/.test(password),
+    lower: /[a-z]/.test(password),
+    digit: /\d/.test(password),
+    symbol: /[^A-Za-z0-9]/.test(password),
+  };
+  const pwValid = Object.values(pwChecks).every(Boolean);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -66,6 +75,11 @@ export default function SignupPage() {
 
     if (!agreedToTerms) {
       setError('Please agree to the Terms of Use and Privacy Policy to continue.');
+      return;
+    }
+
+    if (!pwValid) {
+      setError('Password must be at least 10 characters with uppercase, lowercase, digit, and symbol.');
       return;
     }
 
@@ -243,12 +257,31 @@ export default function SignupPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
+                  minLength={10}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${isProduct ? 'border-neutral-700 bg-neutral-800 text-neutral-100 ' + focusRing : 'form-input border-gray-300 ' + focusRing}`}
                   placeholder="••••••••"
                   autoComplete="new-password"
                 />
-                <p className={`text-xs mt-1 ${isProduct ? 'text-neutral-500' : 'text-gray-500'}`} id="password-hint">Minimum 6 characters</p>
+                {password.length > 0 && (
+                  <ul className="mt-2 space-y-0.5 text-xs" id="password-hint">
+                    {([
+                      ['length', '10+ characters'],
+                      ['upper', 'Uppercase letter'],
+                      ['lower', 'Lowercase letter'],
+                      ['digit', 'Number'],
+                      ['symbol', 'Symbol (!@#$…)'],
+                    ] as const).map(([key, label]) => (
+                      <li key={key} className={pwChecks[key]
+                        ? (isProduct ? 'text-green-400' : 'text-green-600')
+                        : (isProduct ? 'text-red-400' : 'text-red-500')}>
+                        {pwChecks[key] ? '✓' : '✗'} {label}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {password.length === 0 && (
+                  <p className={`text-xs mt-1 ${isProduct ? 'text-neutral-500' : 'text-gray-500'}`} id="password-hint">Minimum 10 characters with upper, lower, digit, and symbol</p>
+                )}
               </div>
 
               <div className="flex items-start gap-3">
@@ -278,7 +311,7 @@ export default function SignupPage() {
 
               <button
                 type="submit"
-                disabled={loading || !agreedToTerms || (!!siteKey && !turnstileToken)}
+                disabled={loading || !agreedToTerms || !pwValid || (!!siteKey && !turnstileToken)}
                 className={`w-full text-white py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 ${accentClass}`}
               >
                 {loading ? 'Creating account…' : 'Sign up'}
