@@ -2,6 +2,7 @@
 // Seeds a realistic lister/crew coordinator account with roster, jobs, assignments, and messages.
 
 import { SupabaseClient } from '@supabase/supabase-js';
+import { daysAgo } from './seed';
 
 const ROSTER_MEMBERS = [
   { name: 'Jake Morrison', email: 'jmorrison@example.com', phone: '317-555-4001', skills: ['Camera Op', 'Jib', 'Steadicam'], notes: 'IATSE 317. 15yrs exp. Prefers NFL/NCAA.' },
@@ -159,4 +160,150 @@ export async function seedLister(db: SupabaseClient, userId: string): Promise<vo
   ];
   const { error: imErr } = await db.from('lister_messages').insert(individualMessages);
   if (imErr) throw new Error(`Individual messages: ${imErr.message}`);
+
+  // ─── CENTOS MODULE DATA ──────────────────────────────────────────────────
+
+  // 7. Financial Accounts + Transactions
+  const { data: accts, error: acctErr } = await db
+    .from('financial_accounts')
+    .insert([
+      { user_id: userId, name: 'Business Checking', account_type: 'checking', opening_balance: 12000.00, is_active: true },
+      { user_id: userId, name: 'Business Credit Card', account_type: 'credit_card', opening_balance: 0, credit_limit: 20000, is_active: true },
+    ])
+    .select('id, name');
+  if (acctErr) throw new Error(`Lister accounts: ${acctErr.message}`);
+
+  const bizCheckingId = accts?.find(a => a.name === 'Business Checking')?.id;
+  const bizCreditId = accts?.find(a => a.name === 'Business Credit Card')?.id;
+
+  const { error: txErr } = await db.from('financial_transactions').insert([
+    { user_id: userId, amount: 1200.00, type: 'expense', description: 'Camera crew — Colts vs Dolphins', vendor: 'Jake Morrison', transaction_date: daysAgo(5), source: 'manual', account_id: bizCheckingId },
+    { user_id: userId, amount: 900.00, type: 'expense', description: 'Audio crew — Pacers vs Thunder', vendor: 'Carlos Reyes', transaction_date: daysAgo(8), source: 'manual', account_id: bizCheckingId },
+    { user_id: userId, amount: 600.00, type: 'expense', description: 'Utility crew — IU vs Michigan State', vendor: 'Nicole Foster', transaction_date: daysAgo(12), source: 'manual', account_id: bizCheckingId },
+    { user_id: userId, amount: 49.99, type: 'expense', description: 'CrewOps monthly subscription', vendor: 'CentenarianOS', transaction_date: daysAgo(15), source: 'manual', account_id: bizCreditId },
+    { user_id: userId, amount: 29.99, type: 'expense', description: 'Google Workspace subscription', vendor: 'Google', transaction_date: daysAgo(18), source: 'manual', account_id: bizCreditId },
+    { user_id: userId, amount: 245.00, type: 'expense', description: 'Office supplies — printer ink + paper', vendor: 'Staples', transaction_date: daysAgo(22), source: 'manual', account_id: bizCreditId },
+  ]);
+  if (txErr) throw new Error(`Lister transactions: ${txErr.message}`);
+
+  // 8. Vehicle + Fuel Logs + Trips
+  const { data: veh, error: vehErr } = await db
+    .from('vehicles')
+    .insert([{ user_id: userId, nickname: 'Work Truck', type: 'truck', make: 'Ford', model: 'F-150', year: 2023, ownership_type: 'owned', active: true }])
+    .select('id');
+  if (vehErr) throw new Error(`Lister vehicle: ${vehErr.message}`);
+  const vehicleId = veh?.[0]?.id;
+
+  if (vehicleId) {
+    const { error: fuelErr } = await db.from('fuel_logs').insert([
+      { user_id: userId, vehicle_id: vehicleId, date: daysAgo(4), odometer_miles: 18200, miles_since_last_fill: 280, gallons: 14.2, total_cost: 48.96, cost_per_gallon: 3.449, mpg_display: 19.7, station: 'Speedway', fuel_grade: 'regular', source: 'manual' },
+      { user_id: userId, vehicle_id: vehicleId, date: daysAgo(18), odometer_miles: 17920, miles_since_last_fill: 265, gallons: 13.8, total_cost: 47.61, cost_per_gallon: 3.450, mpg_display: 19.2, station: 'Circle K', fuel_grade: 'regular', source: 'manual' },
+    ]);
+    if (fuelErr) throw new Error(`Lister fuel logs: ${fuelErr.message}`);
+  }
+
+  const { error: tripErr } = await db.from('trips').insert([
+    { user_id: userId, vehicle_id: vehicleId, date: daysAgo(3), mode: 'car', origin: 'Office', destination: 'Lucas Oil Stadium', distance_miles: 8.5, duration_min: 18, trip_category: 'travel', tax_category: 'business', source: 'manual' },
+    { user_id: userId, vehicle_id: vehicleId, date: daysAgo(10), mode: 'car', origin: 'Office', destination: 'Gainbridge Fieldhouse', distance_miles: 6.2, duration_min: 14, trip_category: 'travel', tax_category: 'business', source: 'manual' },
+  ]);
+  if (tripErr) throw new Error(`Lister trips: ${tripErr.message}`);
+
+  // 9. Equipment Categories + Equipment
+  const { data: eqCats, error: eqCatErr } = await db
+    .from('equipment_categories')
+    .insert([
+      { user_id: userId, name: 'Office', sort_order: 1 },
+      { user_id: userId, name: 'Electronics', sort_order: 2 },
+    ])
+    .select('id, name');
+  if (eqCatErr) throw new Error(`Lister equipment categories: ${eqCatErr.message}`);
+  const eqCatIdFn = (name: string) => eqCats?.find(c => c.name === name)?.id ?? null;
+
+  const { error: eqErr } = await db.from('equipment').insert([
+    { user_id: userId, name: 'MacBook Pro 16"', category_id: eqCatIdFn('Electronics'), brand: 'Apple', purchase_date: daysAgo(120), purchase_price: 2499, current_value: 2100, condition: 'excellent' },
+    { user_id: userId, name: 'iPhone 15 Pro', category_id: eqCatIdFn('Electronics'), brand: 'Apple', purchase_date: daysAgo(90), purchase_price: 1199, current_value: 1050, condition: 'good' },
+    { user_id: userId, name: 'Ring Light', category_id: eqCatIdFn('Office'), brand: 'Neewer', purchase_date: daysAgo(60), purchase_price: 89, current_value: 75, condition: 'good' },
+  ]);
+  if (eqErr) throw new Error(`Lister equipment: ${eqErr.message}`);
+
+  // 10. Exercise Categories + Exercises
+  const { data: exCats, error: exCatErr } = await db
+    .from('exercise_categories')
+    .insert([
+      { user_id: userId, name: 'Cardio', sort_order: 1 },
+      { user_id: userId, name: 'Strength', sort_order: 2 },
+      { user_id: userId, name: 'Flexibility', sort_order: 3 },
+    ])
+    .select('id, name');
+  if (exCatErr) throw new Error(`Lister exercise categories: ${exCatErr.message}`);
+  const exCatId = (name: string) => exCats?.find(c => c.name === name)?.id ?? null;
+
+  const { data: exerciseData, error: exErr } = await db
+    .from('exercises')
+    .insert([
+      { user_id: userId, name: 'Morning Walk', category_id: exCatId('Cardio'), default_duration_sec: 1800, primary_muscles: ['legs', 'cardio'] },
+      { user_id: userId, name: 'Desk Stretches', category_id: exCatId('Flexibility'), default_sets: 3, default_duration_sec: 60, primary_muscles: ['back', 'shoulders'] },
+      { user_id: userId, name: 'Dumbbell Rows', category_id: exCatId('Strength'), default_sets: 3, default_reps: 12, primary_muscles: ['back', 'biceps'] },
+    ])
+    .select('id, name');
+  if (exErr) throw new Error(`Lister exercises: ${exErr.message}`);
+
+  // 11. Workout Log with 2 exercises
+  const { data: logData, error: logErr } = await db
+    .from('workout_logs')
+    .insert([{ user_id: userId, name: 'Quick Morning Routine', date: daysAgo(1), duration_min: 30, overall_feeling: 4, purpose: ['health', 'energy'] }])
+    .select('id');
+  if (logErr) throw new Error(`Lister workout log: ${logErr.message}`);
+  const logId = logData?.[0]?.id;
+
+  if (logId && exerciseData) {
+    const exId = (name: string) => exerciseData.find(e => e.name === name)?.id ?? null;
+    const { error: logExErr } = await db.from('workout_log_exercises').insert([
+      { log_id: logId, name: 'Morning Walk', exercise_id: exId('Morning Walk'), sets_completed: 1, duration_sec: 1800, sort_order: 1, phase: 'warmup' },
+      { log_id: logId, name: 'Dumbbell Rows', exercise_id: exId('Dumbbell Rows'), sets_completed: 3, reps_completed: 12, weight_lbs: 35, sort_order: 2, phase: 'working', rpe: 7 },
+    ]);
+    if (logExErr) throw new Error(`Lister workout log exercises: ${logExErr.message}`);
+  }
+
+  // 12. Health Metrics (7 days)
+  const healthRows = Array.from({ length: 7 }, (_, i) => ({
+    user_id: userId,
+    logged_date: daysAgo(i),
+    resting_hr: 62 + Math.floor(Math.random() * 6),
+    steps: 5000 + Math.floor(Math.random() * 4000),
+    sleep_hours: +(6 + Math.random() * 2).toFixed(1),
+    activity_min: 15 + Math.floor(Math.random() * 40),
+    source: 'manual' as const,
+  }));
+  const { error: hmErr } = await db.from('user_health_metrics').insert(healthRows);
+  if (hmErr) throw new Error(`Lister health metrics: ${hmErr.message}`);
+
+  // 13. Life Categories
+  const { error: lcErr } = await db.from('life_categories').insert([
+    { user_id: userId, name: 'Career', icon: 'briefcase', color: '#6366f1', sort_order: 1 },
+    { user_id: userId, name: 'Health', icon: 'heart', color: '#ef4444', sort_order: 2 },
+    { user_id: userId, name: 'Finance', icon: 'dollar-sign', color: '#10b981', sort_order: 3 },
+    { user_id: userId, name: 'Relationships', icon: 'users', color: '#f59e0b', sort_order: 4 },
+  ]);
+  if (lcErr) throw new Error(`Lister life categories: ${lcErr.message}`);
+
+  // 14. Focus Sessions
+  const { error: fsErr } = await db.from('focus_sessions').insert([
+    { user_id: userId, start_time: new Date(Date.now() - 86400000 - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 86400000 - 40 * 60000).toISOString(), duration: 50, notes: 'Crew scheduling for B1G Tournament — assigning 4 camera positions', session_type: 'work' },
+    { user_id: userId, start_time: new Date(Date.now() - 172800000 - 60 * 60000).toISOString(), end_time: new Date(Date.now() - 172800000 - 30 * 60000).toISOString(), duration: 30, notes: 'Reviewing CBS Sports contracts and updated rate cards for 2026', session_type: 'focus' },
+  ]);
+  if (fsErr) throw new Error(`Lister focus sessions: ${fsErr.message}`);
+
+  // 15. Blog Post
+  const { error: blogErr } = await db.from('blog_posts').insert([
+    {
+      user_id: userId, title: 'How I Manage 50+ Contractors Without Losing My Mind',
+      slug: 'manage-50-contractors',
+      excerpt: 'Systems, tools, and habits that keep my freelance crew operation running smoothly across multiple markets.',
+      content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'When you coordinate camera crews across Indiana and Arizona for CBS, ESPN, and Fox Sports, things can spiral fast. I manage over 50 freelance contractors across 12+ events per season. The key is systems: every crew member is in my roster with skills tagged, every job has a number and a status, and every assignment gets tracked from offer to acceptance. I use CrewOps to send group messages by department, track who\'s available, and keep a paper trail of every booking. The biggest lesson? Over-communicate early so you never scramble late. A 5-minute availability check on Monday saves a 2-hour panic on Friday.' }] }] },
+      visibility: 'public', tags: ['crew-management', 'freelance', 'operations'],
+      published_at: new Date(Date.now() - 14 * 86400000).toISOString(),
+    },
+  ]);
+  if (blogErr) throw new Error(`Lister blog post: ${blogErr.message}`);
 }
