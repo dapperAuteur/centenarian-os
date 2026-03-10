@@ -5,6 +5,7 @@ import {
   Loader2, Plus, Trash2, DollarSign, Calendar, CreditCard, Edit2, X, ChevronDown, ChevronUp,
   AlertTriangle, CheckCircle, Clock,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Membership {
   id: string;
@@ -97,7 +98,7 @@ export default function UnionMembershipsPage() {
 
   const load = useCallback(() => {
     setLoading(true);
-    fetch('/api/contractor/union/memberships')
+    offlineFetch('/api/contractor/union/memberships')
       .then((r) => r.json())
       .then((d) => setMemberships(d.memberships ?? []))
       .finally(() => setLoading(false));
@@ -142,7 +143,7 @@ export default function UnionMembershipsPage() {
       ? `/api/contractor/union/memberships/${editingId}`
       : '/api/contractor/union/memberships';
 
-    const res = await fetch(url, {
+    const res = await offlineFetch(url, {
       method: editingId ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -159,7 +160,7 @@ export default function UnionMembershipsPage() {
 
   async function handleDelete(id: string) {
     setDeletingId(id);
-    await fetch(`/api/contractor/union/memberships/${id}`, { method: 'DELETE' });
+    await offlineFetch(`/api/contractor/union/memberships/${id}`, { method: 'DELETE' });
     setDeletingId(null);
     if (expandedId === id) setExpandedId(null);
     load();
@@ -172,7 +173,7 @@ export default function UnionMembershipsPage() {
     }
     setExpandedId(id);
     setLoadingPayments(true);
-    const res = await fetch(`/api/contractor/union/memberships/${id}/payments`);
+    const res = await offlineFetch(`/api/contractor/union/memberships/${id}/payments`);
     const data = await res.json();
     setPayments(data.payments ?? []);
     setLoadingPayments(false);
@@ -182,7 +183,7 @@ export default function UnionMembershipsPage() {
     if (!expandedId || !paymentForm.amount || !paymentForm.payment_date) return;
     setSavingPayment(true);
 
-    const res = await fetch(`/api/contractor/union/memberships/${expandedId}/payments`, {
+    const res = await offlineFetch(`/api/contractor/union/memberships/${expandedId}/payments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

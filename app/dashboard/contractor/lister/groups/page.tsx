@@ -5,6 +5,7 @@ import {
   Loader2, UsersRound, Plus, Trash2, X, UserPlus, UserMinus,
   ChevronDown, ChevronRight,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface GroupMember {
   id: string;
@@ -51,8 +52,8 @@ export default function ListerGroupsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     const [gRes, rRes] = await Promise.all([
-      fetch('/api/contractor/lister/groups').then((r) => r.json()),
-      fetch('/api/contractor/roster').then((r) => r.json()),
+      offlineFetch('/api/contractor/lister/groups').then((r) => r.json()),
+      offlineFetch('/api/contractor/roster').then((r) => r.json()),
     ]);
     setGroups(gRes.groups ?? []);
     setRoster(rRes.roster ?? []);
@@ -64,7 +65,7 @@ export default function ListerGroupsPage() {
   async function createGroup() {
     if (!form.name.trim()) return;
     setSaving(true);
-    const res = await fetch('/api/contractor/lister/groups', {
+    const res = await offlineFetch('/api/contractor/lister/groups', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: form.name.trim(), description: form.description.trim() || null }),
@@ -79,7 +80,7 @@ export default function ListerGroupsPage() {
 
   async function deleteGroup(id: string) {
     setDeletingId(id);
-    await fetch(`/api/contractor/lister/groups/${id}`, { method: 'DELETE' });
+    await offlineFetch(`/api/contractor/lister/groups/${id}`, { method: 'DELETE' });
     setDeletingId(null);
     if (expandedId === id) { setExpandedId(null); setDetail(null); }
     load();
@@ -93,7 +94,7 @@ export default function ListerGroupsPage() {
     }
     setExpandedId(id);
     setLoadingDetail(true);
-    const res = await fetch(`/api/contractor/lister/groups/${id}`);
+    const res = await offlineFetch(`/api/contractor/lister/groups/${id}`);
     const d = await res.json();
     setDetail(d);
     setLoadingDetail(false);
@@ -102,7 +103,7 @@ export default function ListerGroupsPage() {
   async function addMember(groupId: string) {
     if (!selectedMember) return;
     setAddingMember(true);
-    await fetch(`/api/contractor/lister/groups/${groupId}/members`, {
+    await offlineFetch(`/api/contractor/lister/groups/${groupId}/members`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: selectedMember }),
@@ -110,20 +111,20 @@ export default function ListerGroupsPage() {
     setAddingMember(false);
     setSelectedMember('');
     // Refresh detail
-    const res = await fetch(`/api/contractor/lister/groups/${groupId}`);
+    const res = await offlineFetch(`/api/contractor/lister/groups/${groupId}`);
     setDetail(await res.json());
     load();
   }
 
   async function removeMember(groupId: string, userId: string) {
     setRemovingMemberId(userId);
-    await fetch(`/api/contractor/lister/groups/${groupId}/members`, {
+    await offlineFetch(`/api/contractor/lister/groups/${groupId}/members`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: userId }),
     });
     setRemovingMemberId(null);
-    const res = await fetch(`/api/contractor/lister/groups/${groupId}`);
+    const res = await offlineFetch(`/api/contractor/lister/groups/${groupId}`);
     setDetail(await res.json());
     load();
   }
@@ -198,8 +199,9 @@ export default function ListerGroupsPage() {
                 <div className="flex items-center justify-between gap-3 p-4">
                   <button
                     onClick={() => toggleExpand(g.id)}
-                    className="flex items-center gap-3 min-w-0 flex-1 text-left"
+                    className="flex items-center gap-3 min-w-0 flex-1 text-left min-h-11"
                     aria-expanded={isExpanded}
+                    aria-label={`Toggle ${g.name} details`}
                   >
                     <ChevronRight size={14} className={`text-neutral-500 shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`} aria-hidden="true" />
                     <UsersRound size={16} className="text-indigo-400 shrink-0" aria-hidden="true" />

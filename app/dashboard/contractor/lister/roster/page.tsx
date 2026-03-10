@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   Loader2, Plus, Trash2, X, Search, UserCircle,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface RosterContact {
   id: string;
@@ -31,7 +32,7 @@ export default function ListerRosterPage() {
 
   const load = useCallback(() => {
     setLoading(true);
-    fetch('/api/contractor/roster')
+    offlineFetch('/api/contractor/roster')
       .then((r) => r.json())
       .then((d) => setRoster(d.roster ?? []))
       .finally(() => setLoading(false));
@@ -51,7 +52,7 @@ export default function ListerRosterPage() {
       linked_user_id: form.linked_user_id.trim() || null,
     };
 
-    const res = await fetch('/api/contractor/roster', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const res = await offlineFetch('/api/contractor/roster', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     setSaving(false);
     if (res.ok) {
       setShowAdd(false);
@@ -62,7 +63,7 @@ export default function ListerRosterPage() {
 
   async function removeContractor(contactId: string) {
     setRemovingId(contactId);
-    await fetch('/api/contractor/roster', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contact_id: contactId }) });
+    await offlineFetch('/api/contractor/roster', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contact_id: contactId }) });
     setRemovingId(null);
     load();
   }
@@ -148,7 +149,7 @@ export default function ListerRosterPage() {
               {saving ? 'Saving...' : 'Add'}
             </button>
             <button onClick={() => setShowAdd(false)}
-              className="rounded-lg border border-neutral-700 px-4 py-2.5 text-sm text-neutral-400 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              className="rounded-lg border border-neutral-700 px-4 py-2.5 text-sm text-neutral-400 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-11">
               Cancel
             </button>
           </div>

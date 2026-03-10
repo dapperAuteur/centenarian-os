@@ -42,6 +42,7 @@ Create these modules (chapters) in this order:
 | 03 | Exploring the Demo Account | One-click demo login, pre-loaded data, what to explore first |
 | 04 | Your Dashboard Tour | Sidebar, top bar, module pages, settings, mobile layout |
 | 05 | The Module Map | Every module, which nav group it's in, brief descriptions, and reference links |
+| 06 | Interactive Walkthroughs | Module tours, feature pages, demo login, re-taking tours from Settings |
 
 ### After Publishing
 1. Test in incognito — all lessons should load without a 403

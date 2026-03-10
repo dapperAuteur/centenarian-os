@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   Loader2, Briefcase, Check, X as XIcon, MessageCircle,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Assignment {
   id: string;
@@ -35,7 +36,7 @@ export default function WorkerAssignmentsPage() {
 
   const load = useCallback(() => {
     setLoading(true);
-    fetch('/api/contractor/assignments?role=worker')
+    offlineFetch('/api/contractor/assignments?role=worker')
       .then((r) => r.json())
       .then((d) => setAssignments(d.assignments ?? []))
       .finally(() => setLoading(false));
@@ -45,7 +46,7 @@ export default function WorkerAssignmentsPage() {
 
   async function respond(id: string, status: 'accepted' | 'declined') {
     setRespondingId(id);
-    await fetch(`/api/contractor/assignments/${id}`, {
+    await offlineFetch(`/api/contractor/assignments/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status, response_note: responseNote.trim() || null }),

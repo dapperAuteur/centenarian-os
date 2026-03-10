@@ -1,0 +1,51 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format
+Platform Tour,2,6,Interactive Walkthroughs,text,240,true,,"CentenarianOS includes interactive walkthroughs for every major module — guided step-by-step tours that highlight exactly what to click and explain what each part of the interface does. Think of them as a personal tour guide built into the app.
+
+---
+
+### How Walkthroughs Work
+
+When you first visit a module, a **Module Picker** modal offers to start a guided tour. Select the module you want to learn, and the **Tour Overlay** activates. A floating card appears with:
+
+- **Step title and description** — what you're looking at and what it does
+- **Progress bar** — how far through the tour you are
+- **Next / Skip / Exit** buttons — advance, skip a step, or leave the tour
+
+The overlay highlights the relevant UI element by scrolling it into view and adding a glowing ring around it. This makes it easy to see exactly what the tour is describing.
+
+---
+
+### Available Tours
+
+Interactive tours cover:
+
+- **Planner** — roadmaps, goals, milestones, and daily task views
+- **Finance** — accounts, transactions, budgets, and bank linking
+- **Travel** — vehicles, trips, fuel logs, and maintenance
+- **Health Metrics** — core metrics, enrichment tier, and wearable sync
+- **Workouts & Exercises** — templates, logs, exercise library, Nomad OS
+- **Equipment** — asset tracking, valuations, and categories
+- **Academy** — course browsing, enrollment, CYOA navigation
+- **Data Hub** — import/export for all modules
+- **Contractor (JobHub)** — jobs, time entries, invoices, rate cards, venues
+- **Lister (CrewOps)** — job listing, roster, assignments, messaging
+
+---
+
+### Re-Taking Tours
+
+Dismissed a tour or want a refresher? Go to **Settings > Module Tours**. You'll see every tour with its status (Completed, In Progress, or Not Started). Click **Restart** to reset any tour and run through it again from step 1.
+
+On the contractor dashboard, Module Tours appears in the contractor settings page.
+
+---
+
+### Feature Pages & Demo Login
+
+You can also explore modules before signing up. Visit **/features/contractor** or **/features/lister** to see detailed feature descriptions. Each page includes a **Try Demo Login** button that drops you into a demo account with pre-loaded sample data so you can explore the actual interface risk-free.
+
+---
+
+### Offline Access
+
+Once you've loaded a tour or feature page, it's cached for offline access. If you lose connectivity, you can still browse tours and text-based content you've previously visited.",markdown

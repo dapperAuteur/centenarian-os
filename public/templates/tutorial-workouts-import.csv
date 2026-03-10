@@ -1,0 +1,430 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format
+Getting Started,1,1,Welcome to Workouts,text,300,true,,"Welcome to the Workouts Guide — a free tutorial course for CentenarianOS.
+
+The Workouts module lives at `/dashboard/workouts` and is built around two core concepts: **templates** and **logs**. Understanding the difference between them is the key to getting the most out of this module.
+
+---
+
+### Templates vs Logs
+
+**Workout templates** are reusable plans. Think of a template as a blueprint — it defines which exercises to do, in what order, and with what default sets, reps, and weight. You create a template once and use it as many times as you want. Templates live in the Templates tab on the workouts hub.
+
+**Workout logs** are actual completed sessions. When you finish a workout, you log what you actually did — the real sets, reps, weight, how you felt, and any notes. Logs live in the Logs tab. Each log can optionally start from a template, pre-filling the exercises so you only need to adjust the numbers.
+
+---
+
+### The Hub Layout
+
+From your dashboard, click **Workouts** in the left sidebar. The hub page has two tabs:
+
+**Templates tab** — shows all your workout templates as cards. Each card displays the template name, exercise count, and action buttons (edit, delete, start workout). Public templates show like/copy/done counts.
+
+**Logs tab** — shows your completed workout history. Each log card shows the date, workout name, exercise count, overall feeling (1-5 scale), and purpose tags. Click any log to see full details.
+
+---
+
+### The Exercise Library
+
+Templates and logs both pull exercises from the Exercise Library at `/dashboard/exercises`. The library is your personal catalog of movements — each exercise has a name, category (Push, Pull, Legs, Core, Cardio, etc.), instructions, form cues, optional video, and default parameters.
+
+You don't need to set up the library before creating workouts. The ExercisePicker component lets you search and select exercises inline while building a template or logging a session. But having a well-organized library makes workout creation faster and more consistent.
+
+---
+
+### How It Connects
+
+Workouts connect to the rest of CentenarianOS:
+
+- **Equipment links** — tie exercises or workouts to specific gear (dumbbells, bands, a bike)
+- **Activity links** — connect a workout log to a trip, task, or transaction
+- **Life Categories** — tag workouts with life areas like Health or Fitness
+- **Data Hub** — import and export workout data as CSV
+
+This course will walk you through every feature, starting with creating your first template.",markdown
+Getting Started,1,2,Creating a Template,text,300,true,,"A workout template is your reusable plan. Build it once, use it as many times as you want. Let's walk through creating one from scratch.
+
+---
+
+### Opening the Template Form
+
+From the Workouts hub at `/dashboard/workouts`, click the **New Template** button. This opens the WorkoutTemplateForm — a full-page form where you define every detail of your workout plan.
+
+---
+
+### Basic Fields
+
+Start with the basics:
+
+**Name** — give your template a descriptive name like ""Upper Body Push"" or ""30-Min Hotel Room"". This appears on the template card and in the ExercisePicker when you log workouts.
+
+**Description** — optional but helpful. Describe the goal of the workout, target muscle groups, or any context. This shows on the template detail page.
+
+---
+
+### Adding Exercises
+
+The core of a template is its exercise list. Click **Add Exercise** to open the ExercisePicker — a searchable dropdown connected to your Exercise Library.
+
+**How ExercisePicker works:**
+1. Type an exercise name (e.g., ""bench press"")
+2. Results filter as you type, grouped by category
+3. Click an exercise to add it to the template
+4. The exercise appears as a new row in the form
+
+If the exercise you need doesn't exist in your library, you can create it inline — ExercisePicker has a ""Create New"" option that opens the ExerciseFormModal without leaving the template form.
+
+---
+
+### Setting Defaults Per Exercise
+
+Each exercise row in the template has default fields:
+
+- **Sets** — how many sets (e.g., 3)
+- **Reps** — target reps per set (e.g., 10)
+- **Weight** — target weight in your preferred unit (e.g., 135 lbs)
+- **Duration** — for timed exercises like planks (e.g., 60 seconds)
+- **Rest** — rest period between sets (e.g., 90 seconds)
+
+These defaults pre-fill when you start a workout log from this template. You can always adjust the actual numbers during the session.
+
+---
+
+### Reordering Exercises
+
+Drag exercises to reorder them. The order in the template becomes the order in the log. Most people organize by muscle group or by the natural flow of their session — compound movements first, isolation last, core at the end.
+
+---
+
+### Saving the Template
+
+Click **Save Template**. The template appears on your hub's Templates tab. From here you can:
+
+- **Edit** — reopen the form and modify exercises or defaults
+- **Start Workout** — begin a log pre-filled with this template's exercises
+- **Delete** — remove the template (logs created from it are not affected)
+
+Templates are private by default. You can toggle visibility to public in Lesson 07.",markdown
+Getting Started,1,3,Logging a Workout,text,300,true,,"Templates are the plan. Logs are the reality. Let's walk through recording an actual workout session.
+
+---
+
+### Starting a Log
+
+You have two ways to start a workout log:
+
+**From a template** — on the Workouts hub, find your template card and click **Start Workout**. This creates a new log pre-filled with the template's exercises and their default sets, reps, and weight. Adjust any numbers to match what you actually did.
+
+**From blank** — click **Log Workout** on the hub to start an empty log. Add exercises manually using ExercisePicker, just like building a template. This is useful for unstructured sessions or trying something new.
+
+---
+
+### The WorkoutLogForm
+
+The log form is where you record what actually happened. It has two sections: **session-level fields** and **exercise rows**.
+
+**Session-level fields:**
+
+- **Name** — auto-filled from the template name, or enter your own
+- **Date** — defaults to today, adjust if logging a past session
+- **Overall Feeling** — rate how the session went from 1 (terrible) to 5 (great). This appears on the log card and helps you track trends over time
+- **Purpose** — a JSONB field with tags describing the workout's intent: strength, hypertrophy, endurance, mobility, recovery, sport-specific, or custom. Select one or more
+- **Warmup Notes** — free text for what you did before the main work
+- **Cooldown Notes** — free text for stretching, foam rolling, or other recovery
+
+---
+
+### Exercise Rows
+
+Each exercise row shows:
+
+- Exercise name (linked from the library)
+- **Sets** — actual sets completed
+- **Reps** — actual reps per set
+- **Weight** — actual weight used
+
+If you started from a template, these are pre-filled with the template defaults. Change any value to reflect what you actually did. The Advanced section (covered in Lesson 04) adds RPE, tempo, and more.
+
+---
+
+### Saving the Log
+
+Click **Save Workout**. This creates a `workout_log` entry in the database along with `workout_log_exercises` rows for each exercise. The log appears on the Logs tab of your hub.
+
+After saving, the WorkoutFeedbackModal may appear (covered in Lesson 06) to capture your post-workout mood and difficulty rating.
+
+Saving a log also auto-increments the `done_count` on the source template (if you started from one) and the `use_count` on each exercise used. These counters help you see which templates and exercises you rely on most.
+
+---
+
+### Viewing Log Details
+
+Click any log card on the Logs tab to see the full detail page. This shows all session fields, every exercise with actual numbers, any advanced fields used, and the activity links section.",markdown
+Advanced Training,2,1,Enhanced Fields,text,360,true,,"The basic sets/reps/weight fields cover most sessions. But if you want to track your training with the precision of a coach, the Enhanced Fields give you over a dozen additional data points per exercise. Every exercise row in both templates and logs has a collapsible **Advanced** section — click to expand it.
+
+---
+
+### Intensity and Effort
+
+**RPE (Rate of Perceived Exertion)** — a 1-10 scale. RPE 7 means you had about 3 reps left in the tank. RPE 10 means total failure. Tracking RPE over time helps you manage fatigue and autoregulate intensity without rigid percentage programs.
+
+**Percent of Max** — enter a number like 80 to indicate you're working at 80% of your one-rep max. Useful for percentage-based strength programs.
+
+**To Failure** — a boolean flag. Toggle this on when you pushed the set to muscular failure. Helps you review how often you're training to failure vs. leaving reps in reserve.
+
+---
+
+### Tempo and Timing
+
+**Tempo** — uses a four-digit format like `3-1-2-0`. Each number represents seconds for: eccentric (lowering) - pause at bottom - concentric (lifting) - pause at top. Tempo control is essential for hypertrophy and rehab work.
+
+**Hold Time (seconds)** — for isometric holds. How long you held the position.
+
+**Distance (miles)** — for exercises measured by distance: running, rowing, cycling, farmer's walks.
+
+**Rest (seconds)** — log-specific rest between sets, overriding the template default.
+
+---
+
+### Exercise Modifiers
+
+**Circuit** — flag this exercise as part of a circuit. Circuit-flagged exercises are performed back-to-back with no rest between them.
+
+**Superset Group** — a numeric group ID. Exercises sharing the same superset group number are performed alternately. For example, bench press (group 1) and bent-over row (group 1) form a superset pair.
+
+**Negatives** — eccentric-only reps. Toggle this when you're doing slow negatives for strength overload.
+
+**Isometric** — a static hold. Combined with hold_sec, this tracks plank variations, wall sits, and similar exercises.
+
+**Unilateral** — single-limb work. When toggled on, the **Side** field appears.
+
+**Side** — left, right, or both. Tracks which limb performed the exercise. Essential for identifying and correcting imbalances.
+
+**Balance** — flag exercises that challenge balance and stability (single-leg deadlifts, Bosu squats).
+
+---
+
+### Training Context
+
+**Phase** — a text label for your current training phase: Accumulation, Intensification, Deload, Peaking, or custom. Helps you categorize logs within a periodization plan.
+
+**Feeling** — a per-exercise log-only field. How did this specific exercise feel? Separate from the session-level overall feeling.
+
+---
+
+### Using Enhanced Fields in Templates vs Logs
+
+In **templates**, enhanced fields set defaults. If your bench press template row has RPE 8 and tempo 3-1-2-0, every log started from that template pre-fills those values.
+
+In **logs**, enhanced fields capture what actually happened. You might plan RPE 8 but log RPE 9 because the set was harder than expected.
+
+---
+
+### The Advanced Section UI
+
+All enhanced fields live in a collapsible panel labeled **Advanced** on each exercise row. Click the chevron to expand. The section only appears if you need it — beginners can ignore it entirely and stick to sets/reps/weight.",markdown
+Advanced Training,2,2,Nomad Longevity OS,text,300,true,,"The Nomad Longevity OS is a pre-built training system designed for people who travel, work from home, or just want a structured program without the planning overhead. It lives at `/dashboard/workouts/nomad` and comes loaded with 28 exercises and 12 workout templates organized into four programs.
+
+---
+
+### First-Time Setup
+
+The first time you visit the Nomad page, you'll see a **Seed Workouts** button. Click it to run the idempotent seed operation — this creates 28 exercises from the Nomad Glossary and 12 workout templates in your account. If you've already seeded, clicking it again does nothing. The seed is per-user, so your exercise library stays clean.
+
+---
+
+### The Four Programs
+
+The Nomad OS organizes its 12 templates into four tabs:
+
+**AM (Morning Mobility)** — short 10-15 minute routines to wake up the body. Joint circles, dynamic stretches, breathing exercises. Designed to be done in a hotel room or living room with zero equipment.
+
+**PM (Evening Recovery)** — wind-down sessions focused on flexibility and parasympathetic activation. Foam rolling sequences, static stretches, controlled breathing. Helps separate the work day from rest.
+
+**Hotel (Bodyweight)** — full workouts requiring no equipment. Push-ups, squats, lunges, planks, and variations. Three templates at different difficulty levels — beginner, intermediate, and advanced. Perfect for travel days when you have no gym access.
+
+**Gym (Full Equipment)** — barbell and dumbbell sessions for when you have access to a proper gym. Compound movements, progressive overload targets, and structured rest periods. Three templates covering push, pull, and legs.
+
+---
+
+### The Friction Protocol
+
+Can't decide which workout to do? The **Friction Protocol** is a decision-making tool built into the Nomad page. Click the Friction Protocol button and it asks you a short series of questions:
+
+1. How much time do you have? (10 min / 30 min / 45+ min)
+2. What equipment is available? (none / dumbbells / full gym)
+3. How does your body feel? (fresh / normal / sore)
+
+Based on your answers, it recommends one of the 12 templates. This removes the decision fatigue that often prevents people from starting. You can accept the recommendation and immediately start logging, or browse the tabs and choose something else.
+
+---
+
+### Using Nomad Templates
+
+Nomad templates work exactly like any other workout template. Click **Start Workout** on a template card to open the WorkoutLogForm pre-filled with that template's exercises. Adjust sets, reps, and weight to match your session. Save the log.
+
+After saving a Nomad workout, the WorkoutFeedbackModal appears automatically (covered in Lesson 06). The Nomad system uses this feedback to help the CentenarianOS team refine the protocols over time.
+
+---
+
+### Customizing Nomad Exercises
+
+The 28 seeded exercises become part of your personal Exercise Library. You can edit their instructions, form cues, add videos, or link equipment — just like any exercise you created yourself. Your changes only affect your account.",markdown
+Advanced Training,2,3,Workout Feedback,text,240,true,,"After you save a workout log, CentenarianOS may ask you a few quick questions about your session. This is the WorkoutFeedbackModal — a short post-workout survey that captures how you felt, how hard it was, and what you'd like from future programming.
+
+---
+
+### When It Appears
+
+The feedback modal triggers in two situations:
+
+1. **After any Nomad OS workout** — it always appears when you save a log from the Nomad page
+2. **After any workout log save** — the WorkoutLogForm has an `onWorkoutLogged` callback that can trigger the modal
+
+The modal is optional. You can dismiss it without submitting. But the data is valuable — it helps you track mood trends and gives the CentenarianOS team signals for improving the Nomad protocols.
+
+---
+
+### What It Captures
+
+The WorkoutFeedbackModal has five fields:
+
+**Mood Before (1-5)** — how you felt before starting the workout. 1 is terrible, 5 is great. This pairs with the session-level Overall Feeling to show mood change from pre to post.
+
+**Mood After (1-5)** — how you feel right now, immediately after finishing. Most people see a bump here — exercise tends to improve mood. Tracking the delta over weeks reveals whether your training is helping or draining you.
+
+**Difficulty** — a text label: Easy, Moderate, Hard, or Brutal. This is subjective and complements the per-exercise RPE from Lesson 04. RPE measures individual set difficulty; this measures the session as a whole.
+
+**Instruction Preference** — what kind of coaching you'd prefer: More Detail, Less Detail, Video Demos, or No Preference. This field helps the team understand how to evolve the Nomad content.
+
+**Feedback** — a free-text field for anything else. ""The hotel room was too small for lunges."" ""Loved the tempo work."" ""Need a shorter AM routine."" Whatever comes to mind.
+
+---
+
+### Rate Limiting
+
+Feedback submissions are rate-limited to **10 per day** per user. This prevents accidental spam from rapid-fire log saves. Under normal use you'll never hit this limit — even logging three workouts a day with feedback leaves plenty of headroom.
+
+---
+
+### Viewing Your Feedback History
+
+Your past feedback is accessible via `GET /api/workouts/feedback`. Each entry shows the workout log it's attached to, the timestamp, and all five fields. Over time, this builds a mood and difficulty history that correlates with your training load.
+
+---
+
+### The Feedback Data Model
+
+Each feedback entry is stored in the `workout_feedback` table and linked to a specific `workout_log_id`. The entry includes `activity_category` (auto-filled from the workout), `activity_duration`, `protocol_version` (for Nomad versioning), and a `status` field that the admin team can use for review.",markdown
+Social & Data,3,1,Sharing and Discovery,text,300,true,,"CentenarianOS isn't just a personal tracker — it has a community layer. You can publish your workout templates for others to find, browse templates shared by other users, and copy anything you like into your own library.
+
+---
+
+### Public Visibility Toggle
+
+By default, every workout template you create is private — only you can see it. To share a template with the community, open the template and toggle **Public Visibility** on. Once public, the template appears on the Discover page and is accessible via a shareable link.
+
+You can toggle visibility off at any time. Making a template private again removes it from the Discover page, but anyone who already copied it keeps their copy.
+
+---
+
+### Social Counters
+
+Public templates display three counters:
+
+**Likes** — how many users have liked the template. Click the heart icon to like. Click again to unlike. Likes are a signal of quality and help surface popular templates on the Discover page.
+
+**Copies** — how many users have copied the template into their own account. This is the strongest signal of usefulness — someone liked it enough to make it their own.
+
+**Done Count** — how many times the template has been completed across all users. Every time anyone saves a workout log from this template, the done count increments. High done counts mean the template is battle-tested.
+
+---
+
+### The Discover Page
+
+The Discover page lets you browse public templates from the community. You can search by name, filter by exercise type, and sort by likes, copies, or done count. Each template card shows the creator's name, exercise list preview, and all three counters.
+
+---
+
+### Copying a Template
+
+Found a template you want to use? Click **Copy**. This duplicates the entire template — name, description, exercise list, and all default values — into your account as a private template. The exercises used in the template are also copied to your Exercise Library if they don't already exist there.
+
+Your copy is independent. Edit it, rename it, add or remove exercises — changes to your copy don't affect the original, and updates to the original don't affect your copy.
+
+---
+
+### Sharing via Link
+
+Every public template has a shareable URL. Click the **Share** button to copy the link. You can send it via email, text, or social media. Recipients can view the template details and copy it to their own account if they have a CentenarianOS account.
+
+---
+
+### How Done Count Works
+
+When you save a workout log, the system checks if the log was started from a template. If it was, the template's done_count increments by one. Additionally, the `use_count` on each exercise in the log increments. These counters update across both your personal templates and public templates.
+
+This means completing a workout benefits the whole community — your log adds to the done count that helps other users identify effective templates.",markdown
+Social & Data,3,2,Import and Export,text,240,true,,"If you have workout data in spreadsheets, another app, or just want to back up your training history, the Data Hub handles import and export for workouts.
+
+---
+
+### Exporting Workouts
+
+Navigate to the Data Hub at `/dashboard/data` and find the **Workouts** card. Click **Export** to download a CSV file of your workout logs.
+
+The export includes every workout log and its exercises. Each row represents one exercise within a log, with columns for:
+
+- Workout name, date, overall feeling, purpose
+- Exercise name, sets, reps, weight, duration
+- Enhanced fields: RPE, tempo, superset group, circuit, to_failure, side, etc.
+- Warmup and cooldown notes (on the first row of each workout)
+
+You can filter exports by date range using the `?from=` and `?to=` query parameters. The CSV is compatible with Excel, Google Sheets, and any data analysis tool.
+
+---
+
+### Importing Workouts
+
+Click **Import** on the Workouts card in the Data Hub. This opens the GenericImportPage with the DataImporter component.
+
+**Preparing your CSV:**
+
+Download the template at `/templates/workouts-import-template.csv` for the correct column headers and example rows. The template shows the expected format for each field.
+
+**How rows are grouped:**
+
+The import system groups rows by **name + date** combination. All rows sharing the same workout name and date become exercises within a single `workout_log` entry. This means:
+
+```
+""Morning Push,2026-03-01,Bench Press,3,10,135""
+""Morning Push,2026-03-01,OHP,3,8,95""
+""Morning Push,2026-03-01,Tricep Dips,3,12,""
+```
+
+These three rows create one workout log named ""Morning Push"" dated March 1st with three exercises.
+
+**Import steps:**
+1. Upload your CSV file or paste from Google Sheets
+2. Preview the parsed data — check that rows grouped correctly
+3. Click **Import** to process
+4. Review the result: imported count, skipped count, and any errors
+
+---
+
+### What Import Does NOT Do
+
+Bulk imports do not auto-create linked finance transactions. If your workout involved a gym membership payment, you'll need to create that transaction separately in the Finance module and link it via Activity Links.
+
+Import also does not create exercises in your Exercise Library. If an exercise name in the CSV doesn't match an existing exercise, the import creates the `workout_log_exercises` row with the name as-is but without an `exercise_id` foreign key.
+
+---
+
+### Template File
+
+The import template is available at `/templates/workouts-import-template.csv`. It includes example rows showing:
+
+- Basic fields: name, date, exercise_name, sets, reps, weight
+- Enhanced fields: rpe, tempo, superset_group, circuit, to_failure
+- Session fields: overall_feeling, purpose, warmup_notes, cooldown_notes
+
+Download it, fill in your data, and import. The DataImporter validates each row and reports errors inline.",markdown

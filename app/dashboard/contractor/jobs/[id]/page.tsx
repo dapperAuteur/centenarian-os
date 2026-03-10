@@ -11,6 +11,7 @@ import {
 import JobStatusBadge from '@/components/contractor/JobStatusBadge';
 import JobSummaryCards from '@/components/contractor/JobSummaryCards';
 import QuickLogModal from '@/components/contractor/QuickLogModal';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 /* ─── Types ─────────────────────────────────────────────── */
 interface Job {
@@ -120,11 +121,11 @@ export default function JobDetailPage() {
 
   const loadJob = useCallback(async () => {
     const [jobRes, summaryRes, timeRes, invoiceRes, docRes] = await Promise.all([
-      fetch(`/api/contractor/jobs/${id}`),
-      fetch(`/api/contractor/jobs/${id}/summary`),
-      fetch(`/api/contractor/jobs/${id}/time-entries`),
-      fetch(`/api/finance/invoices?job_id=${id}`),
-      fetch(`/api/contractor/jobs/${id}/documents`),
+      offlineFetch(`/api/contractor/jobs/${id}`),
+      offlineFetch(`/api/contractor/jobs/${id}/summary`),
+      offlineFetch(`/api/contractor/jobs/${id}/time-entries`),
+      offlineFetch(`/api/finance/invoices?job_id=${id}`),
+      offlineFetch(`/api/contractor/jobs/${id}/documents`),
     ]);
     const [jobData, summaryData, timeData, invoiceData, docData] = await Promise.all([
       jobRes.json(), summaryRes.json(), timeRes.json(), invoiceRes.json(), docRes.json(),
@@ -146,7 +147,7 @@ export default function JobDetailPage() {
   async function addTimeEntry(e: React.FormEvent) {
     e.preventDefault();
     setTeSaving(true);
-    const res = await fetch(`/api/contractor/jobs/${id}/time-entries`, {
+    const res = await offlineFetch(`/api/contractor/jobs/${id}/time-entries`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -165,14 +166,14 @@ export default function JobDetailPage() {
   }
 
   async function deleteTimeEntry(entryId: string) {
-    await fetch(`/api/contractor/jobs/${id}/time-entries/${entryId}`, { method: 'DELETE' });
+    await offlineFetch(`/api/contractor/jobs/${id}/time-entries/${entryId}`, { method: 'DELETE' });
     loadJob();
   }
 
   /* ─── Generate Invoice ──────────────────────────────── */
   async function generateInvoice(entryId?: string) {
     setGenerating(true);
-    await fetch(`/api/contractor/jobs/${id}/generate-invoice`, {
+    await offlineFetch(`/api/contractor/jobs/${id}/generate-invoice`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(entryId ? { entry_id: entryId } : {}),
@@ -184,7 +185,7 @@ export default function JobDetailPage() {
   /* ─── Toggle Public / Share Contacts ────────────────── */
   async function togglePublic() {
     const newVal = !job?.is_public;
-    await fetch(`/api/contractor/jobs/${id}`, {
+    await offlineFetch(`/api/contractor/jobs/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_public: newVal }),
@@ -194,7 +195,7 @@ export default function JobDetailPage() {
 
   async function toggleShareContacts() {
     const newVal = !job?.share_contacts;
-    await fetch(`/api/contractor/jobs/${id}`, {
+    await offlineFetch(`/api/contractor/jobs/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ share_contacts: newVal }),
@@ -204,7 +205,7 @@ export default function JobDetailPage() {
 
   /* ─── Status Update ─────────────────────────────────── */
   async function updateStatus() {
-    await fetch(`/api/contractor/jobs/${id}`, {
+    await offlineFetch(`/api/contractor/jobs/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus }),

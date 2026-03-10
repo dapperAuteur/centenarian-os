@@ -22,6 +22,7 @@ This short course covers your account-level settings on CentenarianOS — your s
 | 01 | Your Subscription | The billing page — current plan, renewal date, managing via Stripe portal |
 | 02 | Wearable Connections | Connecting OAuth devices, manual CSV imports, and disconnecting providers |
 | 03 | Upgrading and Canceling | Upgrading to Lifetime, canceling a monthly subscription, and what happens after |
+| 04 | Module Tours | Re-taking interactive walkthroughs, viewing tour progress, and restarting tours |
 
 ---
 

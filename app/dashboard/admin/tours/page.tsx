@@ -211,7 +211,7 @@ export default function TourAnalyticsPage() {
               ))}
               {data.recent_activity.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-neutral-600">
+                  <td colSpan={6} className="px-4 py-6 text-center text-neutral-500">
                     No tour events yet
                   </td>
                 </tr>

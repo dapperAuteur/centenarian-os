@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Loader2, Send, UserPlus, CheckCircle, Clock, Mail } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Invite {
   id: string;
@@ -21,7 +22,7 @@ export default function ContractorInvitePage() {
 
   const load = useCallback(() => {
     setLoading(true);
-    fetch('/api/contractor/invite')
+    offlineFetch('/api/contractor/invite')
       .then((r) => r.json())
       .then((d) => setInvites(d.invites ?? []))
       .finally(() => setLoading(false));
@@ -35,7 +36,7 @@ export default function ContractorInvitePage() {
     setSending(true);
     setMessage(null);
 
-    const res = await fetch('/api/contractor/invite', {
+    const res = await offlineFetch('/api/contractor/invite', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.trim(), product: 'contractor' }),

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   Loader2, CalendarCheck, Search, CheckCircle, XCircle, Minus,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface BusyJob {
   job_id: string;
@@ -43,7 +44,7 @@ export default function ListerAvailabilityPage() {
     if (!from || !to) return;
     setLoading(true);
     setSearched(true);
-    const res = await fetch(`/api/contractor/availability?from=${from}&to=${to}`);
+    const res = await offlineFetch(`/api/contractor/availability?from=${from}&to=${to}`);
     const d = await res.json();
     setContractors(d.contractors ?? []);
     setLoading(false);

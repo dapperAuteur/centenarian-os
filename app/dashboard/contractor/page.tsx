@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Plus, HardHat, ArrowRight, Loader2 } from 'lucide-react';
 import JobStatusBadge from '@/components/contractor/JobStatusBadge';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Job {
   id: string;
@@ -29,7 +30,7 @@ export default function ContractorHubPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/contractor/jobs?limit=20')
+    offlineFetch('/api/contractor/jobs?limit=20')
       .then((r) => r.json())
       .then((d) => setJobs(d.jobs ?? []))
       .finally(() => setLoading(false));

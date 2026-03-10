@@ -5,6 +5,7 @@ import {
   Loader2, Send, Inbox, Mail, MailOpen, Trash2, X,
   ChevronDown, Users as UsersIcon,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Message {
   id: string;
@@ -54,9 +55,9 @@ export default function ListerMessagesPage() {
   const load = useCallback(async () => {
     setLoading(true);
     const [mRes, gRes, rRes] = await Promise.all([
-      fetch(`/api/contractor/lister/messages?folder=${folder}`).then((r) => r.json()),
-      fetch('/api/contractor/lister/groups').then((r) => r.json()),
-      fetch('/api/contractor/roster').then((r) => r.json()),
+      offlineFetch(`/api/contractor/lister/messages?folder=${folder}`).then((r) => r.json()),
+      offlineFetch('/api/contractor/lister/groups').then((r) => r.json()),
+      offlineFetch('/api/contractor/roster').then((r) => r.json()),
     ]);
     setMessages(mRes.messages ?? []);
     setGroups(gRes.groups ?? []);
@@ -79,7 +80,7 @@ export default function ListerMessagesPage() {
       payload.group_id = form.group_id;
     }
 
-    const res = await fetch('/api/contractor/lister/messages', {
+    const res = await offlineFetch('/api/contractor/lister/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -95,13 +96,13 @@ export default function ListerMessagesPage() {
 
   async function deleteMessage(id: string) {
     setDeletingId(id);
-    await fetch(`/api/contractor/lister/messages/${id}`, { method: 'DELETE' });
+    await offlineFetch(`/api/contractor/lister/messages/${id}`, { method: 'DELETE' });
     setDeletingId(null);
     load();
   }
 
   async function markRead(id: string) {
-    await fetch(`/api/contractor/lister/messages/${id}`, {
+    await offlineFetch(`/api/contractor/lister/messages/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_read: true }),
@@ -245,7 +246,7 @@ export default function ListerMessagesPage() {
               {sending ? 'Sending...' : 'Send'}
             </button>
             <button onClick={() => setShowCompose(false)}
-              className="rounded-lg border border-neutral-700 px-4 py-2.5 text-sm text-neutral-400 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              className="rounded-lg border border-neutral-700 px-4 py-2.5 text-sm text-neutral-400 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-11">
               Cancel
             </button>
           </div>

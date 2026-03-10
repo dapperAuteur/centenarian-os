@@ -16,7 +16,9 @@ CentenarianOS is a comprehensive longevity-focused life-management platform. It 
 - **Payments**: Stripe (checkout sessions, webhooks, subscription management, Stripe Connect for teacher payouts)
 - **AI**: Google Gemini 2.5 Flash (chat, coaching, embeddings, vision/OCR)
 - **Embeddings**: Gemini text-embedding-004 (768-dim vectors, pgvector)
-- **Media**: Cloudinary (image/video uploads for courses, exercises, profiles)
+- **Media**: Cloudinary (image/video uploads for courses, exercises, profiles, blog posts)
+- **Video Embedding**: VideoEmbed Tiptap node (YouTube, Viloud.tv, Mux, Cloudinary direct) — used in blog posts and recipes
+- **Offline**: offlineFetch wrapper caches GETs in IndexedDB, queues mutations for replay — all contractor/lister pages
 - **Charts**: Recharts (admin analytics, finance dashboards)
 - **Banking**: Teller API (bank account OAuth linking and auto-sync)
 - **Bot Prevention**: Cloudflare Turnstile on signup
@@ -43,7 +45,7 @@ CentenarianOS is a comprehensive longevity-focused life-management platform. It 
 
 6. **Equipment Tracker** — Categories (auto-seeded defaults), items with purchase price, valuations over time (value chart). Links to financial transactions. Cross-module activity linking. Equipment catalog with system-suggested items.
 
-7. **Workouts & Exercises** — Exercise library with categories (10 defaults + user-created), instructions, form cues, video/audio/media URLs, muscle groups, equipment links, difficulty levels (beginner/intermediate/advanced), equipment classification (none/minimal/gym). 110+ system-seeded exercises. Workout templates and logs with 16+ enhanced fields: RPE, tempo, supersets, circuits, negatives, isometrics, to-failure, unilateral, balance, distance, hold time. Nomad Longevity OS protocol (28 seeded exercises, 12 templates, AM/PM/Hotel/Gym programs, Friction Protocol). Workout feedback system with mood tracking.
+7. **Workouts & Exercises** — Exercise library with categories (10 defaults + user-created), instructions, form cues, video/audio/media URLs, muscle groups, equipment links, difficulty levels (beginner/intermediate/advanced), equipment classification (none/minimal/gym). 110+ system-seeded exercises. Workout templates and logs with 16+ enhanced fields: RPE, tempo, supersets, circuits, negatives, isometrics, to-failure, unilateral, balance, distance, hold time. Nomad Longevity OS protocol (28 seeded exercises, 12 templates, AM/PM/Hotel/Gym programs, Friction Protocol). Workout feedback system with mood tracking. Social layer: public visibility toggle, like/copy/done counts, shareable links via public alias (no PII), discover pages for browsing public content.
 
 8. **Coaching Gems** — Custom AI personas with configurable data source access (11 types: health, finance, travel, workouts, recipes, planner, academy, daily logs, focus, meals, correlations). File uploads (CSV, images, PDFs). Knowledge base documents. Action execution (create recipes, log workouts, create transactions/tasks/gems, import transactions). Auto-flashcard extraction. Session persistence.
 
@@ -61,8 +63,14 @@ CentenarianOS is a comprehensive longevity-focused life-management platform. It 
 
 15. **Correlations & Analytics** — Pearson correlation analysis across health and lifestyle metrics. Multi-metric trend visualization. Cross-module pattern discovery.
 
+16. **Module Walkthrough Onboarding** — Interactive step-by-step tours for every module. TourOverlay component highlights UI elements with tooltips. Tour progress persists server-side. Users can restart tours from Settings → Module Tours. ModulePickerModal shows available tours on first login. Tour events tracked (started, step_completed, step_skipped, tour_completed, tour_exited).
+
+17. **Blog & Recipe Video Embedding** — VideoEmbed Tiptap extension node for inline video in blog posts and recipes. Supports YouTube, Viloud.tv, Mux, Cloudinary direct. MediaEmbedModal provides tabbed UI (video URL, social embed, image upload, video upload). Blog CSV import auto-inserts VideoEmbed node when video_url column is present. getEmbedUrl utility auto-detects provider and converts to embed format.
+
+18. **Offline Support (Contractor & Lister)** — All 24 contractor and lister pages use offlineFetch wrapper (lib/offline/offline-fetch). GET responses cached in IndexedDB. POST/PATCH/DELETE mutations queued offline and replayed on reconnection. Text-based pages (tutorials, lessons) available offline once loaded.
+
 ### Admin Panel (18 pages)
-Overview, Users (list + detail), Messages, Content moderation, Engagement analytics, Feedback management, Academy settings, Academy courses, Live sessions, Metrics configuration, Institutions directory, App Logs viewer, Usage analytics, Short Links dashboard, Education AI Chat (persistent sessions with tags, notes, full-text search).
+Overview, Users (list + detail), Messages, Content moderation, Engagement analytics, Feedback management, Academy settings, Academy courses, Live sessions, Metrics configuration, Institutions directory, App Logs viewer, Usage analytics, Short Links dashboard, Education AI Chat (persistent sessions with tags, notes, full-text search), Tour Analytics, Contractor Users management.
 
 ### AI Integration
 - **Coaching Gems**: Full conversational AI with data source injection, file analysis, action execution, flashcard generation
@@ -85,7 +93,7 @@ Overview, Users (list + detail), Messages, Content moderation, Engagement analyt
 - **Invited users**: Admin can grant trial or lifetime access without payment, with optional module restrictions
 
 ### Database Architecture
-- **104+ migrations** in supabase/migrations/ (000 through 104)
+- **117+ migrations** in supabase/migrations/ (000 through 117)
 - **Key tables**: profiles, financial_accounts, financial_transactions, budget_categories, vehicles, trips, trip_routes, fuel_logs, vehicle_maintenance, equipment, equipment_categories, equipment_valuations, exercises, exercise_categories, workout_logs, workout_templates, courses, lessons, modules (academy), course_prerequisites, prerequisite_override_requests, gem_personas, language_coach_sessions, life_categories, entity_life_categories, activity_links, user_contacts, contact_locations, scan_images, receipt_line_items, item_prices, institutions, institution_offers, invited_users, teller_enrollments, admin_chats, admin_chat_messages, app_logs, usage_events, page_views
 - **Patterns**: Soft-delete via is_active flags, .maybeSingle() for optional rows, service role for admin ops, fire-and-forget logging
 - **RLS**: Enabled on all user-facing tables. Service role key bypasses RLS for admin/webhook routes.
@@ -107,17 +115,23 @@ Overview, Users (list + detail), Messages, Content moderation, Engagement analyt
 - **CYOA via embeddings**: Lesson navigation uses cosine similarity rather than manual prerequisite graphs, with cross-course matching option
 - **Tiptap + Markdown dual support**: Lessons can use either format, stored in same column with content_format flag
 - **Teller API for banking**: OAuth-based bank account linking for transaction auto-sync, institution policy tracking
+- **offlineFetch pattern**: Drop-in fetch replacement caches in IndexedDB, queues mutations — enables offline-first contractor/lister apps
+- **VideoEmbed Tiptap node**: Isomorphic custom node stores src URL, auto-detects provider (YouTube/Viloud/Mux/Cloudinary)
+- **Module tours**: TourOverlay component with server-persisted step progress, event tracking, and restart capability
 
-### Tutorial Courses (15 series, 200+ lessons)
-Getting Started, Planner, Finance, Travel, Fuel, Engine, Health Metrics, Workouts, Equipment, Correlations & Analytics, Academy (student), Teaching (teacher), Settings & Billing, Data Hub, Life Categories, Coach & Gems (admin-only). All use CYOA navigation with free preview lessons.
+### Tutorial Courses (19 series, 200+ lessons)
+Getting Started, Planner, Finance, Travel, Fuel, Engine, Health Metrics, Workouts, Exercises, Blog & Publishing, Recipes, Equipment, Correlations & Analytics, Academy (student), Teaching (teacher), Settings & Billing, Data Hub, Life Categories, Coach & Gems (admin-only), Contractor (JobHub, 15 lessons), Lister (CrewOps, 13 lessons). All use CYOA navigation with free preview lessons.
 
 ### Project Stats
 - ~400+ TypeScript files
-- 104+ database migrations
-- 15+ user-facing modules
-- 18 admin management pages
-- 10 AI-powered features
+- 117+ database migrations
+- 18+ user-facing modules (including contractor, lister, social layer)
+- 20 admin management pages
+- 12 AI-powered features
 - 3 wearable integrations (Oura, WHOOP, Garmin)
 - All-module CSV import/export pipelines
-- 15 tutorial course series (200+ lessons)
+- 19 tutorial course series (200+ lessons)
+- Offline-first contractor and lister apps (24 pages)
+- Interactive module walkthrough onboarding for all major features
+- Video embedding in blog posts and recipes (YouTube, Viloud, Mux, Cloudinary)
 `;

@@ -5,6 +5,7 @@ import {
   Loader2, UserPlus, ChevronDown, X as XIcon,
   AlertTriangle, Briefcase,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Assignment {
   id: string;
@@ -55,9 +56,9 @@ export default function ListerAssignPage() {
   const load = useCallback(async () => {
     setLoading(true);
     const [aRes, jRes, rRes] = await Promise.all([
-      fetch('/api/contractor/assignments?role=lister').then((r) => r.json()),
-      fetch('/api/contractor/jobs?status=assigned,confirmed,in_progress').then((r) => r.json()),
-      fetch('/api/contractor/roster').then((r) => r.json()),
+      offlineFetch('/api/contractor/assignments?role=lister').then((r) => r.json()),
+      offlineFetch('/api/contractor/jobs?status=assigned,confirmed,in_progress').then((r) => r.json()),
+      offlineFetch('/api/contractor/roster').then((r) => r.json()),
     ]);
     setAssignments(aRes.assignments ?? []);
     setJobs(jRes.jobs ?? []);
@@ -70,7 +71,7 @@ export default function ListerAssignPage() {
   async function createAssignment() {
     if (!form.job_id || !form.assigned_to) return;
     setAssigning(true);
-    const res = await fetch('/api/contractor/assignments', {
+    const res = await offlineFetch('/api/contractor/assignments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
@@ -85,7 +86,7 @@ export default function ListerAssignPage() {
 
   async function removeAssignment(id: string) {
     setRemovingId(id);
-    await fetch(`/api/contractor/assignments/${id}`, {
+    await offlineFetch(`/api/contractor/assignments/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'removed' }),
@@ -201,7 +202,7 @@ export default function ListerAssignPage() {
               {assigning ? 'Assigning...' : 'Assign'}
             </button>
             <button onClick={() => setShowAssign(false)}
-              className="rounded-lg border border-neutral-700 px-4 py-2.5 text-sm text-neutral-400 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              className="rounded-lg border border-neutral-700 px-4 py-2.5 text-sm text-neutral-400 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-11">
               Cancel
             </button>
           </div>

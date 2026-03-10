@@ -1,0 +1,521 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format
+Getting Started,1,1,Welcome to the Exercise Library,text,300,true,,"Welcome to the Exercise Library Guide — a free tutorial course for CentenarianOS.
+
+The Exercise Library is your personal catalog of movements. Instead of typing ""Bench Press"" into every workout and hoping you remember the details, you build a library once and pull from it forever. Each exercise carries its own instructions, form cues, video demo, images, audio coaching, and default programming — so when you add it to a workout, all the context comes with it.
+
+Let's look at what you're working with.
+
+---
+
+### Where to Find It
+
+From your dashboard, click **Exercises** in the left sidebar under the **Life** group. This takes you to `/dashboard/exercises` — the Exercise Library hub.
+
+---
+
+### What's Already There
+
+The first time you visit, CentenarianOS seeds your library with **110+ exercises** covering all major movement patterns. These are real, usable entries — not placeholders. Each one has a name, category, and basic metadata. You can edit any of them, add your own video demos, or delete the ones you don't need.
+
+---
+
+### Categories
+
+Exercises are organized into **10 auto-seeded categories**:
+
+| Category | Examples |
+|----------|----------|
+| Push | Bench Press, Overhead Press, Push-ups |
+| Pull | Pull-ups, Barbell Row, Face Pulls |
+| Legs | Squats, Lunges, Leg Press |
+| Core | Planks, Russian Twists, Dead Bugs |
+| Cardio | Running, Jump Rope, Rowing |
+| Flexibility | Hamstring Stretch, Hip Openers |
+| Olympic | Clean & Jerk, Snatch, Power Clean |
+| Plyometric | Box Jumps, Burpees, Depth Jumps |
+| Balance | Single-Leg Stand, Bosu Ball Work |
+| Other | Anything that doesn't fit above |
+
+You can create custom categories too — we'll cover that in Lesson 04.
+
+---
+
+### What Each Exercise Stores
+
+Every exercise record includes:
+
+- **Name** — the exercise title (e.g., ""Barbell Back Squat"")
+- **Category** — which movement pattern it belongs to
+- **Instructions** — step-by-step execution guide
+- **Form cues** — quick reminders for proper technique
+- **Video URL** — a link to a YouTube, Viloud, Mux, or direct video demo
+- **Media** — photos uploaded via Cloudinary (form check angles, setup shots)
+- **Audio cues** — uploaded audio files for coaching prompts
+- **Primary muscles** — multi-select of targeted muscle groups
+- **Difficulty** — beginner, intermediate, or advanced
+- **Equipment type** — none, minimal, or gym
+- **Defaults** — default sets, reps, weight, duration, and rest period
+
+---
+
+### Hub vs. Detail
+
+The hub page shows your full library in a searchable, filterable grid. Click any exercise to open its **detail page** at `/dashboard/exercises/[id]`, where you see the full record: video player, images, instructions, form cues, linked equipment, and usage stats.",markdown
+Getting Started,1,2,Creating an Exercise,text,300,true,,"The seeded exercises are a starting point. Sooner or later you'll want to add your own — a favorite mobility drill, a machine variation your gym has, or a movement from a training program. Here's how.
+
+---
+
+### Opening the Form
+
+On the Exercise Library hub (`/dashboard/exercises`), click the **Add Exercise** button. This opens the ExerciseFormModal — a single form with everything you need.
+
+---
+
+### Required Fields
+
+Only one field is truly required:
+
+- **Name** — give your exercise a clear, specific name. ""Dumbbell Romanian Deadlift"" is better than ""RDL"" because it'll be easier to find later.
+
+---
+
+### Optional Fields (All Recommended)
+
+**Category** — pick from the 10 defaults or any custom categories you've created. If you skip this, the exercise lands in ""Other.""
+
+**Instructions** — a text field for step-by-step execution. Write it the way you'd explain the movement to someone who's never done it. Line breaks are preserved.
+
+**Form cues** — short, punchy reminders. Think ""chest up,"" ""drive through heels,"" ""squeeze at the top."" These show as quick-reference tips on the exercise detail page and in workout forms.
+
+**Video URL** — paste a link to a video demonstration. Supported providers:
+- YouTube (any standard or shortened URL)
+- Viloud
+- Mux
+- Direct video file URL (.mp4, .webm)
+
+The video embeds directly on the exercise detail page using the same VideoEmbed component used in blog posts.
+
+**Media upload** — upload images via Cloudinary. Use this for form check photos, setup diagrams, or equipment positioning shots. Multiple images supported.
+
+**Audio upload** — upload an audio file for coaching cues. Useful if you record verbal reminders or tempo counts.
+
+**Primary muscles** — multi-select from a predefined list of muscle groups (chest, back, quads, hamstrings, glutes, shoulders, biceps, triceps, core, calves, etc.). Selecting muscles lets you filter exercises by muscle group later.
+
+**Difficulty** — choose one:
+- **Beginner** — safe for someone new to training
+- **Intermediate** — requires some training experience
+- **Advanced** — demands significant skill or strength
+
+**Equipment type** — classify the gear requirement:
+- **None** — bodyweight only
+- **Minimal** — resistance bands, dumbbells, kettlebells
+- **Gym** — barbells, machines, cable stations
+
+---
+
+### Default Programming
+
+At the bottom of the form, set the defaults that auto-fill when you add this exercise to a workout:
+
+| Field | Example |
+|-------|---------|
+| **Sets** | 3 |
+| **Reps** | 10 |
+| **Weight** | 135 (in your preferred unit) |
+| **Duration** | 30 (seconds, for timed exercises) |
+| **Rest** | 90 (seconds between sets) |
+
+These are starting points. You can always override them in individual workouts.
+
+---
+
+### Saving
+
+Click **Save** and the exercise appears in your library immediately. You can edit it anytime by clicking the edit icon on the exercise card or from the detail page.",markdown
+Content & Media,2,1,Adding Video and Media,text,240,true,,"An exercise without a visual reference is just a name. Adding video, images, and audio turns your library into a coaching tool you can actually follow during a workout.
+
+---
+
+### Video URL
+
+The **Video URL** field accepts a link to a video demonstration. Paste it in and the exercise detail page renders a full embedded player — no extra steps.
+
+**Supported providers:**
+
+| Provider | Example URL |
+|----------|-------------|
+| YouTube | `https://youtube.com/watch?v=abc123` or `https://youtu.be/abc123` |
+| Viloud | Any Viloud embed URL |
+| Mux | Mux playback URL |
+| Direct | `https://example.com/video.mp4` or `.webm` |
+
+This uses the same **VideoEmbed** component that powers video in blog posts and recipes. If a URL works in a blog post, it works here.
+
+**Tips for video URLs:**
+- YouTube is the easiest — just copy the share link
+- For your own recordings, upload to YouTube as unlisted if you don't want them public
+- Direct URLs work for self-hosted files, but streaming performance depends on your hosting
+
+The video player appears at the top of the exercise detail page. During workouts, you can tap into the exercise detail to watch the demo without leaving your session.
+
+---
+
+### Media (Images)
+
+The **Media** field lets you upload images through Cloudinary. This is ideal for:
+
+- **Form check angles** — front, side, and rear views of the movement
+- **Setup shots** — how to position equipment before starting
+- **Progression photos** — showing beginner vs. advanced variations
+- **Anatomy highlights** — marking which muscles are targeted
+
+Click the upload area or drag and drop. Multiple images are supported. Cloudinary handles resizing and optimization automatically — you don't need to compress images before uploading.
+
+Images display in a gallery on the exercise detail page below the video player.
+
+---
+
+### Audio Cues
+
+The **Audio** field accepts an uploaded audio file. Use it for:
+
+- **Tempo counts** — ""down two three four, up two three four""
+- **Verbal coaching** — recorded cues you can play during sets
+- **Breathing reminders** — ""inhale on the way down, exhale on the press""
+
+Upload any standard audio format. The file attaches to the exercise and plays from the detail page.
+
+---
+
+### Putting It Together
+
+A fully loaded exercise might look like this:
+
+| Field | Content |
+|-------|---------|
+| Video | YouTube link to a 60-second demo |
+| Media | Two images — side view at bottom, side view at top |
+| Audio | 15-second tempo count clip |
+| Instructions | Written step-by-step guide |
+| Form cues | ""Chest up, knees tracking toes, full depth"" |
+
+You don't need all of these for every exercise. But the exercises you use most — your bread-and-butter movements — benefit from having rich media attached. When you pull them into a workout, all of that context is one tap away.",markdown
+Content & Media,2,2,Categories and Filtering,text,240,true,,"A library with 100+ exercises needs good organization. Categories and filters are how you find what you need in seconds instead of scrolling through a wall of cards.
+
+---
+
+### Exercise Categories
+
+Every exercise belongs to one category. CentenarianOS seeds 10 defaults the first time you access the library:
+
+| Category | Movement Pattern |
+|----------|-----------------|
+| Push | Chest, shoulders, triceps — pressing movements |
+| Pull | Back, biceps — rowing and pulling movements |
+| Legs | Quads, hamstrings, glutes — squat and hinge patterns |
+| Core | Abs, obliques, lower back — stability and anti-rotation |
+| Cardio | Heart rate-focused — running, cycling, rowing |
+| Flexibility | Stretching, mobility, yoga poses |
+| Olympic | Competition lifts — clean, jerk, snatch |
+| Plyometric | Explosive movements — jumps, bounds, throws |
+| Balance | Stability-focused — single-leg, wobble board, Bosu |
+| Other | Everything else |
+
+---
+
+### Creating Custom Categories
+
+The defaults cover standard training, but your routine might include categories they don't. To create a custom category:
+
+1. Navigate to the Exercise Library hub
+2. Open the category management area
+3. Click **Add Category**
+4. Enter a name (e.g., ""Rehabilitation,"" ""Sport-Specific,"" ""Warm-Up Drills"")
+5. Save
+
+Custom categories appear alongside the defaults in the category filter and in the ExerciseFormModal dropdown. There's no limit to how many you can create.
+
+You can also **rename** or **delete** custom categories. Deleting a category moves its exercises to ""Other"" — nothing gets lost.
+
+---
+
+### Filtering Your Library
+
+The hub page offers four ways to narrow your view:
+
+**Category filter** — the row of pills at the top of the grid. Click a category to show only exercises in that group. Click ""All"" to reset.
+
+**Search by name** — the search bar matches against exercise names. Type ""squat"" and you'll see Back Squat, Front Squat, Goblet Squat, and any other variation with ""squat"" in the name.
+
+**Muscle group filter** — filter by primary muscles. If you tagged your exercises with muscle groups (Lesson 02), you can find every exercise that targets ""glutes"" or ""shoulders"" regardless of category.
+
+**Difficulty filter** — narrow to beginner, intermediate, or advanced exercises. Useful when programming for different skill levels or when you want to find regressions or progressions.
+
+**Equipment type filter** — show only exercises that require none, minimal, or gym equipment. Perfect for planning hotel workouts (filter to ""none"" or ""minimal"") or gym days (filter to ""gym"").
+
+---
+
+### Combining Filters
+
+Filters stack. You can search for ""press"" within the ""Push"" category filtered to ""intermediate"" difficulty and ""gym"" equipment. The results narrow with each filter you apply.
+
+This is especially powerful once your library grows past the seeded exercises. With custom exercises added over time, filters keep the library manageable.",markdown
+Using Exercises,3,1,Exercises in Workouts,text,300,true,,"The Exercise Library exists to feed your workouts. When you add an exercise to a workout template or log, it brings all its metadata along — and unlocks a set of enhanced tracking fields that go far beyond sets and reps.
+
+---
+
+### The ExercisePicker
+
+When you're building a workout template or logging a session, the **ExercisePicker** component is how you select exercises. It's a searchable dropdown connected directly to your library.
+
+Start typing an exercise name and matching results appear. Select one and its defaults auto-fill: sets, reps, weight, duration, and rest period. You can override any of these per workout.
+
+The ExercisePicker only shows exercises from your personal library. If you've copied a public exercise from the Discover page (Lesson 07), it's available here too.
+
+---
+
+### Enhanced Tracking Fields
+
+Each exercise in a workout has a collapsible **Advanced** section with fields that go well beyond basic programming. These appear on both workout templates and workout logs.
+
+**Performance fields:**
+
+| Field | What It Tracks |
+|-------|----------------|
+| **RPE** | Rate of Perceived Exertion (1-10 scale) — how hard the set felt |
+| **Tempo** | Eccentric-pause-concentric-pause timing (e.g., ""3-1-2-0"") |
+| **Percent of max** | Percentage of your one-rep max for the movement |
+| **Distance** | Miles covered (for carries, runs, rowing) |
+| **Hold time** | Seconds held (for isometric exercises like planks) |
+
+**Training technique flags:**
+
+| Flag | What It Means |
+|------|---------------|
+| **Circuit** | Exercise is part of a circuit — minimal rest between exercises |
+| **Superset** | Paired with another exercise; use superset group number to link them |
+| **Negatives** | Slow eccentric focus |
+| **Isometric** | Static hold under tension |
+| **To failure** | Push until you can't complete another rep |
+| **Unilateral** | Single-limb work (one arm, one leg) |
+| **Balance** | Stability-focused variation |
+
+**Superset grouping** — when you mark two or more exercises with the same superset group number, the workout detail page visually groups them together. Group 1 exercises display as a pair, group 2 as another pair, and so on.
+
+---
+
+### Templates vs. Logs
+
+In a **workout template**, these fields set your plan: ""Bench Press, 4 sets of 8 at 75% of max, tempo 3-1-1-0.""
+
+In a **workout log**, they record what actually happened: ""Bench Press, 4 sets of 8, RPE 8, felt strong."" Logs also add:
+
+- **Side** — left, right, or both (for unilateral exercises)
+- **Feeling** — how the exercise felt during execution
+- **Rest seconds** — actual rest taken between sets
+
+---
+
+### Workout-Level Fields
+
+Beyond individual exercises, the workout log itself has enhanced fields:
+
+- **Purpose** — JSONB field for tagging the workout's intent (strength, hypertrophy, conditioning, etc.)
+- **Overall feeling** — 1 to 5 scale rating for the whole session
+- **Warmup notes** — what you did before the working sets
+- **Cooldown notes** — what you did after
+
+---
+
+### Why It Matters
+
+Tracking RPE, tempo, and technique flags turns your workout history into a training journal. Three months from now, you can look back and see not just that you squatted 225 for 5 sets of 5, but that it was at RPE 7 with a 3-1-1-0 tempo, unilateral on the last set, and you felt ""strong."" That context makes programming decisions smarter over time.",markdown
+Using Exercises,3,2,Equipment Linking,text,240,true,,"Some exercises need specific gear. A barbell back squat needs a barbell and a squat rack. A TRX row needs a suspension trainer. If you're already tracking that gear in the Equipment Tracker, you can link it directly to exercises — creating a two-way connection between what you do and what you use.
+
+---
+
+### How Equipment Linking Works
+
+The Exercise Library uses an **exercise_equipment junction table** to create a many-to-many relationship between exercises and equipment. This means:
+
+- One exercise can link to **multiple pieces of equipment** (e.g., ""Cable Crossover"" links to both the cable machine and D-handles)
+- One piece of equipment can link to **multiple exercises** (e.g., a barbell links to squats, deadlifts, bench press, overhead press, and dozens more)
+
+---
+
+### Linking Equipment to an Exercise
+
+From the exercise edit form or detail page:
+
+1. Find the **Equipment** section
+2. Search for equipment from your Equipment Tracker inventory
+3. Select the items this exercise uses
+4. Save
+
+The linked equipment appears on the exercise detail page with the item name, brand, and a link to the equipment detail page.
+
+---
+
+### Viewing the Connection from Both Sides
+
+**From an exercise:** the detail page shows all linked equipment. Click any item to jump to its equipment detail page.
+
+**From equipment:** the Equipment Tracker detail page shows activity links, which can include exercises that use that piece of gear. This gives you a usage map — ""which exercises am I doing with this kettlebell?""
+
+---
+
+### Practical Uses
+
+**Hotel workout planning** — filter exercises by equipment type ""none"" or ""minimal"" to see what you can do without a gym. If you travel with a resistance band (tracked in Equipment), you can find every exercise linked to it.
+
+**Gym inventory awareness** — link exercises to the specific machines and equipment at your gym. If a machine is out of service, you can quickly find alternative exercises by browsing what other equipment you have linked to similar movements.
+
+**Equipment ROI** — the Equipment Tracker can show you how often you use a piece of gear by counting the exercises and workouts linked to it. That $300 kettlebell that's linked to 15 exercises and appears in 50 workout logs? Worth every penny. The $200 gadget linked to nothing? Maybe it's time to sell.
+
+---
+
+### Equipment vs. Equipment Type
+
+Don't confuse the two:
+
+| Feature | What It Is |
+|---------|-----------|
+| **Equipment type** (exercise field) | A classification — none, minimal, or gym. Used for filtering. |
+| **Equipment linking** (junction table) | A direct connection to specific items in your Equipment Tracker inventory. |
+
+You can set an exercise's equipment type to ""gym"" (for filtering) and also link it to the specific barbell and bench in your equipment inventory (for tracking). They serve different purposes and complement each other.",markdown
+Social & Data,4,1,Sharing and Discovery,text,300,true,,"Your Exercise Library starts as a personal tool, but it doesn't have to stay that way. CentenarianOS lets you share exercises publicly, discover what others have created, and copy exercises into your own library with a single click.
+
+---
+
+### Visibility Toggle
+
+Every exercise has a **visibility setting**: private or public.
+
+- **Private** (default) — only you can see it. It lives in your library and nowhere else.
+- **Public** — the exercise appears on the Discover page and can be viewed by anyone with the link. Your personal identity is never exposed — public exercises use an alias, not your name or email.
+
+Toggle visibility from the exercise edit form or detail page. You can make an exercise public and then switch it back to private at any time.
+
+---
+
+### Sharing via Link
+
+When an exercise is public, it gets a shareable link using a **public alias**. This link contains no personally identifiable information — no username, no email, no profile data. Just the exercise content.
+
+Share the link anywhere: text messages, group chats, training forums, social media. Anyone with a CentenarianOS account can view it and copy it to their library.
+
+---
+
+### The Discover Page
+
+Browse what the community has shared at `/dashboard/exercises/discover`. The Discover page shows all public exercises from all users.
+
+You can:
+
+- **Browse** — scroll through public exercises or filter by category, muscle group, and difficulty
+- **Like** — tap the heart icon to like an exercise. Like counts are visible to everyone.
+- **Copy** — add a public exercise to your own library. This creates a full copy — you own it and can edit it freely. Changes you make don't affect the original.
+- **Mark as done** — tap the checkmark to mark an exercise as ""done."" This is a personal marker that shows you've tried it. A deduplication confirmation window appears if you've already marked it recently, preventing accidental double-taps.
+
+---
+
+### Social Counts
+
+Each public exercise displays three counters:
+
+| Counter | What It Tracks |
+|---------|----------------|
+| **Likes** | How many users have liked the exercise |
+| **Copies** | How many users have copied it to their library |
+| **Done** | How many users have marked it as completed |
+
+These counts give you a sense of which exercises the community finds valuable. An exercise with 50 likes and 30 copies has been vetted by real users.
+
+---
+
+### Privacy by Design
+
+A few things to know about how sharing works:
+
+- **No PII in public views** — your name, email, and profile are never shown on public exercises. The public alias is the only identifier.
+- **Copying is one-way** — when someone copies your exercise, they get a snapshot. They can't see your future edits, and their edits don't affect your original.
+- **You control visibility** — flipping an exercise back to private removes it from the Discover page immediately. Existing copies in other users' libraries remain (they own those copies), but no new users can find or copy it.
+
+---
+
+### When to Share
+
+Share exercises when you've built something genuinely useful — a detailed movement with good instructions, form cues, and a video demo. The community benefits most from exercises that are complete, not just named.",markdown
+Social & Data,4,2,Import and Export,text,240,true,,"If you have a large exercise list from a previous app, a spreadsheet, or a coaching program, typing them in one at a time isn't practical. The Data Hub lets you import and export exercises in bulk via CSV.
+
+---
+
+### Exporting Exercises
+
+To export your exercise library:
+
+1. Navigate to the **Data Hub** at `/dashboard/data`
+2. Find the **Exercises** card
+3. Click **Export**
+
+This downloads a CSV file containing every exercise in your library. Each row includes the exercise name, category, instructions, form cues, video URL, primary muscles, difficulty, equipment type, and default programming values.
+
+Use exports for:
+- **Backup** — keep an offline copy of your exercise library
+- **Sharing** — send the CSV to a training partner or client who can import it into their account
+- **Analysis** — open in a spreadsheet to audit your library (how many exercises per category, which ones are missing video, etc.)
+
+---
+
+### Importing Exercises
+
+To import exercises from a CSV:
+
+1. Navigate to the **Data Hub** at `/dashboard/data`
+2. Find the **Exercises** card
+3. Click **Import**
+4. Upload your CSV file or paste from Google Sheets
+
+The import page uses the **GenericImportPage** component with a preview step — you'll see your data in a table before anything is created. Review the preview, fix any issues, and confirm.
+
+---
+
+### CSV Template
+
+Download the import template at `/templates/exercises-import-template.csv` (also linked from the Data Hub). The template includes column headers and example rows so you know exactly what format to use.
+
+**Key columns:**
+
+| Column | Required | Example |
+|--------|----------|---------|
+| name | Yes | Barbell Back Squat |
+| category | No | Legs |
+| instructions | No | Stand with feet shoulder-width apart... |
+| form_cues | No | Chest up, knees tracking toes |
+| video_url | No | https://youtube.com/watch?v=abc123 |
+| primary_muscles | No | quads, glutes, hamstrings |
+| difficulty | No | intermediate |
+| equipment_type | No | gym |
+| default_sets | No | 4 |
+| default_reps | No | 8 |
+| default_weight | No | 185 |
+| default_duration | No | (blank for non-timed) |
+| default_rest | No | 120 |
+
+**Tips:**
+- Category names must match existing categories (or the import creates them if they don't exist)
+- Primary muscles should be comma-separated within the cell
+- Difficulty must be one of: beginner, intermediate, advanced
+- Equipment type must be one of: none, minimal, gym
+
+---
+
+### Duplicating Exercises
+
+Not technically an import, but related: the **Duplicate** feature lets you create a variation from an existing exercise. From the exercise detail page or the library grid, click the duplicate action. This copies all fields into a new exercise, which you can rename and modify.
+
+Use duplication for:
+- **Variations** — duplicate ""Bench Press"" and rename to ""Incline Bench Press,"" adjusting instructions and defaults
+- **Progression tracking** — duplicate an exercise to create beginner and advanced versions with different default programming
+- **Template exercises** — build a ""base"" exercise with detailed instructions, then duplicate and customize for specific programs",markdown

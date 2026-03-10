@@ -6,6 +6,7 @@ import {
   Loader2, Briefcase, Users, Send, UserPlus, CalendarCheck,
   UsersRound, BarChart3, ChevronRight, Clock,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface DashboardData {
   summary: {
@@ -41,7 +42,7 @@ export default function ListerDashboardPage() {
 
   const load = useCallback(() => {
     setLoading(true);
-    fetch('/api/contractor/lister/dashboard')
+    offlineFetch('/api/contractor/lister/dashboard')
       .then((r) => r.json())
       .then((d) => setData(d))
       .finally(() => setLoading(false));

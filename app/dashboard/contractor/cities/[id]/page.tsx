@@ -7,6 +7,7 @@ import {
   UtensilsCrossed, Hotel, ShoppingCart, Dumbbell, Pill, Ticket, Bus, Coffee, Shirt, HelpCircle,
   type LucideIcon,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface CityGuide {
   id: string;
@@ -67,13 +68,13 @@ export default function CityGuideDetailPage() {
 
   const load = useCallback(() => {
     setLoading(true);
-    fetch(`/api/contractor/cities/${id}`)
+    offlineFetch(`/api/contractor/cities/${id}`)
       .then((r) => r.json())
       .then((d) => {
         setGuide(d.guide ?? null);
         setEntries(d.entries ?? []);
         // Check ownership via /api/auth/me
-        fetch('/api/auth/me')
+        offlineFetch('/api/auth/me')
           .then((r) => r.json())
           .then((me) => setIsOwner(d.guide?.user_id === me.id));
       })
@@ -85,7 +86,7 @@ export default function CityGuideDetailPage() {
   async function addEntry() {
     if (!form.name.trim()) return;
     setSaving(true);
-    const res = await fetch(`/api/contractor/cities/${id}`, {
+    const res = await offlineFetch(`/api/contractor/cities/${id}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -104,7 +105,7 @@ export default function CityGuideDetailPage() {
 
   async function updateEntry(entryId: string) {
     setSaving(true);
-    await fetch(`/api/contractor/cities/${id}/entries/${entryId}`, {
+    await offlineFetch(`/api/contractor/cities/${id}/entries/${entryId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -121,7 +122,7 @@ export default function CityGuideDetailPage() {
 
   async function deleteEntry(entryId: string) {
     setDeletingId(entryId);
-    await fetch(`/api/contractor/cities/${id}/entries/${entryId}`, { method: 'DELETE' });
+    await offlineFetch(`/api/contractor/cities/${id}/entries/${entryId}`, { method: 'DELETE' });
     setDeletingId(null);
     load();
   }

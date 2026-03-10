@@ -123,7 +123,7 @@ export default function ModulePickerModal({
             </div>
             <button
               onClick={handleSkip}
-              className="flex items-center justify-center w-8 h-8 rounded-lg text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800 transition shrink-0 ml-4"
+              className="flex items-center justify-center min-h-11 min-w-11 rounded-lg text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800 transition shrink-0 ml-4"
               aria-label="Skip onboarding"
             >
               <X className="w-4 h-4" />
@@ -139,7 +139,8 @@ export default function ModulePickerModal({
                   key={tour.slug}
                   onClick={() => handlePickModule(tour)}
                   disabled={loading}
-                  className={`text-left rounded-xl border border-neutral-800 bg-neutral-950 p-4 hover:border-${accent}-500/50 hover:bg-neutral-800/80 transition disabled:opacity-60`}
+                  aria-label={`Start ${tour.name} tour`}
+                  className={`text-left rounded-xl border border-neutral-800 bg-neutral-950 p-4 hover:border-${accent}-500/50 hover:bg-neutral-800/80 transition disabled:opacity-60 min-h-11`}
                 >
                   <div className="flex items-start gap-3">
                     <div className={`inline-flex items-center justify-center w-9 h-9 rounded-lg bg-${accent}-500/10 shrink-0`}>
@@ -148,7 +149,7 @@ export default function ModulePickerModal({
                     <div>
                       <p className="text-sm font-semibold text-neutral-200">{tour.name}</p>
                       <p className="text-xs text-neutral-500 mt-0.5">{tour.description}</p>
-                      <p className="text-xs text-neutral-600 mt-1">{tour.steps.length} steps</p>
+                      <p className="text-xs text-neutral-500 mt-1">{tour.steps.length} steps</p>
                     </div>
                   </div>
                 </button>
@@ -158,7 +159,7 @@ export default function ModulePickerModal({
 
           {/* Footer */}
           <div className="px-6 py-4 border-t border-neutral-800 flex items-center justify-between">
-            <p className="text-xs text-neutral-600">
+            <p className="text-xs text-neutral-500">
               You can restart tours anytime from Settings
             </p>
             <button

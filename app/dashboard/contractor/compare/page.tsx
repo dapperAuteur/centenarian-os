@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Loader2, Search, X, ArrowUpDown } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Job {
   id: string;
@@ -81,7 +82,7 @@ export default function CompareJobsPage() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    fetch('/api/contractor/jobs?limit=200')
+    offlineFetch('/api/contractor/jobs?limit=200')
       .then((r) => r.json())
       .then((d) => setAllJobs(d.jobs ?? []))
       .finally(() => setJobsLoading(false));
@@ -99,7 +100,7 @@ export default function CompareJobsPage() {
   const compare = useCallback(() => {
     if (selectedIds.length < 2) return;
     setLoading(true);
-    fetch(`/api/contractor/compare?ids=${selectedIds.join(',')}`)
+    offlineFetch(`/api/contractor/compare?ids=${selectedIds.join(',')}`)
       .then((r) => r.json())
       .then((d) => setResults(d.comparisons ?? null))
       .finally(() => setLoading(false));

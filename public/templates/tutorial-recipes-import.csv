@@ -1,0 +1,529 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format
+Getting Started,1,1,Welcome to Recipes,text,300,true,,"Welcome to the Recipes Guide — a free tutorial course for CentenarianOS.
+
+The Recipes module is where you create, manage, and discover recipes with built-in nutritional analysis. It has two faces: a public listing that anyone can browse and a private dashboard where you manage your own collection.
+
+---
+
+### Public Recipes
+
+The public recipes page at `/recipes` is visible to everyone — no account required. It shows a grid of recipe cards from the community. Each card displays the recipe title, cover image, prep and cook time, NCV score badge, and social counters (likes, saves, clones).
+
+Anyone can browse and read public recipes. Creating, saving, and cloning require a CentenarianOS account.
+
+---
+
+### Your Recipe Dashboard
+
+Logged-in users manage recipes at `/dashboard/recipes`. The dashboard has tabs for different views:
+
+**My Recipes** — everything you've created. Draft and published recipes all appear here. Click any recipe to edit.
+
+**Saved** — recipes from other users that you've bookmarked. These are reference copies — the original author still owns them.
+
+**Liked** — recipes you've hearted. Similar to Saved but lighter — a like is a social signal, a save is for your personal collection.
+
+---
+
+### What a Recipe Contains
+
+Every recipe in CentenarianOS has:
+
+- **Title and description** — the name and a brief summary
+- **Servings** — how many portions the recipe makes
+- **Prep time and cook time** — in minutes
+- **Ingredients** — built with the Ingredient Builder (covered in Lesson 03), including USDA nutritional data
+- **Instructions** — step-by-step directions in rich text
+- **Tags** — categorize by cuisine, diet, meal type, or custom labels
+- **Cover image and gallery** — photos uploaded via Cloudinary
+- **Visibility** — public or private
+- **NCV Score** — a calculated Nutritional Caloric Value score (covered in Lesson 04)
+
+---
+
+### NCV at a Glance
+
+Every recipe card shows a colored NCV badge. This is the Nutritional Caloric Value — a quick indicator of nutrient density. Green means high nutrients relative to calories. Yellow is balanced. Red means calorie-dense with fewer nutrients per calorie. We'll cover the formula in detail in Lesson 04.
+
+---
+
+### How It Connects
+
+Recipes connect to the rest of CentenarianOS:
+
+- **Fuel tracker** — add a recipe to your daily meal log and its nutrition totals carry over
+- **Equipment links** — link cooking gear to recipes via Activity Links
+- **Blog posts** — embed recipes in blog content
+- **Data Hub** — recipes appear in the cross-module activity link system
+
+This course starts with creating a recipe from scratch. Let's build one.",markdown
+Getting Started,1,2,Creating a Recipe,text,300,true,,"Let's create a recipe from scratch. From your dashboard at `/dashboard/recipes`, click **New Recipe** to open the recipe editor.
+
+---
+
+### Basic Information
+
+Start at the top of the form:
+
+**Title** — the recipe name. Be specific: ""Garlic Lemon Salmon with Roasted Asparagus"" is more useful than ""Salmon Dinner.""
+
+**Description** — a brief summary of what the dish is, what makes it special, or who it's for. This appears on the recipe card and in search results.
+
+**Servings** — how many portions the recipe makes. This is important because nutritional calculations are per-serving. If the recipe serves 4, the NCV score and nutrition panel divide totals by 4.
+
+**Prep Time** — minutes of active preparation before cooking begins. Chopping, marinating, measuring.
+
+**Cook Time** — minutes of actual cooking. Baking, sauteing, simmering.
+
+---
+
+### Ingredients
+
+The ingredient list is the heart of the recipe. Click **Add Ingredient** to open the RecipeIngredientBuilder — a specialized component covered in detail in Lesson 03.
+
+In brief: you search for an ingredient by name (which queries USDA Food Data Central and Open Food Facts), select the match, enter a quantity and unit, and the system calculates the nutritional data automatically. You can also enter ingredients manually if no database match is needed.
+
+Drag ingredients to reorder. The nutrition panel at the bottom of the ingredient list updates live as you add, remove, or adjust quantities.
+
+---
+
+### Instructions
+
+Write your cooking steps in the rich text editor. Each step should be a clear, actionable instruction. Use numbered lists for sequential steps. You can format text with bold, italic, and links.
+
+Tips for good instructions:
+- Start each step with a verb: ""Preheat,"" ""Chop,"" ""Combine""
+- Include temperatures and times: ""Bake at 400F for 25 minutes""
+- Note visual cues: ""until golden brown"" or ""until the onions are translucent""
+
+---
+
+### Tags
+
+Tags help users find your recipe. Add tags for:
+
+- **Cuisine** — Italian, Mexican, Japanese, Mediterranean
+- **Diet** — Keto, Vegan, Paleo, Gluten-Free
+- **Meal type** — Breakfast, Lunch, Dinner, Snack, Dessert
+- **Custom** — ""Quick Weeknight,"" ""Meal Prep,"" ""High Protein""
+
+Type a tag name and press Enter. Tags are free-form text — no predefined list.
+
+---
+
+### Cover Image and Gallery
+
+Upload a cover image to make your recipe card stand out. Click the image upload area to open the Cloudinary uploader. The cover image appears on the recipe card in the grid and at the top of the detail page.
+
+You can also add gallery images — additional photos showing cooking stages, plating options, or ingredient prep. Gallery images appear in a scrollable row below the cover image on the detail page.
+
+---
+
+### Visibility
+
+Choose who can see your recipe:
+
+**Private** — only you. Good for works-in-progress or personal family recipes you don't want to share.
+
+**Public** — visible on the `/recipes` page and discoverable by any CentenarianOS user. Public recipes can be liked, saved, and cloned.
+
+You can change visibility at any time after publishing.
+
+---
+
+### Saving
+
+Click **Save Recipe**. The recipe is created and you're taken to the detail page where you can review everything. From here, edit any section, add a video (Lesson 06), or share the link.",markdown
+Building Recipes,2,3,Ingredient Builder,text,360,true,,"The RecipeIngredientBuilder is the most powerful part of the recipe editor. It connects to food databases, calculates nutrition automatically, and supports barcode scanning for packaged foods. Let's walk through every feature.
+
+---
+
+### Searching Food Databases
+
+When you click **Add Ingredient**, a search field appears. Type a food name — ""chicken breast,"" ""brown rice,"" ""olive oil."" As you type, the builder queries two databases:
+
+**USDA Food Data Central** — the US Department of Agriculture's comprehensive food composition database. This is the primary source. It returns detailed nutrition data: calories, protein, fat, carbs, fiber, and dozens of micronutrients.
+
+**Open Food Facts** — a community-maintained database of packaged foods. This covers brand-name products that USDA may not have, like specific protein bars, sauces, or snacks.
+
+Results appear in a dropdown. Each result shows the food name, serving size, and calorie count. Click to select.
+
+---
+
+### Quantity and Unit
+
+After selecting a food, enter the quantity and unit:
+
+- **Quantity** — a number (e.g., 2, 0.5, 150)
+- **Unit** — grams, ounces, cups, tablespoons, teaspoons, pieces, or custom
+
+The builder scales the nutritional data based on your quantity. If the database lists ""chicken breast, 100g = 165 calories"" and you enter 200g, the builder calculates 330 calories. All macros and micros scale proportionally.
+
+---
+
+### Barcode Scanning
+
+For packaged foods, click the **barcode icon** in the search field. This opens your device camera (on mobile) or a file picker (on desktop). Scan the product barcode and the builder looks it up in Open Food Facts. If found, it auto-fills the food name, serving size, and full nutrition data.
+
+This is particularly useful for:
+- Protein powders with complex nutrition labels
+- Specific brand products (Kind bars, Chobani yogurt, etc.)
+- International products with non-English labels
+
+---
+
+### Manual Entry
+
+Sometimes the food you need isn't in any database. Click **Manual Entry** to switch to a free-form mode where you type the ingredient name and enter nutrition values by hand:
+
+- Calories, protein, fat, carbs, fiber
+- Optional: sodium, sugar, cholesterol, vitamins
+
+Manual entries appear in the ingredient list just like database-matched ones. The nutrition panel includes them in its totals.
+
+---
+
+### The Live Nutrition Panel
+
+At the bottom of the ingredient list, a nutrition panel shows real-time totals:
+
+- **Per serving** — total nutrition divided by the servings count
+- **Per recipe** — total nutrition for the entire batch
+- **Macro split** — a visual breakdown of protein, fat, and carbs as percentages
+
+The panel updates instantly as you add, remove, or adjust ingredients. Change a quantity from 100g to 200g and watch the numbers recalculate.
+
+---
+
+### Reordering Ingredients
+
+Drag ingredients to reorder the list. Most people organize by usage order in the recipe — the order you reach for them while cooking. The drag handle appears on the left side of each ingredient row.
+
+---
+
+### Editing and Removing
+
+Click any ingredient row to edit its quantity, unit, or swap the food item. Click the trash icon to remove it. The nutrition panel recalculates immediately.
+
+---
+
+### DraftIngredient Type
+
+For developers: the builder exports a `DraftIngredient` TypeScript type from `components/recipes/RecipeIngredientBuilder.tsx`. This type represents an ingredient before it's saved to the database — it includes the food database reference, quantity, unit, and all nutrition fields.",markdown
+Building Recipes,2,4,NCV Scoring,text,240,true,,"Every recipe in CentenarianOS has an NCV score — a Nutritional Caloric Value rating that tells you at a glance how nutrient-dense the recipe is. Let's break down what it means, how it's calculated, and when to use it.
+
+---
+
+### The Formula
+
+NCV is a simple ratio:
+
+```
+NCV = (protein + fiber) / calories
+```
+
+Both protein and fiber are measured in grams. Calories are total kilocalories. The result is a decimal number that gets mapped to a color-coded badge.
+
+The logic: protein and fiber are the two macronutrients most associated with satiety, muscle maintenance, and digestive health. A food that delivers more protein and fiber per calorie is generally more nutrient-dense.
+
+---
+
+### The Color Scale
+
+The NCV score maps to three tiers:
+
+**Green** — high nutrient density. The recipe delivers a strong ratio of protein and fiber relative to its calories. Examples: grilled chicken salad, lentil soup, Greek yogurt bowl. These are the recipes to reach for when you want maximum nutrition per calorie.
+
+**Yellow** — balanced. A moderate ratio. The recipe has decent nutrition but also meaningful caloric density. Examples: pasta with meat sauce, stir-fry with rice, a balanced sandwich. These are everyday meals — perfectly fine, not optimized.
+
+**Red** — calorie-dense with relatively less protein and fiber per calorie. Examples: desserts, fried foods, cream-based sauces, pastries. These recipes deliver more energy than micronutrient value per calorie.
+
+---
+
+### What NCV Does Well
+
+NCV is a quick filter. When you're scanning a list of recipes trying to decide what to cook, the badge gives you an instant read on nutrient density without opening each recipe and reading the full nutrition panel.
+
+It's also useful for meal planning. If you're building a week of meals and want to balance nutrient-dense dinners with more indulgent weekend cooking, NCV badges help you see the balance at a glance.
+
+---
+
+### Limitations
+
+NCV is intentionally simple, and that means it has blind spots:
+
+**Healthy fats are penalized.** A salmon recipe rich in omega-3s might score yellow because the fat adds calories without adding protein or fiber. The NCV formula doesn't account for fat quality.
+
+**Micronutrients are ignored.** A fruit salad rich in vitamins C and A might score low because fruit has moderate fiber and minimal protein relative to its natural sugars.
+
+**Context matters.** A red NCV doesn't mean the recipe is unhealthy. A post-workout smoothie with banana, honey, and protein powder might score lower than expected because of the sugar calories, but it's exactly what your body needs after training.
+
+NCV is one data point, not a verdict. Use it alongside the full nutrition panel and your own knowledge of what your body needs.
+
+---
+
+### Where NCV Appears
+
+- **Recipe cards** — on both the public `/recipes` page and your dashboard
+- **Recipe detail page** — next to the nutrition panel
+- **Fuel tracker** — when you add a recipe to your daily meal log, the NCV badge appears there too",markdown
+Import & Media,3,5,Importing Recipes,text,240,true,,"Found a recipe online that you want to add to your collection? Instead of manually copying every ingredient and instruction, CentenarianOS can import it directly from the URL. The system reads the structured data embedded in the page and fills in the recipe form for you.
+
+---
+
+### How It Works
+
+Most major recipe websites embed machine-readable data in their pages using the **schema.org/Recipe** format. This is a standard called JSON-LD that search engines like Google use to display recipe cards in search results. CentenarianOS reads the same data.
+
+When you paste a URL into the import field, the system:
+
+1. Fetches the page
+2. Scans for JSON-LD structured data
+3. Extracts the `schema.org/Recipe` object
+4. Maps the fields to a CentenarianOS recipe draft
+
+No extra npm packages are needed — the scraper is built with pure TypeScript in `/api/recipes/import`.
+
+---
+
+### What Gets Imported
+
+The importer pulls these fields from the structured data:
+
+- **Title** — the recipe name
+- **Description** — the summary or intro text
+- **Ingredients** — the full ingredient list as text strings
+- **Instructions** — step-by-step directions
+- **Prep time and cook time** — parsed from ISO 8601 duration format
+- **Servings** — the yield or recipe yield field
+- **Image** — the primary photo URL (if available)
+- **Source URL** — stored in the `source_url` column so you always have a link back to the original
+
+---
+
+### Compatible Sites
+
+The importer works with any site that uses schema.org/Recipe markup. This includes:
+
+- **AllRecipes** — one of the most comprehensive structured data implementations
+- **Food Network** — recipes with full nutrition data
+- **NYT Cooking** — well-structured recipes
+- **Bon Appetit** — Conde Nast sites generally have good markup
+- **Serious Eats** — detailed recipes with technique notes
+- **Most food blogs** — WordPress recipe plugins (WP Recipe Maker, Tasty Recipes) generate schema.org data automatically
+
+If a site doesn't use structured data, the import will fail gracefully with a message explaining that no recipe data was found.
+
+---
+
+### Review Before Publishing
+
+After importing, the recipe opens in the editor as a **draft**. This is intentional — you should review and adjust before publishing:
+
+- **Ingredients** — imported as text strings. You may want to match them to USDA database entries using the Ingredient Builder for accurate nutrition data
+- **Instructions** — check formatting. Some sites have ads or notes mixed into their instruction steps
+- **Servings** — verify the number is correct. Some schemas list servings as a string like ""6-8"" which may need manual adjustment
+- **Image** — the importer stores the URL. You can replace it with your own Cloudinary upload
+- **Tags** — not usually included in structured data. Add your own
+
+Once reviewed, set visibility to Public or Private and save.
+
+---
+
+### The Source URL
+
+Every imported recipe stores the original URL in the `source_url` field. This appears as a link on the recipe detail page, giving credit to the original author and providing a reference if you want to check their notes or comments section.",markdown
+Import & Media,3,6,Video in Recipes,text,240,true,,"A well-shot cooking video can show technique that written instructions can't. CentenarianOS lets you embed video directly into your recipes using the same VideoEmbed system used in blog posts.
+
+---
+
+### The MediaEmbedModal
+
+To add a video to a recipe, open the recipe editor and click the **Embed Video** button. This opens the MediaEmbedModal — a dialog that accepts video from multiple sources.
+
+**Supported sources:**
+
+- **YouTube** — paste any YouTube URL (regular or short link). The system extracts the video ID and embeds a responsive iframe
+- **Viloud** — paste a Viloud.tv embed URL. Used by the CentenarianOS team for hosted content
+- **Mux** — paste a Mux playback ID or URL. Mux provides adaptive bitrate streaming for high-quality playback
+- **Cloudinary** — upload a video file directly. The uploader handles encoding and generates a streaming URL
+
+---
+
+### How to Embed
+
+The process is the same regardless of source:
+
+1. Click **Embed Video** in the recipe editor
+2. The MediaEmbedModal opens
+3. **For URL-based sources** (YouTube, Viloud, Mux): paste the URL into the field and click Embed
+4. **For upload** (Cloudinary): click the upload area, select your video file, wait for it to process
+5. The video appears at the top of the recipe content area
+
+The VideoEmbed component handles responsive sizing — the video scales to fit any screen width, from mobile to desktop.
+
+---
+
+### Where the Video Appears
+
+The embedded video displays at the top of the recipe detail page, above the ingredients and instructions. This is the prime position for a cooking demo — viewers watch the technique overview first, then scroll down to follow the written steps.
+
+On the public `/recipes` page, a small video icon badge appears on recipe cards that have an embedded video. This signals to browsers that the recipe includes a visual demo.
+
+---
+
+### Good Cooking Videos
+
+A few tips for effective recipe videos:
+
+**Keep it focused.** Show the technique, not the personality. A 2-minute video of proper knife cuts or sauce consistency is more valuable than a 10-minute lifestyle vlog with cooking in the background.
+
+**Show the tricky parts.** If a step is hard to describe in text — how to fold dough, when a caramel is the right color, how to tell if fish is done — that's where video adds the most value.
+
+**Lighting matters.** Natural light from a window works well for overhead cooking shots. Avoid harsh overhead kitchen fluorescents.
+
+**No video is fine.** Not every recipe needs one. Simple recipes with straightforward techniques work perfectly with just text and photos.
+
+---
+
+### Updating or Removing
+
+To change the video, open the recipe editor and click **Embed Video** again. The modal shows the current embed with an option to replace or remove it. Removing the video deletes the embed reference but doesn't delete the source file from Cloudinary.",markdown
+Social & Integration,4,7,"Likes, Saves, and Cloning",text,300,true,,"CentenarianOS recipes have a social layer. You can like recipes you enjoy, save them for later, clone them into your own collection, and share them with anyone. Let's walk through each feature.
+
+---
+
+### Liking a Recipe
+
+The **heart icon** appears on every public recipe — on the card and on the detail page. Click it to like, click again to unlike. Likes are lightweight social signals. They help surface popular recipes and tell the author that someone enjoyed their work.
+
+Your liked recipes appear in the **Liked** tab on your recipe dashboard. This is a quick-reference list — you didn't commit to cooking the recipe, you just noted it as interesting.
+
+---
+
+### Saving a Recipe
+
+The **bookmark icon** saves a recipe to your personal collection. Saved recipes appear in the **Saved** tab on your dashboard. Think of saves as your recipe reading list — things you intend to cook or reference later.
+
+Saving is different from cloning. A saved recipe is a reference to the original — if the author updates the ingredients or instructions, your saved link shows the updated version. You don't own a copy; you're bookmarking someone else's work.
+
+---
+
+### Cloning a Recipe
+
+The **clone button** (copy icon) creates a full duplicate of the recipe in your account. The clone includes:
+
+- Title (with ""Copy of"" prefix)
+- All ingredients with their nutrition data
+- All instructions
+- Tags, prep time, cook time, servings
+- Cover image reference
+
+Your clone is **independent**. Edit the title, swap ingredients, adjust instructions — it's your recipe now. Changes to the original don't affect your clone, and your edits don't affect the original.
+
+Cloned recipes start as **private drafts**. Review and customize before publishing.
+
+The clone count on the original recipe increments, showing the community how many people found the recipe worth copying.
+
+---
+
+### The Share Bar
+
+Every public recipe has a share bar with options to distribute the recipe link:
+
+- **Copy Link** — copies the recipe URL to your clipboard for pasting anywhere
+- **Email** — opens your email client with the recipe title and link pre-filled
+- **LinkedIn** — shares to LinkedIn (useful for nutrition professionals or food bloggers)
+
+The share bar appears on the recipe detail page below the title and author info.
+
+---
+
+### Adding to the Fuel Tracker
+
+From the recipe detail page, click **Add to Fuel**. This adds the recipe to your daily meal log in the Fuel tracker. The per-serving nutrition data carries over automatically — calories, protein, fat, carbs, and fiber are all included. This is covered in detail in Lesson 08.
+
+---
+
+### Dashboard Tab Summary
+
+Your recipe dashboard at `/dashboard/recipes` has three tabs that organize your interactions:
+
+| Tab | What It Contains |
+|-----|-----------------|
+| **My Recipes** | Recipes you created or cloned |
+| **Saved** | Recipes you bookmarked (references to originals) |
+| **Liked** | Recipes you hearted (lightweight signals) |
+
+Cloned recipes appear in **My Recipes** because they're your copies. The original remains in the author's account.",markdown
+Social & Integration,4,8,Fuel Integration,text,240,true,,"Recipes aren't just for cooking — they're data. When you connect a recipe to the Fuel tracker, its nutritional breakdown flows into your daily intake totals. This lesson covers how that integration works.
+
+---
+
+### Adding a Recipe to Fuel
+
+From any recipe detail page, click **Add to Fuel**. This creates an entry in your daily meal log for the current day with the recipe's per-serving nutrition pre-filled.
+
+The Fuel tracker receives:
+- **Calories** — per serving
+- **Protein** — grams per serving
+- **Fat** — grams per serving
+- **Carbs** — grams per serving
+- **Fiber** — grams per serving
+
+You can adjust the number of servings consumed. If the recipe makes 4 servings and you ate 2, change the quantity to 2 and the nutrition doubles accordingly.
+
+---
+
+### Nutrition Accuracy
+
+The quality of the Fuel data depends on how the recipe was built. Recipes with ingredients matched to USDA Food Data Central entries (via the Ingredient Builder in Lesson 03) have precise nutrition. Recipes with manual-entry ingredients or imported-from-URL ingredients may have approximate values.
+
+Check the recipe's nutrition panel before adding to Fuel. If the numbers look off — unrealistic calorie counts or missing protein values — edit the recipe's ingredients to improve accuracy.
+
+---
+
+### Creating Protocols from Recipes
+
+A protocol in the Fuel tracker is a saved meal plan — a collection of foods you eat together regularly. You can build protocols from recipes:
+
+1. Add a recipe to Fuel
+2. In the Fuel tracker, save that meal entry as a **Protocol**
+3. Name it (e.g., ""Weekday Lunch Prep"")
+4. Next time, load the protocol instead of re-adding the recipe
+
+Protocols are useful for meal preppers who cook the same recipes weekly. Cook on Sunday, load the protocol each day, and your Fuel log stays accurate without re-entering anything.
+
+---
+
+### Meal Prep Batches
+
+When you cook a recipe as a meal prep batch, the servings field becomes important. If you make a recipe that yields 8 servings and plan to eat 2 per day for 4 days:
+
+1. Create the recipe with **servings: 8**
+2. Add to Fuel each day with **quantity: 2**
+3. The tracker logs 2/8 of the total nutrition each day
+
+This keeps your daily intake accurate even when a single cooking session feeds you for days.
+
+---
+
+### Where Recipe Data Shows Up
+
+Once a recipe is logged in Fuel, its nutrition contributes to:
+
+- **Daily totals** — the Fuel dashboard's calorie and macro summary for that day
+- **Weekly review** — the AI-powered weekly review includes nutritional trends if Fuel data exists
+- **Health metrics correlation** — if you track metrics like weight or energy, the correlation engine can look for patterns between your nutrition and other health data
+
+---
+
+### The NCV Badge in Fuel
+
+When you view a Fuel log entry that came from a recipe, the NCV badge carries over. This means you can scan your daily meal log and quickly see which meals were nutrient-dense (green) vs. calorie-dense (red). It's the same badge from the recipe card — consistent visual language across modules.
+
+---
+
+### Recipes Without Fuel
+
+Not every recipe needs to go into the Fuel tracker. Many users create recipes purely for cooking reference — the instructions and ingredient list are the value, not the nutritional tracking. The Fuel integration is optional and additive. Use it when nutrition matters to your goals.",markdown

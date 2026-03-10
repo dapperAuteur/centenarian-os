@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Loader2, Send, AlertTriangle, FileText, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -31,7 +32,7 @@ export default function UnionChatPage() {
     setMessages((prev) => [...prev, { role: 'user', content: q }]);
     setLoading(true);
 
-    const res = await fetch('/api/contractor/union/chat', {
+    const res = await offlineFetch('/api/contractor/union/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question: q, union_local: unionFilter.trim() || undefined }),
@@ -99,7 +100,7 @@ export default function UnionChatPage() {
         {messages.length === 0 && (
           <div className="flex h-full items-center justify-center text-center">
             <div className="max-w-sm space-y-3">
-              <FileText size={32} className="mx-auto text-neutral-700" aria-hidden="true" />
+              <FileText size={32} className="mx-auto text-neutral-500" aria-hidden="true" />
               <p className="text-neutral-500 text-sm">
                 Ask questions about your uploaded union contracts, bylaws, and work rules.
               </p>

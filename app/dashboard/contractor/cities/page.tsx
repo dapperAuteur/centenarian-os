@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   Loader2, MapPin, Plus, Globe, Lock, ChevronRight, Search,
 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface CityGuide {
   id: string;
@@ -31,7 +32,7 @@ export default function CityGuidesPage() {
 
   const load = useCallback(() => {
     setLoading(true);
-    fetch('/api/contractor/cities?shared=true')
+    offlineFetch('/api/contractor/cities?shared=true')
       .then((r) => r.json())
       .then((d) => {
         setGuides(d.guides ?? []);
@@ -45,7 +46,7 @@ export default function CityGuidesPage() {
   async function createGuide() {
     if (!form.city_name.trim()) return;
     setCreating(true);
-    const res = await fetch('/api/contractor/cities', {
+    const res = await offlineFetch('/api/contractor/cities', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),

@@ -39,6 +39,7 @@ import {
   BarChart3,
   ArrowUpDown,
   Users,
+  Library,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -134,6 +135,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Gems', href: '/dashboard/gems', icon: Gem, paid: true, adminOnly: true },
       { label: 'Submissions', href: '/dashboard/admin/submissions', icon: Inbox, paid: false, adminOnly: true },
       { label: 'Invites', href: '/dashboard/admin/invites', icon: UserPlus, paid: false, adminOnly: true },
+      { label: 'Content Library', href: '/dashboard/admin/content-library', icon: Library, paid: false, adminOnly: true },
     ],
   },
 ];
