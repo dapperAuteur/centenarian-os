@@ -9,6 +9,7 @@ import CodeBlock from '@tiptap/extension-code-block';
 import Placeholder from '@tiptap/extension-placeholder';
 import Heading from '@tiptap/extension-heading';
 import { Node, mergeAttributes } from '@tiptap/core';
+import { VideoEmbedNode } from '@/lib/tiptap/video-embed-extension';
 import { useState } from 'react';
 import EditorToolbar from './EditorToolbar';
 import MediaEmbedModal from './MediaEmbedModal';
@@ -73,6 +74,7 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
         placeholder: placeholder || 'Start writing your post…',
       }),
       SocialEmbed,
+      VideoEmbedNode,
     ],
     content: content || undefined,
     onUpdate: ({ editor }) => {
@@ -86,7 +88,7 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
   });
 
   const handleMediaInsert = (payload: {
-    type: 'youtube' | 'social' | 'image' | 'video';
+    type: 'videoUrl' | 'social' | 'image' | 'video';
     url?: string;
     html?: string;
     platform?: string;
@@ -95,8 +97,14 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
     if (!editor) return;
 
     switch (payload.type) {
-      case 'youtube':
-        editor.chain().focus().setYoutubeVideo({ src: payload.url! }).run();
+      case 'videoUrl':
+      case 'video':
+        // All video embeds use the videoEmbed node (YouTube, Viloud, Mux, Cloudinary, etc.)
+        editor
+          .chain()
+          .focus()
+          .insertContent({ type: 'videoEmbed', attrs: { src: payload.url! } })
+          .run();
         break;
       case 'social':
         editor
@@ -110,20 +118,6 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
         break;
       case 'image':
         editor.chain().focus().setImage({ src: payload.url!, alt: '' }).run();
-        break;
-      case 'video':
-        // Insert video as a social embed node with a <video> tag
-        editor
-          .chain()
-          .focus()
-          .insertContent({
-            type: 'socialEmbed',
-            attrs: {
-              html: `<video controls class="w-full rounded-lg" src="${payload.url}"></video>`,
-              platform: 'cloudinary',
-            },
-          })
-          .run();
         break;
     }
   };

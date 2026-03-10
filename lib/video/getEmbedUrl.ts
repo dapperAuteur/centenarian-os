@@ -1,4 +1,4 @@
-export type VideoProvider = 'youtube' | 'viloud' | 'mux' | 'unknown';
+export type VideoProvider = 'youtube' | 'viloud' | 'mux' | 'cloudinary' | 'unknown';
 
 export interface EmbedResult {
   provider: VideoProvider;
@@ -39,6 +39,11 @@ export function getEmbedUrl(url: string | null | undefined): EmbedResult {
   // Mux
   if (host.includes('stream.mux.com') || host.includes('mux.com')) {
     return { provider: 'mux', embedUrl: url.trim() };
+  }
+
+  // Cloudinary (direct video file — rendered as <video>, not iframe)
+  if (host.includes('cloudinary.com') || host.includes('res.cloudinary.com')) {
+    return { provider: 'cloudinary', embedUrl: null };
   }
 
   return { provider: 'unknown', embedUrl: null };

@@ -223,6 +223,23 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
     ],
     previewColumns: ['name', 'category', 'primary_muscles', 'default_sets', 'default_reps'],
   },
+  blog: {
+    moduleName: 'Blog Posts',
+    apiEndpoint: '/api/blog/import',
+    templateUrl: '/templates/blog-import-template.csv',
+    instructions:
+      'Upload blog posts. Required: title. Content is markdown (converted to rich text automatically). Tags are pipe-separated (e.g. tag1|tag2). Video URL is optional — placed at the top of the post.',
+    columns: [
+      { key: 'title', label: 'Title', required: true },
+      { key: 'slug', label: 'Slug' },
+      { key: 'excerpt', label: 'Excerpt' },
+      { key: 'visibility', label: 'Visibility (draft/private/public)' },
+      { key: 'tags', label: 'Tags (pipe-separated)' },
+      { key: 'video_url', label: 'Video URL' },
+      { key: 'content', label: 'Content (markdown)' },
+    ],
+    previewColumns: ['title', 'slug', 'visibility', 'tags'],
+  },
 };
 
 export default function DynamicImportPage() {

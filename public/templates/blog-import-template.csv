@@ -1,0 +1,2 @@
+title,slug,excerpt,visibility,tags,video_url,content
+"My First Post","my-first-post","A short excerpt for the post","draft","tag1|tag2|tag3","https://www.youtube.com/watch?v=example","The markdown body of your blog post. Use standard markdown syntax for formatting."
