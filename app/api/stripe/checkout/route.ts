@@ -1,9 +1,16 @@
 // app/api/stripe/checkout/route.ts
-// Creates a Stripe Checkout session for monthly or lifetime plans
+// Creates a Stripe Checkout session for monthly, lifetime, contractor, lister, or teacher plans
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe';
+
+const VALID_PLANS = [
+  'monthly', 'lifetime',
+  'teacher', 'teacher-annual',
+  'contractor-monthly', 'contractor-annual',
+  'lister-monthly', 'lister-annual',
+];
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -14,7 +21,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { plan } = await request.json();
-  if (!['monthly', 'lifetime', 'teacher', 'teacher-annual'].includes(plan)) {
+  if (!VALID_PLANS.includes(plan)) {
     return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
   }
 
@@ -25,9 +32,13 @@ export async function POST(request: NextRequest) {
     .eq('id', user.id)
     .single();
 
-  // Block redundant upgrades (only for member plans — teacher is a separate role any member can add)
+  // Block redundant upgrades (only for main CentOS plans)
   const isTeacherPlan = plan === 'teacher' || plan === 'teacher-annual';
-  if (!isTeacherPlan && profile?.subscription_status === 'lifetime') {
+  const isContractorPlan = plan.startsWith('contractor-');
+  const isListerPlan = plan.startsWith('lister-');
+  const isProductPlan = isContractorPlan || isListerPlan || isTeacherPlan;
+
+  if (!isProductPlan && profile?.subscription_status === 'lifetime') {
     return NextResponse.json({ error: 'Already a lifetime member' }, { status: 400 });
   }
 
@@ -40,7 +51,6 @@ export async function POST(request: NextRequest) {
     });
     customerId = customer.id;
 
-    // Save customer ID (use service role below in webhook; anon client is fine here since it's their own row)
     await supabase
       .from('profiles')
       .update({ stripe_customer_id: customerId })
@@ -51,7 +61,7 @@ export async function POST(request: NextRequest) {
 
   let session;
 
-  if (plan === 'teacher' || plan === 'teacher-annual') {
+  if (isTeacherPlan) {
     const teacherPriceId = plan === 'teacher-annual'
       ? process.env.TEACHER_ANNUAL_PRICE_ID
       : process.env.TEACHER_MONTHLY_PRICE_ID;
@@ -64,8 +74,37 @@ export async function POST(request: NextRequest) {
       line_items: [{ price: teacherPriceId, quantity: 1 }],
       success_url: `${baseUrl}/dashboard/teaching?onboarded=true`,
       cancel_url: `${baseUrl}/academy/teach`,
-      // Both teacher plans use 'teacher' as plan marker in webhook
       metadata: { supabase_user_id: user.id, plan: 'teacher' },
+    });
+  } else if (isContractorPlan) {
+    const priceId = plan === 'contractor-annual'
+      ? process.env.STRIPE_CONTRACTOR_ANNUAL_PRICE_ID
+      : process.env.STRIPE_CONTRACTOR_MONTHLY_PRICE_ID;
+    if (!priceId) {
+      return NextResponse.json({ error: 'Contractor plan not configured' }, { status: 503 });
+    }
+    session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      mode: 'subscription',
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${baseUrl}/dashboard/contractor?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/contractor-pricing`,
+      metadata: { supabase_user_id: user.id, plan: 'contractor' },
+    });
+  } else if (isListerPlan) {
+    const priceId = plan === 'lister-annual'
+      ? process.env.STRIPE_LISTER_ANNUAL_PRICE_ID
+      : process.env.STRIPE_LISTER_MONTHLY_PRICE_ID;
+    if (!priceId) {
+      return NextResponse.json({ error: 'Lister plan not configured' }, { status: 503 });
+    }
+    session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      mode: 'subscription',
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${baseUrl}/dashboard/contractor/lister?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/lister-pricing`,
+      metadata: { supabase_user_id: user.id, plan: 'lister' },
     });
   } else if (plan === 'monthly') {
     session = await stripe.checkout.sessions.create({
@@ -77,6 +116,7 @@ export async function POST(request: NextRequest) {
       metadata: { supabase_user_id: user.id, plan: 'monthly' },
     });
   } else {
+    // lifetime
     session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'payment',
