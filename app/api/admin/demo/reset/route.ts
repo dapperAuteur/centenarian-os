@@ -1,12 +1,16 @@
 // app/api/admin/demo/reset/route.ts
-// Clears and reseeds both demo accounts with realistic dummy data.
+// Clears and reseeds all demo accounts with realistic dummy data.
 // Called daily by Vercel cron (GET) or manually by admin (POST).
 // Guard: Authorization: Bearer {CRON_SECRET}
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { clearUserData, seedTutorial, seedVisitor } from '@/lib/demo/seed';
+import { seedContractor } from '@/lib/demo/seed-contractor';
+import { seedLister } from '@/lib/demo/seed-lister';
 import { syncAllKnowledge } from '@/lib/admin/syncKnowledge';
+
+type SeedType = 'tutorial' | 'visitor' | 'contractor' | 'lister';
 
 function db() {
   return createClient(
@@ -29,20 +33,36 @@ export async function GET(request: NextRequest) {
 
   const tutorialUserId = process.env.DEMO_TUTORIAL_USER_ID;
   const visitorUserId = process.env.DEMO_VISITOR_USER_ID;
+  const contractorUserId = process.env.DEMO_CONTRACTOR_USER_ID;
+  const listerUserId = process.env.DEMO_LISTER_USER_ID;
 
   if (!tutorialUserId || !visitorUserId) {
     return NextResponse.json({ error: 'Demo user IDs not configured' }, { status: 500 });
   }
 
   const supabase = db();
+  const resetList: SeedType[] = [];
   try {
     await resetUser(supabase, tutorialUserId, 'tutorial');
+    resetList.push('tutorial');
+
     await resetUser(supabase, visitorUserId, 'visitor');
+    resetList.push('visitor');
+
+    if (contractorUserId) {
+      await resetUser(supabase, contractorUserId, 'contractor');
+      resetList.push('contractor');
+    }
+
+    if (listerUserId) {
+      await resetUser(supabase, listerUserId, 'lister');
+      resetList.push('lister');
+    }
 
     // Fire-and-forget: sync help articles + course embeddings + timestamp
     syncAllKnowledge().catch((e) => console.error('[cron] syncAllKnowledge failed:', e));
 
-    return NextResponse.json({ ok: true, reset: ['tutorial', 'visitor'], at: new Date().toISOString() });
+    return NextResponse.json({ ok: true, reset: resetList, at: new Date().toISOString() });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: msg }, { status: 500 });
@@ -53,12 +73,21 @@ export async function POST(request: NextRequest) {
   return GET(request);
 }
 
-async function resetUser(supabase: ReturnType<typeof db>, userId: string, type: 'tutorial' | 'visitor') {
+async function resetUser(supabase: ReturnType<typeof db>, userId: string, type: SeedType) {
   await clearUserData(supabase, userId);
-  if (type === 'tutorial') {
-    await seedTutorial(supabase, userId);
-  } else {
-    await seedVisitor(supabase, userId);
+  switch (type) {
+    case 'tutorial':
+      await seedTutorial(supabase, userId);
+      break;
+    case 'visitor':
+      await seedVisitor(supabase, userId);
+      break;
+    case 'contractor':
+      await seedContractor(supabase, userId);
+      break;
+    case 'lister':
+      await seedLister(supabase, userId);
+      break;
   }
 }
 
