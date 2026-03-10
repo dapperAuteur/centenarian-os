@@ -35,7 +35,7 @@ export default function ListerPricingPage() {
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 401) {
-          window.location.href = '/login?next=/lister-pricing';
+          window.location.href = '/signup';
           return;
         }
         setError(data.error ?? 'Something went wrong');

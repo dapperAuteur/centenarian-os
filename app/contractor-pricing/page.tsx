@@ -37,7 +37,7 @@ export default function ContractorPricingPage() {
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 401) {
-          window.location.href = '/login?next=/contractor-pricing';
+          window.location.href = '/signup';
           return;
         }
         setError(data.error ?? 'Something went wrong');
