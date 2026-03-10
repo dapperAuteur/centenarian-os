@@ -3,11 +3,18 @@
 // app/dashboard/settings/page.tsx
 // Dashboard preferences — lets users choose their home page.
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { NAV_GROUPS } from '@/components/nav/NavConfig';
-import { Settings, Check, Loader2 } from 'lucide-react';
+import { Settings, Check, Loader2, Sparkles, RotateCcw } from 'lucide-react';
 import MfaSetupSection from '@/components/settings/MfaSetupSection';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import TourRestartButton from '@/components/onboarding/TourRestartButton';
+
+interface TourStatus {
+  module_slug: string;
+  app: string;
+  status: 'available' | 'in_progress' | 'completed' | 'skipped';
+}
 
 // All non-admin nav items as choosable home pages
 const HOME_OPTIONS = NAV_GROUPS
@@ -30,6 +37,17 @@ export default function DashboardSettingsPage() {
   const [likesPublic, setLikesPublic] = useState(false);
   const [showDoneCounts, setShowDoneCounts] = useState(false);
   const [socialSaving, setSocialSaving] = useState(false);
+  const [tours, setTours] = useState<TourStatus[]>([]);
+
+  const loadTours = useCallback(async () => {
+    try {
+      const res = await fetch('/api/onboarding/status');
+      if (res.ok) {
+        const d = await res.json();
+        setTours(d.tours ?? []);
+      }
+    } catch {}
+  }, []);
 
   useEffect(() => {
     offlineFetch('/api/user/preferences')
@@ -44,7 +62,8 @@ export default function DashboardSettingsPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+    loadTours();
+  }, [loadTours]);
 
   async function handleSave() {
     setSaving(true);
@@ -264,6 +283,82 @@ export default function DashboardSettingsPage() {
             />
           </button>
         </label>
+      </div>
+
+      {/* Module Tours */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mt-6">
+        <div className="flex items-center gap-2 mb-1">
+          <Sparkles className="w-5 h-5 text-fuchsia-600" aria-hidden="true" />
+          <h2 className="text-base font-semibold text-gray-800">Module Tours</h2>
+        </div>
+        <p className="text-sm text-gray-500 mb-5">
+          Re-take any feature walkthrough to refresh your memory.
+        </p>
+
+        {tours.length > 0 ? (
+          <div className="space-y-2">
+            {tours.map((t) => (
+              <div
+                key={`${t.app}-${t.module_slug}`}
+                className="flex items-center justify-between rounded-lg bg-gray-50 border border-gray-200 px-4 py-3"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-gray-400 uppercase">{t.app}</span>
+                  <span className="text-sm text-gray-700 capitalize">
+                    {t.module_slug.replace(/-/g, ' ')}
+                  </span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    t.status === 'completed'
+                      ? 'bg-green-100 text-green-700'
+                      : t.status === 'in_progress'
+                        ? 'bg-amber-100 text-amber-700'
+                        : t.status === 'skipped'
+                          ? 'bg-gray-100 text-gray-500'
+                          : 'bg-gray-100 text-gray-400'
+                  }`}>
+                    {t.status === 'in_progress' ? 'in progress' : t.status}
+                  </span>
+                </div>
+                <button
+                  onClick={async () => {
+                    await fetch(`/api/onboarding/tours/${t.module_slug}/restart`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ app: t.app }),
+                    });
+                    loadTours();
+                  }}
+                  className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-fuchsia-600 transition min-h-11 px-2"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                  Restart
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400">No tours started yet. Explore features to begin.</p>
+        )}
+
+        {tours.length > 0 && (
+          <div className="mt-4">
+            <button
+              onClick={async () => {
+                if (!confirm('Restart all module tours? Sparkle badges will reappear on every feature.')) return;
+                await fetch('/api/onboarding/tours/reset', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({}),
+                });
+                loadTours();
+              }}
+              className="flex items-center gap-2 text-sm text-gray-500 hover:text-fuchsia-600 transition min-h-11 px-2"
+            >
+              <RotateCcw className="w-4 h-4" aria-hidden="true" />
+              Restart All Tours
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Two-Factor Authentication */}
