@@ -2,14 +2,21 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import {
-  Loader2, MapPin, Save, CheckCircle, AlertTriangle,
+  Loader2, MapPin, Save, CheckCircle, AlertTriangle, RotateCcw, Sparkles,
 } from 'lucide-react';
+import TourRestartButton from '@/components/onboarding/TourRestartButton';
 
 interface TravelSettings {
   home_address: string | null;
   home_lat: number | null;
   home_lng: number | null;
   distance_unit: 'mi' | 'km';
+}
+
+interface TourStatus {
+  module_slug: string;
+  app: string;
+  status: 'available' | 'in_progress' | 'completed' | 'skipped';
 }
 
 export default function ContractorSettingsPage() {
@@ -22,6 +29,17 @@ export default function ContractorSettingsPage() {
 
   const [address, setAddress] = useState('');
   const [unit, setUnit] = useState<'mi' | 'km'>('mi');
+  const [tours, setTours] = useState<TourStatus[]>([]);
+
+  const loadTours = useCallback(async () => {
+    try {
+      const res = await fetch('/api/onboarding/status');
+      if (res.ok) {
+        const d = await res.json();
+        setTours((d.tours ?? []).filter((t: TourStatus) => t.app === 'contractor'));
+      }
+    } catch {}
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -38,7 +56,7 @@ export default function ContractorSettingsPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); loadTours(); }, [load, loadTours]);
 
   async function saveHomeAddress() {
     if (!address.trim()) return;
@@ -184,6 +202,61 @@ export default function ContractorSettingsPage() {
           <Save size={14} aria-hidden="true" />
           Update Unit
         </button>
+      </section>
+
+      {/* Module Tours */}
+      <section className="rounded-xl border border-neutral-800 bg-neutral-900 p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <Sparkles size={18} className="text-amber-400" aria-hidden="true" />
+          <h2 className="text-lg font-semibold text-neutral-100">Module Tours</h2>
+        </div>
+        <p className="text-sm text-neutral-400">
+          Re-take any feature walkthrough to refresh your memory.
+        </p>
+
+        {tours.length > 0 ? (
+          <div className="space-y-2">
+            {tours.map((t) => (
+              <div
+                key={t.module_slug}
+                className="flex items-center justify-between rounded-lg bg-neutral-800 px-4 py-3"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-neutral-200 capitalize">
+                    {t.module_slug.replace(/-/g, ' ')}
+                  </span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    t.status === 'completed'
+                      ? 'bg-green-900/40 text-green-400'
+                      : t.status === 'in_progress'
+                        ? 'bg-amber-900/40 text-amber-400'
+                        : t.status === 'skipped'
+                          ? 'bg-neutral-700 text-neutral-400'
+                          : 'bg-neutral-700 text-neutral-500'
+                  }`}>
+                    {t.status === 'in_progress' ? 'in progress' : t.status}
+                  </span>
+                </div>
+                <TourRestartButton
+                  app="contractor"
+                  moduleSlug={t.module_slug}
+                  label="Restart"
+                  onReset={loadTours}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-neutral-500">No tours started yet. Explore features to begin.</p>
+        )}
+
+        {tours.length > 0 && (
+          <TourRestartButton
+            app="contractor"
+            label="Restart All Tours"
+            onReset={loadTours}
+          />
+        )}
       </section>
 
       {/* Feedback */}

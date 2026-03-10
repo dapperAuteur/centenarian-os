@@ -2,30 +2,211 @@
  * Converts a markdown string to a Tiptap JSON document.
  *
  * Process:
- *   markdown → HTML (via `marked`)
- *             → Tiptap JSON (via `generateJSON` from @tiptap/core)
+ *   markdown → tokens (via `marked.lexer()`)
+ *             → Tiptap JSON (direct token-to-node mapping)
  *
- * Works in both browser and Node.js (no DOM required for `marked`).
- * `generateJSON` requires Node.js JSDOM or browser — call this only in
- * client components or server components that run in Node.
+ * Works in both browser and Node.js — no DOM required.
  */
 
-import { marked } from 'marked';
-import { generateJSON } from '@tiptap/core';
-import StarterKit from '@tiptap/starter-kit';
-import Link from '@tiptap/extension-link';
-import Image from '@tiptap/extension-image';
-import CodeBlock from '@tiptap/extension-code-block';
-import Heading from '@tiptap/extension-heading';
+import { marked, type Token, type Tokens } from 'marked';
 
-// Same extension list as the editor (minus React-specific / client-only ones)
-const extensions = [
-  StarterKit.configure({ codeBlock: false, heading: false }),
-  Heading.configure({ levels: [1, 2, 3] }),
-  CodeBlock,
-  Link.configure({ openOnClick: false }),
-  Image,
-];
+// --- Inline token → Tiptap mark/text conversion ---
+
+interface TiptapTextNode {
+  type: 'text';
+  text: string;
+  marks?: { type: string; attrs?: Record<string, unknown> }[];
+}
+
+type TiptapInline = TiptapTextNode | { type: string; attrs?: Record<string, unknown> };
+
+function inlineTokensToNodes(
+  tokens: Token[],
+  parentMarks: { type: string; attrs?: Record<string, unknown> }[] = [],
+): TiptapInline[] {
+  const nodes: TiptapInline[] = [];
+
+  for (const token of tokens) {
+    switch (token.type) {
+      case 'text': {
+        const t = token as Tokens.Text;
+        const text = t.text;
+        if (text) {
+          nodes.push({
+            type: 'text',
+            text,
+            ...(parentMarks.length > 0 ? { marks: [...parentMarks] } : {}),
+          });
+        }
+        break;
+      }
+      case 'strong': {
+        const t = token as Tokens.Strong;
+        const marks = [...parentMarks, { type: 'bold' }];
+        nodes.push(...inlineTokensToNodes(t.tokens, marks));
+        break;
+      }
+      case 'em': {
+        const t = token as Tokens.Em;
+        const marks = [...parentMarks, { type: 'italic' }];
+        nodes.push(...inlineTokensToNodes(t.tokens, marks));
+        break;
+      }
+      case 'codespan': {
+        const t = token as Tokens.Codespan;
+        nodes.push({
+          type: 'text',
+          text: t.text,
+          marks: [...parentMarks, { type: 'code' }],
+        });
+        break;
+      }
+      case 'link': {
+        const t = token as Tokens.Link;
+        const marks = [
+          ...parentMarks,
+          { type: 'link', attrs: { href: t.href, target: '_blank', rel: 'noopener noreferrer nofollow' } },
+        ];
+        nodes.push(...inlineTokensToNodes(t.tokens, marks));
+        break;
+      }
+      case 'image': {
+        const t = token as Tokens.Image;
+        nodes.push({
+          type: 'image',
+          attrs: { src: t.href, alt: t.text || null, title: t.title || null },
+        });
+        break;
+      }
+      case 'br': {
+        nodes.push({ type: 'hardBreak' } as TiptapInline);
+        break;
+      }
+      case 'escape': {
+        const t = token as Tokens.Escape;
+        nodes.push({
+          type: 'text',
+          text: t.text,
+          ...(parentMarks.length > 0 ? { marks: [...parentMarks] } : {}),
+        });
+        break;
+      }
+      default: {
+        // Fallback: use raw text if available
+        const raw = (token as { raw?: string }).raw || (token as { text?: string }).text;
+        if (raw) {
+          nodes.push({
+            type: 'text',
+            text: raw,
+            ...(parentMarks.length > 0 ? { marks: [...parentMarks] } : {}),
+          });
+        }
+        break;
+      }
+    }
+  }
+
+  return nodes;
+}
+
+// --- Block token → Tiptap node conversion ---
+
+interface TiptapNode {
+  type: string;
+  attrs?: Record<string, unknown>;
+  content?: (TiptapNode | TiptapInline)[];
+  marks?: { type: string; attrs?: Record<string, unknown> }[];
+}
+
+function blockTokenToNode(token: Token): TiptapNode | null {
+  switch (token.type) {
+    case 'heading': {
+      const t = token as Tokens.Heading;
+      const level = Math.min(t.depth, 3);
+      const content = inlineTokensToNodes(t.tokens);
+      return {
+        type: 'heading',
+        attrs: { level },
+        ...(content.length > 0 ? { content } : {}),
+      };
+    }
+    case 'paragraph': {
+      const t = token as Tokens.Paragraph;
+      const content = inlineTokensToNodes(t.tokens);
+      return {
+        type: 'paragraph',
+        ...(content.length > 0 ? { content } : {}),
+      };
+    }
+    case 'blockquote': {
+      const t = token as Tokens.Blockquote;
+      const children = tokensToNodes(t.tokens);
+      return {
+        type: 'blockquote',
+        ...(children.length > 0 ? { content: children } : {}),
+      };
+    }
+    case 'code': {
+      const t = token as Tokens.Code;
+      return {
+        type: 'codeBlock',
+        attrs: { language: t.lang || null },
+        content: t.text ? [{ type: 'text', text: t.text }] : [],
+      };
+    }
+    case 'list': {
+      const t = token as Tokens.List;
+      const listType = t.ordered ? 'orderedList' : 'bulletList';
+      const items = t.items.map((item) => {
+        const children = tokensToNodes(item.tokens);
+        return {
+          type: 'listItem',
+          ...(children.length > 0 ? { content: children } : {}),
+        };
+      });
+      return {
+        type: listType,
+        ...(items.length > 0 ? { content: items } : {}),
+      };
+    }
+    case 'hr': {
+      return { type: 'horizontalRule' };
+    }
+    case 'space': {
+      return null; // skip whitespace tokens
+    }
+    case 'html': {
+      // Wrap raw HTML as a paragraph with the text
+      const t = token as Tokens.HTML;
+      const text = t.text.trim();
+      if (!text) return null;
+      return {
+        type: 'paragraph',
+        content: [{ type: 'text', text }],
+      };
+    }
+    default: {
+      // Fallback: wrap unknown blocks as paragraph
+      const raw = (token as { raw?: string }).raw?.trim();
+      if (raw) {
+        return {
+          type: 'paragraph',
+          content: [{ type: 'text', text: raw }],
+        };
+      }
+      return null;
+    }
+  }
+}
+
+function tokensToNodes(tokens: Token[]): TiptapNode[] {
+  const nodes: TiptapNode[] = [];
+  for (const token of tokens) {
+    const node = blockTokenToNode(token);
+    if (node) nodes.push(node);
+  }
+  return nodes;
+}
 
 /**
  * Parses frontmatter from a markdown string.
@@ -56,13 +237,13 @@ export function parseFrontmatter(raw: string): {
 
 /**
  * Converts a markdown string to a Tiptap JSON document object.
- * Strips the H1 title from the body if it matches the post title
- * (to avoid duplication since PostForm has its own title field).
+ * Uses marked's lexer to tokenize, then maps tokens directly to Tiptap JSON.
+ * No DOM required — works in Node.js API routes.
  */
 export function markdownToTiptapJSON(markdown: string): object {
-  // marked returns a string synchronously with default options
-  const html = marked(markdown, { async: false }) as string;
-  return generateJSON(html, extensions);
+  const tokens = marked.lexer(markdown);
+  const content = tokensToNodes(tokens);
+  return { type: 'doc', content };
 }
 
 /**

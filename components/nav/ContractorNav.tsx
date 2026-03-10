@@ -11,7 +11,9 @@ import {
   Package, ScanLine, Database, Settings, Bell, LogOut,
   UserCircle, ChevronDown, Menu, X, MessageCircle,
   BarChart3, ArrowUpDown, Users, Building2, MapPin, Scale, Inbox, IdCard, UserPlus,
+  Sparkles, RotateCcw,
 } from 'lucide-react';
+import TourRestartButton from '@/components/onboarding/TourRestartButton';
 
 interface NavItem {
   label: string;
@@ -93,11 +95,13 @@ function NavDropdown({
   pathname,
   openGroup,
   setOpenGroup,
+  untoured,
 }: {
   group: NavGroup;
   pathname: string;
   openGroup: string | null;
   setOpenGroup: (g: string | null) => void;
+  untoured?: Set<string>;
 }) {
   const isOpen = openGroup === group.label;
   const groupActive = isGroupActive(group, pathname);
@@ -141,6 +145,9 @@ function NavDropdown({
           {group.items.map((item) => {
             const ItemIcon = item.icon;
             const active = isActive(item.href, pathname);
+            // Extract slug from href for sparkle badge
+            const slug = item.href.split('/').pop() || '';
+            const showSparkle = untoured?.has(slug);
             return (
               <Link
                 key={item.href}
@@ -155,6 +162,9 @@ function NavDropdown({
               >
                 <ItemIcon className="w-4 h-4 shrink-0" aria-hidden="true" />
                 {item.label}
+                {showSparkle && (
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse ml-auto shrink-0" aria-hidden="true" />
+                )}
               </Link>
             );
           })}
@@ -169,9 +179,11 @@ export interface ContractorNavProps {
   username: string | null;
   unreadMessages: number;
   onLogout: () => void;
+  /** Set of module slugs whose tours are still 'available' (show sparkle badge) */
+  untoured?: Set<string>;
 }
 
-export default function ContractorNav({ username, unreadMessages, onLogout }: ContractorNavProps) {
+export default function ContractorNav({ username, unreadMessages, onLogout, untoured }: ContractorNavProps) {
   const pathname = usePathname();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -234,6 +246,7 @@ export default function ContractorNav({ username, unreadMessages, onLogout }: Co
                   pathname={pathname}
                   openGroup={openGroup}
                   setOpenGroup={setOpenGroup}
+                  untoured={untoured}
                 />
               ))}
             </div>
@@ -314,6 +327,10 @@ export default function ContractorNav({ username, unreadMessages, onLogout }: Co
                       <MessageCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
                       Feedback
                     </Link>
+                    <div className="my-1 border-t border-neutral-700" />
+                    <div className="px-1" role="menuitem">
+                      <TourRestartButton app="contractor" />
+                    </div>
                     <div className="my-1 border-t border-neutral-700" />
                     <button
                       onClick={() => { setUserMenuOpen(false); onLogout(); }}
@@ -403,6 +420,8 @@ export default function ContractorNav({ username, unreadMessages, onLogout }: Co
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   const active = isActive(item.href, pathname);
+                  const slug = item.href.split('/').pop() || '';
+                  const showSparkle = untoured?.has(slug);
                   return (
                     <Link
                       key={item.href}
@@ -414,6 +433,9 @@ export default function ContractorNav({ username, unreadMessages, onLogout }: Co
                     >
                       <Icon className="w-5 h-5 shrink-0" aria-hidden="true" />
                       {item.label}
+                      {showSparkle && (
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse ml-auto shrink-0" aria-hidden="true" />
+                      )}
                     </Link>
                   );
                 })}

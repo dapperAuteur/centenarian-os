@@ -8,7 +8,7 @@ import BlogPostList from '@/components/blog/BlogPostList';
 import BlogAnalytics from '@/components/blog/BlogAnalytics';
 import LikedSavedPosts from '@/components/blog/LikedSavedPosts';
 import UsernameSetupModal from '@/components/blog/UsernameSetupModal';
-import { PenLine, BarChart2, List, FileDown, Heart, Bookmark } from 'lucide-react';
+import { PenLine, BarChart2, List, FileDown, Upload, Heart, Bookmark } from 'lucide-react';
 import { isAdmin } from '@/lib/blog/admin';
 import type { Profile } from '@/lib/types';
 
@@ -79,13 +79,22 @@ export default function BlogDashboardPage() {
             </div>
             <div className="flex items-center gap-2">
               {isAdmin(user.email) && (
-                <Link
-                  href="/dashboard/blog/import"
-                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
-                >
-                  <FileDown className="w-4 h-4" />
-                  Import
-                </Link>
+                <>
+                  <Link
+                    href="/dashboard/data/import/blog"
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+                  >
+                    <Upload className="w-4 h-4" />
+                    CSV Import
+                  </Link>
+                  <Link
+                    href="/dashboard/blog/import"
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+                  >
+                    <FileDown className="w-4 h-4" />
+                    Markdown
+                  </Link>
+                </>
               )}
               <Link
                 href="/dashboard/blog/new"

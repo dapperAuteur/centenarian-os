@@ -11,7 +11,9 @@ import {
   ClipboardList, Briefcase, Users, Send, MessageCircle,
   BarChart3, CalendarCheck, UserPlus, Settings, Bell, LogOut,
   UserCircle, ChevronDown, Menu, X, CreditCard, UsersRound,
+  Sparkles,
 } from 'lucide-react';
+import TourRestartButton from '@/components/onboarding/TourRestartButton';
 
 interface ListerNavItem {
   label: string;
@@ -39,9 +41,10 @@ export interface ListerNavProps {
   username: string | null;
   unreadMessages: number;
   onLogout: () => void;
+  untoured?: Set<string>;
 }
 
-export default function ListerNav({ username, unreadMessages, onLogout }: ListerNavProps) {
+export default function ListerNav({ username, unreadMessages, onLogout, untoured }: ListerNavProps) {
   const pathname = usePathname();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -93,6 +96,8 @@ export default function ListerNav({ username, unreadMessages, onLogout }: Lister
               {NAV_ITEMS.slice(1).map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.href, pathname);
+                const slug = item.href.split('/').pop() || '';
+                const showSparkle = untoured?.has(slug);
                 return (
                   <Link
                     key={item.href}
@@ -106,6 +111,9 @@ export default function ListerNav({ username, unreadMessages, onLogout }: Lister
                   >
                     <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
                     {item.label}
+                    {showSparkle && (
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-pulse shrink-0" aria-hidden="true" />
+                    )}
                   </Link>
                 );
               })}
@@ -179,6 +187,10 @@ export default function ListerNav({ username, unreadMessages, onLogout }: Lister
                       Feedback
                     </Link>
                     <div className="my-1 border-t border-neutral-700" />
+                    <div className="px-1" role="menuitem">
+                      <TourRestartButton app="lister" />
+                    </div>
+                    <div className="my-1 border-t border-neutral-700" />
                     <button
                       onClick={() => { setUserMenuOpen(false); onLogout(); }}
                       className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition min-h-11"
@@ -248,6 +260,8 @@ export default function ListerNav({ username, unreadMessages, onLogout }: Lister
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.href, pathname);
+                const slug = item.href.split('/').pop() || '';
+                const showSparkle = untoured?.has(slug);
                 return (
                   <Link
                     key={item.href}
@@ -259,6 +273,9 @@ export default function ListerNav({ username, unreadMessages, onLogout }: Lister
                   >
                     <Icon className="w-5 h-5 shrink-0" aria-hidden="true" />
                     {item.label}
+                    {showSparkle && (
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-pulse ml-auto shrink-0" aria-hidden="true" />
+                    )}
                   </Link>
                 );
               })}
