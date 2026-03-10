@@ -33,7 +33,15 @@ export async function GET(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const enriched = (messages ?? []).map((m) => ({
+  // Filter out broadcast messages sent before the user signed up.
+  // Direct messages (scope='user') are always visible regardless of timing.
+  const userCreatedAt = new Date(user.created_at);
+  const visible = (messages ?? []).filter((m) => {
+    if (m.recipient_scope === 'user') return true;
+    return new Date(m.created_at) >= userCreatedAt;
+  });
+
+  const enriched = visible.map((m) => ({
     ...m,
     is_read: Array.isArray(m.message_reads) && m.message_reads.length > 0,
   }));
