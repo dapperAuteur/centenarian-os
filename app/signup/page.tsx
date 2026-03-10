@@ -118,7 +118,17 @@ export default function SignupPage() {
     }
 
     try {
-      const { error } = await supabase.auth.signUp({ email, password });
+      // Build subdomain-aware callback so the confirmation email redirects to the correct app
+      const dashboardRedirect = isContractor ? '/dashboard/contractor' : isLister ? '/dashboard/contractor/lister' : '/dashboard/planner';
+      const emailRedirectTo = typeof window !== 'undefined'
+        ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(dashboardRedirect)}`
+        : undefined;
+
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo },
+      });
       if (error) throw error;
 
       const redirectAfterSignup = isContractor ? '/contractor-pricing?from=signup' : isLister ? '/lister-pricing?from=signup' : '/pricing?from=signup';

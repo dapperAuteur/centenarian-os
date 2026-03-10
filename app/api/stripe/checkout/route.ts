@@ -57,7 +57,9 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id);
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? request.headers.get('origin') ?? 'http://localhost:3000';
+  // Prefer the actual request origin so subdomain users (contractor.*, lister.*) get
+  // redirected back to their subdomain after Stripe checkout, not the main domain.
+  const baseUrl = request.headers.get('origin') ?? process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
   let session;
 
