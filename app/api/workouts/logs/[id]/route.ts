@@ -25,7 +25,7 @@ export async function GET(
   const db = getDb();
   const { data, error } = await db
     .from('workout_logs')
-    .select('*, workout_log_exercises(*)')
+    .select('*, workout_log_exercises(*, exercises(video_url, media_url))')
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle();
@@ -115,7 +115,7 @@ export async function PATCH(
 
   const { data } = await db
     .from('workout_logs')
-    .select('*, workout_log_exercises(*)')
+    .select('*, workout_log_exercises(*, exercises(video_url, media_url))')
     .eq('id', id)
     .single();
 

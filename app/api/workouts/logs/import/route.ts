@@ -16,6 +16,7 @@ function getDb() {
 
 interface ParsedExercise {
   name: string;
+  video_url: string | null;
   sets_completed: number | null;
   reps_completed: number | null;
   weight_lbs: number | null;
@@ -100,6 +101,7 @@ export async function POST(request: NextRequest) {
     if (exerciseName) {
       exercise = {
         name: exerciseName,
+        video_url: row.video_url?.trim() || null,
         sets_completed: parseInt10(row.sets_completed),
         reps_completed: parseInt10(row.reps_completed),
         weight_lbs: parseNum(row.weight_lbs),
@@ -178,6 +180,32 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Build exercise name → id/video_url map for linking and enrichment
+  const { data: userExercises } = await db
+    .from('exercises')
+    .select('id, name, video_url')
+    .eq('user_id', user.id)
+    .eq('is_active', true);
+
+  const exerciseMap = new Map(
+    (userExercises || []).map((e: { id: string; name: string; video_url: string | null }) => [
+      e.name.toLowerCase(),
+      { id: e.id, video_url: e.video_url },
+    ]),
+  );
+
+  // Enrich exercises: fill in missing video_url on library entries
+  for (const group of groups.values()) {
+    for (const ex of group.exercises) {
+      if (!ex.video_url) continue;
+      const match = exerciseMap.get(ex.name.toLowerCase());
+      if (match && !match.video_url) {
+        await db.from('exercises').update({ video_url: ex.video_url }).eq('id', match.id);
+        match.video_url = ex.video_url;
+      }
+    }
+  }
+
   // Insert workout_logs and their exercises
   let imported = 0;
 
@@ -206,6 +234,7 @@ export async function POST(request: NextRequest) {
       const exerciseRows = group.exercises.map((ex, i) => ({
         log_id: log.id,
         name: ex.name,
+        exercise_id: exerciseMap.get(ex.name.toLowerCase())?.id || null,
         sets_completed: ex.sets_completed,
         reps_completed: ex.reps_completed,
         weight_lbs: ex.weight_lbs,

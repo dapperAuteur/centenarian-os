@@ -19,13 +19,15 @@ export async function GET() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('dashboard_home, scan_auto_save_images')
+    .select('dashboard_home, scan_auto_save_images, likes_public, show_done_counts')
     .eq('id', user.id)
     .single();
 
   return NextResponse.json({
     dashboard_home: profile?.dashboard_home ?? '/dashboard/blog',
     scan_auto_save_images: profile?.scan_auto_save_images ?? false,
+    likes_public: profile?.likes_public ?? false,
+    show_done_counts: profile?.show_done_counts ?? false,
   });
 }
 
@@ -48,6 +50,14 @@ export async function PATCH(request: Request) {
 
   if (scan_auto_save_images !== undefined) {
     updates.scan_auto_save_images = !!scan_auto_save_images;
+  }
+
+  if (body.likes_public !== undefined) {
+    updates.likes_public = !!body.likes_public;
+  }
+
+  if (body.show_done_counts !== undefined) {
+    updates.show_done_counts = !!body.show_done_counts;
   }
 
   if (Object.keys(updates).length === 0) {

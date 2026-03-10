@@ -7,32 +7,78 @@ export async function GET(
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
 
-  const { data, error } = await supabase
+  // Try owner query first (if authenticated)
+  if (user) {
+    const { data, error } = await supabase
+      .from('exercises')
+      .select('*, exercise_categories(id, name, icon, color), exercise_equipment(id, equipment_id, equipment(id, name))')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (data) {
+      // Count activity links for owner
+      const { count: linkCount } = await supabase
+        .from('activity_links')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .or(
+          `and(source_type.eq.exercise,source_id.eq.${id}),and(target_type.eq.exercise,target_id.eq.${id})`,
+        );
+
+      // Check if user liked this exercise
+      const { data: likeRow } = await supabase
+        .from('exercise_likes')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .eq('exercise_id', id)
+        .maybeSingle();
+
+      return NextResponse.json({
+        exercise: data,
+        link_count: linkCount || 0,
+        is_owner: true,
+        liked: !!likeRow,
+      });
+    }
+
+    if (error && error.code !== 'PGRST116') {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+  }
+
+  // Fall through: try public exercise (RLS allows SELECT on visibility='public')
+  const { data: publicEx, error: pubErr } = await supabase
     .from('exercises')
-    .select('*, exercise_categories(id, name, icon, color), exercise_equipment(id, equipment_id, equipment(id, name))')
+    .select('*, exercise_categories(id, name, icon, color)')
     .eq('id', id)
-    .eq('user_id', user.id)
+    .eq('visibility', 'public')
+    .eq('is_active', true)
     .maybeSingle();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (pubErr) return NextResponse.json({ error: pubErr.message }, { status: 500 });
+  if (!publicEx) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  // Count activity links
-  const { count: linkCount } = await supabase
-    .from('activity_links')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .or(
-      `and(source_type.eq.exercise,source_id.eq.${id}),and(target_type.eq.exercise,target_id.eq.${id})`,
-    );
+  // Check like status if authenticated
+  let liked = false;
+  if (user) {
+    const { data: likeRow } = await supabase
+      .from('exercise_likes')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .eq('exercise_id', id)
+      .maybeSingle();
+    liked = !!likeRow;
+  }
 
   return NextResponse.json({
-    exercise: data,
-    link_count: linkCount || 0,
+    exercise: publicEx,
+    link_count: 0,
+    is_owner: false,
+    liked,
   });
 }
 
@@ -56,6 +102,7 @@ export async function PATCH(
     'primary_muscles', 'default_sets', 'default_reps', 'default_weight_lbs',
     'default_duration_sec', 'default_rest_sec', 'notes', 'is_active',
     'equipment_needed', 'is_bodyweight_default', 'is_timed_default', 'per_side_default',
+    'visibility',
   ] as const;
 
   const updates: Record<string, unknown> = {};

@@ -27,6 +27,9 @@ export default function DashboardSettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [scanAutoSave, setScanAutoSave] = useState(false);
   const [scanAutoSaveSaving, setScanAutoSaveSaving] = useState(false);
+  const [likesPublic, setLikesPublic] = useState(false);
+  const [showDoneCounts, setShowDoneCounts] = useState(false);
+  const [socialSaving, setSocialSaving] = useState(false);
 
   useEffect(() => {
     offlineFetch('/api/user/preferences')
@@ -36,6 +39,8 @@ export default function DashboardSettingsPage() {
         setCurrent(home);
         setSelected(home);
         setScanAutoSave(d.scan_auto_save_images ?? false);
+        setLikesPublic(d.likes_public ?? false);
+        setShowDoneCounts(d.show_done_counts ?? false);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -183,6 +188,78 @@ export default function DashboardSettingsPage() {
             <span
               className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                 scanAutoSave ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </label>
+      </div>
+
+      {/* Social & Privacy */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
+        <h2 className="text-sm font-semibold text-gray-900">Social & Privacy</h2>
+        <p className="text-xs text-gray-500">Your profile is private by default. These settings control what others can see.</p>
+
+        <label className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-700">Show my likes publicly</p>
+            <p className="text-xs text-gray-400">Others can see exercises and workouts you&apos;ve liked</p>
+          </div>
+          <button
+            onClick={async () => {
+              setSocialSaving(true);
+              try {
+                const newVal = !likesPublic;
+                const res = await offlineFetch('/api/user/preferences', {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ likes_public: newVal }),
+                });
+                if (res.ok) setLikesPublic(newVal);
+              } finally {
+                setSocialSaving(false);
+              }
+            }}
+            disabled={socialSaving}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              likesPublic ? 'bg-fuchsia-600' : 'bg-gray-300'
+            } ${socialSaving ? 'opacity-50' : ''}`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                likesPublic ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </label>
+
+        <label className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-700">Show done counts on profile</p>
+            <p className="text-xs text-gray-400">Others can see how many exercises and workouts you&apos;ve completed</p>
+          </div>
+          <button
+            onClick={async () => {
+              setSocialSaving(true);
+              try {
+                const newVal = !showDoneCounts;
+                const res = await offlineFetch('/api/user/preferences', {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ show_done_counts: newVal }),
+                });
+                if (res.ok) setShowDoneCounts(newVal);
+              } finally {
+                setSocialSaving(false);
+              }
+            }}
+            disabled={socialSaving}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              showDoneCounts ? 'bg-fuchsia-600' : 'bg-gray-300'
+            } ${socialSaving ? 'opacity-50' : ''}`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                showDoneCounts ? 'translate-x-6' : 'translate-x-1'
               }`}
             />
           </button>

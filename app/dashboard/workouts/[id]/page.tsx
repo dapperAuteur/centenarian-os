@@ -3,10 +3,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
-  ArrowLeft, Calendar, Clock, Dumbbell, Copy, Trash2, Loader2, Pencil,
+  ArrowLeft, Calendar, Clock, Dumbbell, Copy, Trash2, Loader2, Pencil, Play,
 } from 'lucide-react';
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import VideoEmbed from '@/components/ui/VideoEmbed';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
 import WorkoutLogForm from '@/components/workouts/WorkoutLogForm';
@@ -56,6 +57,7 @@ export default function WorkoutDetailPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showEdit, setShowEdit] = useState(false);
+  const [expandedVideos, setExpandedVideos] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -284,6 +286,22 @@ export default function WorkoutDetailPage() {
                     {ex.rest_sec != null && <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded-full">Rest {ex.rest_sec}s</span>}
                     {ex.feeling != null && <span className="text-xs px-1.5 py-0.5 bg-fuchsia-50 text-fuchsia-700 rounded-full">{FEELING_LABELS[ex.feeling]}</span>}
                   </div>
+
+                  {/* Exercise video */}
+                  {ex.exercises?.video_url && (
+                    expandedVideos.has(ex.id) ? (
+                      <div className="mt-3">
+                        <VideoEmbed url={ex.exercises.video_url} title={`${ex.name} form video`} />
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setExpandedVideos((prev) => new Set(prev).add(ex.id))}
+                        className="mt-2 inline-flex items-center gap-1.5 text-xs text-sky-600 hover:text-sky-700 transition"
+                      >
+                        <Play className="w-3.5 h-3.5" aria-hidden="true" /> Watch form video
+                      </button>
+                    )
+                  )}
                 </div>
               );
             })}
