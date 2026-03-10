@@ -103,15 +103,23 @@ function LoginContent() {
     }
   };
 
-  // ── OTP: send code ──────────────────────────────────────────────────────
+  // ── OTP: send code / magic link ─────────────────────────────────────────
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setOtpError('');
     setOtpLoading(true);
     try {
+      // Build subdomain-aware callback URL so magic links redirect correctly
+      let emailRedirectTo: string | undefined;
+      if (typeof window !== 'undefined') {
+        emailRedirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(dashboardRedirect)}`;
+      }
       const { error } = await supabase.auth.signInWithOtp({
         email: otpEmail,
-        options: { shouldCreateUser: false },
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo,
+        },
       });
       if (error) throw error;
       setOtpStep('code');
@@ -274,7 +282,7 @@ function LoginContent() {
                   : isProduct ? 'text-neutral-400 hover:bg-neutral-800' : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
-              Email Code
+              Email Link
             </button>
           </div>
 
@@ -359,7 +367,7 @@ function LoginContent() {
                       placeholder="you@example.com"
                     />
                     <p className={`text-xs mt-1.5 ${isProduct ? 'text-neutral-500' : 'text-gray-400'}`}>
-                      We&apos;ll send a 6-digit code to this address. Only existing accounts can use this method.
+                      We&apos;ll send a login link or 6-digit code to this address. Only existing accounts can use this method.
                     </p>
                   </div>
 
@@ -375,7 +383,7 @@ function LoginContent() {
                 <form onSubmit={handleVerifyCode} className="space-y-6">
                   <div>
                     <p className={`text-sm mb-4 ${isProduct ? 'text-neutral-400' : 'text-gray-600'}`}>
-                      A 6-digit code was sent to <span className={`font-medium ${isProduct ? 'text-neutral-100' : 'text-gray-900'}`}>{otpEmail}</span>.
+                      Check your email at <span className={`font-medium ${isProduct ? 'text-neutral-100' : 'text-gray-900'}`}>{otpEmail}</span>. You&apos;ll receive either a login link (click to sign in) or a 6-digit code to enter below.
                     </p>
                     <label htmlFor="otp-code" className={`block text-sm font-medium mb-1 ${isProduct ? 'text-neutral-300' : 'text-gray-700'}`}>
                       6-digit code
