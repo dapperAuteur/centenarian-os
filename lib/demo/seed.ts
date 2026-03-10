@@ -82,7 +82,10 @@ export const CLEAR_ORDER = [
 export async function clearUserData(supabase: SupabaseClient, userId: string): Promise<void> {
   for (const table of CLEAR_ORDER) {
     const { error } = await supabase.from(table).delete().eq('user_id', userId);
-    if (error) throw new Error(`Failed to clear ${table}: ${error.message}`);
+    // Skip tables that don't exist yet (migration not applied)
+    if (error && !error.message.includes('Could not find the table')) {
+      throw new Error(`Failed to clear ${table}: ${error.message}`);
+    }
   }
 }
 

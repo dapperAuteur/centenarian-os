@@ -9,7 +9,8 @@ import { cookies } from 'next/headers';
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/dashboard/planner';
+  // Default to /dashboard — middleware rewrites to correct subdomain path
+  const next = searchParams.get('next') ?? '/dashboard';
 
   if (code) {
     const cookieStore = await cookies();

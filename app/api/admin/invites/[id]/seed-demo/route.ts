@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSessionClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
-import { seedVisitor, seedTutorial } from '@/lib/demo/seed';
+import { clearUserData, seedVisitor, seedTutorial } from '@/lib/demo/seed';
 import { seedContractor } from '@/lib/demo/seed-contractor';
 import { seedLister } from '@/lib/demo/seed-lister';
 
@@ -37,10 +37,12 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
 
   if (fetchErr || !invite) return NextResponse.json({ error: 'Invite not found' }, { status: 404 });
   if (!invite.user_id) return NextResponse.json({ error: 'User has not accepted the invite yet' }, { status: 400 });
-  if (invite.demo_seeded) return NextResponse.json({ error: 'Demo data already seeded' }, { status: 400 });
   if (!invite.demo_profile) return NextResponse.json({ error: 'No demo profile set on invite' }, { status: 400 });
 
   try {
+    // Clear any existing data first to avoid unique constraint violations
+    await clearUserData(db, invite.user_id);
+
     if (invite.demo_profile === 'visitor') {
       await seedVisitor(db, invite.user_id);
     } else if (invite.demo_profile === 'contractor_demo') {
