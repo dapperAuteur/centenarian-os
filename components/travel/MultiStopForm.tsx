@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Trash2, ArrowDown } from 'lucide-react';
+import { Plus, Trash2, ArrowDown, ChevronDown } from 'lucide-react';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
@@ -22,6 +22,17 @@ interface Stop {
   purpose: string;
   vehicle_id: string;
   date: string; // per-leg date for multi-day trips
+  // Booking details
+  confirmation_number: string;
+  carrier_name: string;
+  seat_assignment: string;
+  terminal: string;
+  gate: string;
+  accommodation_name: string;
+  accommodation_address: string;
+  pickup_address: string;
+  return_address: string;
+  booking_url: string;
 }
 
 const MODE_OPTIONS = ['bike', 'car', 'bus', 'train', 'plane', 'walk', 'run', 'ferry', 'rideshare', 'other'];
@@ -44,6 +55,16 @@ const BLANK_STOP: Stop = {
   purpose: 'errand',
   vehicle_id: '',
   date: '',
+  confirmation_number: '',
+  carrier_name: '',
+  seat_assignment: '',
+  terminal: '',
+  gate: '',
+  accommodation_name: '',
+  accommodation_address: '',
+  pickup_address: '',
+  return_address: '',
+  booking_url: '',
 };
 
 interface LegData {
@@ -92,18 +113,15 @@ function legsToStops(legs: LegData[], isRoundTrip: boolean, routeDate?: string):
   const stops: Stop[] = [];
   // Stop 0: origin of first leg (no transport info)
   stops.push({
+    ...BLANK_STOP,
     location: effectiveLegs[0].origin || '',
     mode: '',
-    distance_miles: '',
-    duration_min: '',
-    cost: '',
-    purpose: 'errand',
-    vehicle_id: '',
     date: effectiveLegs[0].date || routeDate || '',
   });
   // Stop i (1..N): destination of leg i-1, with leg i-1's transport info
   for (const leg of effectiveLegs) {
     stops.push({
+      ...BLANK_STOP,
       location: leg.destination || '',
       mode: leg.mode || 'car',
       distance_miles: leg.distance_miles != null ? String(leg.distance_miles) : '',
@@ -132,6 +150,7 @@ export default function MultiStopForm({ vehicles, onClose, onSaved, editRouteId,
   const [tripStatus, setTripStatus] = useState(initialRoute?.trip_status || defaultStatus || 'completed');
   const [packingNotes, setPackingNotes] = useState(initialRoute?.packing_notes || '');
   const [saving, setSaving] = useState(false);
+  const [expandedBooking, setExpandedBooking] = useState<number | null>(null);
   const isPlanning = tripStatus === 'planned' || tripStatus === 'in_progress';
 
   const addStop = () => {
@@ -166,6 +185,7 @@ export default function MultiStopForm({ vehicles, onClose, onSaved, editRouteId,
           if (stops[i].cost) totalCost += parseFloat(stops[i].cost);
         }
         effectiveStops = [...stops, {
+          ...BLANK_STOP,
           location: stops[0].location,
           mode: stops[stops.length - 1].mode || 'car',
           distance_miles: totalDist > 0 ? String(totalDist) : '',
@@ -190,6 +210,16 @@ export default function MultiStopForm({ vehicles, onClose, onSaved, editRouteId,
           purpose: to.purpose || null,
           vehicle_id: to.vehicle_id || null,
           date: to.date || null,
+          confirmation_number: to.confirmation_number || null,
+          carrier_name: to.carrier_name || null,
+          seat_assignment: to.seat_assignment || null,
+          terminal: to.terminal || null,
+          gate: to.gate || null,
+          accommodation_name: to.accommodation_name || null,
+          accommodation_address: to.accommodation_address || null,
+          pickup_address: to.pickup_address || null,
+          return_address: to.return_address || null,
+          booking_url: to.booking_url || null,
         });
       }
 
@@ -381,6 +411,63 @@ export default function MultiStopForm({ vehicles, onClose, onSaved, editRouteId,
                       className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs min-h-11"
                       aria-label={`Date for leg ${idx}`}
                     />
+                  </div>
+                )}
+                {idx > 0 && (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedBooking(expandedBooking === idx ? null : idx)}
+                      className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-medium text-gray-500 hover:bg-gray-50 transition"
+                    >
+                      <span>Booking Details</span>
+                      <ChevronDown className={`w-3 h-3 transition-transform ${expandedBooking === idx ? 'rotate-180' : ''}`} />
+                    </button>
+                    {expandedBooking === idx && (
+                      <div className="px-2 pb-2 space-y-2 border-t border-gray-100">
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <input type="text" value={stop.confirmation_number} placeholder="Confirmation #"
+                            onChange={(e) => updateStop(idx, 'confirmation_number', e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Confirmation number" />
+                          <input type="text" value={stop.carrier_name}
+                            placeholder={stop.mode === 'plane' ? 'Airline' : 'Carrier'}
+                            onChange={(e) => updateStop(idx, 'carrier_name', e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Carrier name" />
+                        </div>
+                        {stop.mode === 'plane' && (
+                          <div className="grid grid-cols-3 gap-2">
+                            <input type="text" value={stop.seat_assignment} placeholder="Seat"
+                              onChange={(e) => updateStop(idx, 'seat_assignment', e.target.value)}
+                              className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Seat" />
+                            <input type="text" value={stop.terminal} placeholder="Terminal"
+                              onChange={(e) => updateStop(idx, 'terminal', e.target.value)}
+                              className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Terminal" />
+                            <input type="text" value={stop.gate} placeholder="Gate"
+                              onChange={(e) => updateStop(idx, 'gate', e.target.value)}
+                              className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Gate" />
+                          </div>
+                        )}
+                        <div className="grid grid-cols-2 gap-2">
+                          <input type="text" value={stop.accommodation_name} placeholder="Hotel / Accommodation"
+                            onChange={(e) => updateStop(idx, 'accommodation_name', e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Accommodation" />
+                          <input type="text" value={stop.accommodation_address} placeholder="Address"
+                            onChange={(e) => updateStop(idx, 'accommodation_address', e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Accommodation address" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input type="text" value={stop.pickup_address} placeholder="Pickup address"
+                            onChange={(e) => updateStop(idx, 'pickup_address', e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Pickup address" />
+                          <input type="text" value={stop.return_address} placeholder="Return address"
+                            onChange={(e) => updateStop(idx, 'return_address', e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Return address" />
+                        </div>
+                        <input type="url" value={stop.booking_url} placeholder="Booking URL"
+                          onChange={(e) => updateStop(idx, 'booking_url', e.target.value)}
+                          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Booking URL" />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

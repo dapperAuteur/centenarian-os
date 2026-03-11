@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Package, Calendar, DollarSign, Plus } from 'lucide-react';
+import { ArrowLeft, Package, Calendar, DollarSign, Plus, Heart, Share2, Globe, Lock } from 'lucide-react';
 import Image from 'next/image';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import ActivityLinker from '@/components/ui/ActivityLinker';
@@ -27,6 +27,9 @@ interface EquipmentDetail {
   notes: string | null;
   is_active: boolean;
   transaction_id: string | null;
+  visibility: string | null;
+  like_count: number | null;
+  share_count: number | null;
 }
 
 interface Valuation {
@@ -45,6 +48,12 @@ export default function EquipmentDetailPage() {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Social state
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [shareCount, setShareCount] = useState(0);
+  const [linkCopied, setLinkCopied] = useState(false);
+
   // Add valuation form
   const [showValForm, setShowValForm] = useState(false);
   const [valDate, setValDate] = useState(new Date().toISOString().split('T')[0]);
@@ -55,15 +64,21 @@ export default function EquipmentDetailPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [itemRes, valRes, mediaRes] = await Promise.all([
+      const [itemRes, valRes, mediaRes, likeRes] = await Promise.all([
         offlineFetch(`/api/equipment/${id}`),
         offlineFetch(`/api/equipment/${id}/valuations`),
         offlineFetch(`/api/equipment/${id}/media`),
+        offlineFetch(`/api/social/likes?entity_type=equipment&entity_id=${id}`),
       ]);
-      const [itemData, valData, mediaData] = await Promise.all([itemRes.json(), valRes.json(), mediaRes.json()]);
+      const [itemData, valData, mediaData, likeData] = await Promise.all([
+        itemRes.json(), valRes.json(), mediaRes.json(), likeRes.json(),
+      ]);
       setItem(itemData.item || null);
       setValuations(valData.valuations || []);
       setMediaItems(mediaData.media || []);
+      setLiked(!!likeData.liked);
+      setLikeCount(likeData.like_count ?? 0);
+      setShareCount(itemData.item?.share_count ?? 0);
     } catch { /* handled */ }
     finally { setLoading(false); }
   }, [id]);
@@ -94,6 +109,43 @@ export default function EquipmentDetailPage() {
     } finally {
       setValSaving(false);
     }
+  };
+
+  const toggleVisibility = async () => {
+    if (!item) return;
+    const newVisibility = item.visibility === 'public' ? 'private' : 'public';
+    const res = await offlineFetch(`/api/equipment/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visibility: newVisibility }),
+    });
+    if (res.ok) {
+      setItem({ ...item, visibility: newVisibility });
+    }
+  };
+
+  const toggleLike = async () => {
+    const res = await offlineFetch('/api/social/likes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entity_type: 'equipment', entity_id: id }),
+    });
+    if (res.ok) {
+      setLiked((prev) => !prev);
+      setLikeCount((prev) => liked ? prev - 1 : prev + 1);
+    }
+  };
+
+  const handleShare = async () => {
+    await navigator.clipboard.writeText(window.location.href);
+    offlineFetch('/api/social/shares', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entity_type: 'equipment', entity_id: id, platform: 'link' }),
+    });
+    setShareCount((prev) => prev + 1);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
   };
 
   if (loading) {
@@ -150,7 +202,7 @@ export default function EquipmentDetailPage() {
                   </p>
                 )}
               </div>
-              <div className="flex gap-2 shrink-0">
+              <div className="flex flex-wrap gap-2 shrink-0 items-center">
                 {catName && (
                   <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
                     {catName}
@@ -161,6 +213,52 @@ export default function EquipmentDetailPage() {
                     Retired
                   </span>
                 )}
+                <button
+                  onClick={toggleVisibility}
+                  className={`min-h-11 min-w-11 flex items-center justify-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition ${
+                    item.visibility === 'public'
+                      ? 'bg-sky-50 text-sky-600 hover:bg-sky-100'
+                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  }`}
+                  aria-label={item.visibility === 'public' ? 'Set to private' : 'Set to public'}
+                >
+                  {item.visibility === 'public' ? (
+                    <><Globe className="w-3.5 h-3.5" aria-hidden="true" /> Public</>
+                  ) : (
+                    <><Lock className="w-3.5 h-3.5" aria-hidden="true" /> Private</>
+                  )}
+                </button>
+                <button
+                  onClick={toggleLike}
+                  className="min-h-11 min-w-11 flex items-center justify-center gap-1 text-sm transition"
+                  aria-label={liked ? 'Unlike' : 'Like'}
+                >
+                  <Heart
+                    className={`w-4 h-4 ${liked ? 'text-red-500' : 'text-gray-400 hover:text-red-400'}`}
+                    fill={liked ? 'currentColor' : 'none'}
+                    aria-hidden="true"
+                  />
+                  {likeCount > 0 && (
+                    <span className={`text-xs ${liked ? 'text-red-500' : 'text-gray-500'}`}>{likeCount}</span>
+                  )}
+                </button>
+                <div className="relative">
+                  <button
+                    onClick={handleShare}
+                    className="min-h-11 min-w-11 flex items-center justify-center gap-1 text-sm text-gray-600 hover:text-gray-900 transition"
+                    aria-label="Share"
+                  >
+                    <Share2 className="w-4 h-4" aria-hidden="true" />
+                    {shareCount > 0 && (
+                      <span className="text-xs text-gray-500">{shareCount}</span>
+                    )}
+                  </button>
+                  {linkCopied && (
+                    <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] bg-gray-900 text-white px-2 py-0.5 rounded">
+                      Link copied!
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 

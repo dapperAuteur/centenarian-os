@@ -7,7 +7,7 @@ import Link from 'next/link';
 import {
   DollarSign, HeartPulse, Navigation, Fuel, Wrench, Car, Package,
   Users, CalendarClock, Dumbbell, ListChecks, Upload, Download, FileDown,
-  Database, Calendar,
+  Database, Calendar, Library,
 } from 'lucide-react';
 
 interface ModuleCard {
@@ -130,6 +130,16 @@ const MODULES: ModuleCard[] = [
     importHref: '/dashboard/data/import/exercises',
     templateUrl: '/templates/exercises-import-template.csv',
     description: 'Exercise library — instructions, cues, muscles, defaults',
+  },
+  {
+    slug: 'media',
+    label: 'Media',
+    icon: <Library className="w-5 h-5" />,
+    exportUrl: '/api/media/export',
+    importHref: '/dashboard/data/import/media',
+    templateUrl: '/templates/media-import-template.csv',
+    description: 'Books, TV, movies, music, podcasts, and more',
+    filters: '?media_type=&status=',
   },
 ];
 

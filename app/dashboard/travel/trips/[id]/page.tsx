@@ -5,12 +5,13 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, MapPin, Clock, Gauge, Flame, Leaf, DollarSign,
   Copy, Trash2, Loader2, Car, Bike, Footprints, Train, Plane,
-  FileText, CheckCircle,
+  FileText, CheckCircle, Share2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
+import TripShareModal from '@/components/travel/TripShareModal';
 
 interface Trip {
   id: string;
@@ -33,6 +34,27 @@ interface Trip {
   trip_status: string;
   packing_notes: string | null;
   is_round_trip: boolean;
+  confirmation_number: string | null;
+  booking_reference: string | null;
+  carrier_name: string | null;
+  check_in_date: string | null;
+  check_out_date: string | null;
+  pickup_address: string | null;
+  return_address: string | null;
+  pickup_time: string | null;
+  return_time: string | null;
+  seat_assignment: string | null;
+  terminal: string | null;
+  gate: string | null;
+  booking_url: string | null;
+  accommodation_name: string | null;
+  accommodation_address: string | null;
+  room_type: string | null;
+  loyalty_program: string | null;
+  loyalty_number: string | null;
+  budget_amount: number | null;
+  brand_id: string | null;
+  visibility: string;
   vehicles: { id: string; nickname: string; type: string } | null;
 }
 
@@ -67,6 +89,7 @@ export default function TripDetailPage() {
   const [linkedTx, setLinkedTx] = useState<LinkedTransaction | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -253,6 +276,30 @@ export default function TripDetailPage() {
           )}
         </div>
 
+        {/* Budget bar */}
+        {trip.budget_amount != null && trip.budget_amount > 0 && (
+          <div className="text-sm">
+            <span className="text-gray-400 text-xs block mb-1">Budget</span>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    (trip.cost || 0) > trip.budget_amount ? 'bg-red-500' :
+                    (trip.cost || 0) > trip.budget_amount * 0.8 ? 'bg-amber-500' : 'bg-green-500'
+                  }`}
+                  style={{ width: `${Math.min(100, ((trip.cost || 0) / trip.budget_amount) * 100)}%` }}
+                />
+              </div>
+              <span className="text-xs text-gray-600 whitespace-nowrap">
+                ${(trip.cost || 0).toFixed(2)} / ${trip.budget_amount.toFixed(2)}
+              </span>
+            </div>
+            {(trip.cost || 0) > trip.budget_amount && (
+              <p className="text-xs text-red-600 mt-0.5">Over by ${((trip.cost || 0) - trip.budget_amount).toFixed(2)}</p>
+            )}
+          </div>
+        )}
+
         {trip.notes && (
           <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">{trip.notes}</div>
         )}
@@ -279,6 +326,129 @@ export default function TripDetailPage() {
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
           <h3 className="text-sm font-medium text-blue-800 mb-2">Packing Notes</h3>
           <p className="text-sm text-blue-700 whitespace-pre-wrap">{trip.packing_notes}</p>
+        </div>
+      )}
+
+      {/* Booking Details */}
+      {(trip.confirmation_number || trip.carrier_name || trip.accommodation_name || trip.seat_assignment || trip.pickup_address || trip.booking_url || trip.loyalty_program) && (
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-4">
+          <h3 className="text-sm font-semibold text-gray-700">Booking Details</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+            {trip.confirmation_number && (
+              <div>
+                <span className="text-gray-400 text-xs block">Confirmation #</span>
+                <span className="text-gray-900 font-medium font-mono">{trip.confirmation_number}</span>
+              </div>
+            )}
+            {trip.booking_reference && (
+              <div>
+                <span className="text-gray-400 text-xs block">Booking Ref</span>
+                <span className="text-gray-900 font-medium font-mono">{trip.booking_reference}</span>
+              </div>
+            )}
+            {trip.carrier_name && (
+              <div>
+                <span className="text-gray-400 text-xs block">{trip.mode === 'plane' ? 'Airline' : 'Carrier'}</span>
+                <span className="text-gray-900 font-medium">{trip.carrier_name}</span>
+              </div>
+            )}
+          </div>
+          {/* Flight details */}
+          {(trip.seat_assignment || trip.terminal || trip.gate) && (
+            <div className="grid grid-cols-3 gap-4 text-sm">
+              {trip.seat_assignment && (
+                <div>
+                  <span className="text-gray-400 text-xs block">Seat</span>
+                  <span className="text-gray-900 font-medium">{trip.seat_assignment}</span>
+                </div>
+              )}
+              {trip.terminal && (
+                <div>
+                  <span className="text-gray-400 text-xs block">Terminal</span>
+                  <span className="text-gray-900 font-medium">{trip.terminal}</span>
+                </div>
+              )}
+              {trip.gate && (
+                <div>
+                  <span className="text-gray-400 text-xs block">Gate</span>
+                  <span className="text-gray-900 font-medium">{trip.gate}</span>
+                </div>
+              )}
+            </div>
+          )}
+          {/* Accommodation */}
+          {(trip.accommodation_name || trip.check_in_date) && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+              {trip.accommodation_name && (
+                <div>
+                  <span className="text-gray-400 text-xs block">Accommodation</span>
+                  <span className="text-gray-900 font-medium">{trip.accommodation_name}</span>
+                  {trip.room_type && <span className="text-gray-500 text-xs block">{trip.room_type}</span>}
+                </div>
+              )}
+              {trip.check_in_date && (
+                <div>
+                  <span className="text-gray-400 text-xs block">Check-in</span>
+                  <span className="text-gray-900 font-medium">{fmtDate(trip.check_in_date)}</span>
+                </div>
+              )}
+              {trip.check_out_date && (
+                <div>
+                  <span className="text-gray-400 text-xs block">Check-out</span>
+                  <span className="text-gray-900 font-medium">{fmtDate(trip.check_out_date)}</span>
+                </div>
+              )}
+            </div>
+          )}
+          {trip.accommodation_address && (
+            <div className="text-sm">
+              <span className="text-gray-400 text-xs block">Address</span>
+              <span className="text-gray-900">{trip.accommodation_address}</span>
+            </div>
+          )}
+          {/* Pickup / Return */}
+          {(trip.pickup_address || trip.return_address) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              {trip.pickup_address && (
+                <div>
+                  <span className="text-gray-400 text-xs block">Pickup</span>
+                  <span className="text-gray-900">{trip.pickup_address}</span>
+                  {trip.pickup_time && <span className="text-gray-500 text-xs block">{trip.pickup_time}</span>}
+                </div>
+              )}
+              {trip.return_address && (
+                <div>
+                  <span className="text-gray-400 text-xs block">Return</span>
+                  <span className="text-gray-900">{trip.return_address}</span>
+                  {trip.return_time && <span className="text-gray-500 text-xs block">{trip.return_time}</span>}
+                </div>
+              )}
+            </div>
+          )}
+          {/* Loyalty */}
+          {(trip.loyalty_program || trip.loyalty_number) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              {trip.loyalty_program && (
+                <div>
+                  <span className="text-gray-400 text-xs block">Loyalty Program</span>
+                  <span className="text-gray-900 font-medium">{trip.loyalty_program}</span>
+                </div>
+              )}
+              {trip.loyalty_number && (
+                <div>
+                  <span className="text-gray-400 text-xs block">Member #</span>
+                  <span className="text-gray-900 font-medium font-mono">{trip.loyalty_number}</span>
+                </div>
+              )}
+            </div>
+          )}
+          {trip.booking_url && (
+            <div className="text-sm">
+              <a href={trip.booking_url} target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:underline text-xs">
+                View Booking
+              </a>
+            </div>
+          )}
         </div>
       )}
 
@@ -333,6 +503,12 @@ export default function TripDetailPage() {
             <FileText className="w-3.5 h-3.5" /> Download Itinerary
           </a>
           <button
+            onClick={() => setShowShareModal(true)}
+            className="flex items-center gap-1.5 px-3 min-h-11 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition"
+          >
+            <Share2 className="w-3.5 h-3.5" /> Share
+          </button>
+          <button
             onClick={handleDuplicate}
             disabled={!!actionLoading}
             className="flex items-center gap-1.5 px-3 min-h-11 bg-sky-50 text-sky-700 rounded-lg text-sm font-medium hover:bg-sky-100 disabled:opacity-50 transition"
@@ -359,6 +535,14 @@ export default function TripDetailPage() {
       <div className="bg-white border border-gray-200 rounded-2xl p-5">
         <LifeCategoryTagger entityType="trip" entityId={trip.id} />
       </div>
+
+      {/* Share Modal */}
+      <TripShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        entityType="trip"
+        entityId={trip.id}
+      />
     </div>
   );
 }

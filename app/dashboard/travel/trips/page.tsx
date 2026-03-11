@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, Plus, Route, CalendarDays } from 'lucide-react';
+import { ChevronLeft, Plus, Route, CalendarDays, ChevronDown } from 'lucide-react';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import MultiStopForm from '@/components/travel/MultiStopForm';
@@ -32,6 +32,27 @@ interface Trip {
   trip_status: string;
   packing_notes: string | null;
   is_round_trip: boolean;
+  confirmation_number: string | null;
+  booking_reference: string | null;
+  carrier_name: string | null;
+  check_in_date: string | null;
+  check_out_date: string | null;
+  pickup_address: string | null;
+  return_address: string | null;
+  pickup_time: string | null;
+  return_time: string | null;
+  seat_assignment: string | null;
+  terminal: string | null;
+  gate: string | null;
+  booking_url: string | null;
+  accommodation_name: string | null;
+  accommodation_address: string | null;
+  room_type: string | null;
+  loyalty_program: string | null;
+  loyalty_number: string | null;
+  budget_amount: number | null;
+  brand_id: string | null;
+  visibility: string;
   vehicles?: { id: string; nickname: string } | null;
 }
 
@@ -74,6 +95,27 @@ const BLANK_FORM = {
   trip_status: 'completed',
   packing_notes: '',
   is_round_trip: false,
+  confirmation_number: '',
+  booking_reference: '',
+  carrier_name: '',
+  check_in_date: '',
+  check_out_date: '',
+  pickup_address: '',
+  return_address: '',
+  pickup_time: '',
+  return_time: '',
+  seat_assignment: '',
+  terminal: '',
+  gate: '',
+  booking_url: '',
+  accommodation_name: '',
+  accommodation_address: '',
+  room_type: '',
+  loyalty_program: '',
+  loyalty_number: '',
+  budget_amount: '',
+  brand_id: '',
+  visibility: 'private',
 };
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
@@ -92,6 +134,7 @@ export default function TripsPage() {
   const router = useRouter();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [modeFilter, setModeFilter] = useState('');
@@ -105,6 +148,7 @@ export default function TripsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [linkedTxDialog, setLinkedTxDialog] = useState<{ transactionId: string } | null>(null);
   const [showMultiStop, setShowMultiStop] = useState(false);
+  const [showBookingDetails, setShowBookingDetails] = useState(false);
   const [editingRoute, setEditingRoute] = useState<{
     id: string;
     route: { name: string | null; date: string; notes: string | null; is_round_trip: boolean };
@@ -129,10 +173,11 @@ export default function TripsPage() {
       if (taxFilter) params.set('tax_category', taxFilter);
       if (categoryFilter) params.set('trip_category', categoryFilter);
       if (statusFilter) params.set('trip_status', statusFilter);
-      const [tripsRes, vehiclesRes, routesRes] = await Promise.all([
+      const [tripsRes, vehiclesRes, routesRes, brandsRes] = await Promise.all([
         offlineFetch(`/api/travel/trips?${params}`),
         offlineFetch('/api/travel/vehicles'), // active only
         page === 0 ? offlineFetch('/api/travel/routes?limit=10') : null,
+        offlineFetch('/api/brands'),
       ]);
       if (tripsRes.ok) {
         const d = await tripsRes.json();
@@ -146,6 +191,10 @@ export default function TripsPage() {
       if (routesRes?.ok) {
         const d = await routesRes.json();
         setRoutes(d.routes || []);
+      }
+      if (brandsRes.ok) {
+        const d = await brandsRes.json();
+        setBrands(d || []);
       }
     } finally {
       setLoading(false);
@@ -198,7 +247,29 @@ export default function TripsPage() {
       trip_status: t.trip_status ?? 'completed',
       packing_notes: t.packing_notes ?? '',
       is_round_trip: t.is_round_trip ?? false,
+      confirmation_number: t.confirmation_number ?? '',
+      booking_reference: t.booking_reference ?? '',
+      carrier_name: t.carrier_name ?? '',
+      check_in_date: t.check_in_date ?? '',
+      check_out_date: t.check_out_date ?? '',
+      pickup_address: t.pickup_address ?? '',
+      return_address: t.return_address ?? '',
+      pickup_time: t.pickup_time ?? '',
+      return_time: t.return_time ?? '',
+      seat_assignment: t.seat_assignment ?? '',
+      terminal: t.terminal ?? '',
+      gate: t.gate ?? '',
+      booking_url: t.booking_url ?? '',
+      accommodation_name: t.accommodation_name ?? '',
+      accommodation_address: t.accommodation_address ?? '',
+      room_type: t.room_type ?? '',
+      loyalty_program: t.loyalty_program ?? '',
+      loyalty_number: t.loyalty_number ?? '',
+      budget_amount: t.budget_amount != null ? String(t.budget_amount) : '',
+      brand_id: t.brand_id ?? '',
+      visibility: t.visibility ?? 'private',
     });
+    setShowBookingDetails(!!(t.confirmation_number || t.carrier_name || t.accommodation_name || t.seat_assignment || t.booking_url));
     setShowForm(true);
   };
 
@@ -225,6 +296,29 @@ export default function TripsPage() {
         end_date: form.end_date || null,
         packing_notes: form.packing_notes || null,
         is_round_trip: form.is_round_trip,
+        // Booking details
+        confirmation_number: form.confirmation_number || null,
+        booking_reference: form.booking_reference || null,
+        carrier_name: form.carrier_name || null,
+        check_in_date: form.check_in_date || null,
+        check_out_date: form.check_out_date || null,
+        pickup_address: form.pickup_address || null,
+        return_address: form.return_address || null,
+        pickup_time: form.pickup_time || null,
+        return_time: form.return_time || null,
+        seat_assignment: form.seat_assignment || null,
+        terminal: form.terminal || null,
+        gate: form.gate || null,
+        booking_url: form.booking_url || null,
+        accommodation_name: form.accommodation_name || null,
+        accommodation_address: form.accommodation_address || null,
+        room_type: form.room_type || null,
+        loyalty_program: form.loyalty_program || null,
+        loyalty_number: form.loyalty_number || null,
+        // Budget & sharing
+        budget_amount: form.budget_amount ? parseFloat(form.budget_amount) : null,
+        brand_id: form.brand_id || null,
+        visibility: form.visibility || 'private',
       };
       const res = await offlineFetch('/api/travel/trips', {
         method: editingId ? 'PATCH' : 'POST',
@@ -723,6 +817,33 @@ export default function TripsPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
+                <label htmlFor="trip-budget" className="block text-xs font-medium text-gray-600 mb-1">Budget ($)</label>
+                <input
+                  id="trip-budget"
+                  type="number" step="0.01" value={form.budget_amount} placeholder="0.00"
+                  onChange={(e) => setForm((f) => ({ ...f, budget_amount: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              {brands.length > 0 && (
+                <div>
+                  <label htmlFor="trip-brand" className="block text-xs font-medium text-gray-600 mb-1">Brand</label>
+                  <select
+                    id="trip-brand"
+                    value={form.brand_id}
+                    onChange={(e) => setForm((f) => ({ ...f, brand_id: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                  >
+                    <option value="">None</option>
+                    {brands.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
                 <label htmlFor="trip-purpose" className="block text-xs font-medium text-gray-600 mb-1">Purpose</label>
                 <select
                   id="trip-purpose"
@@ -824,6 +945,151 @@ export default function TripsPage() {
                 <p className="text-xs text-gray-400 mt-1">Link equipment below for a packing checklist</p>
               </div>
             )}
+            {/* Collapsible Booking Details */}
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowBookingDetails((v) => !v)}
+                className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition min-h-11"
+              >
+                <span>Booking Details</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showBookingDetails ? 'rotate-180' : ''}`} />
+              </button>
+              {showBookingDetails && (
+                <div className="px-3 pb-3 space-y-3 border-t border-gray-100">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                    <div>
+                      <label htmlFor="trip-confirmation" className="block text-xs font-medium text-gray-600 mb-1">Confirmation #</label>
+                      <input id="trip-confirmation" type="text" value={form.confirmation_number} placeholder="ABC123"
+                        onChange={(e) => setForm((f) => ({ ...f, confirmation_number: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                      <label htmlFor="trip-booking-ref" className="block text-xs font-medium text-gray-600 mb-1">Booking Ref</label>
+                      <input id="trip-booking-ref" type="text" value={form.booking_reference} placeholder="Optional"
+                        onChange={(e) => setForm((f) => ({ ...f, booking_reference: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="trip-carrier" className="block text-xs font-medium text-gray-600 mb-1">
+                      {form.mode === 'plane' ? 'Airline' : form.mode === 'bus' ? 'Bus Company' : form.mode === 'train' ? 'Rail Company' : 'Carrier / Company'}
+                    </label>
+                    <input id="trip-carrier" type="text" value={form.carrier_name}
+                      onChange={(e) => setForm((f) => ({ ...f, carrier_name: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  </div>
+                  {/* Flight-specific */}
+                  {form.mode === 'plane' && (
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label htmlFor="trip-seat" className="block text-xs font-medium text-gray-600 mb-1">Seat</label>
+                        <input id="trip-seat" type="text" value={form.seat_assignment} placeholder="12A"
+                          onChange={(e) => setForm((f) => ({ ...f, seat_assignment: e.target.value }))}
+                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                      </div>
+                      <div>
+                        <label htmlFor="trip-terminal" className="block text-xs font-medium text-gray-600 mb-1">Terminal</label>
+                        <input id="trip-terminal" type="text" value={form.terminal} placeholder="B"
+                          onChange={(e) => setForm((f) => ({ ...f, terminal: e.target.value }))}
+                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                      </div>
+                      <div>
+                        <label htmlFor="trip-gate" className="block text-xs font-medium text-gray-600 mb-1">Gate</label>
+                        <input id="trip-gate" type="text" value={form.gate} placeholder="B22"
+                          onChange={(e) => setForm((f) => ({ ...f, gate: e.target.value }))}
+                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                      </div>
+                    </div>
+                  )}
+                  {/* Accommodation */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="trip-accom-name" className="block text-xs font-medium text-gray-600 mb-1">Hotel / Accommodation</label>
+                      <input id="trip-accom-name" type="text" value={form.accommodation_name}
+                        onChange={(e) => setForm((f) => ({ ...f, accommodation_name: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                      <label htmlFor="trip-room" className="block text-xs font-medium text-gray-600 mb-1">Room Type</label>
+                      <input id="trip-room" type="text" value={form.room_type} placeholder="King Suite"
+                        onChange={(e) => setForm((f) => ({ ...f, room_type: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="trip-accom-addr" className="block text-xs font-medium text-gray-600 mb-1">Accommodation Address</label>
+                    <input id="trip-accom-addr" type="text" value={form.accommodation_address}
+                      onChange={(e) => setForm((f) => ({ ...f, accommodation_address: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="trip-checkin" className="block text-xs font-medium text-gray-600 mb-1">Check-in</label>
+                      <input id="trip-checkin" type="date" value={form.check_in_date}
+                        onChange={(e) => setForm((f) => ({ ...f, check_in_date: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                      <label htmlFor="trip-checkout" className="block text-xs font-medium text-gray-600 mb-1">Check-out</label>
+                      <input id="trip-checkout" type="date" value={form.check_out_date}
+                        onChange={(e) => setForm((f) => ({ ...f, check_out_date: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                    </div>
+                  </div>
+                  {/* Pickup / Return */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="trip-pickup-addr" className="block text-xs font-medium text-gray-600 mb-1">Pickup Address</label>
+                      <input id="trip-pickup-addr" type="text" value={form.pickup_address}
+                        onChange={(e) => setForm((f) => ({ ...f, pickup_address: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                      <label htmlFor="trip-return-addr" className="block text-xs font-medium text-gray-600 mb-1">Return Address</label>
+                      <input id="trip-return-addr" type="text" value={form.return_address}
+                        onChange={(e) => setForm((f) => ({ ...f, return_address: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="trip-pickup-time" className="block text-xs font-medium text-gray-600 mb-1">Pickup Time</label>
+                      <input id="trip-pickup-time" type="time" value={form.pickup_time}
+                        onChange={(e) => setForm((f) => ({ ...f, pickup_time: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                      <label htmlFor="trip-return-time" className="block text-xs font-medium text-gray-600 mb-1">Return Time</label>
+                      <input id="trip-return-time" type="time" value={form.return_time}
+                        onChange={(e) => setForm((f) => ({ ...f, return_time: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                    </div>
+                  </div>
+                  {/* Loyalty + Booking URL */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="trip-loyalty-prog" className="block text-xs font-medium text-gray-600 mb-1">Loyalty Program</label>
+                      <input id="trip-loyalty-prog" type="text" value={form.loyalty_program} placeholder="Delta SkyMiles"
+                        onChange={(e) => setForm((f) => ({ ...f, loyalty_program: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                      <label htmlFor="trip-loyalty-num" className="block text-xs font-medium text-gray-600 mb-1">Loyalty / Member #</label>
+                      <input id="trip-loyalty-num" type="text" value={form.loyalty_number}
+                        onChange={(e) => setForm((f) => ({ ...f, loyalty_number: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="trip-booking-url" className="block text-xs font-medium text-gray-600 mb-1">Booking URL</label>
+                    <input id="trip-booking-url" type="url" value={form.booking_url} placeholder="https://..."
+                      onChange={(e) => setForm((f) => ({ ...f, booking_url: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  </div>
+                </div>
+              )}
+            </div>
             {editingId && (
               <div className="pt-3 border-t border-gray-200">
                 <ActivityLinker entityType="trip" entityId={editingId} />

@@ -8,6 +8,8 @@ import PostVisibilitySelector from './PostVisibilitySelector';
 import CloudinaryUploader from './CloudinaryUploader';
 import { Save, Loader2, ExternalLink, RefreshCw } from 'lucide-react';
 import type { BlogPost, PostVisibility } from '@/lib/types';
+import ActivityLinker from '@/components/ui/ActivityLinker';
+import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
 
 // Dynamically import the Tiptap editor to avoid SSR issues
 const TiptapEditor = dynamic(() => import('./TiptapEditor'), { ssr: false });
@@ -301,6 +303,23 @@ export default function PostForm({ post, username }: PostFormProps) {
               </div>
             )}
           </div>
+
+          {/* Cross-Module Links (only when editing an existing post) */}
+          {isEditing && post && (
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">Linked Items</label>
+              <p className="text-xs text-gray-400 mb-2">Link media, equipment, recipes, and more to this post</p>
+              <ActivityLinker entityType="blog_post" entityId={post.id} />
+            </div>
+          )}
+
+          {/* Life Categories */}
+          {isEditing && post && (
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">Life Categories</label>
+              <LifeCategoryTagger entityType="blog_post" entityId={post.id} compact />
+            </div>
+          )}
         </div>
       </div>
     </div>
