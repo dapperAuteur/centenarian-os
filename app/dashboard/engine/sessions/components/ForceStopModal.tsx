@@ -3,7 +3,8 @@
 
 import Modal from '@/components/ui/Modal';
 import { AlertTriangle, Clock } from 'lucide-react';
-import { formatDate, formatTime24 } from '@/lib/utils/sessionValidation';
+import { formatDate } from '@/lib/utils/sessionValidation';
+import { useClockFormat, formatTime } from '@/lib/hooks/useClockFormat';
 import { FocusSession } from '@/lib/types';
 
 interface ForceStopModalProps {
@@ -25,6 +26,7 @@ export default function ForceStopModal({
   session,
   isStopping,
 }: ForceStopModalProps) {
+  const clockFormat = useClockFormat();
   if (!session) return null;
 
   // Calculate how long session has been running
@@ -60,7 +62,7 @@ export default function ForceStopModal({
                 {elapsedHours}h {elapsedMinutes}m
               </div>
               <div className="text-xs text-amber-700 mt-2">
-                Started: {formatDate(session.start_time)} at {formatTime24(session.start_time)}
+                Started: {formatDate(session.start_time)} at {formatTime(session.start_time, clockFormat)}
               </div>
             </div>
 

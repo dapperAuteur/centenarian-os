@@ -31,9 +31,22 @@
 
 ---
 
+## Shared Database
+
+This app's Supabase database is shared with other apps (e.g. the Contractor/JobHub app). Keep this in mind at all times:
+
+- **Never drop or rename tables/columns** without checking if other apps depend on them
+- **Migrations must be additive** — use `ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`
+- **The `profiles` table is shared** — columns like `clock_format`, `dashboard_home`, etc. are used across apps. Adding columns is fine; removing or altering existing ones requires coordination
+- **RLS policies must stay app-agnostic** — don't write policies that assume a single app context
+- **When querying shared tables** (e.g. `profiles`, `auth.users`), don't assume all columns exist in every app's TypeScript types — use optional chaining and defaults
+
+---
+
 ## General Code Patterns
 
 - Use `.maybeSingle()` not `.single()` for Supabase queries that may return no rows
 - Service role client (`SUPABASE_SERVICE_ROLE_KEY`) for API routes bypassing RLS
 - Tailwind v4: `shrink-0` not `flex-shrink-0`, `bg-linear-to-b` not `bg-gradient-to-b`
 - Never use `text-neutral-600` or darker on dark backgrounds — this is the single most common contrast bug
+- Time formatting: use `formatTime()` from `lib/hooks/useClockFormat` with the user's `clockFormat` preference — never hardcode 12h or 24h

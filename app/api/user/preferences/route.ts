@@ -19,7 +19,7 @@ export async function GET() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('dashboard_home, scan_auto_save_images, likes_public, show_done_counts')
+    .select('dashboard_home, scan_auto_save_images, likes_public, show_done_counts, clock_format')
     .eq('id', user.id)
     .single();
 
@@ -28,6 +28,7 @@ export async function GET() {
     scan_auto_save_images: profile?.scan_auto_save_images ?? false,
     likes_public: profile?.likes_public ?? false,
     show_done_counts: profile?.show_done_counts ?? false,
+    clock_format: profile?.clock_format ?? '12h',
   });
 }
 
@@ -58,6 +59,13 @@ export async function PATCH(request: Request) {
 
   if (body.show_done_counts !== undefined) {
     updates.show_done_counts = !!body.show_done_counts;
+  }
+
+  if (body.clock_format !== undefined) {
+    if (body.clock_format !== '12h' && body.clock_format !== '24h') {
+      return NextResponse.json({ error: 'clock_format must be "12h" or "24h"' }, { status: 400 });
+    }
+    updates.clock_format = body.clock_format;
   }
 
   if (Object.keys(updates).length === 0) {

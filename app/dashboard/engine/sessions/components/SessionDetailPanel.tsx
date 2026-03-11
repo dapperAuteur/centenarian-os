@@ -3,7 +3,8 @@
 
 import { FocusSession, Task } from '@/lib/types';
 import { X, Edit2, Trash2, Copy, Clock, DollarSign, Calendar, Tag, FileText } from 'lucide-react';
-import { formatDuration, formatDate, formatTime24 } from '@/lib/utils/sessionValidation';
+import { formatDuration, formatDate } from '@/lib/utils/sessionValidation';
+import { useClockFormat, formatTime } from '@/lib/hooks/useClockFormat';
 
 interface SessionDetailPanelProps {
   session: FocusSession | null;
@@ -28,6 +29,7 @@ export default function SessionDetailPanel({
   onDelete,
   onDuplicate,
 }: SessionDetailPanelProps) {
+  const clockFormat = useClockFormat();
   if (!session) return null;
 
   const task = session.task_id ? tasks.find(t => t.id === session.task_id) : null;
@@ -97,11 +99,11 @@ export default function SessionDetailPanel({
                 {formatDate(session.start_time)}
               </p>
               <p className="text-sm text-gray-600">
-                Started: {formatTime24(session.start_time)}
+                Started: {formatTime(session.start_time, clockFormat)}
               </p>
               {session.end_time && (
                 <p className="text-sm text-gray-600">
-                  Ended: {formatTime24(session.end_time)}
+                  Ended: {formatTime(session.end_time, clockFormat)}
                 </p>
               )}
             </div>

@@ -5,7 +5,8 @@
 import { useState } from 'react';
 import { FocusSession, Task } from '@/lib/types';
 import { Edit2, Trash2, ChevronUp, ChevronDown, StopCircle, Eye } from 'lucide-react';
-import { formatDuration, formatDate, formatTime24 } from '@/lib/utils/sessionValidation';
+import { formatDuration, formatDate } from '@/lib/utils/sessionValidation';
+import { useClockFormat, formatTime } from '@/lib/hooks/useClockFormat';
 
 interface SessionsTableProps {
   sessions: FocusSession[];
@@ -31,6 +32,7 @@ export default function SessionsTable({
   onDelete,
   onForceStop,
 }: SessionsTableProps) {
+  const clockFormat = useClockFormat();
   const [sortField, setSortField] = useState<SortField>('start_time');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
@@ -163,9 +165,9 @@ export default function SessionsTable({
                         {formatDate(session.start_time)}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {formatTime24(session.start_time)}
+                        {formatTime(session.start_time, clockFormat)}
                         {session.end_time && (
-                          <> - {formatTime24(session.end_time)}</>
+                          <> - {formatTime(session.end_time, clockFormat)}</>
                         )}
                       </div>
                     </td>
