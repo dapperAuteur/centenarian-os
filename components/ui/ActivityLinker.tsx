@@ -31,6 +31,29 @@ interface ActivityLinkerProps {
   entityId: string;
 }
 
+// Equipment-trip relationship options for tracking equipment status on trips
+const EQUIPMENT_TRIP_RELATIONSHIPS = [
+  { value: 'packing', label: 'Packing' },
+  { value: 'brought', label: 'Brought along' },
+  { value: 'bought', label: 'Bought on trip' },
+  { value: 'sold', label: 'Sold on trip' },
+  { value: 'lost', label: 'Lost on trip' },
+  { value: 'stolen', label: 'Stolen on trip' },
+  { value: 'broken', label: 'Broken on trip' },
+  { value: 'returned_without', label: 'Left behind' },
+] as const;
+
+const RELATIONSHIP_BADGE: Record<string, string> = {
+  packing: 'bg-blue-50 text-blue-700',
+  brought: 'bg-green-50 text-green-700',
+  bought: 'bg-emerald-50 text-emerald-700',
+  sold: 'bg-amber-50 text-amber-700',
+  lost: 'bg-red-50 text-red-700',
+  stolen: 'bg-red-50 text-red-700',
+  broken: 'bg-orange-50 text-orange-700',
+  returned_without: 'bg-gray-100 text-gray-600',
+};
+
 const TYPE_LABELS: Record<EntityType, string> = {
   task: 'Task',
   trip: 'Trip',
@@ -76,6 +99,13 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [addRelationship, setAddRelationship] = useState('');
+
+  // Show equipment relationship picker when linking equipment to trip or vice versa
+  const showRelationshipPicker = (
+    (entityType === 'trip' && addType === 'equipment') ||
+    (entityType === 'equipment' && addType === 'trip')
+  );
 
   const loadLinks = useCallback(async () => {
     setLoading(true);
@@ -321,12 +351,14 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
         source_id: entityId,
         target_type: addType,
         target_id: targetId,
+        relationship: addRelationship || null,
       }),
     });
     if (res.ok) {
       // Keep panel open + type selected for batch linking
       setSearchQuery('');
       setSearchResults([]);
+      setAddRelationship('');
       loadLinks();
     }
   };
@@ -364,10 +396,16 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
             >
               <span className="font-medium">{TYPE_LABELS[link.linked_type]}:</span>
               <span className="truncate max-w-48">{link.linked_display_name}</span>
+              {link.relationship && (
+                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${RELATIONSHIP_BADGE[link.relationship] || 'bg-gray-100 text-gray-600'}`}>
+                  {link.relationship.replace(/_/g, ' ')}
+                </span>
+              )}
               <button
                 type="button"
                 onClick={() => handleRemove(link.id)}
-                className="ml-0.5 opacity-60 hover:opacity-100 transition"
+                className="ml-0.5 opacity-60 hover:opacity-100 transition min-h-6 min-w-6 flex items-center justify-center"
+                aria-label={`Remove link to ${link.linked_display_name}`}
               >
                 <X className="w-3 h-3" />
               </button>
@@ -388,6 +426,7 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
                 setAddType(e.target.value as EntityType);
                 setSearchResults([]);
                 setSearchQuery('');
+                setAddRelationship('');
               }}
               className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs shrink-0"
             >
@@ -420,6 +459,21 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
               </div>
             )}
           </div>
+
+          {/* Equipment-trip relationship selector */}
+          {showRelationshipPicker && (
+            <select
+              value={addRelationship}
+              onChange={(e) => setAddRelationship(e.target.value)}
+              className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs min-h-11"
+              aria-label="Equipment status on trip"
+            >
+              <option value="">Status (optional)</option>
+              {EQUIPMENT_TRIP_RELATIONSHIPS.map((r) => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
+          )}
 
           {/* Search results */}
           {searchResults.length > 0 && (

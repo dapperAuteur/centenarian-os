@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, MapPin, Clock, Gauge, Flame, Leaf, DollarSign,
   Copy, Trash2, Loader2, Car, Bike, Footprints, Train, Plane,
+  FileText, CheckCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -15,6 +16,7 @@ interface Trip {
   id: string;
   mode: string;
   date: string;
+  end_date: string | null;
   origin: string | null;
   destination: string | null;
   distance_miles: number | null;
@@ -28,9 +30,18 @@ interface Trip {
   notes: string | null;
   tax_category: string | null;
   trip_category: string | null;
+  trip_status: string;
+  packing_notes: string | null;
   is_round_trip: boolean;
   vehicles: { id: string; nickname: string; type: string } | null;
 }
+
+const STATUS_BADGE: Record<string, { label: string; className: string }> = {
+  planned: { label: 'Planned', className: 'bg-blue-100 text-blue-700' },
+  in_progress: { label: 'In Progress', className: 'bg-amber-100 text-amber-700' },
+  completed: { label: 'Completed', className: 'bg-green-100 text-green-700' },
+  cancelled: { label: 'Cancelled', className: 'bg-gray-100 text-gray-500' },
+};
 
 interface LinkedTransaction {
   id: string;
@@ -131,6 +142,11 @@ export default function TripDetailPage() {
               </span>
               {trip.is_round_trip && (
                 <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">Round Trip</span>
+              )}
+              {trip.trip_status && trip.trip_status !== 'completed' && (
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[trip.trip_status]?.className ?? 'bg-gray-100 text-gray-600'}`}>
+                  {STATUS_BADGE[trip.trip_status]?.label ?? trip.trip_status}
+                </span>
               )}
               {trip.trip_category && (
                 <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
@@ -258,21 +274,75 @@ export default function TripDetailPage() {
         </Link>
       )}
 
+      {/* Packing Notes */}
+      {trip.packing_notes && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+          <h3 className="text-sm font-medium text-blue-800 mb-2">Packing Notes</h3>
+          <p className="text-sm text-blue-700 whitespace-pre-wrap">{trip.packing_notes}</p>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="bg-white border border-gray-200 rounded-2xl p-4">
         <h3 className="text-sm font-medium text-gray-700 mb-3">Actions</h3>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+          {trip.trip_status === 'planned' && (
+            <button
+              onClick={async () => {
+                setActionLoading('complete');
+                try {
+                  await offlineFetch('/api/travel/trips', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: trip.id, trip_status: 'completed' }),
+                  });
+                  load();
+                } finally { setActionLoading(null); }
+              }}
+              disabled={!!actionLoading}
+              className="flex items-center gap-1.5 px-3 min-h-11 bg-green-50 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100 disabled:opacity-50 transition"
+            >
+              <CheckCircle className="w-3.5 h-3.5" /> Mark Completed
+            </button>
+          )}
+          {trip.trip_status === 'planned' && (
+            <button
+              onClick={async () => {
+                setActionLoading('progress');
+                try {
+                  await offlineFetch('/api/travel/trips', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: trip.id, trip_status: 'in_progress' }),
+                  });
+                  load();
+                } finally { setActionLoading(null); }
+              }}
+              disabled={!!actionLoading}
+              className="flex items-center gap-1.5 px-3 min-h-11 bg-amber-50 text-amber-700 rounded-lg text-sm font-medium hover:bg-amber-100 disabled:opacity-50 transition"
+            >
+              Start Trip
+            </button>
+          )}
+          <a
+            href={`/api/travel/trips/${trip.id}/itinerary`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 min-h-11 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition"
+          >
+            <FileText className="w-3.5 h-3.5" /> Download Itinerary
+          </a>
           <button
             onClick={handleDuplicate}
             disabled={!!actionLoading}
-            className="flex items-center gap-1.5 px-3 py-2 bg-sky-50 text-sky-700 rounded-lg text-sm font-medium hover:bg-sky-100 disabled:opacity-50 transition"
+            className="flex items-center gap-1.5 px-3 min-h-11 bg-sky-50 text-sky-700 rounded-lg text-sm font-medium hover:bg-sky-100 disabled:opacity-50 transition"
           >
             <Copy className="w-3.5 h-3.5" /> Duplicate
           </button>
           <button
             onClick={handleDelete}
             disabled={!!actionLoading}
-            className="flex items-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 disabled:opacity-50 transition"
+            className="flex items-center gap-1.5 px-3 min-h-11 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 disabled:opacity-50 transition"
           >
             <Trash2 className="w-3.5 h-3.5" /> Delete
           </button>

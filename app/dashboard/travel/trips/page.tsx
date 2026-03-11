@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, Plus, Route } from 'lucide-react';
+import { ChevronLeft, Plus, Route, CalendarDays } from 'lucide-react';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import MultiStopForm from '@/components/travel/MultiStopForm';
@@ -15,6 +15,7 @@ interface Trip {
   id: string;
   mode: string;
   date: string;
+  end_date: string | null;
   origin: string | null;
   destination: string | null;
   distance_miles: number | null;
@@ -28,6 +29,8 @@ interface Trip {
   notes: string | null;
   tax_category: string | null;
   trip_category: string | null;
+  trip_status: string;
+  packing_notes: string | null;
   is_round_trip: boolean;
   vehicles?: { id: string; nickname: string } | null;
 }
@@ -56,6 +59,7 @@ const VEHICLE_TYPE_TO_MODE: Record<string, string> = {
 const BLANK_FORM = {
   mode: 'bike',
   date: new Date().toISOString().split('T')[0],
+  end_date: '',
   origin: '',
   destination: '',
   distance_miles: '',
@@ -67,7 +71,16 @@ const BLANK_FORM = {
   vehicle_id: '',
   tax_category: 'personal',
   trip_category: 'travel',
+  trip_status: 'completed',
+  packing_notes: '',
   is_round_trip: false,
+};
+
+const STATUS_BADGE: Record<string, { label: string; className: string }> = {
+  planned: { label: 'Planned', className: 'bg-blue-50 text-blue-700' },
+  in_progress: { label: 'In Progress', className: 'bg-amber-50 text-amber-700' },
+  completed: { label: 'Completed', className: 'bg-green-50 text-green-700' },
+  cancelled: { label: 'Cancelled', className: 'bg-gray-100 text-gray-500' },
 };
 
 function fmt(n: number | null | undefined, d = 1) {
@@ -84,6 +97,7 @@ export default function TripsPage() {
   const [modeFilter, setModeFilter] = useState('');
   const [taxFilter, setTaxFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(BLANK_FORM);
@@ -114,6 +128,7 @@ export default function TripsPage() {
       if (modeFilter) params.set('mode', modeFilter);
       if (taxFilter) params.set('tax_category', taxFilter);
       if (categoryFilter) params.set('trip_category', categoryFilter);
+      if (statusFilter) params.set('trip_status', statusFilter);
       const [tripsRes, vehiclesRes, routesRes] = await Promise.all([
         offlineFetch(`/api/travel/trips?${params}`),
         offlineFetch('/api/travel/vehicles'), // active only
@@ -135,7 +150,7 @@ export default function TripsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, modeFilter, taxFilter, categoryFilter]);
+  }, [page, modeFilter, taxFilter, categoryFilter, statusFilter]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -168,6 +183,7 @@ export default function TripsPage() {
     setForm({
       mode: t.mode,
       date: t.date,
+      end_date: t.end_date ?? '',
       origin: t.origin ?? '',
       destination: t.destination ?? '',
       distance_miles: t.distance_miles != null ? String(t.distance_miles) : '',
@@ -179,6 +195,8 @@ export default function TripsPage() {
       vehicle_id: t.vehicles?.id ?? '',
       tax_category: t.tax_category ?? 'personal',
       trip_category: t.trip_category ?? 'travel',
+      trip_status: t.trip_status ?? 'completed',
+      packing_notes: t.packing_notes ?? '',
       is_round_trip: t.is_round_trip ?? false,
     });
     setShowForm(true);
@@ -203,6 +221,9 @@ export default function TripsPage() {
         vehicle_id: form.vehicle_id || null,
         tax_category: form.tax_category || 'personal',
         trip_category: form.trip_category || 'travel',
+        trip_status: form.trip_status || 'completed',
+        end_date: form.end_date || null,
+        packing_notes: form.packing_notes || null,
         is_round_trip: form.is_round_trip,
       };
       const res = await offlineFetch('/api/travel/trips', {
@@ -241,8 +262,8 @@ export default function TripsPage() {
     if (res.ok) load();
   };
 
-  const clearFilters = () => { setModeFilter(''); setTaxFilter(''); setCategoryFilter(''); setPage(0); };
-  const hasFilter = modeFilter || taxFilter || categoryFilter;
+  const clearFilters = () => { setModeFilter(''); setTaxFilter(''); setCategoryFilter(''); setStatusFilter(''); setPage(0); };
+  const hasFilter = modeFilter || taxFilter || categoryFilter || statusFilter;
   const totalPages = Math.ceil(total / limit);
 
   return (
@@ -267,11 +288,18 @@ export default function TripsPage() {
             Multi-Stop
           </button>
           <button
+            onClick={() => { setForm({ ...BLANK_FORM, trip_status: 'planned', date: '' }); setEditingId(null); setShowForm(true); }}
+            className="flex items-center gap-1.5 px-3 py-2 border border-blue-600 text-blue-600 rounded-xl text-sm font-medium hover:bg-blue-50 transition"
+          >
+            <CalendarDays className="w-4 h-4" />
+            Plan Trip
+          </button>
+          <button
             onClick={() => { setForm(BLANK_FORM); setEditingId(null); setShowForm(true); }}
             className="flex items-center gap-1.5 px-3 py-2 bg-sky-600 text-white rounded-xl text-sm font-medium hover:bg-sky-700 transition"
           >
             <Plus className="w-4 h-4" />
-            Add Trip
+            Log Trip
           </button>
         </div>
       </div>
@@ -327,6 +355,27 @@ export default function TripsPage() {
             }`}
           >
             Fitness only
+          </button>
+          <span className="text-gray-300">|</span>
+          <button
+            onClick={() => { setStatusFilter(statusFilter === 'planned' ? '' : 'planned'); setPage(0); }}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
+              statusFilter === 'planned'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            Planned
+          </button>
+          <button
+            onClick={() => { setStatusFilter(statusFilter === 'in_progress' ? '' : 'in_progress'); setPage(0); }}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
+              statusFilter === 'in_progress'
+                ? 'bg-amber-500 text-white'
+                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            In Progress
           </button>
           {hasFilter && (
             <button
@@ -411,6 +460,11 @@ export default function TripsPage() {
                     <td className="px-4 py-3 text-right text-orange-600">{t.calories_burned ?? '—'}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
+                        {t.trip_status && t.trip_status !== 'completed' && (
+                          <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${STATUS_BADGE[t.trip_status]?.className ?? 'bg-gray-100 text-gray-600'}`}>
+                            {STATUS_BADGE[t.trip_status]?.label ?? t.trip_status}
+                          </span>
+                        )}
                         {t.is_round_trip && (
                           <span className="text-xs bg-sky-50 text-sky-600 px-1.5 py-0.5 rounded font-medium">
                             RT
@@ -521,9 +575,30 @@ export default function TripsPage() {
       )}
 
       {/* Add / Edit Trip Modal */}
-      <Modal isOpen={showForm} onClose={() => { setShowForm(false); setEditingId(null); setForm(BLANK_FORM); }} title={editingId ? 'Edit Trip' : 'Log Trip'} size="sm">
+      <Modal isOpen={showForm} onClose={() => { setShowForm(false); setEditingId(null); setForm(BLANK_FORM); }} title={editingId ? 'Edit Trip' : form.trip_status === 'planned' ? 'Plan Trip' : 'Log Trip'} size="sm">
         <form onSubmit={handleSave}>
           <div className="p-6 space-y-4">
+            {/* Status selector */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+              <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
+                {(['planned', 'in_progress', 'completed'] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, trip_status: s }))}
+                    className={`flex-1 py-2 font-medium transition capitalize ${form.trip_status === s
+                      ? s === 'planned' ? 'bg-blue-600 text-white'
+                        : s === 'in_progress' ? 'bg-amber-500 text-white'
+                        : 'bg-green-600 text-white'
+                      : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    {s === 'in_progress' ? 'In Progress' : s.charAt(0).toUpperCase() + s.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label htmlFor="trip-mode" className="block text-xs font-medium text-gray-600 mb-1">Mode</label>
@@ -539,7 +614,7 @@ export default function TripsPage() {
                 </select>
               </div>
               <div>
-                <label htmlFor="trip-date" className="block text-xs font-medium text-gray-600 mb-1">Date</label>
+                <label htmlFor="trip-date" className="block text-xs font-medium text-gray-600 mb-1">{form.trip_status === 'planned' ? 'Start Date' : 'Date'}</label>
                 <input
                   id="trip-date"
                   type="date" value={form.date}
@@ -550,6 +625,19 @@ export default function TripsPage() {
                 />
               </div>
             </div>
+            {/* End date for multi-day trips */}
+            {(form.trip_status === 'planned' || form.trip_status === 'in_progress' || form.end_date) && (
+              <div>
+                <label htmlFor="trip-end-date" className="block text-xs font-medium text-gray-600 mb-1">End Date (optional, for multi-day trips)</label>
+                <input
+                  id="trip-end-date"
+                  type="date" value={form.end_date}
+                  onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                  min={form.date}
+                />
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label htmlFor="trip-origin" className="block text-xs font-medium text-gray-600 mb-1">From</label>
@@ -721,23 +809,38 @@ export default function TripsPage() {
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
               />
             </div>
+            {/* Packing notes for planned trips */}
+            {(form.trip_status === 'planned' || form.trip_status === 'in_progress' || form.packing_notes) && (
+              <div>
+                <label htmlFor="trip-packing" className="block text-xs font-medium text-gray-600 mb-1">Packing Notes</label>
+                <textarea
+                  id="trip-packing"
+                  value={form.packing_notes}
+                  onChange={(e) => setForm((f) => ({ ...f, packing_notes: e.target.value }))}
+                  placeholder="Items to pack, things to remember..."
+                  rows={3}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                />
+                <p className="text-xs text-gray-400 mt-1">Link equipment below for a packing checklist</p>
+              </div>
+            )}
             {editingId && (
               <div className="pt-3 border-t border-gray-200">
                 <ActivityLinker entityType="trip" entityId={editingId} />
               </div>
             )}
           </div>
-          <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 pt-3 pb-3 flex gap-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+          <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 pt-3 pb-3 flex flex-col sm:flex-row gap-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
             <button
               type="button"
               onClick={() => { setShowForm(false); setEditingId(null); setForm(BLANK_FORM); }}
-              className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+              className="flex-1 border border-gray-200 rounded-xl min-h-11 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
             >
               Cancel
             </button>
             <button type="submit" disabled={saving}
-              className="flex-1 bg-sky-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-50">
-              {saving ? 'Saving...' : editingId ? 'Update Trip' : 'Save Trip'}
+              className={`flex-1 text-white rounded-xl min-h-11 text-sm font-medium transition disabled:opacity-50 ${form.trip_status === 'planned' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-sky-600 hover:bg-sky-700'}`}>
+              {saving ? 'Saving...' : editingId ? 'Update Trip' : form.trip_status === 'planned' ? 'Plan Trip' : 'Save Trip'}
             </button>
           </div>
         </form>

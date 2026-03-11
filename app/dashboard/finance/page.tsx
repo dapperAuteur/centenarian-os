@@ -381,7 +381,7 @@ export default function FinanceDashboardPage() {
           </div>
           <div className="flex gap-3 flex-wrap">
             {accounts.filter((a) => a.is_active).map((acct) => (
-              <div key={acct.id} className="bg-white border border-gray-200 rounded-xl px-4 py-3 min-w-[160px]">
+              <Link key={acct.id} href={`/dashboard/finance/transactions?account_id=${acct.id}&account_name=${encodeURIComponent(acct.name)}`} className="bg-white border border-gray-200 rounded-xl px-4 py-3 min-w-[160px] hover:border-fuchsia-300 hover:shadow-sm transition-all cursor-pointer block">
                 <p className="text-xs text-gray-500 mb-0.5">
                   {ACCOUNT_TYPE_LABEL[acct.account_type] ?? acct.account_type}
                   {acct.last_four && <span className="ml-1">··{acct.last_four}</span>}
@@ -390,7 +390,7 @@ export default function FinanceDashboardPage() {
                 <p className={`text-base font-bold mt-0.5 ${acct.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
                   {acct.balance < 0 ? '-' : ''}${Math.abs(acct.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </p>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
