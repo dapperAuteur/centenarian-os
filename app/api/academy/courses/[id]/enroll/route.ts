@@ -35,7 +35,6 @@ export async function POST(request: NextRequest, { params }: Params) {
   const { id: courseId } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const db = getDb();
 
@@ -48,6 +47,19 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   if (courseErr || !course || !course.is_published) {
     return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+  }
+
+  const isFree = course.price_type === 'free' || Number(course.price) === 0;
+
+  // Unauthenticated users: free courses grant guest access, paid courses prompt login
+  if (!user) {
+    if (isFree) {
+      return NextResponse.json({ enrolled: true, guest: true });
+    }
+    return NextResponse.json(
+      { error: 'Login required to enroll', login_required: true },
+      { status: 401 },
+    );
   }
 
   // Fetch teacher's Connect info separately (may not exist for platform teachers)

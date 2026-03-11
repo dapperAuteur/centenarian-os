@@ -108,7 +108,11 @@ export default function LessonPlayerPage() {
       offlineFetch(`/api/academy/courses/${courseId}`).then((r) => r.json()),
     ]).then(([lessonData, courseData]) => {
       if (lessonData.locked) {
-        router.push(`/academy/${courseId}`);
+        if (lessonData.login_required) {
+          window.location.href = `/login?from=${encodeURIComponent(`/academy/${courseId}/lessons/${lessonId}`)}`;
+        } else {
+          router.push(`/academy/${courseId}`);
+        }
         return;
       }
       setLesson(lessonData);

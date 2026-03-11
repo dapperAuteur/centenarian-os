@@ -46,7 +46,8 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const supabase = createClient();
 
-  const dashboardRedirect = '/dashboard/planner';
+  const fromParam = searchParams.get('from');
+  const dashboardRedirect = fromParam && fromParam.startsWith('/') ? fromParam : '/dashboard/planner';
 
   // Handle middleware redirect with ?mfa=pending
   useEffect(() => {

@@ -32,8 +32,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   if (error || !lesson) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const { data: course } = await db.from('courses').select('teacher_id, is_sequential').eq('id', courseId).single();
+  const { data: course } = await db.from('courses').select('teacher_id, is_sequential, price_type, price').eq('id', courseId).single();
   const isOwner = user?.id === course?.teacher_id || user?.email === process.env.ADMIN_EMAIL;
+  const isFreeCourse = course?.price_type === 'free' || Number(course?.price) === 0;
 
   let enrolled = false;
   if (user && !isOwner) {
@@ -46,8 +47,11 @@ export async function GET(_req: NextRequest, { params }: Params) {
     enrolled = data?.status === 'active';
   }
 
-  const canAccess = isOwner || enrolled || lesson.is_free_preview;
+  const canAccess = isOwner || enrolled || lesson.is_free_preview || isFreeCourse;
   if (!canAccess) {
+    if (!user) {
+      return NextResponse.json({ error: 'Login required to access this lesson', locked: true, login_required: true }, { status: 403 });
+    }
     return NextResponse.json({ error: 'Enroll to access this lesson', locked: true }, { status: 403 });
   }
 
