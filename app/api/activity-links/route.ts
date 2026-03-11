@@ -10,6 +10,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 const VALID_TYPES = new Set([
   'task', 'trip', 'route', 'transaction', 'recipe',
   'fuel_log', 'maintenance', 'invoice', 'workout', 'equipment', 'focus_session', 'exercise', 'daily_log',
+  'media_item', 'podcast_episode', 'blog_post',
 ]);
 
 function getDb() {
@@ -94,6 +95,22 @@ async function resolveDisplayName(
       const { data } = await db.from('daily_logs').select('date, energy_rating').eq('id', entityId).maybeSingle();
       if (!data) return 'Daily Log';
       return `Daily Log (${data.date})${data.energy_rating ? ` — energy ${data.energy_rating}/5` : ''}`;
+    }
+    case 'media_item': {
+      const { data } = await db.from('media_items').select('title, media_type, creator').eq('id', entityId).maybeSingle();
+      if (!data) return 'Media';
+      const typeLabel = data.media_type?.replace('_', ' ') || '';
+      return data.creator ? `${data.title} — ${data.creator} (${typeLabel})` : `${data.title} (${typeLabel})`;
+    }
+    case 'podcast_episode': {
+      const { data } = await db.from('podcast_episodes').select('title, episode_number, season_number').eq('id', entityId).maybeSingle();
+      if (!data) return 'Episode';
+      const ep = data.episode_number ? `S${data.season_number || 1}E${data.episode_number}` : '';
+      return ep ? `${data.title} (${ep})` : data.title;
+    }
+    case 'blog_post': {
+      const { data } = await db.from('blog_posts').select('title').eq('id', entityId).maybeSingle();
+      return data?.title || 'Blog Post';
     }
     default:
       return entityType;

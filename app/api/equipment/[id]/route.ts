@@ -65,7 +65,7 @@ export async function PATCH(
     'name', 'category_id', 'brand', 'model', 'serial_number',
     'purchase_date', 'purchase_price', 'current_value', 'warranty_expires',
     'condition', 'image_url', 'image_public_id', 'notes', 'is_active',
-    'transaction_id', 'catalog_id', 'ownership_type',
+    'transaction_id', 'catalog_id', 'ownership_type', 'visibility',
   ] as const;
 
   const updates: Record<string, unknown> = {};

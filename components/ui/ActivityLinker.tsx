@@ -12,7 +12,7 @@ import { offlineFetch } from '@/lib/offline/offline-fetch';
 type EntityType =
   | 'task' | 'trip' | 'route' | 'transaction' | 'recipe'
   | 'fuel_log' | 'maintenance' | 'invoice' | 'workout' | 'equipment' | 'focus_session' | 'exercise' | 'daily_log'
-  | 'media_item' | 'podcast_episode';
+  | 'media_item' | 'podcast_episode' | 'blog_post';
 
 interface ActivityLink {
   id: string;
@@ -71,6 +71,7 @@ const TYPE_LABELS: Record<EntityType, string> = {
   daily_log: 'Daily Log',
   media_item: 'Media',
   podcast_episode: 'Podcast Episode',
+  blog_post: 'Blog Post',
 };
 
 const TYPE_COLORS: Record<EntityType, string> = {
@@ -89,6 +90,7 @@ const TYPE_COLORS: Record<EntityType, string> = {
   daily_log: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   media_item: 'bg-purple-50 text-purple-700 border-purple-200',
   podcast_episode: 'bg-pink-50 text-pink-700 border-pink-200',
+  blog_post: 'bg-emerald-50 text-emerald-700 border-emerald-200',
 };
 
 // Linkable types (exclude the current entity type)
@@ -332,6 +334,56 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
               .map((w) => ({
                 id: w.id,
                 display_name: `${w.name || 'Workout'} (${w.date})${w.duration_minutes ? ` ${w.duration_minutes}min` : ''}`,
+              }));
+          }
+          break;
+        }
+        case 'media_item': {
+          const res = await offlineFetch(`/api/media?search=${encodeURIComponent(q)}&limit=10`);
+          if (res.ok) {
+            const d = await res.json();
+            results = (d.items || [])
+              .map((m: Record<string, unknown>) => ({
+                id: String(m.id),
+                display_name: `${m.title}${m.creator ? ` — ${m.creator}` : ''} (${String(m.media_type || '').replace('_', ' ')})`,
+              }));
+          }
+          break;
+        }
+        case 'podcast_episode': {
+          const res = await offlineFetch('/api/podcasts?limit=20');
+          if (res.ok) {
+            const d = await res.json();
+            results = (d.episodes || [])
+              .filter((e: Record<string, unknown>) => {
+                const search = `${e.title || ''} ${e.description || ''}`.toLowerCase();
+                return search.includes(q);
+              })
+              .slice(0, 10)
+              .map((e: Record<string, unknown>) => {
+                const ep = e.episode_number ? `S${e.season_number || 1}E${e.episode_number}` : '';
+                return {
+                  id: String(e.id),
+                  display_name: ep ? `${e.title} (${ep})` : String(e.title),
+                };
+              });
+          }
+          break;
+        }
+        case 'blog_post': {
+          const res = await offlineFetch('/api/blog?limit=20');
+          if (res.ok) {
+            const d = await res.json();
+            const posts = d.posts || d || [];
+            results = (Array.isArray(posts) ? posts : [])
+              .filter((p: Record<string, unknown>) => {
+                const search = `${p.title || ''}`.toLowerCase();
+                return search.includes(q);
+              })
+              .slice(0, 10)
+              .map((p: Record<string, unknown>) => ({
+                id: String(p.id),
+                display_name: String(p.title || 'Blog Post'),
               }));
           }
           break;

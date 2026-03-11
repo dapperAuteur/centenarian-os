@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, Star, Trash2, Loader2, ExternalLink, Plus, Heart,
+  ArrowLeft, Star, Trash2, Loader2, ExternalLink, Plus, Heart, Share2, Globe, Lock,
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import ActivityLinker from '@/components/ui/ActivityLinker';
@@ -84,6 +84,13 @@ export default function MediaDetailPage() {
   const [notes, setNotes] = useState<MediaNote[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Social state
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [shareCount, setShareCount] = useState(0);
+  const [visibility, setVisibility] = useState('private');
+  const [copiedLink, setCopiedLink] = useState(false);
+
   // Note form
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [noteForm, setNoteForm] = useState({ title: '', content: '', note_type: 'general' });
@@ -92,17 +99,25 @@ export default function MediaDetailPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [itemRes, notesRes] = await Promise.all([
+      const [itemRes, notesRes, likeRes] = await Promise.all([
         offlineFetch(`/api/media/${id}`),
         offlineFetch(`/api/media/${id}/notes`),
+        offlineFetch(`/api/social/likes?entity_type=media_item&entity_id=${id}`),
       ]);
       if (itemRes.ok) {
         const d = await itemRes.json();
         setItem(d.item || null);
+        setShareCount(d.item?.share_count ?? 0);
+        setVisibility(d.item?.visibility ?? 'private');
       }
       if (notesRes.ok) {
         const d = await notesRes.json();
         setNotes(d.notes || []);
+      }
+      if (likeRes.ok) {
+        const d = await likeRes.json();
+        setLiked(!!d.liked);
+        setLikeCount(d.like_count ?? 0);
       }
     } catch { /* handled */ }
     finally { setLoading(false); }
@@ -156,6 +171,44 @@ export default function MediaDetailPage() {
     if (!confirm('Delete this note?')) return;
     await offlineFetch(`/api/media/${id}/notes/${noteId}`, { method: 'DELETE' });
     load();
+  };
+
+  const handleToggleVisibility = async () => {
+    const newVis = visibility === 'public' ? 'private' : 'public';
+    const res = await offlineFetch(`/api/media/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visibility: newVis }),
+    });
+    if (res.ok) setVisibility(newVis);
+  };
+
+  const handleLike = async () => {
+    const res = await offlineFetch('/api/social/likes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entity_type: 'media_item', entity_id: id }),
+    });
+    if (res.ok) {
+      const d = await res.json();
+      setLiked(d.liked);
+      setLikeCount(d.like_count);
+    }
+  };
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/dashboard/discover/media/${id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch { /* fallback ignored */ }
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+    await offlineFetch('/api/social/shares', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entity_type: 'media_item', entity_id: id, platform: 'link' }),
+    });
+    setShareCount((c) => c + 1);
   };
 
   if (loading) {
@@ -317,6 +370,28 @@ export default function MediaDetailPage() {
           <button onClick={handleDelete}
             className="flex items-center gap-1.5 px-3 min-h-11 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition">
             <Trash2 className="w-3.5 h-3.5" /> Delete
+          </button>
+          <button onClick={handleToggleVisibility}
+            aria-label={visibility === 'public' ? 'Make private' : 'Make public'}
+            className={`flex items-center gap-1.5 px-3 min-h-11 rounded-lg text-sm font-medium transition ${
+              visibility === 'public' ? 'bg-fuchsia-50 text-fuchsia-600' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+            }`}>
+            {visibility === 'public' ? <Globe className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+            {visibility === 'public' ? 'Public' : 'Private'}
+          </button>
+          <button onClick={handleLike}
+            aria-label={liked ? 'Unlike' : 'Like'}
+            className={`flex items-center gap-1.5 px-3 min-h-11 rounded-lg text-sm font-medium transition ${
+              liked ? 'bg-red-50 text-red-500' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+            }`}>
+            <Heart className={`w-3.5 h-3.5 ${liked ? 'fill-current' : ''}`} />
+            {likeCount}
+          </button>
+          <button onClick={handleShare}
+            aria-label="Share"
+            className="flex items-center gap-1.5 px-3 min-h-11 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium transition">
+            <Share2 className="w-3.5 h-3.5" />
+            {copiedLink ? 'Copied!' : shareCount}
           </button>
         </div>
       </div>

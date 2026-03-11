@@ -102,6 +102,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Recipes', href: '/dashboard/recipes', icon: ChefHat, paid: false },
       { label: 'Academy', href: '/academy', icon: GraduationCap, paid: false },
       { label: 'Live', href: '/live', icon: Radio, paid: false },
+      { label: 'Discover', href: '/dashboard/discover', icon: Sparkles, paid: false },
     ],
   },
   {
