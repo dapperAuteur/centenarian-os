@@ -18,6 +18,10 @@ function getDb() {
 }
 
 function isPlatformTeacherEmail(email: string): boolean {
+  // Admin is always a platform teacher (payments go to platform account)
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  if (adminEmail && email.toLowerCase() === adminEmail) return true;
+
   const platformEmails = (process.env.PLATFORM_TEACHER_EMAILS ?? '')
     .split(',')
     .map((e) => e.trim().toLowerCase())
@@ -31,20 +35,39 @@ export async function POST(request: NextRequest, { params }: Params) {
   const { id: courseId } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const db = getDb();
 
-  // Get course details (left-join teacher_profiles so missing row doesn't break .single())
-  const { data: course } = await db
+  // Get course details — separate query for teacher_profiles since there's no direct FK from courses
+  const { data: course, error: courseErr } = await db
     .from('courses')
-    .select('id, title, price, price_type, is_published, teacher_id, stripe_price_id, stripe_product_id, trial_period_days, teacher_profiles!left(stripe_connect_account_id, stripe_connect_onboarded)')
+    .select('id, title, price, price_type, is_published, teacher_id, stripe_price_id, stripe_product_id, trial_period_days')
     .eq('id', courseId)
     .maybeSingle();
 
-  if (!course || !course.is_published) {
+  if (courseErr || !course || !course.is_published) {
     return NextResponse.json({ error: 'Course not found' }, { status: 404 });
   }
+
+  const isFree = course.price_type === 'free' || Number(course.price) === 0;
+
+  // Unauthenticated users: free courses grant guest access, paid courses prompt login
+  if (!user) {
+    if (isFree) {
+      return NextResponse.json({ enrolled: true, guest: true });
+    }
+    return NextResponse.json(
+      { error: 'Login required to enroll', login_required: true },
+      { status: 401 },
+    );
+  }
+
+  // Fetch teacher's Connect info separately (may not exist for platform teachers)
+  const { data: teacherProfile } = await db
+    .from('teacher_profiles')
+    .select('stripe_connect_account_id, stripe_connect_onboarded')
+    .eq('user_id', course.teacher_id)
+    .maybeSingle();
 
   // Block teacher from enrolling in own course
   if (course.teacher_id === user.id) {
@@ -160,9 +183,6 @@ export async function POST(request: NextRequest, { params }: Params) {
   const { data: { user: teacherAuthUser } } = await db.auth.admin.getUserById(course.teacher_id);
   const isPlatformTeacher = !!teacherAuthUser?.email && isPlatformTeacherEmail(teacherAuthUser.email);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const teacherProfile = (course as any).teacher_profiles;
-
   // Third-party teachers must have completed Connect onboarding
   if (!isPlatformTeacher && (!teacherProfile?.stripe_connect_account_id || !teacherProfile?.stripe_connect_onboarded)) {
     return NextResponse.json({ error: 'Teacher has not set up payouts yet' }, { status: 503 });
@@ -213,11 +233,11 @@ export async function POST(request: NextRequest, { params }: Params) {
         // Create product + price on teacher's Connect account
         const product = await stripe.products.create(
           { name: course.title, metadata: { course_id: courseId } },
-          { stripeAccount: teacherProfile.stripe_connect_account_id },
+          { stripeAccount: teacherProfile!.stripe_connect_account_id },
         );
         const price = await stripe.prices.create(
           { unit_amount: priceInCents, currency: 'usd', product: product.id },
-          { stripeAccount: teacherProfile.stripe_connect_account_id },
+          { stripeAccount: teacherProfile!.stripe_connect_account_id },
         );
         priceId = price.id;
         await db.from('courses').update({ stripe_product_id: product.id, stripe_price_id: priceId }).eq('id', courseId);
@@ -242,12 +262,12 @@ export async function POST(request: NextRequest, { params }: Params) {
       line_items: [{ price: priceId, quantity: 1 }],
       payment_intent_data: {
         application_fee_amount: applicationFee,
-        transfer_data: { destination: teacherProfile.stripe_connect_account_id },
+        transfer_data: { destination: teacherProfile!.stripe_connect_account_id },
       },
       success_url: `${baseUrl}/academy/${courseId}?enrolled=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/academy/${courseId}`,
       metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment', attempt_number: String(attemptNumber) },
-    }, { stripeAccount: teacherProfile.stripe_connect_account_id });
+    }, { stripeAccount: teacherProfile!.stripe_connect_account_id });
 
     return NextResponse.json({ url: session.url });
   }
@@ -269,11 +289,11 @@ export async function POST(request: NextRequest, { params }: Params) {
     } else {
       const product = await stripe.products.create(
         { name: course.title, metadata: { course_id: courseId } },
-        { stripeAccount: teacherProfile.stripe_connect_account_id },
+        { stripeAccount: teacherProfile!.stripe_connect_account_id },
       );
       const price = await stripe.prices.create(
         { unit_amount: priceInCents, currency: 'usd', product: product.id, recurring: { interval: 'month' } },
-        { stripeAccount: teacherProfile.stripe_connect_account_id },
+        { stripeAccount: teacherProfile!.stripe_connect_account_id },
       );
       priceId = price.id;
       await db.from('courses').update({ stripe_product_id: product.id, stripe_price_id: priceId }).eq('id', courseId);
@@ -307,7 +327,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     line_items: [{ price: priceId, quantity: 1 }],
     subscription_data: {
       application_fee_percent: feePercent,
-      transfer_data: { destination: teacherProfile.stripe_connect_account_id },
+      transfer_data: { destination: teacherProfile!.stripe_connect_account_id },
       ...(trialDays > 0 && {
         trial_period_days: trialDays,
         trial_settings: { end_behavior: { missing_payment_method: 'cancel' } },
@@ -316,7 +336,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     success_url: `${baseUrl}/academy/${courseId}?enrolled=true&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/academy/${courseId}`,
     metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment', attempt_number: String(attemptNumber) },
-  }, { stripeAccount: teacherProfile.stripe_connect_account_id });
+  }, { stripeAccount: teacherProfile!.stripe_connect_account_id });
 
   return NextResponse.json({ url: session.url });
 }

@@ -193,6 +193,38 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     updates.trial_period_days = Math.max(0, Math.min(30, Number(updates.trial_period_days) || 0));
   }
 
+  // Prevent publishing paid courses if teacher hasn't set up payouts (unless platform teacher)
+  if (body.is_published === true && !course.is_published) {
+    const isPaidCourse = (updates.price_type ?? body.price_type ?? 'free') !== 'free'
+      || (Number(updates.price ?? body.price ?? 0) > 0);
+
+    if (isPaidCourse) {
+      const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+      const isPlatform = !!adminEmail && user.email?.toLowerCase() === adminEmail;
+
+      if (!isPlatform) {
+        const platformEmails = (process.env.PLATFORM_TEACHER_EMAILS ?? '')
+          .split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+        const isInPlatformList = user.email && platformEmails.includes(user.email.toLowerCase());
+
+        if (!isInPlatformList) {
+          const { data: tp } = await db
+            .from('teacher_profiles')
+            .select('stripe_connect_account_id, stripe_connect_onboarded')
+            .eq('user_id', course.teacher_id)
+            .maybeSingle();
+
+          if (!tp?.stripe_connect_account_id || !tp?.stripe_connect_onboarded) {
+            return NextResponse.json(
+              { error: 'Set up payouts before publishing a paid course. Go to Teaching → Payouts to connect your Stripe account.' },
+              { status: 400 },
+            );
+          }
+        }
+      }
+    }
+  }
+
   const { data, error } = await db
     .from('courses')
     .update({ ...updates, updated_at: new Date().toISOString() })

@@ -240,7 +240,13 @@ function CourseDetailContent() {
     try {
       const r = await offlineFetch(`/api/academy/courses/${courseId}/enroll`, { method: 'POST' });
       const d = await r.json();
-      if (!r.ok) throw new Error(d.error ?? 'Failed to enroll');
+      if (!r.ok) {
+        if (d.login_required) {
+          window.location.href = `/login?from=${encodeURIComponent(`/academy/${courseId}`)}`;
+          return;
+        }
+        throw new Error(d.error ?? 'Failed to enroll');
+      }
       if (d.url) {
         window.location.href = d.url;
       } else {
@@ -470,7 +476,8 @@ function CourseDetailContent() {
                   </div>
                   <div className="divide-y divide-gray-800">
                     {modLessons.map((lesson) => {
-                      const canAccess = (course.enrolled || lesson.is_free_preview) && !lesson.locked;
+                      const isFree = course.price_type === 'free' || Number(course.price) === 0;
+                      const canAccess = (course.enrolled || lesson.is_free_preview || isFree) && !lesson.locked;
                       const lessonHref = `/academy/${courseId}/lessons/${lesson.id}`;
                       return (
                         <div key={lesson.id} className="flex items-center gap-3 px-4 sm:px-5 py-3">
@@ -484,7 +491,7 @@ function CourseDetailContent() {
                               className="flex-1 text-sm min-w-0 text-gray-200 hover:text-fuchsia-300 transition"
                             >
                               {lesson.title}
-                              {lesson.is_free_preview && !course.enrolled && (
+                              {lesson.is_free_preview && !course.enrolled && !isFree && (
                                 <span className="ml-2 text-xs text-fuchsia-400">Free preview</span>
                               )}
                               {lesson.is_new && (
@@ -808,6 +815,8 @@ function CourseDetailContent() {
                   const allRequiredMet = requiredPrereqs.every((p) => p.completed);
                   const canEnroll = allRequiredMet || course.has_prerequisite_override;
 
+                  const isFree = course.price_type === 'free' || Number(course.price) === 0;
+
                   if (course.enrolled) {
                     return (
                       <Link
@@ -815,6 +824,18 @@ function CourseDetailContent() {
                         className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-fuchsia-600 text-white rounded-xl font-semibold hover:bg-fuchsia-700 transition min-h-11"
                       >
                         <Play className="w-4 h-4" /> Continue Learning
+                      </Link>
+                    );
+                  }
+
+                  // Free courses — go straight to first lesson without enrollment
+                  if (isFree && allLessons.length > 0) {
+                    return (
+                      <Link
+                        href={`/academy/${courseId}/lessons/${allLessons[0].id}`}
+                        className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-fuchsia-600 text-white rounded-xl font-semibold hover:bg-fuchsia-700 transition min-h-11"
+                      >
+                        <Play className="w-4 h-4" /> Start Learning
                       </Link>
                     );
                   }
