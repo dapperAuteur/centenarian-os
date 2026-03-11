@@ -179,3 +179,4 @@ files/a-google-calendar.ical/Other_awews.com_ferbj1m4c5smb6redjr1dp8edo\@group.c
 files/bugs/security-risks.md
 
 plans/
+.env*.local
