@@ -77,6 +77,25 @@ interface LegInput {
   dest_lat?: number | null;
   dest_lng?: number | null;
   date?: string | null; // per-leg date for multi-day trips
+  // Booking details
+  confirmation_number?: string | null;
+  booking_reference?: string | null;
+  carrier_name?: string | null;
+  check_in_date?: string | null;
+  check_out_date?: string | null;
+  pickup_address?: string | null;
+  return_address?: string | null;
+  pickup_time?: string | null;
+  return_time?: string | null;
+  seat_assignment?: string | null;
+  terminal?: string | null;
+  gate?: string | null;
+  booking_url?: string | null;
+  accommodation_name?: string | null;
+  accommodation_address?: string | null;
+  room_type?: string | null;
+  loyalty_program?: string | null;
+  loyalty_number?: string | null;
 }
 
 export async function POST(request: NextRequest) {
@@ -85,7 +104,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { name, date, legs, notes, is_round_trip, save_as_template, trip_status, packing_notes } = body;
+  const { name, date, legs, notes, is_round_trip, save_as_template, trip_status, packing_notes, budget_amount, brand_id, visibility } = body;
 
   if (!date) return NextResponse.json({ error: 'date is required' }, { status: 400 });
   if (!Array.isArray(legs) || legs.length < 2) {
@@ -107,6 +126,9 @@ export async function POST(request: NextRequest) {
       notes: notes?.trim() || null,
       trip_status: resolvedStatus,
       packing_notes: packing_notes?.trim() || null,
+      budget_amount: budget_amount ? parseFloat(budget_amount) : null,
+      brand_id: brand_id || null,
+      visibility: visibility || 'private',
     })
     .select()
     .single();
@@ -175,6 +197,25 @@ export async function POST(request: NextRequest) {
         route_id: route.id,
         leg_order: i,
         trip_status: resolvedStatus,
+        // Booking details
+        confirmation_number: leg.confirmation_number || null,
+        booking_reference: leg.booking_reference || null,
+        carrier_name: leg.carrier_name || null,
+        check_in_date: leg.check_in_date || null,
+        check_out_date: leg.check_out_date || null,
+        pickup_address: leg.pickup_address || null,
+        return_address: leg.return_address || null,
+        pickup_time: leg.pickup_time || null,
+        return_time: leg.return_time || null,
+        seat_assignment: leg.seat_assignment || null,
+        terminal: leg.terminal || null,
+        gate: leg.gate || null,
+        booking_url: leg.booking_url || null,
+        accommodation_name: leg.accommodation_name || null,
+        accommodation_address: leg.accommodation_address || null,
+        room_type: leg.room_type || null,
+        loyalty_program: leg.loyalty_program || null,
+        loyalty_number: leg.loyalty_number || null,
       })
       .select()
       .single();

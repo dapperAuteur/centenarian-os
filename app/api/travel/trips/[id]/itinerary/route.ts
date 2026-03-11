@@ -155,6 +155,20 @@ export async function GET(
           ${t.co2_kg ? `<span>${Number(t.co2_kg).toFixed(1)} kg CO\u2082</span>` : ''}
         </div>
         ${t.notes ? `<div class="leg-notes">${String(t.notes)}</div>` : ''}
+        ${(t.confirmation_number || t.carrier_name || t.seat_assignment || t.accommodation_name || t.pickup_address) ? `
+        <div class="booking-details">
+          ${t.confirmation_number ? `<span class="booking-item"><strong>Conf #</strong> ${t.confirmation_number}</span>` : ''}
+          ${t.carrier_name ? `<span class="booking-item"><strong>Carrier:</strong> ${t.carrier_name}</span>` : ''}
+          ${t.seat_assignment ? `<span class="booking-item"><strong>Seat:</strong> ${t.seat_assignment}</span>` : ''}
+          ${t.terminal ? `<span class="booking-item"><strong>Terminal:</strong> ${t.terminal}</span>` : ''}
+          ${t.gate ? `<span class="booking-item"><strong>Gate:</strong> ${t.gate}</span>` : ''}
+          ${t.accommodation_name ? `<span class="booking-item"><strong>Hotel:</strong> ${t.accommodation_name}${t.room_type ? ` (${t.room_type})` : ''}</span>` : ''}
+          ${t.accommodation_address ? `<span class="booking-item">${t.accommodation_address}</span>` : ''}
+          ${t.check_in_date ? `<span class="booking-item"><strong>Check-in:</strong> ${fmtDate(String(t.check_in_date))}</span>` : ''}
+          ${t.check_out_date ? `<span class="booking-item"><strong>Check-out:</strong> ${fmtDate(String(t.check_out_date))}</span>` : ''}
+          ${t.pickup_address ? `<span class="booking-item"><strong>Pickup:</strong> ${t.pickup_address}${t.pickup_time ? ` at ${t.pickup_time}` : ''}</span>` : ''}
+          ${t.return_address ? `<span class="booking-item"><strong>Return:</strong> ${t.return_address}${t.return_time ? ` at ${t.return_time}` : ''}</span>` : ''}
+        </div>` : ''}
       </div>`;
   }).join('\n');
 
@@ -219,6 +233,8 @@ export async function GET(
   .leg-route { font-size: 1rem; margin-bottom: 6px; }
   .leg-stats { display: flex; gap: 12px; font-size: 0.8rem; color: #6b7280; flex-wrap: wrap; }
   .leg-notes { font-size: 0.8rem; color: #9ca3af; margin-top: 6px; font-style: italic; }
+  .booking-details { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e5e7eb; display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  .booking-item { font-size: 0.78rem; color: #6b7280; }
   .packing-notes { font-size: 0.85rem; color: #374151; margin-bottom: 10px; }
   .equipment-list { list-style: none; padding: 0; }
   .equipment-list li { padding: 6px 0; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }

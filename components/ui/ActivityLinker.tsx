@@ -11,7 +11,8 @@ import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 type EntityType =
   | 'task' | 'trip' | 'route' | 'transaction' | 'recipe'
-  | 'fuel_log' | 'maintenance' | 'invoice' | 'workout' | 'equipment' | 'focus_session' | 'exercise' | 'daily_log';
+  | 'fuel_log' | 'maintenance' | 'invoice' | 'workout' | 'equipment' | 'focus_session' | 'exercise' | 'daily_log'
+  | 'media_item' | 'podcast_episode';
 
 interface ActivityLink {
   id: string;
@@ -68,6 +69,8 @@ const TYPE_LABELS: Record<EntityType, string> = {
   focus_session: 'Focus Session',
   exercise: 'Exercise',
   daily_log: 'Daily Log',
+  media_item: 'Media',
+  podcast_episode: 'Podcast Episode',
 };
 
 const TYPE_COLORS: Record<EntityType, string> = {
@@ -84,6 +87,8 @@ const TYPE_COLORS: Record<EntityType, string> = {
   focus_session: 'bg-orange-50 text-orange-700 border-orange-200',
   exercise: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
   daily_log: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  media_item: 'bg-purple-50 text-purple-700 border-purple-200',
+  podcast_episode: 'bg-pink-50 text-pink-700 border-pink-200',
 };
 
 // Linkable types (exclude the current entity type)

@@ -1,0 +1,3 @@
+title,creator,media_type,status,rating,start_date,end_date,genre,tags,cover_image_url,external_url,current_progress,total_length,season_number,episode_number,year_released,source_platform,notes,favorite,visibility
+The Great Gatsby,F. Scott Fitzgerald,book,completed,5,2024-01-15,2024-02-01,fiction;classic,,,,page 180,180,,,,Kindle,Amazing read,true,private
+Breaking Bad,,tv_show,in_progress,5,2024-03-01,,drama;thriller,binge-worthy,,,S3E5,,3,5,2008,Netflix,,false,private

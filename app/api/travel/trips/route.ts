@@ -90,6 +90,15 @@ export async function POST(request: NextRequest) {
     is_round_trip, job_id,
     origin_lat, origin_lng, dest_lat, dest_lng,
     trip_status, end_date, packing_notes,
+    // Booking details
+    confirmation_number, booking_reference, carrier_name,
+    check_in_date, check_out_date,
+    pickup_address, return_address, pickup_time, return_time,
+    seat_assignment, terminal, gate, booking_url,
+    accommodation_name, accommodation_address, room_type,
+    loyalty_program, loyalty_number,
+    // Budget & sharing
+    budget_amount, brand_id, visibility,
   } = body;
 
   if (!mode || !date) {
@@ -154,6 +163,29 @@ export async function POST(request: NextRequest) {
       trip_status: trip_status || 'completed',
       end_date: end_date || null,
       packing_notes: packing_notes || null,
+      // Booking details
+      confirmation_number: confirmation_number || null,
+      booking_reference: booking_reference || null,
+      carrier_name: carrier_name || null,
+      check_in_date: check_in_date || null,
+      check_out_date: check_out_date || null,
+      pickup_address: pickup_address || null,
+      return_address: return_address || null,
+      pickup_time: pickup_time || null,
+      return_time: return_time || null,
+      seat_assignment: seat_assignment || null,
+      terminal: terminal || null,
+      gate: gate || null,
+      booking_url: booking_url || null,
+      accommodation_name: accommodation_name || null,
+      accommodation_address: accommodation_address || null,
+      room_type: room_type || null,
+      loyalty_program: loyalty_program || null,
+      loyalty_number: loyalty_number || null,
+      // Budget & sharing
+      budget_amount: budget_amount ? parseFloat(budget_amount) : null,
+      brand_id: brand_id || null,
+      visibility: visibility || 'private',
     })
     .select()
     .single();
