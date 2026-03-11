@@ -5,10 +5,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { NAV_GROUPS } from '@/components/nav/NavConfig';
-import { Settings, Check, Loader2, Sparkles, RotateCcw } from 'lucide-react';
+import { Settings, Check, Loader2, Sparkles, RotateCcw, Clock } from 'lucide-react';
 import MfaSetupSection from '@/components/settings/MfaSetupSection';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import TourRestartButton from '@/components/onboarding/TourRestartButton';
+import { invalidateClockFormatCache } from '@/lib/hooks/useClockFormat';
 
 interface TourStatus {
   module_slug: string;
@@ -37,6 +38,8 @@ export default function DashboardSettingsPage() {
   const [likesPublic, setLikesPublic] = useState(false);
   const [showDoneCounts, setShowDoneCounts] = useState(false);
   const [socialSaving, setSocialSaving] = useState(false);
+  const [clockFormat, setClockFormat] = useState<'12h' | '24h'>('12h');
+  const [clockSaving, setClockSaving] = useState(false);
   const [tours, setTours] = useState<TourStatus[]>([]);
 
   const loadTours = useCallback(async () => {
@@ -59,6 +62,7 @@ export default function DashboardSettingsPage() {
         setScanAutoSave(d.scan_auto_save_images ?? false);
         setLikesPublic(d.likes_public ?? false);
         setShowDoneCounts(d.show_done_counts ?? false);
+        setClockFormat(d.clock_format === '24h' ? '24h' : '12h');
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -211,6 +215,50 @@ export default function DashboardSettingsPage() {
             />
           </button>
         </label>
+      </div>
+
+      {/* Clock Format */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mt-6">
+        <div className="flex items-center gap-2 mb-1">
+          <Clock className="w-5 h-5 text-fuchsia-600" aria-hidden="true" />
+          <h2 className="text-base font-semibold text-gray-800">Time Format</h2>
+        </div>
+        <p className="text-sm text-gray-500 mb-4">
+          Choose how times are displayed throughout the app.
+        </p>
+        <div className="flex gap-3">
+          {(['12h', '24h'] as const).map((fmt) => (
+            <button
+              key={fmt}
+              disabled={clockSaving}
+              onClick={async () => {
+                if (fmt === clockFormat) return;
+                setClockSaving(true);
+                try {
+                  const res = await offlineFetch('/api/user/preferences', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clock_format: fmt }),
+                  });
+                  if (res.ok) {
+                    setClockFormat(fmt);
+                    invalidateClockFormatCache(fmt);
+                  }
+                } finally {
+                  setClockSaving(false);
+                }
+              }}
+              className={`flex-1 px-4 py-3 rounded-xl border-2 text-sm font-medium transition ${
+                clockFormat === fmt
+                  ? 'border-fuchsia-500 bg-fuchsia-50 text-fuchsia-700'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-fuchsia-200'
+              } ${clockSaving ? 'opacity-50' : ''}`}
+            >
+              <span className="block text-lg font-bold">{fmt === '12h' ? '2:30 PM' : '14:30'}</span>
+              <span className="block text-xs text-gray-500 mt-0.5">{fmt === '12h' ? '12-hour' : '24-hour'}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Social & Privacy */}

@@ -3,7 +3,8 @@
 
 import Modal from '@/components/ui/Modal';
 import { AlertTriangle } from 'lucide-react';
-import { formatDuration, formatDate, formatTime24 } from '@/lib/utils/sessionValidation';
+import { formatDuration, formatDate } from '@/lib/utils/sessionValidation';
+import { useClockFormat, formatTime } from '@/lib/hooks/useClockFormat';
 import { FocusSession } from '@/lib/types';
 
 interface DeleteConfirmModalProps {
@@ -25,6 +26,7 @@ export default function DeleteConfirmModal({
   session,
   isDeleting,
 }: DeleteConfirmModalProps) {
+  const clockFormat = useClockFormat();
   if (!session) return null;
 
   return (
@@ -49,8 +51,8 @@ export default function DeleteConfirmModal({
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Time:</span>
                 <span className="font-medium text-gray-900">
-                  {formatTime24(session.start_time)}
-                  {session.end_time && <> - {formatTime24(session.end_time)}</>}
+                  {formatTime(session.start_time, clockFormat)}
+                  {session.end_time && <> - {formatTime(session.end_time, clockFormat)}</>}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
