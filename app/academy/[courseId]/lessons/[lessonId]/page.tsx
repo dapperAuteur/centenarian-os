@@ -261,6 +261,19 @@ export default function LessonPlayerPage() {
           </div>
         )}
 
+        {/* No content fallback */}
+        {!lesson.text_content
+          && !lesson.content_url
+          && !lesson.quiz_content
+          && !lesson.map_content
+          && !(lesson.documents && lesson.documents.length > 0)
+          && !(lesson.transcript_content && lesson.transcript_content.length > 0) && (
+          <div className="mb-6 bg-gray-900 border border-gray-800 rounded-xl sm:rounded-2xl p-6 sm:p-8 text-center">
+            <FileText className="w-8 h-8 text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-400 text-sm">Content for this lesson is being prepared.</p>
+          </div>
+        )}
+
         {lesson.map_content && (
           <MapViewer mapContent={lesson.map_content} />
         )}
