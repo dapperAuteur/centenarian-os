@@ -16,6 +16,8 @@ import {
 import MediaUploader from '@/components/ui/MediaUploader';
 import DataImporter from '@/components/academy/DataImporter';
 import GlossaryEditor from '@/components/academy/GlossaryEditor';
+import LessonDocumentEditor from '@/components/academy/LessonDocumentEditor';
+import type { DocDraft } from '@/components/academy/LessonDocumentEditor';
 
 interface Lesson {
   id: string;
@@ -92,7 +94,6 @@ export default function CourseEditorPage() {
   const [mapLines, setMapLines] = useState<Array<{ id: string; coords: [number, number][]; title: string; color: string; description: string }>>([]);
   const [mapPolygons, setMapPolygons] = useState<Array<{ id: string; coords: [number, number][]; title: string; color: string; fillColor: string; description: string }>>([]);
   // Document editor state
-  const [showDocSection, setShowDocSection] = useState(false);
   const [lessonDocuments, setLessonDocuments] = useState<Array<{ id: string; url: string; title: string; description: string; source_url: string }>>([]);
   // Podcast links state
   const [podcastLinks, setPodcastLinks] = useState<Array<{ id: string; url: string; label: string }>>([]);
@@ -102,6 +103,10 @@ export default function CourseEditorPage() {
   const [bulkImportResult, setBulkImportResult] = useState<{ message: string; errors?: string[] } | null>(null);
   const [bulkImportMode, setBulkImportMode] = useState<'create' | 'upsert' | 'replace'>('create');
   const [feedback, setFeedback] = useState('');
+  // Lesson document editing state
+  const [editingDocsLessonId, setEditingDocsLessonId] = useState<string | null>(null);
+  const [editingDocs, setEditingDocs] = useState<DocDraft[]>([]);
+  const [savingDocs, setSavingDocs] = useState(false);
   // Glossary state
   const [showGlossary, setShowGlossary] = useState(false);
 
@@ -409,7 +414,6 @@ export default function CourseEditorPage() {
       setMapPolygons([]);
       setShowMapSection(false);
       setLessonDocuments([]);
-      setShowDocSection(false);
       setPodcastLinks([]);
       setAddingLesson(null);
       fetchCourse();
@@ -550,6 +554,45 @@ export default function CourseEditorPage() {
 
   function removeDocument(docId: string) {
     setLessonDocuments((prev) => prev.filter((d) => d.id !== docId));
+  }
+
+  async function startEditingDocs(lessonId: string) {
+    if (editingDocsLessonId === lessonId) {
+      setEditingDocsLessonId(null);
+      return;
+    }
+    // Fetch current lesson documents
+    try {
+      const r = await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}`);
+      const data = await r.json();
+      const docs = (data.documents ?? []).map((d: { id?: string; url: string; title: string; description?: string; source_url?: string }) => ({
+        id: d.id || crypto.randomUUID(),
+        url: d.url || '',
+        title: d.title || '',
+        description: d.description || '',
+        source_url: d.source_url || '',
+      }));
+      setEditingDocs(docs);
+      setEditingDocsLessonId(lessonId);
+    } catch { /* ignore */ }
+  }
+
+  async function saveEditingDocs() {
+    if (!editingDocsLessonId) return;
+    setSavingDocs(true);
+    try {
+      const payload = editingDocs.filter((d) => d.title.trim() || d.url.trim());
+      await offlineFetch(`/api/academy/courses/${courseId}/lessons/${editingDocsLessonId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documents: payload }),
+      });
+      setEditingDocsLessonId(null);
+      setEditingDocs([]);
+      setFeedback('Documents saved');
+      setTimeout(() => setFeedback(''), 2000);
+    } catch { /* ignore */ }
+    setSavingDocs(false);
   }
 
   function addPodcastLink() {
@@ -1279,23 +1322,59 @@ export default function CourseEditorPage() {
 
                   {lessons.map((lesson) => {
                     const Icon = LESSON_TYPE_ICON[lesson.lesson_type] ?? Play;
+                    const isEditingDocs = editingDocsLessonId === lesson.id;
                     return (
-                      <div key={lesson.id} className="flex items-center gap-3 px-4 py-3 border-t border-gray-800">
-                        <GripVertical className="w-3.5 h-3.5 text-gray-700 shrink-0" />
-                        <Icon className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-                        <span className="flex-1 text-sm text-gray-300 min-w-0 truncate">{lesson.title}</span>
-                        {lesson.is_free_preview && (
-                          <span className="text-xs text-fuchsia-400 px-1.5 py-0.5 bg-fuchsia-900/30 rounded shrink-0">Preview</span>
+                      <div key={lesson.id} className="border-t border-gray-800">
+                        <div className="flex items-center gap-3 px-4 py-3">
+                          <GripVertical className="w-3.5 h-3.5 text-gray-700 shrink-0" />
+                          <Icon className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                          <span className="flex-1 text-sm text-gray-300 min-w-0 truncate">{lesson.title}</span>
+                          {lesson.is_free_preview && (
+                            <span className="text-xs text-fuchsia-400 px-1.5 py-0.5 bg-fuchsia-900/30 rounded shrink-0">Preview</span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => startEditingDocs(lesson.id)}
+                            className={`p-2 transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center ${isEditingDocs ? 'text-fuchsia-400' : 'text-gray-600 hover:text-fuchsia-400'}`}
+                            aria-label="Edit documents"
+                          >
+                            <Paperclip className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteLesson(lesson.id)}
+                            className="p-2 text-gray-600 hover:text-red-400 transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
+                            aria-label="Delete lesson"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        {isEditingDocs && (
+                          <div className="px-4 pb-4 space-y-3">
+                            <LessonDocumentEditor
+                              documents={editingDocs}
+                              onChange={setEditingDocs}
+                              defaultOpen
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={saveEditingDocs}
+                                disabled={savingDocs}
+                                className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-xs font-semibold hover:bg-fuchsia-700 transition disabled:opacity-50 min-h-11"
+                              >
+                                {savingDocs ? 'Saving…' : 'Save Documents'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingDocsLessonId(null)}
+                                className="px-4 py-2 bg-gray-800 text-gray-400 rounded-lg text-xs hover:bg-gray-700 transition min-h-11"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
                         )}
-                        {/* Delete always visible — hover:opacity trick is invisible on mobile */}
-                        <button
-                          type="button"
-                          onClick={() => deleteLesson(lesson.id)}
-                          className="p-2 text-gray-600 hover:text-red-400 transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
-                          aria-label="Delete lesson"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
                       </div>
                     );
                   })}
@@ -1650,90 +1729,10 @@ export default function CourseEditorPage() {
                       </div>
 
                       {/* Documents — any lesson type */}
-                      <div className="border border-gray-700 rounded-xl overflow-hidden">
-                        <button
-                          type="button"
-                          onClick={() => setShowDocSection((v) => !v)}
-                          className="w-full flex items-center gap-2 px-3 py-2.5 bg-gray-800/50 text-sm font-semibold text-gray-300 hover:bg-gray-800 transition"
-                        >
-                          <Paperclip className="w-3.5 h-3.5 text-fuchsia-400" />
-                          Documents
-                          <span className="text-xs text-gray-600 ml-1">
-                            {lessonDocuments.length > 0 ? `(${lessonDocuments.length} docs)` : '(optional)'}
-                          </span>
-                          <ChevronDown className={`w-3.5 h-3.5 ml-auto text-gray-600 transition-transform ${showDocSection ? 'rotate-180' : ''}`} />
-                        </button>
-                        {showDocSection && (
-                          <div className="p-3 space-y-3 bg-gray-800/20">
-                            <DataImporter
-                              label="Batch import from CSV"
-                              columns={[
-                                { key: 'url', label: 'URL', required: true },
-                                { key: 'title', label: 'Title', required: true },
-                                { key: 'description', label: 'Description' },
-                                { key: 'source_url', label: 'Source URL' },
-                              ]}
-                              onImport={handleDocumentImport}
-                              templateCsvUrl="/templates/documents.csv"
-                            />
-                            <div className="border-t border-gray-700 pt-3">
-                              <div className="flex items-center justify-between mb-2">
-                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Manual entry</p>
-                                <button type="button" onClick={addDocument} className="flex items-center gap-1 text-xs text-fuchsia-400 hover:text-fuchsia-300 transition">
-                                  <Plus className="w-3 h-3" /> Add Document
-                                </button>
-                              </div>
-                              {lessonDocuments.length === 0 && (
-                                <p className="text-xs text-gray-600 text-center py-2">No documents. Import via CSV or add manually.</p>
-                              )}
-                              <div className="space-y-2">
-                                {lessonDocuments.map((doc, di) => (
-                                  <div key={doc.id} className="border border-gray-700 rounded-lg p-2 space-y-1.5">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs text-gray-500 shrink-0 w-5">{di + 1}</span>
-                                      <input
-                                        type="text"
-                                        value={doc.title}
-                                        onChange={(e) => updateDocument(doc.id, { title: e.target.value })}
-                                        placeholder="Document title…"
-                                        className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
-                                      />
-                                      <button type="button" onClick={() => removeDocument(doc.id)} className="text-gray-600 hover:text-red-400 transition p-1 shrink-0">
-                                        <X className="w-3.5 h-3.5" />
-                                      </button>
-                                    </div>
-                                    <div className="ml-7">
-                                      <MediaUploader
-                                        dark
-                                        onUpload={(url) => updateDocument(doc.id, { url })}
-                                        onRemove={() => updateDocument(doc.id, { url: '' })}
-                                        currentUrl={doc.url || undefined}
-                                        label="Upload PDF or image"
-                                      />
-                                    </div>
-                                    <div className="ml-7 grid grid-cols-2 gap-2">
-                                      <input
-                                        type="text"
-                                        value={doc.description}
-                                        onChange={(e) => updateDocument(doc.id, { description: e.target.value })}
-                                        placeholder="Description…"
-                                        className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
-                                      />
-                                      <input
-                                        type="url"
-                                        value={doc.source_url}
-                                        onChange={(e) => updateDocument(doc.id, { source_url: e.target.value })}
-                                        placeholder="Original source URL…"
-                                        className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
-                                      />
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      <LessonDocumentEditor
+                        documents={lessonDocuments}
+                        onChange={setLessonDocuments}
+                      />
 
                       <div className="flex flex-wrap gap-2">
                         <button onClick={() => addLesson(mod.id)} className="px-4 py-2.5 bg-fuchsia-600 text-white rounded-xl text-sm font-semibold hover:bg-fuchsia-700 transition min-h-11">Add Lesson</button>
