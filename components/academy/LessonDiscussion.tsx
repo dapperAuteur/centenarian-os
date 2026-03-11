@@ -200,9 +200,9 @@ export default function LessonDiscussion({ courseId, lessonId, currentUserId, is
                   <Pin className="w-2.5 h-2.5" /> Pinned
                 </span>
               )}
-              <span className="text-xs text-gray-600">{timeAgo(post.created_at)}</span>
+              <span className="text-xs text-gray-500">{timeAgo(post.created_at)}</span>
               {post.updated_at !== post.created_at && (
-                <span className="text-xs text-gray-700">(edited)</span>
+                <span className="text-xs text-gray-500">(edited)</span>
               )}
             </div>
 
@@ -213,7 +213,7 @@ export default function LessonDiscussion({ courseId, lessonId, currentUserId, is
                   value={editBody}
                   onChange={(e) => setEditBody(e.target.value)}
                   rows={2}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500 resize-none"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-fuchsia-500 resize-none"
                 />
                 <div className="flex gap-2">
                   <button
@@ -241,7 +241,7 @@ export default function LessonDiscussion({ courseId, lessonId, currentUserId, is
                 {!isReply && (
                   <button
                     onClick={() => { setReplyTo(replyTo === post.id ? null : post.id); setReplyBody(''); }}
-                    className="flex items-center gap-1 text-xs text-gray-600 hover:text-fuchsia-400 transition"
+                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-fuchsia-400 transition"
                   >
                     <Reply className="w-3 h-3" /> Reply
                   </button>
@@ -249,7 +249,7 @@ export default function LessonDiscussion({ courseId, lessonId, currentUserId, is
                 {canEdit && (
                   <button
                     onClick={() => { setEditingId(post.id); setEditBody(post.body); }}
-                    className="flex items-center gap-1 text-xs text-gray-600 hover:text-blue-400 transition"
+                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-400 transition"
                   >
                     <Edit2 className="w-3 h-3" /> Edit
                   </button>
@@ -257,7 +257,7 @@ export default function LessonDiscussion({ courseId, lessonId, currentUserId, is
                 {canDelete && (
                   <button
                     onClick={() => deletePost(post.id, post.parent_id)}
-                    className="flex items-center gap-1 text-xs text-gray-600 hover:text-red-400 transition"
+                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-400 transition"
                   >
                     <Trash2 className="w-3 h-3" /> Delete
                   </button>
@@ -265,7 +265,7 @@ export default function LessonDiscussion({ courseId, lessonId, currentUserId, is
                 {isTeacher && !isReply && (
                   <button
                     onClick={() => togglePin(post.id, post.is_pinned)}
-                    className={`flex items-center gap-1 text-xs transition ${post.is_pinned ? 'text-amber-400 hover:text-amber-300' : 'text-gray-600 hover:text-amber-400'}`}
+                    className={`flex items-center gap-1 text-xs transition ${post.is_pinned ? 'text-amber-400 hover:text-amber-300' : 'text-gray-500 hover:text-amber-400'}`}
                   >
                     <Pin className="w-3 h-3" /> {post.is_pinned ? 'Unpin' : 'Pin'}
                   </button>
@@ -286,7 +286,7 @@ export default function LessonDiscussion({ courseId, lessonId, currentUserId, is
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitReply(post.id); } }}
                 placeholder="Write a reply…"
                 rows={2}
-                className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500 resize-none"
+                className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-fuchsia-500 resize-none"
               />
               <button
                 onClick={() => submitReply(post.id)}
@@ -317,7 +317,7 @@ export default function LessonDiscussion({ courseId, lessonId, currentUserId, is
 
       {loading ? (
         <div className="flex justify-center py-6">
-          <Loader2 className="w-5 h-5 animate-spin text-gray-600" />
+          <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
         </div>
       ) : (
         <>
@@ -330,7 +330,7 @@ export default function LessonDiscussion({ courseId, lessonId, currentUserId, is
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitPost(); } }}
                 placeholder="Join the discussion…"
                 rows={2}
-                className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500 resize-none"
+                className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-fuchsia-500 resize-none"
               />
               <button
                 onClick={submitPost}
@@ -343,7 +343,7 @@ export default function LessonDiscussion({ courseId, lessonId, currentUserId, is
           )}
 
           {posts.length === 0 ? (
-            <p className="text-center text-gray-600 text-sm py-6">No discussion yet. Be the first to post!</p>
+            <p className="text-center text-gray-500 text-sm py-6">No discussion yet. Be the first to post!</p>
           ) : (
             <div className="divide-y divide-gray-800">
               {posts.map((post) => renderPost(post))}

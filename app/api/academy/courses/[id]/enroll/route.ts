@@ -35,12 +35,12 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   const db = getDb();
 
-  // Get course details
+  // Get course details (left-join teacher_profiles so missing row doesn't break .single())
   const { data: course } = await db
     .from('courses')
-    .select('id, title, price, price_type, is_published, teacher_id, stripe_price_id, stripe_product_id, trial_period_days, teacher_profiles(stripe_connect_account_id, stripe_connect_onboarded)')
+    .select('id, title, price, price_type, is_published, teacher_id, stripe_price_id, stripe_product_id, trial_period_days, teacher_profiles!left(stripe_connect_account_id, stripe_connect_onboarded)')
     .eq('id', courseId)
-    .single();
+    .maybeSingle();
 
   if (!course || !course.is_published) {
     return NextResponse.json({ error: 'Course not found' }, { status: 404 });
