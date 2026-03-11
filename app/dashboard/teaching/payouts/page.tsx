@@ -14,7 +14,7 @@ function PayoutsContent() {
   const connected = searchParams.get('connected') === 'true';
   const refresh = searchParams.get('refresh') === 'true';
 
-  const [status, setStatus] = useState<{ connected: boolean; onboarded: boolean } | null>(null);
+  const [status, setStatus] = useState<{ connected: boolean; onboarded: boolean; platformTeacher?: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState('');
@@ -73,12 +73,14 @@ function PayoutsContent() {
           </div>
           <div>
             <p className="font-semibold text-white">
-              {status?.onboarded ? 'Stripe Connected' : 'Not Connected'}
+              {status?.platformTeacher ? 'Platform Account' : status?.onboarded ? 'Stripe Connected' : 'Not Connected'}
             </p>
             <p className="text-gray-500 text-sm">
-              {status?.onboarded
-                ? 'Your bank account is set up to receive payouts.'
-                : 'You need to connect your Stripe account to get paid.'}
+              {status?.platformTeacher
+                ? 'Payments go directly to the platform Stripe account.'
+                : status?.onboarded
+                  ? 'Your bank account is set up to receive payouts.'
+                  : 'You need to connect your Stripe account to get paid.'}
             </p>
           </div>
         </div>
@@ -104,7 +106,19 @@ function PayoutsContent() {
           </>
         )}
 
-        {status?.onboarded && (
+        {status?.onboarded && status?.platformTeacher && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-400">Payout status</span>
+              <span className="text-green-400 font-medium">Platform Account</span>
+            </div>
+            <p className="text-gray-400 text-sm">
+              As a platform teacher, course payments go directly to the app&apos;s Stripe account. No separate Connect setup needed.
+            </p>
+          </div>
+        )}
+
+        {status?.onboarded && !status?.platformTeacher && (
           <div className="space-y-3">
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-400">Payout status</span>
