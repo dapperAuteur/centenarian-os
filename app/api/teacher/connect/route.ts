@@ -1,10 +1,19 @@
 // app/api/teacher/connect/route.ts
 // Creates or returns a Stripe Connect Express onboarding link for the current teacher.
+// Platform teachers (PLATFORM_TEACHER_EMAILS) skip Connect — payments go to the app's Stripe account.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe';
+
+function isPlatformTeacherEmail(email: string): boolean {
+  const platformEmails = (process.env.PLATFORM_TEACHER_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return platformEmails.length > 0 && platformEmails.includes(email.toLowerCase());
+}
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -20,6 +29,11 @@ export async function POST(request: NextRequest) {
 
   if (profile?.role !== 'teacher' && user.email !== process.env.ADMIN_EMAIL) {
     return NextResponse.json({ error: 'Teacher account required' }, { status: 403 });
+  }
+
+  // Platform teachers don't need Stripe Connect — payments go to the app's account
+  if (user.email && isPlatformTeacherEmail(user.email)) {
+    return NextResponse.json({ error: 'Platform teachers do not need Stripe Connect. Course payments go directly to the platform account.' }, { status: 400 });
   }
 
   const db = createServiceClient(
@@ -92,6 +106,11 @@ export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // Platform teachers are always "connected" — no Stripe Connect needed
+  if (user.email && isPlatformTeacherEmail(user.email)) {
+    return NextResponse.json({ connected: true, onboarded: true, platformTeacher: true });
+  }
 
   const db = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

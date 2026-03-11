@@ -8,7 +8,7 @@ import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ChevronLeft, Plus, Loader2, Save, Globe, EyeOff, Trash2, Upload,
+  ChevronLeft, Plus, Loader2, Save, Globe, EyeOff, Trash2, Upload, Download,
   GitBranch, Sparkles, Play, FileText, Volume2, Presentation, GripVertical,
   CheckCircle, ClipboardList, HelpCircle, X, Map, ChevronDown, Paperclip,
   Link2, Shield, Search, BookMarked,
@@ -100,7 +100,7 @@ export default function CourseEditorPage() {
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [bulkImporting, setBulkImporting] = useState(false);
   const [bulkImportResult, setBulkImportResult] = useState<{ message: string; errors?: string[] } | null>(null);
-  const [bulkImportMode, setBulkImportMode] = useState<'create' | 'upsert'>('create');
+  const [bulkImportMode, setBulkImportMode] = useState<'create' | 'upsert' | 'replace'>('create');
   const [feedback, setFeedback] = useState('');
   // Glossary state
   const [showGlossary, setShowGlossary] = useState(false);
@@ -1166,17 +1166,27 @@ export default function CourseEditorPage() {
           </div>
         )}
 
-        {/* Bulk CSV Import */}
+        {/* Bulk CSV Import / Export */}
         <div className="mb-4">
-          <button
-            type="button"
-            onClick={() => setShowBulkImport(!showBulkImport)}
-            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-fuchsia-400 transition"
-          >
-            <Upload className="w-3 h-3" />
-            {showBulkImport ? 'Hide' : 'Bulk Import from CSV'}
-            <ChevronDown className={`w-3 h-3 transition-transform ${showBulkImport ? 'rotate-180' : ''}`} />
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setShowBulkImport(!showBulkImport)}
+              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-fuchsia-400 transition"
+            >
+              <Upload className="w-3 h-3" />
+              {showBulkImport ? 'Hide' : 'Bulk Import from CSV'}
+              <ChevronDown className={`w-3 h-3 transition-transform ${showBulkImport ? 'rotate-180' : ''}`} />
+            </button>
+            <a
+              href={`/api/academy/courses/${courseId}/export`}
+              download
+              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-fuchsia-400 transition"
+            >
+              <Download className="w-3 h-3" />
+              Export as CSV
+            </a>
+          </div>
           {showBulkImport && (
             <div className="mt-3 p-4 bg-gray-800/40 border border-gray-700 rounded-xl space-y-3">
               <p className="text-xs text-gray-400">
@@ -1198,7 +1208,17 @@ export default function CourseEditorPage() {
                 >
                   Create + Update
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setBulkImportMode('replace')}
+                  className={`px-2 py-1 rounded text-xs font-medium transition ${bulkImportMode === 'replace' ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`}
+                >
+                  Replace All
+                </button>
               </div>
+              {bulkImportMode === 'replace' && (
+                <p className="text-xs text-amber-400">This will delete all existing modules and lessons before importing. Student progress will be reset.</p>
+              )}
               <DataImporter
                 label="Course CSV"
                 columns={[

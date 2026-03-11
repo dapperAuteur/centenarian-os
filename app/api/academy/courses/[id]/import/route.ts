@@ -48,10 +48,20 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   const body = await request.json();
   const rows: Record<string, string>[] = body.rows;
-  const mode: 'create' | 'upsert' = body.mode || 'create';
+  const mode: 'create' | 'upsert' | 'replace' = body.mode || 'create';
 
   if (!Array.isArray(rows) || rows.length === 0) {
     return NextResponse.json({ error: 'No rows provided' }, { status: 400 });
+  }
+
+  // Replace mode: delete all existing lessons, modules, and related progress
+  if (mode === 'replace') {
+    // Delete lessons first (cascades lesson_progress, lesson_embeddings, etc.)
+    await db.from('lessons').delete().eq('course_id', courseId);
+    // Delete modules
+    await db.from('course_modules').delete().eq('course_id', courseId);
+    // Clear cached stripe price/product so they get recreated if course price changes
+    await db.from('courses').update({ stripe_price_id: null, stripe_product_id: null }).eq('id', courseId);
   }
 
   // Fetch existing modules for this course
@@ -78,7 +88,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   }
 
   const isCourseFreePricing = course.price_type === 'free';
-  const stats = { modules_created: 0, lessons_created: 0, lessons_updated: 0, lessons_skipped: 0, errors: [] as string[] };
+  const stats = { replaced: mode === 'replace', modules_created: 0, lessons_created: 0, lessons_updated: 0, lessons_skipped: 0, errors: [] as string[] };
 
   // Group rows by module_title to create modules first
   const moduleTitles = new Set<string>();
@@ -195,6 +205,6 @@ export async function POST(request: NextRequest, { params }: Params) {
   return NextResponse.json({
     success: true,
     stats,
-    message: `Created ${stats.modules_created} modules, ${stats.lessons_created} lessons. Updated ${stats.lessons_updated}. Skipped ${stats.lessons_skipped}.${stats.errors.length > 0 ? ` ${stats.errors.length} errors.` : ''}`,
+    message: `${stats.replaced ? 'Replaced all content. ' : ''}Created ${stats.modules_created} modules, ${stats.lessons_created} lessons. Updated ${stats.lessons_updated}. Skipped ${stats.lessons_skipped}.${stats.errors.length > 0 ? ` ${stats.errors.length} errors.` : ''}`,
   });
 }

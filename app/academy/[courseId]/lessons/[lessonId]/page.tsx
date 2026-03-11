@@ -20,6 +20,7 @@ import VideoPlayer from '@/components/academy/VideoPlayer';
 import LessonDiscussion from '@/components/academy/LessonDiscussion';
 import PodcastLinks from '@/components/academy/PodcastLinks';
 import DocumentViewer from '@/components/academy/DocumentViewer';
+import type { DocumentItem } from '@/components/academy/DocumentViewer';
 import GlossaryTermRow from '@/components/academy/GlossaryTermRow';
 import type { GlossaryTerm } from '@/components/academy/GlossaryTermRow';
 
@@ -59,7 +60,7 @@ interface Lesson {
     lines?: Array<{ id: string; coords: [number, number][]; title: string; color?: string; description?: string }>;
     polygons?: Array<{ id: string; coords: [number, number][]; title: string; color?: string; fillColor?: string; description?: string }>;
   } | null;
-  documents: Array<{ id: string; url: string; title: string; description?: string; source_url?: string }> | null;
+  documents: Array<{ id: string; url: string; title: string; description?: string; source_url?: string; inline_content?: string }> | null;
   podcast_links: Array<{ url: string; label?: string }> | null;
 }
 
@@ -264,9 +265,21 @@ export default function LessonPlayerPage() {
           <MapViewer mapContent={lesson.map_content} />
         )}
 
-        {lesson.documents && lesson.documents.length > 0 && (
-          <DocumentViewer documents={lesson.documents} />
-        )}
+        {(() => {
+          // Build primary sources: existing documents + auto-generated transcript
+          const docs: DocumentItem[] = [...(lesson.documents ?? [])];
+          if (lesson.transcript_content && lesson.transcript_content.length > 0) {
+            const fmt = (s: number) => { const m = Math.floor(s / 60); const sec = Math.floor(s % 60); return `${m}:${sec.toString().padStart(2, '0')}`; };
+            docs.push({
+              id: '__transcript',
+              url: '#',
+              title: 'Lesson Transcript',
+              description: `${lesson.transcript_content.length} segments`,
+              inline_content: lesson.transcript_content.map((seg) => `[${fmt(seg.startTime)}] ${seg.text}`).join('\n'),
+            });
+          }
+          return docs.length > 0 ? <DocumentViewer documents={docs} /> : null;
+        })()}
 
         {/* Lesson glossary terms */}
         {lessonGlossary.length > 0 && (
