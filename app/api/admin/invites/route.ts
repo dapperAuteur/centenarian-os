@@ -52,9 +52,8 @@ export async function POST(request: NextRequest) {
 
   if (!email) return NextResponse.json({ error: 'email is required' }, { status: 400 });
 
-  const validProducts = ['centos', 'contractor', 'lister'];
-  if (!validProducts.includes(product)) {
-    return NextResponse.json({ error: 'product must be centos, contractor, or lister' }, { status: 400 });
+  if (product !== 'centos') {
+    return NextResponse.json({ error: 'product must be centos' }, { status: 400 });
   }
 
   const db = serviceDb();
@@ -82,20 +81,7 @@ export async function POST(request: NextRequest) {
   const authClient = adminAuthClient();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
-  // Build subdomain-aware redirect URL through auth callback
-  let baseUrl: string;
-  let destination: string;
-  if (product === 'contractor') {
-    baseUrl = siteUrl.replace('://', '://contractor.');
-    destination = '/dashboard/contractor';
-  } else if (product === 'lister') {
-    baseUrl = siteUrl.replace('://', '://lister.');
-    destination = '/dashboard/contractor/lister';
-  } else {
-    baseUrl = siteUrl;
-    destination = '/dashboard/planner';
-  }
-  const redirectTo = `${baseUrl}/auth/callback?next=${encodeURIComponent(destination)}`;
+  const redirectTo = `${siteUrl}/auth/callback?next=${encodeURIComponent('/dashboard/planner')}`;
 
   const { error: inviteErr } = await authClient.auth.admin.inviteUserByEmail(email, {
     redirectTo,

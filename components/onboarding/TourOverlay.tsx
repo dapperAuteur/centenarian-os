@@ -6,7 +6,7 @@ import type { TourStep } from '@/lib/onboarding/tour-steps';
 
 interface TourOverlayProps {
   steps: TourStep[];
-  app: 'contractor' | 'lister' | 'main';
+  app: 'main';
   moduleSlug: string;
   initialStep?: number;
   onComplete: () => void;
@@ -26,7 +26,6 @@ export default function TourOverlay({
   const [currentStep, setCurrentStep] = useState(initialStep);
   const step = steps[currentStep];
   const isLastStep = currentStep === steps.length - 1;
-  const accent = app === 'lister' ? 'indigo' : 'amber';
 
   // Track step event
   const trackStep = useCallback(
@@ -158,7 +157,7 @@ export default function TourOverlay({
         {/* Progress bar */}
         <div className="w-full h-1 bg-neutral-800 rounded-full mb-4 overflow-hidden">
           <div
-            className={`h-full bg-${accent}-500 rounded-full transition-all duration-300`}
+            className="h-full bg-sky-500 rounded-full transition-all duration-300"
             style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
           />
         </div>
@@ -175,7 +174,7 @@ export default function TourOverlay({
 
           <button
             onClick={handleNext}
-            className={`flex items-center gap-1.5 px-5 py-2.5 bg-${accent}-600 hover:bg-${accent}-500 text-white rounded-xl text-sm font-semibold transition min-h-11`}
+            className="flex items-center gap-1.5 px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-sm font-semibold transition min-h-11"
           >
             {isLastStep ? 'Finish' : 'Next'}
             {!isLastStep && <ChevronRight className="w-4 h-4" aria-hidden="true" />}
@@ -188,7 +187,7 @@ export default function TourOverlay({
         .tour-highlight {
           position: relative;
           z-index: 9999;
-          box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.4), 0 0 20px rgba(251, 191, 36, 0.2);
+          box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.4), 0 0 20px rgba(14, 165, 233, 0.2);
           border-radius: 0.75rem;
           transition: box-shadow 0.3s ease;
         }

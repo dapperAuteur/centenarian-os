@@ -27,7 +27,7 @@ export async function geocodeAddress(address: string): Promise<GeoResult | null>
 
   const res = await fetch(`${NOMINATIM_URL}?${params}`, {
     headers: {
-      'User-Agent': 'CentenarianOS/1.0 (contractor-job-hub)',
+      'User-Agent': 'CentenarianOS/1.0',
     },
   });
 

@@ -11,9 +11,6 @@ export function daysAgo(n: number): string {
 
 // Deletion order respects FK constraints (children before parents)
 export const CLEAR_ORDER = [
-  'lister_messages',
-  'lister_message_group_members',
-  'lister_message_groups',
   'contractor_job_assignments',
   'union_rag_submissions',
   'union_document_chunks',

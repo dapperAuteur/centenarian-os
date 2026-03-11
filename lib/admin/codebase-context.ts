@@ -18,7 +18,7 @@ CentenarianOS is a comprehensive longevity-focused life-management platform. It 
 - **Embeddings**: Gemini text-embedding-004 (768-dim vectors, pgvector)
 - **Media**: Cloudinary (image/video uploads for courses, exercises, profiles, blog posts)
 - **Video Embedding**: VideoEmbed Tiptap node (YouTube, Viloud.tv, Mux, Cloudinary direct) — used in blog posts and recipes
-- **Offline**: offlineFetch wrapper caches GETs in IndexedDB, queues mutations for replay — all contractor/lister pages
+- **Offline**: offlineFetch wrapper caches GETs in IndexedDB, queues mutations for replay
 - **Charts**: Recharts (admin analytics, finance dashboards)
 - **Banking**: Teller API (bank account OAuth linking and auto-sync)
 - **Bot Prevention**: Cloudflare Turnstile on signup
@@ -67,10 +67,10 @@ CentenarianOS is a comprehensive longevity-focused life-management platform. It 
 
 17. **Blog & Recipe Video Embedding** — VideoEmbed Tiptap extension node for inline video in blog posts and recipes. Supports YouTube, Viloud.tv, Mux, Cloudinary direct. MediaEmbedModal provides tabbed UI (video URL, social embed, image upload, video upload). Blog CSV import auto-inserts VideoEmbed node when video_url column is present. getEmbedUrl utility auto-detects provider and converts to embed format.
 
-18. **Offline Support (Contractor & Lister)** — All 24 contractor and lister pages use offlineFetch wrapper (lib/offline/offline-fetch). GET responses cached in IndexedDB. POST/PATCH/DELETE mutations queued offline and replayed on reconnection. Text-based pages (tutorials, lessons) available offline once loaded.
+18. **Offline Support** — offlineFetch wrapper (lib/offline/offline-fetch). GET responses cached in IndexedDB. POST/PATCH/DELETE mutations queued offline and replayed on reconnection. Text-based pages (tutorials, lessons) available offline once loaded.
 
 ### Admin Panel (18 pages)
-Overview, Users (list + detail), Messages, Content moderation, Engagement analytics, Feedback management, Academy settings, Academy courses, Live sessions, Metrics configuration, Institutions directory, App Logs viewer, Usage analytics, Short Links dashboard, Education AI Chat (persistent sessions with tags, notes, full-text search), Tour Analytics, Contractor Users management.
+Overview, Users (list + detail), Messages, Content moderation, Engagement analytics, Feedback management, Academy settings, Academy courses, Live sessions, Metrics configuration, Institutions directory, App Logs viewer, Usage analytics, Short Links dashboard, Education AI Chat (persistent sessions with tags, notes, full-text search), Tour Analytics.
 
 ### AI Integration
 - **Coaching Gems**: Full conversational AI with data source injection, file analysis, action execution, flashcard generation
@@ -115,23 +115,22 @@ Overview, Users (list + detail), Messages, Content moderation, Engagement analyt
 - **CYOA via embeddings**: Lesson navigation uses cosine similarity rather than manual prerequisite graphs, with cross-course matching option
 - **Tiptap + Markdown dual support**: Lessons can use either format, stored in same column with content_format flag
 - **Teller API for banking**: OAuth-based bank account linking for transaction auto-sync, institution policy tracking
-- **offlineFetch pattern**: Drop-in fetch replacement caches in IndexedDB, queues mutations — enables offline-first contractor/lister apps
+- **offlineFetch pattern**: Drop-in fetch replacement caches in IndexedDB, queues mutations — enables offline-first pages
 - **VideoEmbed Tiptap node**: Isomorphic custom node stores src URL, auto-detects provider (YouTube/Viloud/Mux/Cloudinary)
 - **Module tours**: TourOverlay component with server-persisted step progress, event tracking, and restart capability
 
-### Tutorial Courses (19 series, 200+ lessons)
-Getting Started, Planner, Finance, Travel, Fuel, Engine, Health Metrics, Workouts, Exercises, Blog & Publishing, Recipes, Equipment, Correlations & Analytics, Academy (student), Teaching (teacher), Settings & Billing, Data Hub, Life Categories, Coach & Gems (admin-only), Contractor (JobHub, 15 lessons), Lister (CrewOps, 13 lessons). All use CYOA navigation with free preview lessons.
+### Tutorial Courses (17 series, 170+ lessons)
+Getting Started, Planner, Finance, Travel, Fuel, Engine, Health Metrics, Workouts, Exercises, Blog & Publishing, Recipes, Equipment, Correlations & Analytics, Academy (student), Teaching (teacher), Settings & Billing, Data Hub, Life Categories, Coach & Gems (admin-only). All use CYOA navigation with free preview lessons.
 
 ### Project Stats
 - ~400+ TypeScript files
 - 117+ database migrations
-- 18+ user-facing modules (including contractor, lister, social layer)
+- 16+ user-facing modules (including social layer)
 - 20 admin management pages
 - 12 AI-powered features
 - 3 wearable integrations (Oura, WHOOP, Garmin)
 - All-module CSV import/export pipelines
-- 19 tutorial course series (200+ lessons)
-- Offline-first contractor and lister apps (24 pages)
+- 17 tutorial course series (170+ lessons)
 - Interactive module walkthrough onboarding for all major features
 - Video embedding in blog posts and recipes (YouTube, Viloud, Mux, Cloudinary)
 `;
