@@ -452,14 +452,15 @@ export default function EquipmentForm({
 
       {/* Image */}
       <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">Photo</label>
+        <label className="block text-xs font-medium text-gray-700 mb-1">Cover Photo / Video</label>
         <MediaUploader
           currentUrl={form.image_url || null}
-          accept="image/*"
-          label="Add photo"
+          accept="image/*,video/*"
+          label="Add photo or video"
           onUpload={(url) => set('image_url', url)}
           onRemove={() => { set('image_url', ''); set('image_public_id', ''); }}
         />
+        <p className="text-[10px] text-gray-400 mt-1">Add more media (including audio) from the detail page after saving.</p>
       </div>
 
       {/* Notes */}

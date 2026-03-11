@@ -8,6 +8,7 @@ import { offlineFetch } from '@/lib/offline/offline-fetch';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
 import ValuationChart from '@/components/equipment/ValuationChart';
+import EquipmentMediaGallery, { type MediaItem } from '@/components/equipment/EquipmentMediaGallery';
 
 interface EquipmentDetail {
   id: string;
@@ -41,6 +42,7 @@ export default function EquipmentDetailPage() {
   const router = useRouter();
   const [item, setItem] = useState<EquipmentDetail | null>(null);
   const [valuations, setValuations] = useState<Valuation[]>([]);
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Add valuation form
@@ -53,13 +55,15 @@ export default function EquipmentDetailPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [itemRes, valRes] = await Promise.all([
+      const [itemRes, valRes, mediaRes] = await Promise.all([
         offlineFetch(`/api/equipment/${id}`),
         offlineFetch(`/api/equipment/${id}/valuations`),
+        offlineFetch(`/api/equipment/${id}/media`),
       ]);
-      const [itemData, valData] = await Promise.all([itemRes.json(), valRes.json()]);
+      const [itemData, valData, mediaData] = await Promise.all([itemRes.json(), valRes.json(), mediaRes.json()]);
       setItem(itemData.item || null);
       setValuations(valData.valuations || []);
+      setMediaItems(mediaData.media || []);
     } catch { /* handled */ }
     finally { setLoading(false); }
   }, [id]);
@@ -212,6 +216,15 @@ export default function EquipmentDetailPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Media Gallery */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-5">
+        <EquipmentMediaGallery
+          equipmentId={id}
+          media={mediaItems}
+          onUpdate={setMediaItems}
+        />
       </div>
 
       {/* Value History */}

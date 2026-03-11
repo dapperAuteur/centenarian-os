@@ -131,7 +131,7 @@ export async function DELETE(
     return NextResponse.json({ ok: true, soft_deleted: true });
   }
 
-  // Hard delete — clean up Cloudinary image if present
+  // Hard delete — clean up Cloudinary assets (legacy image + all media)
   const { data: item } = await supabase
     .from('equipment')
     .select('image_public_id')
@@ -142,9 +142,22 @@ export async function DELETE(
   if (item?.image_public_id) {
     try {
       await deleteCloudinaryAsset(item.image_public_id);
-    } catch {
-      // Non-fatal — image cleanup failure shouldn't block delete
-    }
+    } catch { /* non-fatal */ }
+  }
+
+  // Clean up all equipment_media Cloudinary assets
+  const { data: allMedia } = await supabase
+    .from('equipment_media')
+    .select('public_id, media_type')
+    .eq('equipment_id', id)
+    .eq('user_id', user.id);
+
+  if (allMedia?.length) {
+    await Promise.allSettled(
+      allMedia
+        .filter((m) => m.public_id)
+        .map((m) => deleteCloudinaryAsset(m.public_id!, m.media_type)),
+    );
   }
 
   const { error } = await supabase
@@ -157,7 +170,7 @@ export async function DELETE(
   return NextResponse.json({ ok: true, soft_deleted: false });
 }
 
-async function deleteCloudinaryAsset(publicId: string) {
+async function deleteCloudinaryAsset(publicId: string, mediaType?: string) {
   const { createHash } = await import('crypto');
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
   const apiKey = process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY!;
@@ -171,8 +184,10 @@ async function deleteCloudinaryAsset(publicId: string) {
     api_key: apiKey,
     signature,
   });
+  // Cloudinary uses 'video' resource type for both video and audio
+  const resourceType = (mediaType === 'video' || mediaType === 'audio') ? 'video' : 'image';
   await fetch(
-    `https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`,
+    `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/destroy`,
     { method: 'POST', body: form },
   );
 }
