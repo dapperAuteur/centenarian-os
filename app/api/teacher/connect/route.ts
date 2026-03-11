@@ -8,6 +8,10 @@ import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe';
 
 function isPlatformTeacherEmail(email: string): boolean {
+  // Admin is always a platform teacher
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  if (adminEmail && email.toLowerCase() === adminEmail) return true;
+
   const platformEmails = (process.env.PLATFORM_TEACHER_EMAILS ?? '')
     .split(',')
     .map((e) => e.trim().toLowerCase())
