@@ -108,6 +108,7 @@ export default function TravelPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [recentTrips, setRecentTrips] = useState<Trip[]>([]);
+  const [plannedTrips, setPlannedTrips] = useState<(Trip & { trip_status: string; end_date?: string | null })[]>([]);
   const [settings, setSettings] = useState<TravelSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -136,12 +137,13 @@ export default function TravelPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [sumRes, vehiclesRes, tripsRes, settingsRes, tmplRes] = await Promise.all([
+      const [sumRes, vehiclesRes, tripsRes, settingsRes, tmplRes, plannedRes] = await Promise.all([
         offlineFetch('/api/travel/summary?months=6'),
         offlineFetch('/api/travel/vehicles?include_retired=true'),
         offlineFetch('/api/travel/trips?limit=10'),
         offlineFetch('/api/travel/settings'),
         offlineFetch('/api/travel/templates'),
+        offlineFetch('/api/travel/trips/planned'),
       ]);
       if (sumRes.ok) setSummary(await sumRes.json());
       if (vehiclesRes.ok) {
@@ -157,6 +159,10 @@ export default function TravelPage() {
         setSettings(s);
       }
       if (tmplRes.ok) setTemplates(await tmplRes.json());
+      if (plannedRes.ok) {
+        const { trips: pt } = await plannedRes.json();
+        setPlannedTrips(pt || []);
+      }
     } finally {
       setLoading(false);
     }
@@ -632,6 +638,46 @@ export default function TravelPage() {
           </>
         )}
       </div>
+
+      {/* Planned Trips */}
+      {plannedTrips.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-blue-800 flex items-center gap-2">
+              <Zap className="w-4 h-4 text-blue-600" />
+              Upcoming Trips ({plannedTrips.length})
+            </h2>
+            <Link href="/dashboard/travel/trips?trip_status=planned" className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+              View all <ChevronRight className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="divide-y divide-blue-100">
+            {plannedTrips.map((trip) => (
+              <Link key={trip.id} href={`/dashboard/travel/trips/${trip.id}`} className="flex items-center justify-between py-2.5 hover:bg-blue-100/50 -mx-2 px-2 rounded-lg transition">
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">{MODE_ICONS[trip.mode] ?? '\u{1F690}'}</span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {trip.origin && trip.destination
+                        ? `${trip.origin} \u2192 ${trip.destination}`
+                        : trip.purpose ?? 'Trip'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(trip.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {trip.end_date && ` – ${new Date(trip.end_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                    </p>
+                  </div>
+                </div>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                  trip.trip_status === 'in_progress' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                }`}>
+                  {trip.trip_status === 'in_progress' ? 'In Progress' : 'Planned'}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Recent Trips */}
       <div className="bg-white border border-gray-200 rounded-2xl p-5">

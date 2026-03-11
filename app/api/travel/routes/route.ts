@@ -76,6 +76,7 @@ interface LegInput {
   origin_lng?: number | null;
   dest_lat?: number | null;
   dest_lng?: number | null;
+  date?: string | null; // per-leg date for multi-day trips
 }
 
 export async function POST(request: NextRequest) {
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { name, date, legs, notes, is_round_trip, save_as_template } = body;
+  const { name, date, legs, notes, is_round_trip, save_as_template, trip_status, packing_notes } = body;
 
   if (!date) return NextResponse.json({ error: 'date is required' }, { status: 400 });
   if (!Array.isArray(legs) || legs.length < 2) {
@@ -94,6 +95,8 @@ export async function POST(request: NextRequest) {
   const db = getDb();
 
   // 1. Create the route parent
+  const resolvedStatus = trip_status || 'completed';
+
   const { data: route, error: routeErr } = await db
     .from('trip_routes')
     .insert({
@@ -102,6 +105,8 @@ export async function POST(request: NextRequest) {
       date,
       is_round_trip: is_round_trip ?? false,
       notes: notes?.trim() || null,
+      trip_status: resolvedStatus,
+      packing_notes: packing_notes?.trim() || null,
     })
     .select()
     .single();
@@ -144,12 +149,14 @@ export async function POST(request: NextRequest) {
       ? (leg.trip_category || 'travel')
       : 'travel';
 
+    const legDate = leg.date || date;
+
     const { data: trip, error: tripErr } = await db
       .from('trips')
       .insert({
         user_id: user.id,
         mode: leg.mode,
-        date,
+        date: legDate,
         origin: leg.origin || null,
         destination: leg.destination || null,
         distance_miles: dist,
@@ -167,6 +174,7 @@ export async function POST(request: NextRequest) {
         source: 'manual',
         route_id: route.id,
         leg_order: i,
+        trip_status: resolvedStatus,
       })
       .select()
       .single();
@@ -178,8 +186,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: tripErr.message }, { status: 500 });
     }
 
-    // Create linked finance transaction per leg if cost > 0
-    if (cost && cost > 0) {
+    // Create linked finance transaction per leg if cost > 0 (skip for planned trips)
+    if (cost && cost > 0 && resolvedStatus === 'completed') {
       try {
         const vendor = leg.origin && leg.destination
           ? `${leg.origin} → ${leg.destination}`
@@ -206,7 +214,11 @@ export async function POST(request: NextRequest) {
     if (co2) totalCo2 += co2;
   }
 
-  // 3. Update route aggregates
+  // 3. Compute end_date from latest leg date
+  const legDates = createdTrips.map((t) => t.date).filter(Boolean).sort();
+  const endDate = legDates.length > 0 ? legDates[legDates.length - 1] : null;
+
+  // 4. Update route aggregates
   await db
     .from('trip_routes')
     .update({
@@ -214,6 +226,7 @@ export async function POST(request: NextRequest) {
       total_duration: totalDuration,
       total_cost: parseFloat(totalCost.toFixed(2)),
       total_co2_kg: parseFloat(totalCo2.toFixed(3)),
+      end_date: endDate !== date ? endDate : null,
     })
     .eq('id', route.id);
 

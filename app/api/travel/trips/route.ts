@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
   const purpose = params.get('purpose');
   const tax_category = params.get('tax_category');
   const trip_category = params.get('trip_category');
+  const trip_status = params.get('trip_status');
   const limit = Math.min(parseInt(params.get('limit') || '50'), 500);
   const offset = parseInt(params.get('offset') || '0');
 
@@ -65,6 +66,7 @@ export async function GET(request: NextRequest) {
   if (purpose) query = query.eq('purpose', purpose);
   if (tax_category) query = query.eq('tax_category', tax_category);
   if (trip_category) query = query.eq('trip_category', trip_category);
+  if (trip_status) query = query.eq('trip_status', trip_status);
   const jobId = params.get('job_id');
   if (jobId) query = query.eq('job_id', jobId);
 
@@ -87,6 +89,7 @@ export async function POST(request: NextRequest) {
     tax_category, trip_category, finance_category_id,
     is_round_trip, job_id,
     origin_lat, origin_lng, dest_lat, dest_lng,
+    trip_status, end_date, packing_notes,
   } = body;
 
   if (!mode || !date) {
@@ -148,14 +151,18 @@ export async function POST(request: NextRequest) {
       trip_category: resolvedTripCategory,
       is_round_trip: roundTrip,
       job_id: job_id || null,
+      trip_status: trip_status || 'completed',
+      end_date: end_date || null,
+      packing_notes: packing_notes || null,
     })
     .select()
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Auto-create linked finance transaction if cost is provided
-  if (cost && cost > 0) {
+  // Auto-create linked finance transaction if cost is provided (skip for planned trips)
+  const resolvedStatus = trip_status || 'completed';
+  if (cost && cost > 0 && resolvedStatus === 'completed') {
     try {
       const arrow = roundTrip ? '↔' : '→';
       const txId = await createLinkedTransaction(supabase, {
@@ -204,7 +211,7 @@ export async function PATCH(request: NextRequest) {
   // Fetch existing record for CO2 recalc and transaction sync
   const { data: existing } = await supabase
     .from('trips')
-    .select('mode, distance_miles, cost, origin, destination, date, transaction_id, is_round_trip')
+    .select('mode, distance_miles, cost, origin, destination, date, transaction_id, is_round_trip, trip_status')
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle();
@@ -235,6 +242,10 @@ export async function PATCH(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  // When a planned trip is marked completed, create the finance transaction
+  const statusChanged = updates.trip_status !== undefined;
+  const justCompleted = statusChanged && updates.trip_status === 'completed' && existing.trip_status !== 'completed';
+
   // Sync linked finance transaction if cost-related fields changed
   const costChanged = updates.cost !== undefined;
   const originChanged = updates.origin !== undefined;
@@ -242,7 +253,7 @@ export async function PATCH(request: NextRequest) {
   const dateChanged = updates.date !== undefined;
   const modeChanged = updates.mode !== undefined;
 
-  if (costChanged || originChanged || destinationChanged || dateChanged || modeChanged || roundTripChanged) {
+  if (costChanged || originChanged || destinationChanged || dateChanged || modeChanged || roundTripChanged || justCompleted) {
     const newCost = updates.cost ?? existing.cost;
     const newOrigin = updates.origin ?? existing.origin;
     const newDest = updates.destination ?? existing.destination;

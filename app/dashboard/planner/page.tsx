@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Task, RecurringTask } from '@/lib/types';
 import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import Link from 'next/link';
-import { Calendar, DollarSign, Plus, Repeat, Upload, Download, Filter } from 'lucide-react';
+import { Calendar, DollarSign, Plus, Repeat, Upload, Download, Filter, Plane, MapPin } from 'lucide-react';
 import { EditTaskModal } from '@/components/EditTaskModal';
 import CreateRecurringTaskModal, { RecurringTaskData } from '@/components/planner/CreateRecurringTaskModal';
 import CreateTaskModal from '@/components/planner/CreateTaskModal';
@@ -128,6 +128,24 @@ export default function PlannerPage() {
   // Backlog tasks (outside current date window, not completed)
   const [backlogTasks, setBacklogTasks] = useState<Task[]>([]);
 
+  // Planned trips
+  interface PlannedTrip {
+    id: string;
+    mode: string;
+    date: string;
+    end_date: string | null;
+    origin: string | null;
+    destination: string | null;
+    purpose: string | null;
+    cost: number | null;
+    notes: string | null;
+    trip_status: string;
+    packing_notes: string | null;
+    is_round_trip: boolean;
+    vehicles: { id: string; nickname: string; type: string } | null;
+  }
+  const [plannedTrips, setPlannedTrips] = useState<PlannedTrip[]>([]);
+
   // Recurring task state
   const [showRecurringModal, setShowRecurringModal] = useState(false);
   const [, setRecurringTasks] = useState<RecurringTask[]>([]);
@@ -160,7 +178,7 @@ export default function PlannerPage() {
     const manager = OfflineSyncManager.getInstance();
 
     try {
-      const [mainRes, backlogRes] = await Promise.all([
+      const [mainRes, backlogRes, tripsRes] = await Promise.all([
         supabase
           .from('tasks')
           .select('*')
@@ -176,6 +194,8 @@ export default function PlannerPage() {
           .neq('status', 'archived')
           .or(`date.gt.${endDate},date.lt.${startDate}`)
           .order('date', { ascending: true }),
+        // Planned trips overlapping this date range
+        offlineFetch(`/api/travel/trips/planned?from=${startDate}&to=${endDate}`),
       ]);
 
       if (mainRes.data) {
@@ -186,7 +206,11 @@ export default function PlannerPage() {
         console.error('[Planner] Backlog query error:', backlogRes.error);
       }
       setBacklogTasks((backlogRes.data || []) as Task[]);
-      console.log('[Planner] Backlog tasks loaded:', backlogRes.data?.length ?? 0, 'startDate:', startDate, 'endDate:', endDate);
+
+      if (tripsRes.ok) {
+        const tripsData = await tripsRes.json();
+        setPlannedTrips(tripsData.trips || []);
+      }
     } catch {
       // Offline or error — fall back to cache
       const cached = await manager.getCached<Task[]>(cacheKey);
@@ -496,6 +520,59 @@ export default function PlannerPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Planned Trips */}
+      {plannedTrips.length > 0 && (
+        <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Plane className="w-5 h-5 text-blue-600" />
+            Planned Trips
+          </h3>
+          <div className="space-y-3">
+            {plannedTrips.map((trip) => {
+              const MODE_ICONS: Record<string, string> = {
+                bike: '\u{1F6B2}', car: '\u{1F697}', bus: '\u{1F68C}', train: '\u{1F682}', plane: '\u2708\uFE0F',
+                walk: '\u{1F6B6}', run: '\u{1F3C3}', ferry: '\u26F4\uFE0F', rideshare: '\u{1F695}', other: '\u{1F690}',
+              };
+              const dateStr = new Date(trip.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              const endStr = trip.end_date ? ` – ${new Date(trip.end_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : '';
+              return (
+                <Link
+                  key={trip.id}
+                  href={`/dashboard/travel/trips/${trip.id}`}
+                  className="block p-4 rounded-lg border-l-4 border-blue-500 bg-blue-50/50 hover:shadow-md transition"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="grow">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-base">{MODE_ICONS[trip.mode] ?? '\u{1F690}'}</span>
+                        <span className={`text-xs font-semibold uppercase px-2 py-0.5 rounded-full ${
+                          trip.trip_status === 'planned' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {trip.trip_status === 'in_progress' ? 'In Progress' : 'Planned'}
+                        </span>
+                        <span className="text-xs text-gray-500">{dateStr}{endStr}</span>
+                      </div>
+                      <p className="text-gray-900 font-medium">
+                        {trip.origin && trip.destination
+                          ? `${trip.origin} ${trip.is_round_trip ? '\u2194' : '\u2192'} ${trip.destination}`
+                          : trip.notes || `${trip.mode} trip`}
+                      </p>
+                      {trip.cost != null && trip.cost > 0 && (
+                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                          <DollarSign className="w-3 h-3" />
+                          Est. ${trip.cost.toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+                    <MapPin className="w-4 h-4 text-blue-400 shrink-0 mt-1" />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       )}
 
