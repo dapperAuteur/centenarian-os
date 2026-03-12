@@ -31,31 +31,29 @@ The key fields are mode of transport, distance, and date. Everything else is opt
 
 ### Navigating to Trips
 
-Go to `/dashboard/travel/trips`. You'll see your trip history — or an empty state if this is your first trip.
+Go to `/dashboard/travel` or `/dashboard/travel/trips`. You'll see your trip history — or an empty state if this is your first trip.
 
-Click **Log Trip** to open the trip entry form.
+Click **Add Trip** to open the unified trip form.
 
 ---
 
-### The Trip Entry Form
+### The Unified Trip Form
 
-Let me walk through the fields:
+CentenarianOS uses one form for all trips — whether it's a simple A→B drive or a multi-stop journey. A 2-stop trip is a simple trip; add more stops for a multi-stop route. Here are the fields for each leg:
 
-**Vehicle** — Select which vehicle (or mode of transport) you used. If you were on a bike, select your bike entry from the vehicle list. If it's a vehicle that doesn't take fuel, that's fine — trips work for any vehicle.
+**Vehicle** — Select from two groups: **Your Vehicles** (personal cars, bikes) and **Public Transport** (pre-loaded planes, trains, buses, ferries, rideshare). The vehicle selection auto-sets the travel mode.
+
+**Origin** — Starting point for this leg. Supports saved contact locations for quick selection.
+
+**Destination** — Endpoint for this leg. Same contact location support.
 
 **Date** — The date of the trip. Defaults to today.
 
-**Mode** — A dropdown: Car, Bike, Walk, Run, Hike. This determines how the trip is categorized in your analytics. Bike trips contribute to your bike savings calculation. Car trips contribute to your vehicle cost totals.
+**Distance** — In miles. Enter the distance for this leg.
 
-**Distance** — In miles (or kilometers, depending on your settings). Enter the total distance of the trip.
+**Cost** (optional) — Fuel cost, ticket price, or fare. Legs with cost > $0 can create linked finance transactions.
 
-**Start location** (optional) — A text field for the starting point. For example: "Home", "Office", "Denver, CO". This is free text — it's not a map integration.
-
-**End location** (optional) — Same format as start.
-
-**Route name** (optional) — A short label for the trip. For example: "Morning commute", "I-70 mountain drive", "Sunday trail ride".
-
-**Notes** (optional) — Anything else you want to remember about this trip. Road conditions, highlights, stops made.
+**Notes** (optional) — Anything you want to remember about this leg.
 
 **Duration** (optional) — How long the trip took in hours and minutes. Used to calculate average speed when you're curious about that.
 

@@ -8,18 +8,26 @@ export async function GET(request: NextRequest) {
 
   const includeRetired = request.nextUrl.searchParams.get('include_retired') === 'true';
 
-  let query = supabase
+  // Fetch user's vehicles
+  let userQuery = supabase
     .from('vehicles')
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: true });
 
   if (!includeRetired) {
-    query = query.eq('active', true);
+    userQuery = userQuery.eq('active', true);
   }
 
-  const { data, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  // Also fetch system (public transport) vehicles
+  const [userResult, systemResult] = await Promise.all([
+    userQuery,
+    supabase.from('vehicles').select('*').eq('is_system', true).eq('active', true).order('nickname'),
+  ]);
+
+  if (userResult.error) return NextResponse.json({ error: userResult.error.message }, { status: 500 });
+
+  const data = [...(userResult.data || []), ...(systemResult.data || [])];
 
   // Attach latest odometer reading from fuel_logs for each vehicle
   const vehicleIds = (data || []).map((v) => v.id);
@@ -88,6 +96,10 @@ export async function PATCH(request: NextRequest) {
   const { id, retire, reactivate, ...updates } = body;
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
+  // Prevent editing system vehicles
+  const { data: existing } = await supabase.from('vehicles').select('is_system').eq('id', id).maybeSingle();
+  if (existing?.is_system) return NextResponse.json({ error: 'Cannot edit system vehicles' }, { status: 403 });
+
   // Shorthand flags for retire/reactivate
   if (retire) updates.active = false;
   if (reactivate) updates.active = true;
@@ -111,6 +123,10 @@ export async function DELETE(request: NextRequest) {
 
   const { id } = await request.json();
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+  // Prevent deleting system vehicles
+  const { data: existing } = await supabase.from('vehicles').select('is_system').eq('id', id).maybeSingle();
+  if (existing?.is_system) return NextResponse.json({ error: 'Cannot delete system vehicles' }, { status: 403 });
 
   const { error } = await supabase
     .from('vehicles')

@@ -11,6 +11,7 @@ interface Vehicle {
   type: string;
   ownership_type: string;
   trip_mode: string | null;
+  is_system?: boolean;
 }
 
 interface Stop {
@@ -22,6 +23,9 @@ interface Stop {
   purpose: string;
   vehicle_id: string;
   date: string; // per-leg date for multi-day trips
+  calories_burned: string;
+  tax_category: string;
+  trip_category: string;
   // Booking details
   confirmation_number: string;
   carrier_name: string;
@@ -35,6 +39,8 @@ interface Stop {
   booking_url: string;
 }
 
+const HUMAN_POWERED_MODES = ['bike', 'walk', 'run', 'other'];
+
 const MODE_OPTIONS = ['bike', 'car', 'bus', 'train', 'plane', 'walk', 'run', 'ferry', 'rideshare', 'other'];
 const MODE_ICONS: Record<string, string> = {
   bike: '🚲', car: '🚗', bus: '🚌', train: '🚂', plane: '✈️',
@@ -44,6 +50,8 @@ const MODE_ICONS: Record<string, string> = {
 const VEHICLE_TYPE_TO_MODE: Record<string, string> = {
   car: 'car', bike: 'bike', ebike: 'bike',
   motorcycle: 'car', scooter: 'car', shoes: 'walk',
+  plane: 'plane', train: 'train', bus: 'bus',
+  ferry: 'ferry', rideshare: 'rideshare',
 };
 
 const BLANK_STOP: Stop = {
@@ -52,9 +60,12 @@ const BLANK_STOP: Stop = {
   distance_miles: '',
   duration_min: '',
   cost: '',
-  purpose: 'errand',
+  purpose: 'commute',
   vehicle_id: '',
   date: '',
+  calories_burned: '',
+  tax_category: 'personal',
+  trip_category: 'travel',
   confirmation_number: '',
   carrier_name: '',
   seat_assignment: '',
@@ -81,6 +92,7 @@ interface LegData {
 
 interface MultiStopFormProps {
   vehicles: Vehicle[];
+  brands?: { id: string; name: string }[];
   onClose: () => void;
   onSaved: () => void;
   editRouteId?: string;
@@ -92,6 +104,9 @@ interface MultiStopFormProps {
     trip_status?: string;
     end_date?: string | null;
     packing_notes?: string | null;
+    budget_amount?: number | null;
+    brand_id?: string | null;
+    visibility?: string | null;
   };
   initialLegs?: LegData[];
   defaultStatus?: string;
@@ -135,7 +150,7 @@ function legsToStops(legs: LegData[], isRoundTrip: boolean, routeDate?: string):
   return stops;
 }
 
-export default function MultiStopForm({ vehicles, onClose, onSaved, editRouteId, initialRoute, initialLegs, defaultStatus }: MultiStopFormProps) {
+export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved, editRouteId, initialRoute, initialLegs, defaultStatus }: MultiStopFormProps) {
   const isEdit = !!editRouteId;
   const [name, setName] = useState(initialRoute?.name || '');
   const [date, setDate] = useState(initialRoute?.date || new Date().toISOString().split('T')[0]);
@@ -149,9 +164,16 @@ export default function MultiStopForm({ vehicles, onClose, onSaved, editRouteId,
   const [notes, setNotes] = useState(initialRoute?.notes || '');
   const [tripStatus, setTripStatus] = useState(initialRoute?.trip_status || defaultStatus || 'completed');
   const [packingNotes, setPackingNotes] = useState(initialRoute?.packing_notes || '');
+  const [budgetAmount, setBudgetAmount] = useState(initialRoute?.budget_amount != null ? String(initialRoute.budget_amount) : '');
+  const [brandId, setBrandId] = useState(initialRoute?.brand_id || '');
+  const [visibility, setVisibility] = useState(initialRoute?.visibility || 'private');
   const [saving, setSaving] = useState(false);
   const [expandedBooking, setExpandedBooking] = useState<number | null>(null);
+  const [expandedExtra, setExpandedExtra] = useState<number | null>(null);
   const isPlanning = tripStatus === 'planned' || tripStatus === 'in_progress';
+  const isMultiStop = stops.length > 2;
+  const userVehicles = vehicles.filter((v) => !v.is_system);
+  const systemVehicles = vehicles.filter((v) => v.is_system);
 
   const addStop = () => {
     setStops((s) => [...s, { ...BLANK_STOP }]);
@@ -210,6 +232,9 @@ export default function MultiStopForm({ vehicles, onClose, onSaved, editRouteId,
           purpose: to.purpose || null,
           vehicle_id: to.vehicle_id || null,
           date: to.date || null,
+          calories_burned: to.calories_burned ? Number(to.calories_burned) : null,
+          tax_category: to.tax_category || 'personal',
+          trip_category: HUMAN_POWERED_MODES.includes(to.mode) ? (to.trip_category || 'travel') : 'travel',
           confirmation_number: to.confirmation_number || null,
           carrier_name: to.carrier_name || null,
           seat_assignment: to.seat_assignment || null,
@@ -233,6 +258,9 @@ export default function MultiStopForm({ vehicles, onClose, onSaved, editRouteId,
         is_round_trip: isRoundTrip,
         trip_status: tripStatus,
         packing_notes: packingNotes.trim() || null,
+        budget_amount: budgetAmount ? Number(budgetAmount) : null,
+        brand_id: brandId || null,
+        visibility: visibility || 'private',
       };
       if (!isEdit) {
         payload.save_as_template = saveTemplate && name.trim();
@@ -259,7 +287,11 @@ export default function MultiStopForm({ vehicles, onClose, onSaved, editRouteId,
         onSubmit={handleSubmit}
         className="bg-white rounded-2xl p-6 pb-0 w-full max-w-lg space-y-4 shadow-xl max-h-[90vh] overflow-y-auto"
       >
-        <h2 className="text-lg font-bold text-gray-900">{isEdit ? 'Edit Multi-Stop Route' : isPlanning ? 'Plan Multi-Stop Trip' : 'Multi-Stop Route'}</h2>
+        <h2 className="text-lg font-bold text-gray-900">
+          {isEdit ? (isMultiStop ? 'Edit Route' : 'Edit Trip')
+            : isPlanning ? (isMultiStop ? 'Plan Multi-Stop Trip' : 'Plan Trip')
+            : isMultiStop ? 'Multi-Stop Route' : 'Add Trip'}
+        </h2>
 
         {/* Status selector */}
         <div>
@@ -286,7 +318,7 @@ export default function MultiStopForm({ vehicles, onClose, onSaved, editRouteId,
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label htmlFor="route-name" className="block text-xs font-medium text-gray-600 mb-1">Route Name</label>
+            <label htmlFor="route-name" className="block text-xs font-medium text-gray-600 mb-1">{isMultiStop ? 'Route Name' : 'Trip Name'}</label>
             <input
               id="route-name"
               type="text"
@@ -397,11 +429,22 @@ export default function MultiStopForm({ vehicles, onClose, onSaved, editRouteId,
                         aria-label={`Vehicle for leg ${idx}`}
                       >
                         <option value="">No vehicle</option>
-                        {vehicles.map((v) => (
-                          <option key={v.id} value={v.id}>
-                            {v.nickname}{v.ownership_type !== 'owned' ? ` (${v.ownership_type})` : ''}
-                          </option>
-                        ))}
+                        {userVehicles.length > 0 && (
+                          <optgroup label="Your Vehicles">
+                            {userVehicles.map((v) => (
+                              <option key={v.id} value={v.id}>
+                                {v.nickname}{v.ownership_type !== 'owned' ? ` (${v.ownership_type})` : ''}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        {systemVehicles.length > 0 && (
+                          <optgroup label="Public Transport">
+                            {systemVehicles.map((v) => (
+                              <option key={v.id} value={v.id}>{v.nickname}</option>
+                            ))}
+                          </optgroup>
+                        )}
                       </select>
                     )}
                     <input
@@ -411,6 +454,74 @@ export default function MultiStopForm({ vehicles, onClose, onSaved, editRouteId,
                       className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs min-h-11"
                       aria-label={`Date for leg ${idx}`}
                     />
+                  </div>
+                )}
+                {/* Per-leg extra fields (calories, tax, trip type) */}
+                {idx > 0 && (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedExtra(expandedExtra === idx ? null : idx)}
+                      className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-medium text-gray-500 hover:bg-gray-50 transition"
+                    >
+                      <span>Purpose &amp; Details</span>
+                      <ChevronDown className={`w-3 h-3 transition-transform ${expandedExtra === idx ? 'rotate-180' : ''}`} />
+                    </button>
+                    {expandedExtra === idx && (
+                      <div className="px-2 pb-2 space-y-2 border-t border-gray-100">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                          <select
+                            value={stop.purpose}
+                            onChange={(e) => updateStop(idx, 'purpose', e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs"
+                            aria-label="Purpose"
+                          >
+                            {['commute', 'leisure', 'work', 'errand', 'exercise', 'other'].map((p) => (
+                              <option key={p} value={p}>{p}</option>
+                            ))}
+                          </select>
+                          <select
+                            value={stop.tax_category}
+                            onChange={(e) => updateStop(idx, 'tax_category', e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs"
+                            aria-label="Tax category"
+                          >
+                            <option value="personal">Personal</option>
+                            <option value="business">Business</option>
+                            <option value="medical">Medical</option>
+                            <option value="charitable">Charitable</option>
+                          </select>
+                          <input
+                            type="number"
+                            value={stop.calories_burned}
+                            onChange={(e) => updateStop(idx, 'calories_burned', e.target.value)}
+                            placeholder="Calories"
+                            className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs"
+                            aria-label="Calories burned"
+                          />
+                        </div>
+                        {HUMAN_POWERED_MODES.includes(stop.mode) && (
+                          <div>
+                            <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
+                              <button
+                                type="button"
+                                onClick={() => updateStop(idx, 'trip_category', 'travel')}
+                                className={`flex-1 py-1.5 font-medium transition ${stop.trip_category === 'travel' ? 'bg-sky-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                              >
+                                Travel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateStop(idx, 'trip_category', 'fitness')}
+                                className={`flex-1 py-1.5 font-medium transition ${stop.trip_category === 'fitness' ? 'bg-sky-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                              >
+                                Fitness
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
                 {idx > 0 && (
@@ -539,6 +650,49 @@ export default function MultiStopForm({ vehicles, onClose, onSaved, editRouteId,
           />
         </div>
 
+        {/* Budget, Brand, Visibility */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label htmlFor="route-budget" className="block text-xs font-medium text-gray-600 mb-1">Budget</label>
+            <input
+              id="route-budget"
+              type="number"
+              step="0.01"
+              value={budgetAmount}
+              onChange={(e) => setBudgetAmount(e.target.value)}
+              placeholder="$ 0.00"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+            />
+          </div>
+          {brands.length > 0 && (
+            <div>
+              <label htmlFor="route-brand" className="block text-xs font-medium text-gray-600 mb-1">Brand</label>
+              <select
+                id="route-brand"
+                value={brandId}
+                onChange={(e) => setBrandId(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">None</option>
+                {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+          )}
+          <div>
+            <label htmlFor="route-visibility" className="block text-xs font-medium text-gray-600 mb-1">Visibility</label>
+            <select
+              id="route-visibility"
+              value={visibility}
+              onChange={(e) => setVisibility(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="private">Private</option>
+              <option value="shared">Shared</option>
+              <option value="public">Public</option>
+            </select>
+          </div>
+        </div>
+
         {/* Packing notes for planned trips */}
         {isPlanning && (
           <div>
@@ -567,7 +721,7 @@ export default function MultiStopForm({ vehicles, onClose, onSaved, editRouteId,
             disabled={saving}
             className={`flex-1 text-white rounded-xl min-h-11 text-sm font-medium transition disabled:opacity-50 ${isPlanning ? 'bg-blue-600 hover:bg-blue-700' : 'bg-sky-600 hover:bg-sky-700'}`}
           >
-            {saving ? 'Saving...' : isEdit ? 'Update Route' : isPlanning ? 'Plan Route' : 'Save Route'}
+            {saving ? 'Saving...' : isEdit ? (isMultiStop ? 'Update Route' : 'Update Trip') : isPlanning ? (isMultiStop ? 'Plan Route' : 'Plan Trip') : (isMultiStop ? 'Save Route' : 'Save Trip')}
           </button>
         </div>
       </form>

@@ -28,6 +28,14 @@ export const CLEAR_ORDER = [
   'contractor_jobs',
   'admin_chat_messages',
   'admin_chats',
+  'social_bookmarks',
+  'social_shares',
+  'social_likes',
+  'media_episode_links',
+  'podcast_episodes',
+  'media_notes',
+  'media_items',
+  'media_categories',
   'activity_links',
   'entity_life_categories',
   'workout_log_exercises',
@@ -40,6 +48,7 @@ export const CLEAR_ORDER = [
   'exercise_equipment',
   'exercises',
   'exercise_categories',
+  'equipment_media',
   'equipment_valuations',
   'equipment',
   'equipment_categories',
@@ -53,6 +62,7 @@ export const CLEAR_ORDER = [
   'receipt_line_items',
   'item_prices',
   'scan_images',
+  'trip_shares',
   'trip_routes',
   'trips',
   'trip_template_stops',
@@ -442,6 +452,56 @@ export async function seedTutorial(supabase: SupabaseClient, userId: string): Pr
     published_at: new Date(Date.now() - 3 * 86400000).toISOString(),
   }]);
   if (blogErr) throw new Error(`Tutorial blog: ${blogErr.message}`);
+
+  // ── Media Categories & Items ──
+  const { data: mediaCats, error: mediaCatErr } = await supabase
+    .from('media_categories')
+    .insert([
+      { user_id: userId, name: 'Books', icon: '📚', color: '#3b82f6', sort_order: 1 },
+      { user_id: userId, name: 'TV & Film', icon: '🎬', color: '#ef4444', sort_order: 2 },
+      { user_id: userId, name: 'Podcasts', icon: '🎙️', color: '#8b5cf6', sort_order: 3 },
+    ])
+    .select('id, name');
+  if (mediaCatErr) throw new Error(`Tutorial media categories: ${mediaCatErr.message}`);
+  const mediaCatId = (name: string) => mediaCats?.find(c => c.name === name)?.id ?? null;
+
+  const { data: mediaItems, error: mediaErr } = await supabase.from('media_items').insert([
+    { user_id: userId, title: 'Outlive: The Science & Art of Longevity', creator: 'Peter Attia', media_type: 'book', status: 'completed', rating: 5, start_date: daysAgo(60), end_date: daysAgo(20), category_id: mediaCatId('Books'), genre: ['health', 'longevity'], tags: ['must-read'], is_favorite: true, visibility: 'public' },
+    { user_id: userId, title: 'Lifespan: Why We Age and Why We Don\'t Have To', creator: 'David Sinclair', media_type: 'book', status: 'in_progress', current_progress: 'Chapter 8', total_length: '12 chapters', category_id: mediaCatId('Books'), genre: ['science', 'aging'], visibility: 'private' },
+    { user_id: userId, title: 'Blue Zones Kitchen', creator: 'Dan Buettner', media_type: 'book', status: 'want_to_consume', category_id: mediaCatId('Books'), genre: ['cooking', 'longevity'] },
+    { user_id: userId, title: 'The Zone of Interest', creator: 'Jonathan Glazer', media_type: 'movie', status: 'completed', rating: 4, category_id: mediaCatId('TV & Film'), genre: ['drama', 'history'], year_released: 2023 },
+    { user_id: userId, title: 'Huberman Lab', creator: 'Andrew Huberman', media_type: 'podcast', status: 'in_progress', category_id: mediaCatId('Podcasts'), genre: ['health', 'neuroscience'], is_favorite: true, visibility: 'public' },
+    { user_id: userId, title: 'The Drive', creator: 'Peter Attia', media_type: 'podcast', status: 'in_progress', category_id: mediaCatId('Podcasts'), genre: ['health', 'longevity'] },
+  ]).select('id, title');
+  if (mediaErr) throw new Error(`Tutorial media items: ${mediaErr.message}`);
+
+  // ── Media Notes ──
+  const outliveId = mediaItems?.find(m => m.title.startsWith('Outlive'))?.id;
+  if (outliveId) {
+    await supabase.from('media_notes').insert([
+      { user_id: userId, media_item_id: outliveId, title: 'Key framework', content: 'Medicine 3.0: shift from reactive to proactive. Focus on the four horsemen — heart disease, cancer, neurodegenerative disease, metabolic dysfunction.', note_type: 'general', content_format: 'markdown' },
+      { user_id: userId, media_item_id: outliveId, title: 'Favorite quote', content: '"The objective of Medicine 3.0 is not to patch people up and get them out the door but to prevent the diseases and conditions that would send them to the doctor in the first place."', note_type: 'quote', content_format: 'markdown' },
+    ]);
+  }
+
+  // ── Cross-Module Activity Links ──
+  // Link recipe → blog post, trip → transaction, workout → equipment
+  const blogData = await supabase.from('blog_posts').select('id').eq('user_id', userId).limit(1);
+  const blogId = blogData?.data?.[0]?.id;
+  const tripData = await supabase.from('trips').select('id').eq('user_id', userId).limit(1);
+  const tripId = tripData?.data?.[0]?.id;
+  const txData = await supabase.from('financial_transactions').select('id').eq('user_id', userId).eq('type', 'expense').limit(1);
+  const txId = txData?.data?.[0]?.id;
+  const recipeId = recipeData?.[0]?.id;
+
+  const linkRows = [
+    recipeId && blogId && { user_id: userId, source_type: 'recipe', source_id: recipeId, target_type: 'blog_post', target_id: blogId },
+    tripId && txId && { user_id: userId, source_type: 'trip', source_id: tripId, target_type: 'transaction', target_id: txId },
+    outliveId && recipeId && { user_id: userId, source_type: 'media_item', source_id: outliveId, target_type: 'recipe', target_id: recipeId },
+  ].filter(Boolean);
+  if (linkRows.length > 0) {
+    await supabase.from('activity_links').insert(linkRows);
+  }
 }
 
 // ─── VISITOR ACCOUNT ────────────────────────────────────────────────────────
@@ -1075,5 +1135,73 @@ export async function seedVisitor(supabase: SupabaseClient, userId: string): Pro
       const { error: locErr } = await supabase.from('contact_locations').insert(locRows);
       if (locErr) throw new Error(`Visitor contact locations: ${locErr.message}`);
     }
+  }
+
+  // ── Media Categories & Items ──
+  const { data: vMediaCats, error: vMediaCatErr } = await supabase
+    .from('media_categories')
+    .insert([
+      { user_id: userId, name: 'Books', icon: '📚', color: '#3b82f6', sort_order: 1 },
+      { user_id: userId, name: 'TV & Film', icon: '🎬', color: '#ef4444', sort_order: 2 },
+      { user_id: userId, name: 'Music', icon: '🎵', color: '#10b981', sort_order: 3 },
+      { user_id: userId, name: 'Podcasts', icon: '🎙️', color: '#8b5cf6', sort_order: 4 },
+      { user_id: userId, name: 'Art', icon: '🎨', color: '#f59e0b', sort_order: 5 },
+    ])
+    .select('id, name');
+  if (vMediaCatErr) throw new Error(`Visitor media categories: ${vMediaCatErr.message}`);
+  const vMCatId = (name: string) => vMediaCats?.find(c => c.name === name)?.id ?? null;
+
+  const { data: vMediaItems, error: vMediaErr } = await supabase.from('media_items').insert([
+    { user_id: userId, title: 'Outlive: The Science & Art of Longevity', creator: 'Peter Attia', media_type: 'book', status: 'completed', rating: 5, start_date: daysAgo(90), end_date: daysAgo(45), category_id: vMCatId('Books'), genre: ['health', 'longevity'], tags: ['must-read'], is_favorite: true, visibility: 'public' },
+    { user_id: userId, title: 'Atomic Habits', creator: 'James Clear', media_type: 'book', status: 'completed', rating: 5, start_date: daysAgo(120), end_date: daysAgo(100), category_id: vMCatId('Books'), genre: ['productivity', 'habits'], visibility: 'public' },
+    { user_id: userId, title: 'The 100-Year Life', creator: 'Lynda Gratton', media_type: 'book', status: 'in_progress', current_progress: 'Part 3', total_length: '4 parts', category_id: vMCatId('Books'), genre: ['longevity', 'economics'] },
+    { user_id: userId, title: 'Blue Zones Kitchen', creator: 'Dan Buettner', media_type: 'book', status: 'want_to_consume', category_id: vMCatId('Books'), genre: ['cooking', 'longevity'] },
+    { user_id: userId, title: 'Born to Run', creator: 'Christopher McDougall', media_type: 'book', status: 'completed', rating: 4, category_id: vMCatId('Books'), genre: ['running', 'adventure'] },
+    { user_id: userId, title: 'Shogun', creator: 'FX / Hulu', media_type: 'tv_show', status: 'completed', rating: 5, category_id: vMCatId('TV & Film'), genre: ['drama', 'historical'], season_number: 1, episode_number: 10, total_seasons: 1, total_episodes: 10, year_released: 2024, is_favorite: true, visibility: 'public' },
+    { user_id: userId, title: 'Past Lives', creator: 'Celine Song', media_type: 'movie', status: 'completed', rating: 5, category_id: vMCatId('TV & Film'), genre: ['drama', 'romance'], year_released: 2023, visibility: 'public' },
+    { user_id: userId, title: 'Huberman Lab', creator: 'Andrew Huberman', media_type: 'podcast', status: 'in_progress', category_id: vMCatId('Podcasts'), genre: ['health', 'neuroscience'], is_favorite: true, visibility: 'public' },
+    { user_id: userId, title: 'The Drive', creator: 'Peter Attia', media_type: 'podcast', status: 'in_progress', category_id: vMCatId('Podcasts'), genre: ['health', 'longevity'] },
+    { user_id: userId, title: 'Kind of Blue', creator: 'Miles Davis', media_type: 'album', status: 'completed', rating: 5, category_id: vMCatId('Music'), genre: ['jazz'], year_released: 1959, is_favorite: true },
+  ]).select('id, title');
+  if (vMediaErr) throw new Error(`Visitor media items: ${vMediaErr.message}`);
+
+  // ── Media Notes ──
+  const vOutliveId = vMediaItems?.find(m => m.title.startsWith('Outlive'))?.id;
+  const vAtomicId = vMediaItems?.find(m => m.title === 'Atomic Habits')?.id;
+  const noteRows = [
+    vOutliveId && { user_id: userId, media_item_id: vOutliveId, title: 'Core framework', content: 'Medicine 3.0: proactive health optimization. The four horsemen — heart disease, cancer, neurodegenerative disease, metabolic dysfunction. Exercise is the most potent longevity "drug" we have.', note_type: 'review', content_format: 'markdown' },
+    vOutliveId && { user_id: userId, media_item_id: vOutliveId, title: 'Exercise hierarchy', content: 'Zone 2 cardio (3-4x/week, 45min), strength training (3x/week), stability & mobility daily. These form the "centenarian decathlon" training base.', note_type: 'general', content_format: 'markdown' },
+    vAtomicId && { user_id: userId, media_item_id: vAtomicId, title: 'Key takeaway', content: '"You do not rise to the level of your goals. You fall to the level of your systems." Applied this directly to my tracking habits in CentenarianOS.', note_type: 'quote', content_format: 'markdown' },
+  ].filter(Boolean);
+  if (noteRows.length > 0) {
+    await supabase.from('media_notes').insert(noteRows);
+  }
+
+  // ── Cross-Module Activity Links ──
+  const vBlogData = await supabase.from('blog_posts').select('id, title').eq('user_id', userId);
+  const vBlogId = (title: string) => vBlogData?.data?.find(b => b.title.includes(title))?.id;
+  const vRecipeData = await supabase.from('recipes').select('id, title').eq('user_id', userId);
+  const vRecipeId = (title: string) => vRecipeData?.data?.find(r => r.title.includes(title))?.id;
+  const vTripData = await supabase.from('trips').select('id').eq('user_id', userId).limit(3);
+  const vTxData = await supabase.from('financial_transactions').select('id').eq('user_id', userId).eq('type', 'expense').limit(3);
+  const vWorkoutData = await supabase.from('workout_logs').select('id, name').eq('user_id', userId).limit(2);
+  const vEquipData = await supabase.from('equipment').select('id, name').eq('user_id', userId).limit(2);
+  const wkId = (name: string) => vWorkoutData?.data?.find(w => w.name?.includes(name))?.id;
+  const eqpId = (name: string) => vEquipData?.data?.find(e => e.name?.includes(name))?.id;
+
+  const vLinkRows = [
+    // recipe → blog post
+    vRecipeId('Salmon') && vBlogId('Fuel Tracking') && { user_id: userId, source_type: 'recipe', source_id: vRecipeId('Salmon'), target_type: 'blog_post', target_id: vBlogId('Fuel Tracking') },
+    // trip → transaction
+    vTripData?.data?.[0]?.id && vTxData?.data?.[0]?.id && { user_id: userId, source_type: 'trip', source_id: vTripData.data[0].id, target_type: 'transaction', target_id: vTxData.data[0].id },
+    // workout → equipment
+    wkId('Push') && eqpId('Barbell') && { user_id: userId, source_type: 'workout', source_id: wkId('Push'), target_type: 'equipment', target_id: eqpId('Barbell') },
+    // media → recipe (longevity book inspired a recipe)
+    vOutliveId && vRecipeId('Salmon') && { user_id: userId, source_type: 'media_item', source_id: vOutliveId, target_type: 'recipe', target_id: vRecipeId('Salmon') },
+    // trip → blog post (road trip blog)
+    vTripData?.data?.[1]?.id && vBlogId('Road Trip') && { user_id: userId, source_type: 'trip', source_id: vTripData.data[1].id, target_type: 'blog_post', target_id: vBlogId('Road Trip') },
+  ].filter(Boolean);
+  if (vLinkRows.length > 0) {
+    await supabase.from('activity_links').insert(vLinkRows);
   }
 }

@@ -161,7 +161,7 @@ export default function PricingPage() {
                 'Daily task planner (week/3-day/daily views)',
                 'Fuel & nutrition tracking (NCV framework)',
                 'Focus Engine (timer, debrief, pain log)',
-                'Travel & vehicle tracking with fuel OCR',
+                'Travel tracking with public transport, booking details & budgets',
                 'Financial dashboard (accounts, budgets, brands)',
                 'Bank account linking via Teller (auto-sync)',
                 'Health metrics & wearable sync (Garmin, Oura, WHOOP)',
@@ -173,6 +173,7 @@ export default function PricingPage() {
                 'Correlation analysis across health & lifestyle metrics',
                 'Academy courses & 15+ tutorial guides',
                 'Data Hub — bulk import/export for all modules',
+                'Media tracker — books, TV, movies, podcasts & notes',
                 'Cross-module linking, saved contacts & blog publishing',
                 'Interactive feature walkthroughs & guided onboarding',
               ].map((f) => (

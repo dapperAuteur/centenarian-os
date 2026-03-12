@@ -44,9 +44,10 @@ This lesson is a reference. It lists every module in CentenarianOS, what it does
 | Module | Path | What It Does | Paid? |
 |--------|------|-------------|-------|
 | **Finance** | `/dashboard/finance` | Financial accounts (checking, savings, credit card, loan, cash). Transaction tracking with vendors, categories, and account assignment. Budget categories with monthly limits. Brand/business P&L tracking. CSV import/export. Saved contacts with autocomplete. | Yes |
-| **Travel** | `/dashboard/travel` | Vehicle profiles, fuel logs with MPG calculation, receipt OCR (Gemini Vision), trip logging (manual + Garmin import), multi-stop routes, trip templates, round trips, vehicle maintenance, bike savings calculator. | Yes |
+| **Travel** | `/dashboard/travel` | Unified trip form (simple + multi-stop), public transport library (planes, trains, buses, ferries), booking details per leg (confirmations, seats, hotels), fuel logs with OCR, Garmin import, trip budgets, sharing, vehicle maintenance, bike savings. | Yes |
 | **Equipment** | `/dashboard/equipment` | Catalog gear and possessions. Categories, purchase price, current value, valuation history with charts. Link to financial transactions. Cross-module activity links. Summary dashboard with depreciation and ROI. | Yes |
 | **Categories** | `/dashboard/categories` | Life Categories — tag any item across all modules with high-level life areas (Health, Finance, Career, Fitness, etc.). Analytics dashboard with spending breakdown, activity charts, and uncategorized items view for quick batch tagging. | Yes |
+| **Media** | `/dashboard/media` | Track books, TV, movies, music, podcasts, art. Status tracking, ratings, rich notes (quotes, reviews, podcast prep). Podcast episode linking for content creators. | Yes |
 | **Data Hub** | `/dashboard/data` | Centralized import/export hub for all modules. CSV templates, Google Sheets integration, date-range exports. | Yes |
 
 ---
@@ -101,6 +102,7 @@ These features work across multiple modules:
 /dashboard/finance       — Financial Dashboard
 /dashboard/travel        — Travel & Vehicles
 /dashboard/equipment     — Equipment Tracker
+/dashboard/media         — Media Tracker
 /dashboard/categories    — Life Categories
 /dashboard/data          — Data Hub
 /dashboard/blog          — Blog
@@ -133,7 +135,7 @@ These features work across multiple modules:
 
 ## Key Takeaways
 
-- 5 nav groups: Operate (4 modules), Health (6), Life (5), Learn (4), AI (2 admin-only)
+- 5 nav groups: Operate (4 modules), Health (6), Life (6), Learn (4), AI (2 admin-only)
 - Free modules: Blog, Recipes, Academy, Live
 - Everything else requires Monthly ($10/mo) or Lifetime ($100)
 - Cross-module features: Saved Contacts, Activity Links, Life Categories, Contact Locations
