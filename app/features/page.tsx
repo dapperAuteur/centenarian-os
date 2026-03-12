@@ -32,6 +32,12 @@ export default function FeaturesIndexPage() {
             <Link href="/blog" className="text-sm text-gray-600 hover:text-gray-900 font-medium hidden sm:block">
               Blog
             </Link>
+            <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900 font-medium hidden sm:block">
+              Login
+            </Link>
+            <Link href="/signup" className="text-sm text-gray-600 hover:text-gray-900 font-medium hidden sm:block">
+              Sign Up
+            </Link>
             <Link
               href="/pricing"
               className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition font-medium text-sm"

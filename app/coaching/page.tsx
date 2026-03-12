@@ -112,6 +112,8 @@ export default function CoachingPage() {
               <Link href="/coaching" className="text-fuchsia-700 font-semibold">Coaching</Link>
               <Link href="/tech-roadmap" className="text-gray-600 hover:text-gray-900 font-medium">Tech Roadmap</Link>
               <Link href="/contribute" className="text-gray-600 hover:text-gray-900 font-medium">Contribute</Link>
+              <Link href="/login" className="text-gray-600 hover:text-gray-900 font-medium">Login</Link>
+              <Link href="/signup" className="text-gray-600 hover:text-gray-900 font-medium">Sign Up</Link>
               <Link
                 href="/pricing"
                 className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-medium"
@@ -138,6 +140,8 @@ export default function CoachingPage() {
               <Link href="/coaching" className="block text-fuchsia-700 font-semibold" onClick={() => setMobileMenuOpen(false)}>Coaching</Link>
               <Link href="/tech-roadmap" className="block text-gray-600 hover:text-gray-900 font-medium" onClick={() => setMobileMenuOpen(false)}>Tech Roadmap</Link>
               <Link href="/contribute" className="block text-gray-600 hover:text-gray-900 font-medium" onClick={() => setMobileMenuOpen(false)}>Contribute</Link>
+              <Link href="/login" className="block text-gray-600 hover:text-gray-900 font-medium" onClick={() => setMobileMenuOpen(false)}>Login</Link>
+              <Link href="/signup" className="block text-gray-600 hover:text-gray-900 font-medium" onClick={() => setMobileMenuOpen(false)}>Sign Up</Link>
               <Link
                 href="/pricing"
                 className="block w-full text-center px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-medium"
