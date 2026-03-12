@@ -39,9 +39,17 @@ export default function DemoPage() {
             <ArrowLeft className="w-4 h-4" />
             <span className="font-medium">Back to Home</span>
           </Link>
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-linear-to-br from-fuchsia-500 to-sky-500 rounded-lg shrink-0" />
-            <span className="text-xl font-bold text-gray-900">CentenarianOS</span>
+          <div className="flex items-center gap-4">
+            <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
+              Login
+            </Link>
+            <Link href="/signup" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
+              Sign Up
+            </Link>
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-linear-to-br from-fuchsia-500 to-sky-500 rounded-lg shrink-0" />
+              <span className="text-xl font-bold text-gray-900">CentenarianOS</span>
+            </div>
           </div>
         </nav>
       </header>
