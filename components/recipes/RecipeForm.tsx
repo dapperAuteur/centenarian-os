@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
@@ -10,7 +11,7 @@ import { calculateRecipeNutrition } from '@/lib/recipes/nutrition';
 import RecipeVisibilitySelector from './RecipeVisibilitySelector';
 import RecipeCloudinaryUploader from './RecipeCloudinaryUploader';
 import RecipeIngredientBuilder, { type DraftIngredient } from './RecipeIngredientBuilder';
-import { Save, Loader2, ExternalLink, RefreshCw, Trash2, Link2, Download } from 'lucide-react';
+import { Save, Loader2, ExternalLink, RefreshCw, Trash2, Link2, Download, ArrowLeft } from 'lucide-react';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import type { Recipe, RecipeMedia, RecipeVisibility } from '@/lib/types';
 
@@ -235,9 +236,18 @@ export default function RecipeForm({ recipe, username }: RecipeFormProps) {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
-          {isEditing ? 'Edit recipe' : 'New recipe'}
-        </h1>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard/recipes"
+            className="p-1.5 text-gray-400 hover:text-gray-700 transition rounded-lg hover:bg-gray-100 min-h-11 min-w-11 flex items-center justify-center"
+            aria-label="Back to recipes"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {isEditing ? 'Edit recipe' : 'New recipe'}
+          </h1>
+        </div>
         <div className="flex items-center gap-2">
           {lastSaved && (
             <span className="text-xs text-gray-400">
