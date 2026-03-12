@@ -17,7 +17,7 @@ export default function TermsPage() {
         <div className="max-w-3xl mx-auto px-6 py-16">
         <h1 className="text-3xl font-bold text-white mb-2">Terms of Use</h1>
         <p className="text-gray-400 text-sm mb-10">
-          Last updated: February 21, 2026 &nbsp;·&nbsp; Operated by B4C LLC / AwesomeWebStore.com
+          Last updated: February 21, 2026 &nbsp;·&nbsp; Operated by B4C LLC / AwesomeWebStore.com, under the WitUS.online platform
         </p>
 
         <Section title="1. Acceptance of Terms">
@@ -28,10 +28,10 @@ export default function TermsPage() {
             If you do not agree, do not use the Platform.
           </p>
           <p className="mt-3">
-            The Platform is operated by B4C LLC and AwesomeWebStore.com. Anthony McDonald is the founder
-            and operator. References to &quot;CentenarianOS,&quot; &quot;B4C LLC,&quot; &quot;AwesomeWebStore.com,&quot; and
-            &quot;Anthony McDonald&quot; in these terms refer collectively to the same operating entity and its
-            principals.
+            The Platform is operated by B4C LLC and AwesomeWebStore.com, under the WitUS.online platform.
+            Anthony McDonald is the founder and operator. References to &quot;CentenarianOS,&quot; &quot;B4C LLC,&quot;
+            &quot;AwesomeWebStore.com,&quot; and &quot;Anthony McDonald&quot; in these terms refer collectively to the same
+            operating entity and its principals.
           </p>
         </Section>
 

@@ -298,6 +298,13 @@ export default function SignupPage() {
           </div>
         </main>
 
+        <p className="text-center text-xs text-gray-400 pb-4">
+          Your CentenarianOS account also works on{' '}
+          <a href="https://work.witus.online" target="_blank" rel="noopener noreferrer" className="text-sky-500 hover:underline">
+            Work.WitUS.Online
+          </a>{' '}
+          &mdash; powered by WitUS.online
+        </p>
         <SiteFooter theme="light" />
       </div>
     </>

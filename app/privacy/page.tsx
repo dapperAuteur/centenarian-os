@@ -16,13 +16,13 @@ export default function PrivacyPage() {
         <div className="max-w-3xl mx-auto px-6 py-16">
         <h1 className="text-3xl font-bold text-white mb-2">Privacy Policy</h1>
         <p className="text-gray-400 text-sm mb-10">
-          Last updated: February 21, 2026 &nbsp;·&nbsp; Operated by B4C LLC / AwesomeWebStore.com
+          Last updated: February 21, 2026 &nbsp;·&nbsp; Operated by B4C LLC / AwesomeWebStore.com, under the WitUS.online platform
         </p>
 
         <Section title="1. Who We Are">
           <p>
             CentenarianOS (&quot;we,&quot; &quot;us,&quot; &quot;our&quot;) is a longevity and health education platform operated by
-            B4C LLC and AwesomeWebStore.com, founded by Anthony McDonald. This Privacy Policy explains
+            B4C LLC and AwesomeWebStore.com, under the WitUS.online platform, founded by Anthony McDonald. This Privacy Policy explains
             how we collect, use, store, and protect your personal information.
           </p>
         </Section>
