@@ -358,7 +358,10 @@ export default function SharedTripPage() {
         {/* Footer */}
         <footer className="text-center pt-6 border-t border-gray-200">
           <p className="text-xs text-gray-400">
-            Shared via CentenarianOS
+            Shared via CentenarianOS &nbsp;&middot;&nbsp; Powered by{' '}
+            <a href="https://witus.online" target="_blank" rel="noopener noreferrer" className="text-sky-500 hover:underline">
+              WitUS.online
+            </a>
           </p>
         </footer>
       </div>

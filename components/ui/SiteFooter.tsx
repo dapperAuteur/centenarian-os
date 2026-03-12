@@ -32,7 +32,16 @@ export default function SiteFooter({ theme = 'dark' }: SiteFooterProps) {
           <Link href="/academy" className={linkCls}>Academy</Link>
         </nav>
         <p className={`${copyCls} text-center sm:text-right shrink-0`}>
-          &copy; {year} B4C LLC / AwesomeWebStore.com. All rights reserved.
+          &copy; {year} CentenarianOS. Powered by{' '}
+          <a
+            href="https://witus.online"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={isDark ? 'text-sky-500 hover:text-sky-400 transition' : 'text-sky-600 hover:text-sky-500 transition'}
+          >
+            WitUS.online
+          </a>
+          , a B4C LLC / AwesomeWebStore.com brand.
         </p>
       </div>
     </footer>

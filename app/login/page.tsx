@@ -395,6 +395,7 @@ function LoginContent() {
         </div>
       </main>
 
+      <p className="text-center text-xs text-gray-400 pb-4">Part of the <a href="https://witus.online" target="_blank" rel="noopener noreferrer" className="text-sky-500 hover:underline">WitUS platform</a></p>
       <SiteFooter theme="light" />
     </div>
   );
