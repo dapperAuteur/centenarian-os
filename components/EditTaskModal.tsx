@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Task } from '@/lib/types';
-import { DollarSign, MapPin } from 'lucide-react';
+import { Task, TaskTag } from '@/lib/types';
+import { DollarSign, MapPin, Calendar } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
+import RoadmapItemPicker from '@/components/planner/RoadmapItemPicker';
+import { TAGS, TAG_COLORS } from '@/lib/constants/tags';
 
 interface EditTaskModalProps {
   task: Task | null;
@@ -27,8 +29,11 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
       setFormData({
         activity: task.activity,
         description: task.description,
+        date: task.date,
         time: task.time,
+        tag: task.tag,
         priority: task.priority,
+        milestone_id: task.milestone_id,
         estimated_cost: task.estimated_cost || 0,
         actual_cost: task.actual_cost || 0,
         revenue: task.revenue || 0,
@@ -77,8 +82,20 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
           />
         </div>
 
-        {/* Time & Priority */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Date, Time & Priority */}
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              <Calendar className="w-3.5 h-3.5 inline mr-1" aria-hidden="true" />
+              Date
+            </label>
+            <input
+              type="date"
+              value={formData.date || ''}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+            />
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
             <input
@@ -100,6 +117,37 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
               <option value={3}>Low (3)</option>
             </select>
           </div>
+        </div>
+
+        {/* Tag */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Tag</label>
+          <div className="flex flex-wrap gap-2">
+            {TAGS.map(t => (
+              <button
+                key={t}
+                type="button"
+                aria-pressed={formData.tag === t}
+                onClick={() => setFormData({ ...formData, tag: t })}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                  formData.tag === t
+                    ? TAG_COLORS[t]
+                    : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Milestone (move task) */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Milestone</label>
+          <RoadmapItemPicker
+            value={formData.milestone_id || ''}
+            onChange={(id) => setFormData({ ...formData, milestone_id: id })}
+          />
         </div>
 
         {/* Financial Fields */}
