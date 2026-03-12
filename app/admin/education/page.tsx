@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Send, Loader2, Sparkles, Plus, Search, MessageSquare,
-  Trash2, Tag, StickyNote, X, ChevronLeft,
+  Trash2, Tag, StickyNote, X, ChevronLeft, RefreshCw, CheckCircle,
 } from 'lucide-react';
 import { marked } from 'marked';
 
@@ -121,6 +121,10 @@ export default function AdminEducationPage() {
   const [editNotes, setEditNotes] = useState('');
   const [tagInput, setTagInput] = useState('');
 
+  // Knowledge sync state
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [syncResult, setSyncResult] = useState('');
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
@@ -131,6 +135,22 @@ export default function AdminEducationPage() {
       .then((d) => setLastSynced(d.lastSyncedAt ?? null))
       .catch(() => {});
   }, []);
+
+  async function handleSync() {
+    setSyncStatus('loading');
+    setSyncResult('');
+    try {
+      const r = await fetch('/api/admin/knowledge/refresh', { method: 'POST' });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error ?? 'Sync failed');
+      setSyncResult(`Help: ${d.helpArticles?.succeeded ?? 0} articles · Courses: ${d.courses?.processed ?? 0} lessons`);
+      setSyncStatus('done');
+      setLastSynced(d.timestamp ?? new Date().toISOString());
+    } catch (err) {
+      setSyncResult(err instanceof Error ? err.message : 'Sync failed');
+      setSyncStatus('error');
+    }
+  }
 
   /* ── Chat list ───────────────────────────────────────────────────────────── */
 
@@ -404,6 +424,26 @@ export default function AdminEducationPage() {
               const b = staleBadge(lastSynced);
               return <span className={`text-xs ${b.color}`}>{b.text}</span>;
             })()}
+
+            {/* Sync Knowledge button */}
+            <button
+              onClick={handleSync}
+              disabled={syncStatus === 'loading'}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-gray-400 hover:text-fuchsia-300 bg-gray-800 rounded-lg hover:bg-gray-700 transition disabled:opacity-50"
+              title="Refresh help articles + course embeddings"
+            >
+              {syncStatus === 'loading'
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : syncStatus === 'done'
+                ? <CheckCircle className="w-3.5 h-3.5 text-green-400" />
+                : <RefreshCw className="w-3.5 h-3.5" />}
+              {syncStatus === 'loading' ? 'Syncing…' : 'Sync Knowledge'}
+            </button>
+            {syncResult && (
+              <span className={`text-[10px] ${syncStatus === 'error' ? 'text-red-400' : 'text-green-400'}`}>
+                {syncResult}
+              </span>
+            )}
 
             {/* Tags / Notes button */}
             {activeChat && (
