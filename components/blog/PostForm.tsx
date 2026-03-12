@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { generateSlug } from '@/lib/blog/slug';
 import PostVisibilitySelector from './PostVisibilitySelector';
 import CloudinaryUploader from './CloudinaryUploader';
-import { Save, Loader2, ExternalLink, RefreshCw } from 'lucide-react';
+import { Save, Loader2, ExternalLink, RefreshCw, ArrowLeft } from 'lucide-react';
 import type { BlogPost, PostVisibility } from '@/lib/types';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
@@ -117,9 +118,18 @@ export default function PostForm({ post, username }: PostFormProps) {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
-          {isEditing ? 'Edit post' : 'New post'}
-        </h1>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard/blog"
+            className="p-1.5 text-gray-400 hover:text-gray-700 transition rounded-lg hover:bg-gray-100 min-h-11 min-w-11 flex items-center justify-center"
+            aria-label="Back to blog"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {isEditing ? 'Edit post' : 'New post'}
+          </h1>
+        </div>
         <div className="flex items-center gap-2">
           {lastSaved && (
             <span className="text-xs text-gray-400">
