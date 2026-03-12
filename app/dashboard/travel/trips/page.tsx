@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, Plus, Route, CalendarDays, ChevronDown } from 'lucide-react';
+import { ChevronLeft, Plus, ChevronDown } from 'lucide-react';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import MultiStopForm from '@/components/travel/MultiStopForm';
@@ -75,6 +75,8 @@ const HUMAN_POWERED_MODES = ['bike', 'walk', 'run', 'other'];
 const VEHICLE_TYPE_TO_MODE: Record<string, string> = {
   car: 'car', bike: 'bike', ebike: 'bike',
   motorcycle: 'car', scooter: 'car', shoes: 'walk',
+  plane: 'plane', train: 'train', bus: 'bus',
+  ferry: 'ferry', rideshare: 'rideshare',
 };
 
 const BLANK_FORM = {
@@ -376,24 +378,10 @@ export default function TripsPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowMultiStop(true)}
-            className="flex items-center gap-1.5 px-3 py-2 border border-sky-600 text-sky-600 rounded-xl text-sm font-medium hover:bg-sky-50 transition"
-          >
-            <Route className="w-4 h-4" />
-            Multi-Stop
-          </button>
-          <button
-            onClick={() => { setForm({ ...BLANK_FORM, trip_status: 'planned', date: '' }); setEditingId(null); setShowForm(true); }}
-            className="flex items-center gap-1.5 px-3 py-2 border border-blue-600 text-blue-600 rounded-xl text-sm font-medium hover:bg-blue-50 transition"
-          >
-            <CalendarDays className="w-4 h-4" />
-            Plan Trip
-          </button>
-          <button
-            onClick={() => { setForm(BLANK_FORM); setEditingId(null); setShowForm(true); }}
-            className="flex items-center gap-1.5 px-3 py-2 bg-sky-600 text-white rounded-xl text-sm font-medium hover:bg-sky-700 transition"
+            className="flex items-center gap-1.5 px-3 py-2 bg-sky-600 text-white rounded-xl text-sm font-medium hover:bg-sky-700 transition min-h-11"
           >
             <Plus className="w-4 h-4" />
-            Log Trip
+            Add Trip
           </button>
         </div>
       </div>
@@ -647,19 +635,21 @@ export default function TripsPage() {
         </div>
       </Modal>
 
-      {/* Multi-Stop Form Modal (create) */}
+      {/* Unified Trip / Multi-Stop Form Modal (create) */}
       {showMultiStop && (
         <MultiStopForm
           vehicles={vehicles}
+          brands={brands}
           onClose={() => setShowMultiStop(false)}
           onSaved={load}
         />
       )}
 
-      {/* Multi-Stop Form Modal (edit) */}
+      {/* Unified Trip / Multi-Stop Form Modal (edit) */}
       {editingRoute && (
         <MultiStopForm
           vehicles={vehicles}
+          brands={brands}
           editRouteId={editingRoute.id}
           initialRoute={editingRoute.route}
           initialLegs={editingRoute.legs}

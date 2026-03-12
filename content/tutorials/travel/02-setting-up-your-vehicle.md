@@ -57,6 +57,19 @@ You can have as many vehicles as you need. Click **Add Vehicle** again to add a 
 
 ---
 
+### Public Transport Library
+
+You don't need to create entries for planes, trains, buses, ferries, or rideshare services. CentenarianOS includes a **public transport library** — pre-loaded system vehicles available to all users.
+
+When you open the vehicle selector in the trip form, you'll see two groups:
+
+- **Your Vehicles** — personal vehicles you've added (cars, bikes, etc.)
+- **Public Transport** — system-provided options: Commercial Flight, Passenger Train, City Bus, Intercity Bus, Ferry, Rideshare (Uber/Lyft), Subway/Metro, Light Rail, and Long-Distance Train
+
+Select any public transport vehicle to log a flight, train ride, or bus trip without creating a vehicle profile first. These system vehicles can't be edited or deleted — they're shared across all users.
+
+---
+
 ### Editing or Deleting a Vehicle
 
 If you made a typo or need to update the odometer baseline, click the **Edit** button on the vehicle card. The same form opens with your current values pre-filled. Make your changes and save.

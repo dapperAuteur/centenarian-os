@@ -28,29 +28,30 @@ Single-leg trips (A to B with no stops) don't need routes — just log them as r
 
 ### Creating a Multi-Stop Route
 
-Navigate to `/dashboard/travel` and look for the **Routes** section. Click **+ New Route**.
+Navigate to `/dashboard/travel` and click **Add Trip**. The unified trip form opens with 2 stops by default (a simple A→B trip).
 
-A route has:
-- **Name** — a descriptive label (e.g., "SF to Vegas Road Trip")
+To create a multi-stop route, click **+ Add Stop**. Once you have 3 or more stops, the form title changes to "Multi-Stop Route" and route-level fields appear:
+
+- **Route Name** — a descriptive label (e.g., "SF to Vegas Road Trip")
 - **Date** — the date of the journey
-- **Notes** — optional context
-
-After creating the route, you add legs.
+- **Budget** (optional) — set a spending target for the whole route
+- **Brand** (optional) — tag the route with a business brand for P&L tracking
+- **Visibility** — private, shared, or public
 
 ---
 
 ### Adding Legs
 
-Each leg is a trip that belongs to the route. For each leg, you fill in the standard trip form:
+Each pair of consecutive stops creates a leg. For each leg, fill in:
 
-- **Origin** — starting point for this leg (can use saved contact locations)
-- **Destination** — endpoint for this leg
-- **Mode** — car, bike, walk, bus, train, etc.
+- **Vehicle** — select from Your Vehicles or Public Transport (plane, train, bus, ferry, rideshare)
+- **Origin / Destination** — auto-populated from stop order; supports saved contact locations
 - **Distance** — miles for this leg
-- **Cost** — fuel/ticket/fare cost for this leg (optional)
-- **Vehicle** — which vehicle was used (if applicable)
+- **Cost** — fuel/ticket/fare cost (optional; legs with cost > $0 create linked finance transactions)
 
-Legs are ordered by `leg_order` within the route. The first leg starts from the route origin, and each subsequent leg starts where the previous one ended.
+Each leg also has collapsible **Purpose & Details** and **Booking Details** sections for tax tagging, calories, confirmation numbers, seat assignments, and more.
+
+Legs are ordered by `leg_order` within the route. The first leg starts from stop 1, and each subsequent leg starts where the previous one ended.
 
 ---
 

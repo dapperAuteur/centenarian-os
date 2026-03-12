@@ -4,7 +4,7 @@
 import {
   Target, Utensils, Brain, Car, DollarSign, Heart, Dumbbell, Flame,
   Package, GraduationCap, BookOpen, TrendingUp, Database, ChartNetwork,
-  Camera, Tag, History, type LucideIcon,
+  Camera, Tag, History, Library, type LucideIcon,
 } from 'lucide-react';
 
 export interface ModuleHighlight {
@@ -154,27 +154,27 @@ export const MODULES: ModuleData[] = [
     bgGradient: 'from-amber-600 to-amber-800',
     Icon: Car,
     features: [
-      'Vehicle profiles & fuel logging with OCR',
-      'Trip tracking (car, bike, walk, run)',
+      'Unified trip form with booking details per leg',
+      'Public transport library (plane, train, bus, ferry)',
       'Bike savings vs. car cost-per-mile',
-      'Garmin activity import',
+      'Fuel OCR, Garmin import & trip budgets',
     ],
     highlights: [
       {
-        title: 'Vehicle Profiles',
-        description: 'Track multiple vehicles with ownership type, tax category, and fuel efficiency. Retire old vehicles while keeping their history.',
+        title: 'Unified Trip Form',
+        description: 'One form for all trips — simple A→B or multi-stop routes. Add booking details per leg: confirmation numbers, seat assignments, hotel info, and rental car details.',
       },
       {
-        title: 'OCR Fuel Receipts',
-        description: 'Snap a photo of your fuel receipt. Gemini Vision extracts gallons, price, odometer, and station automatically.',
+        title: 'Public Transport Library',
+        description: 'Pre-loaded planes, trains, buses, ferries, and rideshare vehicles available to all users. No need to create your own — just select and go.',
       },
       {
-        title: 'Multi-Stop Routes',
-        description: 'Plan complex journeys with multiple legs. Each stop can have its own mode of transport, and costs are tracked per-leg with linked finance transactions.',
+        title: 'Trip Budgets & Brands',
+        description: 'Set a budget per trip or route and track spending against it. Tag trips with brands for business P&L integration.',
       },
       {
-        title: 'Bike Savings Calculator',
-        description: 'See how much you save by biking instead of driving. Compares your car\'s cost-per-mile against zero-cost bike trips.',
+        title: 'Bike Savings & OCR',
+        description: 'See how much you save by biking instead of driving. Scan fuel receipts with Gemini Vision AI for instant data entry.',
       },
     ],
     dashboardPath: '/dashboard/travel',
@@ -668,6 +668,44 @@ export const MODULES: ModuleData[] = [
     ],
     dashboardPath: '/dashboard/retrospective',
     relatedSlugs: ['correlations', 'engine', 'health-metrics'],
+  },
+  {
+    slug: 'media',
+    name: 'Media Tracker',
+    tagline: 'Track everything you read, watch, and listen to',
+    description: 'A personal media consumption tracker for books, TV, movies, music, podcasts, and art. Add notes, reviews, and ratings — then link media to podcast episodes for content creation.',
+    color: 'border-indigo-500',
+    iconColor: 'text-indigo-600',
+    checkColor: 'text-indigo-600',
+    bgGradient: 'from-indigo-600 to-indigo-800',
+    Icon: Library,
+    features: [
+      'Books, TV, movies, music, podcasts & art',
+      'Status tracking (want / in progress / done)',
+      'Rich notes with quote & spoiler types',
+      'Podcast episode linking for content prep',
+    ],
+    highlights: [
+      {
+        title: 'Universal Media Library',
+        description: 'Track any media type: books, TV shows, movies, music, podcasts, art, and articles. Each type has conditional fields (season/episode for TV, chapter progress for books).',
+      },
+      {
+        title: 'Status & Rating System',
+        description: 'Mark items as want-to-consume, in-progress, completed, or dropped. Rate 1-5 stars and tag favorites for quick reference.',
+      },
+      {
+        title: 'Rich Notes & Reviews',
+        description: 'Add multiple notes per item with types: general, quote, review, podcast prep, discussion point, or spoiler. Rich text editor for detailed annotations.',
+      },
+      {
+        title: 'Podcast Episode Linking',
+        description: 'Link media items to podcast episodes for content creation. Track which books, shows, or movies you discussed in each episode with timestamps and discussion notes.',
+      },
+    ],
+    dashboardPath: '/dashboard/media',
+    tutorialSlug: 'media',
+    relatedSlugs: ['blog-recipes', 'categories', 'connections'],
   },
 ];
 

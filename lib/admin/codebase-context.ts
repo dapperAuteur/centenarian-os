@@ -11,7 +11,7 @@ CentenarianOS is a comprehensive longevity-focused life-management platform. It 
 ### Tech Stack
 - **Framework**: Next.js 15 App Router (TypeScript, app/ directory structure)
 - **Styling**: Tailwind CSS v4 (utility-first, dark theme with fuchsia accents)
-- **Database**: Supabase (PostgreSQL + Row-Level Security), 104+ migrations
+- **Database**: Supabase (PostgreSQL + Row-Level Security), 126+ migrations
 - **Auth**: Supabase Auth (email/password, magic link)
 - **Payments**: Stripe (checkout sessions, webhooks, subscription management, Stripe Connect for teacher payouts)
 - **AI**: Google Gemini 2.5 Flash (chat, coaching, embeddings, vision/OCR)
@@ -31,13 +31,13 @@ CentenarianOS is a comprehensive longevity-focused life-management platform. It 
 - **Middleware**: Route protection for admin-only paths (/coaching, /dashboard/coach, /dashboard/gems).
 - **Invited Users**: Admin can grant access without Stripe subscription — trial or lifetime, with optional module-level restrictions.
 
-### Modules (15+)
+### Modules (22+)
 
 1. **Finance** — Financial accounts (checking, savings, credit card, loan, cash), transactions with categories, budgets, recurring transactions, invoices, CSV import/export. Balance = opening_balance + SUM(income) - SUM(expenses). Teller API integration for bank account OAuth linking and auto-sync. Institution policies (APR, fees, rewards, dispute windows). Saved contacts with default categories for auto-fill.
 
 2. **Health Metrics** — Three tiers: Core (RHR, steps, sleep, activity calories), Enrichment (per-metric unlock with disclaimer), Body Composition (locked, per-metric acknowledgment). Wearable OAuth: Oura, WHOOP, Garmin with auto-sync. CSV imports: Apple Health, Google Health, InBody, Hume Health. Admin controls global enable/disable and per-user access overrides.
 
-3. **Travel** — Vehicles (with ownership/tax/trip categories), trips (one-way + round-trip), fuel logs (with OCR via Gemini Vision), vehicle maintenance, multi-stop routes with trip_routes table, trip templates (single + multi-stop). Garmin activity import. Bike savings calculator. Each trip leg with cost creates a linked finance transaction.
+3. **Travel** — Vehicles (with ownership/tax/trip categories), trips (one-way + round-trip), fuel logs (with OCR via Gemini Vision), vehicle maintenance, multi-stop routes with trip_routes table, trip templates (single + multi-stop). Garmin activity import. Bike savings calculator. Each trip leg with cost creates a linked finance transaction. **Booking details** (migration 122): confirmation number, booking reference, carrier name, hotel check-in/check-out dates, accommodation name/address/room type, pickup/return addresses and times, flight seat assignment/terminal/gate, booking URL, loyalty program/number. **Trip budgets** (migration 123): budget_amount on trips and routes, brand_id FK to user_brands for brand-associated travel. **Trip sharing** (migration 124): visibility (private/shared/public) on trips and routes, trip_shares table for per-user sharing or token-based public links with expiration, shared itinerary read-only view page.
 
 4. **Planner** — Tasks, milestones, roadmaps, goals. Weekly AI review via Gemini. Task location linking via saved contacts with sub-locations. Calendar import (.ics parser, pure TypeScript). Life retrospective AI analysis of calendar history patterns.
 
@@ -53,7 +53,7 @@ CentenarianOS is a comprehensive longevity-focused life-management platform. It 
 
 10. **Data Hub** — Centralized CSV import/export for all modules (finance, health metrics, trips, fuel, maintenance, vehicles, equipment, contacts, tasks, workouts). Template downloads. GenericImportPage component for consistent UX. Google Sheets paste support.
 
-11. **Cross-Module Activity Links** — Bidirectional linking between any entity types (tasks, trips, routes, transactions, recipes, fuel logs, maintenance, invoices, workouts, equipment, focus sessions, exercises). ActivityLinker component with search + pill UI.
+11. **Cross-Module Activity Links** — Bidirectional linking between any entity types (tasks, trips, routes, transactions, recipes, fuel logs, maintenance, invoices, workouts, equipment, focus sessions, exercises, media_items, podcast_episodes, blog_posts). ActivityLinker component with search + pill UI. Integrated into blog PostForm, media detail, and podcast episode pages.
 
 12. **Smart Scan** — Universal OCR-powered document scanner using Gemini Vision. Auto-detects document type (receipt, recipe, fuel receipt, maintenance invoice, medical). Extracts receipt line items with per-item pricing. Historical price tracking per vendor/item/date via item_prices table. Links to contacts, transactions, and other entities.
 
@@ -68,6 +68,14 @@ CentenarianOS is a comprehensive longevity-focused life-management platform. It 
 17. **Blog & Recipe Video Embedding** — VideoEmbed Tiptap extension node for inline video in blog posts and recipes. Supports YouTube, Viloud.tv, Mux, Cloudinary direct. MediaEmbedModal provides tabbed UI (video URL, social embed, image upload, video upload). Blog CSV import auto-inserts VideoEmbed node when video_url column is present. getEmbedUrl utility auto-detects provider and converts to embed format.
 
 18. **Offline Support** — offlineFetch wrapper (lib/offline/offline-fetch). GET responses cached in IndexedDB. POST/PATCH/DELETE mutations queued offline and replayed on reconnection. Text-based pages (tutorials, lessons) available offline once loaded.
+
+19. **Media Tracker** (migration 125) — "All the Spoilers" brand. media_categories (user-defined, auto-seeded: Books, TV & Film, Music, Podcasts, Art, Other). media_items: title, creator, media_type (book/tv_show/movie/video/song/album/podcast/art/article/other), status (want_to_consume/in_progress/completed/dropped), rating 1-5, start/end dates, genre[], tags[], cover image, external URL, progress tracking, season/episode tracking for TV series, brand_id FK, visibility (private/public), year_released, source_platform, notes, is_favorite, use_count. media_notes: per-item notes with content_format (markdown/tiptap), note_type (general/quote/review/podcast_prep/discussion_point/spoiler). podcast_episodes: title, episode/season numbers, air_date, show_notes (markdown/tiptap), audio_url, duration, status (draft/recorded/published). media_episode_links junction: links media items to podcast episodes with discussion_notes and timestamps. APIs: full CRUD for media, categories, notes, podcasts, episode linking. CSV import/export via Data Hub. Dashboard: media hub with summary cards, type/status filters, grid of media cards; detail page with notes editor, linked episodes, ActivityLinker, LifeCategoryTagger; podcast episode list and detail pages.
+
+20. **Social Interactions** (migration 126) — social_likes table (polymorphic: media_item, equipment), social_shares table (share_method: link/embed/social, platform tracking), social_bookmarks table. Denormalized like_count/share_count/bookmark_count on media_items and equipment. Public visibility toggle on media items and equipment. Discover pages for browsing public content. Like/share/bookmark UI on detail pages. Public read policies for equipment and equipment_media when visibility='public'.
+
+21. **Blog & Recipe Search/Filters** — Client-side search by title, description/excerpt, and tags. Visibility filter pills (blog: All/Draft/Public/Private/Members Only/Scheduled; recipes: All/Draft/Public/Scheduled). Sort controls (newest, recently edited, title A-Z). Result count display. Back navigation arrows from edit/create pages to list pages.
+
+22. **Edit Modal Completeness** — All planner entities (tasks, roadmaps, goals, milestones) have fully editable fields in their edit modals. Tasks: date, time, tag (color-coded pills), priority, milestone assignment via RoadmapItemPicker, contact, location, estimated cost. Roadmaps: status (active/archived). Goals: roadmap assignment (move between roadmaps). Milestones: goal assignment (move between goals).
 
 ### Admin Panel (18 pages)
 Overview, Users (list + detail), Messages, Content moderation, Engagement analytics, Feedback management, Academy settings, Academy courses, Live sessions, Metrics configuration, Institutions directory, App Logs viewer, Usage analytics, Short Links dashboard, Education AI Chat (persistent sessions with tags, notes, full-text search), Tour Analytics.
@@ -93,8 +101,8 @@ Overview, Users (list + detail), Messages, Content moderation, Engagement analyt
 - **Invited users**: Admin can grant trial or lifetime access without payment, with optional module restrictions
 
 ### Database Architecture
-- **117+ migrations** in supabase/migrations/ (000 through 117)
-- **Key tables**: profiles, financial_accounts, financial_transactions, budget_categories, vehicles, trips, trip_routes, fuel_logs, vehicle_maintenance, equipment, equipment_categories, equipment_valuations, exercises, exercise_categories, workout_logs, workout_templates, courses, lessons, modules (academy), course_prerequisites, prerequisite_override_requests, gem_personas, language_coach_sessions, life_categories, entity_life_categories, activity_links, user_contacts, contact_locations, scan_images, receipt_line_items, item_prices, institutions, institution_offers, invited_users, teller_enrollments, admin_chats, admin_chat_messages, app_logs, usage_events, page_views
+- **126+ migrations** in supabase/migrations/ (000 through 126)
+- **Key tables**: profiles, financial_accounts, financial_transactions, budget_categories, vehicles, trips, trip_routes, trip_shares, fuel_logs, vehicle_maintenance, equipment, equipment_categories, equipment_valuations, equipment_media, exercises, exercise_categories, workout_logs, workout_templates, courses, lessons, modules (academy), course_prerequisites, prerequisite_override_requests, gem_personas, language_coach_sessions, life_categories, entity_life_categories, activity_links, user_contacts, contact_locations, scan_images, receipt_line_items, item_prices, institutions, institution_offers, invited_users, teller_enrollments, admin_chats, admin_chat_messages, app_logs, usage_events, page_views, media_categories, media_items, media_notes, podcast_episodes, media_episode_links, social_likes, social_shares, social_bookmarks
 - **Patterns**: Soft-delete via is_active flags, .maybeSingle() for optional rows, service role for admin ops, fire-and-forget logging
 - **RLS**: Enabled on all user-facing tables. Service role key bypasses RLS for admin/webhook routes.
 
@@ -123,14 +131,17 @@ Overview, Users (list + detail), Messages, Content moderation, Engagement analyt
 Getting Started, Planner, Finance, Travel, Fuel, Engine, Health Metrics, Workouts, Exercises, Blog & Publishing, Recipes, Equipment, Correlations & Analytics, Academy (student), Teaching (teacher), Settings & Billing, Data Hub, Life Categories, Coach & Gems (admin-only). All use CYOA navigation with free preview lessons.
 
 ### Project Stats
-- ~400+ TypeScript files
-- 117+ database migrations
-- 16+ user-facing modules (including social layer)
+- ~450+ TypeScript files
+- 126+ database migrations
+- 22+ user-facing modules (including social layer, media tracker, trip sharing)
 - 20 admin management pages
 - 12 AI-powered features
 - 3 wearable integrations (Oura, WHOOP, Garmin)
-- All-module CSV import/export pipelines
+- All-module CSV import/export pipelines (including media)
 - 17 tutorial course series (170+ lessons)
 - Interactive module walkthrough onboarding for all major features
 - Video embedding in blog posts and recipes (YouTube, Viloud, Mux, Cloudinary)
+- Social interactions: likes, shares, bookmarks, discover pages for public content
+- Trip sharing with token-based public links and per-user access control
+- Full booking detail tracking for business travel (flights, hotels, car rentals)
 `;

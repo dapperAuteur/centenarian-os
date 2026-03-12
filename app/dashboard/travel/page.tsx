@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Modal from '@/components/ui/Modal';
+import MultiStopForm from '@/components/travel/MultiStopForm';
 import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 
 interface Summary {
@@ -86,6 +87,8 @@ const MODE_ICONS: Record<string, string> = {
 const VEHICLE_TYPE_TO_MODE: Record<string, string> = {
   car: 'car', bike: 'bike', ebike: 'bike',
   motorcycle: 'car', scooter: 'car', shoes: 'walk',
+  plane: 'plane', train: 'train', bus: 'bus',
+  ferry: 'ferry', rideshare: 'rideshare',
 };
 
 const MODE_COLORS: Record<string, string> = {
@@ -114,12 +117,7 @@ export default function TravelPage() {
 
   // Add trip modal state
   const [showAddTrip, setShowAddTrip] = useState(false);
-  const [tripForm, setTripForm] = useState({
-    mode: 'bike', date: new Date().toISOString().split('T')[0],
-    origin: '', destination: '', distance_miles: '', duration_min: '',
-    purpose: 'commute', calories_burned: '', notes: '', vehicle_id: '',
-    tax_category: 'personal', trip_category: 'travel', save_as_template: false, template_name: '',
-  });
+  const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
   const [savingTrip, setSavingTrip] = useState(false);
 
   // Add/edit vehicle modal state
@@ -137,13 +135,14 @@ export default function TravelPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [sumRes, vehiclesRes, tripsRes, settingsRes, tmplRes, plannedRes] = await Promise.all([
+      const [sumRes, vehiclesRes, tripsRes, settingsRes, tmplRes, plannedRes, brandsRes] = await Promise.all([
         offlineFetch('/api/travel/summary?months=6'),
         offlineFetch('/api/travel/vehicles?include_retired=true'),
         offlineFetch('/api/travel/trips?limit=10'),
         offlineFetch('/api/travel/settings'),
         offlineFetch('/api/travel/templates'),
         offlineFetch('/api/travel/trips/planned'),
+        offlineFetch('/api/brands'),
       ]);
       if (sumRes.ok) setSummary(await sumRes.json());
       if (vehiclesRes.ok) {
@@ -163,6 +162,7 @@ export default function TravelPage() {
         const { trips: pt } = await plannedRes.json();
         setPlannedTrips(pt || []);
       }
+      if (brandsRes.ok) setBrands(await brandsRes.json());
     } finally {
       setLoading(false);
     }
@@ -172,7 +172,6 @@ export default function TravelPage() {
 
   const logCommuteByBike = async () => {
     if (!settings?.commute_distance_miles) {
-      setTripForm((f) => ({ ...f, mode: 'bike', purpose: 'commute' }));
       setShowAddTrip(true);
       return;
     }
@@ -195,57 +194,6 @@ export default function TravelPage() {
         }),
       });
       load();
-    } finally {
-      setSavingTrip(false);
-    }
-  };
-
-  const handleSaveTrip = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingTrip(true);
-    try {
-      const res = await offlineFetch('/api/travel/trips', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: tripForm.mode,
-          date: tripForm.date,
-          origin: tripForm.origin || null,
-          destination: tripForm.destination || null,
-          distance_miles: tripForm.distance_miles ? parseFloat(tripForm.distance_miles) : null,
-          duration_min: tripForm.duration_min ? parseInt(tripForm.duration_min) : null,
-          purpose: tripForm.purpose || null,
-          calories_burned: tripForm.calories_burned ? parseInt(tripForm.calories_burned) : null,
-          notes: tripForm.notes || null,
-          vehicle_id: tripForm.vehicle_id || null,
-          tax_category: tripForm.tax_category || 'personal',
-          trip_category: tripForm.trip_category || 'travel',
-        }),
-      });
-      if (res.ok) {
-        // Optionally save as template
-        if (tripForm.save_as_template && tripForm.template_name.trim()) {
-          await offlineFetch('/api/travel/templates', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: tripForm.template_name.trim(),
-              mode: tripForm.mode,
-              vehicle_id: tripForm.vehicle_id || null,
-              origin: tripForm.origin || null,
-              destination: tripForm.destination || null,
-              distance_miles: tripForm.distance_miles ? parseFloat(tripForm.distance_miles) : null,
-              duration_min: tripForm.duration_min ? parseInt(tripForm.duration_min) : null,
-              purpose: tripForm.purpose || null,
-              trip_category: tripForm.trip_category || 'travel',
-              tax_category: tripForm.tax_category || 'personal',
-            }),
-          });
-        }
-        setShowAddTrip(false);
-        setTripForm({ mode: 'bike', date: new Date().toISOString().split('T')[0], origin: '', destination: '', distance_miles: '', duration_min: '', purpose: 'commute', calories_burned: '', notes: '', vehicle_id: '', tax_category: 'personal', trip_category: 'travel', save_as_template: false, template_name: '' });
-        load();
-      }
     } finally {
       setSavingTrip(false);
     }
@@ -772,211 +720,15 @@ export default function TravelPage() {
         ))}
       </div>
 
-      {/* Add Trip Modal */}
-      <Modal isOpen={showAddTrip} onClose={() => setShowAddTrip(false)} title="Log Trip" size="sm">
-        <form onSubmit={handleSaveTrip}>
-          <div className="p-6 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="qtrip-mode" className="block text-xs font-medium text-gray-600 mb-1">Mode</label>
-                <select
-                  id="qtrip-mode"
-                  value={tripForm.mode}
-                  onChange={(e) => setTripForm((f) => ({ ...f, mode: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                >
-                  {['bike','car','bus','train','plane','walk','run','ferry','rideshare','other'].map((m) => (
-                    <option key={m} value={m}>{MODE_ICONS[m]} {m}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="qtrip-date" className="block text-xs font-medium text-gray-600 mb-1">Date</label>
-                <input
-                  id="qtrip-date"
-                  type="date" value={tripForm.date}
-                  onChange={(e) => setTripForm((f) => ({ ...f, date: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                  required
-                  aria-required="true"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="qtrip-origin" className="block text-xs font-medium text-gray-600 mb-1">From</label>
-                <input
-                  id="qtrip-origin"
-                  type="text" value={tripForm.origin} placeholder="Origin"
-                  onChange={(e) => setTripForm((f) => ({ ...f, origin: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label htmlFor="qtrip-destination" className="block text-xs font-medium text-gray-600 mb-1">To</label>
-                <input
-                  id="qtrip-destination"
-                  type="text" value={tripForm.destination} placeholder="Destination"
-                  onChange={(e) => setTripForm((f) => ({ ...f, destination: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label htmlFor="qtrip-miles" className="block text-xs font-medium text-gray-600 mb-1">Miles</label>
-                <input
-                  id="qtrip-miles"
-                  type="number" step="0.01" value={tripForm.distance_miles} placeholder="0.0"
-                  onChange={(e) => setTripForm((f) => ({ ...f, distance_miles: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label htmlFor="qtrip-duration" className="block text-xs font-medium text-gray-600 mb-1">Duration (min)</label>
-                <input
-                  id="qtrip-duration"
-                  type="number" value={tripForm.duration_min} placeholder="0"
-                  onChange={(e) => setTripForm((f) => ({ ...f, duration_min: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label htmlFor="qtrip-calories" className="block text-xs font-medium text-gray-600 mb-1">Calories</label>
-                <input
-                  id="qtrip-calories"
-                  type="number" value={tripForm.calories_burned} placeholder="0"
-                  onChange={(e) => setTripForm((f) => ({ ...f, calories_burned: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="qtrip-purpose" className="block text-xs font-medium text-gray-600 mb-1">Purpose</label>
-                <select
-                  id="qtrip-purpose"
-                  value={tripForm.purpose}
-                  onChange={(e) => setTripForm((f) => ({ ...f, purpose: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                >
-                  {['commute','leisure','work','errand','exercise','other'].map((p) => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="qtrip-tax" className="block text-xs font-medium text-gray-600 mb-1">Tax purpose</label>
-                <select
-                  id="qtrip-tax"
-                  value={tripForm.tax_category}
-                  onChange={(e) => setTripForm((f) => ({ ...f, tax_category: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value="personal">Personal</option>
-                  <option value="business">Business</option>
-                  <option value="medical">Medical</option>
-                  <option value="charitable">Charitable</option>
-                </select>
-              </div>
-            </div>
-            {/* Travel vs Fitness toggle — only for human-powered modes */}
-            {['bike','walk','run','other'].includes(tripForm.mode) && (
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Trip type</label>
-                <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
-                  <button
-                    type="button"
-                    onClick={() => setTripForm((f) => ({ ...f, trip_category: 'travel' }))}
-                    className={`flex-1 py-2 font-medium transition ${tripForm.trip_category === 'travel' ? 'bg-sky-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
-                  >
-                    Travel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTripForm((f) => ({ ...f, trip_category: 'fitness' }))}
-                    className={`flex-1 py-2 font-medium transition ${tripForm.trip_category === 'fitness' ? 'bg-sky-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
-                  >
-                    Fitness
-                  </button>
-                </div>
-                <p className="text-xs text-gray-400 mt-1">Travel counts toward commute savings. Fitness is for workouts.</p>
-              </div>
-            )}
-            {vehicles.filter((v) => v.active).length > 0 && (
-              <div>
-                <label htmlFor="qtrip-vehicle" className="block text-xs font-medium text-gray-600 mb-1">Vehicle</label>
-                <select
-                  id="qtrip-vehicle"
-                  value={tripForm.vehicle_id}
-                  onChange={(e) => {
-                    const vid = e.target.value;
-                    const v = vehicles.find((veh) => veh.id === vid);
-                    const autoMode = v ? (v.trip_mode || VEHICLE_TYPE_TO_MODE[v.type]) : undefined;
-                    setTripForm((f) => ({
-                      ...f,
-                      vehicle_id: vid,
-                      ...(autoMode ? { mode: autoMode } : {}),
-                    }));
-                  }}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value="">None</option>
-                  {vehicles.filter((v) => v.active).map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.nickname}{v.ownership_type !== 'owned' ? ` (${v.ownership_type})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <div>
-              <label htmlFor="qtrip-notes" className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-              <input
-                id="qtrip-notes"
-                type="text" value={tripForm.notes} placeholder="Optional notes"
-                onChange={(e) => setTripForm((f) => ({ ...f, notes: e.target.value }))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-              />
-            </div>
-            {/* Save as template */}
-            <div className="border border-gray-100 rounded-lg p-3">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={tripForm.save_as_template}
-                  onChange={(e) => setTripForm((f) => ({ ...f, save_as_template: e.target.checked }))}
-                  className="rounded border-gray-300"
-                />
-                <span className="text-xs font-medium text-gray-600">Save as template for quick re-logging</span>
-              </label>
-              {tripForm.save_as_template && (
-                <input
-                  id="qtrip-template-name"
-                  type="text"
-                  value={tripForm.template_name}
-                  onChange={(e) => setTripForm((f) => ({ ...f, template_name: e.target.value }))}
-                  placeholder="Template name (e.g. Morning Commute)"
-                  className="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                  required={tripForm.save_as_template}
-                  aria-required={tripForm.save_as_template}
-                />
-              )}
-            </div>
-          </div>
-          <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 pt-3 pb-3 flex gap-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
-            <button type="button" onClick={() => setShowAddTrip(false)}
-              className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
-              Cancel
-            </button>
-            <button type="submit" disabled={savingTrip}
-              className="flex-1 bg-sky-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-50">
-              {savingTrip ? 'Saving...' : 'Save Trip'}
-            </button>
-          </div>
-        </form>
-      </Modal>
-
+      {/* Add Trip Modal — uses unified MultiStopForm */}
+      {showAddTrip && (
+        <MultiStopForm
+          vehicles={vehicles.filter((v) => v.active)}
+          brands={brands}
+          onClose={() => setShowAddTrip(false)}
+          onSaved={() => { setShowAddTrip(false); load(); }}
+        />
+      )}
       {/* Add / Edit Vehicle Modal */}
       <Modal isOpen={showAddVehicle} onClose={() => { setShowAddVehicle(false); setEditingVehicle(null); setVehicleForm({ type: 'car', nickname: '', make: '', model: '', year: '', color: '', ownership_type: 'owned', trip_mode: '' }); }} title={editingVehicle ? 'Edit Vehicle' : 'Add Vehicle'} size="sm">
         <form onSubmit={handleSaveVehicle}>

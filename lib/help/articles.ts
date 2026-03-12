@@ -430,4 +430,98 @@ export const HELP_ARTICLES: HelpArticle[] = [
     title: 'How does Teller bank account syncing work?',
     content: `Teller is a bank account linking API that lets you automatically import transactions. Go to Dashboard → Finance → Accounts and click Connect Bank Account. Select your bank from the Teller enrollment flow and authorize access. Once connected, your transactions sync daily. Each synced transaction includes date, amount, description, and merchant. You can categorize synced transactions and link them to contacts. If you disconnect, historical synced transactions remain in your account. Teller supports most major US banks and credit unions.`,
   },
+
+  // ─── TRAVEL MODULE ────────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to log a trip',
+    content: `Go to Dashboard → Travel and click Add Trip, or go to the Trip History page and click Add Trip. The unified trip form lets you create simple A-to-B trips or multi-stop routes. By default you see two stops (origin and destination). Click "Add stop" to create a multi-stop route. For each leg you can set mode (car, bike, plane, train, bus, etc.), distance, duration, cost, and optionally select a vehicle. Use the status toggle at the top to mark trips as Planned, In Progress, or Completed. Check "Round trip" to automatically add a return leg.`,
+  },
+  {
+    role: 'all',
+    title: 'How to use booking details for flights, hotels, and rentals',
+    content: `When adding or editing a trip, each leg has a collapsible "Booking Details" section. Click it to expand fields for: confirmation number, carrier/airline name, flight seat assignment, terminal, and gate (shown for plane mode), hotel/accommodation name and address with room type and check-in/check-out dates, pickup and return addresses with times (for car rentals), loyalty program and member number, and booking URL. These details also appear on the trip detail page and in shared itineraries.`,
+  },
+  {
+    role: 'all',
+    title: 'What are public transport vehicles?',
+    content: `CentenarianOS includes a built-in public transport library available to all users. When selecting a vehicle for a trip leg, the dropdown is grouped into "Your Vehicles" (your personal cars, bikes, etc.) and "Public Transport" (Commercial Flight, Passenger Train, City Bus, Ferry, Rideshare, Taxi, Subway/Metro, Intercity Bus, Light Rail/Tram). Selecting a public transport vehicle automatically sets the correct trip mode. You can still add your own private vehicles in the Vehicles section of the Travel dashboard.`,
+  },
+  {
+    role: 'all',
+    title: 'How to share a trip itinerary',
+    content: `On any trip detail page, click the Share button. You can share with a specific CentenarianOS user or generate a public link with an optional expiration date. Shared trips display as a read-only itinerary showing the route, dates, booking details, and packing notes. You control visibility: Private (only you), Shared (specific users), or Public (anyone with the link). Manage shares from the trip detail page.`,
+  },
+  {
+    role: 'all',
+    title: 'How to set a trip budget',
+    content: `When creating or editing a trip, the form includes a Budget field where you can set a spending target. The budget appears on the trip detail page alongside actual costs from each leg. For multi-stop routes, each leg's cost contributes to the total. You can also associate trips with a Brand for brand-sponsored travel tracking.`,
+  },
+
+  // ─── MEDIA TRACKER ────────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to use the Media Tracker',
+    content: `Go to Dashboard → Media to track books, TV shows, movies, music, podcasts, art, articles, and more. Click Add Media to create an item with title, creator, type, status (Want to Consume, In Progress, Completed, Dropped), and an optional 1-5 star rating. Track your progress with current position and total length. For TV shows, track season and episode numbers. Add cover images, external URLs, genre tags, and release year. Use the filters at the top to view by media type or status.`,
+  },
+  {
+    role: 'all',
+    title: 'How to add notes and reviews to media items',
+    content: `On any media detail page, scroll to the Notes section. Click Add Note to create notes with different types: General, Quote, Review, Podcast Prep, Discussion Point, or Spoiler. Notes support both Markdown and Rich Text formatting. Use notes to capture your thoughts, favorite quotes, talking points for podcast episodes, or spoiler-tagged plot discussions.`,
+  },
+  {
+    role: 'all',
+    title: 'How to link media items to podcast episodes',
+    content: `If you produce a podcast, go to Dashboard → Media → Podcasts to manage episodes. Create episodes with title, episode/season numbers, air date, show notes, audio URL, and duration. Link media items to episodes from the episode detail page — click Link Media to search and attach books, movies, or shows you discussed. Each link can include discussion notes and timestamps.`,
+  },
+
+  // ─── SOCIAL FEATURES ──────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to like, share, and discover public content',
+    content: `Media items and equipment can be set to Public visibility, making them browsable on the Discover page. Visit Discover to browse public media lists and equipment collections from other users. Click the heart icon to like, the share icon to share via link or social media, and the bookmark icon to save for later. Like and share counts are visible on public items. Your own likes and bookmarks are accessible from your profile.`,
+  },
+
+  // ─── EQUIPMENT TRACKER ────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to track equipment and gear',
+    content: `Go to Dashboard → Equipment to catalog your gear and possessions. Add items with name, category (auto-seeded defaults like Electronics, Sports, Kitchen, etc.), purchase price, and purchase date. Link to the original financial transaction if you tracked the purchase. Track value over time by adding valuations — the detail page shows a value chart. Upload photos, videos, and audio to each item's media gallery. Use the ActivityLinker to connect equipment to workouts, trips, or other activities.`,
+  },
+
+  // ─── WORKOUTS & EXERCISES ─────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to use the exercise library and log workouts',
+    content: `Go to Dashboard → Exercises to browse 110+ pre-loaded exercises organized by category (Push, Pull, Legs, Core, Cardio, etc.). Each exercise has instructions, form cues, and optional video/audio media. Create custom exercises and categories too. To log a workout, go to Dashboard → Workouts and click Log Workout. Add exercises from the library, set reps, sets, weight, and use advanced fields like RPE, tempo, supersets, circuits, and more. Templates let you save workout structures for quick re-use.`,
+  },
+
+  // ─── SMART SCAN ───────────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to scan receipts and documents',
+    content: `Go to Dashboard → Scan to use the universal document scanner. Upload or photograph a receipt, recipe, fuel receipt, maintenance invoice, or medical document. The AI (Gemini Vision) auto-detects the document type and extracts relevant data: receipt line items with pricing, fuel amounts and odometer readings, recipe ingredients, etc. Scanned receipts track historical prices per vendor and item. Link scanned documents to contacts, financial transactions, and other entities.`,
+  },
+
+  // ─── LIFE CATEGORIES ──────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to tag items with Life Categories',
+    content: `Life Categories let you tag any item across all modules with life areas like Health, Finance, Career, Relationships, etc. Go to Dashboard → Categories to view the analytics dashboard with spending breakdowns and activity charts. To tag an item, look for the tag chips on any detail page or edit modal — click to add/remove categories. Use batch tagging on the Categories dashboard to tag uncategorized items. Create custom categories with your own icons and colors from the Categories settings.`,
+  },
+
+  // ─── BLOG & RECIPE SEARCH ─────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to search and filter blog posts and recipes',
+    content: `On Dashboard → Blog or Dashboard → Recipes, use the search bar at the top to search by title, description, or tags. Filter by visibility status using the pill buttons: All, Draft, Public, Private (blog only), Members Only (blog only), or Scheduled. Sort by newest, recently edited, or title A-Z. The result count updates as you filter. When editing or creating a post or recipe, click the back arrow in the header to return to the list.`,
+  },
 ];
