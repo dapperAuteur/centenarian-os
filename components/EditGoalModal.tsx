@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Goal, GoalStatus, TaskTag } from '@/lib/types';
+import { Goal, GoalStatus, TaskTag, Roadmap } from '@/lib/types';
 import { X, DollarSign } from 'lucide-react';
 
 interface EditGoalModalProps {
@@ -15,6 +15,7 @@ interface EditGoalModalProps {
 export function EditGoalModal({ goal, isOpen, onClose, onSave }: EditGoalModalProps) {
   const [formData, setFormData] = useState<Partial<Goal>>({});
   const [saving, setSaving] = useState(false);
+  const [roadmaps, setRoadmaps] = useState<Pick<Roadmap, 'id' | 'title'>[]>([]);
   const supabase = createClient();
 
   useEffect(() => {
@@ -25,11 +26,20 @@ export function EditGoalModal({ goal, isOpen, onClose, onSave }: EditGoalModalPr
         category: goal.category,
         target_year: goal.target_year,
         status: goal.status,
+        roadmap_id: goal.roadmap_id,
         estimated_cost: goal.estimated_cost || 0,
         actual_cost: goal.actual_cost || 0,
         revenue: goal.revenue || 0,
       });
+      // Load roadmaps for move dropdown
+      supabase
+        .from('roadmaps')
+        .select('id, title')
+        .eq('status', 'active')
+        .order('title')
+        .then(({ data }) => setRoadmaps(data || []));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [goal, isOpen]);
 
   const handleSave = async () => {
@@ -118,6 +128,23 @@ export function EditGoalModal({ goal, isOpen, onClose, onSave }: EditGoalModalPr
               </select>
             </div>
           </div>
+
+          {/* Move to different roadmap */}
+          {roadmaps.length > 1 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Roadmap</label>
+              <select
+                value={formData.roadmap_id || ''}
+                onChange={(e) => setFormData({ ...formData, roadmap_id: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
+              >
+                {roadmaps.map((r) => (
+                  <option key={r.id} value={r.id}>{r.title}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400 mt-1">Move this goal to a different roadmap</p>
+            </div>
+          )}
 
           <div className="pt-4 border-t border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">

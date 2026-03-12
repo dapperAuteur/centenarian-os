@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Roadmap } from '@/lib/types';
+import { Roadmap, ItemStatus } from '@/lib/types';
 import { X, DollarSign } from 'lucide-react';
 
 interface EditRoadmapModalProps {
@@ -24,6 +24,7 @@ export function EditRoadmapModal({ roadmap, isOpen, onClose, onSave }: EditRoadm
         description: roadmap.description,
         start_date: roadmap.start_date,
         end_date: roadmap.end_date,
+        status: roadmap.status,
         estimated_cost: roadmap.estimated_cost || 0,
         actual_cost: roadmap.actual_cost || 0,
         revenue: roadmap.revenue || 0,
@@ -78,7 +79,7 @@ export function EditRoadmapModal({ roadmap, isOpen, onClose, onSave }: EditRoadm
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
               <input
@@ -96,6 +97,17 @@ export function EditRoadmapModal({ roadmap, isOpen, onClose, onSave }: EditRoadm
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={formData.status || 'active'}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as ItemStatus })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 form-input"
+              >
+                <option value="active">Active</option>
+                <option value="archived">Archived</option>
+              </select>
             </div>
           </div>
 
