@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // File: app/signup/page.tsx
-// New user registration with Cloudflare Turnstile bot prevention.
+// New user registration — password signup or email-only OTP (6-digit code).
 
 'use client';
 
@@ -21,11 +21,24 @@ declare global {
   }
 }
 
+type SignupTab = 'password' | 'email';
+type OtpStep = 'email' | 'code';
+
 export default function SignupPage() {
+  const [tab, setTab] = useState<SignupTab>('password');
+
+  // Password tab state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Email-only (OTP) tab state
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpStep, setOtpStep] = useState<OtpStep>('email');
+  const [otpError, setOtpError] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
 
   const pwChecks = {
     length: password.length >= 10,
@@ -44,7 +57,6 @@ export default function SignupPage() {
 
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
-  // Render Turnstile widget once the script loads
   function onTurnstileLoad() {
     if (!window.turnstile || !siteKey) return;
     widgetIdRef.current = window.turnstile.render('#turnstile-widget', {
@@ -56,6 +68,49 @@ export default function SignupPage() {
     });
   }
 
+  function resetTurnstile() {
+    if (widgetIdRef.current && window.turnstile) {
+      window.turnstile.reset(widgetIdRef.current);
+    }
+    setTurnstileToken(null);
+  }
+
+  function switchTab(t: SignupTab) {
+    setTab(t);
+    setError('');
+    setOtpError('');
+    setOtpStep('email');
+    setOtpCode('');
+    resetTurnstile();
+  }
+
+  // Shared Turnstile verification helper
+  async function verifyTurnstile(setErr: (msg: string) => void): Promise<boolean> {
+    if (!siteKey) return true;
+    if (!turnstileToken) {
+      setErr('Please complete the human verification below.');
+      return false;
+    }
+    try {
+      const res = await fetch('/api/auth/verify-turnstile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: turnstileToken }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setErr(data.error ?? 'Verification failed. Please try again.');
+        resetTurnstile();
+        return false;
+      }
+      return true;
+    } catch {
+      setErr('Could not verify. Please refresh and try again.');
+      return false;
+    }
+  }
+
+  // ── Password signup ────────────────────────────────────────────────────
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -64,56 +119,21 @@ export default function SignupPage() {
       setError('Please agree to the Terms of Use and Privacy Policy to continue.');
       return;
     }
-
     if (!pwValid) {
       setError('Password must be at least 10 characters with uppercase, lowercase, digit, and symbol.');
       return;
     }
 
-    // Skip Turnstile if no site key configured (dev environment)
-    if (siteKey) {
-      if (!turnstileToken) {
-        setError('Please complete the human verification below.');
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const verifyRes = await fetch('/api/auth/verify-turnstile', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: turnstileToken }),
-        });
-        const verifyData = await verifyRes.json();
-        if (!verifyData.success) {
-          setError(verifyData.error ?? 'Verification failed. Please try again.');
-          // Reset widget so user can retry
-          if (widgetIdRef.current && window.turnstile) {
-            window.turnstile.reset(widgetIdRef.current);
-          }
-          setTurnstileToken(null);
-          setLoading(false);
-          return;
-        }
-      } catch {
-        setError('Could not verify. Please refresh and try again.');
-        setLoading(false);
-        return;
-      }
-    } else {
-      setLoading(true);
-    }
+    setLoading(true);
+    const ok = await verifyTurnstile(setError);
+    if (!ok) { setLoading(false); return; }
 
     try {
       const emailRedirectTo = typeof window !== 'undefined'
         ? `${window.location.origin}/auth/callback?next=${encodeURIComponent('/dashboard/planner')}`
         : undefined;
 
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo },
-      });
+      const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo } });
       if (error) throw error;
 
       router.push('/pricing?from=signup');
@@ -122,6 +142,56 @@ export default function SignupPage() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ── Email-only: send OTP code ──────────────────────────────────────────
+  const handleSendCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOtpError('');
+
+    if (!agreedToTerms) {
+      setOtpError('Please agree to the Terms of Use and Privacy Policy to continue.');
+      return;
+    }
+
+    setOtpLoading(true);
+    const ok = await verifyTurnstile(setOtpError);
+    if (!ok) { setOtpLoading(false); return; }
+
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: otpEmail,
+        options: { shouldCreateUser: true },
+      });
+      if (error) throw error;
+      setOtpStep('code');
+    } catch (err: any) {
+      setOtpError(err.message ?? 'Failed to send code');
+      resetTurnstile();
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  // ── Email-only: verify OTP code ────────────────────────────────────────
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOtpError('');
+    setOtpLoading(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: otpEmail,
+        token: otpCode,
+        type: 'email',
+      });
+      if (error) throw error;
+      router.push('/pricing?from=signup');
+      router.refresh();
+    } catch (err: any) {
+      setOtpError(err.message ?? 'Invalid code');
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -192,109 +262,246 @@ export default function SignupPage() {
         {/* Signup Form */}
         <main className="flex-1 flex items-center justify-center p-4">
           <div className="max-w-md w-full rounded-2xl p-8 bg-white shadow-xl">
-            <header className="mb-8">
+            <header className="mb-6">
               <h1 className="text-3xl font-bold text-gray-900">Create your account</h1>
               <p className="text-gray-600 mt-2">Begin your multi-decade journey</p>
             </header>
 
-            <form onSubmit={handleSignup} className="space-y-6">
-              {error && (
-                <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm" role="alert">
-                  {error}
-                </div>
-              )}
-
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium mb-1 text-gray-700">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent form-input border-gray-300 focus:ring-sky-500"
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium mb-1 text-gray-700">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={10}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent form-input border-gray-300 focus:ring-sky-500"
-                  placeholder="••••••••"
-                  autoComplete="new-password"
-                />
-                {password.length > 0 && (
-                  <ul className="mt-2 space-y-0.5 text-xs" id="password-hint">
-                    {([
-                      ['length', '10+ characters'],
-                      ['upper', 'Uppercase letter'],
-                      ['lower', 'Lowercase letter'],
-                      ['digit', 'Number'],
-                      ['symbol', 'Symbol (!@#$…)'],
-                    ] as const).map(([key, label]) => (
-                      <li key={key} className={pwChecks[key] ? 'text-green-600' : 'text-red-500'}>
-                        {pwChecks[key] ? '✓' : '✗'} {label}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {password.length === 0 && (
-                  <p className="text-xs mt-1 text-gray-500" id="password-hint">Minimum 10 characters with upper, lower, digit, and symbol</p>
-                )}
-              </div>
-
-              <div className="flex items-start gap-3">
-                <input
-                  id="agree-terms"
-                  type="checkbox"
-                  checked={agreedToTerms}
-                  onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded shrink-0 border-gray-300 focus:ring-sky-500"
-                />
-                <label htmlFor="agree-terms" className="text-sm cursor-pointer text-gray-600">
-                  I agree to the{' '}
-                  <Link href="/terms" className="font-medium text-sky-600 hover:underline" target="_blank">
-                    Terms of Use
-                  </Link>
-                  {' '}and{' '}
-                  <Link href="/privacy" className="font-medium text-sky-600 hover:underline" target="_blank">
-                    Privacy Policy
-                  </Link>
-                </label>
-              </div>
-
-              {/* Cloudflare Turnstile widget — only rendered when site key is configured */}
-              {siteKey && (
-                <div id="turnstile-widget" className="flex justify-center" />
-              )}
-
+            {/* Tabs */}
+            <div className="flex mb-6 border rounded-lg overflow-hidden border-gray-200">
               <button
-                type="submit"
-                disabled={loading || !agreedToTerms || !pwValid || (!!siteKey && !turnstileToken)}
-                className="w-full text-white py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 bg-sky-600 hover:bg-sky-700"
+                type="button"
+                onClick={() => switchTab('password')}
+                className={`flex-1 py-2 text-sm font-medium transition ${
+                  tab === 'password'
+                    ? 'bg-sky-600 hover:bg-sky-700 text-white'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
               >
-                {loading ? 'Creating account…' : 'Sign up'}
+                Password
               </button>
+              <button
+                type="button"
+                onClick={() => switchTab('email')}
+                className={`flex-1 py-2 text-sm font-medium transition ${
+                  tab === 'email'
+                    ? 'bg-sky-600 hover:bg-sky-700 text-white'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                Email Only
+              </button>
+            </div>
 
-              <p className="text-center text-sm text-gray-600">
-                Already have an account?{' '}
-                <Link href="/login" className="font-medium text-sky-600 hover:underline">
-                  Login
-                </Link>
-              </p>
-            </form>
+            {/* ── Password tab ──────────────────────────────────────────── */}
+            {tab === 'password' && (
+              <form onSubmit={handleSignup} className="space-y-6">
+                {error && (
+                  <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm" role="alert">
+                    {error}
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium mb-1 text-gray-700">
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent form-input border-gray-300 focus:ring-sky-500"
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium mb-1 text-gray-700">
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={10}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent form-input border-gray-300 focus:ring-sky-500"
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                  />
+                  {password.length > 0 && (
+                    <ul className="mt-2 space-y-0.5 text-xs" id="password-hint">
+                      {([
+                        ['length', '10+ characters'],
+                        ['upper', 'Uppercase letter'],
+                        ['lower', 'Lowercase letter'],
+                        ['digit', 'Number'],
+                        ['symbol', 'Symbol (!@#$…)'],
+                      ] as const).map(([key, label]) => (
+                        <li key={key} className={pwChecks[key] ? 'text-green-600' : 'text-red-500'}>
+                          {pwChecks[key] ? '✓' : '✗'} {label}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {password.length === 0 && (
+                    <p className="text-xs mt-1 text-gray-500" id="password-hint">Minimum 10 characters with upper, lower, digit, and symbol</p>
+                  )}
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <input
+                    id="agree-terms"
+                    type="checkbox"
+                    checked={agreedToTerms}
+                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded shrink-0 border-gray-300 focus:ring-sky-500"
+                  />
+                  <label htmlFor="agree-terms" className="text-sm cursor-pointer text-gray-600">
+                    I agree to the{' '}
+                    <Link href="/terms" className="font-medium text-sky-600 hover:underline" target="_blank">
+                      Terms of Use
+                    </Link>
+                    {' '}and{' '}
+                    <Link href="/privacy" className="font-medium text-sky-600 hover:underline" target="_blank">
+                      Privacy Policy
+                    </Link>
+                  </label>
+                </div>
+
+                {siteKey && <div id="turnstile-widget" className="flex justify-center" />}
+
+                <button
+                  type="submit"
+                  disabled={loading || !agreedToTerms || !pwValid || (!!siteKey && !turnstileToken)}
+                  className="w-full text-white py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 bg-sky-600 hover:bg-sky-700"
+                >
+                  {loading ? 'Creating account…' : 'Sign up'}
+                </button>
+
+                <p className="text-center text-sm text-gray-600">
+                  Already have an account?{' '}
+                  <Link href="/login" className="font-medium text-sky-600 hover:underline">
+                    Login
+                  </Link>
+                </p>
+              </form>
+            )}
+
+            {/* ── Email-only tab ─────────────────────────────────────────── */}
+            {tab === 'email' && (
+              <div className="space-y-6">
+                {otpError && (
+                  <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm" role="alert">
+                    {otpError}
+                  </div>
+                )}
+
+                {otpStep === 'email' ? (
+                  <form onSubmit={handleSendCode} className="space-y-6">
+                    <div>
+                      <label htmlFor="otp-email" className="block text-sm font-medium mb-1 text-gray-700">
+                        Email
+                      </label>
+                      <input
+                        id="otp-email"
+                        type="email"
+                        value={otpEmail}
+                        onChange={(e) => setOtpEmail(e.target.value)}
+                        required
+                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent form-input border-gray-300 focus:ring-sky-500"
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                      />
+                      <p className="text-xs mt-1.5 text-gray-400">
+                        We&apos;ll send a 6-digit code to this address. No password needed.
+                      </p>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <input
+                        id="agree-terms-otp"
+                        type="checkbox"
+                        checked={agreedToTerms}
+                        onChange={(e) => setAgreedToTerms(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded shrink-0 border-gray-300 focus:ring-sky-500"
+                      />
+                      <label htmlFor="agree-terms-otp" className="text-sm cursor-pointer text-gray-600">
+                        I agree to the{' '}
+                        <Link href="/terms" className="font-medium text-sky-600 hover:underline" target="_blank">
+                          Terms of Use
+                        </Link>
+                        {' '}and{' '}
+                        <Link href="/privacy" className="font-medium text-sky-600 hover:underline" target="_blank">
+                          Privacy Policy
+                        </Link>
+                      </label>
+                    </div>
+
+                    {siteKey && <div id="turnstile-widget" className="flex justify-center" />}
+
+                    <button
+                      type="submit"
+                      disabled={otpLoading || !agreedToTerms || (!!siteKey && !turnstileToken)}
+                      className="w-full text-white py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 bg-sky-600 hover:bg-sky-700"
+                    >
+                      {otpLoading ? 'Sending…' : 'Send Code'}
+                    </button>
+
+                    <p className="text-center text-sm text-gray-600">
+                      Already have an account?{' '}
+                      <Link href="/login" className="font-medium text-sky-600 hover:underline">
+                        Login
+                      </Link>
+                    </p>
+                  </form>
+                ) : (
+                  <form onSubmit={handleVerifyCode} className="space-y-6">
+                    <div>
+                      <p className="text-sm mb-4 text-gray-600">
+                        We sent a 6-digit code to <span className="font-medium text-gray-900">{otpEmail}</span>. Enter it below to create your account.
+                      </p>
+                      <label htmlFor="otp-code" className="block text-sm font-medium mb-1 text-gray-700">
+                        6-digit code
+                      </label>
+                      <input
+                        id="otp-code"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]{6}"
+                        maxLength={6}
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        required
+                        autoFocus
+                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent form-input text-center text-2xl tracking-widest font-mono border-gray-300 focus:ring-sky-500"
+                        placeholder="000000"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={otpLoading || otpCode.length !== 6}
+                      className="w-full text-white py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 bg-sky-600 hover:bg-sky-700"
+                    >
+                      {otpLoading ? 'Verifying…' : 'Verify & Create Account'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => { setOtpStep('email'); setOtpCode(''); setOtpError(''); resetTurnstile(); }}
+                      className="w-full text-sm transition text-gray-500 hover:text-gray-700"
+                    >
+                      Use a different email
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
           </div>
         </main>
 
