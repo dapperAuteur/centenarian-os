@@ -98,15 +98,10 @@ function LoginContent() {
     setOtpError('');
     setOtpLoading(true);
     try {
-      let emailRedirectTo: string | undefined;
-      if (typeof window !== 'undefined') {
-        emailRedirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(dashboardRedirect)}`;
-      }
       const { error } = await supabase.auth.signInWithOtp({
         email: otpEmail,
         options: {
           shouldCreateUser: false,
-          emailRedirectTo,
         },
       });
       if (error) throw error;
@@ -249,7 +244,7 @@ function LoginContent() {
                   : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
-              Email Link
+              Email Code
             </button>
           </div>
 
@@ -290,6 +285,12 @@ function LoginContent() {
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent form-input border-gray-300 focus:ring-sky-500"
                   placeholder="••••••••"
                 />
+              </div>
+
+              <div className="text-right">
+                <Link href="/forgot-password" className="text-sm font-medium text-sky-600 hover:underline">
+                  Forgot password?
+                </Link>
               </div>
 
               <button
@@ -334,7 +335,7 @@ function LoginContent() {
                       placeholder="you@example.com"
                     />
                     <p className="text-xs mt-1.5 text-gray-400">
-                      We&apos;ll send a login link or 6-digit code to this address. Only existing accounts can use this method.
+                      We&apos;ll send a 6-digit code to this address. Only existing accounts can use this method.
                     </p>
                   </div>
 
@@ -350,7 +351,7 @@ function LoginContent() {
                 <form onSubmit={handleVerifyCode} className="space-y-6">
                   <div>
                     <p className="text-sm mb-4 text-gray-600">
-                      Check your email at <span className="font-medium text-gray-900">{otpEmail}</span>. You&apos;ll receive either a login link (click to sign in) or a 6-digit code to enter below.
+                      We sent a 6-digit code to <span className="font-medium text-gray-900">{otpEmail}</span>. Enter it below to sign in.
                     </p>
                     <label htmlFor="otp-code" className="block text-sm font-medium mb-1 text-gray-700">
                       6-digit code
