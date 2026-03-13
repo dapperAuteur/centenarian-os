@@ -16,9 +16,13 @@ export async function GET(request: NextRequest) {
   const from = params.get('from');
   const to = params.get('to');
   const type = params.get('type'); // 'expense' | 'income'
-  const categoryId = params.get('category_id');
-  const accountId = params.get('account_id');
-  const brandId = params.get('brand_id');
+  // Multi-value filters (comma-separated); fall back to legacy single-value params
+  const accountIds = params.get('account_ids')?.split(',').filter(Boolean)
+    ?? (params.get('account_id') ? [params.get('account_id')!] : []);
+  const categoryIds = params.get('category_ids')?.split(',').filter(Boolean)
+    ?? (params.get('category_id') ? [params.get('category_id')!] : []);
+  const brandIds = params.get('brand_ids')?.split(',').filter(Boolean)
+    ?? (params.get('brand_id') ? [params.get('brand_id')!] : []);
   const sourceModule = params.get('source_module');
   const source = params.get('source');
   const disputeStatus = params.get('dispute_status');
@@ -28,7 +32,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from('financial_transactions')
-    .select('*, budget_categories(id, name, color)', { count: 'exact' })
+    .select('*, budget_categories(id, name, color), financial_accounts(id, name)', { count: 'exact' })
     .eq('user_id', user.id)
     .order('transaction_date', { ascending: false })
     .range(offset, offset + limit - 1);
@@ -36,15 +40,15 @@ export async function GET(request: NextRequest) {
   if (from) query = query.gte('transaction_date', from);
   if (to) query = query.lte('transaction_date', to);
   if (type) query = query.eq('type', type);
-  if (categoryId) query = query.eq('category_id', categoryId);
-  if (accountId) query = query.eq('account_id', accountId);
-  if (brandId) query = query.eq('brand_id', brandId);
+  if (categoryIds.length > 0) query = query.in('category_id', categoryIds);
+  if (accountIds.length > 0) query = query.in('account_id', accountIds);
+  if (brandIds.length > 0) query = query.in('brand_id', brandIds);
   if (sourceModule) query = query.eq('source_module', sourceModule);
   if (source) query = query.eq('source', source);
   if (disputeStatus) query = query.eq('dispute_status', disputeStatus);
   const jobId = params.get('job_id');
   if (jobId) query = query.eq('job_id', jobId);
-  if (q) query = query.or(`description.ilike.%${q}%,vendor.ilike.%${q}%,notes.ilike.%${q}%`);
+  if (q) query = query.or(`description.ilike.%${q}%,vendor.ilike.%${q}%,notes.ilike.%${q}%,amount::text.ilike.%${q}%`);
 
   const { data, error, count } = await query;
 
