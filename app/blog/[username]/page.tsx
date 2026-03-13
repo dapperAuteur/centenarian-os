@@ -1,9 +1,42 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import PostCard from '@/components/blog/PostCard';
+import type { Metadata } from 'next';
 import type { BlogPost, Profile } from '@/lib/types';
 
 type Props = { params: Promise<{ username: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { username } = await params;
+  const supabase = await createClient();
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('display_name, username, bio')
+    .eq('username', username)
+    .maybeSingle();
+  if (!profile) return { title: 'Blog' };
+  const name = profile.display_name || profile.username;
+  const SITE_URL = process.env.NEXT_PUBLIC_APP_URL
+    ? `https://${process.env.NEXT_PUBLIC_APP_URL.replace(/^https?:\/\//, '')}`
+    : 'https://centenarianos.com';
+  return {
+    title: `${name}'s Blog`,
+    description: profile.bio || `Read posts by ${name} on CentenarianOS.`,
+    openGraph: {
+      title: `${name}'s Blog`,
+      description: profile.bio || `Read posts by ${name} on CentenarianOS.`,
+      images: [`${SITE_URL}/api/og/profile/${username}`],
+      url: `${SITE_URL}/blog/${username}`,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${name}'s Blog`,
+      images: [`${SITE_URL}/api/og/profile/${username}`],
+    },
+    alternates: { canonical: `${SITE_URL}/blog/${username}` },
+  };
+}
 
 export default async function UserBlogPage({ params }: Props) {
   const { username } = await params;

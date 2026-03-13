@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { notFound } from 'next/navigation';
 import { headers } from 'next/headers';
 import Image from 'next/image';
@@ -12,9 +13,56 @@ import ReadDepthTracker from '@/components/blog/ReadDepthTracker';
 import { buildShareUrls } from '@/lib/blog/share';
 import { Lock } from 'lucide-react';
 import PageViewTracker from '@/components/ui/PageViewTracker';
+import type { Metadata } from 'next';
 import type { BlogPost, Profile } from '@/lib/types';
 
 type Props = { params: Promise<{ username: string; slug: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { username, slug } = await params;
+  const db = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  const { data: profile } = await db
+    .from('profiles')
+    .select('id, display_name, username')
+    .eq('username', username)
+    .maybeSingle();
+  if (!profile) return { title: 'Post not found' };
+  const { data: post } = await db
+    .from('blog_posts')
+    .select('title, excerpt, cover_image_url, published_at')
+    .eq('user_id', profile.id)
+    .eq('slug', slug)
+    .eq('visibility', 'public')
+    .maybeSingle();
+  if (!post) return { title: 'Post not found' };
+  const name = profile.display_name || profile.username;
+  const SITE_URL = process.env.NEXT_PUBLIC_APP_URL
+    ? `https://${process.env.NEXT_PUBLIC_APP_URL.replace(/^https?:\/\//, '')}`
+    : 'https://centenarianos.com';
+  const ogImage = `${SITE_URL}/api/og/blog/${username}/${slug}`;
+  return {
+    title: post.title,
+    description: post.excerpt || `A post by ${name}`,
+    openGraph: {
+      title: post.title,
+      description: post.excerpt || `A post by ${name}`,
+      images: [{ url: ogImage, width: 1200, height: 630 }],
+      url: `${SITE_URL}/blog/${username}/${slug}`,
+      type: 'article',
+      authors: [name],
+      publishedTime: post.published_at ?? undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      images: [ogImage],
+    },
+    alternates: { canonical: `${SITE_URL}/blog/${username}/${slug}` },
+  };
+}
 
 export default async function PublicPostPage({ params }: Props) {
   const { username, slug } = await params;
@@ -54,8 +102,25 @@ export default async function PublicPostPage({ params }: Props) {
         ])
       : [{ data: null }, { data: null }];
 
+    const { articleSchema } = await import('@/lib/seo/json-ld');
+    const postJsonLd = articleSchema({
+      title: bp.title,
+      excerpt: bp.excerpt ?? null,
+      cover_image_url: bp.cover_image_url ?? null,
+      published_at: bp.published_at ?? null,
+      updated_at: (bp as { updated_at?: string | null }).updated_at ?? null,
+      slug,
+      username,
+      author_name: p.display_name || p.username,
+      author_avatar: (p as { avatar_url?: string | null }).avatar_url ?? null,
+    });
+
     return (
       <main className="max-w-3xl mx-auto px-4 py-12">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(postJsonLd) }}
+        />
         <PageViewTracker path={`/blog/${username}/${slug}`} />
         <ReadDepthTracker postId={bp.id} />
 
