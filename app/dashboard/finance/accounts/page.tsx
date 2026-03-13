@@ -640,6 +640,16 @@ export default function AccountsPage() {
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${TYPE_COLORS[acct.account_type] ?? 'bg-gray-100 text-gray-700'}`}>
                         {TYPE_LABELS[acct.account_type] ?? acct.account_type}
                       </span>
+                      {acct.teller_account_id ? (
+                        <span className="flex items-center gap-1 text-xs bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded-full">
+                          <Landmark className="w-3 h-3" aria-hidden="true" />
+                          Bank Sync
+                        </span>
+                      ) : (
+                        <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                          Manual
+                        </span>
+                      )}
                       {!acct.is_active && (
                         <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Inactive</span>
                       )}
@@ -696,9 +706,6 @@ export default function AccountsPage() {
                   <div className="flex items-center gap-1 shrink-0">
                     {acct.teller_account_id ? (
                       <>
-                        <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full mr-1" title="Connected via Teller">
-                          Linked
-                        </span>
                         <button
                           onClick={() => handleUnlinkTeller(acct)}
                           disabled={unlinking === acct.id}
