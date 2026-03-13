@@ -178,7 +178,7 @@ export default function LifeCategoryTagger({
                 key={cat.id}
                 type="button"
                 onClick={() => handleTag(cat.id)}
-                className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded hover:bg-gray-50 text-left transition"
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-gray-700 rounded hover:bg-gray-50 text-left transition"
               >
                 <span
                   className="w-3 h-3 rounded-full shrink-0"
@@ -219,7 +219,7 @@ export default function LifeCategoryTagger({
                     key={cat.id}
                     type="button"
                     onClick={() => handleTag(cat.id)}
-                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs rounded hover:bg-gray-50 text-left transition"
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-gray-700 rounded hover:bg-gray-50 text-left transition"
                   >
                     <span
                       className="w-3 h-3 rounded-full shrink-0"
