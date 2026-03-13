@@ -4,7 +4,7 @@
 // Auth: mTLS (client certificate) + Basic Auth (access token per enrollment).
 
 import { randomBytes, createCipheriv, createDecipheriv } from 'crypto';
-import { readFileSync, writeFileSync, existsSync, chmodSync } from 'fs';
+import { readFileSync } from 'fs';
 import https from 'https';
 
 const API_BASE = 'https://api.teller.io';
@@ -28,23 +28,18 @@ let _agent: https.Agent | null = null;
  *      certificate contents, written to /tmp at runtime.
  */
 function getTlsAgent(): https.Agent | undefined {
-  let certPath = process.env.TELLER_CERT_PATH;
-  let keyPath = process.env.TELLER_KEY_PATH;
+  const certPath = process.env.TELLER_CERT_PATH;
+  const keyPath = process.env.TELLER_KEY_PATH;
 
-  // Production: cert contents stored as base64 env vars → write to /tmp
-  if (!certPath && process.env.TELLER_CERT) {
-    certPath = '/tmp/teller-cert.pem';
-    if (!existsSync(certPath)) {
-      writeFileSync(certPath, Buffer.from(process.env.TELLER_CERT, 'base64'));
-      chmodSync(certPath, 0o600);
+  // Production: cert/key passed as base64 env vars — use content directly (no /tmp write)
+  if (!certPath && process.env.TELLER_CERT && process.env.TELLER_KEY) {
+    if (!_agent) {
+      _agent = new https.Agent({
+        cert: Buffer.from(process.env.TELLER_CERT, 'base64'),
+        key: Buffer.from(process.env.TELLER_KEY, 'base64'),
+      });
     }
-  }
-  if (!keyPath && process.env.TELLER_KEY) {
-    keyPath = '/tmp/teller-key.pem';
-    if (!existsSync(keyPath)) {
-      writeFileSync(keyPath, Buffer.from(process.env.TELLER_KEY, 'base64'));
-      chmodSync(keyPath, 0o600);
-    }
+    return _agent;
   }
 
   if (!certPath || !keyPath) {
@@ -52,6 +47,7 @@ function getTlsAgent(): https.Agent | undefined {
     return undefined;
   }
 
+  // Local dev: load from file paths
   if (!_agent) {
     _agent = new https.Agent({
       cert: readFileSync(certPath),

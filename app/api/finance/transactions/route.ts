@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
   const sourceModule = params.get('source_module');
   const source = params.get('source');
   const disputeStatus = params.get('dispute_status');
+  const q = params.get('q')?.trim() || '';
   const limit = Math.min(parseInt(params.get('limit') || '100') || 100, 500);
   const offset = parseInt(params.get('offset') || '0');
 
@@ -43,6 +44,7 @@ export async function GET(request: NextRequest) {
   if (disputeStatus) query = query.eq('dispute_status', disputeStatus);
   const jobId = params.get('job_id');
   if (jobId) query = query.eq('job_id', jobId);
+  if (q) query = query.or(`description.ilike.%${q}%,vendor.ilike.%${q}%,notes.ilike.%${q}%`);
 
   const { data, error, count } = await query;
 

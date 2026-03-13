@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight, Link2, X } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight, Link2, X, Search } from 'lucide-react';
 import Link from 'next/link';
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -68,6 +68,8 @@ export default function TransactionsPage() {
   const [filterFrom, setFilterFrom] = useState<string>('');
   const [filterTo, setFilterTo] = useState<string>('');
   const [filterAccount, setFilterAccount] = useState<string>(urlAccountId);
+  const [filterSearch, setFilterSearch] = useState<string>('');
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Edit inline
   const [editId, setEditId] = useState<string | null>(null);
@@ -85,6 +87,7 @@ export default function TransactionsPage() {
     if (filterAccount) params.set('account_id', filterAccount);
     if (filterFrom) params.set('from', filterFrom);
     if (filterTo) params.set('to', filterTo);
+    if (filterSearch) params.set('q', filterSearch);
 
     try {
       const res = await offlineFetch(`/api/finance/transactions?${params}`);
@@ -96,7 +99,7 @@ export default function TransactionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, filterType, filterCategory, filterBrand, filterAccount, filterFrom, filterTo]);
+  }, [page, filterType, filterCategory, filterBrand, filterAccount, filterFrom, filterTo, filterSearch]);
 
   useEffect(() => {
     Promise.all([
@@ -171,6 +174,23 @@ export default function TransactionsPage() {
         <div className="flex items-center gap-2 mb-3">
           <Filter className="w-4 h-4 text-gray-500" />
           <span className="text-sm font-medium text-gray-700">Filters</span>
+        </div>
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
+          <input
+            type="text"
+            value={filterSearch}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+              searchDebounceRef.current = setTimeout(() => {
+                setFilterSearch(val);
+                setPage(0);
+              }, 300);
+            }}
+            placeholder="Search description, vendor, notes…"
+            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg"
+          />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           <select
