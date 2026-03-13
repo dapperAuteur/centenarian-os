@@ -2,8 +2,32 @@
 // Public blog layout. Uses SiteHeader for unified nav (full nav when logged in,
 // minimal public header when logged out). Blog-specific links in a secondary strip.
 
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import SiteHeader from '@/components/SiteHeader';
+
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL
+  ? `https://${process.env.NEXT_PUBLIC_APP_URL.replace(/^https?:\/\//, '')}`
+  : 'https://centenarianos.com';
+
+export const metadata: Metadata = {
+  title: 'Blog',
+  description: 'Member posts on longevity, health, finance, travel, and personal development from the CentenarianOS community.',
+  openGraph: {
+    title: 'CentenarianOS Blog',
+    description: 'Member posts on longevity, health, finance, and personal development.',
+    images: [{ url: `${SITE_URL}/og-default.png`, width: 1200, height: 630 }],
+    url: `${SITE_URL}/blog`,
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CentenarianOS Blog',
+    images: [`${SITE_URL}/og-default.png`],
+  },
+  alternates: { canonical: `${SITE_URL}/blog` },
+};
+
 import SiteFooter from '@/components/ui/SiteFooter';
 
 export default function BlogLayout({ children }: { children: React.ReactNode }) {

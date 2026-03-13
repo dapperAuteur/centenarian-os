@@ -20,9 +20,25 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const mod = getModuleBySlug(slug);
   if (!mod) return {};
+  const SITE_URL = process.env.NEXT_PUBLIC_APP_URL
+    ? `https://${process.env.NEXT_PUBLIC_APP_URL.replace(/^https?:\/\//, '')}`
+    : 'https://centenarianos.com';
   return {
-    title: `${mod.name} — CentenarianOS`,
+    title: mod.name,
     description: mod.description,
+    openGraph: {
+      title: `${mod.name} — CentenarianOS`,
+      description: mod.description,
+      images: [{ url: `${SITE_URL}/og-default.png`, width: 1200, height: 630 }],
+      url: `${SITE_URL}/features/${slug}`,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: mod.name,
+      images: [`${SITE_URL}/og-default.png`],
+    },
+    alternates: { canonical: `${SITE_URL}/features/${slug}` },
   };
 }
 

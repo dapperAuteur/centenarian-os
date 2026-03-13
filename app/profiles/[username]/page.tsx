@@ -75,8 +75,20 @@ export default async function PublicProfilePage({ params }: Params) {
 
   const joinYear = new Date(profile.created_at).getFullYear();
 
+  const { personSchema } = await import('@/lib/seo/json-ld');
+  const profileJsonLd = personSchema({
+    username: profile.username,
+    display_name: profile.display_name,
+    bio: profile.bio ?? null,
+    avatar_url: profile.avatar_url ?? null,
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(profileJsonLd) }}
+      />
       <SiteHeader />
 
       <main className="flex-1">

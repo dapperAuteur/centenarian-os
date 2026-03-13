@@ -7,8 +7,17 @@
 BEGIN;
 
 -- ─── 1. Help articles unique constraint ───────────────────────────────────────
-ALTER TABLE public.help_articles
-  ADD CONSTRAINT IF NOT EXISTS help_articles_title_app_key UNIQUE (title, app);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'help_articles_title_app_key'
+      AND conrelid = 'public.help_articles'::regclass
+  ) THEN
+    ALTER TABLE public.help_articles
+      ADD CONSTRAINT help_articles_title_app_key UNIQUE (title, app);
+  END IF;
+END $$;
 
 -- ─── 2. Public venues library ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.public_venues (

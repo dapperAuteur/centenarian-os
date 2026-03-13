@@ -5,6 +5,7 @@
 //   3. Recipe exists but restricted → unavailable page with cook's other recipes
 
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { notFound } from 'next/navigation';
 import { headers } from 'next/headers';
 import Image from 'next/image';
@@ -19,9 +20,57 @@ import RecipeMediaGallery from '@/components/recipes/RecipeMediaGallery';
 import { buildRecipeShareUrls } from '@/lib/recipes/share';
 import AddToFuelButton from './AddToFuelButton';
 import PageViewTracker from '@/components/ui/PageViewTracker';
+import type { Metadata } from 'next';
 import type { Recipe, RecipeIngredient, RecipeMedia, Profile } from '@/lib/types';
 
 type Props = { params: Promise<{ username: string; slug: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { username, slug } = await params;
+  const db = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  const { data: profile } = await db
+    .from('profiles')
+    .select('id, display_name, username')
+    .eq('username', username)
+    .maybeSingle();
+  if (!profile) return { title: 'Recipe not found' };
+  const { data: recipe } = await db
+    .from('recipes')
+    .select('title, description, cover_image_url, published_at')
+    .eq('user_id', profile.id)
+    .eq('slug', slug)
+    .eq('visibility', 'public')
+    .maybeSingle();
+  if (!recipe) return { title: 'Recipe not found' };
+  const name = profile.display_name || profile.username;
+  const SITE_URL = process.env.NEXT_PUBLIC_APP_URL
+    ? `https://${process.env.NEXT_PUBLIC_APP_URL.replace(/^https?:\/\//, '')}`
+    : 'https://centenarianos.com';
+  const ogImage = recipe.cover_image_url
+    ? recipe.cover_image_url
+    : `${SITE_URL}/og-default.png`;
+  return {
+    title: recipe.title,
+    description: recipe.description || `A recipe by ${name}`,
+    openGraph: {
+      title: recipe.title,
+      description: recipe.description || `A recipe by ${name}`,
+      images: [{ url: ogImage, width: 1200, height: 630 }],
+      url: `${SITE_URL}/recipes/cooks/${username}/${slug}`,
+      type: 'article',
+      authors: [name],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: recipe.title,
+      images: [ogImage],
+    },
+    alternates: { canonical: `${SITE_URL}/recipes/cooks/${username}/${slug}` },
+  };
+}
 
 export default async function PublicRecipePage({ params }: Props) {
   const { username, slug } = await params;
@@ -88,8 +137,26 @@ export default async function PublicRecipePage({ params }: Props) {
 
     const totalTime = (r.prep_time_minutes || 0) + (r.cook_time_minutes || 0);
 
+    const { recipeSchema } = await import('@/lib/seo/json-ld');
+    const recipeJsonLd = recipeSchema({
+      title: r.title,
+      description: r.description ?? null,
+      cover_image_url: r.cover_image_url ?? null,
+      slug,
+      username,
+      author_name: p.display_name || p.username,
+      prep_time_minutes: r.prep_time_minutes ?? null,
+      cook_time_minutes: r.cook_time_minutes ?? null,
+      servings: r.servings ?? null,
+      published_at: r.published_at ?? null,
+    });
+
     return (
       <main className="max-w-3xl mx-auto px-4 py-12">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(recipeJsonLd) }}
+        />
         <PageViewTracker path={`/recipes/cooks/${username}/${slug}`} />
         {/* Cover image */}
         {r.cover_image_url && (

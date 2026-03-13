@@ -55,6 +55,11 @@ export async function GET(_request: NextRequest, { params }: Params) {
   const userId = profile.id;
   const name = profile.display_name || profile.username;
 
+  // Log this render as a social share signal (fire-and-forget)
+  db.from('og_image_requests')
+    .insert({ profile_username: username, app: 'centenarian' })
+    .then(() => {}, () => {});
+
   // Fetch stats
   const [achievementsRes, streakRes, courseCountRes, pathCountRes] = await Promise.all([
     db

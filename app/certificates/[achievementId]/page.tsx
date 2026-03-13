@@ -16,9 +16,54 @@ function getDb() {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { achievementId } = await params;
+  const db = getDb();
+
+  const { data: achievement } = await db
+    .from('user_achievements')
+    .select('achievement_type, ref_id, earned_at, user_id')
+    .eq('id', achievementId)
+    .in('achievement_type', ['course_complete', 'path_complete'])
+    .maybeSingle();
+
+  const { data: profile } = achievement
+    ? await db.from('profiles').select('display_name, username').eq('id', achievement.user_id).maybeSingle()
+    : { data: null };
+
+  const recipientName = profile?.display_name || profile?.username || 'A Member';
+  const isCourse = achievement?.achievement_type === 'course_complete';
+
+  let subjectTitle = 'a course';
+  if (achievement?.ref_id) {
+    if (isCourse) {
+      const { data: course } = await db.from('courses').select('title').eq('id', achievement.ref_id).maybeSingle();
+      if (course?.title) subjectTitle = course.title;
+    } else {
+      const { data: path } = await db.from('learning_paths').select('title').eq('id', achievement.ref_id).maybeSingle();
+      if (path?.title) subjectTitle = path.title;
+    }
+  }
+
+  const SITE_URL = process.env.NEXT_PUBLIC_APP_URL
+    ? `https://${process.env.NEXT_PUBLIC_APP_URL.replace(/^https?:\/\//, '')}`
+    : 'https://centenarianos.com';
+  const ogImage = `${SITE_URL}/api/og/certificate/${achievementId}`;
+  const title = `${recipientName} completed "${subjectTitle}"`;
+
   return {
-    title: `Certificate of Completion — CentenarianOS`,
-    description: `Verified certificate of completion #${achievementId}`,
+    title: 'Certificate of Completion',
+    description: `${title} — verified certificate on CentenarianOS.`,
+    openGraph: {
+      title,
+      description: `Verified certificate of completion on CentenarianOS.`,
+      images: [{ url: ogImage, width: 1200, height: 630 }],
+      url: `${SITE_URL}/certificates/${achievementId}`,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      images: [ogImage],
+    },
   };
 }
 
@@ -89,8 +134,21 @@ export default async function CertificatePage({ params }: Params) {
 
   const shortId = achievementId.slice(0, 8).toUpperCase();
 
+  const { certificateSchema } = await import('@/lib/seo/json-ld');
+  const certJsonLd = certificateSchema({
+    achievementId,
+    subjectTitle,
+    recipientName,
+    username: profile.username,
+    earnedAt: achievement.earned_at,
+  });
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(certJsonLd) }}
+      />
       {/* Print toolbar — hidden when printing */}
       <div className="print:hidden bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm">
         <Link href="/" className="text-sm font-bold text-gray-700 hover:text-fuchsia-700 transition">

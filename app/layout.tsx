@@ -7,12 +7,36 @@ import { Analytics } from "@vercel/analytics/next"
 import { Inter } from 'next/font/google';
 import './globals.css';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
+import SocialReferralTracker from '@/components/SocialReferralTracker';
+import { organizationSchema } from '@/lib/seo/json-ld';
 
 const inter = Inter({ subsets: ['latin'] });
 
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL
+  ? `https://${process.env.NEXT_PUBLIC_APP_URL.replace(/^https?:\/\//, '')}`
+  : 'https://centenarianos.com';
+
 export const metadata: Metadata = {
-  title: 'CentenarianOS',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: 'CentenarianOS',
+    template: '%s — CentenarianOS',
+  },
   description: 'Multi-decade personal operating system for executing audacious goals through data-driven daily habits',
+  openGraph: {
+    title: 'CentenarianOS',
+    description: 'Multi-decade personal operating system for executing audacious goals through data-driven daily habits',
+    url: SITE_URL,
+    siteName: 'CentenarianOS',
+    images: [{ url: `${SITE_URL}/og-default.png`, width: 1200, height: 630, alt: 'CentenarianOS' }],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CentenarianOS',
+    description: 'Multi-decade personal operating system for executing audacious goals through data-driven daily habits',
+    images: [`${SITE_URL}/og-default.png`],
+  },
 };
 
 // Viewport must be a separate export in Next.js 15+
@@ -32,9 +56,14 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0d9488" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema()) }}
+        />
       </head>
       <body className={inter.className}>
         {children}
+        <SocialReferralTracker />
         <Analytics />
         {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
           <Script

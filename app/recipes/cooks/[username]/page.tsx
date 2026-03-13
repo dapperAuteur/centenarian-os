@@ -7,11 +7,44 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ChefHat } from 'lucide-react';
 import RecipeCard from '@/components/recipes/RecipeCard';
+import type { Metadata } from 'next';
 import type { Recipe, Profile } from '@/lib/types';
 
 export const revalidate = 60;
 
 type Params = { params: Promise<{ username: string }> };
+
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const { username } = await params;
+  const supabase = await createClient();
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('display_name, username, bio')
+    .eq('username', username)
+    .maybeSingle();
+  if (!profile) return { title: 'Recipes' };
+  const name = profile.display_name || profile.username;
+  const SITE_URL = process.env.NEXT_PUBLIC_APP_URL
+    ? `https://${process.env.NEXT_PUBLIC_APP_URL.replace(/^https?:\/\//, '')}`
+    : 'https://centenarianos.com';
+  return {
+    title: `${name}'s Recipes`,
+    description: profile.bio || `Recipes by ${name} on CentenarianOS.`,
+    openGraph: {
+      title: `${name}'s Recipes`,
+      description: profile.bio || `Recipes by ${name} on CentenarianOS.`,
+      images: [`${SITE_URL}/api/og/profile/${username}`],
+      url: `${SITE_URL}/recipes/cooks/${username}`,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${name}'s Recipes`,
+      images: [`${SITE_URL}/api/og/profile/${username}`],
+    },
+    alternates: { canonical: `${SITE_URL}/recipes/cooks/${username}` },
+  };
+}
 
 export default async function CookPage({ params }: Params) {
   const { username } = await params;
@@ -56,7 +89,7 @@ export default async function CookPage({ params }: Params) {
               className="w-18 h-18 rounded-full object-cover"
             />
           ) : (
-            <div className="w-18 h-18 rounded-full bg-gradient-to-br from-orange-100 to-amber-200 flex items-center justify-center">
+            <div className="w-18 h-18 rounded-full bg-linear-to-br from-orange-100 to-amber-200 flex items-center justify-center">
               <ChefHat className="w-8 h-8 text-orange-500" />
             </div>
           )}
