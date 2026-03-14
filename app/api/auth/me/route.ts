@@ -22,6 +22,18 @@ export async function GET() {
 
   const isAdmin = user.email === process.env.ADMIN_EMAIL;
 
+  // Demo users always get full access
+  const demoUserIds = [
+    process.env.DEMO_TUTORIAL_USER_ID,
+    process.env.DEMO_VISITOR_USER_ID,
+  ].filter(Boolean);
+  const demoEmails = [
+    process.env.DEMO_TUTORIAL_USER_EMAIL,
+    process.env.DEMO_VISITOR_USER_EMAIL,
+    process.env.DEMO_CONTRACTOR_EMAIL,
+  ].filter(Boolean);
+  const isDemoUser = demoUserIds.includes(user.id) || (user.email && demoEmails.includes(user.email));
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('role, username')
@@ -67,6 +79,7 @@ export async function GET() {
   return NextResponse.json({
     isAdmin,
     isTeacher,
+    isDemoUser: !!isDemoUser,
     role,
     username: profile?.username ?? null,
     userId: user.id,

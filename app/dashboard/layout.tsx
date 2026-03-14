@@ -47,12 +47,13 @@ export default function DashboardLayout({
   const isPaid = subStatus === 'monthly' || subStatus === 'lifetime';
   const [isAdmin, setIsAdmin] = useState(false);
   const [isTeacher, setIsTeacher] = useState(false);
+  const [isDemoUser, setIsDemoUser] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
   const [adminLoading, setAdminLoading] = useState(true);
   const [adminUnread, setAdminUnread] = useState(0);
   const [isInvited, setIsInvited] = useState(false);
   const [inviteModules, setInviteModules] = useState<string[] | null>(null);
-  const hasAccess = isPaid || isAdmin || isInvited;
+  const hasAccess = isPaid || isAdmin || isInvited || isDemoUser;
   // Only apply module restrictions to invited users who aren't paying subscribers or admins
   const allowedModules = isInvited && !isPaid && !isAdmin ? inviteModules : null;
   const unreadMessages = useUnreadCount();
@@ -63,6 +64,7 @@ export default function DashboardLayout({
       .then((d) => {
         setIsAdmin(d.isAdmin ?? false);
         setIsTeacher(d.isTeacher ?? false);
+        setIsDemoUser(d.isDemoUser ?? false);
         setUsername(d.username ?? null);
         setIsInvited(d.isInvited ?? false);
         setInviteModules(d.inviteModules ?? null);
