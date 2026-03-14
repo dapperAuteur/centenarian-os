@@ -69,4 +69,9 @@ async function resetUser(supabase: ReturnType<typeof db>, userId: string, type: 
       await seedVisitor(supabase, userId);
       break;
   }
+  // Ensure demo users pass the subscription gate (isPaid check in dashboard layout)
+  await supabase
+    .from('profiles')
+    .update({ subscription_status: 'lifetime' })
+    .eq('id', userId);
 }
