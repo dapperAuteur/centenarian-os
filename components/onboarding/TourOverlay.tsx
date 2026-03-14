@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { X, ChevronRight, SkipForward, RotateCcw } from 'lucide-react';
+import { X, ChevronRight, SkipForward } from 'lucide-react';
 import type { TourStep } from '@/lib/onboarding/tour-steps';
 
 interface TourOverlayProps {
@@ -113,7 +113,7 @@ export default function TourOverlay({
   if (!step) return null;
 
   // Determine placement offset
-  const placementClasses: Record<string, string> = {
+  const _placementClasses: Record<string, string> = {
     top: 'bottom-full mb-3',
     bottom: 'top-full mt-3',
     left: 'right-full mr-3',

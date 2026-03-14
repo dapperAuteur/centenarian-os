@@ -433,7 +433,7 @@ export async function POST(request: NextRequest) {
 
     for (let i = 0; i < mod.lessons.length; i++) {
       const lessonNum = mod.lessons[i];
-      const filePath = path.join(tutorialsDir, `${lessonNum}-*.md`);
+      const _filePath = path.join(tutorialsDir, `${lessonNum}-*.md`);
 
       // Find the actual file (glob-like matching)
       let actualFile: string | null = null;

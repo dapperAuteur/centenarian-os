@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Task, TaskTag } from '@/lib/types';
+import { Task } from '@/lib/types';
 import { DollarSign, MapPin, Calendar } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';

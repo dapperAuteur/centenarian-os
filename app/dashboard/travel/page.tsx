@@ -84,7 +84,7 @@ const MODE_ICONS: Record<string, string> = {
   walk: '🚶', run: '🏃', ferry: '⛴️', rideshare: '🚕', other: '🚐',
 };
 
-const VEHICLE_TYPE_TO_MODE: Record<string, string> = {
+const _VEHICLE_TYPE_TO_MODE: Record<string, string> = {
   car: 'car', bike: 'bike', ebike: 'bike',
   motorcycle: 'car', scooter: 'car', shoes: 'walk',
   plane: 'plane', train: 'train', bus: 'bus',

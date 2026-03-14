@@ -50,6 +50,8 @@ interface MediaNote {
   is_public: boolean;
   created_at: string;
   updated_at: string;
+  audio_url?: string | null;
+  audio_public_id?: string | null;
 }
 
 const TYPE_ICONS: Record<string, string> = {
