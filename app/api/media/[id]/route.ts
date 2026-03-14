@@ -43,11 +43,12 @@ export async function PATCH(
   const body = await request.json();
 
   const allowed = [
-    'title', 'media_type', 'subtitle', 'creator', 'category_id', 'brand_id',
-    'status', 'rating', 'source_url', 'image_url', 'image_public_id',
-    'start_date', 'end_date', 'release_year', 'duration_minutes',
-    'platform', 'format', 'language', 'isbn', 'season', 'episode',
-    'series_name', 'series_order', 'is_favorite', 'notes',
+    'title', 'media_type', 'creator', 'category_id', 'brand_id',
+    'status', 'rating', 'cover_image_url', 'external_url',
+    'start_date', 'end_date', 'year_released',
+    'source_platform', 'season_number', 'episode_number',
+    'total_seasons', 'total_episodes', 'current_progress', 'total_length',
+    'visibility', 'is_favorite', 'notes',
   ] as const;
 
   const updates: Record<string, unknown> = {};

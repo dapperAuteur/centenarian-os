@@ -9,6 +9,8 @@ import {
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
+import AudioRecorder from '@/components/media/AudioRecorder';
+import MediaRelationships from '@/components/media/MediaRelationships';
 
 interface MediaItem {
   id: string;
@@ -93,7 +95,7 @@ export default function MediaDetailPage() {
 
   // Note form
   const [showNoteForm, setShowNoteForm] = useState(false);
-  const [noteForm, setNoteForm] = useState({ title: '', content: '', note_type: 'general' });
+  const [noteForm, setNoteForm] = useState({ title: '', content: '', note_type: 'general', audio_url: '', audio_public_id: '' });
   const [savingNote, setSavingNote] = useState(false);
 
   const load = useCallback(async () => {
@@ -160,7 +162,7 @@ export default function MediaDetailPage() {
         body: JSON.stringify(noteForm),
       });
       if (res.ok) {
-        setNoteForm({ title: '', content: '', note_type: 'general' });
+        setNoteForm({ title: '', content: '', note_type: 'general', audio_url: '', audio_public_id: '' });
         setShowNoteForm(false);
         load();
       }
@@ -396,6 +398,11 @@ export default function MediaDetailPage() {
         </div>
       </div>
 
+      {/* Relationships */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-5">
+        <MediaRelationships entityId={item.id} />
+      </div>
+
       {/* Notes */}
       <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4">
         <div className="flex items-center justify-between">
@@ -421,7 +428,12 @@ export default function MediaDetailPage() {
             </div>
             <textarea value={noteForm.content} rows={4} placeholder="Write your note..."
               onChange={(e) => setNoteForm((f) => ({ ...f, content: e.target.value }))}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" required />
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+            <AudioRecorder
+              existingUrl={noteForm.audio_url || null}
+              onUploaded={(url, publicId) => setNoteForm((f) => ({ ...f, audio_url: url, audio_public_id: publicId }))}
+              onRemoved={() => setNoteForm((f) => ({ ...f, audio_url: '', audio_public_id: '' }))}
+            />
             <div className="flex gap-2">
               <button type="button" onClick={() => setShowNoteForm(false)}
                 className="px-3 py-1.5 text-xs text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 min-h-11">
@@ -454,7 +466,10 @@ export default function MediaDetailPage() {
                   <Trash2 className="w-3 h-3" />
                 </button>
               </div>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{note.content}</p>
+              {note.content && <p className="text-sm text-gray-700 whitespace-pre-wrap">{note.content}</p>}
+              {note.audio_url && (
+                <audio src={note.audio_url} controls className="h-10 w-full mt-2" />
+              )}
               <span className="text-[10px] text-gray-400 mt-1 block">{fmtDate(note.created_at?.split('T')[0])}</span>
             </div>
           );
