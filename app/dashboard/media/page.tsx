@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Star, BookOpen, Tv, Film, Music, Upload, Download, Globe } from 'lucide-react';
+import { Plus, Star, BookOpen, Tv, Film, Music, Upload, Download, Globe, Settings } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import MediaCard, { type MediaItem } from '@/components/media/MediaCard';
 import MediaForm, { type MediaPrefill } from '@/components/media/MediaForm';
@@ -125,6 +125,10 @@ export default function MediaHubPage() {
           >
             <Globe className="w-4 h-4" /> Import URL
           </button>
+          <Link href="/dashboard/media/settings"
+            className="px-3 py-2 text-sm font-medium border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition min-h-11 flex items-center gap-1.5">
+            <Settings className="w-4 h-4" aria-hidden="true" /> Settings
+          </Link>
           <button
             onClick={() => { setEditItem(null); setPrefill(null); setShowForm(true); }}
             className="px-4 py-2 text-sm font-medium text-white bg-fuchsia-600 hover:bg-fuchsia-700 rounded-xl transition flex items-center gap-1.5 min-h-11"
