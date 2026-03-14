@@ -4,13 +4,14 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, Star, Trash2, Loader2, ExternalLink, Plus, Heart, Share2, Globe, Lock,
+  ArrowLeft, Star, Trash2, Loader2, ExternalLink, Plus, Heart, Share2, Globe, Lock, Edit3,
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
 import AudioRecorder from '@/components/media/AudioRecorder';
 import MediaRelationships from '@/components/media/MediaRelationships';
+import MediaForm from '@/components/media/MediaForm';
 
 interface MediaItem {
   id: string;
@@ -95,6 +96,10 @@ export default function MediaDetailPage() {
   const [visibility, setVisibility] = useState('private');
   const [copiedLink, setCopiedLink] = useState(false);
 
+  // Edit form
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
+
   // Note form
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [noteForm, setNoteForm] = useState({ title: '', content: '', note_type: 'general', audio_url: '', audio_public_id: '' });
@@ -128,6 +133,19 @@ export default function MediaDetailPage() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleOpenEdit = async () => {
+    if (brands.length === 0) {
+      try {
+        const res = await offlineFetch('/api/brands');
+        if (res.ok) {
+          const d = await res.json();
+          setBrands(d.brands || d || []);
+        }
+      } catch { /* brands optional */ }
+    }
+    setShowEditForm(true);
+  };
 
   const handleDelete = async () => {
     if (!confirm('Delete this media item?')) return;
@@ -371,9 +389,15 @@ export default function MediaDetailPage() {
             <Heart className={`w-3.5 h-3.5 ${item.is_favorite ? 'fill-red-500' : ''}`} />
             {item.is_favorite ? 'Unfavorite' : 'Favorite'}
           </button>
+          <button onClick={handleOpenEdit}
+            className="flex items-center gap-1.5 px-3 min-h-11 bg-sky-50 text-sky-600 rounded-lg text-sm font-medium hover:bg-sky-100 transition"
+            aria-label="Edit media item">
+            <Edit3 className="w-3.5 h-3.5" aria-hidden="true" /> Edit
+          </button>
           <button onClick={handleDelete}
-            className="flex items-center gap-1.5 px-3 min-h-11 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition">
-            <Trash2 className="w-3.5 h-3.5" /> Delete
+            className="flex items-center gap-1.5 px-3 min-h-11 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition"
+            aria-label="Delete media item">
+            <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /> Delete
           </button>
           <button onClick={handleToggleVisibility}
             aria-label={visibility === 'public' ? 'Make private' : 'Make public'}
@@ -487,6 +511,15 @@ export default function MediaDetailPage() {
       <div className="bg-white border border-gray-200 rounded-2xl p-5">
         <LifeCategoryTagger entityType="media_item" entityId={item.id} />
       </div>
+
+      {/* Edit Form */}
+      <MediaForm
+        isOpen={showEditForm}
+        onClose={() => setShowEditForm(false)}
+        onSaved={() => { load(); }}
+        brands={brands}
+        editItem={item}
+      />
     </div>
   );
 }

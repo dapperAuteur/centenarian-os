@@ -88,6 +88,18 @@ export default function MediaHubPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const handleDelete = async (itemId: string) => {
+    if (!confirm('Delete this media item?')) return;
+    const res = await offlineFetch(`/api/media/${itemId}`, { method: 'DELETE' });
+    if (res.ok) load();
+  };
+
+  const handleEdit = (mediaItem: MediaItem) => {
+    setEditItem(mediaItem);
+    setPrefill(null);
+    setShowForm(true);
+  };
+
   const totalPages = Math.ceil(total / limit);
 
   const statCards = [
@@ -214,6 +226,8 @@ export default function MediaHubPage() {
               key={item.id}
               item={item}
               onClick={() => router.push(`/dashboard/media/${item.id}`)}
+              onEdit={() => handleEdit(item)}
+              onDelete={() => handleDelete(item.id)}
             />
           ))}
         </div>
