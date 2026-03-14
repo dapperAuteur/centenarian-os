@@ -8,7 +8,7 @@ import { NAV_GROUPS } from '@/components/nav/NavConfig';
 import { Settings, Check, Loader2, Sparkles, RotateCcw, Clock } from 'lucide-react';
 import MfaSetupSection from '@/components/settings/MfaSetupSection';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
-import TourRestartButton from '@/components/onboarding/TourRestartButton';
+// import TourRestartButton from '@/components/onboarding/TourRestartButton';
 import { invalidateClockFormatCache } from '@/lib/hooks/useClockFormat';
 
 interface TourStatus {

@@ -34,10 +34,10 @@ export async function POST(
 
   const { id } = await params;
   const body = await request.json();
-  const { title, content, content_format, note_type } = body;
+  const { title, content, content_format, note_type, audio_url, audio_public_id } = body;
 
-  if (!content?.trim()) {
-    return NextResponse.json({ error: 'content is required' }, { status: 400 });
+  if (!content?.trim() && !audio_url) {
+    return NextResponse.json({ error: 'content or audio is required' }, { status: 400 });
   }
 
   const { data, error } = await supabase
@@ -46,9 +46,11 @@ export async function POST(
       media_item_id: id,
       user_id: user.id,
       title: title || null,
-      content: content.trim(),
+      content: (content || '').trim(),
       content_format: content_format || 'markdown',
-      note_type: note_type || 'note',
+      note_type: note_type || 'general',
+      audio_url: audio_url || null,
+      audio_public_id: audio_public_id || null,
     })
     .select()
     .single();

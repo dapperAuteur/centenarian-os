@@ -534,6 +534,7 @@ export default function CourseEditorPage() {
     setMapPolygons(Object.entries(grouped).map(([, v]) => ({ id: crypto.randomUUID(), ...v })));
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function handleDocumentImport(rows: Record<string, string>[]) {
     setLessonDocuments(rows.map((r) => ({
       id: crypto.randomUUID(),
@@ -544,14 +545,17 @@ export default function CourseEditorPage() {
     })));
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function addDocument() {
     setLessonDocuments((prev) => [...prev, { id: crypto.randomUUID(), url: '', title: '', description: '', source_url: '' }]);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function updateDocument(docId: string, updates: Partial<{ url: string; title: string; description: string; source_url: string }>) {
     setLessonDocuments((prev) => prev.map((d) => d.id === docId ? { ...d, ...updates } : d));
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function removeDocument(docId: string) {
     setLessonDocuments((prev) => prev.filter((d) => d.id !== docId));
   }

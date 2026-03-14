@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight, Link2, X, Search, Check, Loader2, Tags } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight, Link2, X, Search, Check, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -63,7 +63,7 @@ export default function TransactionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlAccountId = searchParams.get('account_id') || '';
-  const urlAccountName = searchParams.get('account_name') || '';
+  const _urlAccountName = searchParams.get('account_name') || '';
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);

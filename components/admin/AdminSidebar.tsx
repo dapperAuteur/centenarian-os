@@ -47,7 +47,7 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
   }, [fetchCounts]);
 
   return (
-    <nav className="flex-1 p-3 space-y-1" aria-label="Admin sections">
+    <nav className="flex-1 p-3 space-y-1 overflow-y-auto" aria-label="Admin sections">
       {NAV_ITEMS.map(({ href, label, icon: Icon, exact, badgeKey }) => {
         const active = exact ? pathname === href : pathname.startsWith(href);
         const badge = badgeKey ? unread[badgeKey] : 0;
@@ -57,7 +57,7 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
             href={href}
             onClick={onNavigate}
             aria-current={active ? 'page' : undefined}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-fuchsia-400 focus-visible:outline-none ${
+            className={`flex items-center gap-3 px-3 py-2.5 min-h-11 rounded-lg text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-fuchsia-400 focus-visible:outline-none ${
               active ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'
             }`}
           >

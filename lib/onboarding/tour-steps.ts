@@ -23,12 +23,12 @@ export interface ModuleTour {
 // Helpers
 // ────────────────────────────────────────────────
 
-export function getTour(app: 'main', slug: string): ModuleTour | undefined {
+export function getTour(_app: 'main', _slug: string): ModuleTour | undefined {
   // No tours defined yet for main app
   return undefined;
 }
 
-export function getAllTours(app: 'main'): ModuleTour[] {
+export function getAllTours(_app: 'main'): ModuleTour[] {
   // No tours defined yet for main app
   return [];
 }

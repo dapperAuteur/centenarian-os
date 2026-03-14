@@ -12,7 +12,7 @@ export async function PATCH(
   const { id, noteId } = await params;
   const body = await request.json();
 
-  const allowed = ['title', 'content', 'content_format', 'note_type', 'sort_order'] as const;
+  const allowed = ['title', 'content', 'content_format', 'note_type', 'sort_order', 'audio_url', 'audio_public_id'] as const;
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {
     if (body[key] !== undefined) updates[key] = body[key];

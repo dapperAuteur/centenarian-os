@@ -28,11 +28,23 @@ interface Brand {
   name: string;
 }
 
+export interface MediaPrefill {
+  title?: string;
+  creator?: string | null;
+  media_type?: string;
+  year_released?: number | null;
+  cover_image_url?: string | null;
+  genre?: string[];
+  notes?: string | null;
+  external_url?: string;
+}
+
 interface MediaFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (createdItem?: { id: string; title: string; media_type: string }) => void;
   brands: Brand[];
+  prefill?: MediaPrefill | null;
   editItem?: {
     id: string;
     title: string;
@@ -87,9 +99,22 @@ const BLANK = {
   is_favorite: false,
 };
 
-export default function MediaForm({ isOpen, onClose, onSaved, brands, editItem }: MediaFormProps) {
+export default function MediaForm({ isOpen, onClose, onSaved, brands, prefill, editItem }: MediaFormProps) {
   const isEdit = !!editItem;
   const [form, setForm] = useState(() => {
+    if (!editItem && prefill) {
+      return {
+        ...BLANK,
+        title: prefill.title ?? '',
+        creator: prefill.creator ?? '',
+        media_type: prefill.media_type ?? 'book',
+        year_released: prefill.year_released != null ? String(prefill.year_released) : '',
+        cover_image_url: prefill.cover_image_url ?? '',
+        genre: (prefill.genre ?? []).join('; '),
+        notes: prefill.notes ?? '',
+        external_url: prefill.external_url ?? '',
+      };
+    }
     if (!editItem) return { ...BLANK };
     return {
       title: editItem.title,
@@ -161,7 +186,11 @@ export default function MediaForm({ isOpen, onClose, onSaved, brands, editItem }
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        onSaved();
+        const data = await res.json().catch(() => null);
+        const created = !isEdit && data?.item
+          ? { id: data.item.id, title: data.item.title, media_type: data.item.media_type }
+          : undefined;
+        onSaved(created);
         onClose();
       }
     } finally {

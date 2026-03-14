@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Star, BookOpen, Tv, Film, Music, Upload, Download } from 'lucide-react';
+import { Plus, Star, BookOpen, Tv, Film, Music, Upload, Download, Globe } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import MediaCard, { type MediaItem } from '@/components/media/MediaCard';
-import MediaForm from '@/components/media/MediaForm';
+import MediaForm, { type MediaPrefill } from '@/components/media/MediaForm';
+import ImportUrlDialog from '@/components/media/ImportUrlDialog';
 import Link from 'next/link';
 
 const TYPE_FILTERS = [
@@ -48,6 +49,8 @@ export default function MediaHubPage() {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<MediaItem | null>(null);
+  const [showImportUrl, setShowImportUrl] = useState(false);
+  const [prefill, setPrefill] = useState<MediaPrefill | null>(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const limit = 50;
@@ -117,7 +120,13 @@ export default function MediaHubPage() {
             <Download className="w-4 h-4" /> Export
           </a>
           <button
-            onClick={() => { setEditItem(null); setShowForm(true); }}
+            onClick={() => setShowImportUrl(true)}
+            className="px-3 py-2 text-sm font-medium border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition min-h-11 flex items-center gap-1.5"
+          >
+            <Globe className="w-4 h-4" /> Import URL
+          </button>
+          <button
+            onClick={() => { setEditItem(null); setPrefill(null); setShowForm(true); }}
             className="px-4 py-2 text-sm font-medium text-white bg-fuchsia-600 hover:bg-fuchsia-700 rounded-xl transition flex items-center gap-1.5 min-h-11"
           >
             <Plus className="w-4 h-4" /> Add Media
@@ -224,10 +233,23 @@ export default function MediaHubPage() {
       {/* Add/Edit Form */}
       <MediaForm
         isOpen={showForm}
-        onClose={() => { setShowForm(false); setEditItem(null); }}
+        onClose={() => { setShowForm(false); setEditItem(null); setPrefill(null); }}
         onSaved={load}
         brands={brands}
+        prefill={prefill}
         editItem={editItem}
+      />
+
+      {/* Import from URL */}
+      <ImportUrlDialog
+        isOpen={showImportUrl}
+        onClose={() => setShowImportUrl(false)}
+        onImported={(data) => {
+          setPrefill(data);
+          setEditItem(null);
+          setShowImportUrl(false);
+          setShowForm(true);
+        }}
       />
     </div>
   );

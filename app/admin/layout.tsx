@@ -55,16 +55,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <X className="w-4 h-4" />
           </button>
         </div>
-        <AdminSidebar onNavigate={() => setSidebarOpen(false)} />
-        <div className="p-3 border-t border-gray-800">
+        <div className="p-3 border-b border-gray-800">
           <Link
             href="/dashboard/planner"
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-white transition"
+            className="flex items-center gap-2 px-3 py-2 min-h-11 text-sm text-gray-400 hover:text-white transition rounded-lg"
           >
             <ArrowLeft className="w-4 h-4" aria-hidden="true" />
             Back to App
           </Link>
         </div>
+        <AdminSidebar onNavigate={() => setSidebarOpen(false)} />
       </aside>
 
       {/* Main */}
