@@ -9,26 +9,28 @@ export function daysAgo(n: number): string {
   return d.toISOString().split('T')[0];
 }
 
-// Deletion order respects FK constraints (children before parents)
+// Tables that reference users via a column other than user_id
+const ALT_USER_TABLES: Record<string, string> = {
+  contractor_job_assignments: 'assigned_by',
+  job_replacement_requests: 'requester_id',
+};
+
+// Deletion order respects FK constraints (children before parents).
+// Only tables with a direct user_id column belong here — cascade children
+// (e.g. invoice_items, workout_log_exercises) are auto-deleted with their parent.
 export const CLEAR_ORDER = [
-  'contractor_job_assignments',
   'union_rag_submissions',
-  'union_document_chunks',
   'union_documents',
   'union_dues_payments',
   'union_memberships',
-  'job_replacement_requests',
   'city_guide_entries',
   'city_guides',
-  'invoice_items',
   'invoices',
   'job_documents',
   'job_time_entries',
   'contractor_rate_cards',
   'contractor_jobs',
-  'admin_chat_messages',
   'admin_chats',
-  'social_bookmarks',
   'social_shares',
   'social_likes',
   'media_episode_links',
@@ -38,14 +40,11 @@ export const CLEAR_ORDER = [
   'media_categories',
   'activity_links',
   'entity_life_categories',
-  'workout_log_exercises',
-  'workout_template_exercises',
   'workout_logs',
   'workout_templates',
   'workout_feedback',
   'weekly_reviews',
   'daily_logs',
-  'exercise_equipment',
   'exercises',
   'exercise_categories',
   'equipment_media',
@@ -53,9 +52,6 @@ export const CLEAR_ORDER = [
   'equipment',
   'equipment_categories',
   'focus_sessions',
-  'tasks',
-  'milestones',
-  'goals',
   'roadmaps',
   'user_health_metrics',
   'life_categories',
@@ -65,18 +61,15 @@ export const CLEAR_ORDER = [
   'trip_shares',
   'trip_routes',
   'trips',
-  'trip_template_stops',
   'trip_templates',
   'vehicle_maintenance',
   'fuel_logs',
-  'recipe_ingredients',
   'recipe_likes',
   'recipe_saves',
   'recipes',
   'blog_posts',
   'financial_transactions',
   'user_brands',
-  'contact_locations',
   'user_contacts',
   'budget_categories',
   'teller_enrollments',
@@ -87,6 +80,16 @@ export const CLEAR_ORDER = [
 ];
 
 export async function clearUserData(supabase: SupabaseClient, userId: string): Promise<void> {
+  // 1. Clear tables with non-standard user columns first
+  for (const [table, col] of Object.entries(ALT_USER_TABLES)) {
+    const { error } = await supabase.from(table).delete().eq(col, userId);
+    if (error && !error.message.includes('Could not find the table')
+        && !error.message.includes('does not exist')) {
+      throw new Error(`Failed to clear ${table}: ${error.message}`);
+    }
+  }
+
+  // 2. Clear standard user_id tables
   for (const table of CLEAR_ORDER) {
     const { error } = await supabase.from(table).delete().eq('user_id', userId);
     // Skip tables that don't exist yet (migration not applied)
@@ -236,7 +239,6 @@ export async function seedTutorial(supabase: SupabaseClient, userId: string): Pr
     steps: 6000 + Math.floor(Math.random() * 6000),
     sleep_hours: +(6.5 + Math.random() * 2).toFixed(1),
     activity_min: 20 + Math.floor(Math.random() * 50),
-    source: 'manual' as const,
   }));
   const { error: hmErr } = await supabase.from('user_health_metrics').insert(healthRows);
   if (hmErr) throw new Error(`Tutorial health metrics: ${hmErr.message}`);
@@ -278,9 +280,9 @@ export async function seedTutorial(supabase: SupabaseClient, userId: string): Pr
   if (logId && exerciseData) {
     const exId = (name: string) => exerciseData.find(e => e.name === name)?.id ?? null;
     const { error: logExErr } = await supabase.from('workout_log_exercises').insert([
-      { log_id: logId, name: 'Push-ups', exercise_id: exId('Push-ups'), sets_completed: 3, reps_completed: 15, sort_order: 1, phase: 'working', rpe: 7 },
-      { log_id: logId, name: 'Squats', exercise_id: exId('Squats'), sets_completed: 3, reps_completed: 12, weight_lbs: 135, sort_order: 2, phase: 'working', rpe: 8 },
-      { log_id: logId, name: 'Plank', exercise_id: exId('Plank'), sets_completed: 3, duration_sec: 45, sort_order: 3, phase: 'cooldown' },
+      { log_id: logId, name: 'Push-ups', exercise_id: exId('Push-ups'), sets_completed: 3, reps_completed: 15, sort_order: 1, phase: 'working', rpe: 7, is_circuit: false, to_failure: false, is_unilateral: false },
+      { log_id: logId, name: 'Squats', exercise_id: exId('Squats'), sets_completed: 3, reps_completed: 12, weight_lbs: 135, sort_order: 2, phase: 'working', rpe: 8, is_circuit: false, to_failure: false, is_unilateral: false },
+      { log_id: logId, name: 'Plank', exercise_id: exId('Plank'), sets_completed: 3, duration_sec: 45, sort_order: 3, phase: 'cooldown', is_circuit: false, to_failure: false, is_unilateral: false },
     ]);
     if (logExErr) throw new Error(`Tutorial workout log exercises: ${logExErr.message}`);
   }
@@ -467,11 +469,11 @@ export async function seedTutorial(supabase: SupabaseClient, userId: string): Pr
 
   const { data: mediaItems, error: mediaErr } = await supabase.from('media_items').insert([
     { user_id: userId, title: 'Outlive: The Science & Art of Longevity', creator: 'Peter Attia', media_type: 'book', status: 'completed', rating: 5, start_date: daysAgo(60), end_date: daysAgo(20), category_id: mediaCatId('Books'), genre: ['health', 'longevity'], tags: ['must-read'], is_favorite: true, visibility: 'public' },
-    { user_id: userId, title: 'Lifespan: Why We Age and Why We Don\'t Have To', creator: 'David Sinclair', media_type: 'book', status: 'in_progress', current_progress: 'Chapter 8', total_length: '12 chapters', category_id: mediaCatId('Books'), genre: ['science', 'aging'], visibility: 'private' },
-    { user_id: userId, title: 'Blue Zones Kitchen', creator: 'Dan Buettner', media_type: 'book', status: 'want_to_consume', category_id: mediaCatId('Books'), genre: ['cooking', 'longevity'] },
-    { user_id: userId, title: 'The Zone of Interest', creator: 'Jonathan Glazer', media_type: 'movie', status: 'completed', rating: 4, category_id: mediaCatId('TV & Film'), genre: ['drama', 'history'], year_released: 2023 },
+    { user_id: userId, title: 'Lifespan: Why We Age and Why We Don\'t Have To', creator: 'David Sinclair', media_type: 'book', status: 'in_progress', current_progress: 'Chapter 8', total_length: '12 chapters', category_id: mediaCatId('Books'), genre: ['science', 'aging'], is_favorite: false, visibility: 'private' },
+    { user_id: userId, title: 'Blue Zones Kitchen', creator: 'Dan Buettner', media_type: 'book', status: 'want_to_consume', category_id: mediaCatId('Books'), genre: ['cooking', 'longevity'], is_favorite: false, visibility: 'private' },
+    { user_id: userId, title: 'The Zone of Interest', creator: 'Jonathan Glazer', media_type: 'movie', status: 'completed', rating: 4, category_id: mediaCatId('TV & Film'), genre: ['drama', 'history'], year_released: 2023, is_favorite: false, visibility: 'private' },
     { user_id: userId, title: 'Huberman Lab', creator: 'Andrew Huberman', media_type: 'podcast', status: 'in_progress', category_id: mediaCatId('Podcasts'), genre: ['health', 'neuroscience'], is_favorite: true, visibility: 'public' },
-    { user_id: userId, title: 'The Drive', creator: 'Peter Attia', media_type: 'podcast', status: 'in_progress', category_id: mediaCatId('Podcasts'), genre: ['health', 'longevity'] },
+    { user_id: userId, title: 'The Drive', creator: 'Peter Attia', media_type: 'podcast', status: 'in_progress', category_id: mediaCatId('Podcasts'), genre: ['health', 'longevity'], is_favorite: false, visibility: 'private' },
   ]).select('id, title');
   if (mediaErr) throw new Error(`Tutorial media items: ${mediaErr.message}`);
 
@@ -759,7 +761,6 @@ export async function seedVisitor(supabase: SupabaseClient, userId: string): Pro
     active_calories: 200 + Math.floor(Math.random() * 400),
     spo2_pct: +(96 + Math.random() * 3).toFixed(1),
     weight_lbs: +(174 + (Math.random() * 4 - 2)).toFixed(1),
-    source: 'manual' as const,
   }));
   const { error: hmErr } = await supabase.from('user_health_metrics').insert(healthRows);
   if (hmErr) throw new Error(`Visitor health metrics: ${hmErr.message}`);
@@ -823,55 +824,55 @@ export async function seedVisitor(supabase: SupabaseClient, userId: string): Pro
 
   const { error: wExErr } = await supabase.from('workout_log_exercises').insert([
     // Push Day (day 1)
-    { log_id: wLogId('Push Day'), name: 'Bench Press', exercise_id: exId('Bench Press'), sets_completed: 4, reps_completed: 8, weight_lbs: 155, sort_order: 1, phase: 'working', rpe: 8 },
-    { log_id: wLogId('Push Day'), name: 'Overhead Press', exercise_id: exId('Overhead Press'), sets_completed: 3, reps_completed: 10, weight_lbs: 95, sort_order: 2, phase: 'working', rpe: 7 },
-    { log_id: wLogId('Push Day'), name: 'Push-ups', exercise_id: exId('Push-ups'), sets_completed: 3, reps_completed: 20, sort_order: 3, phase: 'working', rpe: 6, to_failure: true },
-    { log_id: wLogId('Push Day'), name: 'Plank', exercise_id: exId('Plank'), sets_completed: 3, duration_sec: 60, sort_order: 4, phase: 'cooldown' },
+    { log_id: wLogId('Push Day'), name: 'Bench Press', exercise_id: exId('Bench Press'), sets_completed: 4, reps_completed: 8, weight_lbs: 155, sort_order: 1, phase: 'working', rpe: 8, is_circuit: false, to_failure: false, is_unilateral: false },
+    { log_id: wLogId('Push Day'), name: 'Overhead Press', exercise_id: exId('Overhead Press'), sets_completed: 3, reps_completed: 10, weight_lbs: 95, sort_order: 2, phase: 'working', rpe: 7, is_circuit: false, to_failure: false, is_unilateral: false },
+    { log_id: wLogId('Push Day'), name: 'Push-ups', exercise_id: exId('Push-ups'), sets_completed: 3, reps_completed: 20, sort_order: 3, phase: 'working', rpe: 6, is_circuit: false, to_failure: true, is_unilateral: false },
+    { log_id: wLogId('Push Day'), name: 'Plank', exercise_id: exId('Plank'), sets_completed: 3, duration_sec: 60, sort_order: 4, phase: 'cooldown', is_circuit: false, to_failure: false, is_unilateral: false },
     // Pull Day (day 2)
-    { log_id: wLogId('Pull Day'), name: 'Pull-ups', exercise_id: exId('Pull-ups'), sets_completed: 4, reps_completed: 8, sort_order: 1, phase: 'working', rpe: 8 },
-    { log_id: wLogId('Pull Day'), name: 'Barbell Rows', exercise_id: exId('Barbell Rows'), sets_completed: 4, reps_completed: 10, weight_lbs: 135, sort_order: 2, phase: 'working', rpe: 7 },
-    { log_id: wLogId('Pull Day'), name: 'Dead Bug', exercise_id: exId('Dead Bug'), sets_completed: 3, reps_completed: 10, sort_order: 3, phase: 'cooldown' },
+    { log_id: wLogId('Pull Day'), name: 'Pull-ups', exercise_id: exId('Pull-ups'), sets_completed: 4, reps_completed: 8, sort_order: 1, phase: 'working', rpe: 8, is_circuit: false, to_failure: false, is_unilateral: false },
+    { log_id: wLogId('Pull Day'), name: 'Barbell Rows', exercise_id: exId('Barbell Rows'), sets_completed: 4, reps_completed: 10, weight_lbs: 135, sort_order: 2, phase: 'working', rpe: 7, is_circuit: false, to_failure: false, is_unilateral: false },
+    { log_id: wLogId('Pull Day'), name: 'Dead Bug', exercise_id: exId('Dead Bug'), sets_completed: 3, reps_completed: 10, sort_order: 3, phase: 'cooldown', is_circuit: false, to_failure: false, is_unilateral: false },
     // Leg Day (day 4)
-    { log_id: wLogId('Leg Day'), name: 'Back Squat', exercise_id: exId('Back Squat'), sets_completed: 4, reps_completed: 8, weight_lbs: 185, sort_order: 1, phase: 'working', rpe: 9 },
-    { log_id: wLogId('Leg Day'), name: 'Romanian Deadlift', exercise_id: exId('Romanian Deadlift'), sets_completed: 3, reps_completed: 10, weight_lbs: 155, sort_order: 2, phase: 'working', rpe: 8 },
-    { log_id: wLogId('Leg Day'), name: 'Lunges', exercise_id: exId('Lunges'), sets_completed: 3, reps_completed: 12, weight_lbs: 40, sort_order: 3, phase: 'working', rpe: 7, is_unilateral: true },
-    { log_id: wLogId('Leg Day'), name: 'Hip 90/90 Stretch', exercise_id: exId('Hip 90/90 Stretch'), sets_completed: 2, duration_sec: 30, sort_order: 4, phase: 'cooldown' },
+    { log_id: wLogId('Leg Day'), name: 'Back Squat', exercise_id: exId('Back Squat'), sets_completed: 4, reps_completed: 8, weight_lbs: 185, sort_order: 1, phase: 'working', rpe: 9, is_circuit: false, to_failure: false, is_unilateral: false },
+    { log_id: wLogId('Leg Day'), name: 'Romanian Deadlift', exercise_id: exId('Romanian Deadlift'), sets_completed: 3, reps_completed: 10, weight_lbs: 155, sort_order: 2, phase: 'working', rpe: 8, is_circuit: false, to_failure: false, is_unilateral: false },
+    { log_id: wLogId('Leg Day'), name: 'Lunges', exercise_id: exId('Lunges'), sets_completed: 3, reps_completed: 12, weight_lbs: 40, sort_order: 3, phase: 'working', rpe: 7, is_circuit: false, to_failure: false, is_unilateral: true },
+    { log_id: wLogId('Leg Day'), name: 'Hip 90/90 Stretch', exercise_id: exId('Hip 90/90 Stretch'), sets_completed: 2, duration_sec: 30, sort_order: 4, phase: 'cooldown', is_circuit: false, to_failure: false, is_unilateral: false },
     // AM Priming (day 6)
     ...(wLogIds('AM Priming')[0] ? [
-      { log_id: wLogIds('AM Priming')[0], name: 'Hip 90/90 Stretch', exercise_id: exId('Hip 90/90 Stretch'), sets_completed: 2, duration_sec: 30, sort_order: 1, phase: 'warmup' },
-      { log_id: wLogIds('AM Priming')[0], name: 'Dead Bug', exercise_id: exId('Dead Bug'), sets_completed: 2, reps_completed: 8, sort_order: 2, phase: 'working' },
-      { log_id: wLogIds('AM Priming')[0], name: 'Plank', exercise_id: exId('Plank'), sets_completed: 2, duration_sec: 45, sort_order: 3, phase: 'working' },
+      { log_id: wLogIds('AM Priming')[0], name: 'Hip 90/90 Stretch', exercise_id: exId('Hip 90/90 Stretch'), sets_completed: 2, duration_sec: 30, sort_order: 1, phase: 'warmup', is_circuit: false, to_failure: false, is_unilateral: false },
+      { log_id: wLogIds('AM Priming')[0], name: 'Dead Bug', exercise_id: exId('Dead Bug'), sets_completed: 2, reps_completed: 8, sort_order: 2, phase: 'working', is_circuit: false, to_failure: false, is_unilateral: false },
+      { log_id: wLogIds('AM Priming')[0], name: 'Plank', exercise_id: exId('Plank'), sets_completed: 2, duration_sec: 45, sort_order: 3, phase: 'working', is_circuit: false, to_failure: false, is_unilateral: false },
     ] : []),
     // Full Body HIIT (day 8)
     ...(wLogId('Full Body HIIT') ? [
-      { log_id: wLogId('Full Body HIIT'), name: 'Push-ups', exercise_id: exId('Push-ups'), sets_completed: 4, reps_completed: 15, sort_order: 1, phase: 'working', rpe: 7, is_circuit: true },
-      { log_id: wLogId('Full Body HIIT'), name: 'Back Squat', exercise_id: exId('Back Squat'), sets_completed: 4, reps_completed: 12, weight_lbs: 135, sort_order: 2, phase: 'working', rpe: 7, is_circuit: true },
-      { log_id: wLogId('Full Body HIIT'), name: 'Pull-ups', exercise_id: exId('Pull-ups'), sets_completed: 4, reps_completed: 6, sort_order: 3, phase: 'working', rpe: 8, is_circuit: true },
-      { log_id: wLogId('Full Body HIIT'), name: 'Treadmill Run', exercise_id: exId('Treadmill Run'), sets_completed: 1, duration_sec: 300, sort_order: 4, phase: 'cooldown' },
+      { log_id: wLogId('Full Body HIIT'), name: 'Push-ups', exercise_id: exId('Push-ups'), sets_completed: 4, reps_completed: 15, sort_order: 1, phase: 'working', rpe: 7, is_circuit: true, to_failure: false, is_unilateral: false },
+      { log_id: wLogId('Full Body HIIT'), name: 'Back Squat', exercise_id: exId('Back Squat'), sets_completed: 4, reps_completed: 12, weight_lbs: 135, sort_order: 2, phase: 'working', rpe: 7, is_circuit: true, to_failure: false, is_unilateral: false },
+      { log_id: wLogId('Full Body HIIT'), name: 'Pull-ups', exercise_id: exId('Pull-ups'), sets_completed: 4, reps_completed: 6, sort_order: 3, phase: 'working', rpe: 8, is_circuit: true, to_failure: false, is_unilateral: false },
+      { log_id: wLogId('Full Body HIIT'), name: 'Treadmill Run', exercise_id: exId('Treadmill Run'), sets_completed: 1, duration_sec: 300, sort_order: 4, phase: 'cooldown', is_circuit: false, to_failure: false, is_unilateral: false },
     ] : []),
     // Upper Body (day 10)
     ...(wLogIds('Upper Body')[0] ? [
-      { log_id: wLogIds('Upper Body')[0], name: 'Bench Press', exercise_id: exId('Bench Press'), sets_completed: 4, reps_completed: 8, weight_lbs: 150, sort_order: 1, phase: 'working', rpe: 7 },
-      { log_id: wLogIds('Upper Body')[0], name: 'Barbell Rows', exercise_id: exId('Barbell Rows'), sets_completed: 4, reps_completed: 10, weight_lbs: 130, sort_order: 2, phase: 'working', rpe: 7 },
-      { log_id: wLogIds('Upper Body')[0], name: 'Overhead Press', exercise_id: exId('Overhead Press'), sets_completed: 3, reps_completed: 8, weight_lbs: 90, sort_order: 3, phase: 'working', rpe: 8 },
+      { log_id: wLogIds('Upper Body')[0], name: 'Bench Press', exercise_id: exId('Bench Press'), sets_completed: 4, reps_completed: 8, weight_lbs: 150, sort_order: 1, phase: 'working', rpe: 7, is_circuit: false, to_failure: false, is_unilateral: false },
+      { log_id: wLogIds('Upper Body')[0], name: 'Barbell Rows', exercise_id: exId('Barbell Rows'), sets_completed: 4, reps_completed: 10, weight_lbs: 130, sort_order: 2, phase: 'working', rpe: 7, is_circuit: false, to_failure: false, is_unilateral: false },
+      { log_id: wLogIds('Upper Body')[0], name: 'Overhead Press', exercise_id: exId('Overhead Press'), sets_completed: 3, reps_completed: 8, weight_lbs: 90, sort_order: 3, phase: 'working', rpe: 8, is_circuit: false, to_failure: false, is_unilateral: false },
     ] : []),
     // Recovery & Mobility (day 14)
     ...(wLogIds('Recovery & Mobility')[0] ? [
-      { log_id: wLogIds('Recovery & Mobility')[0], name: 'Hip 90/90 Stretch', exercise_id: exId('Hip 90/90 Stretch'), sets_completed: 3, duration_sec: 45, sort_order: 1, phase: 'working' },
-      { log_id: wLogIds('Recovery & Mobility')[0], name: 'Plank', exercise_id: exId('Plank'), sets_completed: 2, duration_sec: 60, sort_order: 2, phase: 'working' },
-      { log_id: wLogIds('Recovery & Mobility')[0], name: 'Dead Bug', exercise_id: exId('Dead Bug'), sets_completed: 3, reps_completed: 10, sort_order: 3, phase: 'working' },
+      { log_id: wLogIds('Recovery & Mobility')[0], name: 'Hip 90/90 Stretch', exercise_id: exId('Hip 90/90 Stretch'), sets_completed: 3, duration_sec: 45, sort_order: 1, phase: 'working', is_circuit: false, to_failure: false, is_unilateral: false },
+      { log_id: wLogIds('Recovery & Mobility')[0], name: 'Plank', exercise_id: exId('Plank'), sets_completed: 2, duration_sec: 60, sort_order: 2, phase: 'working', is_circuit: false, to_failure: false, is_unilateral: false },
+      { log_id: wLogIds('Recovery & Mobility')[0], name: 'Dead Bug', exercise_id: exId('Dead Bug'), sets_completed: 3, reps_completed: 10, sort_order: 3, phase: 'working', is_circuit: false, to_failure: false, is_unilateral: false },
     ] : []),
   ]);
   if (wExErr) throw new Error(`Visitor workout log exercises: ${wExErr.message}`);
 
   // ── Workout Feedback (for recent workouts) ──
   const feedbackRows = [
-    { user_id: userId, workout_log_id: wLogId('Push Day'), activity_category: 'WORKOUT_GYM', activity_duration: '55', mood_before: 3, mood_after: 4, difficulty: 'just-right', feedback: 'Bench press felt solid. Shoulder warm-up really helped today.' },
-    { user_id: userId, workout_log_id: wLogId('Pull Day'), activity_category: 'WORKOUT_GYM', activity_duration: '50', mood_before: 4, mood_after: 5, difficulty: 'just-right', feedback: 'Best pull-up session in weeks. Back pump was great.' },
+    { user_id: userId, workout_log_id: wLogId('Push Day'), activity_category: 'WORKOUT_GYM', activity_duration: '60', mood_before: 3, mood_after: 4, difficulty: 'just-right', feedback: 'Bench press felt solid. Shoulder warm-up really helped today.' },
+    { user_id: userId, workout_log_id: wLogId('Pull Day'), activity_category: 'WORKOUT_GYM', activity_duration: '45', mood_before: 4, mood_after: 5, difficulty: 'just-right', feedback: 'Best pull-up session in weeks. Back pump was great.' },
     { user_id: userId, workout_log_id: wLogId('Leg Day'), activity_category: 'WORKOUT_GYM', activity_duration: '60', mood_before: 3, mood_after: 3, difficulty: 'harder', feedback: 'Squats were heavy today. Knee felt tight on the last set.' },
     { user_id: userId, workout_log_id: wLogId('Full Body HIIT'), activity_category: 'WORKOUT_GYM', activity_duration: '30', mood_before: 3, mood_after: 5, difficulty: 'just-right', feedback: 'Circuit format kept the heart rate up. Great conditioning workout.' },
     ...(wLogIds('Recovery & Mobility')[0] ? [
-      { user_id: userId, workout_log_id: wLogIds('Recovery & Mobility')[0], activity_category: 'PM' as const, activity_duration: '25', mood_before: 2, mood_after: 4, difficulty: 'easier' as const, feedback: 'Really needed this after a stressful week. Feel much looser now.' },
+      { user_id: userId, workout_log_id: wLogIds('Recovery & Mobility')[0], activity_category: 'PM' as const, activity_duration: '30', mood_before: 2, mood_after: 4, difficulty: 'easier' as const, feedback: 'Really needed this after a stressful week. Feel much looser now.' },
     ] : []),
   ].filter(r => r.workout_log_id);
   if (feedbackRows.length > 0) {
@@ -934,15 +935,15 @@ export async function seedVisitor(supabase: SupabaseClient, userId: string): Pro
   const DAY_MS = 86400000;
   const { error: fsErr } = await supabase.from('focus_sessions').insert([
     { user_id: userId, start_time: new Date(Date.now() - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 40 * 60000).toISOString(), duration: 50, notes: 'Deep work on client proposal — DataCo SOW', session_type: 'focus', hourly_rate: 150, revenue: 125 },
-    { user_id: userId, start_time: new Date(Date.now() - DAY_MS - 120 * 60000).toISOString(), end_time: new Date(Date.now() - DAY_MS - 45 * 60000).toISOString(), duration: 75, notes: 'Code review and architecture planning', session_type: 'work' },
-    { user_id: userId, start_time: new Date(Date.now() - 2 * DAY_MS - 60 * 60000).toISOString(), end_time: new Date(Date.now() - 2 * DAY_MS - 15 * 60000).toISOString(), duration: 45, notes: 'Blog writing — fuel tracking post', session_type: 'focus' },
+    { user_id: userId, start_time: new Date(Date.now() - DAY_MS - 120 * 60000).toISOString(), end_time: new Date(Date.now() - DAY_MS - 45 * 60000).toISOString(), duration: 75, notes: 'Code review and architecture planning', session_type: 'work', hourly_rate: 0, revenue: 0 },
+    { user_id: userId, start_time: new Date(Date.now() - 2 * DAY_MS - 60 * 60000).toISOString(), end_time: new Date(Date.now() - 2 * DAY_MS - 15 * 60000).toISOString(), duration: 45, notes: 'Blog writing — fuel tracking post', session_type: 'focus', hourly_rate: 0, revenue: 0 },
     { user_id: userId, start_time: new Date(Date.now() - 3 * DAY_MS - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 3 * DAY_MS - 30 * 60000).toISOString(), duration: 60, notes: 'Financial reconciliation and invoice review', session_type: 'work', hourly_rate: 150, revenue: 150 },
     { user_id: userId, start_time: new Date(Date.now() - 4 * DAY_MS - 50 * 60000).toISOString(), end_time: new Date(Date.now() - 4 * DAY_MS).toISOString(), duration: 50, notes: 'Client presentation prep — TechCorp Q1 review', session_type: 'focus', hourly_rate: 150, revenue: 125 },
     { user_id: userId, start_time: new Date(Date.now() - 7 * DAY_MS - 80 * 60000).toISOString(), end_time: new Date(Date.now() - 7 * DAY_MS - 20 * 60000).toISOString(), duration: 60, notes: 'Market research for consulting pitch', session_type: 'focus', hourly_rate: 150, revenue: 150 },
-    { user_id: userId, start_time: new Date(Date.now() - 10 * DAY_MS - 45 * 60000).toISOString(), end_time: new Date(Date.now() - 10 * DAY_MS).toISOString(), duration: 45, notes: 'Quarterly goal review and roadmap update', session_type: 'work' },
-    { user_id: userId, start_time: new Date(Date.now() - 14 * DAY_MS - 55 * 60000).toISOString(), end_time: new Date(Date.now() - 14 * DAY_MS - 10 * 60000).toISOString(), duration: 45, notes: 'Blog post outline — longevity habits for desk workers', session_type: 'focus' },
+    { user_id: userId, start_time: new Date(Date.now() - 10 * DAY_MS - 45 * 60000).toISOString(), end_time: new Date(Date.now() - 10 * DAY_MS).toISOString(), duration: 45, notes: 'Quarterly goal review and roadmap update', session_type: 'work', hourly_rate: 0, revenue: 0 },
+    { user_id: userId, start_time: new Date(Date.now() - 14 * DAY_MS - 55 * 60000).toISOString(), end_time: new Date(Date.now() - 14 * DAY_MS - 10 * 60000).toISOString(), duration: 45, notes: 'Blog post outline — longevity habits for desk workers', session_type: 'focus', hourly_rate: 0, revenue: 0 },
     { user_id: userId, start_time: new Date(Date.now() - 18 * DAY_MS - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 18 * DAY_MS - 30 * 60000).toISOString(), duration: 60, notes: 'StartupXYZ project planning session', session_type: 'work', hourly_rate: 150, revenue: 150 },
-    { user_id: userId, start_time: new Date(Date.now() - 22 * DAY_MS - 40 * 60000).toISOString(), end_time: new Date(Date.now() - 22 * DAY_MS).toISOString(), duration: 40, notes: 'Equipment inventory and valuation updates', session_type: 'work' },
+    { user_id: userId, start_time: new Date(Date.now() - 22 * DAY_MS - 40 * 60000).toISOString(), end_time: new Date(Date.now() - 22 * DAY_MS).toISOString(), duration: 40, notes: 'Equipment inventory and valuation updates', session_type: 'work', hourly_rate: 0, revenue: 0 },
   ]);
   if (fsErr) throw new Error(`Visitor focus sessions: ${fsErr.message}`);
 
@@ -1153,15 +1154,15 @@ export async function seedVisitor(supabase: SupabaseClient, userId: string): Pro
 
   const { data: vMediaItems, error: vMediaErr } = await supabase.from('media_items').insert([
     { user_id: userId, title: 'Outlive: The Science & Art of Longevity', creator: 'Peter Attia', media_type: 'book', status: 'completed', rating: 5, start_date: daysAgo(90), end_date: daysAgo(45), category_id: vMCatId('Books'), genre: ['health', 'longevity'], tags: ['must-read'], is_favorite: true, visibility: 'public' },
-    { user_id: userId, title: 'Atomic Habits', creator: 'James Clear', media_type: 'book', status: 'completed', rating: 5, start_date: daysAgo(120), end_date: daysAgo(100), category_id: vMCatId('Books'), genre: ['productivity', 'habits'], visibility: 'public' },
-    { user_id: userId, title: 'The 100-Year Life', creator: 'Lynda Gratton', media_type: 'book', status: 'in_progress', current_progress: 'Part 3', total_length: '4 parts', category_id: vMCatId('Books'), genre: ['longevity', 'economics'] },
-    { user_id: userId, title: 'Blue Zones Kitchen', creator: 'Dan Buettner', media_type: 'book', status: 'want_to_consume', category_id: vMCatId('Books'), genre: ['cooking', 'longevity'] },
-    { user_id: userId, title: 'Born to Run', creator: 'Christopher McDougall', media_type: 'book', status: 'completed', rating: 4, category_id: vMCatId('Books'), genre: ['running', 'adventure'] },
+    { user_id: userId, title: 'Atomic Habits', creator: 'James Clear', media_type: 'book', status: 'completed', rating: 5, start_date: daysAgo(120), end_date: daysAgo(100), category_id: vMCatId('Books'), genre: ['productivity', 'habits'], is_favorite: false, visibility: 'public' },
+    { user_id: userId, title: 'The 100-Year Life', creator: 'Lynda Gratton', media_type: 'book', status: 'in_progress', current_progress: 'Part 3', total_length: '4 parts', category_id: vMCatId('Books'), genre: ['longevity', 'economics'], is_favorite: false, visibility: 'private' },
+    { user_id: userId, title: 'Blue Zones Kitchen', creator: 'Dan Buettner', media_type: 'book', status: 'want_to_consume', category_id: vMCatId('Books'), genre: ['cooking', 'longevity'], is_favorite: false, visibility: 'private' },
+    { user_id: userId, title: 'Born to Run', creator: 'Christopher McDougall', media_type: 'book', status: 'completed', rating: 4, category_id: vMCatId('Books'), genre: ['running', 'adventure'], is_favorite: false, visibility: 'private' },
     { user_id: userId, title: 'Shogun', creator: 'FX / Hulu', media_type: 'tv_show', status: 'completed', rating: 5, category_id: vMCatId('TV & Film'), genre: ['drama', 'historical'], season_number: 1, episode_number: 10, total_seasons: 1, total_episodes: 10, year_released: 2024, is_favorite: true, visibility: 'public' },
-    { user_id: userId, title: 'Past Lives', creator: 'Celine Song', media_type: 'movie', status: 'completed', rating: 5, category_id: vMCatId('TV & Film'), genre: ['drama', 'romance'], year_released: 2023, visibility: 'public' },
+    { user_id: userId, title: 'Past Lives', creator: 'Celine Song', media_type: 'movie', status: 'completed', rating: 5, category_id: vMCatId('TV & Film'), genre: ['drama', 'romance'], year_released: 2023, is_favorite: false, visibility: 'public' },
     { user_id: userId, title: 'Huberman Lab', creator: 'Andrew Huberman', media_type: 'podcast', status: 'in_progress', category_id: vMCatId('Podcasts'), genre: ['health', 'neuroscience'], is_favorite: true, visibility: 'public' },
-    { user_id: userId, title: 'The Drive', creator: 'Peter Attia', media_type: 'podcast', status: 'in_progress', category_id: vMCatId('Podcasts'), genre: ['health', 'longevity'] },
-    { user_id: userId, title: 'Kind of Blue', creator: 'Miles Davis', media_type: 'album', status: 'completed', rating: 5, category_id: vMCatId('Music'), genre: ['jazz'], year_released: 1959, is_favorite: true },
+    { user_id: userId, title: 'The Drive', creator: 'Peter Attia', media_type: 'podcast', status: 'in_progress', category_id: vMCatId('Podcasts'), genre: ['health', 'longevity'], is_favorite: false, visibility: 'private' },
+    { user_id: userId, title: 'Kind of Blue', creator: 'Miles Davis', media_type: 'album', status: 'completed', rating: 5, category_id: vMCatId('Music'), genre: ['jazz'], year_released: 1959, is_favorite: true, visibility: 'private' },
   ]).select('id, title');
   if (vMediaErr) throw new Error(`Visitor media items: ${vMediaErr.message}`);
 
