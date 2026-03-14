@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Modal from '@/components/ui/Modal';
+import MediaAutocomplete from '@/components/media/MediaAutocomplete';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 const MEDIA_TYPES = [
   { value: 'book', label: 'Book', icon: '\u{1F4D6}' },
@@ -180,7 +182,7 @@ export default function MediaForm({ isOpen, onClose, onSaved, brands, prefill, e
 
       const url = isEdit ? `/api/media/${editItem!.id}` : '/api/media';
       const method = isEdit ? 'PATCH' : 'POST';
-      const res = await fetch(url, {
+      const res = await offlineFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -190,6 +192,25 @@ export default function MediaForm({ isOpen, onClose, onSaved, brands, prefill, e
         const created = !isEdit && data?.item
           ? { id: data.item.id, title: data.item.title, media_type: data.item.media_type }
           : undefined;
+
+        // Auto-save creator and platform for future autocomplete
+        const creatorName = form.creator.trim();
+        const platformName = form.source_platform.trim();
+        if (creatorName) {
+          offlineFetch('/api/media/creators', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: creatorName }),
+          }).catch(() => {});
+        }
+        if (platformName) {
+          offlineFetch('/api/media/platforms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: platformName }),
+          }).catch(() => {});
+        }
+
         onSaved(created);
         onClose();
       }
@@ -237,18 +258,14 @@ export default function MediaForm({ isOpen, onClose, onSaved, brands, prefill, e
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="media-creator" className="block text-xs font-medium text-gray-600 mb-1">
-                {isBook ? 'Author' : isTv ? 'Network / Creator' : 'Creator / Artist'}
-              </label>
-              <input
-                id="media-creator"
-                type="text"
-                value={form.creator}
-                onChange={(e) => setForm((f) => ({ ...f, creator: e.target.value }))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-              />
-            </div>
+            <MediaAutocomplete
+              id="media-creator"
+              value={form.creator}
+              onChange={(name) => setForm((f) => ({ ...f, creator: name }))}
+              endpoint="/api/media/creators"
+              label={isBook ? 'Author' : isTv ? 'Network / Creator' : 'Creator / Artist'}
+              placeholder="Start typing..."
+            />
             <div>
               <label htmlFor="media-status" className="block text-xs font-medium text-gray-600 mb-1">Status</label>
               <select
@@ -381,12 +398,14 @@ export default function MediaForm({ isOpen, onClose, onSaved, brands, prefill, e
                 onChange={(e) => setForm((f) => ({ ...f, year_released: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
             </div>
-            <div>
-              <label htmlFor="media-platform" className="block text-xs font-medium text-gray-600 mb-1">Platform</label>
-              <input id="media-platform" type="text" value={form.source_platform} placeholder="Netflix, Kindle..."
-                onChange={(e) => setForm((f) => ({ ...f, source_platform: e.target.value }))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-            </div>
+            <MediaAutocomplete
+              id="media-platform"
+              value={form.source_platform}
+              onChange={(name) => setForm((f) => ({ ...f, source_platform: name }))}
+              endpoint="/api/media/platforms"
+              label="Platform"
+              placeholder="Netflix, Kindle..."
+            />
             {brands.length > 0 && (
               <div>
                 <label htmlFor="media-brand" className="block text-xs font-medium text-gray-600 mb-1">Brand</label>
