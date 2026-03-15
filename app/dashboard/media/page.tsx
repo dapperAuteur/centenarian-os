@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Star, BookOpen, Tv, Film, Music, Upload, Download, Globe, Settings } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -53,7 +53,16 @@ export default function MediaHubPage() {
   const [prefill, setPrefill] = useState<MediaPrefill | null>(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const limit = 50;
+
+  // Debounce search input (300ms)
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
+  }, [search]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -61,7 +70,7 @@ export default function MediaHubPage() {
       const params = new URLSearchParams({ limit: String(limit), offset: String(page * limit) });
       if (typeFilter) params.set('media_type', typeFilter);
       if (statusFilter) params.set('status', statusFilter);
-      if (search.trim()) params.set('search', search.trim());
+      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
 
       const [itemsRes, summaryRes, brandsRes] = await Promise.all([
         offlineFetch(`/api/media?${params}`),
@@ -84,7 +93,7 @@ export default function MediaHubPage() {
       }
     } catch { /* handled */ }
     finally { setLoading(false); }
-  }, [page, typeFilter, statusFilter, search]);
+  }, [page, typeFilter, statusFilter, debouncedSearch]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -200,8 +209,9 @@ export default function MediaHubPage() {
             type="text"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-            placeholder="Search titles..."
-            className="ml-auto border border-gray-200 rounded-lg px-3 py-1.5 text-sm w-48"
+            placeholder="Search titles, creators, genres..."
+            className="ml-auto border border-gray-200 rounded-lg px-3 py-1.5 text-sm w-48 sm:w-64 min-h-11"
+            aria-label="Search media"
           />
         </div>
       </div>

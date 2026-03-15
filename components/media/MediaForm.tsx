@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { Upload, X, Loader2 } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import MediaAutocomplete from '@/components/media/MediaAutocomplete';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -145,6 +146,34 @@ export default function MediaForm({ isOpen, onClose, onSaved, brands, prefill, e
     };
   });
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !cloudName || !uploadPreset) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', uploadPreset);
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: fd,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.secure_url) {
+          setForm((f) => ({ ...f, cover_image_url: data.secure_url }));
+        }
+      }
+    } catch { /* upload failed */ }
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const isTv = form.media_type === 'tv_show';
   const isBook = form.media_type === 'book';
@@ -427,10 +456,67 @@ export default function MediaForm({ isOpen, onClose, onSaved, brands, prefill, e
           </div>
 
           <div>
-            <label htmlFor="media-cover" className="block text-xs font-medium text-gray-600 mb-1">Cover Image URL</label>
-            <input id="media-cover" type="url" value={form.cover_image_url} placeholder="https://..."
-              onChange={(e) => setForm((f) => ({ ...f, cover_image_url: e.target.value }))}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">Cover Image</label>
+            {form.cover_image_url ? (
+              <div className="flex items-start gap-3">
+                <img
+                  src={form.cover_image_url}
+                  alt="Cover preview"
+                  className="w-16 h-22 object-cover rounded-lg bg-gray-100"
+                />
+                <div className="flex-1 space-y-1.5">
+                  <input
+                    id="media-cover"
+                    type="url"
+                    value={form.cover_image_url}
+                    onChange={(e) => setForm((f) => ({ ...f, cover_image_url: e.target.value }))}
+                    placeholder="https://..."
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                    aria-label="Cover image URL"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, cover_image_url: '' }))}
+                    className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600 min-h-8"
+                    aria-label="Remove cover image"
+                  >
+                    <X className="w-3 h-3" aria-hidden="true" /> Remove
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  id="media-cover"
+                  type="url"
+                  value={form.cover_image_url}
+                  onChange={(e) => setForm((f) => ({ ...f, cover_image_url: e.target.value }))}
+                  placeholder="Paste image URL..."
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm min-h-11"
+                  aria-label="Cover image URL"
+                />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  aria-hidden="true"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading || !cloudName}
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition min-h-11 disabled:opacity-50"
+                  aria-label="Upload cover image"
+                >
+                  {uploading
+                    ? <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Uploading...</>
+                    : <><Upload className="w-4 h-4" aria-hidden="true" /> Upload</>
+                  }
+                </button>
+              </div>
+            )}
           </div>
 
           <div>

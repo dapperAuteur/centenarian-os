@@ -11,6 +11,9 @@ import { Save, Loader2, ExternalLink, RefreshCw, ArrowLeft } from 'lucide-react'
 import type { BlogPost, PostVisibility } from '@/lib/types';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
+import AudioRecorder from '@/components/ui/AudioRecorder';
+import AudioAttachmentList from '@/components/ui/AudioAttachmentList';
+import { useAudioAttachments } from '@/lib/hooks/useAudioAttachments';
 
 // Dynamically import the Tiptap editor to avoid SSR issues
 const TiptapEditor = dynamic(() => import('./TiptapEditor'), { ssr: false });
@@ -39,6 +42,9 @@ export default function PostForm({ post, username }: PostFormProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  const { attachments: audioAttachments, addAttachment: addAudio, removeAttachment: removeAudio } =
+    useAudioAttachments('blog_post', post?.id || null);
 
   // Auto-generate slug from title (unless user has manually edited it)
   useEffect(() => {
@@ -313,6 +319,22 @@ export default function PostForm({ post, username }: PostFormProps) {
               </div>
             )}
           </div>
+
+          {/* Audio Notes (only when editing an existing post) */}
+          {isEditing && post && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Audio Notes</label>
+              <AudioRecorder
+                onUploaded={(url, publicId) => addAudio(url, publicId)}
+                onRemoved={() => {}}
+                label="Record audio note"
+              />
+              <AudioAttachmentList
+                attachments={audioAttachments}
+                onRemove={removeAudio}
+              />
+            </div>
+          )}
 
           {/* Cross-Module Links (only when editing an existing post) */}
           {isEditing && post && (

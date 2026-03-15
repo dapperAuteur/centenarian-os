@@ -9,7 +9,7 @@ import {
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
-import AudioRecorder from '@/components/media/AudioRecorder';
+import AudioRecorder from '@/components/ui/AudioRecorder';
 import MediaRelationships from '@/components/media/MediaRelationships';
 import MediaForm from '@/components/media/MediaForm';
 

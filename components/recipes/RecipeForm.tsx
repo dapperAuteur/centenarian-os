@@ -13,6 +13,10 @@ import RecipeCloudinaryUploader from './RecipeCloudinaryUploader';
 import RecipeIngredientBuilder, { type DraftIngredient } from './RecipeIngredientBuilder';
 import { Save, Loader2, ExternalLink, RefreshCw, Trash2, Link2, Download, ArrowLeft } from 'lucide-react';
 import ActivityLinker from '@/components/ui/ActivityLinker';
+import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
+import AudioRecorder from '@/components/ui/AudioRecorder';
+import AudioAttachmentList from '@/components/ui/AudioAttachmentList';
+import { useAudioAttachments } from '@/lib/hooks/useAudioAttachments';
 import type { Recipe, RecipeMedia, RecipeVisibility } from '@/lib/types';
 
 const TiptapEditor = dynamic(() => import('@/components/blog/TiptapEditor'), { ssr: false });
@@ -53,6 +57,9 @@ export default function RecipeForm({ recipe, username }: RecipeFormProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  const { attachments: audioAttachments, addAttachment: addAudio, removeAttachment: removeAudio } =
+    useAudioAttachments('recipe', recipe?.id || null);
 
   // Auto-generate slug from title
   useEffect(() => {
@@ -582,9 +589,33 @@ export default function RecipeForm({ recipe, username }: RecipeFormProps) {
             <p className="text-xs text-gray-400">Cite the original source. Shown on the public recipe page.</p>
           </div>
 
+          {/* Audio Notes (only when editing) */}
+          {isEditing && recipe?.id && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Audio Notes</label>
+              <AudioRecorder
+                onUploaded={(url, publicId) => addAudio(url, publicId)}
+                onRemoved={() => {}}
+                label="Record audio note"
+              />
+              <AudioAttachmentList
+                attachments={audioAttachments}
+                onRemove={removeAudio}
+              />
+            </div>
+          )}
+
           {isEditing && recipe?.id && (
             <div className="bg-white border border-gray-200 rounded-xl p-4">
               <ActivityLinker entityType="recipe" entityId={recipe.id} />
+            </div>
+          )}
+
+          {/* Life Categories */}
+          {isEditing && recipe?.id && (
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">Life Categories</label>
+              <LifeCategoryTagger entityType="recipe" entityId={recipe.id} compact />
             </div>
           )}
         </div>
