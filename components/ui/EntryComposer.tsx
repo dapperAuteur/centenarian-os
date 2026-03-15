@@ -1,13 +1,17 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Save, CheckCircle, Mic, Link2, Tags, Paperclip, ChevronDown, ChevronUp } from 'lucide-react';
+import { Save, CheckCircle, Mic, Link2, Tags, Paperclip, ImagePlus, ChevronDown, ChevronUp } from 'lucide-react';
 import AudioRecorder from '@/components/ui/AudioRecorder';
 import AudioAttachmentList from '@/components/ui/AudioAttachmentList';
 import { useAudioAttachments } from '@/lib/hooks/useAudioAttachments';
+import ImageAttachmentPicker from '@/components/ui/ImageAttachmentPicker';
+import ImageAttachmentGrid from '@/components/ui/ImageAttachmentGrid';
+import { useImageAttachments } from '@/lib/hooks/useImageAttachments';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
 import MediaUploader from '@/components/ui/MediaUploader';
+import type { ScanResult } from '@/components/scan/ScanButton';
 
 type EntityType =
   | 'blog_post' | 'recipe' | 'daily_log' | 'focus_session'
@@ -15,6 +19,7 @@ type EntityType =
 
 interface EntryComposerFeatures {
   audio?: boolean;
+  photos?: boolean;
   media?: boolean;
   activityLinks?: boolean;
   lifeCategories?: boolean;
@@ -47,13 +52,17 @@ interface EntryComposerProps {
   onMediaRemove?: () => void;
   /** Current media URL for preview */
   currentMediaUrl?: string | null;
+  /** Max photo attachments */
+  maxPhotos?: number;
+  /** OCR scan result callback */
+  onScanResult?: (data: ScanResult) => void;
   /** Dark mode */
   variant?: 'light' | 'dark';
   /** Module's form fields */
   children: React.ReactNode;
 }
 
-type ExpandedSection = 'audio' | 'media' | 'links' | 'categories' | null;
+type ExpandedSection = 'audio' | 'photos' | 'media' | 'links' | 'categories' | null;
 
 export default function EntryComposer({
   entityType,
@@ -69,6 +78,8 @@ export default function EntryComposer({
   onMediaUpload,
   onMediaRemove,
   currentMediaUrl,
+  maxPhotos = 10,
+  onScanResult,
   variant = 'light',
   children,
 }: EntryComposerProps) {
@@ -82,6 +93,12 @@ export default function EntryComposer({
     addAttachment,
     removeAttachment,
   } = useAudioAttachments(entityType, entityId);
+
+  const {
+    attachments: imageAttachments,
+    addAttachment: addImage,
+    removeAttachment: removeImage,
+  } = useImageAttachments(entityType, entityId);
 
   const dark = variant === 'dark';
 
@@ -110,11 +127,18 @@ export default function EntryComposer({
     // AudioRecorder reset — no-op, attachments managed via list
   }, []);
 
+  const handleImageUploaded = useCallback(
+    (url: string, publicId: string) => {
+      addImage(url, publicId);
+    },
+    [addImage],
+  );
+
   const toggleSection = (section: ExpandedSection) => {
     setExpanded((prev) => (prev === section ? null : section));
   };
 
-  const hasAnyFeature = features.audio || features.media || features.activityLinks || features.lifeCategories;
+  const hasAnyFeature = features.audio || features.photos || features.media || features.activityLinks || features.lifeCategories;
   const extrasAvailable = hasAnyFeature && !!entityId;
 
   // Style helpers
@@ -140,6 +164,16 @@ export default function EntryComposer({
         />
       )}
 
+      {/* Image attachments (always visible if any exist) */}
+      {features.photos && imageAttachments.length > 0 && (
+        <ImageAttachmentGrid
+          attachments={imageAttachments}
+          onRemove={removeImage}
+          onScanResult={onScanResult}
+          variant={variant}
+        />
+      )}
+
       {/* Extras toolbar */}
       {hasAnyFeature && (
         <div className="space-y-3">
@@ -156,6 +190,20 @@ export default function EntryComposer({
                     <Mic className="w-4 h-4 text-red-500" aria-hidden="true" />
                     Audio
                     {expanded === 'audio'
+                      ? <ChevronUp className="w-3 h-3" aria-hidden="true" />
+                      : <ChevronDown className="w-3 h-3" aria-hidden="true" />}
+                  </button>
+                )}
+                {features.photos && (
+                  <button
+                    type="button"
+                    onClick={() => toggleSection('photos')}
+                    className={`${toolbarBtnBase} ${expanded === 'photos' ? toolbarBtnActive : ''}`}
+                    aria-expanded={expanded === 'photos'}
+                  >
+                    <ImagePlus className="w-4 h-4 text-sky-500" aria-hidden="true" />
+                    Photos
+                    {expanded === 'photos'
                       ? <ChevronUp className="w-3 h-3" aria-hidden="true" />
                       : <ChevronDown className="w-3 h-3" aria-hidden="true" />}
                   </button>
@@ -218,6 +266,17 @@ export default function EntryComposer({
                 </div>
               )}
 
+              {expanded === 'photos' && features.photos && (
+                <div className={`rounded-xl border p-4 ${sectionBg}`}>
+                  <ImageAttachmentPicker
+                    onUploaded={handleImageUploaded}
+                    maxImages={maxPhotos}
+                    currentCount={imageAttachments.length}
+                    variant={variant}
+                  />
+                </div>
+              )}
+
               {expanded === 'media' && features.media && (
                 <div className={`rounded-xl border p-4 ${sectionBg}`}>
                   <MediaUploader
@@ -250,7 +309,7 @@ export default function EntryComposer({
           ) : (
             entityId === null && (
               <p className={`text-xs ${dark ? 'text-gray-500' : 'text-gray-400'}`}>
-                Save first to add audio, links, and tags
+                Save first to add audio, photos, links, and tags
               </p>
             )
           )}

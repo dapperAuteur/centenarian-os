@@ -17,6 +17,9 @@ import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
 import AudioRecorder from '@/components/ui/AudioRecorder';
 import AudioAttachmentList from '@/components/ui/AudioAttachmentList';
 import { useAudioAttachments } from '@/lib/hooks/useAudioAttachments';
+import ImageAttachmentPicker from '@/components/ui/ImageAttachmentPicker';
+import ImageAttachmentGrid from '@/components/ui/ImageAttachmentGrid';
+import { useImageAttachments } from '@/lib/hooks/useImageAttachments';
 import type { Recipe, RecipeMedia, RecipeVisibility } from '@/lib/types';
 
 const TiptapEditor = dynamic(() => import('@/components/blog/TiptapEditor'), { ssr: false });
@@ -60,6 +63,8 @@ export default function RecipeForm({ recipe, username }: RecipeFormProps) {
 
   const { attachments: audioAttachments, addAttachment: addAudio, removeAttachment: removeAudio } =
     useAudioAttachments('recipe', recipe?.id || null);
+  const { attachments: imageAttachments, addAttachment: addImage, removeAttachment: removeImage } =
+    useImageAttachments('recipe', recipe?.id || null);
 
   // Auto-generate slug from title
   useEffect(() => {
@@ -601,6 +606,21 @@ export default function RecipeForm({ recipe, username }: RecipeFormProps) {
               <AudioAttachmentList
                 attachments={audioAttachments}
                 onRemove={removeAudio}
+              />
+            </div>
+          )}
+
+          {/* Photos (only when editing) */}
+          {isEditing && recipe?.id && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Photos</label>
+              <ImageAttachmentPicker
+                onUploaded={(url, publicId) => addImage(url, publicId)}
+                currentCount={imageAttachments.length}
+              />
+              <ImageAttachmentGrid
+                attachments={imageAttachments}
+                onRemove={removeImage}
               />
             </div>
           )}

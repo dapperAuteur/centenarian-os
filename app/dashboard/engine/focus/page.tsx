@@ -12,6 +12,9 @@ import { Play, Pause, StopCircle, Settings as SettingsIcon } from 'lucide-react'
 import AudioRecorder from '@/components/ui/AudioRecorder';
 import AudioAttachmentList from '@/components/ui/AudioAttachmentList';
 import { useAudioAttachments } from '@/lib/hooks/useAudioAttachments';
+import ImageAttachmentPicker from '@/components/ui/ImageAttachmentPicker';
+import ImageAttachmentGrid from '@/components/ui/ImageAttachmentGrid';
+import { useImageAttachments } from '@/lib/hooks/useImageAttachments';
 import PomodoroPresets from '@/components/focus/PomodoroPresets';
 import CustomPresetModal from '@/components/focus/CustomPresetModal';
 import PomodoroSettingsModal from '@/components/focus/PomodoroSettingsModal';
@@ -75,6 +78,8 @@ export default function FocusTimerPage() {
   // Audio attachments for the active session
   const { attachments: audioAttachments, addAttachment: addAudio, removeAttachment: removeAudio } =
     useAudioAttachments('focus_session', currentSessionId);
+  const { attachments: imageAttachments, addAttachment: addImage, removeAttachment: removeImage } =
+    useImageAttachments('focus_session', currentSessionId);
 
   const loadData = useCallback(async () => {
     const today = new Date().toISOString().split('T')[0];
@@ -578,6 +583,25 @@ export default function FocusTimerPage() {
               attachments={audioAttachments}
               onRemove={removeAudio}
             />
+          </div>
+        )}
+
+        {/* Photo attachments — visible during active session */}
+        {currentSessionId && (
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Photos</label>
+            <ImageAttachmentPicker
+              onUploaded={(url, publicId) => addImage(url, publicId)}
+              currentCount={imageAttachments.length}
+            />
+            {imageAttachments.length > 0 && (
+              <div className="mt-2">
+                <ImageAttachmentGrid
+                  attachments={imageAttachments}
+                  onRemove={removeImage}
+                />
+              </div>
+            )}
           </div>
         )}
 

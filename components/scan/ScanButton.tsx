@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Camera, Loader2 } from 'lucide-react';
+import { Camera, ImagePlus, Loader2 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import type { DocumentType } from '@/lib/ocr/classify';
 
@@ -30,7 +30,8 @@ export default function ScanButton({
   className,
 }: ScanButtonProps) {
   const [loading, setLoading] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = async (files: FileList) => {
     if (!files.length) return;
@@ -59,30 +60,48 @@ export default function ScanButton({
       onError?.('Scan failed — please try again');
     } finally {
       setLoading(false);
-      if (fileRef.current) fileRef.current.value = '';
+      if (cameraRef.current) cameraRef.current.value = '';
+      if (galleryRef.current) galleryRef.current.value = '';
     }
   };
 
-  const defaultClass =
-    'flex items-center gap-1.5 px-3 py-2 bg-purple-600 text-white rounded-xl text-sm font-medium hover:bg-purple-700 transition cursor-pointer';
+  const btnClass = className ||
+    'flex items-center gap-1.5 px-3 py-2 min-h-11 bg-purple-600 text-white rounded-xl text-sm font-medium hover:bg-purple-700 transition cursor-pointer';
 
   return (
-    <label className={className || defaultClass}>
-      {loading ? (
-        <Loader2 className="w-4 h-4 animate-spin" />
-      ) : (
-        <Camera className="w-4 h-4" />
-      )}
-      {loading ? 'Scanning...' : label}
-      <input
-        ref={fileRef}
-        type="file"
-        multiple
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => e.target.files && handleFiles(e.target.files)}
-      />
-    </label>
+    <div className="flex flex-col sm:flex-row gap-2">
+      <label className={btnClass}>
+        {loading ? (
+          <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+        ) : (
+          <Camera className="w-4 h-4" aria-hidden="true" />
+        )}
+        {loading ? 'Scanning...' : label}
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => e.target.files && handleFiles(e.target.files)}
+        />
+      </label>
+      <label className={btnClass}>
+        {loading ? (
+          <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+        ) : (
+          <ImagePlus className="w-4 h-4" aria-hidden="true" />
+        )}
+        Choose Photos
+        <input
+          ref={galleryRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(e) => e.target.files && handleFiles(e.target.files)}
+        />
+      </label>
+    </div>
   );
 }

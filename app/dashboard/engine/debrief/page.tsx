@@ -79,7 +79,7 @@ export default function DailyDebriefPage() {
         <EntryComposer
           entityType="daily_log"
           entityId={logId}
-          features={{ audio: true, activityLinks: true, lifeCategories: true }}
+          features={{ audio: true, photos: true, activityLinks: true, lifeCategories: true }}
           onSave={handleSave}
           saveLabel="Save Debrief"
           saveDisabled={!log.energy_rating}

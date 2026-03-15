@@ -132,7 +132,7 @@ export default function PainTrackingPage() {
         <EntryComposer
           entityType="daily_log"
           entityId={logId}
-          features={{ audio: true, activityLinks: true, lifeCategories: true }}
+          features={{ audio: true, photos: true, activityLinks: true, lifeCategories: true }}
           onSave={handleSave}
           saveLabel="Log Body Check"
         >
