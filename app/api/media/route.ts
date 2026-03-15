@@ -35,7 +35,12 @@ export async function GET(request: NextRequest) {
   if (status) query = query.eq('status', status);
   if (categoryId) query = query.eq('category_id', categoryId);
   if (brandId) query = query.eq('brand_id', brandId);
-  if (search) query = query.ilike('title', `%${search}%`);
+  if (search) {
+    const term = `%${search}%`;
+    query = query.or(
+      `title.ilike.${term},creator.ilike.${term},source_platform.ilike.${term},genre.cs.{"${search}"},tags.cs.{"${search}"}`
+    );
+  }
   if (isFavorite === 'true') query = query.eq('is_favorite', true);
 
   const { data, count, error } = await query;

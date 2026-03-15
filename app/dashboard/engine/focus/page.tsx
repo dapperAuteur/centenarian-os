@@ -9,6 +9,9 @@ import { FocusSession, Task, PomodoroSettings, DEFAULT_POMODORO_SETTINGS, WorkIn
 import SaveSessionAsTemplateButton from '@/components/focus/SaveSessionAsTemplateButton';
 import SessionTypeToggle from '@/components/focus/SessionTypeToggle';
 import { Play, Pause, StopCircle, Settings as SettingsIcon } from 'lucide-react';
+import AudioRecorder from '@/components/ui/AudioRecorder';
+import AudioAttachmentList from '@/components/ui/AudioAttachmentList';
+import { useAudioAttachments } from '@/lib/hooks/useAudioAttachments';
 import PomodoroPresets from '@/components/focus/PomodoroPresets';
 import CustomPresetModal from '@/components/focus/CustomPresetModal';
 import PomodoroSettingsModal from '@/components/focus/PomodoroSettingsModal';
@@ -68,6 +71,10 @@ export default function FocusTimerPage() {
   const [pendingSessionEnd, setPendingSessionEnd] = useState<{ sessionId: string; elapsedSeconds: number; revenue: number; notes: string; } | null>(null);
 
   const supabase = createClient();
+
+  // Audio attachments for the active session
+  const { attachments: audioAttachments, addAttachment: addAudio, removeAttachment: removeAudio } =
+    useAudioAttachments('focus_session', currentSessionId);
 
   const loadData = useCallback(async () => {
     const today = new Date().toISOString().split('T')[0];
@@ -553,6 +560,24 @@ export default function FocusTimerPage() {
                 Transfer to Recipe
               </a>
             </div>
+          </div>
+        )}
+
+        {/* Audio recorder — visible during active session */}
+        {currentSessionId && (
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Voice Notes</label>
+            <AudioRecorder
+              onUploaded={(url, publicId) => addAudio(url, publicId)}
+              onRemoved={() => {}}
+              compact
+              autoUpload
+              label="Record voice note"
+            />
+            <AudioAttachmentList
+              attachments={audioAttachments}
+              onRemove={removeAudio}
+            />
           </div>
         )}
 
