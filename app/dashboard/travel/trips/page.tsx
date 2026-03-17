@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, Plus, ChevronDown } from 'lucide-react';
+import { ChevronLeft, Plus, ChevronDown, Search } from 'lucide-react';
+import PaginationBar from '@/components/ui/PaginationBar';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import MultiStopForm from '@/components/travel/MultiStopForm';
@@ -132,17 +133,21 @@ function fmt(n: number | null | undefined, d = 1) {
   return n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
 }
 
-export default function TripsPage() {
+function TripsPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [modeFilter, setModeFilter] = useState('');
-  const [taxFilter, setTaxFilter] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [search, setSearch] = useState(() => searchParams.get('search') || '');
+  const [modeFilter, setModeFilter] = useState(() => searchParams.get('mode') || '');
+  const [taxFilter, setTaxFilter] = useState(() => searchParams.get('tax_category') || '');
+  const [categoryFilter, setCategoryFilter] = useState(() => searchParams.get('trip_category') || '');
+  const [statusFilter, setStatusFilter] = useState(() => searchParams.get('trip_status') || '');
+  const [fromDate, setFromDate] = useState(() => searchParams.get('from') || '');
+  const [toDate, setToDate] = useState(() => searchParams.get('to') || '');
   const [page, setPage] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(BLANK_FORM);
@@ -171,10 +176,13 @@ export default function TripsPage() {
         limit: String(limit),
         offset: String(page * limit),
       });
+      if (search) params.set('search', search);
       if (modeFilter) params.set('mode', modeFilter);
       if (taxFilter) params.set('tax_category', taxFilter);
       if (categoryFilter) params.set('trip_category', categoryFilter);
       if (statusFilter) params.set('trip_status', statusFilter);
+      if (fromDate) params.set('from', fromDate);
+      if (toDate) params.set('to', toDate);
       const [tripsRes, vehiclesRes, routesRes, brandsRes] = await Promise.all([
         offlineFetch(`/api/travel/trips?${params}`),
         offlineFetch('/api/travel/vehicles'), // active only
@@ -201,7 +209,7 @@ export default function TripsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, modeFilter, taxFilter, categoryFilter, statusFilter]);
+  }, [page, search, modeFilter, taxFilter, categoryFilter, statusFilter, fromDate, toDate]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -358,8 +366,8 @@ export default function TripsPage() {
     if (res.ok) load();
   };
 
-  const clearFilters = () => { setModeFilter(''); setTaxFilter(''); setCategoryFilter(''); setStatusFilter(''); setPage(0); };
-  const hasFilter = modeFilter || taxFilter || categoryFilter || statusFilter;
+  const clearFilters = () => { setSearch(''); setModeFilter(''); setTaxFilter(''); setCategoryFilter(''); setStatusFilter(''); setFromDate(''); setToDate(''); setPage(0); };
+  const hasFilter = search || modeFilter || taxFilter || categoryFilter || statusFilter || fromDate || toDate;
   const totalPages = Math.ceil(total / limit);
 
   return (
@@ -388,6 +396,33 @@ export default function TripsPage() {
 
       {/* Filters */}
       <div className="space-y-2">
+        {/* Search + date range */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" aria-hidden="true" />
+            <input
+              type="text"
+              placeholder="Search origin, destination, notes…"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+              className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+            />
+          </div>
+          <input
+            type="date"
+            aria-label="From date"
+            value={fromDate}
+            onChange={(e) => { setFromDate(e.target.value); setPage(0); }}
+            className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+          />
+          <input
+            type="date"
+            aria-label="To date"
+            value={toDate}
+            onChange={(e) => { setToDate(e.target.value); setPage(0); }}
+            className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+          />
+        </div>
         {/* Mode filters */}
         <div className="flex flex-wrap gap-2">
           {['', 'bike', 'car', 'walk', 'run', 'bus', 'train', 'plane'].map((m) => (
@@ -589,28 +624,7 @@ export default function TripsPage() {
         )}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <button
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-            disabled={page === 0}
-            className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40 transition"
-          >
-            Previous
-          </button>
-          <span className="text-sm text-gray-500">
-            Page {page + 1} of {totalPages}
-          </span>
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-            disabled={page >= totalPages - 1}
-            className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40 transition"
-          >
-            Next
-          </button>
-        </div>
-      )}
+      <PaginationBar page={page + 1} totalPages={totalPages} onPageChange={(p) => setPage(p - 1)} variant="light" />
 
       {/* Linked transaction confirmation dialog */}
       <Modal isOpen={!!linkedTxDialog} onClose={() => setLinkedTxDialog(null)} title="Delete linked transaction?" size="sm">
@@ -1102,5 +1116,13 @@ export default function TripsPage() {
         </form>
       </Modal>
     </div>
+  );
+}
+
+export default function TripsPage() {
+  return (
+    <Suspense>
+      <TripsPageInner />
+    </Suspense>
   );
 }

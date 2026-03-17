@@ -129,6 +129,12 @@ function fmtMoney(n: number | null | undefined) {
 
 export default function TravelPage() {
   useTrackPageView('travel', '/dashboard/travel');
+  const now = new Date();
+  const currentMonthFrom = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  const currentMonthTo = now.toISOString().split('T')[0];
+  const currentMonthLabel = now.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  const bikeHref = `/dashboard/travel/trips?mode=bike&from=${currentMonthFrom}&to=${currentMonthTo}`;
+  const carHref = `/dashboard/travel/trips?mode=car&from=${currentMonthFrom}&to=${currentMonthTo}`;
   const [summary, setSummary] = useState<Summary | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [recentTrips, setRecentTrips] = useState<Trip[]>([]);
@@ -369,73 +375,85 @@ export default function TravelPage() {
         </div>
       )}
 
-      {/* Stats Grid */}
+      {/* Stats Grid — Month to Date */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-gray-700">Month to Date</h2>
+        <span className="text-xs text-gray-400">{currentMonthLabel}</span>
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white border border-gray-200 rounded-2xl p-4">
+        <Link href={bikeHref} className="bg-white border border-gray-200 rounded-2xl p-4 hover:bg-gray-50 hover:border-sky-200 transition">
           <div className="flex items-center gap-2 mb-1">
-            <Bike className="w-4 h-4 text-green-600" />
+            <Bike className="w-4 h-4 text-green-600" aria-hidden="true" />
             <span className="text-xs font-medium text-gray-500">Bike Miles</span>
           </div>
           <p className="text-2xl font-bold text-gray-900">{fmt(cm?.bikeMiles)}</p>
           <p className="text-xs text-gray-400 mt-0.5">{cm?.bikeCommuteDays ?? 0} commute days</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-2xl p-4">
+        </Link>
+        <Link href={bikeHref} className="bg-white border border-gray-200 rounded-2xl p-4 hover:bg-gray-50 hover:border-sky-200 transition">
           <div className="flex items-center gap-2 mb-1">
-            <DollarSign className="w-4 h-4 text-emerald-600" />
+            <DollarSign className="w-4 h-4 text-emerald-600" aria-hidden="true" />
             <span className="text-xs font-medium text-gray-500">Bike Savings</span>
           </div>
           <p className="text-2xl font-bold text-gray-900">{fmtMoney(cm?.bikeSavings)}</p>
-          <p className="text-xs text-gray-400 mt-0.5">vs. driving this month</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-2xl p-4">
+          <p className="text-xs text-gray-400 mt-0.5">vs. driving</p>
+        </Link>
+        <Link href={bikeHref} className="bg-white border border-gray-200 rounded-2xl p-4 hover:bg-gray-50 hover:border-sky-200 transition">
           <div className="flex items-center gap-2 mb-1">
-            <Leaf className="w-4 h-4 text-teal-600" />
+            <Leaf className="w-4 h-4 text-teal-600" aria-hidden="true" />
             <span className="text-xs font-medium text-gray-500">CO₂ Saved</span>
           </div>
           <p className="text-2xl font-bold text-gray-900">{fmt(cm?.co2SavedKgVsCar)} kg</p>
-          <p className="text-xs text-gray-400 mt-0.5">by biking vs. driving</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-2xl p-4">
+          <p className="text-xs text-gray-400 mt-0.5">biking vs. driving</p>
+        </Link>
+        <Link href={bikeHref} className="bg-white border border-gray-200 rounded-2xl p-4 hover:bg-gray-50 hover:border-sky-200 transition">
           <div className="flex items-center gap-2 mb-1">
-            <Flame className="w-4 h-4 text-orange-500" />
+            <Flame className="w-4 h-4 text-orange-500" aria-hidden="true" />
             <span className="text-xs font-medium text-gray-500">Commute Cals</span>
           </div>
           <p className="text-2xl font-bold text-gray-900">
             {fmt(cm?.calsByMode?.['bike'] ?? 0, 0)}
           </p>
           <p className="text-xs text-gray-400 mt-0.5">burned biking</p>
-        </div>
+        </Link>
       </div>
 
       {/* Fuel stats if we have data */}
       {(cm?.fuelSpend ?? 0) > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <div className="bg-white border border-gray-200 rounded-2xl p-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <Link href="/dashboard/travel/fuel" className="bg-white border border-gray-200 rounded-2xl p-4 hover:bg-gray-50 hover:border-sky-200 transition">
             <div className="flex items-center gap-2 mb-1">
-              <Car className="w-4 h-4 text-red-500" />
+              <Car className="w-4 h-4 text-red-500" aria-hidden="true" />
               <span className="text-xs font-medium text-gray-500">Fuel Spend</span>
             </div>
             <p className="text-2xl font-bold text-gray-900">{fmtMoney(cm?.fuelSpend)}</p>
             <p className="text-xs text-gray-400 mt-0.5">{fmt(cm?.fuelGallons, 2)} gallons</p>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-2xl p-4">
+          </Link>
+          <Link href="/dashboard/travel/fuel" className="bg-white border border-gray-200 rounded-2xl p-4 hover:bg-gray-50 hover:border-sky-200 transition">
             <div className="flex items-center gap-2 mb-1">
-              <Gauge className="w-4 h-4 text-blue-500" />
+              <Gauge className="w-4 h-4 text-blue-500" aria-hidden="true" />
               <span className="text-xs font-medium text-gray-500">Avg MPG</span>
             </div>
             <p className="text-2xl font-bold text-gray-900">{cm?.avgMpg != null ? fmt(cm.avgMpg, 1) : '—'}</p>
             <p className="text-xs text-gray-400 mt-0.5">this month</p>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-2xl p-4">
+          </Link>
+          <Link href={carHref} className="bg-white border border-gray-200 rounded-2xl p-4 hover:bg-gray-50 hover:border-sky-200 transition">
             <div className="flex items-center gap-2 mb-1">
-              <Car className="w-4 h-4 text-gray-500" />
+              <Car className="w-4 h-4 text-gray-500" aria-hidden="true" />
               <span className="text-xs font-medium text-gray-500">Car Miles</span>
             </div>
             <p className="text-2xl font-bold text-gray-900">{fmt(cm?.carMiles)}</p>
-            <p className="text-xs text-gray-400 mt-0.5">
-              {cm?.carCostPerMile != null ? `$${fmt(cm.carCostPerMile, 3)}/mile` : 'this month'}
-            </p>
-          </div>
+            <p className="text-xs text-gray-400 mt-0.5">this month</p>
+          </Link>
+          {cm?.carCostPerMile != null && (
+            <Link href={carHref} className="bg-amber-50 border border-amber-200 rounded-2xl p-4 hover:bg-amber-100 transition">
+              <div className="flex items-center gap-2 mb-1">
+                <DollarSign className="w-4 h-4 text-amber-600" aria-hidden="true" />
+                <span className="text-xs font-medium text-amber-700">Cost / Mile</span>
+              </div>
+              <p className="text-2xl font-bold text-amber-800">${fmt(cm.carCostPerMile, 3)}</p>
+              <p className="text-xs text-amber-600 mt-0.5">car trips this month</p>
+            </Link>
+          )}
         </div>
       )}
 
