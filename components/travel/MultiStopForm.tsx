@@ -78,6 +78,35 @@ const BLANK_STOP: Stop = {
   booking_url: '',
 };
 
+interface TripTemplateStop {
+  stop_order: number;
+  location_name: string;
+  mode: string | null;
+  distance_miles: number | null;
+  duration_min: number | null;
+  cost: number | null;
+  purpose: string | null;
+  vehicle_id: string | null;
+}
+
+interface TripTemplate {
+  id: string;
+  name: string;
+  mode: string;
+  vehicle_id: string | null;
+  origin: string | null;
+  destination: string | null;
+  distance_miles: number | null;
+  duration_min: number | null;
+  purpose: string | null;
+  trip_category: string | null;
+  tax_category: string | null;
+  notes: string | null;
+  is_multi_stop: boolean;
+  use_count: number;
+  stops?: TripTemplateStop[];
+}
+
 interface LegData {
   mode: string;
   origin: string | null;
@@ -110,6 +139,7 @@ interface MultiStopFormProps {
   };
   initialLegs?: LegData[];
   defaultStatus?: string;
+  templates?: TripTemplate[];
 }
 
 function legsToStops(legs: LegData[], isRoundTrip: boolean, routeDate?: string): Stop[] {
@@ -150,7 +180,7 @@ function legsToStops(legs: LegData[], isRoundTrip: boolean, routeDate?: string):
   return stops;
 }
 
-export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved, editRouteId, initialRoute, initialLegs, defaultStatus }: MultiStopFormProps) {
+export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved, editRouteId, initialRoute, initialLegs, defaultStatus, templates }: MultiStopFormProps) {
   const isEdit = !!editRouteId;
   const [name, setName] = useState(initialRoute?.name || '');
   const [date, setDate] = useState(initialRoute?.date || new Date().toISOString().split('T')[0]);
@@ -170,8 +200,49 @@ export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved,
   const [saving, setSaving] = useState(false);
   const [expandedBooking, setExpandedBooking] = useState<number | null>(null);
   const [expandedExtra, setExpandedExtra] = useState<number | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const isPlanning = tripStatus === 'planned' || tripStatus === 'in_progress';
   const isMultiStop = stops.length > 2;
+
+  const applyTemplate = (tmpl: TripTemplate) => {
+    if (tmpl.name) setName(tmpl.name);
+    if (tmpl.notes) setNotes(tmpl.notes);
+    if (tmpl.is_multi_stop && tmpl.stops?.length) {
+      const newStops: Stop[] = tmpl.stops
+        .slice()
+        .sort((a, b) => a.stop_order - b.stop_order)
+        .map((s) => ({
+          ...BLANK_STOP,
+          location: s.location_name,
+          mode: s.mode || '',
+          distance_miles: s.distance_miles != null ? String(s.distance_miles) : '',
+          duration_min: s.duration_min != null ? String(s.duration_min) : '',
+          cost: s.cost != null ? String(s.cost) : '',
+          purpose: s.purpose || '',
+          vehicle_id: s.vehicle_id || '',
+          trip_category: tmpl.trip_category || 'travel',
+          tax_category: tmpl.tax_category || 'personal',
+          date: '',
+        }));
+      setStops(newStops);
+    } else {
+      setStops([
+        { ...BLANK_STOP, location: tmpl.origin || '', mode: tmpl.mode || '', vehicle_id: tmpl.vehicle_id || '', date: '' },
+        {
+          ...BLANK_STOP,
+          location: tmpl.destination || '',
+          mode: tmpl.mode || '',
+          vehicle_id: tmpl.vehicle_id || '',
+          distance_miles: tmpl.distance_miles != null ? String(tmpl.distance_miles) : '',
+          duration_min: tmpl.duration_min != null ? String(tmpl.duration_min) : '',
+          purpose: tmpl.purpose || 'commute',
+          trip_category: tmpl.trip_category || 'travel',
+          tax_category: tmpl.tax_category || 'personal',
+          date: '',
+        },
+      ]);
+    }
+  };
   const userVehicles = vehicles.filter((v) => !v.is_system);
   const systemVehicles = vehicles.filter((v) => v.is_system);
 
@@ -292,6 +363,29 @@ export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved,
             : isPlanning ? (isMultiStop ? 'Plan Multi-Stop Trip' : 'Plan Trip')
             : isMultiStop ? 'Multi-Stop Route' : 'Add Trip'}
         </h2>
+
+        {!isEdit && templates && templates.length > 0 && (
+          <div>
+            <label htmlFor="template-select" className="block text-xs font-medium text-gray-600 mb-1">Load from template</label>
+            <select
+              id="template-select"
+              value={selectedTemplateId}
+              onChange={(e) => {
+                const tmpl = templates.find((t) => t.id === e.target.value);
+                setSelectedTemplateId(e.target.value);
+                if (tmpl) applyTemplate(tmpl);
+              }}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+            >
+              <option value="">— choose a template —</option>
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}{t.distance_miles ? ` (${t.distance_miles} mi)` : ''}{t.use_count > 0 ? ` · ${t.use_count}x` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Status selector */}
         <div>

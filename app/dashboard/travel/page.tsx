@@ -67,16 +67,34 @@ interface TravelSettings {
   default_vehicle_id: string | null;
 }
 
+interface TripTemplateStop {
+  stop_order: number;
+  location_name: string;
+  mode: string | null;
+  distance_miles: number | null;
+  duration_min: number | null;
+  cost: number | null;
+  purpose: string | null;
+  vehicle_id: string | null;
+}
+
 interface TripTemplate {
   id: string;
   name: string;
   mode: string;
+  vehicle_id: string | null;
   origin: string | null;
   destination: string | null;
   distance_miles: number | null;
   duration_min: number | null;
+  purpose: string | null;
+  trip_category: string | null;
+  tax_category: string | null;
+  notes: string | null;
+  is_multi_stop: boolean;
   use_count: number;
   vehicles: { nickname: string; type: string } | null;
+  stops?: TripTemplateStop[];
 }
 
 const MODE_ICONS: Record<string, string> = {
@@ -672,8 +690,9 @@ export default function TravelPage() {
             <h2 className="text-sm font-semibold text-gray-700">Quick Re-log</h2>
             <span className="text-xs text-gray-400">{templates.length} saved templates</span>
           </div>
+          <div className={templates.length > 6 ? 'max-h-80 overflow-y-auto pr-1' : ''}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {templates.slice(0, 6).map((t) => (
+            {templates.map((t) => (
               <button
                 key={t.id}
                 onClick={() => logFromTemplate(t)}
@@ -694,6 +713,7 @@ export default function TravelPage() {
                 <Repeat className="w-3.5 h-3.5 text-gray-400 shrink-0" />
               </button>
             ))}
+          </div>
           </div>
         </div>
       )}
@@ -725,6 +745,7 @@ export default function TravelPage() {
         <MultiStopForm
           vehicles={vehicles.filter((v) => v.active)}
           brands={brands}
+          templates={templates}
           onClose={() => setShowAddTrip(false)}
           onSaved={() => { setShowAddTrip(false); load(); }}
         />
