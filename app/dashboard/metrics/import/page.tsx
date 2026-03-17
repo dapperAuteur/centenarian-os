@@ -150,7 +150,8 @@ const CSV_MAPPINGS: Record<string, Record<string, string>> = {
 };
 
 function parseCSV(text: string, source: Source): MetricRow[] {
-  const lines = text.trim().split('\n');
+  const cleaned = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = cleaned.trim().split('\n');
   if (lines.length < 2) return [];
 
   const headers = lines[0].split(',').map((h) => h.trim().replace(/^"|"$/g, ''));
@@ -187,7 +188,9 @@ function parseCSV(text: string, source: Source): MetricRow[] {
 
 // Parse InBody CSV preserving all raw columns for the dedicated import endpoint
 function parseInBodyCSV(text: string): Record<string, string>[] {
-  const lines = text.trim().split('\n');
+  // Strip BOM (common in device/Windows exports) and normalize CRLF line endings
+  const cleaned = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = cleaned.trim().split('\n');
   if (lines.length < 2) return [];
   const headers = lines[0].split(',').map((h) => h.trim().replace(/^"|"$/g, ''));
   return lines.slice(1).flatMap((line) => {
