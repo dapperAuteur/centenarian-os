@@ -197,11 +197,9 @@ function parseInBodyCSV(text: string): Record<string, string>[] {
     const values = line.split(',').map((v) => v.trim().replace(/^"|"$/g, ''));
     const raw: Record<string, string> = {};
     headers.forEach((h, i) => { raw[h] = values[i] ?? ''; });
-    // Normalize date (YYYYMMDDHHmmss → YYYY-MM-DD)
-    if (raw['date'] && /^\d{14}$/.test(raw['date'])) {
-      const d = raw['date'];
-      raw['date'] = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
-    }
+    // Keep the full 14-digit InBody timestamp intact so the server can build
+    // the correct measured_at with time (normalizing to date-only here causes
+    // same-day scans to collide on the unique constraint).
     return raw['date'] ? [raw] : [];
   });
 }
