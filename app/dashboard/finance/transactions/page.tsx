@@ -63,7 +63,7 @@ export default function TransactionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlAccountId = searchParams.get('account_id') || '';
-  const _urlAccountName = searchParams.get('account_name') || '';
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);

@@ -76,6 +76,7 @@ export default function ImageAttachmentGrid({
               onClick={() => setLightboxUrl(att.image_url)}
               aria-label={att.label || 'View image'}
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={att.image_url}
                 alt={att.label || 'Attached image'}
@@ -139,6 +140,7 @@ export default function ImageAttachmentGrid({
           >
             <X className="w-5 h-5" aria-hidden="true" />
           </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={lightboxUrl}
             alt="Full size preview"

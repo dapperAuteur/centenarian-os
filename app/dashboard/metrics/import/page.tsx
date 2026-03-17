@@ -77,7 +77,7 @@ const SOURCE_TEMPLATES: Partial<Record<Source, string>> = {
   hume_health: '/templates/hume-health-import-template.csv',
   csv: '/templates/health-metrics-import-template.csv',
   google_health: '/templates/health-metrics-import-template.csv',
-  inbody: '/templates/health-metrics-import-template.csv',
+  inbody: '/templates/inbody-import-template.csv',
 };
 
 // CSV column name mappings per source
@@ -124,6 +124,13 @@ const CSV_MAPPINGS: Record<string, Record<string, string>> = {
     'Strain': 'stress_score',
     'Calories': 'active_calories',
   },
+  inbody: {
+    'date': 'logged_date',                   // YYYYMMDDHHmmss — normalized below
+    'Weight(lb)': 'weight_lbs',
+    'Percent Body Fat(%)': 'body_fat_pct',
+    'Skeletal Muscle Mass(lb)': 'muscle_mass_lbs',
+    'BMI(kg/m²)': 'bmi',
+  },
   csv: {
     'date': 'logged_date',
     'logged_date': 'logged_date',
@@ -161,6 +168,11 @@ function parseCSV(text: string, source: Source): MetricRow[] {
       }
     });
 
+    // InBody date format: YYYYMMDDHHmmss → YYYY-MM-DD
+    if (row.logged_date && /^\d{14}$/.test(row.logged_date)) {
+      const d = row.logged_date;
+      row.logged_date = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
+    }
     // Try to normalize date formats (MM/DD/YYYY → YYYY-MM-DD)
     if (row.logged_date && !row.logged_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
       const d = new Date(row.logged_date);
@@ -173,11 +185,30 @@ function parseCSV(text: string, source: Source): MetricRow[] {
   }).filter((r) => r.logged_date);
 }
 
+// Parse InBody CSV preserving all raw columns for the dedicated import endpoint
+function parseInBodyCSV(text: string): Record<string, string>[] {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map((h) => h.trim().replace(/^"|"$/g, ''));
+  return lines.slice(1).flatMap((line) => {
+    const values = line.split(',').map((v) => v.trim().replace(/^"|"$/g, ''));
+    const raw: Record<string, string> = {};
+    headers.forEach((h, i) => { raw[h] = values[i] ?? ''; });
+    // Normalize date (YYYYMMDDHHmmss → YYYY-MM-DD)
+    if (raw['date'] && /^\d{14}$/.test(raw['date'])) {
+      const d = raw['date'];
+      raw['date'] = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
+    }
+    return raw['date'] ? [raw] : [];
+  });
+}
+
 export default function MetricsImportPage() {
   const searchParams = useSearchParams();
   const initialSource = (searchParams.get('source') as Source) || 'manual';
   const [source, setSource] = useState<Source>(initialSource);
   const [rows, setRows] = useState<MetricRow[]>([{ ...EMPTY_ROW, logged_date: new Date().toISOString().split('T')[0] }]);
+  const [rawInBodyRows, setRawInBodyRows] = useState<Record<string, string>[]>([]);
   const [csvText, setCsvText] = useState('');
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ imported: number; skipped: number; errors?: string[] } | null>(null);
@@ -201,9 +232,15 @@ export default function MetricsImportPage() {
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
       setCsvText(text);
-      const parsed = parseCSV(text, source);
-      if (parsed.length > 0) {
-        setRows(parsed);
+      if (source === 'inbody') {
+        const raw = parseInBodyCSV(text);
+        setRawInBodyRows(raw);
+        // Also populate summary rows for preview table
+        const parsed = parseCSV(text, source);
+        if (parsed.length > 0) setRows(parsed);
+      } else {
+        const parsed = parseCSV(text, source);
+        if (parsed.length > 0) setRows(parsed);
       }
     };
     reader.readAsText(file);
@@ -211,6 +248,18 @@ export default function MetricsImportPage() {
 
   const handlePasteCSV = () => {
     if (!csvText.trim()) return;
+    if (source === 'inbody') {
+      const raw = parseInBodyCSV(csvText);
+      if (raw.length > 0) {
+        setRawInBodyRows(raw);
+        const parsed = parseCSV(csvText, source);
+        if (parsed.length > 0) setRows(parsed);
+        setError(null);
+      } else {
+        setError('Could not parse any rows from the CSV. Check the format.');
+      }
+      return;
+    }
     const parsed = parseCSV(csvText, source);
     if (parsed.length > 0) {
       setRows(parsed);
@@ -224,6 +273,34 @@ export default function MetricsImportPage() {
     setImporting(true);
     setError(null);
     setResult(null);
+
+    // For InBody: send all raw columns to dedicated endpoint
+    if (source === 'inbody') {
+      const inBodyImportRows = rawInBodyRows.filter((r) => r['date']);
+      if (inBodyImportRows.length === 0) {
+        setError('No InBody rows parsed. Upload or paste your InBody CSV first.');
+        setImporting(false);
+        return;
+      }
+      try {
+        const res = await fetch('/api/health-metrics/inbody/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rows: inBodyImportRows }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || 'Import failed');
+        } else {
+          setResult(data);
+        }
+      } catch {
+        setError('Network error');
+      } finally {
+        setImporting(false);
+      }
+      return;
+    }
 
     // Clean rows: remove empty ones, convert to import format
     const importRows = rows

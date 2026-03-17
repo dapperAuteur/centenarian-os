@@ -105,12 +105,6 @@ const MODE_ICONS: Record<string, string> = {
   walk: '🚶', run: '🏃', ferry: '⛴️', rideshare: '🚕', other: '🚐',
 };
 
-const _VEHICLE_TYPE_TO_MODE: Record<string, string> = {
-  car: 'car', bike: 'bike', ebike: 'bike',
-  motorcycle: 'car', scooter: 'car', shoes: 'walk',
-  plane: 'plane', train: 'train', bus: 'bus',
-  ferry: 'ferry', rideshare: 'rideshare',
-};
 
 const MODE_COLORS: Record<string, string> = {
   bike: '#22c55e', car: '#ef4444', bus: '#3b82f6', train: '#8b5cf6',

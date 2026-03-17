@@ -63,6 +63,11 @@ interface DayData {
   pain_intensity: number | null;
   green_meal_ratio: number | null;
   resting_hr: number | null;
+  // InBody body composition (from most recent scan on or before this date)
+  body_fat_pct: number | null;
+  muscle_mass_lbs: number | null;
+  phase_angle_deg: number | null;
+  inbody_score: number | null;
 }
 
 interface CorrelationPair {
@@ -93,7 +98,7 @@ export async function GET(request: NextRequest) {
   const db = getDb();
 
   // Fetch all data sources in parallel
-  const [healthRes, logsRes, focusRes, mealsRes] = await Promise.all([
+  const [healthRes, logsRes, focusRes, mealsRes, inbodyRes] = await Promise.all([
     db.from('user_health_metrics')
       .select('logged_date, sleep_hours, steps, resting_hr, activity_min, recovery_score')
       .eq('user_id', user.id)
@@ -118,6 +123,13 @@ export async function GET(request: NextRequest) {
       .eq('user_id', user.id)
       .gte('date', sinceStr)
       .lte('date', todayStr),
+
+    db.from('inbody_scans')
+      .select('logged_date, body_fat_pct, skeletal_muscle_mass_lbs, phase_angle_deg, inbody_score, measured_at')
+      .eq('user_id', user.id)
+      .gte('logged_date', sinceStr)
+      .lte('logged_date', todayStr)
+      .order('measured_at', { ascending: false }),
   ]);
 
   // Build per-day map
@@ -125,7 +137,7 @@ export async function GET(request: NextRequest) {
 
   const getDay = (date: string): DayData => {
     if (!dayMap.has(date)) {
-      dayMap.set(date, { date, sleep_hours: null, steps: null, energy_rating: null, focus_minutes: 0, pain_intensity: null, green_meal_ratio: null, resting_hr: null });
+      dayMap.set(date, { date, sleep_hours: null, steps: null, energy_rating: null, focus_minutes: 0, pain_intensity: null, green_meal_ratio: null, resting_hr: null, body_fat_pct: null, muscle_mass_lbs: null, phase_angle_deg: null, inbody_score: null });
     }
     return dayMap.get(date)!;
   };
@@ -165,6 +177,18 @@ export async function GET(request: NextRequest) {
     d.green_meal_ratio = counts.total > 0 ? Math.round((counts.green / counts.total) * 100) : null;
   }
 
+  // InBody — use latest scan per date (already sorted desc by measured_at)
+  const seenInBodyDates = new Set<string>();
+  for (const s of inbodyRes.data ?? []) {
+    if (seenInBodyDates.has(s.logged_date)) continue;
+    seenInBodyDates.add(s.logged_date);
+    const d = getDay(s.logged_date);
+    d.body_fat_pct = s.body_fat_pct;
+    d.muscle_mass_lbs = s.skeletal_muscle_mass_lbs;
+    d.phase_angle_deg = s.phase_angle_deg;
+    d.inbody_score = s.inbody_score;
+  }
+
   const allDays = [...dayMap.values()];
 
   // Define correlation pairs to check
@@ -175,6 +199,12 @@ export async function GET(request: NextRequest) {
     { a: 'green_meal_ratio', b: 'energy_rating', labelA: 'Green Meal %', labelB: 'Energy Rating' },
     { a: 'sleep_hours', b: 'focus_minutes', labelA: 'Sleep Hours', labelB: 'Focus Minutes' },
     { a: 'resting_hr', b: 'energy_rating', labelA: 'Resting HR', labelB: 'Energy Rating' },
+    // InBody body composition correlations
+    { a: 'sleep_hours', b: 'phase_angle_deg', labelA: 'Sleep Hours', labelB: 'Phase Angle (°)' },
+    { a: 'steps', b: 'body_fat_pct', labelA: 'Daily Steps', labelB: 'Body Fat %' },
+    { a: 'resting_hr', b: 'body_fat_pct', labelA: 'Resting HR', labelB: 'Body Fat %' },
+    { a: 'sleep_hours', b: 'muscle_mass_lbs', labelA: 'Sleep Hours', labelB: 'Muscle Mass (lbs)' },
+    { a: 'inbody_score', b: 'energy_rating', labelA: 'InBody Score', labelB: 'Energy Rating' },
   ];
 
   const pairs: CorrelationPair[] = [];

@@ -23,11 +23,13 @@ export interface ModuleTour {
 // Helpers
 // ────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function getTour(_app: 'main', _slug: string): ModuleTour | undefined {
   // No tours defined yet for main app
   return undefined;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function getAllTours(_app: 'main'): ModuleTour[] {
   // No tours defined yet for main app
   return [];
