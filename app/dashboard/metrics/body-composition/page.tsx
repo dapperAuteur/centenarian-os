@@ -402,9 +402,9 @@ export default function BodyCompositionPage() {
                   <YAxis yAxisId="weight" tick={{ fontSize: 11 }} domain={['auto', 'auto']} />
                   <YAxis yAxisId="fat" orientation="right" tick={{ fontSize: 11 }} domain={['auto', 'auto']} />
                   <Tooltip
-                    formatter={(v: number | string | undefined, name: string) => {
+                    formatter={(v: number | string | undefined, name: string | undefined) => {
                       const n = Number(v);
-                      return name === 'Weight' ? [`${n.toFixed(1)} lbs`, name] : [`${n.toFixed(1)}%`, name];
+                      return name === 'Weight' ? [`${n.toFixed(1)} lbs`, name ?? ''] : [`${n.toFixed(1)}%`, name ?? ''];
                     }}
                   />
                   <Legend />
@@ -486,7 +486,7 @@ export default function BodyCompositionPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
                   <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v: number | string | undefined, name: string) => [`${Number(v).toFixed(1)} L`, name]} />
+                  <Tooltip formatter={(v: number | string | undefined, name: string | undefined) => [`${Number(v).toFixed(1)} L`, name ?? '']} />
                   <Legend />
                   <Area type="monotone" dataKey="icw" name="Intracellular Water" stroke="#0ea5e9" fill="#e0f2fe" strokeWidth={2} connectNulls />
                   <Area type="monotone" dataKey="ecw" name="Extracellular Water" stroke="#6366f1" fill="#eef2ff" strokeWidth={2} connectNulls />
