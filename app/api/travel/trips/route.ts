@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
   const tax_category = params.get('tax_category');
   const trip_category = params.get('trip_category');
   const trip_status = params.get('trip_status');
+  const search = params.get('search');
   const limit = Math.min(parseInt(params.get('limit') || '50'), 500);
   const offset = parseInt(params.get('offset') || '0');
 
@@ -69,6 +70,10 @@ export async function GET(request: NextRequest) {
   if (trip_status) query = query.eq('trip_status', trip_status);
   const jobId = params.get('job_id');
   if (jobId) query = query.eq('job_id', jobId);
+  if (search) {
+    const term = `%${search}%`;
+    query = query.or(`origin.ilike.${term},destination.ilike.${term},notes.ilike.${term},purpose.ilike.${term}`);
+  }
 
   const { data, error, count } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
