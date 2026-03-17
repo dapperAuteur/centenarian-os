@@ -87,11 +87,14 @@ interface TripTemplate {
   destination: string | null;
   distance_miles: number | null;
   duration_min: number | null;
+  cost: number | null;
   purpose: string | null;
   trip_category: string | null;
   tax_category: string | null;
   notes: string | null;
+  is_round_trip: boolean;
   is_multi_stop: boolean;
+  brand_id: string | null;
   use_count: number;
   vehicles: { nickname: string; type: string } | null;
   stops?: TripTemplateStop[];
