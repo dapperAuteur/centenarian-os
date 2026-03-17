@@ -459,6 +459,7 @@ export default function MediaForm({ isOpen, onClose, onSaved, brands, prefill, e
             <label className="block text-xs font-medium text-gray-600 mb-1">Cover Image</label>
             {form.cover_image_url ? (
               <div className="flex items-start gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={form.cover_image_url}
                   alt="Cover preview"

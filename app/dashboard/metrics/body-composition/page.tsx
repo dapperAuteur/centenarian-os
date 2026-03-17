@@ -172,7 +172,7 @@ function SegmentalSection({ latest }: { latest: InBodyScan }) {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="segment" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v: number | string) => [`${Number(v).toFixed(1)} lbs`, 'Lean Mass']} />
+                <Tooltip formatter={(v: number | string | undefined) => [`${Number(v).toFixed(1)} lbs`, 'Lean Mass']} />
                 <Bar dataKey="value" fill="#a21caf" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -186,7 +186,7 @@ function SegmentalSection({ latest }: { latest: InBodyScan }) {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="segment" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v: number | string) => [`${Number(v).toFixed(1)} lbs`, 'Fat Mass']} />
+                <Tooltip formatter={(v: number | string | undefined) => [`${Number(v).toFixed(1)} lbs`, 'Fat Mass']} />
                 <Bar dataKey="value" fill="#f59e0b" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -402,7 +402,7 @@ export default function BodyCompositionPage() {
                   <YAxis yAxisId="weight" tick={{ fontSize: 11 }} domain={['auto', 'auto']} />
                   <YAxis yAxisId="fat" orientation="right" tick={{ fontSize: 11 }} domain={['auto', 'auto']} />
                   <Tooltip
-                    formatter={(v: number | string, name: string) => {
+                    formatter={(v: number | string | undefined, name: string) => {
                       const n = Number(v);
                       return name === 'Weight' ? [`${n.toFixed(1)} lbs`, name] : [`${n.toFixed(1)}%`, name];
                     }}
@@ -424,7 +424,7 @@ export default function BodyCompositionPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
                   <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} />
-                  <Tooltip formatter={(v: number | string) => [`${Number(v).toFixed(1)} lbs`, 'Muscle Mass']} />
+                  <Tooltip formatter={(v: number | string | undefined) => [`${Number(v).toFixed(1)} lbs`, 'Muscle Mass']} />
                   <Line type="monotone" dataKey="muscle" name="Muscle Mass" stroke="#a21caf" strokeWidth={2} dot={false} connectNulls />
                 </LineChart>
               </ResponsiveContainer>
@@ -465,7 +465,7 @@ export default function BodyCompositionPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
                   <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v: number | string) => [`${Number(v).toFixed(0)} cm²`, 'Visceral Fat Area']} />
+                  <Tooltip formatter={(v: number | string | undefined) => [`${Number(v).toFixed(0)} cm²`, 'Visceral Fat Area']} />
                   {/* Risk zone: > 100 cm² is elevated */}
                   <ReferenceLine y={100} stroke="#f59e0b" strokeDasharray="4 4" label={{ value: '100 cm²', fontSize: 10, fill: '#f59e0b' }} />
                   <Area type="monotone" dataKey="visceralArea" name="Visceral Fat Area" stroke="#ef4444" fill="#fef2f2" strokeWidth={2} connectNulls />
@@ -486,7 +486,7 @@ export default function BodyCompositionPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
                   <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v: number | string, name: string) => [`${Number(v).toFixed(1)} L`, name]} />
+                  <Tooltip formatter={(v: number | string | undefined, name: string) => [`${Number(v).toFixed(1)} L`, name]} />
                   <Legend />
                   <Area type="monotone" dataKey="icw" name="Intracellular Water" stroke="#0ea5e9" fill="#e0f2fe" strokeWidth={2} connectNulls />
                   <Area type="monotone" dataKey="ecw" name="Extracellular Water" stroke="#6366f1" fill="#eef2ff" strokeWidth={2} connectNulls />

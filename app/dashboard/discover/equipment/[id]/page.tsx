@@ -121,6 +121,7 @@ export default function PublicEquipmentDetailPage() {
           {/* Image */}
           <div className="w-28 h-28 rounded-xl bg-gray-100 shrink-0 overflow-hidden flex items-center justify-center">
             {item.image_url ? (
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
             ) : (
               <Package className="w-10 h-10 text-gray-300" aria-hidden="true" />
@@ -162,6 +163,7 @@ export default function PublicEquipmentDetailPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {images.map((img) => (
               <div key={img.id} className="rounded-lg overflow-hidden bg-gray-100 aspect-square">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={img.url} alt={img.caption || ''} className="w-full h-full object-cover" />
                 {img.caption && (
                   <p className="text-xs text-gray-500 p-1.5 truncate">{img.caption}</p>

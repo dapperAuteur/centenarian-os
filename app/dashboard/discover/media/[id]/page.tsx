@@ -130,6 +130,7 @@ export default function PublicMediaDetailPage() {
         </Link>
         <div className="flex gap-4 flex-1 min-w-0">
           {item.cover_image_url ? (
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={item.cover_image_url} alt="" className="w-20 h-28 object-cover rounded-lg shrink-0 bg-gray-100" />
           ) : (
             <div className="w-20 h-28 bg-gray-100 rounded-lg flex items-center justify-center text-3xl shrink-0">

@@ -170,6 +170,7 @@ export default function DiscoverPage() {
                 <Link href={detailHref} className="block">
                   <div className="h-40 bg-gray-100 flex items-center justify-center overflow-hidden">
                     {imgUrl ? (
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={imgUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition" />
                     ) : (
                       <span className="text-4xl text-gray-300">{tab === 'media' ? '\u{1F3AC}' : '\u{1F4E6}'}</span>

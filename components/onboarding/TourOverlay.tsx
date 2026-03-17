@@ -112,13 +112,6 @@ export default function TourOverlay({
 
   if (!step) return null;
 
-  // Determine placement offset
-  const _placementClasses: Record<string, string> = {
-    top: 'bottom-full mb-3',
-    bottom: 'top-full mt-3',
-    left: 'right-full mr-3',
-    right: 'left-full ml-3',
-  };
 
   return (
     <>
