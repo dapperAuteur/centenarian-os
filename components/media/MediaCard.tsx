@@ -65,7 +65,7 @@ export default function MediaCard({ item, onClick, onEdit, onDelete }: MediaCard
       >
         <div className="flex gap-3">
           {item.cover_image_url ? (
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={item.cover_image_url}
               alt=""

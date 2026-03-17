@@ -121,7 +121,7 @@ export default function PublicEquipmentDetailPage() {
           {/* Image */}
           <div className="w-28 h-28 rounded-xl bg-gray-100 shrink-0 overflow-hidden flex items-center justify-center">
             {item.image_url ? (
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
             ) : (
               <Package className="w-10 h-10 text-gray-300" aria-hidden="true" />
