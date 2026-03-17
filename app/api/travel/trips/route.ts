@@ -54,30 +54,47 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(parseInt(params.get('limit') || '50'), 500);
   const offset = parseInt(params.get('offset') || '0');
 
-  let query = supabase
-    .from('trips')
-    .select('*, vehicles(id, nickname, type)', { count: 'exact' })
-    .eq('user_id', user.id)
-    .order('date', { ascending: false })
-    .range(offset, offset + limit - 1);
-
-  if (from) query = query.gte('date', from);
-  if (to) query = query.lte('date', to);
-  if (mode) query = query.eq('mode', mode);
-  if (purpose) query = query.eq('purpose', purpose);
-  if (tax_category) query = query.eq('tax_category', tax_category);
-  if (trip_category) query = query.eq('trip_category', trip_category);
-  if (trip_status) query = query.eq('trip_status', trip_status);
   const jobId = params.get('job_id');
-  if (jobId) query = query.eq('job_id', jobId);
-  if (search) {
-    const term = `%${search}%`;
-    query = query.or(`origin.ilike.${term},destination.ilike.${term},notes.ilike.${term},purpose.ilike.${term}`);
+
+  // Build a helper to apply all shared filters to any query
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function applyFilters(q: any) {
+    if (from) q = q.gte('date', from);
+    if (to) q = q.lte('date', to);
+    if (mode) q = q.eq('mode', mode);
+    if (purpose) q = q.eq('purpose', purpose);
+    if (tax_category) q = q.eq('tax_category', tax_category);
+    if (trip_category) q = q.eq('trip_category', trip_category);
+    if (trip_status) q = q.eq('trip_status', trip_status);
+    if (jobId) q = q.eq('job_id', jobId);
+    if (search) {
+      const term = `%${search}%`;
+      q = q.or(`origin.ilike.${term},destination.ilike.${term},notes.ilike.${term},purpose.ilike.${term}`);
+    }
+    return q;
   }
 
-  const { data, error, count } = await query;
+  // Data query: join vehicles for display, paginated, no count (avoids join+count issues)
+  const dataQuery = applyFilters(
+    supabase
+      .from('trips')
+      .select('*, vehicles(id, nickname, type)')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .range(offset, offset + limit - 1)
+  );
+
+  // Count query: HEAD request (no data returned), no join — most reliable way to get total
+  const countQuery = applyFilters(
+    supabase
+      .from('trips')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+  );
+
+  const [{ data, error }, { count }] = await Promise.all([dataQuery, countQuery]);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ trips: data || [], total: count || 0 });
+  return NextResponse.json({ trips: data || [], total: count ?? 0 });
 }
 
 export async function POST(request: NextRequest) {

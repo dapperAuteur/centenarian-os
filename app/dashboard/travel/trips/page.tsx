@@ -1121,7 +1121,7 @@ function TripsPageInner() {
 
 export default function TripsPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<div className="max-w-4xl mx-auto px-4 py-8"><p className="text-sm text-gray-400">Loading trips…</p></div>}>
       <TripsPageInner />
     </Suspense>
   );
