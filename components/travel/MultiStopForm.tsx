@@ -82,11 +82,11 @@ interface TripTemplateStop {
   stop_order: number;
   location_name: string;
   mode: string | null;
+  vehicle_id: string | null;
   distance_miles: number | null;
   duration_min: number | null;
   cost: number | null;
   purpose: string | null;
-  vehicle_id: string | null;
 }
 
 interface TripTemplate {
@@ -98,11 +98,14 @@ interface TripTemplate {
   destination: string | null;
   distance_miles: number | null;
   duration_min: number | null;
+  cost: number | null;
   purpose: string | null;
   trip_category: string | null;
   tax_category: string | null;
   notes: string | null;
+  is_round_trip: boolean;
   is_multi_stop: boolean;
+  brand_id: string | null;
   use_count: number;
   stops?: TripTemplateStop[];
 }
@@ -206,7 +209,10 @@ export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved,
 
   const applyTemplate = (tmpl: TripTemplate) => {
     if (tmpl.name) setName(tmpl.name);
-    if (tmpl.notes) setNotes(tmpl.notes);
+    setNotes(tmpl.notes || '');
+    setIsRoundTrip(tmpl.is_round_trip ?? false);
+    setBrandId(tmpl.brand_id || '');
+
     if (tmpl.is_multi_stop && tmpl.stops?.length) {
       const newStops: Stop[] = tmpl.stops
         .slice()
@@ -215,11 +221,11 @@ export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved,
           ...BLANK_STOP,
           location: s.location_name,
           mode: s.mode || '',
+          vehicle_id: s.vehicle_id || '',
           distance_miles: s.distance_miles != null ? String(s.distance_miles) : '',
           duration_min: s.duration_min != null ? String(s.duration_min) : '',
           cost: s.cost != null ? String(s.cost) : '',
           purpose: s.purpose || '',
-          vehicle_id: s.vehicle_id || '',
           trip_category: tmpl.trip_category || 'travel',
           tax_category: tmpl.tax_category || 'personal',
           date: '',
@@ -235,6 +241,7 @@ export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved,
           vehicle_id: tmpl.vehicle_id || '',
           distance_miles: tmpl.distance_miles != null ? String(tmpl.distance_miles) : '',
           duration_min: tmpl.duration_min != null ? String(tmpl.duration_min) : '',
+          cost: tmpl.cost != null ? String(tmpl.cost) : '',
           purpose: tmpl.purpose || 'commute',
           trip_category: tmpl.trip_category || 'travel',
           tax_category: tmpl.tax_category || 'personal',

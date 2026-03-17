@@ -279,44 +279,63 @@ export async function POST(request: NextRequest) {
   // 4. Optionally save as a template
   let templateId = null;
   if (save_as_template && name?.trim()) {
+    const isMultiLeg = legs.length > 1;
+    const firstLeg = legs[0];
     const { data: tmpl } = await db
       .from('trip_templates')
       .insert({
         user_id: user.id,
         name: name.trim(),
-        mode: legs[0].mode,
-        is_multi_stop: true,
+        mode: firstLeg.mode,
+        vehicle_id: firstLeg.vehicle_id || null,
+        origin: firstLeg.origin || null,
+        destination: !isMultiLeg ? (firstLeg.destination || null) : null,
+        distance_miles: !isMultiLeg ? (firstLeg.distance_miles ? Number(firstLeg.distance_miles) : null) : null,
+        duration_min: !isMultiLeg ? (firstLeg.duration_min ? Number(firstLeg.duration_min) : null) : null,
+        cost: !isMultiLeg ? (firstLeg.cost ? Number(firstLeg.cost) : null) : null,
+        purpose: firstLeg.purpose || null,
+        trip_category: firstLeg.trip_category || null,
+        tax_category: firstLeg.tax_category || null,
+        notes: notes?.trim() || null,
+        is_round_trip: is_round_trip ?? false,
+        is_multi_stop: isMultiLeg,
+        brand_id: brand_id || null,
       })
       .select('id')
       .single();
 
     if (tmpl) {
       templateId = tmpl.id;
-      const stops = legs.map((leg: LegInput, i: number) => ({
-        template_id: tmpl.id,
-        stop_order: i,
-        location_name: i === 0 ? (leg.origin || null) : (leg.destination || null),
-        mode: i === 0 ? null : leg.mode,
-        distance_miles: leg.distance_miles ? Number(leg.distance_miles) : null,
-        duration_min: leg.duration_min ? Number(leg.duration_min) : null,
-        cost: leg.cost ? Number(leg.cost) : null,
-        purpose: leg.purpose || null,
-        notes: leg.notes || null,
-      }));
-      // Add final destination as a stop
-      const lastLeg = legs[legs.length - 1];
-      stops.push({
-        template_id: tmpl.id,
-        stop_order: legs.length,
-        location_name: lastLeg.destination || null,
-        mode: null,
-        distance_miles: null,
-        duration_min: null,
-        cost: null,
-        purpose: null,
-        notes: null,
-      });
-      await db.from('trip_template_stops').insert(stops);
+
+      if (isMultiLeg) {
+        const stops = legs.map((leg: LegInput, i: number) => ({
+          template_id: tmpl.id,
+          stop_order: i,
+          location_name: i === 0 ? (leg.origin || null) : (leg.destination || null),
+          mode: i === 0 ? null : leg.mode,
+          vehicle_id: i === 0 ? null : (leg.vehicle_id || null),
+          distance_miles: i === 0 ? null : (leg.distance_miles ? Number(leg.distance_miles) : null),
+          duration_min: i === 0 ? null : (leg.duration_min ? Number(leg.duration_min) : null),
+          cost: i === 0 ? null : (leg.cost ? Number(leg.cost) : null),
+          purpose: i === 0 ? null : (leg.purpose || null),
+          notes: leg.notes || null,
+        }));
+        // Add final destination as last stop
+        const lastLeg = legs[legs.length - 1];
+        stops.push({
+          template_id: tmpl.id,
+          stop_order: legs.length,
+          location_name: lastLeg.destination || null,
+          mode: null,
+          vehicle_id: null,
+          distance_miles: null,
+          duration_min: null,
+          cost: null,
+          purpose: null,
+          notes: null,
+        });
+        await db.from('trip_template_stops').insert(stops);
+      }
 
       // Link route to template
       await db.from('trip_routes').update({ template_id: tmpl.id }).eq('id', route.id);
