@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Sun, Moon, Zap, Dumbbell, Clock, ChevronDown, ChevronUp, CheckCircle2, Info, Activity, ShieldAlert, ArrowLeft } from 'lucide-react';
+import { Sun, Moon, Zap, Dumbbell, Clock, ChevronDown, ChevronUp, CheckCircle2, Info, Activity, ShieldAlert, ArrowLeft, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import WorkoutLogForm from '@/components/workouts/WorkoutLogForm';
 import WorkoutFeedbackModal from '@/components/workouts/WorkoutFeedbackModal';
+import SuggestWorkoutEditModal from '@/components/workouts/SuggestWorkoutEditModal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 // ---------------------------------------------------------------------------
@@ -365,6 +366,10 @@ export default function NomadOSPage() {
   const [feedbackLogId, setFeedbackLogId] = useState<string | undefined>();
   const [feedbackCategory, setFeedbackCategory] = useState<CategoryKey>('WORKOUT_GYM');
   const [feedbackDuration, setFeedbackDuration] = useState<DurationId>('45');
+  const [feedbackWorkoutName, setFeedbackWorkoutName] = useState<string | undefined>();
+
+  // Suggest edit modal
+  const [suggestOpen, setSuggestOpen] = useState(false);
 
   // Seed + load templates on mount
   const loadTemplates = useCallback(async () => {
@@ -422,6 +427,7 @@ export default function NomadOSPage() {
     setFeedbackLogId(logId);
     setFeedbackCategory(activeCategory);
     setFeedbackDuration(dur);
+    setFeedbackWorkoutName(`Nomad ${ROUTINES[activeCategory].title} ${dur}min`);
     setFeedbackOpen(true);
     loadTemplates();
   };
@@ -459,11 +465,18 @@ export default function NomadOSPage() {
                 : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" aria-hidden="true" />}
             </button>
             {isExpanded && (
-              <div id={panelId} className="p-3.5 bg-white border-t border-gray-100 text-gray-700 text-sm leading-relaxed">
+              <div id={panelId} className="p-3.5 bg-white border-t border-gray-100 text-gray-700 text-sm leading-relaxed space-y-2.5">
                 <div className="flex gap-2">
                   <Info className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" aria-hidden="true" />
                   <p>{GLOSSARY[ex.name] ?? 'Execution details pending.'}</p>
                 </div>
+                <Link
+                  href={`/dashboard/exercises?search=${encodeURIComponent(ex.name)}`}
+                  className="inline-flex items-center gap-1 text-xs text-fuchsia-600 hover:text-fuchsia-700 font-medium"
+                >
+                  <BookOpen className="w-3 h-3" aria-hidden="true" />
+                  View in Exercise Library →
+                </Link>
               </div>
             )}
           </div>
@@ -645,6 +658,16 @@ export default function NomadOSPage() {
                 >
                   Rate workout
                 </button>
+                {currentTemplate && (
+                  <button
+                    type="button"
+                    onClick={() => setSuggestOpen(true)}
+                    className="sm:px-4 py-3 border border-fuchsia-200 rounded-xl text-sm font-medium text-fuchsia-700 hover:bg-fuchsia-50 transition"
+                    aria-label="Suggest an edit to this workout"
+                  >
+                    Suggest Edit
+                  </button>
+                )}
               </div>
               {!currentTemplate && (
                 <p className="text-xs text-gray-400 text-center mt-2">Templates loading — refresh if this persists.</p>
@@ -666,11 +689,22 @@ export default function NomadOSPage() {
       {/* Feedback modal */}
       <WorkoutFeedbackModal
         isOpen={feedbackOpen}
-        onClose={() => setFeedbackOpen(false)}
+        onClose={() => { setFeedbackOpen(false); setFeedbackWorkoutName(undefined); }}
         workoutLogId={feedbackLogId}
+        workoutName={feedbackWorkoutName}
         defaultCategory={feedbackCategory}
         defaultDuration={feedbackDuration}
       />
+
+      {/* Suggest edit modal */}
+      {currentTemplate && (
+        <SuggestWorkoutEditModal
+          isOpen={suggestOpen}
+          onClose={() => setSuggestOpen(false)}
+          templateId={currentTemplate.id}
+          templateName={currentTemplate.name}
+        />
+      )}
     </div>
   );
 }

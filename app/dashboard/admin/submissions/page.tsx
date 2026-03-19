@@ -7,13 +7,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   Inbox, CheckCheck, Trash2, Loader2, Dumbbell, Package,
-  ArrowUpRight, Check, ChevronDown,
+  ArrowUpRight, Check, ChevronDown, MessageSquarePlus, ExternalLink,
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Notification {
   id: string;
-  type: 'new_exercise' | 'new_equipment';
+  type: 'new_exercise' | 'new_equipment' | 'workout_suggestion';
   user_email: string | null;
   entity_name: string;
   entity_id: string;
@@ -24,6 +24,9 @@ interface Notification {
     brand?: string | null;
     model?: string | null;
     condition?: string | null;
+    suggested_name?: string | null;
+    suggested_description?: string | null;
+    suggested_changes?: string | null;
   };
   is_read: boolean;
   promoted: boolean;
@@ -35,7 +38,7 @@ const DIFFICULTY_OPTIONS = ['beginner', 'intermediate', 'advanced'];
 export default function AdminSubmissionsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'new_exercise' | 'new_equipment'>('all');
+  const [filter, setFilter] = useState<'all' | 'new_exercise' | 'new_equipment' | 'workout_suggestion'>('all');
   const [promoting, setPromoting] = useState<Record<string, boolean>>({});
   const [dismissing, setDismissing] = useState<Record<string, boolean>>({});
   const [promoted, setPromoted] = useState<Set<string>>(new Set());
@@ -134,9 +137,10 @@ export default function AdminSubmissionsPage() {
       {/* Type filter */}
       <div className="flex gap-1.5 flex-wrap">
         {([
-          ['all',          'All'],
-          ['new_exercise', 'Exercises'],
-          ['new_equipment','Equipment'],
+          ['all',                'All'],
+          ['new_exercise',       'Exercises'],
+          ['new_equipment',      'Equipment'],
+          ['workout_suggestion', 'Workout Edits'],
         ] as const).map(([val, label]) => (
           <button
             key={val}
@@ -165,9 +169,10 @@ export default function AdminSubmissionsPage() {
       ) : (
         <div className="space-y-3">
           {visible.map((n) => {
-            const isExercise = n.type === 'new_exercise';
-            const isPromoted = promoted.has(n.id) || n.promoted;
-            const isDismissed = dismissed.has(n.id);
+            const isExercise   = n.type === 'new_exercise';
+            const isSuggestion = n.type === 'workout_suggestion';
+            const isPromoted   = promoted.has(n.id) || n.promoted;
+            const isDismissed  = dismissed.has(n.id);
             if (isDismissed) return null;
 
             return (
@@ -176,15 +181,19 @@ export default function AdminSubmissionsPage() {
                 className={`bg-white border rounded-xl p-4 transition ${
                   n.is_read || isPromoted
                     ? 'border-gray-200 opacity-75'
-                    : 'border-indigo-200 shadow-sm'
+                    : isSuggestion ? 'border-fuchsia-200 shadow-sm' : 'border-indigo-200 shadow-sm'
                 }`}
               >
                 <div className="flex items-start gap-3">
                   {/* Icon */}
-                  <div className={`p-2 rounded-lg shrink-0 ${isExercise ? 'bg-fuchsia-50' : 'bg-indigo-50'}`}>
+                  <div className={`p-2 rounded-lg shrink-0 ${
+                    isExercise ? 'bg-fuchsia-50' : isSuggestion ? 'bg-fuchsia-50' : 'bg-indigo-50'
+                  }`}>
                     {isExercise
                       ? <Dumbbell className="w-4 h-4 text-fuchsia-600" />
-                      : <Package className="w-4 h-4 text-indigo-600" />
+                      : isSuggestion
+                        ? <MessageSquarePlus className="w-4 h-4 text-fuchsia-600" />
+                        : <Package className="w-4 h-4 text-indigo-600" />
                     }
                   </div>
 
@@ -192,50 +201,76 @@ export default function AdminSubmissionsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="font-semibold text-gray-900 text-sm">{n.entity_name}</span>
+                      {isSuggestion && (
+                        <span className="text-[10px] px-1.5 py-0.5 bg-fuchsia-50 text-fuchsia-700 rounded font-medium">
+                          Workout Edit Suggestion
+                        </span>
+                      )}
                       {!n.is_read && !isPromoted && (
                         <span className="inline-block w-2 h-2 rounded-full bg-indigo-500 shrink-0" title="Unread" />
                       )}
                       {isPromoted && (
                         <span className="text-[10px] px-1.5 py-0.5 bg-green-100 text-green-700 rounded font-medium">
-                          Promoted
+                          Resolved
                         </span>
                       )}
                     </div>
                     <p className="text-xs text-gray-500 mb-2">
-                      Added by <span className="text-gray-700">{n.user_email || 'unknown'}</span>
+                      {isSuggestion ? 'Suggested' : 'Added'} by{' '}
+                      <span className="text-gray-700">{n.user_email || 'unknown'}</span>
                       {' · '}
                       {new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
 
-                    {/* Meta chips */}
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {n.entity_meta.category && (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">
-                          {n.entity_meta.category}
-                        </span>
-                      )}
-                      {n.entity_meta.equipment_needed && (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded">
-                          {n.entity_meta.equipment_needed}
-                        </span>
-                      )}
-                      {n.entity_meta.brand && (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">
-                          {n.entity_meta.brand}
-                          {n.entity_meta.model ? ` ${n.entity_meta.model}` : ''}
-                        </span>
-                      )}
-                      {n.entity_meta.primary_muscles?.slice(0, 3).map((m) => (
-                        <span key={m} className="text-[10px] px-1.5 py-0.5 bg-fuchsia-50 text-fuchsia-700 rounded">
-                          {m}
-                        </span>
-                      ))}
-                      {n.entity_meta.condition && (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded">
-                          {n.entity_meta.condition}
-                        </span>
-                      )}
-                    </div>
+                    {/* Workout suggestion details */}
+                    {isSuggestion && (
+                      <div className="bg-gray-50 rounded-lg p-3 mb-3 space-y-2 text-xs">
+                        {n.entity_meta.suggested_name && (
+                          <p><span className="font-medium text-gray-600">New name:</span> <span className="text-gray-900">{n.entity_meta.suggested_name}</span></p>
+                        )}
+                        {n.entity_meta.suggested_description && (
+                          <p><span className="font-medium text-gray-600">New description:</span> <span className="text-gray-900">{n.entity_meta.suggested_description}</span></p>
+                        )}
+                        {n.entity_meta.suggested_changes && (
+                          <div>
+                            <p className="font-medium text-gray-600 mb-0.5">Suggested changes:</p>
+                            <p className="text-gray-800 whitespace-pre-wrap">{n.entity_meta.suggested_changes}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Meta chips (exercise / equipment only) */}
+                    {!isSuggestion && (
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {n.entity_meta.category && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">
+                            {n.entity_meta.category}
+                          </span>
+                        )}
+                        {n.entity_meta.equipment_needed && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded">
+                            {n.entity_meta.equipment_needed}
+                          </span>
+                        )}
+                        {n.entity_meta.brand && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">
+                            {n.entity_meta.brand}
+                            {n.entity_meta.model ? ` ${n.entity_meta.model}` : ''}
+                          </span>
+                        )}
+                        {n.entity_meta.primary_muscles?.slice(0, 3).map((m) => (
+                          <span key={m} className="text-[10px] px-1.5 py-0.5 bg-fuchsia-50 text-fuchsia-700 rounded">
+                            {m}
+                          </span>
+                        ))}
+                        {n.entity_meta.condition && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded">
+                            {n.entity_meta.condition}
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     {/* Actions */}
                     {!isPromoted && (
@@ -256,16 +291,28 @@ export default function AdminSubmissionsPage() {
                           </div>
                         )}
 
-                        <button
-                          onClick={() => handlePromote(n)}
-                          disabled={!!promoting[n.id]}
-                          className="px-3 py-1.5 bg-fuchsia-600 text-white rounded-lg text-xs font-semibold hover:bg-fuchsia-700 disabled:opacity-50 flex items-center gap-1.5"
-                        >
-                          {promoting[n.id]
-                            ? <><Loader2 className="w-3 h-3 animate-spin" /> Promoting...</>
-                            : <><ArrowUpRight className="w-3 h-3" /> {isExercise ? 'Add to System Library' : 'Add to Equipment Catalog'}</>
-                          }
-                        </button>
+                        {/* Workout suggestion: link to the template to edit manually */}
+                        {isSuggestion && (
+                          <a
+                            href={`/dashboard/workouts`}
+                            className="px-3 py-1.5 bg-sky-600 text-white rounded-lg text-xs font-semibold hover:bg-sky-700 flex items-center gap-1.5"
+                          >
+                            <ExternalLink className="w-3 h-3" /> Apply in Workouts
+                          </a>
+                        )}
+
+                        {!isSuggestion && (
+                          <button
+                            onClick={() => handlePromote(n)}
+                            disabled={!!promoting[n.id]}
+                            className="px-3 py-1.5 bg-fuchsia-600 text-white rounded-lg text-xs font-semibold hover:bg-fuchsia-700 disabled:opacity-50 flex items-center gap-1.5"
+                          >
+                            {promoting[n.id]
+                              ? <><Loader2 className="w-3 h-3 animate-spin" /> Promoting...</>
+                              : <><ArrowUpRight className="w-3 h-3" /> {isExercise ? 'Add to System Library' : 'Add to Equipment Catalog'}</>
+                            }
+                          </button>
+                        )}
 
                         <button
                           onClick={() => handleDismiss(n.id)}
@@ -276,7 +323,7 @@ export default function AdminSubmissionsPage() {
                             ? <Loader2 className="w-3 h-3 animate-spin" />
                             : <Trash2 className="w-3 h-3" />
                           }
-                          Dismiss
+                          {isSuggestion ? 'Decline' : 'Dismiss'}
                         </button>
                       </div>
                     )}
@@ -284,7 +331,7 @@ export default function AdminSubmissionsPage() {
                     {isPromoted && (
                       <div className="flex items-center gap-1.5 text-xs text-green-700">
                         <Check className="w-3.5 h-3.5" />
-                        {isExercise ? 'Added to System Library' : 'Added to Equipment Catalog'}
+                        {isSuggestion ? 'Marked as resolved' : isExercise ? 'Added to System Library' : 'Added to Equipment Catalog'}
                       </div>
                     )}
                   </div>

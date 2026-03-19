@@ -11,6 +11,7 @@ import VideoEmbed from '@/components/ui/VideoEmbed';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
 import WorkoutLogForm from '@/components/workouts/WorkoutLogForm';
+import MuscleDiagram from '@/components/ui/MuscleDiagram';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyExercise = any;
@@ -217,6 +218,21 @@ export default function WorkoutDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Muscle Diagram */}
+      {(() => {
+        const allMuscles = Array.from(new Set(
+          workout.workout_log_exercises
+            .flatMap((ex: AnyExercise) => ex.primary_muscles ?? [])
+            .filter(Boolean),
+        ));
+        return allMuscles.length > 0 ? (
+          <div className="bg-white border border-gray-200 rounded-2xl p-6">
+            <h2 className="text-sm font-semibold text-gray-900 mb-4">Muscles Worked This Session</h2>
+            <MuscleDiagram primaryMuscles={allMuscles} size="md" />
+          </div>
+        ) : null;
+      })()}
 
       {/* Exercises Table */}
       {workout.workout_log_exercises.length > 0 && (
