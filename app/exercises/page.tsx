@@ -118,10 +118,11 @@ export default async function ExercisesPage({
   }));
 
   const userExercises: UserExercise[] = (rawUser ?? []).map((ex) => {
-    const cat = (ex as { exercise_categories?: { name: string } | null }).exercise_categories;
+    const raw = ex as unknown as { exercise_categories?: { name: string }[] | null };
+    const cat = Array.isArray(raw.exercise_categories) ? raw.exercise_categories[0] : raw.exercise_categories;
     return {
-      id: (ex as { id: string }).id,
-      name: (ex as { name: string }).name,
+      id: (ex as unknown as { id: string }).id,
+      name: (ex as unknown as { name: string }).name,
       category: cat?.name ?? null,
       difficulty: (ex as { difficulty: string | null }).difficulty,
       primary_muscles: (ex as { primary_muscles: string[] | null }).primary_muscles,
@@ -149,7 +150,7 @@ export default async function ExercisesPage({
         <article className="bg-white rounded-xl border border-gray-200 hover:border-sky-300 hover:shadow-sm transition h-full">
           <Link
             href={`/exercises/${ex.id}`}
-            className="flex flex-col gap-3 p-4 h-full min-h-[88px]"
+            className="flex flex-col gap-3 p-4 h-full min-h-22"
             aria-label={`View ${ex.name}`}
           >
             <div className="flex items-start justify-between gap-2">
