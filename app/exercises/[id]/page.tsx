@@ -46,17 +46,18 @@ async function getExerciseDetail(id: string): Promise<ExerciseDetail | null> {
     .maybeSingle();
 
   if (userEx) {
-    const cat = (userEx as { exercise_categories?: { name: string } | null }).exercise_categories;
+    const raw = userEx as unknown as { exercise_categories?: { name: string }[] | null };
+    const cat = Array.isArray(raw.exercise_categories) ? raw.exercise_categories[0] : raw.exercise_categories;
     return {
-      id: (userEx as { id: string }).id,
-      name: (userEx as { name: string }).name,
+      id: (userEx as unknown as { id: string }).id,
+      name: (userEx as unknown as { name: string }).name,
       category: cat?.name ?? null,
-      difficulty: (userEx as { difficulty: string | null }).difficulty,
-      instructions: (userEx as { instructions: string | null }).instructions,
-      form_cues: (userEx as { form_cues: string | null }).form_cues,
-      primary_muscles: (userEx as { primary_muscles: string[] | null }).primary_muscles,
-      video_url: (userEx as { video_url: string | null }).video_url,
-      media_url: (userEx as { media_url: string | null }).media_url,
+      difficulty: (userEx as unknown as { difficulty: string | null }).difficulty,
+      instructions: (userEx as unknown as { instructions: string | null }).instructions,
+      form_cues: (userEx as unknown as { form_cues: string | null }).form_cues,
+      primary_muscles: (userEx as unknown as { primary_muscles: string[] | null }).primary_muscles,
+      video_url: (userEx as unknown as { video_url: string | null }).video_url,
+      media_url: (userEx as unknown as { media_url: string | null }).media_url,
     };
   }
 
