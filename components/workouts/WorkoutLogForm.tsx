@@ -47,6 +47,7 @@ interface LogData {
   id: string;
   name: string;
   date: string;
+  started_at?: string | null;
   duration_min?: number | null;
   notes?: string | null;
   template_id?: string | null;
@@ -73,6 +74,7 @@ interface Props {
 
 export default function WorkoutLogForm({ isOpen, onClose, onSaved, template, existingLog, title, onWorkoutLogged }: Props) {
   const [form, setForm] = useState({ name: '', date: new Date().toISOString().split('T')[0], duration_min: '', notes: '' });
+  const [startedAt, setStartedAt] = useState('');
   const [purpose, setPurpose] = useState<string[]>([]);
   const [overallFeeling, setOverallFeeling] = useState<number | null>(null);
   const [warmupNotes, setWarmupNotes] = useState('');
@@ -94,6 +96,11 @@ export default function WorkoutLogForm({ isOpen, onClose, onSaved, template, exi
         duration_min: existingLog.duration_min != null ? String(existingLog.duration_min) : '',
         notes: existingLog.notes ?? '',
       });
+      // Extract HH:MM from started_at timestamp if present
+      const existingTime = existingLog.started_at
+        ? new Date(existingLog.started_at).toTimeString().slice(0, 5)
+        : '';
+      setStartedAt(existingTime);
       setPurpose(existingLog.purpose ?? []);
       setOverallFeeling(existingLog.overall_feeling ?? null);
       setWarmupNotes(existingLog.warmup_notes ?? '');
@@ -107,6 +114,7 @@ export default function WorkoutLogForm({ isOpen, onClose, onSaved, template, exi
         duration_min: template.estimated_duration_min ? String(template.estimated_duration_min) : '',
         notes: '',
       });
+      setStartedAt('');
       setPurpose(template.purpose ?? []);
       setOverallFeeling(null);
       setWarmupNotes('');
@@ -143,6 +151,7 @@ export default function WorkoutLogForm({ isOpen, onClose, onSaved, template, exi
     } else {
       // Quick log
       setForm({ name: '', date: new Date().toISOString().split('T')[0], duration_min: '', notes: '' });
+      setStartedAt('');
       setPurpose([]);
       setOverallFeeling(null);
       setWarmupNotes('');
@@ -166,10 +175,14 @@ export default function WorkoutLogForm({ isOpen, onClose, onSaved, template, exi
     e.preventDefault();
     setSaving(true);
     try {
+      // Combine date + time into ISO timestamp for started_at
+      const started_at = startedAt ? `${form.date}T${startedAt}:00` : null;
+
       const payload = {
         template_id: template?.id ?? existingLog?.template_id ?? null,
         name: form.name,
         date: form.date,
+        started_at,
         duration_min: form.duration_min ? Number(form.duration_min) : null,
         notes: form.notes || null,
         purpose,
@@ -221,12 +234,18 @@ export default function WorkoutLogForm({ isOpen, onClose, onSaved, template, exi
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label htmlFor="wl-date" className="block text-xs font-medium text-gray-600 mb-1">Date</label>
               <input id="wl-date" type="date" value={form.date}
                 onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required aria-required="true" />
+            </div>
+            <div>
+              <label htmlFor="wl-start" className="block text-xs font-medium text-gray-600 mb-1">Start time</label>
+              <input id="wl-start" type="time" value={startedAt}
+                onChange={(e) => setStartedAt(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
             </div>
             <div>
               <label htmlFor="wl-duration" className="block text-xs font-medium text-gray-600 mb-1">Duration (min)</label>

@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Plus, Play, Trash2, Edit3, Clock, Dumbbell, Copy,
-  ChevronDown, ChevronUp, Upload, Download, Link2, Activity, MessageSquarePlus, ExternalLink,
+  ChevronDown, ChevronUp, Upload, Download, Link2, Activity, MessageSquarePlus, ExternalLink, Pencil,
 } from 'lucide-react';
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
 import WorkoutTemplateForm from '@/components/workouts/WorkoutTemplateForm';
@@ -89,11 +89,14 @@ interface WorkoutLog {
   id: string;
   name: string;
   date: string;
+  started_at?: string | null;
   duration_min: number | null;
   notes: string | null;
   template_id: string | null;
   purpose?: string[];
   overall_feeling?: number | null;
+  warmup_notes?: string | null;
+  cooldown_notes?: string | null;
   workout_log_exercises: LogExercise[];
 }
 
@@ -116,6 +119,7 @@ export default function WorkoutsPage() {
   const [linkingLogId, setLinkingLogId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [suggestTemplate, setSuggestTemplate] = useState<Template | null>(null);
+  const [editingLog, setEditingLog] = useState<WorkoutLog | null>(null);
 
   // Post-workout feedback state
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -169,6 +173,14 @@ export default function WorkoutsPage() {
       body: JSON.stringify({ visibility: next }),
     });
     load();
+  };
+
+  const handleEditLog = async (logId: string) => {
+    const res = await offlineFetch(`/api/workouts/logs/${logId}`);
+    if (res.ok) {
+      const data = await res.json();
+      setEditingLog(data);
+    }
   };
 
   const handleDuplicateLog = async (logId: string) => {
@@ -446,6 +458,9 @@ export default function WorkoutsPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                  <button onClick={() => handleEditLog(log.id)} className="p-1 text-gray-400 hover:text-sky-600" aria-label={`Edit ${log.name}`}>
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
                   <button onClick={() => handleDuplicateLog(log.id)} className="p-1 text-gray-400 hover:text-indigo-600" aria-label={`Duplicate ${log.name}`}>
                     <Copy className="w-3.5 h-3.5" />
                   </button>
@@ -526,6 +541,14 @@ export default function WorkoutsPage() {
         onClose={() => { setFeedbackOpen(false); setFeedbackLogId(undefined); setFeedbackWorkoutName(undefined); }}
         workoutLogId={feedbackLogId}
         workoutName={feedbackWorkoutName}
+      />
+
+      {/* Edit existing log modal */}
+      <WorkoutLogForm
+        isOpen={!!editingLog}
+        onClose={() => setEditingLog(null)}
+        onSaved={() => { setEditingLog(null); load(); }}
+        existingLog={editingLog}
       />
 
       {suggestTemplate && (
