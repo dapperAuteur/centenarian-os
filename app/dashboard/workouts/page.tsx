@@ -179,7 +179,7 @@ export default function WorkoutsPage() {
     const res = await offlineFetch(`/api/workouts/logs/${logId}`);
     if (res.ok) {
       const data = await res.json();
-      setEditingLog(data);
+      setEditingLog(data.workout ?? data);
     }
   };
 
