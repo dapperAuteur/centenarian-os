@@ -543,13 +543,16 @@ export default function WorkoutsPage() {
         workoutName={feedbackWorkoutName}
       />
 
-      {/* Edit existing log modal */}
-      <WorkoutLogForm
-        isOpen={!!editingLog}
-        onClose={() => setEditingLog(null)}
-        onSaved={() => { setEditingLog(null); load(); }}
-        existingLog={editingLog}
-      />
+      {/* Edit existing log modal — conditionally mounted so form state initialises from existingLog */}
+      {editingLog && (
+        <WorkoutLogForm
+          key={editingLog.id}
+          isOpen
+          onClose={() => setEditingLog(null)}
+          onSaved={() => { setEditingLog(null); load(); }}
+          existingLog={editingLog}
+        />
+      )}
 
       {suggestTemplate && (
         <SuggestWorkoutEditModal
