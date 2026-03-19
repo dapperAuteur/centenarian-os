@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ListChecks, Plus, Download, Upload, Search, Loader2, Copy, Trash2, Pencil, BookOpen, Check, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import ExerciseFormModal from '@/components/exercises/ExerciseFormModal';
@@ -53,13 +54,17 @@ const DIFFICULTY_COLORS: Record<string, string> = {
 const SYS_CATEGORIES = ['Push', 'Pull', 'Legs', 'Core', 'Cardio', 'Flexibility', 'Full Body'];
 
 export default function ExerciseLibraryPage() {
-  const [tab, setTab] = useState<'mine' | 'system'>('mine');
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get('search') ?? '';
+  const initialTab = (searchParams.get('tab') === 'system' ? 'system' : 'mine') as 'mine' | 'system';
+
+  const [tab, setTab] = useState<'mine' | 'system'>(initialTab);
 
   // My Library state
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(initialSearch);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [showForm, setShowForm] = useState(false);
   const [editExercise, setEditExercise] = useState<Exercise | null>(null);
@@ -72,7 +77,7 @@ export default function ExerciseLibraryPage() {
   // System Library state
   const [sysExercises, setSysExercises] = useState<SystemExercise[]>([]);
   const [sysLoading, setSysLoading] = useState(false);
-  const [sysSearch, setSysSearch] = useState('');
+  const [sysSearch, setSysSearch] = useState(initialTab === 'system' ? initialSearch : '');
   const [sysEquipment, setSysEquipment] = useState<string>('all');
   const [sysCategory, setSysCategory] = useState<string>('all');
   const [sysCopying, setSysCopying] = useState<Set<string>>(new Set());

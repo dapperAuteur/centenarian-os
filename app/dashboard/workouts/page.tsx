@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Plus, Play, Trash2, Edit3, Clock, Dumbbell, Copy,
-  ChevronDown, ChevronUp, Upload, Download, Link2, Activity, MessageSquarePlus,
+  ChevronDown, ChevronUp, Upload, Download, Link2, Activity, MessageSquarePlus, ExternalLink,
 } from 'lucide-react';
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
 import WorkoutTemplateForm from '@/components/workouts/WorkoutTemplateForm';
@@ -338,20 +338,63 @@ export default function WorkoutsPage() {
                       </div>
                     )}
                     <div className="space-y-1.5">
-                      {t.workout_template_exercises.map((ex, i) => (
-                        <div key={i} className="flex items-center justify-between text-sm bg-white rounded-lg px-3 py-2">
-                          <span className="font-medium text-gray-800">{ex.name}</span>
-                          <span className="text-gray-500 text-xs">
-                            {[
-                              ex.sets != null ? `${ex.sets} sets` : null,
-                              ex.reps != null ? `${ex.reps} reps` : null,
-                              ex.weight_lbs != null ? `${ex.weight_lbs} lbs` : null,
-                              ex.duration_sec != null ? `${ex.duration_sec}s` : null,
-                              ex.rpe != null ? `RPE ${ex.rpe}` : null,
-                            ].filter(Boolean).join(' · ') || 'No details'}
-                          </span>
-                        </div>
-                      ))}
+                      {t.workout_template_exercises.map((ex, i) => {
+                        const detail = [
+                          ex.sets != null ? `${ex.sets} sets` : null,
+                          ex.reps != null ? `${ex.reps} reps` : null,
+                          ex.weight_lbs != null ? `${ex.weight_lbs} lbs` : null,
+                          ex.duration_sec != null ? `${ex.duration_sec}s` : null,
+                          ex.rpe != null ? `RPE ${ex.rpe}` : null,
+                          ex.tempo ? `Tempo ${ex.tempo}` : null,
+                        ].filter(Boolean).join(' · ');
+                        const flags = [
+                          ex.is_circuit && 'Circuit',
+                          ex.is_superset && 'Superset',
+                          ex.to_failure && 'To Failure',
+                          ex.is_unilateral && 'Unilateral',
+                          ex.is_isometric && 'Isometric',
+                        ].filter(Boolean) as string[];
+                        const phase = ex.phase && ex.phase !== 'working' ? ex.phase : null;
+                        return (
+                          <div key={i} className="bg-white rounded-lg border border-gray-100 overflow-hidden">
+                            <div className="flex items-center justify-between px-3 py-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                {phase && (
+                                  <span className="text-[10px] font-medium text-fuchsia-600 bg-fuchsia-50 px-1.5 py-0.5 rounded shrink-0 capitalize">
+                                    {phase}
+                                  </span>
+                                )}
+                                <span className="text-sm font-medium text-gray-800 truncate">{ex.name}</span>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0 ml-2">
+                                <span className="text-gray-500 text-xs">{detail || '—'}</span>
+                                {ex.exercise_id && (
+                                  <Link
+                                    href={`/dashboard/exercises/${ex.exercise_id}`}
+                                    className="text-sky-500 hover:text-sky-700 transition"
+                                    aria-label={`View ${ex.name} exercise details`}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                                  </Link>
+                                )}
+                              </div>
+                            </div>
+                            {(ex.notes || flags.length > 0) && (
+                              <div className="px-3 pb-2 flex flex-wrap items-center gap-1.5">
+                                {flags.map((f) => (
+                                  <span key={f} className="text-[10px] font-medium bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded">
+                                    {f}
+                                  </span>
+                                ))}
+                                {ex.notes && (
+                                  <span className="text-[11px] text-gray-400 italic">{ex.notes}</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                     <div className="flex flex-wrap gap-2 mt-3">
                       {t.visibility === 'public' ? (
