@@ -8,6 +8,7 @@ import {
   Globe, Lock, Eye,
 } from 'lucide-react';
 import VideoEmbed from '@/components/ui/VideoEmbed';
+import MuscleDiagram from '@/components/ui/MuscleDiagram';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import ExerciseFormModal from '@/components/exercises/ExerciseFormModal';
 import ActivityLinker from '@/components/ui/ActivityLinker';
@@ -351,6 +352,14 @@ export default function ExerciseDetailPage() {
               <audio src={exercise.audio_url} controls className="flex-1" />
             </div>
           )}
+        </div>
+      )}
+
+      {/* Muscle Diagram */}
+      {exercise.primary_muscles && exercise.primary_muscles.length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
+          <h2 className="text-sm font-semibold text-gray-700 mb-4">Muscles Worked</h2>
+          <MuscleDiagram primaryMuscles={exercise.primary_muscles} size="md" />
         </div>
       )}
 

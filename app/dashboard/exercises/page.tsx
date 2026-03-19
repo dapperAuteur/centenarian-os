@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { ListChecks, Plus, Download, Upload, Search, Loader2, Copy, Trash2, Pencil, BookOpen, Check } from 'lucide-react';
+import { ListChecks, Plus, Download, Upload, Search, Loader2, Copy, Trash2, Pencil, BookOpen, Check, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import ExerciseFormModal from '@/components/exercises/ExerciseFormModal';
 import Link from 'next/link';
@@ -78,6 +78,7 @@ export default function ExerciseLibraryPage() {
   const [sysCopying, setSysCopying] = useState<Set<string>>(new Set());
   const [sysCopied, setSysCopied] = useState<Set<string>>(new Set());
   const [sysLoaded, setSysLoaded] = useState(false);
+  const [expandedSysId, setExpandedSysId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -184,8 +185,17 @@ export default function ExerciseLibraryPage() {
     try {
       const res = await fetch(`/api/exercises/system/${sysEx.id}`, { method: 'POST' });
       if (res.ok) {
+        const data = await res.json();
         setSysCopied((prev) => new Set(prev).add(sysEx.id));
-        load(); // Refresh personal library count
+        await load();
+        if (!data.already_exists && data.item) {
+          // Switch to My Library tab and open edit modal for the new copy
+          setTab('mine');
+          setEditExercise(data.item);
+          setShowForm(true);
+        } else if (data.already_exists) {
+          setTab('mine');
+        }
       }
     } finally {
       setSysCopying((prev) => { const next = new Set(prev); next.delete(sysEx.id); return next; });
@@ -488,58 +498,90 @@ export default function ExerciseLibraryPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {sysFiltered.map((ex) => {
-                const added   = sysCopied.has(ex.id);
-                const copying = sysCopying.has(ex.id);
+                const added    = sysCopied.has(ex.id);
+                const copying  = sysCopying.has(ex.id);
+                const isExpanded = expandedSysId === ex.id;
                 return (
-                  <div key={ex.id} className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-3">
-                    <div>
+                  <div key={ex.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col">
+                    {/* Card header — click to expand */}
+                    <button
+                      type="button"
+                      aria-expanded={isExpanded}
+                      onClick={() => setExpandedSysId(isExpanded ? null : ex.id)}
+                      className="w-full text-left p-4 hover:bg-gray-50 transition-colors"
+                    >
                       <div className="flex items-start justify-between mb-1.5 gap-2">
                         <h3 className="font-semibold text-gray-900 text-sm">{ex.name}</h3>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 ${DIFFICULTY_COLORS[ex.difficulty] || 'bg-gray-100 text-gray-600'}`}>
-                          {ex.difficulty}
-                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${DIFFICULTY_COLORS[ex.difficulty] || 'bg-gray-100 text-gray-600'}`}>
+                            {ex.difficulty}
+                          </span>
+                          {isExpanded
+                            ? <ChevronUp className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />
+                            : <ChevronDown className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />}
+                        </div>
                       </div>
                       <div className="flex flex-wrap gap-1 mb-2">
-                        <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">
-                          {ex.category}
-                        </span>
+                        <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">{ex.category}</span>
                         <span className="text-[10px] px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded">
                           {EQUIPMENT_LABELS[ex.equipment_needed] || ex.equipment_needed}
                         </span>
                       </div>
                       {ex.primary_muscles && ex.primary_muscles.length > 0 && (
                         <div className="flex flex-wrap gap-1 mb-2">
-                          {ex.primary_muscles.slice(0, 3).map((m) => (
-                            <span key={m} className="text-[10px] px-1.5 py-0.5 bg-fuchsia-50 text-fuchsia-700 rounded">
-                              {m}
-                            </span>
+                          {(isExpanded ? ex.primary_muscles : ex.primary_muscles.slice(0, 3)).map((m) => (
+                            <span key={m} className="text-[10px] px-1.5 py-0.5 bg-fuchsia-50 text-fuchsia-700 rounded">{m}</span>
                           ))}
-                          {ex.primary_muscles.length > 3 && (
-                            <span className="text-[10px] text-gray-400">+{ex.primary_muscles.length - 3}</span>
+                          {!isExpanded && ex.primary_muscles.length > 3 && (
+                            <span className="text-[10px] text-gray-400">+{ex.primary_muscles.length - 3} more</span>
                           )}
                         </div>
                       )}
-                      {ex.instructions && (
+                      {ex.instructions && !isExpanded && (
                         <p className="text-xs text-gray-500 line-clamp-2">{ex.instructions}</p>
                       )}
-                    </div>
-                    <button
-                      onClick={() => handleAddToLibrary(ex)}
-                      disabled={added || copying}
-                      className={`mt-auto w-full py-2 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1.5 ${
-                        added
-                          ? 'bg-green-50 text-green-700 border border-green-200 cursor-default'
-                          : 'bg-fuchsia-600 text-white hover:bg-fuchsia-700 disabled:opacity-50'
-                      }`}
-                    >
-                      {copying ? (
-                        <><Loader2 className="w-3 h-3 animate-spin" /> Adding...</>
-                      ) : added ? (
-                        <><Check className="w-3 h-3" /> Added to My Library</>
-                      ) : (
-                        <>+ Add to My Library</>
-                      )}
                     </button>
+
+                    {/* Expanded detail panel */}
+                    {isExpanded && (
+                      <div className="border-t border-gray-100 bg-gray-50 px-4 pb-3 space-y-3">
+                        {ex.instructions && (
+                          <div className="pt-3">
+                            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Instructions</p>
+                            <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{ex.instructions}</p>
+                          </div>
+                        )}
+                        {ex.form_cues && (
+                          <div className="bg-amber-50 border border-amber-100 rounded-lg p-2.5">
+                            <p className="text-[10px] font-semibold text-amber-700 uppercase tracking-wide mb-1 flex items-center gap-1">
+                              <Info className="w-3 h-3" aria-hidden="true" /> Things to Watch For
+                            </p>
+                            <p className="text-xs text-amber-900 leading-relaxed">{ex.form_cues}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Add to Library button */}
+                    <div className="p-4 pt-0 mt-auto">
+                      <button
+                        onClick={() => handleAddToLibrary(ex)}
+                        disabled={added || copying}
+                        className={`w-full py-2 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1.5 ${
+                          added
+                            ? 'bg-green-50 text-green-700 border border-green-200 cursor-default'
+                            : 'bg-fuchsia-600 text-white hover:bg-fuchsia-700 disabled:opacity-50'
+                        }`}
+                      >
+                        {copying ? (
+                          <><Loader2 className="w-3 h-3 animate-spin" /> Adding...</>
+                        ) : added ? (
+                          <><Check className="w-3 h-3" /> Added — Edit in My Library</>
+                        ) : (
+                          <>+ Add to My Library &amp; Edit</>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 );
               })}

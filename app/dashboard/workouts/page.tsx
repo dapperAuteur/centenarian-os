@@ -8,11 +8,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Plus, Play, Trash2, Edit3, Clock, Dumbbell, Copy,
-  ChevronDown, ChevronUp, Upload, Download, Link2, Activity,
+  ChevronDown, ChevronUp, Upload, Download, Link2, Activity, MessageSquarePlus,
 } from 'lucide-react';
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
 import WorkoutTemplateForm from '@/components/workouts/WorkoutTemplateForm';
 import WorkoutLogForm from '@/components/workouts/WorkoutLogForm';
+import SuggestWorkoutEditModal from '@/components/workouts/SuggestWorkoutEditModal';
 import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import WorkoutFeedbackModal from '@/components/workouts/WorkoutFeedbackModal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -113,10 +114,12 @@ export default function WorkoutsPage() {
 
   const [linkingLogId, setLinkingLogId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [suggestTemplate, setSuggestTemplate] = useState<Template | null>(null);
 
   // Post-workout feedback state
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackLogId, setFeedbackLogId] = useState<string | undefined>();
+  const [feedbackWorkoutName, setFeedbackWorkoutName] = useState<string | undefined>();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -323,7 +326,7 @@ export default function WorkoutsPage() {
                         </div>
                       ))}
                     </div>
-                    <div className="flex gap-2 mt-3">
+                    <div className="flex flex-wrap gap-2 mt-3">
                       <button onClick={() => { setEditingTemplate(t); setShowTemplateForm(true); }}
                         className="text-xs text-sky-600 hover:text-sky-700 flex items-center gap-1" aria-label={`Edit ${t.name}`}>
                         <Edit3 className="w-3 h-3" /> Edit
@@ -331,6 +334,10 @@ export default function WorkoutsPage() {
                       <button onClick={() => handleDuplicateTemplate(t)}
                         className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center gap-1" aria-label={`Duplicate ${t.name}`}>
                         <Copy className="w-3 h-3" /> Duplicate
+                      </button>
+                      <button onClick={() => setSuggestTemplate(t)}
+                        className="text-xs text-fuchsia-600 hover:text-fuchsia-700 flex items-center gap-1" aria-label={`Suggest edit for ${t.name}`}>
+                        <MessageSquarePlus className="w-3 h-3" /> Suggest Edit
                       </button>
                       <button onClick={() => handleDelete(t.id)}
                         className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1" aria-label={`Delete ${t.name}`}>
@@ -420,7 +427,7 @@ export default function WorkoutsPage() {
         isOpen={!!logTemplate}
         onClose={() => setLogTemplate(null)}
         onSaved={() => { setTab('history'); load(); }}
-        onWorkoutLogged={(logId) => { setFeedbackLogId(logId); setFeedbackOpen(true); }}
+        onWorkoutLogged={(logId) => { setFeedbackLogId(logId); setFeedbackWorkoutName(logTemplate?.name); setFeedbackOpen(true); }}
         template={logTemplate}
       />
 
@@ -429,7 +436,7 @@ export default function WorkoutsPage() {
         isOpen={showQuickLog}
         onClose={() => setShowQuickLog(false)}
         onSaved={() => { setTab('history'); load(); }}
-        onWorkoutLogged={(logId) => { setFeedbackLogId(logId); setFeedbackOpen(true); }}
+        onWorkoutLogged={(logId) => { setFeedbackLogId(logId); setFeedbackWorkoutName(undefined); setFeedbackOpen(true); }}
         title="Log Workout"
       />
 
@@ -443,9 +450,19 @@ export default function WorkoutsPage() {
 
       <WorkoutFeedbackModal
         isOpen={feedbackOpen}
-        onClose={() => { setFeedbackOpen(false); setFeedbackLogId(undefined); }}
+        onClose={() => { setFeedbackOpen(false); setFeedbackLogId(undefined); setFeedbackWorkoutName(undefined); }}
         workoutLogId={feedbackLogId}
+        workoutName={feedbackWorkoutName}
       />
+
+      {suggestTemplate && (
+        <SuggestWorkoutEditModal
+          isOpen={!!suggestTemplate}
+          onClose={() => setSuggestTemplate(null)}
+          templateId={suggestTemplate.id}
+          templateName={suggestTemplate.name}
+        />
+      )}
     </div>
   );
 }

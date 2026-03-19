@@ -24,6 +24,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   workoutLogId?: string;
+  workoutName?: string;
   defaultCategory?: ActivityCategory;
   defaultDuration?: string;
   protocolVersion?: string;
@@ -33,6 +34,7 @@ export default function WorkoutFeedbackModal({
   isOpen,
   onClose,
   workoutLogId,
+  workoutName,
   defaultCategory = 'general',
   defaultDuration,
   protocolVersion = '1.1',
@@ -106,9 +108,14 @@ export default function WorkoutFeedbackModal({
     <Modal isOpen={isOpen} onClose={handleClose} title="How did it go?" size="md">
       {/* Reassurance banner — workout is already saved at this point */}
       {!submitted && (
-        <div className="mx-1 mt-1 mb-0 bg-lime-50 border border-lime-200 rounded-lg px-4 py-2 flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-lime-600 shrink-0" aria-hidden="true" />
-          <p className="text-xs text-lime-800 font-medium">Workout saved! Feedback is optional.</p>
+        <div className="mx-1 mt-1 mb-0 bg-lime-50 border border-lime-200 rounded-lg px-4 py-2.5 flex items-start gap-2">
+          <CheckCircle2 className="w-4 h-4 text-lime-600 shrink-0 mt-0.5" aria-hidden="true" />
+          <div>
+            <p className="text-xs text-lime-800 font-medium">Workout saved! Feedback is optional.</p>
+            {workoutName && (
+              <p className="text-xs text-lime-700 mt-0.5">Feedback for: <span className="font-semibold">{workoutName}</span></p>
+            )}
+          </div>
         </div>
       )}
       {submitted ? (
