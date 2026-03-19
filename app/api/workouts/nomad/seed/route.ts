@@ -293,6 +293,13 @@ export async function POST() {
     .ilike('name', 'Nomad %');
 
   if ((nomadTemplateCount ?? 0) > 0) {
+    // Already seeded — but ensure visibility is public in case it was set before this fix
+    const nomadExerciseNames = Object.keys(GLOSSARY);
+    const nomadTemplateNames = TEMPLATES.map((t) => t.name);
+    await Promise.all([
+      db.from('exercises').update({ visibility: 'public' }).eq('user_id', user.id).in('name', nomadExerciseNames),
+      db.from('workout_templates').update({ visibility: 'public' }).eq('user_id', user.id).in('name', nomadTemplateNames),
+    ]);
     return NextResponse.json({ success: true, exercises_seeded: 0, templates_seeded: 0, already_seeded: true });
   }
 
@@ -340,6 +347,7 @@ export async function POST() {
       category_id: categoryMap[EXERCISE_CATEGORIES[name] ?? 'Other'] ?? null,
       is_active: true,
       use_count: 0,
+      visibility: 'public',
     }));
 
   let exercisesSeeded = 0;
@@ -385,6 +393,7 @@ export async function POST() {
         category: tmpl.category,
         estimated_duration_min: tmpl.estimated_duration_min,
         purpose: tmpl.purpose,
+        visibility: 'public',
       })
       .select('id')
       .single();

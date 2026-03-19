@@ -187,6 +187,61 @@ export function certificateSchema(data: CertData) {
   };
 }
 
+// ─── Exercise (HowTo) ─────────────────────────────────────────────────────────
+
+interface ExerciseData {
+  id: string;
+  name: string;
+  instructions?: string | null;
+  primary_muscles?: string[] | null;
+  difficulty?: string | null;
+  video_url?: string | null;
+}
+
+export function exerciseSchema(exercise: ExerciseData) {
+  const SITE_URL = getSiteUrl();
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: exercise.name,
+    description: exercise.instructions ?? undefined,
+    url: `${SITE_URL}/exercises/${exercise.id}`,
+    ...(exercise.video_url
+      ? { video: { '@type': 'VideoObject', contentUrl: exercise.video_url } }
+      : {}),
+    ...(exercise.difficulty ? { educationalLevel: exercise.difficulty } : {}),
+    tool:
+      exercise.primary_muscles?.map((m) => ({ '@type': 'HowToTool', name: m })) ?? [],
+    publisher: organizationSchema(),
+  };
+}
+
+// ─── Workout Template (ExercisePlan) ──────────────────────────────────────────
+
+interface WorkoutTemplateData {
+  id: string;
+  name: string;
+  description?: string | null;
+  category?: string | null;
+  estimated_duration_min?: number | null;
+}
+
+export function workoutTemplateSchema(wt: WorkoutTemplateData) {
+  const SITE_URL = getSiteUrl();
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ExercisePlan',
+    name: wt.name,
+    description: wt.description ?? undefined,
+    url: `${SITE_URL}/workouts`,
+    ...(wt.estimated_duration_min
+      ? { timeRequired: `PT${wt.estimated_duration_min}M` }
+      : {}),
+    ...(wt.category ? { activityType: wt.category } : {}),
+    provider: organizationSchema(),
+  };
+}
+
 // ─── Product + Offer (pricing) ────────────────────────────────────────────────
 
 interface PricingTier {

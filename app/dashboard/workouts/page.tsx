@@ -54,6 +54,7 @@ interface Template {
   estimated_duration_min: number | null;
   use_count: number;
   purpose?: string[];
+  visibility?: 'public' | 'private';
   workout_template_exercises: Exercise[];
 }
 
@@ -159,6 +160,15 @@ export default function WorkoutsPage() {
         setShowTemplateForm(true);
       }
     }
+  };
+
+  const handleToggleVisibility = async (t: Template, next: 'public' | 'private') => {
+    await offlineFetch(`/api/workouts/${t.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visibility: next }),
+    });
+    load();
   };
 
   const handleDuplicateLog = async (logId: string) => {
@@ -290,6 +300,23 @@ export default function WorkoutsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    {t.visibility === 'public' ? (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleToggleVisibility(t, 'private'); }}
+                        className="text-xs font-medium text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full hover:bg-green-100 transition"
+                        aria-label={`${t.name} is public. Click to make private.`}
+                      >
+                        Public
+                      </button>
+                    ) : (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleToggleVisibility(t, 'public'); }}
+                        className="text-xs font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-full hover:bg-gray-200 transition"
+                        aria-label={`${t.name} is private. Click to make public.`}
+                      >
+                        Private
+                      </button>
+                    )}
                     <button
                       onClick={(e) => { e.stopPropagation(); setLogTemplate(t); }}
                       className="flex items-center gap-1 px-2.5 py-1.5 bg-lime-600 text-white rounded-lg text-xs font-medium hover:bg-lime-700 transition"
@@ -327,17 +354,20 @@ export default function WorkoutsPage() {
                       ))}
                     </div>
                     <div className="flex flex-wrap gap-2 mt-3">
-                      <button onClick={() => { setEditingTemplate(t); setShowTemplateForm(true); }}
-                        className="text-xs text-sky-600 hover:text-sky-700 flex items-center gap-1" aria-label={`Edit ${t.name}`}>
-                        <Edit3 className="w-3 h-3" /> Edit
-                      </button>
+                      {t.visibility === 'public' ? (
+                        <button onClick={() => setSuggestTemplate(t)}
+                          className="text-xs text-fuchsia-600 hover:text-fuchsia-700 flex items-center gap-1" aria-label={`Suggest edit for ${t.name}`}>
+                          <MessageSquarePlus className="w-3 h-3" /> Suggest Edit
+                        </button>
+                      ) : (
+                        <button onClick={() => { setEditingTemplate(t); setShowTemplateForm(true); }}
+                          className="text-xs text-sky-600 hover:text-sky-700 flex items-center gap-1" aria-label={`Edit ${t.name}`}>
+                          <Edit3 className="w-3 h-3" /> Edit
+                        </button>
+                      )}
                       <button onClick={() => handleDuplicateTemplate(t)}
-                        className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center gap-1" aria-label={`Duplicate ${t.name}`}>
+                        className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center gap-1" aria-label={`Duplicate ${t.name} as private copy`}>
                         <Copy className="w-3 h-3" /> Duplicate
-                      </button>
-                      <button onClick={() => setSuggestTemplate(t)}
-                        className="text-xs text-fuchsia-600 hover:text-fuchsia-700 flex items-center gap-1" aria-label={`Suggest edit for ${t.name}`}>
-                        <MessageSquarePlus className="w-3 h-3" /> Suggest Edit
                       </button>
                       <button onClick={() => handleDelete(t.id)}
                         className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1" aria-label={`Delete ${t.name}`}>
