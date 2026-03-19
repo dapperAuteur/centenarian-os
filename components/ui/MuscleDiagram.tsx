@@ -7,7 +7,7 @@
 interface Props {
   primaryMuscles: string[];
   secondaryMuscles?: string[];
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
 // Maps app muscle name strings → SVG path IDs (one or more regions per muscle group)
@@ -96,7 +96,7 @@ export default function MuscleDiagram({ primaryMuscles, secondaryMuscles = [], s
   const primaryPaths  = getActivePaths(primaryMuscles);
   const secondaryPaths = getActivePaths(secondaryMuscles);
 
-  const sizeClass = size === 'sm' ? 'h-40' : size === 'lg' ? 'h-72' : 'h-56';
+  const sizeClass = size === 'sm' ? 'h-40' : size === 'xl' ? 'h-[32rem]' : size === 'lg' ? 'h-72' : 'h-56';
 
   // Simplified body silhouette paths — viewBox 0 0 200 320 per figure (front + back side by side)
   // These are anatomically-inspired simplified regions, not exact medical diagrams.

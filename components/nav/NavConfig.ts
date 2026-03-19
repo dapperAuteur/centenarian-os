@@ -115,6 +115,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Submissions', href: '/dashboard/admin/submissions', icon: Inbox, paid: false, adminOnly: true },
       { label: 'Invites', href: '/dashboard/admin/invites', icon: UserPlus, paid: false, adminOnly: true },
       { label: 'Content Library', href: '/dashboard/admin/content-library', icon: Library, paid: false, adminOnly: true },
+      { label: 'Body Viewer', href: '/dashboard/admin/body-viewer', icon: ScanLine, paid: false, adminOnly: true },
     ],
   },
 ];
