@@ -175,8 +175,13 @@ export default function WorkoutLogForm({ isOpen, onClose, onSaved, template, exi
     e.preventDefault();
     setSaving(true);
     try {
-      // Combine date + time into ISO timestamp for started_at
-      const started_at = startedAt ? `${form.date}T${startedAt}:00` : null;
+      // Combine date + time into ISO timestamp for started_at, including local timezone offset
+      // so Supabase stores the correct UTC value instead of treating local time as UTC.
+      const tzOff = -new Date().getTimezoneOffset();
+      const tzSign = tzOff >= 0 ? '+' : '-';
+      const tzAbs = Math.abs(tzOff);
+      const tzStr = `${tzSign}${String(Math.floor(tzAbs / 60)).padStart(2, '0')}:${String(tzAbs % 60).padStart(2, '0')}`;
+      const started_at = startedAt ? `${form.date}T${startedAt}:00${tzStr}` : null;
 
       const payload = {
         template_id: template?.id ?? existingLog?.template_id ?? null,
