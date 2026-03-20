@@ -96,6 +96,8 @@ export interface Task {
   archived_at: string | null;
   contact_id: string | null;
   location_id: string | null;
+  source_type: string | null;
+  source_id: string | null;
 }
 
 // Nutrition types

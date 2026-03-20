@@ -32,6 +32,7 @@ import {
   UserPlus,
   History,
   Library,
+  Hammer,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -57,6 +58,7 @@ export const NAV_GROUPS: NavGroup[] = [
     icon: CalendarClock,
     items: [
       { label: 'Daily Tasks', href: '/dashboard/planner', icon: CalendarClock, paid: true },
+      { label: 'Work Feed', href: '/dashboard/planner?filter=work', icon: Hammer, paid: true },
       { label: 'Engine', href: '/dashboard/engine', icon: Briefcase, paid: true },
       { label: 'History', href: '/dashboard/engine/history', icon: History, paid: true },
       { label: 'Weekly Review', href: '/dashboard/weekly-review', icon: FileText, paid: true },

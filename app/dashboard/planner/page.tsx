@@ -7,17 +7,20 @@ import { createClient } from '@/lib/supabase/client';
 import { Task, RecurringTask } from '@/lib/types';
 import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import Link from 'next/link';
-import { Calendar, DollarSign, Plus, Repeat, Upload, Download, Filter, Plane, MapPin } from 'lucide-react';
+import { Calendar, DollarSign, Plus, Repeat, Upload, Download, Filter, Plane, MapPin, Briefcase } from 'lucide-react';
 import { EditTaskModal } from '@/components/EditTaskModal';
 import CreateRecurringTaskModal, { RecurringTaskData } from '@/components/planner/CreateRecurringTaskModal';
 import CreateTaskModal from '@/components/planner/CreateTaskModal';
 import BacklogSection from '@/components/planner/BacklogSection';
 import TaskCompletionActionsModal from '@/components/planner/TaskCompletionActionsModal';
+import WorkJobBlock, { WorkJob } from '@/components/planner/WorkJobBlock';
+import SyncedTaskBadge from '@/components/planner/SyncedTaskBadge';
+import OutstandingInvoicesWidget from '@/components/planner/OutstandingInvoicesWidget';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { OfflineSyncManager } from '@/lib/offline/sync-manager';
 
 type ViewMode = 'day' | 'week' | 'month';
-type SourceFilter = 'all' | 'calendar' | 'manual' | 'recurring';
+type SourceFilter = 'all' | 'calendar' | 'manual' | 'recurring' | 'work';
 
 interface TaskCardProps {
   task: Task;
@@ -30,9 +33,11 @@ function TaskCard({ task, onToggle, onEdit }: TaskCardProps) {
 
   return (
     <div className={`p-4 rounded-lg border-l-4 transition ${
-      task.completed 
-        ? 'bg-gray-50 border-lime-500 opacity-70' 
-        : 'bg-white border-sky-500 hover:shadow-md'
+      task.completed
+        ? 'bg-gray-50 border-lime-500 opacity-70'
+        : task.source_type
+          ? 'bg-amber-50/50 border-amber-500 hover:shadow-md'
+          : 'bg-white border-sky-500 hover:shadow-md'
     }`}>
       <div className="flex items-start gap-3">
         <button
@@ -54,7 +59,7 @@ function TaskCard({ task, onToggle, onEdit }: TaskCardProps) {
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
               <span className={`text-xs font-semibold uppercase px-2 py-1 rounded-full ${
-                task.completed ? 'bg-gray-300 text-gray-600' : 'bg-sky-500 text-white'
+                task.completed ? 'bg-gray-300 text-gray-600' : task.source_type ? 'bg-amber-500 text-white' : 'bg-sky-500 text-white'
               }`}>
                 {task.tag}
               </span>
@@ -89,6 +94,11 @@ function TaskCard({ task, onToggle, onEdit }: TaskCardProps) {
           <p className={`text-lg font-medium ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
             {task.activity}
           </p>
+          {task.source_type && (
+            <div className="mt-1">
+              <SyncedTaskBadge sourceType={task.source_type} sourceId={task.source_id} />
+            </div>
+          )}
           <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -123,7 +133,11 @@ export default function PlannerPage() {
     return new Date().toISOString().split('T')[0];
   });
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>(() => {
+    const f = searchParams.get('filter');
+    if (f === 'work') return 'work';
+    return 'all';
+  });
 
   // Backlog tasks (outside current date window, not completed)
   const [backlogTasks, setBacklogTasks] = useState<Task[]>([]);
@@ -145,6 +159,15 @@ export default function PlannerPage() {
     vehicles: { id: string; nickname: string; type: string } | null;
   }
   const [plannedTrips, setPlannedTrips] = useState<PlannedTrip[]>([]);
+
+  // Work feed (Work.WitUS integration)
+  interface WorkFeedData {
+    jobs: WorkJob[];
+    assigned_jobs: WorkJob[];
+    outstanding_invoices: { id: string; invoice_number: string; contact_name: string; direction: string; status: string; total: number; amount_paid: number; due_date: string; job_id: string | null }[];
+    summary: { upcoming_job_count: number; outstanding_receivable_total: number; outstanding_receivable_count: number; overdue_count: number };
+  }
+  const [workFeed, setWorkFeed] = useState<WorkFeedData | null>(null);
 
   // Recurring task state
   const [showRecurringModal, setShowRecurringModal] = useState(false);
@@ -178,7 +201,7 @@ export default function PlannerPage() {
     const manager = OfflineSyncManager.getInstance();
 
     try {
-      const [mainRes, backlogRes, tripsRes] = await Promise.all([
+      const [mainRes, backlogRes, tripsRes, workFeedRes] = await Promise.all([
         supabase
           .from('tasks')
           .select('*')
@@ -196,6 +219,8 @@ export default function PlannerPage() {
           .order('date', { ascending: true }),
         // Planned trips overlapping this date range
         offlineFetch(`/api/travel/trips/planned?from=${startDate}&to=${endDate}`),
+        // Work.WitUS jobs and outstanding invoices
+        offlineFetch(`/api/planner/work-feed?from=${startDate}&to=${endDate}`).catch(() => null),
       ]);
 
       if (mainRes.data) {
@@ -210,6 +235,14 @@ export default function PlannerPage() {
       if (tripsRes.ok) {
         const tripsData = await tripsRes.json();
         setPlannedTrips(tripsData.trips || []);
+      }
+
+      // Work feed (graceful — empty if API fails or no Work.WitUS data)
+      if (workFeedRes?.ok) {
+        const wfData = await workFeedRes.json();
+        setWorkFeed(wfData);
+      } else {
+        setWorkFeed(null);
       }
     } catch {
       // Offline or error — fall back to cache
@@ -315,6 +348,7 @@ export default function PlannerPage() {
   const filteredTasks = useMemo(() => {
     if (sourceFilter === 'all') return tasks;
     return tasks.filter((task) => {
+      if (sourceFilter === 'work') return !!task.source_type;
       const milestoneName = milestoneNames[task.milestone_id] ?? '';
       const isCalendar = milestoneName.startsWith('Google Calendar:');
       const isRecurring = milestoneName.toLowerCase().includes('recurring');
@@ -374,13 +408,13 @@ export default function PlannerPage() {
           </div>
           <div className="flex items-center gap-1.5">
             <Filter className="w-4 h-4 text-gray-400" />
-            {([['all', 'All'], ['calendar', 'Calendar'], ['manual', 'Manual'], ['recurring', 'Recurring']] as [SourceFilter, string][]).map(([key, label]) => (
+            {([['all', 'All'], ['calendar', 'Calendar'], ['manual', 'Manual'], ['recurring', 'Recurring'], ['work', 'Work']] as [SourceFilter, string][]).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setSourceFilter(key)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                   sourceFilter === key
-                    ? 'bg-fuchsia-600 text-white'
+                    ? key === 'work' ? 'bg-amber-500 text-white' : 'bg-fuchsia-600 text-white'
                     : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                 }`}
               >
@@ -463,6 +497,17 @@ export default function PlannerPage() {
           </div>
         </div>
       </div>
+
+      {/* Outstanding Invoices Widget (Work.WitUS) */}
+      {workFeed && workFeed.summary.outstanding_receivable_count > 0 && (
+        <div className="mb-6">
+          <OutstandingInvoicesWidget
+            outstandingCount={workFeed.summary.outstanding_receivable_count}
+            outstandingTotal={workFeed.summary.outstanding_receivable_total}
+            overdueCount={workFeed.summary.overdue_count}
+          />
+        </div>
+      )}
 
       {/* Progress Bar */}
       <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
@@ -572,6 +617,24 @@ export default function PlannerPage() {
                 </Link>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Work Jobs (Work.WitUS) */}
+      {workFeed && (workFeed.jobs.length > 0 || workFeed.assigned_jobs.length > 0) && (
+        <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Briefcase className="w-5 h-5 text-amber-600" />
+            Work Jobs
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+              Work.WitUS
+            </span>
+          </h3>
+          <div className="space-y-3">
+            {[...workFeed.jobs, ...workFeed.assigned_jobs].map((job) => (
+              <WorkJobBlock key={job.id} job={job} />
+            ))}
           </div>
         </div>
       )}
