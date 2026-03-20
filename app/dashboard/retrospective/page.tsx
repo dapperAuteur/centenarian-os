@@ -15,6 +15,9 @@ interface Summary {
   focus: { total_sessions: number; total_minutes: number; avg_quality: number | null; total_revenue: number };
   health: { days_logged: number; avg_steps: number | null; avg_sleep_hours: number | null; avg_resting_hr: number | null };
   workouts: { total: number; total_minutes: number };
+  meals?: { total: number; green: number; yellow: number; red: number; restaurant_meals: number; avg_calories: number | null };
+  travel?: { total_trips: number; total_miles: number; bike_miles: number; car_miles: number; total_co2_kg: number; fuel_spend: number; total_trip_cost: number };
+  equipment?: { acquired: number; total_spent: number };
 }
 
 type Preset = { label: string; from: string; to: string };
@@ -127,7 +130,7 @@ export default function RetrospectivePage() {
           Life Retrospective
         </h1>
         <p className="text-gray-600 text-sm mt-1">
-          AI-powered analysis of any date range — tasks, finances, focus, health, and workouts.
+          AI-powered analysis of any date range — tasks, finances, meals, focus, health, travel, and workouts.
         </p>
       </header>
 
@@ -243,6 +246,32 @@ export default function RetrospectivePage() {
               value={summary.health.avg_steps != null ? summary.health.avg_steps.toLocaleString() : '—'}
               sub={summary.health.avg_resting_hr != null ? `${summary.health.avg_resting_hr} bpm RHR` : undefined}
               color="border-red-100"
+            />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatCard
+              label="Meals Logged"
+              value={`${summary.meals?.total ?? 0}`}
+              sub={summary.meals ? `${summary.meals.green}G · ${summary.meals.yellow}Y · ${summary.meals.red}R` : undefined}
+              color="border-lime-100"
+            />
+            <StatCard
+              label="Restaurant Meals"
+              value={`${summary.meals?.restaurant_meals ?? 0}`}
+              sub={summary.meals?.avg_calories != null ? `${summary.meals.avg_calories} avg cal` : undefined}
+              color="border-orange-100"
+            />
+            <StatCard
+              label="Trips"
+              value={`${summary.travel?.total_trips ?? 0}`}
+              sub={summary.travel ? `${summary.travel.total_miles} mi total` : undefined}
+              color="border-sky-100"
+            />
+            <StatCard
+              label="Bike vs Car"
+              value={summary.travel ? `${summary.travel.bike_miles} / ${summary.travel.car_miles} mi` : '—'}
+              sub={summary.travel ? `${summary.travel.total_co2_kg} kg CO₂` : undefined}
+              color="border-emerald-100"
             />
           </div>
         </div>

@@ -1,6 +1,6 @@
 // app/api/ai/life-retrospective/route.ts
 // POST: generate an AI life retrospective for an arbitrary date range.
-// Aggregates tasks, finance, focus, health, workouts and feeds them to Gemini.
+// Aggregates tasks, finance, focus, health, workouts, meals, travel, equipment and feeds them to Gemini.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
@@ -67,8 +67,8 @@ export async function POST(request: NextRequest) {
 
   const db = getDb();
 
-  // Aggregate data from 7 sources in parallel
-  const [tasksRes, transRes, focusRes, healthRes, workoutRes, invoicesRes, futurePlannedRes] = await Promise.all([
+  // Aggregate data from 11 sources in parallel
+  const [tasksRes, transRes, focusRes, healthRes, workoutRes, invoicesRes, futurePlannedRes, mealsRes, tripsRes, fuelLogsRes, equipmentRes] = await Promise.all([
     // 1. Tasks (user auth client for RLS via milestones→goals→roadmaps)
     supabase
       .from('tasks')
@@ -80,11 +80,11 @@ export async function POST(request: NextRequest) {
     // 2. Financial transactions
     db
       .from('financial_transactions')
-      .select('date, amount, type, category_id, vendor, description, notes')
+      .select('transaction_date, amount, type, category_id, vendor, description, notes')
       .eq('user_id', user.id)
-      .gte('date', from)
-      .lte('date', to)
-      .order('date'),
+      .gte('transaction_date', from)
+      .lte('transaction_date', to)
+      .order('transaction_date'),
 
     // 3. Focus sessions
     db
@@ -127,6 +127,38 @@ export async function POST(request: NextRequest) {
       .lte('date', to)
       .eq('tag', 'finance')
       .eq('status', 'active'),
+
+    // 8. Meal logs + protocol NCV
+    db
+      .from('meal_logs')
+      .select('date, meal_type, is_restaurant_meal, protocols(ncv_score, total_calories, total_protein)')
+      .eq('user_id', user.id)
+      .gte('date', from)
+      .lte('date', to),
+
+    // 9. Trips
+    db
+      .from('trips')
+      .select('date, mode, distance_miles, duration_min, calories_burned, co2_kg, purpose, cost')
+      .eq('user_id', user.id)
+      .gte('date', from)
+      .lte('date', to),
+
+    // 10. Vehicle fuel logs
+    db
+      .from('fuel_logs')
+      .select('date, total_cost, gallons, mpg_calculated')
+      .eq('user_id', user.id)
+      .gte('date', from)
+      .lte('date', to),
+
+    // 11. Equipment acquired in period
+    db
+      .from('equipment')
+      .select('purchase_date, name, purchase_price, current_value, condition')
+      .eq('user_id', user.id)
+      .gte('purchase_date', from)
+      .lte('purchase_date', to),
   ]);
 
   const tasks = tasksRes.data ?? [];
@@ -136,6 +168,10 @@ export async function POST(request: NextRequest) {
   const workouts = workoutRes.data ?? [];
   const invoices = invoicesRes.data ?? [];
   const financeTasks = futurePlannedRes.data ?? [];
+  const meals = mealsRes.data ?? [];
+  const trips = tripsRes.data ?? [];
+  const fuelLogs = fuelLogsRes.data ?? [];
+  const equipmentItems = equipmentRes.data ?? [];
 
   // Build summary
   const completedTasks = tasks.filter((t) => t.completed);
@@ -166,6 +202,36 @@ export async function POST(request: NextRequest) {
 
   // Finance task completion (planned income activities)
   const completedFinanceTasks = financeTasks.filter((t) => t.completed);
+
+  // Meal NCV breakdown (unwrap protocol like weekly review does)
+  let greenMeals = 0, yellowMeals = 0, redMeals = 0;
+  const mealCalories: number[] = [];
+  for (const m of meals) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const proto = Array.isArray((m as any).protocols) ? (m as any).protocols[0] : (m as any).protocols;
+    if (proto?.ncv_score === 'Green') greenMeals++;
+    else if (proto?.ncv_score === 'Yellow') yellowMeals++;
+    else if (proto?.ncv_score === 'Red') redMeals++;
+    if (typeof proto?.total_calories === 'number') mealCalories.push(proto.total_calories);
+  }
+  const restaurantMeals = meals.filter((m) => m.is_restaurant_meal).length;
+  const avgCalories = mealCalories.length > 0
+    ? Math.round(mealCalories.reduce((s, v) => s + v, 0) / mealCalories.length)
+    : null;
+
+  // Travel mode breakdown
+  const modeBreakdown: Record<string, number> = {};
+  let totalTripCost = 0;
+  for (const t of trips) {
+    const mode = (t.mode as string) || 'unknown';
+    modeBreakdown[mode] = (modeBreakdown[mode] || 0) + (Number(t.distance_miles) || 0);
+    totalTripCost += Number(t.cost) || 0;
+  }
+  const bikeMiles = Math.round((modeBreakdown['bike'] || 0) * 10) / 10;
+  const carMiles = Math.round((modeBreakdown['car'] || 0) * 10) / 10;
+  const totalMiles = Math.round(Object.values(modeBreakdown).reduce((s, v) => s + v, 0) * 10) / 10;
+  const totalCo2 = Math.round(sum(trips as Record<string, unknown>[], 'co2_kg') * 10) / 10;
+  const fuelSpend = Math.round(sum(fuelLogs as Record<string, unknown>[], 'total_cost') * 100) / 100;
 
   const summary = {
     period: { from, to, days: Math.ceil((new Date(to).getTime() - new Date(from).getTime()) / 86400000) + 1 },
@@ -224,6 +290,28 @@ export async function POST(request: NextRequest) {
       total_minutes: sum(workouts as Record<string, unknown>[], 'duration_min'),
       avg_feeling: avg(workouts as Record<string, unknown>[], 'overall_feeling'),
     },
+    meals: {
+      total: meals.length,
+      green: greenMeals,
+      yellow: yellowMeals,
+      red: redMeals,
+      restaurant_meals: restaurantMeals,
+      avg_calories: avgCalories,
+    },
+    travel: {
+      total_trips: trips.length,
+      total_miles: totalMiles,
+      bike_miles: bikeMiles,
+      car_miles: carMiles,
+      total_co2_kg: totalCo2,
+      mode_breakdown: Object.entries(modeBreakdown).map(([mode, miles]) => ({ mode, miles: Math.round(miles * 10) / 10 })),
+      fuel_spend: fuelSpend,
+      total_trip_cost: Math.round(totalTripCost * 100) / 100,
+    },
+    equipment: {
+      acquired: equipmentItems.length,
+      total_spent: Math.round(sum(equipmentItems as Record<string, unknown>[], 'purchase_price') * 100) / 100,
+    },
   };
 
   const prompt = `You are a longevity and performance coach on CentenarianOS.
@@ -233,10 +321,12 @@ Write a clear, honest, actionable retrospective (400–600 words).
 Structure your response in these sections:
 1. Performance Overview — task completion rate, focus hours, overall productivity signal
 2. Financial Picture — income vs expenses, net position, top spending areas, invoices sent vs paid, income-generating activities planned vs completed
-3. Health & Recovery — sleep, steps, resting HR, HRV, workouts logged
-4. What Went Well — 2–3 specific wins from the data
-5. What Could Have Been Better — 2–3 honest gaps or missed opportunities (reference specific numbers)
-6. Top 3 Recommendations for the Next Similar Period — concrete, actionable, based on the patterns you see
+3. Nutrition & Meals — NCV score breakdown (Green/Yellow/Red), restaurant meal frequency, average calories if available
+4. Health & Recovery — sleep, steps, resting HR, HRV, workouts logged
+5. Travel & Mobility — mode breakdown (bike vs car vs walk), total miles, CO2 impact, fuel spending
+6. What Went Well — 2–3 specific wins from the data
+7. What Could Have Been Better — 2–3 honest gaps or missed opportunities (reference specific numbers)
+8. Top 3 Recommendations for the Next Similar Period — concrete, actionable, based on the patterns you see
 
 Here is the aggregated data:
 ${JSON.stringify(summary, null, 2)}
@@ -245,6 +335,9 @@ Guidelines:
 - Reference specific numbers (e.g. "$X income", "X% task completion", "X focus hours")
 - For finance: if income-generating activities were planned but not completed, call that out directly
 - If invoices were created but remain as drafts (not sent/paid), flag this as an action item
+- For meals: highlight the NCV Green/Yellow/Red ratio — more Green is better for longevity; flag high restaurant meal frequency
+- For travel: highlight bike miles as a longevity win; compare bike vs car usage; mention CO2 savings from active transport
+- If a category has no data (zero counts or null values), briefly note it and suggest starting to track it
 - Be direct and honest — this is a private retrospective for self-improvement
 - Use plain text with line breaks between sections, no markdown headers or bullets
 - End with a one-sentence rallying call for the next period`;
