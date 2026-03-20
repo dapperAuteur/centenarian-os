@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Sun, Moon, Zap, Dumbbell, Clock, ChevronDown, ChevronUp, CheckCircle2, Info, Activity, ShieldAlert, ArrowLeft, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import WorkoutLogForm from '@/components/workouts/WorkoutLogForm';
-import WorkoutFeedbackModal from '@/components/workouts/WorkoutFeedbackModal';
 import SuggestWorkoutEditModal from '@/components/workouts/SuggestWorkoutEditModal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
@@ -361,13 +360,6 @@ export default function NomadOSPage() {
   const [logTemplate, setLogTemplate] = useState<Template | null>(null);
   const [logOpen, setLogOpen] = useState(false);
 
-  // Feedback modal
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [feedbackLogId, setFeedbackLogId] = useState<string | undefined>();
-  const [feedbackCategory, setFeedbackCategory] = useState<CategoryKey>('WORKOUT_GYM');
-  const [feedbackDuration, setFeedbackDuration] = useState<DurationId>('45');
-  const [feedbackWorkoutName, setFeedbackWorkoutName] = useState<string | undefined>();
-
   // Suggest edit modal
   const [suggestOpen, setSuggestOpen] = useState(false);
 
@@ -421,16 +413,6 @@ export default function NomadOSPage() {
     }
   };
 
-  const handleLogSaved = (logId?: string) => {
-    setLogOpen(false);
-    const dur = activeDurations[activeCategory];
-    setFeedbackLogId(logId);
-    setFeedbackCategory(activeCategory);
-    setFeedbackDuration(dur);
-    setFeedbackWorkoutName(`Nomad ${ROUTINES[activeCategory].title} ${dur}min`);
-    setFeedbackOpen(true);
-    loadTemplates();
-  };
 
   const currentData = ROUTINES[activeCategory];
   const currentRoutine = currentData.tabs.find((t) => t.id === activeDurations[activeCategory]);
@@ -646,18 +628,6 @@ export default function NomadOSPage() {
                 >
                   Log This Workout
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFeedbackCategory(activeCategory);
-                    setFeedbackDuration(activeDurations[activeCategory]);
-                    setFeedbackLogId(undefined);
-                    setFeedbackOpen(true);
-                  }}
-                  className="sm:px-4 py-3 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
-                >
-                  Rate workout
-                </button>
                 {currentTemplate && (
                   <button
                     type="button"
@@ -682,18 +652,7 @@ export default function NomadOSPage() {
         isOpen={logOpen}
         onClose={() => setLogOpen(false)}
         onSaved={loadTemplates}
-        onWorkoutLogged={(logId) => handleLogSaved(logId)}
         template={logTemplate}
-      />
-
-      {/* Feedback modal */}
-      <WorkoutFeedbackModal
-        isOpen={feedbackOpen}
-        onClose={() => { setFeedbackOpen(false); setFeedbackWorkoutName(undefined); }}
-        workoutLogId={feedbackLogId}
-        workoutName={feedbackWorkoutName}
-        defaultCategory={feedbackCategory}
-        defaultDuration={feedbackDuration}
       />
 
       {/* Suggest edit modal */}

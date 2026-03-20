@@ -453,6 +453,7 @@ export default function WorkoutsPage() {
                   <p className="text-sm font-semibold text-gray-900">{log.name}</p>
                   <p className="text-xs text-gray-500">
                     {log.date}
+                    {log.started_at ? ` · ${new Date(log.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
                     {log.duration_min ? ` · ${log.duration_min} min` : ''}
                     {log.overall_feeling ? ` · Feeling: ${log.overall_feeling}/5` : ''}
                   </p>
