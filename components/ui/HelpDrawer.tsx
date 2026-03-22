@@ -75,7 +75,7 @@ export default function HelpDrawer({ isOpen, onClose, userRole }: Props) {
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 ${
+        className={`fixed inset-0 z-55 bg-black/50 transition-opacity duration-300 ${
           isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
@@ -83,7 +83,7 @@ export default function HelpDrawer({ isOpen, onClose, userRole }: Props) {
 
       {/* Drawer */}
       <div
-        className={`fixed right-0 top-0 h-full w-full max-w-sm z-50 bg-gray-950 border-l border-gray-800 flex flex-col transition-transform duration-300 ease-in-out ${
+        className={`fixed right-0 top-0 h-full w-full max-w-sm z-60 bg-gray-950 border-l border-gray-800 flex flex-col transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

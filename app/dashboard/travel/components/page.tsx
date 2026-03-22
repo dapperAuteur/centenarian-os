@@ -314,7 +314,7 @@ export default function ComponentWearPage() {
 
       {/* Add Component Modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-60 bg-black/50 flex items-center justify-center p-4">
           <form onSubmit={handleSave} className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl">
             <h2 className="text-lg font-bold text-gray-900">Add Component</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

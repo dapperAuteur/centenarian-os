@@ -127,7 +127,7 @@ export default function ImageAttachmentGrid({
       {/* Lightbox */}
       {lightboxUrl && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 p-4"
           onClick={() => setLightboxUrl(null)}
           role="dialog"
           aria-label="Image preview"

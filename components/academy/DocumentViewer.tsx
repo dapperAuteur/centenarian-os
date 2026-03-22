@@ -74,7 +74,7 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
 
       {/* Document viewer modal/overlay */}
       {selected && selectedIdx !== null && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex flex-col">
+        <div className="fixed inset-0 bg-black/80 z-60 flex flex-col">
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 bg-gray-900 border-b border-gray-800">
             <button

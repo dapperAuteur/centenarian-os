@@ -52,7 +52,7 @@ export default function SessionDetailPanel({
       {/* Backdrop - mobile only */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/30 z-40 transition-opacity sm:hidden"
+          className="fixed inset-0 bg-black/30 z-55 transition-opacity sm:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -60,7 +60,7 @@ export default function SessionDetailPanel({
 
       {/* Panel */}
       <div
-        className={`fixed right-0 top-0 h-full w-full sm:w-[480px] bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed right-0 top-0 h-full w-full sm:w-[480px] bg-white shadow-2xl z-60 transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
