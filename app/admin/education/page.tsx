@@ -587,7 +587,7 @@ export default function AdminEducationPage() {
 
       {/* ── Tags & Notes modal ─────────────────────────────────────────────── */}
       {editingMeta && activeChat && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setEditingMeta(false)}>
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60" onClick={() => setEditingMeta(false)}>
           <div
             className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md mx-4 p-5 space-y-4"
             onClick={(e) => e.stopPropagation()}

@@ -120,7 +120,7 @@ export default function TourOverlay({
 
       {/* Tour card — fixed at bottom on mobile, centered on desktop */}
       <div
-        className="fixed bottom-4 left-4 right-4 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-[420px] z-[9999] bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl p-5"
+        className="fixed bottom-22 left-4 right-4 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-[420px] z-[9999] bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl p-5"
         role="dialog"
         aria-modal="true"
         aria-label={`Tour step ${currentStep + 1} of ${steps.length}`}

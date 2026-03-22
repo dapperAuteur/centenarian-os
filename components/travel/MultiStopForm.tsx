@@ -360,7 +360,7 @@ export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved,
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-60 bg-black/50 flex items-center justify-center p-4">
       <form
         onSubmit={handleSubmit}
         className="bg-white rounded-2xl p-6 pb-0 w-full max-w-lg space-y-4 shadow-xl max-h-[90vh] overflow-y-auto"

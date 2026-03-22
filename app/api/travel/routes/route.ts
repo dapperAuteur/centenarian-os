@@ -107,8 +107,8 @@ export async function POST(request: NextRequest) {
   const { name, date, legs, notes, is_round_trip, save_as_template, trip_status, packing_notes, budget_amount, brand_id, visibility } = body;
 
   if (!date) return NextResponse.json({ error: 'date is required' }, { status: 400 });
-  if (!Array.isArray(legs) || legs.length < 2) {
-    return NextResponse.json({ error: 'At least 2 legs required' }, { status: 400 });
+  if (!Array.isArray(legs) || legs.length < 1) {
+    return NextResponse.json({ error: 'At least 1 leg required' }, { status: 400 });
   }
 
   const db = getDb();
