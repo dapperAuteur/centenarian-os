@@ -297,18 +297,30 @@ export default function ScheduleTemplateModal({
     >
       <div className="p-6 space-y-6">
         {/* Step indicator */}
-        <div className="flex items-center gap-2 mb-4">
-          {Array.from({ length: totalSteps }, (_, i) => (
-            <button
-              key={i}
-              onClick={() => setStep(i + 1)}
-              className={`min-h-11 flex-1 h-2 rounded-full transition ${
-                i + 1 <= step ? 'bg-sky-500' : 'bg-gray-200'
-              }`}
-              aria-label={`Step ${i + 1}`}
-            />
-          ))}
-        </div>
+        {(() => {
+          const stepLabels = isWorkType
+            ? ['Basics', 'Pay', 'Tax', 'Planner', 'Invoice']
+            : ['Basics', 'Planner'];
+          return (
+            <div className="flex items-center gap-1 sm:gap-2 mb-4">
+              {stepLabels.map((label, i) => (
+                <button
+                  key={i}
+                  onClick={() => setStep(i + 1)}
+                  className={`min-h-9 flex-1 px-1 py-1.5 rounded-lg text-xs font-medium transition ${
+                    i + 1 === step
+                      ? 'bg-sky-500 text-white'
+                      : i + 1 < step
+                        ? 'bg-sky-100 text-sky-700'
+                        : 'bg-gray-100 text-gray-400'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* ─── Step 1: Basics ─── */}
         {currentStep === 'basics' && (
