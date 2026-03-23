@@ -930,7 +930,7 @@ export default function PlannerPage() {
                     {tmpl.week_interval > 1 && ` q${tmpl.week_interval}w`}
                   </span>
                 </span>
-                {tmpl.start_date && tmpl.start_date < new Date().toISOString().split('T')[0] && (
+                {tmpl.start_date && tmpl.start_date < new Date().toISOString().split('T')[0] && (!tmpl.last_generated_date || tmpl.last_generated_date < new Date().toISOString().split('T')[0]) && (
                   <button
                     onClick={() => handleBackfillSchedule(tmpl.id)}
                     className="min-h-6 px-2 py-0.5 rounded-full bg-white/70 text-[10px] font-semibold hover:bg-white transition"
