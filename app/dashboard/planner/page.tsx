@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Task, RecurringTask } from '@/lib/types';
 import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import Link from 'next/link';
-import { Calendar, DollarSign, Plus, Repeat, Upload, Download, Filter, Plane, MapPin, Briefcase } from 'lucide-react';
+import { Calendar, DollarSign, Plus, Repeat, Upload, Download, Filter, Plane, MapPin, Briefcase, CalendarClock } from 'lucide-react';
 import { EditTaskModal } from '@/components/EditTaskModal';
 import CreateRecurringTaskModal, { RecurringTaskData } from '@/components/planner/CreateRecurringTaskModal';
 import CreateTaskModal from '@/components/planner/CreateTaskModal';
@@ -16,11 +16,16 @@ import TaskCompletionActionsModal from '@/components/planner/TaskCompletionActio
 import WorkJobBlock, { WorkJob } from '@/components/planner/WorkJobBlock';
 import SyncedTaskBadge from '@/components/planner/SyncedTaskBadge';
 import OutstandingInvoicesWidget from '@/components/planner/OutstandingInvoicesWidget';
+import ScheduleTemplateModal, { ScheduleTemplateFormData } from '@/components/planner/ScheduleTemplateModal';
+import DayOffModal, { DayOffData } from '@/components/planner/DayOffModal';
+import PayPeriodCard, { ReconcileData } from '@/components/planner/PayPeriodCard';
+import { getScheduleIndicators } from '@/components/planner/ScheduleCalendarOverlay';
+import type { ScheduleTemplate, ScheduleException, SchedulePayPeriod } from '@/lib/types';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { OfflineSyncManager } from '@/lib/offline/sync-manager';
 
 type ViewMode = 'day' | 'week' | 'month';
-type SourceFilter = 'all' | 'calendar' | 'manual' | 'recurring' | 'work';
+type SourceFilter = 'all' | 'calendar' | 'manual' | 'recurring' | 'work' | 'schedule';
 
 interface TaskCardProps {
   task: Task;
@@ -179,6 +184,15 @@ export default function PlannerPage() {
   // Completion actions state
   const [completedTask, setCompletedTask] = useState<Task | null>(null);
 
+  // Schedule state
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduleTemplates, setScheduleTemplates] = useState<ScheduleTemplate[]>([]);
+  const [scheduleExceptions, setScheduleExceptions] = useState<ScheduleException[]>([]);
+  const [schedulePayPeriods, setSchedulePayPeriods] = useState<SchedulePayPeriod[]>([]);
+  const [dayOffTarget, setDayOffTarget] = useState<{ templateId: string; date: string; name: string } | null>(null);
+  const [scheduleAccounts, setScheduleAccounts] = useState<{ id: string; name: string }[]>([]);
+  const [scheduleCategories, setScheduleCategories] = useState<{ id: string; name: string }[]>([]);
+
   const supabase = createClient();
 
   const loadTasks = useCallback(async () => {
@@ -264,10 +278,63 @@ export default function PlannerPage() {
     }
   };
 
+  const loadSchedules = useCallback(async () => {
+    try {
+      const [templatesRes, accountsRes, categoriesRes] = await Promise.all([
+        offlineFetch('/api/schedules'),
+        offlineFetch('/api/finance/accounts').catch(() => null),
+        offlineFetch('/api/finance/categories').catch(() => null),
+      ]);
+
+      if (templatesRes.ok) {
+        const data = await templatesRes.json();
+        setScheduleTemplates(data);
+
+        // Load exceptions for active templates in visible date range
+        const activeIds = data.filter((t: ScheduleTemplate) => t.is_active).map((t: ScheduleTemplate) => t.id);
+        if (activeIds.length > 0) {
+          const allExceptions: ScheduleException[] = [];
+          for (const tid of activeIds) {
+            const exRes = await offlineFetch(`/api/schedules/${tid}/exceptions`);
+            if (exRes.ok) {
+              const exData = await exRes.json();
+              allExceptions.push(...exData);
+            }
+          }
+          setScheduleExceptions(allExceptions);
+
+          // Load recent pay periods for work templates
+          const workTemplates = data.filter((t: ScheduleTemplate) => t.template_type === 'work');
+          const allPeriods: SchedulePayPeriod[] = [];
+          for (const wt of workTemplates) {
+            const ppRes = await offlineFetch(`/api/schedules/${wt.id}/pay-periods`);
+            if (ppRes.ok) {
+              const ppData = await ppRes.json();
+              allPeriods.push(...ppData);
+            }
+          }
+          setSchedulePayPeriods(allPeriods);
+        }
+      }
+
+      if (accountsRes?.ok) {
+        const acData = await accountsRes.json();
+        setScheduleAccounts((acData.accounts || acData).map((a: { id: string; name: string }) => ({ id: a.id, name: a.name })));
+      }
+      if (categoriesRes?.ok) {
+        const catData = await categoriesRes.json();
+        setScheduleCategories((catData.categories || catData).map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })));
+      }
+    } catch (error) {
+      console.error('[Planner] Failed to load schedules:', error);
+    }
+  }, []);
+
   useEffect(() => {
     loadTasks();
     loadRecurringTasks();
-  }, [loadTasks]);
+    loadSchedules();
+  }, [loadTasks, loadSchedules]);
 
   const handleToggle = async (taskId: string, completed: boolean) => {
     const { error } = await supabase
@@ -321,6 +388,75 @@ export default function PlannerPage() {
     }
   };
 
+  const handleSaveSchedule = async (data: ScheduleTemplateFormData) => {
+    const res = await offlineFetch('/api/schedules', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to create schedule');
+
+    // Generate tasks for today
+    await offlineFetch('/api/schedules/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ targetDate: new Date().toISOString().split('T')[0] }),
+    });
+
+    await loadSchedules();
+    await loadTasks();
+  };
+
+  const handleSaveDayOff = async (data: DayOffData) => {
+    if (!dayOffTarget) return;
+    const res = await offlineFetch(`/api/schedules/${dayOffTarget.templateId}/exceptions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to save day off');
+    await loadSchedules();
+    await loadTasks();
+  };
+
+  const handleReconcile = async (data: ReconcileData) => {
+    // Find which template this pay period belongs to
+    const period = schedulePayPeriods.find(p => p.id === data.pay_period_id);
+    if (!period) return;
+    const res = await offlineFetch(`/api/schedules/${period.template_id}/pay-periods`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to reconcile');
+    await loadSchedules();
+  };
+
+  const handleConvertToInvoice = async (payPeriodId: string) => {
+    const period = schedulePayPeriods.find(p => p.id === payPeriodId);
+    if (!period) return;
+    const res = await offlineFetch(`/api/schedules/${period.template_id}/invoice`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pay_period_id: payPeriodId }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      alert(`Invoice ${data.invoice_number || data.invoice_id} created!`);
+    } else {
+      alert('Failed to create invoice');
+    }
+  };
+
+  // Schedule indicators for calendar overlay
+  const exceptionMap = useMemo(() => {
+    const map = new Map<string, ScheduleException>();
+    for (const ex of scheduleExceptions) {
+      map.set(`${ex.template_id}:${ex.exception_date}`, ex);
+    }
+    return map;
+  }, [scheduleExceptions]);
+
   const financialSummary = useMemo(() => {
     return tasks.reduce((acc, task) => ({
       estimatedCost: acc.estimatedCost + (task.estimated_cost || 0),
@@ -348,14 +484,15 @@ export default function PlannerPage() {
   const filteredTasks = useMemo(() => {
     if (sourceFilter === 'all') return tasks;
     return tasks.filter((task) => {
-      if (sourceFilter === 'work') return !!task.source_type;
+      if (sourceFilter === 'schedule') return task.source_type === 'schedule';
+      if (sourceFilter === 'work') return !!task.source_type && task.source_type !== 'schedule';
       const milestoneName = milestoneNames[task.milestone_id] ?? '';
       const isCalendar = milestoneName.startsWith('Google Calendar:');
       const isRecurring = milestoneName.toLowerCase().includes('recurring');
       if (sourceFilter === 'calendar') return isCalendar;
       if (sourceFilter === 'recurring') return isRecurring;
       // 'manual' = everything else
-      return !isCalendar && !isRecurring;
+      return !isCalendar && !isRecurring && task.source_type !== 'schedule';
     });
   }, [tasks, sourceFilter, milestoneNames]);
 
@@ -408,13 +545,13 @@ export default function PlannerPage() {
           </div>
           <div className="flex items-center gap-1.5">
             <Filter className="w-4 h-4 text-gray-400" />
-            {([['all', 'All'], ['calendar', 'Calendar'], ['manual', 'Manual'], ['recurring', 'Recurring'], ['work', 'Work']] as [SourceFilter, string][]).map(([key, label]) => (
+            {([['all', 'All'], ['calendar', 'Calendar'], ['manual', 'Manual'], ['recurring', 'Recurring'], ['schedule', 'Schedules'], ['work', 'Work']] as [SourceFilter, string][]).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setSourceFilter(key)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                className={`min-h-11 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                   sourceFilter === key
-                    ? key === 'work' ? 'bg-amber-500 text-white' : 'bg-fuchsia-600 text-white'
+                    ? key === 'work' ? 'bg-amber-500 text-white' : key === 'schedule' ? 'bg-sky-500 text-white' : 'bg-fuchsia-600 text-white'
                     : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                 }`}
               >
@@ -433,10 +570,17 @@ export default function PlannerPage() {
           </button>
           <button
             onClick={() => setShowRecurringModal(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+            className="min-h-11 flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
           >
             <Repeat className="w-4 h-4" />
-            <span>Recurring Task</span>
+            <span>Recurring</span>
+          </button>
+          <button
+            onClick={() => setShowScheduleModal(true)}
+            className="min-h-11 flex items-center space-x-2 px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition"
+          >
+            <CalendarClock className="w-4 h-4" />
+            <span>Schedule</span>
           </button>
           <Link
             href="/dashboard/data/import/tasks"
@@ -546,13 +690,37 @@ export default function PlannerPage() {
         <div className="space-y-6">
           {Object.entries(tasksByDate).map(([date, dateTasks]) => (
             <div key={date} className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">
-                {new Date(date + 'T00:00:00').toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  month: 'short', 
-                  day: 'numeric' 
-                })}
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">
+                  {new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </h3>
+                {/* Schedule indicators */}
+                <div className="flex gap-1">
+                  {getScheduleIndicators(date, scheduleTemplates, exceptionMap).map(({ template, exception }) => (
+                    <button
+                      key={template.id}
+                      onClick={() => setDayOffTarget({ templateId: template.id, date, name: template.name })}
+                      className={`min-h-6 px-2 py-0.5 rounded text-[10px] font-medium ${
+                        exception
+                          ? 'bg-gray-100 text-gray-500 line-through'
+                          : template.template_type === 'work'
+                            ? 'bg-sky-100 text-sky-700'
+                            : template.template_type === 'fitness'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-purple-100 text-purple-700'
+                      }`}
+                      title={exception ? `${template.name} (${exception.exception_type})` : `${template.name} — Click to manage`}
+                    >
+                      {template.name}
+                      {exception && <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-gray-400" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="space-y-3">
                 {dateTasks.map(task => (
                   <TaskCard 
@@ -670,6 +838,87 @@ export default function PlannerPage() {
         isOpen={!!completedTask}
         onClose={() => setCompletedTask(null)}
         task={completedTask}
+      />
+
+      {/* Active Schedule Pay Periods */}
+      {schedulePayPeriods.length > 0 && (
+        <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-sky-600" />
+            Pay Periods
+          </h3>
+          <div className="space-y-3">
+            {schedulePayPeriods.slice(0, 5).map(pp => {
+              const tmpl = scheduleTemplates.find(t => t.id === pp.template_id);
+              return (
+                <PayPeriodCard
+                  key={pp.id}
+                  payPeriod={pp}
+                  scheduleName={tmpl?.name || 'Schedule'}
+                  showInvoiceButton={tmpl?.finance?.auto_invoice}
+                  onReconcile={handleReconcile}
+                  onConvertToInvoice={handleConvertToInvoice}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Active Schedules Summary Strip */}
+      {scheduleTemplates.filter(t => t.is_active).length > 0 && (
+        <div className="bg-white rounded-xl shadow-lg p-4 mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <CalendarClock className="w-4 h-4 text-sky-500" />
+              Active Schedules
+            </h3>
+            <button
+              onClick={() => setShowScheduleModal(true)}
+              className="min-h-11 text-xs text-sky-600 hover:text-sky-700 font-medium"
+            >
+              + New
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {scheduleTemplates.filter(t => t.is_active).map(tmpl => (
+              <span
+                key={tmpl.id}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
+                  tmpl.template_type === 'work'
+                    ? 'bg-sky-100 text-sky-700'
+                    : tmpl.template_type === 'fitness'
+                      ? 'bg-green-100 text-green-700'
+                      : tmpl.template_type === 'class'
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-amber-100 text-amber-700'
+                }`}
+              >
+                {tmpl.name}
+                <span className="text-[10px] opacity-60">
+                  {tmpl.schedule_days.length}d/wk
+                  {tmpl.week_interval > 1 && ` q${tmpl.week_interval}w`}
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <ScheduleTemplateModal
+        isOpen={showScheduleModal}
+        onClose={() => setShowScheduleModal(false)}
+        onSave={handleSaveSchedule}
+        accounts={scheduleAccounts}
+        categories={scheduleCategories}
+      />
+
+      <DayOffModal
+        isOpen={!!dayOffTarget}
+        onClose={() => setDayOffTarget(null)}
+        onSave={handleSaveDayOff}
+        scheduleName={dayOffTarget?.name || ''}
+        date={dayOffTarget?.date}
       />
     </div>
   );

@@ -425,6 +425,7 @@ export interface RecurringPattern {
   type: 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'custom';
   interval?: number; // for custom (e.g., every 3 days)
   daysOfWeek?: number[]; // [1,3,5] = Mon/Wed/Fri
+  weekInterval?: number; // every N weeks (default 1)
   dayOfMonth?: number; // 1-31
   endDate?: Date;
 }
@@ -436,6 +437,7 @@ export interface RecurrencePattern {
   type: RecurrenceType;
   interval?: number; // For custom: repeat every X days
   daysOfWeek?: number[]; // For weekly: [0,2,4] = Sun, Tue, Thu
+  weekInterval?: number; // For weekly: every N weeks (default 1, 2=biweekly)
   dayOfMonth?: number; // For monthly: 1-31
   endDate?: string; // ISO date string
 }
@@ -454,6 +456,116 @@ export interface RecurringTask {
   last_generated_date?: string;
   created_at: string;
   updated_at: string;
+}
+
+// ─── Schedule Template types ────────────────────────────────────────────────
+
+export type ScheduleTemplateType = 'work' | 'fitness' | 'class' | 'custom';
+export type EmploymentType = 'w2' | '1099' | 'other';
+export type PayFrequency = 'weekly' | 'biweekly' | 'semimonthly' | 'monthly';
+export type RateType = 'hourly' | 'daily' | 'flat';
+export type TaxTrackingMethod = 'percentage' | 'flat' | 'none';
+export type ScheduleExceptionType = 'skip' | 'paid_off' | 'unpaid_off' | 'reschedule';
+
+export interface ScheduleTemplate {
+  id: string;
+  user_id: string;
+  name: string;
+  template_type: ScheduleTemplateType;
+  schedule_days: number[]; // [0-6], 0=Sun
+  week_interval: number;
+  start_date?: string;
+  end_date?: string;
+  time_start?: string;
+  time_end?: string;
+  milestone_id?: string;
+  tag?: string;
+  priority: 1 | 2 | 3;
+  is_active: boolean;
+  last_generated_date?: string;
+  created_at: string;
+  updated_at: string;
+  // Joined data
+  finance?: ScheduleTemplateFinance;
+  exception_count?: number;
+}
+
+export interface ScheduleDeduction {
+  label: string;
+  amount: number;
+  is_pretax: boolean;
+}
+
+export interface ScheduleTemplateFinance {
+  id: string;
+  template_id: string;
+  employment_type: EmploymentType;
+  pay_rate: number;
+  rate_type: RateType;
+  hours_per_day?: number;
+  pay_frequency: PayFrequency;
+  payday_anchor: string;
+  pay_account_id?: string;
+  pay_category_id?: string;
+  estimated_tax_rate?: number;
+  estimated_tax_amount?: number;
+  tax_tracking_method: TaxTrackingMethod;
+  per_diem_amount?: number;
+  per_diem_category_id?: string;
+  travel_income_amount?: number;
+  travel_category_id?: string;
+  deductions: ScheduleDeduction[];
+  quarterly_tax_account_id?: string;
+  set_aside_percentage?: number;
+  auto_invoice: boolean;
+  invoice_template_id?: string;
+  invoice_contact_id?: string;
+}
+
+export interface ScheduleException {
+  id: string;
+  template_id: string;
+  exception_date: string;
+  exception_type: ScheduleExceptionType;
+  reason?: string;
+  notes?: string;
+  override_time_start?: string;
+  override_time_end?: string;
+  created_at: string;
+}
+
+export interface SchedulePayPeriod {
+  id: string;
+  template_id: string;
+  period_start: string;
+  period_end: string;
+  days_scheduled: number;
+  days_worked: number;
+  days_paid_off: number;
+  days_unpaid_off: number;
+  estimated_gross?: number;
+  estimated_taxes?: number;
+  estimated_net?: number;
+  actual_gross?: number;
+  actual_taxes?: number;
+  actual_net?: number;
+  per_diem_total?: number;
+  travel_income_total?: number;
+  transaction_id?: string;
+  tax_transaction_id?: string;
+  is_reconciled: boolean;
+  notes?: string;
+  created_at: string;
+}
+
+export interface ScheduleExpense {
+  id: string;
+  template_id: string;
+  transaction_id: string;
+  expense_date: string;
+  description?: string;
+  is_deductible: boolean;
+  created_at: string;
 }
 
 // ─── Blog types ──────────────────────────────────────────────────────────────
