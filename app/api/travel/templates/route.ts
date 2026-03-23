@@ -104,6 +104,9 @@ export async function POST(request: NextRequest) {
           name: tmpl.name,
           date: tripDate,
           template_id: tmpl.id,
+          is_round_trip: tmpl.is_round_trip ?? false,
+          notes: tmpl.notes || null,
+          brand_id: tmpl.brand_id || null,
         })
         .select()
         .single();
@@ -166,6 +169,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Single-leg template → create single trip
+    const singleDist = tmpl.distance_miles ? Number(tmpl.distance_miles) : null;
+    const singleRt = tmpl.is_round_trip === true;
+    const singleFactor = CO2_PER_MILE[tmpl.mode] ?? 0;
+    const singleEffective = singleRt && singleDist ? singleDist * 2 : singleDist;
+    const singleCo2 = singleEffective && singleEffective > 0
+      ? parseFloat((singleFactor * singleEffective).toFixed(3))
+      : null;
+
     const { data: trip, error: tripErr } = await db
       .from('trips')
       .insert({
@@ -177,6 +188,9 @@ export async function POST(request: NextRequest) {
         destination: tmpl.destination,
         distance_miles: tmpl.distance_miles,
         duration_min: tmpl.duration_min,
+        cost: tmpl.cost ?? null,
+        co2_kg: singleCo2,
+        is_round_trip: singleRt,
         purpose: tmpl.purpose,
         trip_category: tmpl.trip_category,
         tax_category: tmpl.tax_category,
