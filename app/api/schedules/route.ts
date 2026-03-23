@@ -50,7 +50,7 @@ export async function GET() {
   }
 
   // Fetch exception counts
-  let exceptionCountMap: Record<string, number> = {};
+  const exceptionCountMap: Record<string, number> = {};
   if (templateIds.length > 0) {
     const { data: counts } = await db
       .rpc('get_schedule_exception_counts', { template_ids: templateIds })

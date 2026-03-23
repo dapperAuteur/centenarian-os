@@ -69,7 +69,6 @@ function getPayPeriodDates(payFrequency: string, paydayAnchor: string, reference
   }
 
   if (payFrequency === 'semimonthly') {
-    const anchorDay = anchor.getDate();
     // Two periods: 1st-15th and 16th-end
     if (ref.getDate() <= 15) {
       return {

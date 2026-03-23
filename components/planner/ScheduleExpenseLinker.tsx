@@ -29,7 +29,7 @@ function formatCurrency(amount: number): string {
 }
 
 export default function ScheduleExpenseLinker({
-  templateId,
+  templateId: _templateId,
   expenses,
   employmentType,
   onLink,

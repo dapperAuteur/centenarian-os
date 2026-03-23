@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Calendar, Briefcase, Dumbbell, GraduationCap, Settings } from 'lucide-react';
+import { Briefcase, Dumbbell, GraduationCap, Settings } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import RoadmapItemPicker from '@/components/planner/RoadmapItemPicker';
 import type {

@@ -457,11 +457,6 @@ export default function PlannerPage() {
     return map;
   }, [scheduleExceptions]);
 
-  const activeWorkSchedules = useMemo(() =>
-    scheduleTemplates.filter(t => t.is_active && t.template_type === 'work'),
-    [scheduleTemplates]
-  );
-
   const financialSummary = useMemo(() => {
     return tasks.reduce((acc, task) => ({
       estimatedCost: acc.estimatedCost + (task.estimated_cost || 0),
