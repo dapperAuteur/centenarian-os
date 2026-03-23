@@ -38,12 +38,20 @@ export default function CreateRecurringTaskModal({
   const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>('daily');
   const [customInterval, setCustomInterval] = useState(1);
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>([1, 2, 3, 4, 5]); // Mon-Fri
+  const [weekInterval, setWeekInterval] = useState(1);
   const [dayOfMonth, setDayOfMonth] = useState(1);
   const [endDate, setEndDate] = useState('');
   const [saving, setSaving] = useState(false);
 
   const tags = ['GENERAL', 'STRENGTH', 'RECOVERY', 'SKILL', 'ADMIN', 'CREATIVE'];
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  const dayPresets: { label: string; days: number[] }[] = [
+    { label: 'Weekdays', days: [1, 2, 3, 4, 5] },
+    { label: 'Weekends', days: [0, 6] },
+    { label: 'MWF', days: [1, 3, 5] },
+    { label: 'TTh', days: [2, 4] },
+  ];
 
   const toggleDayOfWeek = (day: number) => {
     if (daysOfWeek.includes(day)) {
@@ -71,6 +79,9 @@ export default function CreateRecurringTaskModal({
       pattern.interval = customInterval;
     } else if (recurrenceType === 'weekly') {
       pattern.daysOfWeek = daysOfWeek;
+      if (weekInterval > 1) {
+        pattern.weekInterval = weekInterval;
+      }
     } else if (recurrenceType === 'monthly') {
       pattern.dayOfMonth = dayOfMonth;
     }
@@ -140,7 +151,7 @@ export default function CreateRecurringTaskModal({
             type="text"
             value={activity}
             onChange={(e) => setActivity(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
             placeholder="e.g., Morning workout"
           />
         </div>
@@ -154,7 +165,7 @@ export default function CreateRecurringTaskModal({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
             placeholder="Optional details"
           />
         </div>
@@ -168,7 +179,7 @@ export default function CreateRecurringTaskModal({
             <select
               value={tag}
               onChange={(e) => setTag(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
             >
               {tags.map((t) => (
                 <option key={t} value={t}>
@@ -184,7 +195,7 @@ export default function CreateRecurringTaskModal({
             <select
               value={priority}
               onChange={(e) => setPriority(parseInt(e.target.value) as 1 | 2 | 3)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
             >
               <option value={1}>High</option>
               <option value={2}>Medium</option>
@@ -202,7 +213,7 @@ export default function CreateRecurringTaskModal({
             type="time"
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
           />
         </div>
 
@@ -212,15 +223,15 @@ export default function CreateRecurringTaskModal({
             <Repeat className="w-4 h-4 inline mr-1" />
             Recurrence Pattern
           </label>
-          <div className="grid grid-cols-3 gap-2 mb-3">
-            {(['daily', 'weekly', 'biweekly', 'monthly', 'custom'] as RecurrenceType[]).map((type) => (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+            {(['daily', 'weekly', 'monthly', 'custom'] as RecurrenceType[]).map((type) => (
               <button
                 key={type}
                 type="button"
                 onClick={() => setRecurrenceType(type)}
-                className={`px-3 py-2 rounded-lg border capitalize text-sm ${
+                className={`min-h-11 px-3 py-2 rounded-lg border capitalize text-sm ${
                   recurrenceType === type
-                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    ? 'bg-sky-600 text-white border-sky-600'
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                 }`}
               >
@@ -231,23 +242,61 @@ export default function CreateRecurringTaskModal({
 
           {/* Pattern Options */}
           {recurrenceType === 'weekly' && (
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm font-medium text-gray-700 mb-2">Select Days</p>
-              <div className="flex gap-2">
-                {dayNames.map((day, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => toggleDayOfWeek(index)}
-                    className={`px-3 py-2 rounded-lg text-xs font-medium ${
-                      daysOfWeek.includes(index)
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-white text-gray-700 border border-gray-300'
-                    }`}
-                  >
-                    {day}
-                  </button>
-                ))}
+            <div className="p-3 bg-gray-50 rounded-lg space-y-3">
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-2">Quick Presets</p>
+                <div className="flex flex-wrap gap-2">
+                  {dayPresets.map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => setDaysOfWeek(preset.days)}
+                      className={`min-h-11 px-3 py-1.5 rounded-lg text-xs font-medium border ${
+                        JSON.stringify([...daysOfWeek].sort()) === JSON.stringify([...preset.days].sort())
+                          ? 'bg-sky-100 text-sky-700 border-sky-300'
+                          : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-2">Select Days</p>
+                <div className="flex gap-1.5 sm:gap-2">
+                  {dayNames.map((day, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => toggleDayOfWeek(index)}
+                      className={`min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium ${
+                        daysOfWeek.includes(index)
+                          ? 'bg-sky-600 text-white'
+                          : 'bg-white text-gray-700 border border-gray-300'
+                      }`}
+                    >
+                      {day}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label htmlFor="weekInterval" className="block text-sm font-medium text-gray-700 mb-1">
+                  Repeat every
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="weekInterval"
+                    type="number"
+                    value={weekInterval}
+                    onChange={(e) => setWeekInterval(Math.max(1, parseInt(e.target.value) || 1))}
+                    min="1"
+                    max="52"
+                    className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                  />
+                  <span className="text-sm text-gray-600">week(s)</span>
+                </div>
               </div>
             </div>
           )}
@@ -263,7 +312,7 @@ export default function CreateRecurringTaskModal({
                 onChange={(e) => setDayOfMonth(parseInt(e.target.value) || 1)}
                 min="1"
                 max="31"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
               />
             </div>
           )}
@@ -279,7 +328,7 @@ export default function CreateRecurringTaskModal({
                 onChange={(e) => setCustomInterval(parseInt(e.target.value) || 1)}
                 min="1"
                 max="365"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
               />
             </div>
           )}
@@ -294,7 +343,7 @@ export default function CreateRecurringTaskModal({
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
           />
           <p className="text-xs text-gray-500 mt-1">
             Leave blank to repeat indefinitely
@@ -313,7 +362,7 @@ export default function CreateRecurringTaskModal({
           <button
             onClick={handleSave}
             disabled={saving || !activity.trim()}
-            className="px-6 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
+            className="min-h-11 px-6 py-2 bg-sky-600 text-white text-sm font-medium rounded-lg hover:bg-sky-700 transition disabled:opacity-50"
           >
             {saving ? 'Creating...' : 'Create Recurring Task'}
           </button>
