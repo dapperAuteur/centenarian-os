@@ -396,15 +396,44 @@ export default function PlannerPage() {
     });
     if (!res.ok) throw new Error('Failed to create schedule');
 
-    // Generate tasks for today
+    // Backfill from start_date (or today) through today
+    const today = new Date().toISOString().split('T')[0];
+    const fromDate = data.start_date || today;
     await offlineFetch('/api/schedules/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ targetDate: new Date().toISOString().split('T')[0] }),
+      body: JSON.stringify({ fromDate, toDate: today }),
     });
 
     await loadSchedules();
     await loadTasks();
+  };
+
+  const handleBackfillSchedule = async (templateId: string) => {
+    const tmpl = scheduleTemplates.find(t => t.id === templateId);
+    if (!tmpl) return;
+    const today = new Date().toISOString().split('T')[0];
+    const fromDate = tmpl.start_date || today;
+
+    const dayCount = Math.floor((new Date(today).getTime() - new Date(fromDate).getTime()) / 86400000);
+    if (dayCount > 1 && !confirm(`This will generate tasks for ${tmpl.name} from ${fromDate} to ${today} (~${dayCount} days). Continue?`)) {
+      return;
+    }
+
+    const res = await offlineFetch('/api/schedules/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fromDate, toDate: today, templateId }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      alert(`Backfill complete: ${data.tasksGenerated} tasks created.`);
+      await loadSchedules();
+      await loadTasks();
+    } else {
+      alert('Backfill failed. Please try again.');
+    }
   };
 
   const handleSaveDayOff = async (data: DayOffData) => {
@@ -882,9 +911,9 @@ export default function PlannerPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             {scheduleTemplates.filter(t => t.is_active).map(tmpl => (
-              <span
+              <div
                 key={tmpl.id}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
                   tmpl.template_type === 'work'
                     ? 'bg-sky-100 text-sky-700'
                     : tmpl.template_type === 'fitness'
@@ -894,12 +923,23 @@ export default function PlannerPage() {
                         : 'bg-amber-100 text-amber-700'
                 }`}
               >
-                {tmpl.name}
-                <span className="text-[10px] opacity-60">
-                  {tmpl.schedule_days.length}d/wk
-                  {tmpl.week_interval > 1 && ` q${tmpl.week_interval}w`}
+                <span>
+                  {tmpl.name}
+                  <span className="text-[10px] opacity-60 ml-1">
+                    {tmpl.schedule_days.length}d/wk
+                    {tmpl.week_interval > 1 && ` q${tmpl.week_interval}w`}
+                  </span>
                 </span>
-              </span>
+                {tmpl.start_date && tmpl.start_date < new Date().toISOString().split('T')[0] && (
+                  <button
+                    onClick={() => handleBackfillSchedule(tmpl.id)}
+                    className="min-h-6 px-2 py-0.5 rounded-full bg-white/70 text-[10px] font-semibold hover:bg-white transition"
+                    title={`Generate past tasks from ${tmpl.start_date} to today`}
+                  >
+                    Backfill
+                  </button>
+                )}
+              </div>
             ))}
           </div>
         </div>
