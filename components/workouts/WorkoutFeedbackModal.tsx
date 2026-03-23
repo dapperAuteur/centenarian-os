@@ -6,7 +6,7 @@ import Modal from '@/components/ui/Modal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 type ActivityCategory = 'AM' | 'PM' | 'WORKOUT_HOTEL' | 'WORKOUT_GYM' | 'friction' | 'general';
-type Difficulty = 'easier' | 'just-right' | 'harder';
+type Difficulty = 'too-easy' | 'just-right' | 'too-hard';
 type InstructionPref = 'text-is-fine' | 'need-images' | 'need-video';
 
 const MOOD_LABELS = ['', 'Awful', 'Hard', 'OK', 'Good', 'Great'];
@@ -231,7 +231,7 @@ export default function WorkoutFeedbackModal({
               <span className="sr-only">(required)</span>
             </legend>
             <div className="flex gap-2">
-              {(['easier', 'just-right', 'harder'] as Difficulty[]).map((d) => (
+              {(['too-easy', 'just-right', 'too-hard'] as Difficulty[]).map((d) => (
                 <button
                   key={d}
                   type="button"
@@ -243,7 +243,7 @@ export default function WorkoutFeedbackModal({
                       : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
                   }`}
                 >
-                  {d === 'just-right' ? 'Just Right' : d.charAt(0).toUpperCase() + d.slice(1)}
+                  {d.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                 </button>
               ))}
             </div>
