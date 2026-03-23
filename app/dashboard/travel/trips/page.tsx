@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, Plus, ChevronDown, Search } from 'lucide-react';
+import { ChevronLeft, Plus, ChevronDown, Search, Trash2, Play, Repeat } from 'lucide-react';
 import PaginationBar from '@/components/ui/PaginationBar';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
@@ -64,6 +64,36 @@ interface Vehicle {
   active: boolean;
   ownership_type: string;
   trip_mode: string | null;
+}
+
+interface TripTemplate {
+  id: string;
+  name: string;
+  mode: string;
+  vehicle_id: string | null;
+  origin: string | null;
+  destination: string | null;
+  distance_miles: number | null;
+  duration_min: number | null;
+  cost: number | null;
+  purpose: string | null;
+  trip_category: string | null;
+  tax_category: string | null;
+  notes: string | null;
+  is_round_trip: boolean;
+  is_multi_stop: boolean;
+  brand_id: string | null;
+  use_count: number;
+  stops?: Array<{
+    stop_order: number;
+    location_name: string;
+    mode: string | null;
+    vehicle_id: string | null;
+    distance_miles: number | null;
+    duration_min: number | null;
+    cost: number | null;
+    purpose: string | null;
+  }>;
 }
 
 const MODE_ICONS: Record<string, string> = {
@@ -167,6 +197,8 @@ function TripsPageInner() {
     total_cost: number | null; total_co2_kg: number | null;
     is_round_trip: boolean; leg_count: number;
   }>>([]);
+  const [templates, setTemplates] = useState<TripTemplate[]>([]);
+  const [showTemplates, setShowTemplates] = useState(false);
   const limit = 50;
 
   const load = useCallback(async () => {
@@ -183,11 +215,12 @@ function TripsPageInner() {
       if (statusFilter) params.set('trip_status', statusFilter);
       if (fromDate) params.set('from', fromDate);
       if (toDate) params.set('to', toDate);
-      const [tripsRes, vehiclesRes, routesRes, brandsRes] = await Promise.all([
+      const [tripsRes, vehiclesRes, routesRes, brandsRes, templatesRes] = await Promise.all([
         offlineFetch(`/api/travel/trips?${params}`),
         offlineFetch('/api/travel/vehicles'), // active only
         page === 0 ? offlineFetch('/api/travel/routes?limit=10') : null,
         offlineFetch('/api/brands'),
+        offlineFetch('/api/travel/templates'),
       ]);
       if (tripsRes.ok) {
         const d = await tripsRes.json();
@@ -205,6 +238,10 @@ function TripsPageInner() {
       if (brandsRes.ok) {
         const d = await brandsRes.json();
         setBrands(d || []);
+      }
+      if (templatesRes.ok) {
+        const d = await templatesRes.json();
+        setTemplates(d || []);
       }
     } finally {
       setLoading(false);
@@ -363,6 +400,25 @@ function TripsPageInner() {
 
   const handleRouteDuplicate = async (id: string) => {
     const res = await offlineFetch(`/api/travel/routes/${id}/duplicate`, { method: 'POST' });
+    if (res.ok) load();
+  };
+
+  const handleTemplateLog = async (tmpl: TripTemplate) => {
+    const res = await offlineFetch('/api/travel/templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        create_trip: true,
+        template_id: tmpl.id,
+        trip_date: new Date().toISOString().split('T')[0],
+      }),
+    });
+    if (res.ok) load();
+  };
+
+  const handleTemplateDelete = async (id: string) => {
+    if (!confirm('Delete this template?')) return;
+    const res = await offlineFetch(`/api/travel/templates/${id}`, { method: 'DELETE' });
     if (res.ok) load();
   };
 
@@ -533,6 +589,73 @@ function TripsPageInner() {
         </div>
       )}
 
+      {/* Templates */}
+      {templates.length > 0 && (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setShowTemplates((v) => !v)}
+            className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition min-h-11"
+          >
+            <Repeat className="w-4 h-4" />
+            My Templates ({templates.length})
+            <ChevronDown className={`w-4 h-4 transition-transform ${showTemplates ? 'rotate-180' : ''}`} />
+          </button>
+          {showTemplates && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {templates.map((tmpl) => (
+                <div key={tmpl.id} className="border border-gray-200 rounded-xl bg-white p-3 flex items-center gap-3">
+                  <span className="text-lg shrink-0">{MODE_ICONS[tmpl.mode] ?? '🚐'}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-medium text-gray-900 truncate">{tmpl.name}</span>
+                      {tmpl.is_round_trip && (
+                        <span className="text-xs bg-sky-50 text-sky-600 px-1 py-0.5 rounded font-medium shrink-0">RT</span>
+                      )}
+                      {tmpl.is_multi_stop && (
+                        <span className="text-xs bg-fuchsia-50 text-fuchsia-600 px-1 py-0.5 rounded font-medium shrink-0">Multi</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">
+                      {tmpl.is_multi_stop
+                        ? `${tmpl.stops?.length ?? 0} stops`
+                        : tmpl.origin && tmpl.destination
+                          ? `${tmpl.origin} → ${tmpl.destination}`
+                          : tmpl.mode
+                      }
+                      {tmpl.distance_miles != null && !tmpl.is_multi_stop && (
+                        <> · {tmpl.is_round_trip ? (tmpl.distance_miles * 2).toFixed(1) : tmpl.distance_miles.toFixed(1)} mi</>
+                      )}
+                      {tmpl.use_count > 0 && <> · used {tmpl.use_count}×</>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleTemplateLog(tmpl)}
+                      className="min-h-11 min-w-11 flex items-center justify-center text-sky-500 hover:text-sky-700 hover:bg-sky-50 rounded-lg transition"
+                      aria-label={`Log trip from ${tmpl.name}`}
+                      title="Quick log"
+                    >
+                      <Play className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleTemplateDelete(tmpl.id)}
+                      className="min-h-11 min-w-11 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                      aria-label={`Delete template ${tmpl.name}`}
+                      title="Delete"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Table */}
       <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
         {loading ? (
@@ -572,8 +695,8 @@ function TripsPageInner() {
                         ? `${t.origin} ${t.is_round_trip ? '↔' : '→'} ${t.destination}`
                         : t.notes?.substring(0, 40) ?? '—'}
                     </td>
-                    <td className="px-4 py-3 text-right text-gray-700">{fmt(t.distance_miles) ?? '—'}</td>
-                    <td className="px-4 py-3 text-right text-gray-700">{t.duration_min ?? '—'}</td>
+                    <td className="px-4 py-3 text-right text-gray-700">{t.distance_miles != null ? fmt(t.is_round_trip ? t.distance_miles * 2 : t.distance_miles) : '—'}</td>
+                    <td className="px-4 py-3 text-right text-gray-700">{t.duration_min != null ? (t.is_round_trip ? t.duration_min * 2 : t.duration_min) : '—'}</td>
                     <td className="px-4 py-3 text-right text-orange-600">{t.calories_burned ?? '—'}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
@@ -654,6 +777,7 @@ function TripsPageInner() {
         <MultiStopForm
           vehicles={vehicles}
           brands={brands}
+          templates={templates}
           onClose={() => setShowMultiStop(false)}
           onSaved={load}
         />
@@ -664,6 +788,7 @@ function TripsPageInner() {
         <MultiStopForm
           vehicles={vehicles}
           brands={brands}
+          templates={templates}
           editRouteId={editingRoute.id}
           initialRoute={editingRoute.route}
           initialLegs={editingRoute.legs}

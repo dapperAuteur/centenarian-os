@@ -198,7 +198,10 @@ export default function TripDetailPage() {
               <span className="text-gray-400 text-xs block">Distance</span>
               <span className="text-gray-900 font-medium flex items-center gap-1">
                 <Gauge className="w-3.5 h-3.5 text-gray-400" />
-                {trip.distance_miles.toLocaleString()} mi{trip.is_round_trip ? ' (one way)' : ''}
+                {trip.is_round_trip
+                  ? <>{(trip.distance_miles * 2).toLocaleString()} mi <span className="text-xs text-gray-400 font-normal">({trip.distance_miles.toLocaleString()} each way)</span></>
+                  : <>{trip.distance_miles.toLocaleString()} mi</>
+                }
               </span>
             </div>
           )}
@@ -207,7 +210,11 @@ export default function TripDetailPage() {
               <span className="text-gray-400 text-xs block">Duration</span>
               <span className="text-gray-900 font-medium flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-gray-400" />
-                {trip.duration_min >= 60 ? `${Math.floor(trip.duration_min / 60)}h ${trip.duration_min % 60}m` : `${trip.duration_min}m`}
+                {(() => {
+                  const mins = trip.is_round_trip ? trip.duration_min * 2 : trip.duration_min;
+                  return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
+                })()}
+                {trip.is_round_trip && <span className="text-xs text-gray-400 font-normal">({trip.duration_min}m each way)</span>}
               </span>
             </div>
           )}
@@ -216,7 +223,10 @@ export default function TripDetailPage() {
               <span className="text-gray-400 text-xs block">Cost</span>
               <span className="text-gray-900 font-medium flex items-center gap-1">
                 <DollarSign className="w-3.5 h-3.5 text-gray-400" />
-                ${Number(trip.cost).toFixed(2)}
+                {trip.is_round_trip
+                  ? <>${(Number(trip.cost) * 2).toFixed(2)} <span className="text-xs text-gray-400 font-normal">(${Number(trip.cost).toFixed(2)} each way)</span></>
+                  : <>${Number(trip.cost).toFixed(2)}</>
+                }
               </span>
             </div>
           )}

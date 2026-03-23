@@ -311,7 +311,7 @@ export async function POST(request: NextRequest) {
         const stops = legs.map((leg: LegInput, i: number) => ({
           template_id: tmpl.id,
           stop_order: i,
-          location_name: i === 0 ? (leg.origin || null) : (leg.destination || null),
+          location_name: leg.origin || null,
           mode: i === 0 ? null : leg.mode,
           vehicle_id: i === 0 ? null : (leg.vehicle_id || null),
           distance_miles: i === 0 ? null : (leg.distance_miles ? Number(leg.distance_miles) : null),
