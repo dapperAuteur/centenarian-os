@@ -1,5 +1,11 @@
 // lib/fiscal.ts
 // Fiscal year utility functions used by forecast API and UI.
+//
+// Leap year safety: fiscal_year_start_day is capped at 28 in the DB
+// (migration 155 CHECK constraint), so Feb 29 can never be a fiscal start.
+// All month arithmetic uses a safe helper that clamps to the last day of
+// the target month, preventing JavaScript's Date.setMonth() overflow
+// (e.g., Jan 31 + 3 months → May 1 instead of Apr 30).
 
 export interface FiscalConfig {
   startMonth: number; // 1-12
@@ -26,6 +32,23 @@ function addDaysToDate(d: Date, days: number): Date {
   return result;
 }
 
+/**
+ * Safely add months to a date, clamping to the last day of the target month.
+ * Prevents JavaScript overflow (e.g., Jan 31 + 1 month → Feb 28, not Mar 3).
+ */
+function addMonths(d: Date, months: number): Date {
+  const result = new Date(d);
+  const targetMonth = result.getMonth() + months;
+  result.setMonth(targetMonth);
+  // If the day overflowed into the next month, clamp to last day of target month
+  const expectedMonth = ((d.getMonth() + months) % 12 + 12) % 12;
+  if (result.getMonth() !== expectedMonth) {
+    // Overflowed — set to last day of the intended month
+    result.setDate(0); // goes back to last day of previous month
+  }
+  return result;
+}
+
 /** Check if using default calendar year (Jan 1) */
 export function isCalendarYear(config: FiscalConfig): boolean {
   return config.startMonth === 1 && config.startDay === 1;
@@ -46,10 +69,9 @@ export function getFiscalYear(date: string, config: FiscalConfig): FiscalPeriod 
     fyStart = new Date(year - 1, config.startMonth - 1, config.startDay);
   }
 
-  const fyEnd = addDaysToDate(
-    new Date(fyStart.getFullYear() + 1, config.startMonth - 1, config.startDay),
-    -1
-  );
+  // Fiscal year ends the day before the next fiscal year starts
+  const nextFyStart = new Date(fyStart.getFullYear() + 1, config.startMonth - 1, config.startDay);
+  const fyEnd = addDaysToDate(nextFyStart, -1);
 
   const startYear = fyStart.getFullYear();
   const endYear = fyEnd.getFullYear();
@@ -74,19 +96,19 @@ export function getFiscalQuarter(
     (d.getFullYear() - fyStart.getFullYear()) * 12 + (d.getMonth() - fyStart.getMonth());
   const quarter = Math.min(Math.floor(monthsFromStart / 3) + 1, 4);
 
-  const qStart = new Date(fyStart);
-  qStart.setMonth(qStart.getMonth() + (quarter - 1) * 3);
+  const qStart = addMonths(fyStart, (quarter - 1) * 3);
+  const qEndRaw = addMonths(fyStart, quarter * 3);
+  const qEnd = addDaysToDate(qEndRaw, -1);
 
-  const qEnd = new Date(qStart);
-  qEnd.setMonth(qEnd.getMonth() + 3);
-  qEnd.setDate(qEnd.getDate() - 1);
+  // Clamp to fiscal year end
+  const fyEndDate = dateFromStr(fy.end);
+  const clampedEnd = qEnd > fyEndDate ? fyEndDate : qEnd;
 
-  // Month label
   const startMonth = qStart.toLocaleDateString('en-US', { month: 'short' });
-  const endMonth = qEnd.toLocaleDateString('en-US', { month: 'short' });
+  const endMonth = clampedEnd.toLocaleDateString('en-US', { month: 'short' });
   const label = `Q${quarter} (${startMonth}-${endMonth})`;
 
-  return { label, start: toDateStr(qStart), end: toDateStr(qEnd), quarter };
+  return { label, start: toDateStr(qStart), end: toDateStr(clampedEnd), quarter };
 }
 
 /** Get all fiscal periods for the current fiscal year */
@@ -101,6 +123,7 @@ export function getFiscalPeriods(
   const todayStr = today ?? new Date().toISOString().split('T')[0];
   const fy = getFiscalYear(todayStr, config);
   const fyStart = dateFromStr(fy.start);
+  const fyEndDate = dateFromStr(fy.end);
 
   // YTD: fiscal year start → today
   const ytd: FiscalPeriod = {
@@ -109,27 +132,26 @@ export function getFiscalPeriods(
     end: todayStr,
   };
 
-  // Quarters
+  // Quarters — use safe addMonths to avoid day overflow
   const quarters: (FiscalPeriod & { quarter: number })[] = [];
   for (let q = 0; q < 4; q++) {
-    const qStart = new Date(fyStart);
-    qStart.setMonth(qStart.getMonth() + q * 3);
-
-    const qEnd = new Date(qStart);
-    qEnd.setMonth(qEnd.getMonth() + 3);
-    qEnd.setDate(qEnd.getDate() - 1);
+    const qStart = addMonths(fyStart, q * 3);
+    const nextQStart = addMonths(fyStart, (q + 1) * 3);
+    const qEnd = addDaysToDate(nextQStart, -1);
 
     // Clamp to fiscal year end
-    const fyEndDate = dateFromStr(fy.end);
-    if (qEnd > fyEndDate) qEnd.setTime(fyEndDate.getTime());
+    const clampedEnd = qEnd > fyEndDate ? fyEndDate : qEnd;
+
+    // Skip quarters that start after fiscal year end (shouldn't happen, but safety)
+    if (qStart > fyEndDate) continue;
 
     const startMonth = qStart.toLocaleDateString('en-US', { month: 'short' });
-    const endMonth = qEnd.toLocaleDateString('en-US', { month: 'short' });
+    const endMonth = clampedEnd.toLocaleDateString('en-US', { month: 'short' });
 
     quarters.push({
       label: `Q${q + 1} (${startMonth}-${endMonth})`,
       start: toDateStr(qStart),
-      end: toDateStr(qEnd),
+      end: toDateStr(clampedEnd),
       quarter: q + 1,
     });
   }
