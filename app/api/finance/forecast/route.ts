@@ -5,7 +5,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
-import { getFiscalPeriods, isCalendarYear, type FiscalConfig } from '@/lib/fiscal';
+import { getFiscalPeriods, type FiscalConfig } from '@/lib/fiscal';
 
 function getDb() {
   return createServiceClient(
@@ -43,7 +43,7 @@ function projectPayDates(
   if (payFrequency === 'weekly') {
     const daysSince = Math.floor((today.getTime() - anchor.getTime()) / 86400000);
     const weeksSince = Math.floor(daysSince / 7);
-    let d = new Date(anchor);
+    const d = new Date(anchor);
     d.setDate(d.getDate() + weeksSince * 7);
     while (d <= max) {
       if (d >= today) {
@@ -54,7 +54,7 @@ function projectPayDates(
   } else if (payFrequency === 'biweekly') {
     const daysSince = Math.floor((today.getTime() - anchor.getTime()) / 86400000);
     const biweeksSince = Math.floor(daysSince / 14);
-    let d = new Date(anchor);
+    const d = new Date(anchor);
     d.setDate(d.getDate() + biweeksSince * 14);
     while (d <= max) {
       if (d >= today) {
