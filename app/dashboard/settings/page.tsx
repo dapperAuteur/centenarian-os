@@ -47,7 +47,7 @@ export default function DashboardSettingsPage() {
 
   const loadTours = useCallback(async () => {
     try {
-      const res = await fetch('/api/onboarding/status');
+      const res = await offlineFetch('/api/onboarding/status');
       if (res.ok) {
         const d = await res.json();
         setTours(d.tours ?? []);

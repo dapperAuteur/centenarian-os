@@ -30,9 +30,10 @@ function ToolbarButton({
   return (
     <button
       type="button"
-      title={title}
+      aria-label={title}
+      aria-pressed={active}
       onClick={onClick}
-      className={`p-1.5 rounded transition text-sm ${active ? 'bg-fuchsia-600 text-white' : 'text-gray-400 hover:bg-gray-700 hover:text-white'}`}
+      className={`min-h-9 min-w-9 flex items-center justify-center rounded transition text-sm ${active ? 'bg-fuchsia-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}
     >
       {children}
     </button>

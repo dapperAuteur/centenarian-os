@@ -7,6 +7,7 @@ import {
   Upload, ExternalLink, Loader2, Clock, FileDown,
 } from 'lucide-react';
 import Link from 'next/link';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface WearableConnection {
   id: string;
@@ -45,7 +46,7 @@ export default function WearableSettingsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/wearables');
+      const res = await offlineFetch('/api/wearables');
       if (res.ok) {
         const { connections: conns } = await res.json();
         setConnections(conns || []);

@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Shield, ShieldCheck, Copy, Check, Loader2, AlertTriangle } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 type MfaState = 'loading' | 'disabled' | 'enrolling' | 'enabled';
 
@@ -43,7 +44,7 @@ export default function MfaSetupSection() {
     async function init() {
       // Check if user has sensitive data (makes MFA mandatory)
       try {
-        const res = await fetch('/api/auth/mfa-status');
+        const res = await offlineFetch('/api/auth/mfa-status');
         if (res.ok) {
           const data = await res.json();
           setMfaRequired(data.mfaRequired);

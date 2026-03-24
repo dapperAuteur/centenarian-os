@@ -117,32 +117,36 @@ export default function DataImporter({ columns, onImport, templateCsvUrl, label 
       {label && <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{label}</p>}
 
       {/* Mode tabs */}
-      <div className="flex gap-1">
+      <div className="flex gap-1" role="tablist" aria-label="Import method">
         <button
           type="button"
+          role="tab"
+          aria-selected={mode === 'file'}
           onClick={() => setMode('file')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-            mode === 'file' ? 'bg-fuchsia-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+          className={`flex items-center gap-1.5 px-3 min-h-11 rounded-lg text-xs font-medium transition ${
+            mode === 'file' ? 'bg-fuchsia-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
           }`}
         >
-          <Upload className="w-3 h-3" /> CSV File
+          <Upload className="w-3 h-3" aria-hidden="true" /> CSV File
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={mode === 'sheets'}
           onClick={() => setMode('sheets')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-            mode === 'sheets' ? 'bg-fuchsia-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+          className={`flex items-center gap-1.5 px-3 min-h-11 rounded-lg text-xs font-medium transition ${
+            mode === 'sheets' ? 'bg-fuchsia-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
           }`}
         >
-          <FileSpreadsheet className="w-3 h-3" /> Google Sheets
+          <FileSpreadsheet className="w-3 h-3" aria-hidden="true" /> Google Sheets
         </button>
         {templateCsvUrl && (
           <a
             href={templateCsvUrl}
             download
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white transition ml-auto"
+            className="flex items-center gap-1.5 px-3 min-h-11 rounded-lg text-xs font-medium bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white transition ml-auto"
           >
-            <Download className="w-3 h-3" /> Template
+            <Download className="w-3 h-3" aria-hidden="true" /> Template
           </a>
         )}
       </div>
@@ -174,21 +178,22 @@ export default function DataImporter({ columns, onImport, templateCsvUrl, label 
             type="button"
             onClick={handleSheetsImport}
             disabled={loading || !sheetsUrl.trim()}
-            className="px-3 py-1.5 bg-fuchsia-600 text-white rounded-lg text-xs font-semibold hover:bg-fuchsia-700 transition disabled:opacity-50"
+            className="min-h-11 min-w-11 flex items-center justify-center bg-fuchsia-600 text-white rounded-lg text-xs font-semibold hover:bg-fuchsia-700 transition disabled:opacity-50"
+            aria-label="Import from Google Sheets"
           >
-            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Link2 className="w-3.5 h-3.5" />}
+            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" /> : <Link2 className="w-3.5 h-3.5" aria-hidden="true" />}
           </button>
         </div>
       )}
 
       {/* Expected columns hint */}
-      <p className="text-[10px] text-gray-600">
+      <p className="text-[10px] text-gray-400">
         Columns: {columns.map((c) => `${c.label}${c.required ? '*' : ''}`).join(', ')}
       </p>
 
       {/* Status */}
-      {loading && <p className="text-xs text-gray-500 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Importing...</p>}
-      {error && <p className="text-xs text-red-400 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {error}</p>}
+      {loading && <p className="text-xs text-gray-400 flex items-center gap-1" role="status"><Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" /> Importing...</p>}
+      {error && <p className="text-xs text-red-400 flex items-center gap-1" role="alert"><AlertCircle className="w-3 h-3" aria-hidden="true" /> {error}</p>}
       {rowCount !== null && !error && <p className="text-xs text-green-400">Imported {rowCount} rows</p>}
     </div>
   );

@@ -192,17 +192,17 @@ export default function LessonDiscussion({ courseId, lessonId, currentUserId, is
               <span className="text-sm font-semibold text-white">{post.author.display_name || 'Anonymous'}</span>
               {post.is_teacher && (
                 <span className="flex items-center gap-0.5 text-[10px] font-semibold text-fuchsia-400 bg-fuchsia-900/30 px-1.5 py-0.5 rounded">
-                  <Shield className="w-2.5 h-2.5" /> Instructor
+                  <Shield className="w-2.5 h-2.5" aria-hidden="true" /> Instructor
                 </span>
               )}
               {post.is_pinned && !isReply && (
                 <span className="flex items-center gap-0.5 text-[10px] text-amber-400">
-                  <Pin className="w-2.5 h-2.5" /> Pinned
+                  <Pin className="w-2.5 h-2.5" aria-hidden="true" /> Pinned
                 </span>
               )}
-              <span className="text-xs text-gray-500">{timeAgo(post.created_at)}</span>
+              <span className="text-xs text-gray-400">{timeAgo(post.created_at)}</span>
               {post.updated_at !== post.created_at && (
-                <span className="text-xs text-gray-500">(edited)</span>
+                <span className="text-xs text-gray-400">(edited)</span>
               )}
             </div>
 
@@ -241,33 +241,37 @@ export default function LessonDiscussion({ courseId, lessonId, currentUserId, is
                 {!isReply && (
                   <button
                     onClick={() => { setReplyTo(replyTo === post.id ? null : post.id); setReplyBody(''); }}
-                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-fuchsia-400 transition"
+                    className="flex items-center gap-1 min-h-11 text-xs text-gray-400 hover:text-fuchsia-400 transition"
+                    aria-label="Reply to post"
                   >
-                    <Reply className="w-3 h-3" /> Reply
+                    <Reply className="w-3 h-3" aria-hidden="true" /> Reply
                   </button>
                 )}
                 {canEdit && (
                   <button
                     onClick={() => { setEditingId(post.id); setEditBody(post.body); }}
-                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-400 transition"
+                    className="flex items-center gap-1 min-h-11 text-xs text-gray-400 hover:text-blue-400 transition"
+                    aria-label="Edit post"
                   >
-                    <Edit2 className="w-3 h-3" /> Edit
+                    <Edit2 className="w-3 h-3" aria-hidden="true" /> Edit
                   </button>
                 )}
                 {canDelete && (
                   <button
                     onClick={() => deletePost(post.id, post.parent_id)}
-                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-400 transition"
+                    className="flex items-center gap-1 min-h-11 text-xs text-gray-400 hover:text-red-400 transition"
+                    aria-label="Delete post"
                   >
-                    <Trash2 className="w-3 h-3" /> Delete
+                    <Trash2 className="w-3 h-3" aria-hidden="true" /> Delete
                   </button>
                 )}
                 {isTeacher && !isReply && (
                   <button
                     onClick={() => togglePin(post.id, post.is_pinned)}
-                    className={`flex items-center gap-1 text-xs transition ${post.is_pinned ? 'text-amber-400 hover:text-amber-300' : 'text-gray-500 hover:text-amber-400'}`}
+                    className={`flex items-center gap-1 min-h-11 text-xs transition ${post.is_pinned ? 'text-amber-400 hover:text-amber-300' : 'text-gray-400 hover:text-amber-400'}`}
+                    aria-label={post.is_pinned ? 'Unpin post' : 'Pin post'}
                   >
-                    <Pin className="w-3 h-3" /> {post.is_pinned ? 'Unpin' : 'Pin'}
+                    <Pin className="w-3 h-3" aria-hidden="true" /> {post.is_pinned ? 'Unpin' : 'Pin'}
                   </button>
                 )}
               </div>
@@ -291,9 +295,10 @@ export default function LessonDiscussion({ courseId, lessonId, currentUserId, is
               <button
                 onClick={() => submitReply(post.id)}
                 disabled={submitting || !replyBody.trim()}
-                className="px-3 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition disabled:opacity-50 self-end"
+                className="min-h-11 min-w-11 flex items-center justify-center bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition disabled:opacity-50 self-end"
+                aria-label="Send reply"
               >
-                <Send className="w-3.5 h-3.5" />
+                <Send className="w-3.5 h-3.5" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -310,14 +315,14 @@ export default function LessonDiscussion({ courseId, lessonId, currentUserId, is
   return (
     <div className="border border-gray-800 rounded-xl sm:rounded-2xl bg-gray-900 p-4 sm:p-6">
       <h2 className="text-base font-bold mb-4 flex items-center gap-2">
-        <MessageSquare className="w-4 h-4 text-fuchsia-400" />
+        <MessageSquare className="w-4 h-4 text-fuchsia-400" aria-hidden="true" />
         Discussion
-        {postCount > 0 && <span className="text-xs text-gray-500 font-normal">({postCount})</span>}
+        {postCount > 0 && <span className="text-xs text-gray-400 font-normal">({postCount})</span>}
       </h2>
 
       {loading ? (
         <div className="flex justify-center py-6">
-          <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+          <Loader2 className="w-5 h-5 animate-spin text-gray-400" aria-hidden="true" />
         </div>
       ) : (
         <>
@@ -335,15 +340,16 @@ export default function LessonDiscussion({ courseId, lessonId, currentUserId, is
               <button
                 onClick={submitPost}
                 disabled={submitting || !newBody.trim()}
-                className="px-4 py-2.5 bg-fuchsia-600 text-white rounded-xl hover:bg-fuchsia-700 transition disabled:opacity-50 self-end min-h-11"
+                className="min-h-11 min-w-11 flex items-center justify-center bg-fuchsia-600 text-white rounded-xl hover:bg-fuchsia-700 transition disabled:opacity-50 self-end"
+                aria-label="Send post"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
           )}
 
           {posts.length === 0 ? (
-            <p className="text-center text-gray-500 text-sm py-6">No discussion yet. Be the first to post!</p>
+            <p className="text-center text-gray-400 text-sm py-6">No discussion yet. Be the first to post!</p>
           ) : (
             <div className="divide-y divide-gray-800">
               {posts.map((post) => renderPost(post))}

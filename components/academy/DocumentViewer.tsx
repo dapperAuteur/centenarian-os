@@ -49,7 +49,7 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
   return (
     <div className="mb-6">
       <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-        <FileText className="w-4 h-4 text-fuchsia-400" /> Primary Sources
+        <FileText className="w-4 h-4 text-fuchsia-400" aria-hidden="true" /> Primary Sources
       </h3>
 
       {/* Document cards */}
@@ -61,11 +61,11 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
             onClick={() => setSelectedIdx(idx)}
             className="flex items-start gap-3 p-3 bg-gray-900 border border-gray-800 rounded-xl hover:border-fuchsia-700/50 transition text-left group"
           >
-            <FileText className="w-5 h-5 text-gray-600 group-hover:text-fuchsia-400 transition shrink-0 mt-0.5" />
+            <FileText className="w-5 h-5 text-gray-400 group-hover:text-fuchsia-400 transition shrink-0 mt-0.5" aria-hidden="true" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-200 group-hover:text-white transition truncate">{doc.title}</p>
               {doc.description && (
-                <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{doc.description}</p>
+                <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{doc.description}</p>
               )}
             </div>
           </button>
@@ -80,14 +80,15 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
             <button
               type="button"
               onClick={() => setSelectedIdx(null)}
-              className="p-1.5 text-gray-400 hover:text-white transition"
+              className="min-h-11 min-w-11 flex items-center justify-center text-gray-300 hover:text-white transition"
+              aria-label="Close document viewer"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-white truncate">{selected.title}</p>
               {selected.description && (
-                <p className="text-xs text-gray-500 truncate">{selected.description}</p>
+                <p className="text-xs text-gray-400 truncate">{selected.description}</p>
               )}
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -98,7 +99,7 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 px-3 py-1.5 bg-gray-800 text-gray-300 rounded-lg text-xs hover:bg-gray-700 transition"
                 >
-                  <ExternalLink className="w-3 h-3" /> View Original
+                  <ExternalLink className="w-3 h-3" aria-hidden="true" /> View Original
                 </a>
               )}
               {documents.length > 1 && (
@@ -107,18 +108,20 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
                     type="button"
                     disabled={selectedIdx === 0}
                     onClick={() => setSelectedIdx(selectedIdx - 1)}
-                    className="p-1.5 text-gray-400 hover:text-white transition disabled:opacity-30"
+                    className="min-h-11 min-w-11 flex items-center justify-center text-gray-300 hover:text-white transition disabled:opacity-30"
+                    aria-label="Previous document"
                   >
-                    <ChevronLeft className="w-4 h-4" />
+                    <ChevronLeft className="w-4 h-4" aria-hidden="true" />
                   </button>
-                  <span className="text-xs text-gray-500">{selectedIdx + 1}/{documents.length}</span>
+                  <span className="text-xs text-gray-400">{selectedIdx + 1}/{documents.length}</span>
                   <button
                     type="button"
                     disabled={selectedIdx === documents.length - 1}
                     onClick={() => setSelectedIdx(selectedIdx + 1)}
-                    className="p-1.5 text-gray-400 hover:text-white transition disabled:opacity-30"
+                    className="min-h-11 min-w-11 flex items-center justify-center text-gray-300 hover:text-white transition disabled:opacity-30"
+                    aria-label="Next document"
                   >
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
               )}
@@ -137,7 +140,7 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
             ) : !hasValidUrl(selected.url) ? (
               /* No valid URL and no inline content */
               <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-500">
-                <AlertTriangle className="w-8 h-8 text-amber-500/60" />
+                <AlertTriangle className="w-8 h-8 text-amber-500/60" aria-hidden="true" />
                 <p className="text-sm">This document is not available yet.</p>
                 <p className="text-xs text-gray-600">The content URL has not been set up.</p>
               </div>

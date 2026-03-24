@@ -128,14 +128,14 @@ export default function TemplateExerciseRow({ exercise, onChange, onRemove, equi
         </div>
         <div className="flex items-center gap-1 mt-1.5">
           <button type="button" onClick={() => setShowAdvanced(!showAdvanced)}
-            className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+            className="min-h-11 min-w-11 flex items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100"
             aria-label="Toggle advanced options" aria-expanded={showAdvanced}>
-            {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {showAdvanced ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
           </button>
           <button type="button" onClick={onRemove}
-            className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50"
+            className="min-h-11 min-w-11 flex items-center justify-center rounded text-gray-400 hover:text-red-600 hover:bg-red-50"
             aria-label="Remove exercise">
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       </div>
