@@ -15,7 +15,7 @@ function getDb() {
 
 const VALID_CATEGORIES = ['AM', 'PM', 'WORKOUT_HOTEL', 'WORKOUT_GYM', 'friction', 'general'] as const;
 const VALID_DURATIONS = ['5', '15', '30', '45', '60'] as const;
-const VALID_DIFFICULTIES = ['easier', 'just-right', 'harder'] as const;
+const VALID_DIFFICULTIES = ['too-easy', 'just-right', 'too-hard'] as const;
 const VALID_INSTRUCTION_PREFS = ['text-is-fine', 'need-images', 'need-video'] as const;
 
 export async function POST(request: NextRequest) {
