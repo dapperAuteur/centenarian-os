@@ -21,14 +21,15 @@ export function TaskCard({ task, onToggle, onEdit }: TaskCardProps) {
       <div className="flex items-start gap-3">
         <button
           onClick={() => onToggle(task.id, !task.completed)}
-          className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition mt-1 ${
-            task.completed 
-              ? 'bg-lime-500 hover:bg-lime-600' 
+          className={`shrink-0 min-h-11 min-w-11 rounded-full flex items-center justify-center transition ${
+            task.completed
+              ? 'bg-lime-500 hover:bg-lime-600'
               : 'border-2 border-gray-300 hover:border-lime-500'
           }`}
+          aria-label={task.completed ? 'Mark task incomplete' : 'Mark task complete'}
         >
           {task.completed && (
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
             </svg>
           )}
@@ -53,19 +54,20 @@ export function TaskCard({ task, onToggle, onEdit }: TaskCardProps) {
               )}
               <button
                 onClick={() => onEdit(task)}
-                className="p-1 hover:bg-gray-100 rounded transition"
+                className="min-h-11 min-w-11 flex items-center justify-center hover:bg-gray-100 rounded transition"
                 aria-label="Edit task"
               >
-                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </button>
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="p-1 hover:bg-gray-100 rounded transition"
-                aria-label="Toggle details"
+                className="min-h-11 min-w-11 flex items-center justify-center hover:bg-gray-100 rounded transition"
+                aria-label={isExpanded ? 'Collapse details' : 'Expand details'}
+                aria-expanded={isExpanded}
               >
-                <svg className={`w-4 h-4 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
@@ -76,7 +78,7 @@ export function TaskCard({ task, onToggle, onEdit }: TaskCardProps) {
             {task.activity}
           </p>
           <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             {task.time}

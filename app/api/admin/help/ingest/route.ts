@@ -85,6 +85,7 @@ export async function POST(_req: NextRequest) {
         title: article.title,
         content: article.content,
         role: article.role,
+        app: article.app ?? 'centenarian',
         embedding: `[${embedding.join(',')}]`,
       });
       if (error) throw new Error(error.message);

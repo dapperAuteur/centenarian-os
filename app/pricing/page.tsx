@@ -162,8 +162,8 @@ export default function PricingPage() {
                 'Fuel & nutrition tracking (NCV framework)',
                 'Focus Engine (timer, debrief, pain log)',
                 'Travel tracking with public transport, booking details & budgets',
-                'Financial dashboard (accounts, budgets, brands)',
-                'Bank account linking via Teller (auto-sync)',
+                'Financial dashboard (accounts, budgets, invoices)',
+                'Budget forecasting & bank linking via Teller',
                 'Health metrics & wearable sync (Garmin, Oura, WHOOP)',
                 'Workouts, exercises & Nomad Longevity OS protocol',
                 'Equipment & asset tracking with valuations',
@@ -178,7 +178,7 @@ export default function PricingPage() {
                 'Interactive feature walkthroughs & guided onboarding',
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm text-gray-700">
-                  <Check className="w-4 h-4 text-fuchsia-500 mt-0.5 shrink-0" />
+                  <Check className="w-4 h-4 text-fuchsia-500 mt-0.5 shrink-0" aria-hidden="true" />
                   {f}
                 </li>
               ))}
@@ -218,12 +218,12 @@ export default function PricingPage() {
                 'No recurring fees ever',
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
-                  <Check className="w-4 h-4 text-lime-400 mt-0.5 shrink-0" />
+                  <Check className="w-4 h-4 text-lime-400 mt-0.5 shrink-0" aria-hidden="true" />
                   {f}
                 </li>
               ))}
               <li className="flex items-start gap-2 text-sm text-lime-300 font-semibold">
-                <Shirt className="w-4 h-4 text-lime-400 mt-0.5 shrink-0" />
+                <Shirt className="w-4 h-4 text-lime-400 mt-0.5 shrink-0" aria-hidden="true" />
                 Free CentenarianOS shirt from AwesomeWebStore.com
               </li>
             </ul>

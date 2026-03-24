@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
     query_embedding: `[${queryEmbedding.join(',')}]`,
     match_count: 5,
     role_filter: role ?? null,
+    app_filter: 'centenarian',
   });
 
   if (matchError) {
@@ -94,9 +95,9 @@ export async function POST(request: NextRequest) {
     .join('\n\n---\n\n');
 
   // 3. Build system prompt
-  const systemPrompt = `You are a helpful assistant for Centenarian Academy, a learning platform inside CentenarianOS focused on longevity and healthy living.
+  const systemPrompt = `You are a helpful assistant for CentenarianOS, a longevity-focused life operating system. CentenarianOS includes modules for planning, finance, travel, health metrics, workouts, nutrition (Fuel), focus sessions (Engine), equipment tracking, life categories, data import/export, correlations, media tracking, and the Centenarian Academy learning platform.
 
-Answer the user's question using ONLY the documentation context provided below. Be concise, friendly, and specific. If the answer involves a page path (like /academy/my-courses), include it. If the context does not contain enough information to answer the question, say so honestly and suggest they contact support.
+Answer the user's question using ONLY the documentation context provided below. Be concise, friendly, and specific. If the answer involves a page path (like /dashboard/planner or /academy/my-courses), include it. If the context does not contain enough information to answer the question, say so honestly and suggest they contact support.
 
 --- DOCUMENTATION CONTEXT ---
 ${context}

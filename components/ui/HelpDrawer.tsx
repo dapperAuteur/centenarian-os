@@ -18,10 +18,10 @@ interface Props {
 }
 
 const SUGGESTIONS = [
+  'How do I create a task in the Planner?',
+  'How do I log a trip?',
   'How do I enroll in a course?',
-  'How do I submit an assignment?',
-  'What is CYOA mode?',
-  'How do I track my progress?',
+  'How do I track my health metrics?',
 ];
 
 export default function HelpDrawer({ isOpen, onClose, userRole }: Props) {
@@ -90,14 +90,15 @@ export default function HelpDrawer({ isOpen, onClose, userRole }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 shrink-0">
           <div className="flex items-center gap-2">
-            <HelpCircle className="w-5 h-5 text-fuchsia-400" />
-            <span className="font-semibold text-white text-sm">Academy Help</span>
+            <HelpCircle className="w-5 h-5 text-fuchsia-400" aria-hidden="true" />
+            <span className="font-semibold text-white text-sm">Help</span>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition"
+            className="min-h-11 min-w-11 flex items-center justify-center text-gray-300 hover:text-white rounded-lg hover:bg-gray-800 transition"
+            aria-label="Close help drawer"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
 
@@ -107,20 +108,20 @@ export default function HelpDrawer({ isOpen, onClose, userRole }: Props) {
             <div className="space-y-4">
               <div className="flex items-start gap-3">
                 <div className="w-7 h-7 rounded-full bg-fuchsia-600 flex items-center justify-center shrink-0 mt-0.5">
-                  <BookOpen className="w-4 h-4 text-white" />
+                  <BookOpen className="w-4 h-4 text-white" aria-hidden="true" />
                 </div>
                 <div className="bg-gray-800 rounded-xl rounded-tl-none px-4 py-3 text-sm text-gray-200 leading-relaxed">
-                  Hi! I can answer questions about Centenarian Academy — how to enroll, watch lessons, submit assignments, create courses, and more. What do you need help with?
+                  Hi! I can answer questions about CentenarianOS — the Planner, Finance, Travel, Workouts, Health Metrics, Academy, and all other modules. What do you need help with?
                 </div>
               </div>
 
               <div className="space-y-2">
-                <p className="text-xs text-gray-500 px-1">Suggested questions</p>
+                <p className="text-xs text-gray-400 px-1">Suggested questions</p>
                 {SUGGESTIONS.map((s) => (
                   <button
                     key={s}
                     onClick={() => sendMessage(s)}
-                    className="w-full text-left px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-gray-300 hover:border-fuchsia-600 hover:text-white transition"
+                    className="w-full text-left px-3 min-h-11 flex items-center bg-gray-900 border border-gray-700 rounded-lg text-sm text-gray-300 hover:border-fuchsia-600 hover:text-white transition"
                   >
                     {s}
                   </button>
@@ -174,7 +175,7 @@ export default function HelpDrawer({ isOpen, onClose, userRole }: Props) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) sendMessage(input); }}
-              placeholder="Ask anything about the Academy…"
+              placeholder="Ask anything about CentenarianOS…"
               disabled={loading}
               className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 disabled:opacity-50"
             />
@@ -182,13 +183,14 @@ export default function HelpDrawer({ isOpen, onClose, userRole }: Props) {
               type="button"
               onClick={() => sendMessage(input)}
               disabled={loading || !input.trim()}
-              className="p-2.5 bg-fuchsia-600 text-white rounded-xl hover:bg-fuchsia-700 transition disabled:opacity-50"
+              className="min-h-11 min-w-11 flex items-center justify-center bg-fuchsia-600 text-white rounded-xl hover:bg-fuchsia-700 transition disabled:opacity-50"
+              aria-label="Send message"
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
-          <p className="text-xs text-gray-600 mt-2 text-center">
-            Answers are generated from Academy documentation.
+          <p className="text-xs text-gray-400 mt-2 text-center">
+            Answers are generated from CentenarianOS documentation.
           </p>
         </div>
       </div>

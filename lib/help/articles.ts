@@ -7,6 +7,7 @@ export interface HelpArticle {
   title: string;
   content: string;
   role: 'student' | 'teacher' | 'admin' | 'all';
+  app?: 'centenarian' | 'contractor';
 }
 
 export const HELP_ARTICLES: HelpArticle[] = [
@@ -523,5 +524,53 @@ export const HELP_ARTICLES: HelpArticle[] = [
     role: 'all',
     title: 'How to search and filter blog posts and recipes',
     content: `On Dashboard → Blog or Dashboard → Recipes, use the search bar at the top to search by title, description, or tags. Filter by visibility status using the pill buttons: All, Draft, Public, Private (blog only), Members Only (blog only), or Scheduled. Sort by newest, recently edited, or title A-Z. The result count updates as you filter. When editing or creating a post or recipe, click the back arrow in the header to return to the list.`,
+  },
+
+  // ─── INVOICES ──────────────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to create and manage invoices',
+    content: `Go to Dashboard → Finance → Invoices to manage your invoices. Click Create Invoice to start a new one. Select a brand (business entity) from your brands list, enter client details (name, email, address), set issue and due dates, then add line items with description, quantity, and unit price. Optionally set a tax rate. Save as draft, or send directly. Invoices track status: Draft, Sent, Paid, Overdue. When marking an invoice as paid, enter the paid date. You can also create reusable invoice templates from Dashboard → Finance → Invoice Templates.`,
+  },
+
+  // ─── FUEL & NCV FRAMEWORK ─────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'What is the Fuel module and NCV framework?',
+    content: `The Fuel module at Dashboard → Fuel tracks your nutrition using the NCV (Nutrient-to-Calorie Value) framework. NCV scores rate foods as Green (nutrient-dense), Yellow (moderate), or Red (low nutrient density). Build recipes with the ingredient builder, which calculates total macros (calories, protein, carbs, fat, fiber) and NCV score automatically. Import recipes from any URL using the recipe import feature. Track meal prep sessions and manage your ingredient inventory. Each recipe supports servings, prep/cook time, tags, and visibility settings.`,
+  },
+
+  // ─── BUDGET FORECASTING ───────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to use budget forecasting',
+    content: `Go to Dashboard → Finance → Forecast to view your budget projections. The forecasting tool analyzes your historical income and spending patterns across budget categories to project future balances. It shows estimated monthly spending per category, projected account balances, and highlights categories trending over budget. Use this to plan ahead and adjust spending before the month ends. Forecasting works best with at least 30 days of transaction history and properly categorized expenses.`,
+  },
+
+  // ─── WEEKLY REVIEW ────────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to do a Weekly Review',
+    content: `Go to Dashboard → Weekly Review to reflect on your week. The review pulls in your health metrics, spending totals, workout stats, and task completion rate. Write a free-form reflection covering what went well, what to improve, and your focus for next week. AI-powered review (if enabled) generates insights from your cross-module data. Weekly reviews are stored and searchable — look back at past weeks to spot trends in your habits and progress toward goals.`,
+  },
+
+  // ─── GETTING STARTED ──────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'Getting started with CentenarianOS',
+    content: `After signing up and choosing a plan, you land on your dashboard. Start by setting your home page in Dashboard → Settings — choose which module you want to see first. The interactive walkthrough guides you through each module on first visit. Key first steps: (1) Create a roadmap and goal in the Planner, (2) Add a financial account and a few transactions, (3) Log your first health metrics or connect a wearable, (4) Try the demo account at /demo to see how a fully populated dashboard looks. Use the Help button (bottom-right) to ask questions anytime.`,
+  },
+
+  // ─── SETTINGS & BILLING ───────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to manage settings and billing',
+    content: `Go to Dashboard → Settings to configure your preferences: home page, clock format (12h/24h), fiscal year start, social sharing visibility, and scan auto-save. Set up multi-factor authentication (MFA) for account security. Go to Dashboard → Billing to manage your subscription — view your current plan, see payment history, or cancel. Lifetime members never see recurring charges. Connect wearables (Garmin, Oura, WHOOP) from Dashboard → Settings → Wearables for automatic health data sync.`,
   },
 ];

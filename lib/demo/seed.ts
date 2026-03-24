@@ -1178,6 +1178,49 @@ export async function seedVisitor(supabase: SupabaseClient, userId: string): Pro
     await supabase.from('media_notes').insert(noteRows);
   }
 
+  // ── Invoices ──
+  if (brandId) {
+    const { error: invErr } = await supabase.from('invoices').insert([
+      {
+        user_id: userId, brand_id: brandId, invoice_number: 'INV-2026-001',
+        client_name: 'TechCorp Inc.', client_email: 'billing@techcorp.example.com',
+        client_address: '123 Tech Blvd, San Jose, CA 95110',
+        issue_date: daysAgo(30), due_date: daysAgo(0), status: 'paid', paid_date: daysAgo(5),
+        subtotal: 4800, tax_rate: 0, tax_amount: 0, total: 4800, notes: 'March consulting engagement',
+        items: [{ description: 'Technology consulting — 40 hours @ $120/hr', quantity: 40, unit_price: 120, amount: 4800 }],
+      },
+      {
+        user_id: userId, brand_id: brandId, invoice_number: 'INV-2026-002',
+        client_name: 'StartupXYZ', client_email: 'accounts@startupxyz.example.com',
+        client_address: '789 Startup Way, Palo Alto, CA 94301',
+        issue_date: daysAgo(7), due_date: daysAgo(-23), status: 'sent',
+        subtotal: 3600, tax_rate: 0, tax_amount: 0, total: 3600, notes: 'Architecture review + recommendations',
+        items: [
+          { description: 'Architecture review — 20 hours @ $120/hr', quantity: 20, unit_price: 120, amount: 2400 },
+          { description: 'Written recommendations report', quantity: 1, unit_price: 1200, amount: 1200 },
+        ],
+      },
+    ]);
+    if (invErr) throw new Error(`Visitor invoices: ${invErr.message}`);
+  }
+
+  // ── Equipment Valuations ──
+  const vEqList = await supabase.from('equipment').select('id, name').eq('user_id', userId);
+  const laptopEqId = vEqList?.data?.find(e => e.name?.includes('ThinkPad'))?.id;
+  const barbellEqId = vEqList?.data?.find(e => e.name?.includes('Barbell'))?.id;
+  if (laptopEqId) {
+    await supabase.from('equipment_valuations').insert([
+      { equipment_id: laptopEqId, user_id: userId, value: 1400, valued_date: daysAgo(90), notes: 'Purchase value' },
+      { equipment_id: laptopEqId, user_id: userId, value: 1100, valued_date: daysAgo(30), notes: '1 year depreciation estimate' },
+    ]);
+  }
+  if (barbellEqId) {
+    await supabase.from('equipment_valuations').insert([
+      { equipment_id: barbellEqId, user_id: userId, value: 280, valued_date: daysAgo(60), notes: 'Purchase value' },
+      { equipment_id: barbellEqId, user_id: userId, value: 250, valued_date: daysAgo(0), notes: 'Current market estimate' },
+    ]);
+  }
+
   // ── Cross-Module Activity Links ──
   const vBlogData = await supabase.from('blog_posts').select('id, title').eq('user_id', userId);
   const vBlogId = (title: string) => vBlogData?.data?.find(b => b.title.includes(title))?.id;

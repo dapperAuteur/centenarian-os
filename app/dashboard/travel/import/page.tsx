@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Upload, Camera, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface GarminResult {
   inserted: number;
@@ -291,7 +292,7 @@ function CommuteSettingsForm() {
 
   // Load existing settings
   useState(() => {
-    fetch('/api/travel/settings')
+    offlineFetch('/api/travel/settings')
       .then((r) => r.json())
       .then((d) => {
         if (d.settings) {
