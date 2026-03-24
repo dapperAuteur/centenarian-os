@@ -322,6 +322,13 @@ export default function FinanceDashboardPage() {
             Invoices
           </Link>
           <Link
+            href="/dashboard/finance/forecast"
+            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-100 transition"
+          >
+            <TrendingUp className="w-4 h-4" />
+            Forecast
+          </Link>
+          <Link
             href="/dashboard/finance/brands"
             className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
           >

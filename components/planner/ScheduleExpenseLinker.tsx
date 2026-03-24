@@ -29,7 +29,7 @@ function formatCurrency(amount: number): string {
 }
 
 export default function ScheduleExpenseLinker({
-  templateId: _templateId,
+  templateId: _templateId, // eslint-disable-line @typescript-eslint/no-unused-vars
   expenses,
   employmentType,
   onLink,

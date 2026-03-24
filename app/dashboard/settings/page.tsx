@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { NAV_GROUPS } from '@/components/nav/NavConfig';
-import { Settings, Check, Loader2, Sparkles, RotateCcw, Clock } from 'lucide-react';
+import { Settings, Check, Loader2, Sparkles, RotateCcw, Clock, DollarSign } from 'lucide-react';
 import MfaSetupSection from '@/components/settings/MfaSetupSection';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 // import TourRestartButton from '@/components/onboarding/TourRestartButton';
@@ -40,6 +40,9 @@ export default function DashboardSettingsPage() {
   const [socialSaving, setSocialSaving] = useState(false);
   const [clockFormat, setClockFormat] = useState<'12h' | '24h'>('12h');
   const [clockSaving, setClockSaving] = useState(false);
+  const [fiscalMonth, setFiscalMonth] = useState(1);
+  const [fiscalDay, setFiscalDay] = useState(1);
+  const [fiscalSaving, setFiscalSaving] = useState(false);
   const [tours, setTours] = useState<TourStatus[]>([]);
 
   const loadTours = useCallback(async () => {
@@ -63,6 +66,8 @@ export default function DashboardSettingsPage() {
         setLikesPublic(d.likes_public ?? false);
         setShowDoneCounts(d.show_done_counts ?? false);
         setClockFormat(d.clock_format === '24h' ? '24h' : '12h');
+        setFiscalMonth(d.fiscal_year_start_month ?? 1);
+        setFiscalDay(d.fiscal_year_start_day ?? 1);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -259,6 +264,128 @@ export default function DashboardSettingsPage() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Fiscal Calendar */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mt-6">
+        <div className="flex items-center gap-2 mb-1">
+          <DollarSign className="w-5 h-5 text-fuchsia-600" aria-hidden="true" />
+          <h2 className="text-base font-semibold text-gray-800">Fiscal Calendar</h2>
+        </div>
+        <p className="text-sm text-gray-500 mb-4">
+          Set when your fiscal year begins. This affects income forecasts and financial reporting.
+        </p>
+
+        {/* Presets */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {([
+            { label: 'Calendar Year (Jan 1)', month: 1, day: 1 },
+            { label: 'US Federal (Oct 1)', month: 10, day: 1 },
+            { label: 'UK Tax Year (Apr 6)', month: 4, day: 6 },
+            { label: 'Australian (Jul 1)', month: 7, day: 1 },
+          ] as const).map((preset) => {
+            const isActive = fiscalMonth === preset.month && fiscalDay === preset.day;
+            return (
+              <button
+                key={preset.label}
+                disabled={fiscalSaving}
+                onClick={async () => {
+                  if (isActive) return;
+                  setFiscalSaving(true);
+                  try {
+                    const res = await offlineFetch('/api/user/preferences', {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        fiscal_year_start_month: preset.month,
+                        fiscal_year_start_day: preset.day,
+                      }),
+                    });
+                    if (res.ok) {
+                      setFiscalMonth(preset.month);
+                      setFiscalDay(preset.day);
+                    }
+                  } finally {
+                    setFiscalSaving(false);
+                  }
+                }}
+                className={`min-h-11 px-3 py-2 rounded-xl border-2 text-xs font-medium transition ${
+                  isActive
+                    ? 'border-fuchsia-500 bg-fuchsia-50 text-fuchsia-700'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-fuchsia-200'
+                } ${fiscalSaving ? 'opacity-50' : ''}`}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Custom Month + Day */}
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <label htmlFor="fiscal-month" className="block text-xs font-medium text-gray-500 mb-1">Month</label>
+            <select
+              id="fiscal-month"
+              value={fiscalMonth}
+              disabled={fiscalSaving}
+              onChange={async (e) => {
+                const m = Number(e.target.value);
+                setFiscalMonth(m);
+                setFiscalSaving(true);
+                try {
+                  await offlineFetch('/api/user/preferences', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fiscal_year_start_month: m }),
+                  });
+                } finally {
+                  setFiscalSaving(false);
+                }
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-fuchsia-500"
+            >
+              {Array.from({ length: 12 }, (_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  {new Date(2000, i, 1).toLocaleDateString('en-US', { month: 'long' })}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="w-24">
+            <label htmlFor="fiscal-day" className="block text-xs font-medium text-gray-500 mb-1">Day</label>
+            <input
+              id="fiscal-day"
+              type="number"
+              min={1}
+              max={28}
+              value={fiscalDay}
+              disabled={fiscalSaving}
+              onChange={async (e) => {
+                const d = Math.min(28, Math.max(1, Number(e.target.value) || 1));
+                setFiscalDay(d);
+              }}
+              onBlur={async () => {
+                setFiscalSaving(true);
+                try {
+                  await offlineFetch('/api/user/preferences', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fiscal_year_start_day: fiscalDay }),
+                  });
+                } finally {
+                  setFiscalSaving(false);
+                }
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-fuchsia-500"
+            />
+          </div>
+        </div>
+
+        {/* Preview */}
+        <p className="text-xs text-gray-400 mt-3">
+          {fiscalSaving ? 'Saving…' : `Your fiscal year runs: ${new Date(2000, fiscalMonth - 1, fiscalDay).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} – ${new Date(2001, fiscalMonth - 1, fiscalDay - 1).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`}
+        </p>
       </div>
 
       {/* Social & Privacy */}

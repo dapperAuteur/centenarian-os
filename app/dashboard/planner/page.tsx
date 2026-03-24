@@ -16,6 +16,8 @@ import TaskCompletionActionsModal from '@/components/planner/TaskCompletionActio
 import WorkJobBlock, { WorkJob } from '@/components/planner/WorkJobBlock';
 import SyncedTaskBadge from '@/components/planner/SyncedTaskBadge';
 import OutstandingInvoicesWidget from '@/components/planner/OutstandingInvoicesWidget';
+import ExpectedPaymentsWidget from '@/components/planner/ExpectedPaymentsWidget';
+import type { ExpectedPayment } from '@/lib/types';
 import ScheduleTemplateModal, { ScheduleTemplateFormData } from '@/components/planner/ScheduleTemplateModal';
 import DayOffModal, { DayOffData } from '@/components/planner/DayOffModal';
 import PayPeriodCard, { ReconcileData } from '@/components/planner/PayPeriodCard';
@@ -40,9 +42,11 @@ function TaskCard({ task, onToggle, onEdit }: TaskCardProps) {
     <div className={`p-4 rounded-lg border-l-4 transition ${
       task.completed
         ? 'bg-gray-50 border-lime-500 opacity-70'
-        : task.source_type
-          ? 'bg-amber-50/50 border-amber-500 hover:shadow-md'
-          : 'bg-white border-sky-500 hover:shadow-md'
+        : task.source_type === 'expected_payment'
+          ? 'bg-emerald-50/50 border-emerald-500 hover:shadow-md'
+          : task.source_type
+            ? 'bg-amber-50/50 border-amber-500 hover:shadow-md'
+            : 'bg-white border-sky-500 hover:shadow-md'
     }`}>
       <div className="flex items-start gap-3">
         <button
@@ -64,7 +68,7 @@ function TaskCard({ task, onToggle, onEdit }: TaskCardProps) {
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
               <span className={`text-xs font-semibold uppercase px-2 py-1 rounded-full ${
-                task.completed ? 'bg-gray-300 text-gray-600' : task.source_type ? 'bg-amber-500 text-white' : 'bg-sky-500 text-white'
+                task.completed ? 'bg-gray-300 text-gray-600' : task.source_type === 'expected_payment' ? 'bg-emerald-500 text-white' : task.source_type ? 'bg-amber-500 text-white' : 'bg-sky-500 text-white'
               }`}>
                 {task.tag}
               </span>
@@ -170,7 +174,8 @@ export default function PlannerPage() {
     jobs: WorkJob[];
     assigned_jobs: WorkJob[];
     outstanding_invoices: { id: string; invoice_number: string; contact_name: string; direction: string; status: string; total: number; amount_paid: number; due_date: string; job_id: string | null }[];
-    summary: { upcoming_job_count: number; outstanding_receivable_total: number; outstanding_receivable_count: number; overdue_count: number };
+    expected_payments: ExpectedPayment[];
+    summary: { upcoming_job_count: number; outstanding_receivable_total: number; outstanding_receivable_count: number; overdue_count: number; expected_payments_total: number; expected_payments_count: number };
   }
   const [workFeed, setWorkFeed] = useState<WorkFeedData | null>(null);
 
@@ -671,16 +676,23 @@ export default function PlannerPage() {
         </div>
       </div>
 
-      {/* Outstanding Invoices Widget (Work.WitUS) */}
-      {workFeed && workFeed.summary.outstanding_receivable_count > 0 && (
-        <div className="mb-6">
+      {/* Outstanding Invoices + Expected Payments Widgets (Work.WitUS) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        {workFeed && workFeed.summary.outstanding_receivable_count > 0 && (
           <OutstandingInvoicesWidget
             outstandingCount={workFeed.summary.outstanding_receivable_count}
             outstandingTotal={workFeed.summary.outstanding_receivable_total}
             overdueCount={workFeed.summary.overdue_count}
           />
-        </div>
-      )}
+        )}
+        {workFeed && workFeed.summary.expected_payments_count > 0 && (
+          <ExpectedPaymentsWidget
+            payments={workFeed.expected_payments}
+            totalExpected={workFeed.summary.expected_payments_total}
+            count={workFeed.summary.expected_payments_count}
+          />
+        )}
+      </div>
 
       {/* Progress Bar */}
       <div className="bg-white rounded-xl shadow-lg p-6 mb-6">

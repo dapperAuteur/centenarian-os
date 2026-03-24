@@ -1,6 +1,6 @@
 // app/api/planner/work-feed/route.ts
-// GET: returns the user's upcoming contractor jobs and outstanding invoices
-// for display in the CentOS planner alongside regular tasks.
+// GET: returns the user's upcoming contractor jobs, outstanding invoices,
+// and expected payments for display in the CentOS planner.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -28,10 +28,10 @@ export async function GET(request: NextRequest) {
 
   const db = getDb();
 
-  // Fetch jobs, assigned jobs, and outstanding invoices in parallel.
+  // Fetch all data sources in parallel.
   // Job queries are wrapped in try/catch for graceful fallback when
   // contractor_jobs table doesn't exist (user only uses CentOS).
-  const [ownJobs, assignedJobs, invoiceResult] = await Promise.all([
+  const [ownJobs, assignedJobs, invoiceResult, viewPayments, schedulePayments] = await Promise.all([
     // 1. Own jobs
     (async () => {
       try {
@@ -106,7 +106,72 @@ export async function GET(request: NextRequest) {
       if (error) return [];
       return data ?? [];
     })(),
+
+    // 4. Expected payments from VIEW (jobs + invoices with pay dates)
+    (async () => {
+      try {
+        const { data, error } = await db
+          .from('expected_payments')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('expected_date', from)
+          .lte('expected_date', to)
+          .order('expected_date');
+        if (error) return [];
+        return data ?? [];
+      } catch {
+        return []; // VIEW may not exist
+      }
+    })(),
+
+    // 5. Schedule-based expected payments (CentOS-only)
+    (async () => {
+      try {
+        const { data: templates } = await db
+          .from('schedule_templates')
+          .select('id, name')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .eq('template_type', 'work');
+        if (!templates?.length) return [];
+
+        const templateIds = templates.map((t: { id: string }) => t.id);
+        const { data: periods } = await db
+          .from('schedule_pay_periods')
+          .select('*')
+          .in('template_id', templateIds)
+          .eq('is_reconciled', false)
+          .gte('period_end', from)
+          .lte('period_end', to);
+
+        return (periods ?? []).map((p: Record<string, unknown>) => {
+          const tmpl = templates.find((t: { id: string }) => t.id === p.template_id);
+          return {
+            user_id: user.id,
+            source_type: 'schedule',
+            source_id: p.id as string,
+            expected_date: p.period_end as string,
+            label: (tmpl as { name: string })?.name ?? 'Schedule',
+            reference_number: null,
+            expected_amount: Number(p.estimated_net ?? p.estimated_gross ?? 0),
+            status: 'pending',
+            start_date: p.period_start as string,
+            end_date: p.period_end as string,
+            brand_id: null,
+            created_at: p.period_start as string,
+          };
+        });
+      } catch {
+        return [];
+      }
+    })(),
   ]);
+
+  // Merge expected payments from VIEW + schedules
+  const expected_payments = [...viewPayments, ...schedulePayments]
+    .sort((a: Record<string, string>, b: Record<string, string>) =>
+      (a.expected_date ?? '').localeCompare(b.expected_date ?? '')
+    );
 
   // Compute summary
   const outstanding_receivable_total = invoiceResult.reduce(
@@ -115,16 +180,22 @@ export async function GET(request: NextRequest) {
   const overdue_count = invoiceResult.filter(
     (inv: Record<string, string>) => inv.status === 'overdue'
   ).length;
+  const expected_payments_total = expected_payments.reduce(
+    (sum: number, p: Record<string, number>) => sum + (Number(p.expected_amount) || 0), 0
+  );
 
   return NextResponse.json({
     jobs: ownJobs,
     assigned_jobs: assignedJobs,
     outstanding_invoices: invoiceResult,
+    expected_payments,
     summary: {
       upcoming_job_count: ownJobs.length + assignedJobs.length,
       outstanding_receivable_total: Math.round(outstanding_receivable_total * 100) / 100,
       outstanding_receivable_count: invoiceResult.length,
       overdue_count,
+      expected_payments_total: Math.round(expected_payments_total * 100) / 100,
+      expected_payments_count: expected_payments.length,
     },
   });
 }

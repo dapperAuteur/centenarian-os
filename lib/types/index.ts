@@ -100,6 +100,21 @@ export interface Task {
   source_id: string | null;
 }
 
+export interface ExpectedPayment {
+  user_id: string;
+  source_type: 'job' | 'invoice' | 'schedule';
+  source_id: string;
+  expected_date: string;
+  label: string;
+  reference_number: string | null;
+  expected_amount: number;
+  status: string;
+  start_date: string | null;
+  end_date: string | null;
+  brand_id: string | null;
+  created_at: string;
+}
+
 // Nutrition types
 export interface Ingredient {
   id: string;

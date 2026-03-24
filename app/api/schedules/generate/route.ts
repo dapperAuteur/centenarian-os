@@ -48,7 +48,7 @@ async function generateForDate(
   db: Db,
   tmpl: TemplateRow,
   dateStr: string,
-  backfillMode: boolean,
+  _backfillMode: boolean,
 ): Promise<{ created: boolean; error?: string }> {
   const date = new Date(dateStr + 'T00:00:00');
   const dayOfWeek = date.getDay();

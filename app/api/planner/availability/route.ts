@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 
     // Task count for this date
     (async () => {
-      const { count } = await db
+      await db
         .from('tasks')
         .select('id', { count: 'exact', head: true })
         .eq('date', date)
