@@ -25,6 +25,10 @@ import TemplateManagerModal from '@/components/focus/TemplateManagerModal';
 import CreateTemplateModal from '@/components/focus/CreateTemplateModal';
 import DeleteTemplateModal from '@/components/focus/DeleteTemplateModal';
 import QualityRatingModal from '@/components/focus/QualityRatingModal';
+import dynamic from 'next/dynamic';
+import { Pencil } from 'lucide-react';
+
+const DoodleCanvas = dynamic(() => import('@/components/focus/DoodleCanvas'), { ssr: false });
 
 type TimerMode = 'simple' | 'pomodoro';
 type PomodoroPhase = 'work' | 'short-break' | 'long-break';
@@ -68,6 +72,9 @@ export default function FocusTimerPage() {
   const [editingTemplate, setEditingTemplate] = useState<SessionTemplate | null>(null);
   const [deleteTemplateModal, setDeleteTemplateModal] = useState<{ isOpen: boolean; template: SessionTemplate | null; }>({ isOpen: false, template: null });
   const [isDeletingTemplate, setIsDeletingTemplate] = useState(false);
+
+  // Doodle canvas
+  const [showDoodle, setShowDoodle] = useState(false);
 
   // Quality rating
   const [showQualityModal, setShowQualityModal] = useState(false);
@@ -583,6 +590,28 @@ export default function FocusTimerPage() {
               attachments={audioAttachments}
               onRemove={removeAudio}
             />
+          </div>
+        )}
+
+        {/* Doodle canvas — visible during active session */}
+        {currentSessionId && (
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Doodle / Sketch</label>
+            <button
+              onClick={() => setShowDoodle(true)}
+              className="flex items-center gap-1.5 px-4 py-2 bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 rounded-lg text-sm font-medium hover:bg-fuchsia-100 transition min-h-11"
+            >
+              <Pencil className="w-4 h-4" aria-hidden="true" />
+              Open Doodle Canvas
+            </button>
+            {showDoodle && (
+              <DoodleCanvas
+                isOpen={showDoodle}
+                onClose={() => setShowDoodle(false)}
+                onSaved={(url, publicId) => addImage(url, publicId)}
+                sessionId={currentSessionId}
+              />
+            )}
           </div>
         )}
 

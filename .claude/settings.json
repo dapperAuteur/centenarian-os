@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm config:*)",
+      "Bash(NODE_TLS_REJECT_UNAUTHORIZED=0 npm install tldraw)"
+    ]
+  }
+}
