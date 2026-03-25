@@ -61,10 +61,11 @@ export default function ScanPage() {
 
         const { transaction } = await res.json();
 
-        // Record line item prices
+        // Record line item prices + persist receipt_line_items
         if (data.line_items?.length) {
-          await Promise.allSettled(
-            data.line_items.map((li) =>
+          await Promise.allSettled([
+            // Record price history for each item
+            ...data.line_items.map((li) =>
               offlineFetch('/api/items/prices', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -81,9 +82,26 @@ export default function ScanPage() {
                 }),
               }),
             ),
-          );
+            // Persist receipt line items for future reference
+            offlineFetch('/api/scan/receipt-line-items', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                scan_image_id: scanImageId || null,
+                transaction_id: transaction.id,
+                items: data.line_items.map((li) => ({
+                  item_name: li.description,
+                  quantity: li.quantity,
+                  unit_price: li.unit_price,
+                  total_price: li.total,
+                  category_hint: li.category_hint || null,
+                  matched_item_id: null,
+                })),
+              }),
+            }),
+          ]);
 
-          // Insert receipt line items
+          // Link transaction to scan source
           await offlineFetch('/api/finance/transactions', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
