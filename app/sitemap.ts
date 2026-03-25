@@ -35,6 +35,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/privacy`,      lastModified: now, changeFrequency: 'yearly',  priority: 0.3 },
     { url: `${SITE_URL}/terms`,        lastModified: now, changeFrequency: 'yearly',  priority: 0.3 },
     { url: `${SITE_URL}/safety`,       lastModified: now, changeFrequency: 'yearly',  priority: 0.3 },
+    { url: `${SITE_URL}/exercises`,   lastModified: now, changeFrequency: 'weekly',  priority: 0.6 },
+    { url: `${SITE_URL}/workouts`,    lastModified: now, changeFrequency: 'weekly',  priority: 0.6 },
+    { url: `${SITE_URL}/demo`,        lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     // Feature module landing pages (from MODULES static list)
     ...MODULES.map((m) => ({
       url: `${SITE_URL}/features/${m.slug}`,
@@ -124,6 +127,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6 as number,
   }));
 
+  // ── Dynamic: public exercises ──────────────────────────────────────────
+  const { data: exercises } = await db
+    .from('exercises')
+    .select('id, updated_at')
+    .eq('is_active', true)
+    .limit(5000);
+
+  const exerciseRoutes: MetadataRoute.Sitemap = (exercises ?? []).map((e) => ({
+    url: `${SITE_URL}/exercises/${e.id}`,
+    lastModified: e.updated_at ?? now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.5 as number,
+  }));
+
   return [
     ...staticRoutes,
     ...profileRoutes,
@@ -131,5 +148,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...recipeRoutes,
     ...courseRoutes,
     ...institutionRoutes,
+    ...exerciseRoutes,
   ];
 }

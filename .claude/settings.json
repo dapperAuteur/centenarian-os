@@ -16,7 +16,10 @@
       "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app -name opengraph* -o -name og* -type f)",
       "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app -type d -name *admin* -o -type d -name *help* -o -type d -name *support* -o -type d -name *docs*)",
       "Bash(head -100 /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app/api/og/blog/[username]/[slug]/route.tsx)",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Read(//Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/**)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)"
     ],
     "additionalDirectories": [
       "/Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app/api/og/course"

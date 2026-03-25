@@ -147,7 +147,7 @@ export default function Modal({
           {showCloseButton && (
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              className="min-h-11 min-w-11 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
               aria-label="Close modal"
             >
               <X className="w-5 h-5" />

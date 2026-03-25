@@ -262,6 +262,51 @@ export function breadcrumbSchema(items: BreadcrumbItem[]) {
   };
 }
 
+// ─── FAQPage ─────────────────────────────────────────────────────────────────
+
+interface FaqItem {
+  question: string;
+  answer: string;
+}
+
+export function faqSchema(items: FaqItem[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer,
+      },
+    })),
+  };
+}
+
+// ─── SoftwareApplication ─────────────────────────────────────────────────────
+
+export function softwareApplicationSchema() {
+  const SITE_URL = getSiteUrl();
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'CentenarianOS',
+    applicationCategory: 'LifestyleApplication',
+    operatingSystem: 'Web',
+    url: SITE_URL,
+    description: 'Multi-decade personal operating system for executing audacious goals through data-driven daily habits.',
+    offers: {
+      '@type': 'AggregateOffer',
+      lowPrice: '0',
+      highPrice: '250',
+      priceCurrency: 'USD',
+      offerCount: '2',
+    },
+    publisher: organizationSchema(),
+  };
+}
+
 // ─── Product + Offer (pricing) ────────────────────────────────────────────────
 
 interface PricingTier {

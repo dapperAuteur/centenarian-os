@@ -257,10 +257,30 @@ export default function PricingPage() {
           </p>
         </div>
 
-        {/* Feature comparison note */}
-        <div className="mt-4 bg-gray-50 rounded-xl p-6 text-center">
+        {/* FAQ Section */}
+        <div className="mt-16">
+          <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">Frequently Asked Questions</h2>
+          <div className="max-w-3xl mx-auto space-y-6">
+            {[
+              { q: 'Can I try CentenarianOS before subscribing?', a: 'Yes! We offer a full-featured demo account you can explore without creating an account or entering payment info.' },
+              { q: 'What\'s the difference between Monthly and Lifetime?', a: 'Both plans give you full access to every module. Monthly is $10/month and can be canceled anytime. Lifetime is a one-time $100 payment that includes a free CentenarianOS shirt.' },
+              { q: 'Can I switch from Monthly to Lifetime?', a: 'Yes. When you purchase Lifetime, your monthly subscription is automatically canceled. Note that monthly fees already paid are not credited toward the lifetime price.' },
+              { q: 'Is my data private?', a: 'Absolutely. Your data is encrypted at rest and in transit. We never share or sell your data to third parties. Row-level security ensures only you can access your information.' },
+              { q: 'What devices does CentenarianOS work on?', a: 'CentenarianOS is a progressive web app (PWA) that works on any modern browser — desktop, tablet, or phone. Install it to your home screen for a native app experience.' },
+              { q: 'Do you offer refunds?', a: 'We do not offer refunds on subscriptions. You can cancel your monthly plan at any time and retain access until the end of your billing period.' },
+            ].map(({ q, a }) => (
+              <div key={q} className="bg-gray-50 rounded-xl p-5">
+                <h3 className="font-semibold text-gray-900 mb-2">{q}</h3>
+                <p className="text-sm text-gray-600">{a}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Contact */}
+        <div className="mt-8 bg-gray-50 rounded-xl p-6 text-center">
           <p className="text-sm text-gray-600">
-            Have questions?{' '}
+            Have more questions?{' '}
             <a href="mailto:support@centenarianos.com" className="text-fuchsia-600 hover:underline font-medium">
               Contact support
             </a>

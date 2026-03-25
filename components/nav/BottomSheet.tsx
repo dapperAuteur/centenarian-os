@@ -48,7 +48,7 @@ export default function BottomSheet({ open, onClose, title, children }: Props) {
           <span className="font-semibold text-gray-900">{title}</span>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-gray-100 transition"
+            className="min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-gray-100 transition"
             aria-label="Close"
           >
             <X className="w-5 h-5 text-gray-500" />

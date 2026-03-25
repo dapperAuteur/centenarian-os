@@ -75,8 +75,9 @@ export default function LandingPage() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 text-gray-600 hover:text-gray-900"
+              className="lg:hidden min-h-11 min-w-11 flex items-center justify-center text-gray-600 hover:text-gray-900"
               aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -87,73 +88,73 @@ export default function LandingPage() {
             <div className="lg:hidden mt-4 pb-4 space-y-4">
               <Link
                 href="/features"
-                className="block text-gray-600 hover:text-gray-900 font-medium"
+                className="min-h-11 flex items-center text-gray-600 hover:text-gray-900 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Features
               </Link>
               <Link
                 href="/demo"
-                className="block text-gray-600 hover:text-gray-900 font-medium"
+                className="min-h-11 flex items-center text-gray-600 hover:text-gray-900 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Demo
               </Link>
               <Link
                 href="/academy"
-                className="block text-gray-600 hover:text-gray-900 font-medium"
+                className="min-h-11 flex items-center text-gray-600 hover:text-gray-900 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Academy
               </Link>
               <Link
                 href="/blog"
-                className="block text-gray-600 hover:text-gray-900 font-medium"
+                className="min-h-11 flex items-center text-gray-600 hover:text-gray-900 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Blog
               </Link>
               <Link
                 href="/recipes"
-                className="block text-gray-600 hover:text-gray-900 font-medium"
+                className="min-h-11 flex items-center text-gray-600 hover:text-gray-900 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Recipes
               </Link>
               <Link
                 href="/coaching"
-                className="block text-gray-600 hover:text-gray-900 font-medium"
+                className="min-h-11 flex items-center text-gray-600 hover:text-gray-900 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Coaching
               </Link>
               <Link
                 href="/tech-roadmap"
-                className="block text-gray-600 hover:text-gray-900 font-medium"
+                className="min-h-11 flex items-center text-gray-600 hover:text-gray-900 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Tech Roadmap
               </Link>
               <Link
                 href="/contribute"
-                className="block text-gray-600 hover:text-gray-900 font-medium"
+                className="min-h-11 flex items-center text-gray-600 hover:text-gray-900 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Contribute
               </Link>
               {!isLoggedIn && (
                 <>
-                  <Link href="/login" className="block text-gray-600 hover:text-gray-900 font-medium" onClick={() => setMobileMenuOpen(false)}>
+                  <Link href="/login" className="min-h-11 flex items-center text-gray-600 hover:text-gray-900 font-medium" onClick={() => setMobileMenuOpen(false)}>
                     Login
                   </Link>
-                  <Link href="/signup" className="block text-gray-600 hover:text-gray-900 font-medium" onClick={() => setMobileMenuOpen(false)}>
+                  <Link href="/signup" className="min-h-11 flex items-center text-gray-600 hover:text-gray-900 font-medium" onClick={() => setMobileMenuOpen(false)}>
                     Sign Up
                   </Link>
                 </>
               )}
               <Link
                 href={primaryHref}
-                className="block w-full text-center px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-medium"
+                className="w-full text-center min-h-11 flex items-center justify-center px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {primaryLabel}
@@ -214,6 +215,36 @@ export default function LandingPage() {
             Learn About Coaching
           </span>
         </Link>
+      </section>
+
+      {/* How It Works */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
+        <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-6 sm:mb-10">
+          How It Works
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto">
+          <div className="text-center">
+            <div className="w-14 h-14 bg-fuchsia-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl font-extrabold text-fuchsia-600">1</span>
+            </div>
+            <h3 className="font-bold text-gray-900 mb-2">Set Your Vision</h3>
+            <p className="text-sm text-gray-600">Define multi-decade roadmaps and break them into goals, milestones, and daily tasks.</p>
+          </div>
+          <div className="text-center">
+            <div className="w-14 h-14 bg-sky-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl font-extrabold text-sky-600">2</span>
+            </div>
+            <h3 className="font-bold text-gray-900 mb-2">Track Everything</h3>
+            <p className="text-sm text-gray-600">Log meals, workouts, finances, trips, and health metrics. All modules link together.</p>
+          </div>
+          <div className="text-center">
+            <div className="w-14 h-14 bg-lime-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl font-extrabold text-lime-600">3</span>
+            </div>
+            <h3 className="font-bold text-gray-900 mb-2">See What Works</h3>
+            <p className="text-sm text-gray-600">Discover correlations between habits and outcomes. Iterate with data, not guesswork.</p>
+          </div>
+        </div>
       </section>
 
       {/* All Modules */}

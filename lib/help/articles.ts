@@ -596,4 +596,167 @@ export const HELP_ARTICLES: HelpArticle[] = [
     title: 'How to share content with tracked links',
     content: `Blog posts, recipes, and courses each have a Share section with Copy Link, Email, LinkedIn, and Facebook buttons. These buttons use tracked short links (i.centenarianos.com/...) so every share click is measured. Clicking Copy Link copies the short URL to your clipboard. Clicking Email opens your email client with the title and link pre-filled. LinkedIn and Facebook buttons open a share dialog in a new tab. If no short link exists yet (e.g. the content was published before link tracking was enabled), the full URL is used as a fallback.`,
   },
+
+  // ─── EQUIPMENT TRACKER ──────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to track equipment and assets',
+    content: `Go to Dashboard → Equipment to manage your gear, tools, and possessions. Click Add Equipment to create an item with name, category, purchase date, purchase price, and notes. Categories are auto-seeded on first access and you can create custom ones. Link an equipment item to an existing financial transaction to attribute cost. The hub page shows total value and category breakdown.`,
+  },
+  {
+    role: 'all',
+    title: 'How to track equipment valuations',
+    content: `On an equipment detail page (/dashboard/equipment/[id]), click Add Valuation to record the current market value. Each valuation creates a timestamped snapshot. A chart shows value over time. The most recent valuation updates the item's current_value field. Use this to track depreciation or appreciation of assets like vehicles, cameras, or musical instruments.`,
+  },
+  {
+    role: 'all',
+    title: 'Equipment media gallery',
+    content: `Each equipment item has a media gallery where you can upload photos, videos, and audio recordings. Drag items to reorder, rename files, and upload multiple at once. The first gallery item automatically becomes the cover thumbnail shown on the equipment list.`,
+  },
+
+  // ─── LIFE CATEGORIES ──────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'What are Life Categories?',
+    content: `Life Categories are user-defined tags (Health, Finance, Career, etc.) that you can apply to any item across all modules — tasks, trips, transactions, workouts, recipes, and more. They help you see how your time and energy are distributed across life areas. Eight default categories are auto-seeded, and you can create your own with custom icons and colors.`,
+  },
+  {
+    role: 'all',
+    title: 'How to tag items with Life Categories',
+    content: `Look for the Life Category chips on any item detail page or edit modal. Click a category chip to tag or untag an item. The LifeCategoryTagger component shows existing tags and a dropdown to add more. You can also batch-tag items from the Categories dashboard (/dashboard/categories) by viewing uncategorized items.`,
+  },
+  {
+    role: 'all',
+    title: 'Life Categories analytics dashboard',
+    content: `Visit /dashboard/categories to see summary cards for each category, a spending pie chart broken down by category, and an activity bar chart showing how many items are in each life area. The uncategorized items view lets you quickly tag items that haven't been assigned to any category yet.`,
+  },
+
+  // ─── DATA HUB ──────────────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'What is the Data Hub?',
+    content: `The Data Hub (/dashboard/data) is a centralized import/export center for all modules. It supports 10+ module types: finance, health metrics, trips, fuel, maintenance, vehicles, equipment, contacts, tasks, and workouts. Import from CSV files or Google Sheets. Export to CSV with optional date-range filtering.`,
+  },
+  {
+    role: 'all',
+    title: 'How to import data via CSV',
+    content: `Go to Dashboard → Data Hub and click Import on the module card you want. Download the CSV template to see the expected columns and example data. Fill in your data, then drag-and-drop or paste from Google Sheets. The importer validates rows and shows a preview before committing. Bulk imports do NOT auto-create linked finance transactions.`,
+  },
+  {
+    role: 'all',
+    title: 'How to export data to CSV',
+    content: `Go to Dashboard → Data Hub and click Export on any module card. Set optional date range filters (from/to) and click Download CSV. The export includes all fields for the module. You can use exported CSVs for backup, analysis in Excel or Google Sheets, or migrating to another system.`,
+  },
+
+  // ─── EXERCISE LIBRARY ──────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to use the Exercise Library',
+    content: `The Exercise Library (/dashboard/exercises) is your personal catalog of exercises. Each exercise has a name, category, instructions, form cues, muscle groups, default sets/reps/weight, and optional media (video URL, image, audio). Use the ExercisePicker in workout forms to quickly select exercises. Categories are auto-seeded with 10 defaults (Push, Pull, Legs, Core, Cardio, etc.) and can be customized.`,
+  },
+  {
+    role: 'all',
+    title: 'How to link exercises to equipment',
+    content: `Exercises can be linked to equipment items via the equipment junction table. On an exercise detail page, select which equipment is needed (barbell, dumbbell, resistance band, etc.). When you pick an exercise in a workout template, you can also specify which specific equipment item from your Equipment Tracker to use.`,
+  },
+  {
+    role: 'all',
+    title: 'Advanced workout fields explained',
+    content: `Workout templates and logs support advanced fields: RPE (Rate of Perceived Exertion, 1-10), Tempo (e.g. 3-1-2-0 for eccentric-pause-concentric-pause seconds), Superset Groups (group exercises together), boolean flags (Circuit, Negatives, Isometric, To Failure, Balance, Unilateral), and Distance in miles. These fields are optional and appear in the Advanced section of each exercise row.`,
+  },
+
+  // ─── NOMAD LONGEVITY OS ────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'What is the Nomad Longevity OS?',
+    content: `The Nomad Longevity OS (/dashboard/workouts/nomad) is a collection of pre-built workout protocols designed for travelers and home exercisers. It includes AM (morning), PM (evening), Hotel (bodyweight), and Gym (full equipment) workout categories. The Friction Protocol helps you start with minimal commitment — just 2 minutes — and build momentum.`,
+  },
+  {
+    role: 'all',
+    title: 'Post-workout feedback system',
+    content: `After completing a workout (from Nomad OS or any workout log), you are prompted to rate your workout. The WorkoutFeedbackModal asks for mood before/after (1-5), perceived difficulty, instruction preference, and optional written feedback. This data helps track how workouts affect your mental state over time.`,
+  },
+
+  // ─── ACTIVITY LINKS ───────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to link activities across modules',
+    content: `Activity Links let you connect items across different modules — for example, linking a trip to a transaction, a workout to an equipment item, or a task to a recipe. Use the ActivityLinker component on any item detail page. Search for items by type and name, then click to create a bidirectional link. Linked items appear as pills that navigate to the connected item.`,
+  },
+  {
+    role: 'all',
+    title: 'What types of items can be linked?',
+    content: `Activity links support 11 entity types: task, trip, route, transaction, recipe, fuel_log, maintenance, invoice, workout, equipment, and focus_session. Links are bidirectional — linking A→B automatically creates B→A. Use the ActivityLinker component or the /api/activity-links endpoint to manage links.`,
+  },
+
+  // ─── CONTACTS & LOCATIONS ──────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to manage saved contacts',
+    content: `Contacts (/dashboard/contacts or via the ContactAutocomplete component) let you save vendors, customers, and locations. Each contact has a name, type, optional default category, and notes. When you type a vendor name in a finance transaction, the autocomplete suggests saved contacts. Selecting a contact with a default_category_id auto-fills the transaction category.`,
+  },
+  {
+    role: 'all',
+    title: 'How to add locations to contacts',
+    content: `Each contact can have multiple sub-locations with address, latitude/longitude, label, and notes. On a contact detail page, click Add Location. Set one location as the default — it will be pre-selected when you choose that contact in trip origins/destinations. Locations are sortable by drag order.`,
+  },
+
+  // ─── CORRELATIONS & ANALYTICS ─────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to use the Correlations module',
+    content: `The Correlations module (/dashboard/correlations) finds statistical relationships between data from different modules. For example, it can show whether sleep hours correlate with next-day focus ratings, or whether exercise frequency correlates with mood. Select two metrics from the dropdowns, set a date range, and view the scatter plot with a trend line and correlation coefficient.`,
+  },
+  {
+    role: 'all',
+    title: 'Cross-module analytics dashboard',
+    content: `The Analytics page (/dashboard/analytics) shows aggregated daily and weekly views across all modules. See how many tasks you completed, miles you traveled, calories you logged, and workouts you did — all in one place. Charts show trends over time and help you spot patterns across your entire lifestyle.`,
+  },
+
+  // ─── BLOG PUBLISHING ──────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to publish a blog post',
+    content: `Go to Dashboard → Blog and click New Post. Write your content using the rich text editor. Add a cover image, excerpt, and tags. Set visibility to Public to make it discoverable on /blog, or Private to keep it in your dashboard only. Click Publish to go live. Your post gets a public URL at /blog/[username]/[slug] and a tracked short link for sharing.`,
+  },
+  {
+    role: 'all',
+    title: 'Blog sharing and engagement',
+    content: `Published blog posts show like and save buttons for logged-in readers. The share bar includes Copy Link (tracked short URL), Email, LinkedIn, and Facebook buttons. Your public author profile at /profiles/[username] lists all your published posts. Reading progress events are tracked so you can see how many people read to the end.`,
+  },
+
+  // ─── RECIPE PUBLISHING ─────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to create and publish a recipe',
+    content: `Go to Dashboard → Recipes and click Create Recipe. Add a title, description, cover image, prep/cook time, servings, and ingredients using the ingredient builder. Write instructions in the text area. Set visibility to Public to list it on /recipes. Published recipes appear on your cook profile at /recipes/cooks/[username]/[slug].`,
+  },
+  {
+    role: 'all',
+    title: 'How to import a recipe from a URL',
+    content: `On the recipe creation page, paste a URL from any recipe website and click Import. CentenarianOS scrapes the page for schema.org/Recipe JSON-LD structured data and auto-fills the title, description, ingredients, instructions, prep/cook times, and servings. Review and edit the imported data, then save. The source_url is stored for reference.`,
+  },
+
+  // ─── MEDIA LIBRARY ────────────────────────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'How to use the Media Tracker',
+    content: `The Media Tracker (/dashboard/media) lets you track books, TV shows, movies, podcasts, and other media you consume. Add items with title, type, status (watching/reading/completed), rating, and notes. The tracker helps you maintain a personal media log and connect it to your broader life goals via Activity Links and Life Categories.`,
+  },
+  {
+    role: 'all',
+    title: 'How to add podcast links',
+    content: `Podcast episodes can store multi-platform links (Spotify, Apple Podcasts, YouTube, etc.) in a JSONB field. When viewing a podcast entry, click the platform icons to open the episode on that service. Teachers can also add podcast links to course lessons for supplementary listening.`,
+  },
 ];
