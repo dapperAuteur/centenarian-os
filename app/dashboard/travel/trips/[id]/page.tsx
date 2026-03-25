@@ -512,14 +512,12 @@ export default function TripDetailPage() {
               Start Trip
             </button>
           )}
-          <a
-            href={`/api/travel/trips/${trip.id}/itinerary`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href={`/dashboard/travel/trips/${trip.id}/itinerary`}
             className="flex items-center gap-1.5 px-3 min-h-11 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition"
           >
-            <FileText className="w-3.5 h-3.5" /> Download Itinerary
-          </a>
+            <FileText className="w-3.5 h-3.5" /> View Itinerary
+          </Link>
           <button
             onClick={() => setShowShareModal(true)}
             className="flex items-center gap-1.5 px-3 min-h-11 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition"
