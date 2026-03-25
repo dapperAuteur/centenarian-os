@@ -48,7 +48,7 @@ export async function PATCH(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const allowed = ['commute_distance_miles', 'commute_duration_min', 'default_vehicle_id', 'home_address', 'home_lat', 'home_lng', 'distance_unit'];
+  const allowed = ['commute_distance_miles', 'commute_duration_min', 'default_vehicle_id', 'home_address', 'home_lat', 'home_lng', 'distance_unit', 'fifo_enabled_at'];
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
   for (const key of allowed) {
@@ -81,5 +81,40 @@ export async function PATCH(request: NextRequest) {
   }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // When FIFO is being enabled, initialize gallons_remaining on existing fuel logs for owned vehicles
+  if (body.fifo_enabled_at && data?.fifo_enabled_at) {
+    const cutoffDate = new Date(data.fifo_enabled_at).toISOString().slice(0, 10);
+
+    // Get owned vehicle IDs
+    const { data: ownedVehicles } = await supabase
+      .from('vehicles')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('ownership_type', 'owned');
+
+    if (ownedVehicles && ownedVehicles.length > 0) {
+      const vehicleIds = ownedVehicles.map((v) => v.id);
+
+      // Set gallons_remaining = gallons for fuel logs that don't have it set yet
+      const { data: uninitLogs } = await supabase
+        .from('fuel_logs')
+        .select('id, gallons')
+        .eq('user_id', user.id)
+        .in('vehicle_id', vehicleIds)
+        .gte('date', cutoffDate)
+        .is('gallons_remaining', null);
+
+      if (uninitLogs) {
+        for (const log of uninitLogs) {
+          await supabase
+            .from('fuel_logs')
+            .update({ gallons_remaining: log.gallons })
+            .eq('id', log.id);
+        }
+      }
+    }
+  }
+
   return NextResponse.json({ settings: data });
 }

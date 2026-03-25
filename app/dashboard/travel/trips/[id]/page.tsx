@@ -55,6 +55,8 @@ interface Trip {
   budget_amount: number | null;
   brand_id: string | null;
   visibility: string;
+  fifo_cost: number | null;
+  cost_source: string;
   vehicles: { id: string; nickname: string; type: string } | null;
 }
 
@@ -227,6 +229,12 @@ export default function TripDetailPage() {
                   ? <>${(Number(trip.cost) * 2).toFixed(2)} <span className="text-xs text-gray-400 font-normal">(${Number(trip.cost).toFixed(2)} each way)</span></>
                   : <>${Number(trip.cost).toFixed(2)}</>
                 }
+                {trip.cost_source === 'fifo' && (
+                  <span className="text-xs bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded font-medium ml-1">FIFO</span>
+                )}
+                {trip.cost_source === 'override' && trip.fifo_cost != null && (
+                  <span className="text-xs text-gray-400 ml-1">(FIFO est: ${Number(trip.fifo_cost).toFixed(2)})</span>
+                )}
               </span>
             </div>
           )}

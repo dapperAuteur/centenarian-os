@@ -6,6 +6,7 @@ import {
   deleteLinkedTransaction,
 } from '@/lib/finance/linked-transaction';
 import { getRoute } from '@/lib/geo/route';
+import { isFifoEligible, allocateFifoForTrip, deallocateFifoForTrip } from '@/lib/travel/fifo';
 
 // CO2 emission factors in kg per mile
 const CO2_PER_MILE: Record<string, number> = {
@@ -214,14 +215,46 @@ export async function POST(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Auto-create linked finance transaction if cost is provided (skip for planned trips)
+  // FIFO fuel cost allocation
   const resolvedStatus = trip_status || 'completed';
-  if (cost && cost > 0 && resolvedStatus === 'completed') {
+  let resolvedCost = cost;
+
+  if (resolvedDistance && resolvedDistance > 0) {
+    const eligible = await isFifoEligible(supabase, user.id, {
+      mode,
+      vehicleId: vehicle_id || null,
+      tripDate: date,
+      tripStatus: resolvedStatus,
+      manualCost: cost ? parseFloat(cost) : null,
+    });
+
+    if (eligible) {
+      const effectiveDist = roundTrip ? resolvedDistance * 2 : resolvedDistance;
+      const fifoResult = await allocateFifoForTrip(
+        supabase, user.id, vehicle_id, effectiveDist, data.id, date,
+      );
+
+      if (fifoResult) {
+        resolvedCost = fifoResult.fifoCost;
+        await supabase.from('trips').update({
+          cost: fifoResult.fifoCost,
+          fifo_cost: fifoResult.fifoCost,
+          cost_source: 'fifo',
+        }).eq('id', data.id);
+        data.cost = fifoResult.fifoCost;
+        data.fifo_cost = fifoResult.fifoCost;
+        data.cost_source = 'fifo';
+      }
+    }
+  }
+
+  // Auto-create linked finance transaction if cost is provided (skip for planned trips)
+  if (resolvedCost && resolvedCost > 0 && resolvedStatus === 'completed') {
     try {
       const arrow = roundTrip ? '↔' : '→';
       const txId = await createLinkedTransaction(supabase, {
         userId: user.id,
-        amount: cost,
+        amount: resolvedCost,
         vendor: origin && destination ? `${origin} ${arrow} ${destination}` : null,
         date,
         source_module: 'trip',
@@ -265,7 +298,7 @@ export async function PATCH(request: NextRequest) {
   // Fetch existing record for CO2 recalc and transaction sync
   const { data: existing } = await supabase
     .from('trips')
-    .select('mode, distance_miles, cost, origin, destination, date, transaction_id, is_round_trip, trip_status')
+    .select('mode, distance_miles, cost, origin, destination, date, transaction_id, is_round_trip, trip_status, vehicle_id, cost_source, fifo_cost')
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle();
@@ -286,6 +319,21 @@ export async function PATCH(request: NextRequest) {
     updates.trip_category = 'travel';
   }
 
+  // FIFO re-allocation: if distance, vehicle, mode, or round-trip changed on a FIFO trip
+  const fifoRelevantChange = updates.distance_miles !== undefined || updates.vehicle_id !== undefined
+    || updates.mode !== undefined || roundTripChanged;
+  const wasFifo = existing.cost_source === 'fifo';
+
+  // If user is manually setting cost on a FIFO trip, convert to override
+  if (updates.cost !== undefined && updates.cost > 0 && wasFifo) {
+    await deallocateFifoForTrip(supabase, id);
+    updates.cost_source = 'override';
+    // Keep fifo_cost for reference
+  } else if (fifoRelevantChange && wasFifo) {
+    // Deallocate old, will reallocate after update
+    await deallocateFifoForTrip(supabase, id);
+  }
+
   const { data, error } = await supabase
     .from('trips')
     .update(updates)
@@ -295,6 +343,49 @@ export async function PATCH(request: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Re-allocate FIFO if relevant fields changed and trip was/is FIFO-eligible
+  if (fifoRelevantChange && wasFifo && updates.cost_source !== 'override') {
+    const newMode = updates.mode ?? existing.mode;
+    const newVehicleId = updates.vehicle_id ?? existing.vehicle_id;
+    const newDist = updates.distance_miles ?? existing.distance_miles;
+    const newRt = updates.is_round_trip ?? existing.is_round_trip;
+    const newDate = updates.date ?? existing.date;
+
+    if (newVehicleId && newDist && newDist > 0) {
+      const effectiveDist = newRt ? newDist * 2 : newDist;
+      const eligible = await isFifoEligible(supabase, user.id, {
+        mode: newMode,
+        vehicleId: newVehicleId,
+        tripDate: newDate,
+        tripStatus: data.trip_status || 'completed',
+        manualCost: null,
+      });
+
+      if (eligible) {
+        const fifoResult = await allocateFifoForTrip(
+          supabase, user.id, newVehicleId, effectiveDist, id, newDate,
+        );
+        if (fifoResult) {
+          await supabase.from('trips').update({
+            cost: fifoResult.fifoCost,
+            fifo_cost: fifoResult.fifoCost,
+            cost_source: 'fifo',
+          }).eq('id', id);
+          data.cost = fifoResult.fifoCost;
+          data.fifo_cost = fifoResult.fifoCost;
+          data.cost_source = 'fifo';
+        } else {
+          await supabase.from('trips').update({
+            fifo_cost: null,
+            cost_source: 'manual',
+          }).eq('id', id);
+          data.fifo_cost = null;
+          data.cost_source = 'manual';
+        }
+      }
+    }
+  }
 
   // When a planned trip is marked completed, create the finance transaction
   const statusChanged = updates.trip_status !== undefined;
@@ -364,12 +455,17 @@ export async function DELETE(request: NextRequest) {
   // Check for linked finance transaction before deleting
   const { data: existing } = await supabase
     .from('trips')
-    .select('transaction_id')
+    .select('transaction_id, cost_source')
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  // Deallocate FIFO (return gallons to fuel logs) before deleting
+  if (existing.cost_source === 'fifo' || existing.cost_source === 'override') {
+    await deallocateFifoForTrip(supabase, id);
+  }
 
   const { error } = await supabase
     .from('trips')

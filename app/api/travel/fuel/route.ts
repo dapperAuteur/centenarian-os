@@ -83,6 +83,26 @@ export async function POST(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  // Initialize gallons_remaining if FIFO is enabled for this user
+  if (gallons && gallons > 0 && vehicle_id) {
+    const { data: settings } = await supabase
+      .from('travel_settings')
+      .select('fifo_enabled_at')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (settings?.fifo_enabled_at) {
+      const cutoff = new Date(settings.fifo_enabled_at).toISOString().slice(0, 10);
+      if (date >= cutoff) {
+        await supabase
+          .from('fuel_logs')
+          .update({ gallons_remaining: gallons })
+          .eq('id', data.id);
+        data.gallons_remaining = gallons;
+      }
+    }
+  }
+
   // Auto-create linked finance transaction if cost is provided
   if (total_cost && total_cost > 0) {
     try {
@@ -119,7 +139,7 @@ export async function PATCH(request: NextRequest) {
   // Fetch existing record for derived-field recalculation and transaction sync
   const { data: existing } = await supabase
     .from('fuel_logs')
-    .select('miles_since_last_fill, gallons, total_cost, station, date, transaction_id')
+    .select('miles_since_last_fill, gallons, total_cost, station, date, transaction_id, gallons_remaining')
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle();
@@ -133,6 +153,15 @@ export async function PATCH(request: NextRequest) {
     if (miles && gals && gals > 0) {
       updates.mpg_calculated = parseFloat((miles / gals).toFixed(2));
     }
+  }
+
+  // Adjust gallons_remaining if gallons changed on a FIFO-tracked log
+  if (updates.gallons !== undefined && existing.gallons_remaining !== null) {
+    const oldGallons = Number(existing.gallons);
+    const newGallons = Number(updates.gallons);
+    const delta = newGallons - oldGallons;
+    const newRemaining = Math.max(0, Number(existing.gallons_remaining) + delta);
+    updates.gallons_remaining = parseFloat(newRemaining.toFixed(3));
   }
 
   const { data, error } = await supabase
@@ -210,6 +239,16 @@ export async function DELETE(request: NextRequest) {
 
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  // Find trips that have FIFO allocations from this fuel log (before cascade deletes them)
+  const { data: affectedAllocations } = await supabase
+    .from('fuel_allocations')
+    .select('trip_id')
+    .eq('fuel_log_id', id);
+
+  const affectedTripIds = affectedAllocations
+    ? [...new Set(affectedAllocations.map((a) => a.trip_id))]
+    : [];
+
   const { error } = await supabase
     .from('fuel_logs')
     .delete()
@@ -217,6 +256,14 @@ export async function DELETE(request: NextRequest) {
     .eq('user_id', user.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Reset FIFO cost on affected trips (their allocations were cascade-deleted)
+  if (affectedTripIds.length > 0) {
+    await supabase
+      .from('trips')
+      .update({ fifo_cost: null, cost_source: 'manual' })
+      .in('id', affectedTripIds);
+  }
 
   return NextResponse.json({
     ok: true,
