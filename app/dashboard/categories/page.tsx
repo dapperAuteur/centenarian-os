@@ -196,7 +196,7 @@ export default function CategoriesPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-10 space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Tags className="w-6 h-6" />
@@ -204,7 +204,7 @@ export default function CategoriesPage() {
           </h1>
           <p className="text-sm text-gray-500 mt-1">Tag activities across all modules to track how you spend time and money</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="flex bg-gray-100 rounded-lg p-0.5">
             {[7, 30, 90].map((d) => (
               <button
