@@ -237,7 +237,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   // Switchy short link — fire and forget
   const isNowPublishing = body.is_published === true && !course.is_published;
   if (data && isNowPublishing && !course.short_link_id) {
-    const siteUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+    const rawUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+    const siteUrl = rawUrl ? `https://${rawUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}` : '';
     createShortLink({
       url: `${siteUrl}/academy/${id}`,
       slug: toSwitchySlug('c', data.title || course.title),

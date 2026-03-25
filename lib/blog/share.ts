@@ -15,7 +15,8 @@ export function buildShareUrls(
   post: Pick<BlogPost, 'title' | 'slug'> & { short_link_url?: string | null },
   username: string,
 ): ShareUrls {
-  const base = process.env.NEXT_PUBLIC_APP_URL || '';
+  const raw = process.env.NEXT_PUBLIC_APP_URL || '';
+  const base = raw ? `https://${raw.replace(/^https?:\/\//, '').replace(/\/$/, '')}` : '';
   const fullUrl = `${base}/blog/${username}/${post.slug}`;
   const postUrl = post.short_link_url ?? fullUrl;
 
