@@ -65,6 +65,7 @@ interface TravelSettings {
   commute_distance_miles: number | null;
   commute_duration_min: number | null;
   default_vehicle_id: string | null;
+  fifo_enabled_at: string | null;
 }
 
 interface TripTemplateStop {
@@ -190,6 +191,23 @@ export default function TravelPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const toggleFifo = async () => {
+    const enabling = !settings?.fifo_enabled_at;
+    const payload = enabling
+      ? { fifo_enabled_at: new Date().toISOString() }
+      : { fifo_enabled_at: null };
+
+    const res = await offlineFetch('/api/travel/settings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      const { settings: s } = await res.json();
+      setSettings(s);
+    }
+  };
 
   const logCommuteByBike = async () => {
     if (!settings?.commute_distance_miles) {
@@ -448,6 +466,27 @@ export default function TravelPage() {
               <p className="text-xs text-amber-600 mt-0.5">car trips this month</p>
             </Link>
           )}
+        </div>
+      )}
+
+      {/* FIFO Fuel Cost Tracking toggle */}
+      {vehicles.some((v) => v.type === 'car' || v.type === 'motorcycle') && (
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-700">Auto-calculate trip fuel costs</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {settings?.fifo_enabled_at
+                ? `Enabled since ${new Date(settings.fifo_enabled_at).toLocaleDateString()}`
+                : 'Uses FIFO from your fill-up history to allocate fuel cost per trip'}
+            </p>
+          </div>
+          <button
+            onClick={toggleFifo}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition min-h-11 min-w-11 ${settings?.fifo_enabled_at ? 'bg-sky-600' : 'bg-gray-300'}`}
+            aria-label={settings?.fifo_enabled_at ? 'Disable FIFO fuel tracking' : 'Enable FIFO fuel tracking'}
+          >
+            <span className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${settings?.fifo_enabled_at ? 'translate-x-6' : 'translate-x-1'}`} />
+          </button>
         </div>
       )}
 

@@ -54,6 +54,8 @@ interface Trip {
   budget_amount: number | null;
   brand_id: string | null;
   visibility: string;
+  fifo_cost: number | null;
+  cost_source: string;
   vehicles?: { id: string; nickname: string } | null;
 }
 
@@ -199,6 +201,7 @@ function TripsPageInner() {
   }>>([]);
   const [templates, setTemplates] = useState<TripTemplate[]>([]);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [fifoEstimate, setFifoEstimate] = useState<{ estimatedCost: number; mpgUsed: number; isPartial: boolean } | null>(null);
   const limit = 50;
 
   const load = useCallback(async () => {
@@ -249,6 +252,38 @@ function TripsPageInner() {
   }, [page, search, modeFilter, taxFilter, categoryFilter, statusFilter, fromDate, toDate]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Fetch FIFO estimate when form fields change (debounced)
+  useEffect(() => {
+    if (!showForm) { setFifoEstimate(null); return; }
+    const isFuelMode = form.mode === 'car' || form.mode === 'motorcycle';
+    if (!isFuelMode || !form.vehicle_id || !form.distance_miles || !form.date) {
+      setFifoEstimate(null);
+      return;
+    }
+    // Don't show estimate if user typed a manual cost
+    if (form.cost) { setFifoEstimate(null); return; }
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await offlineFetch('/api/travel/fifo/estimate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vehicle_id: form.vehicle_id,
+            distance_miles: parseFloat(form.distance_miles),
+            is_round_trip: form.is_round_trip,
+            trip_date: form.date,
+          }),
+        });
+        if (res.ok) {
+          const d = await res.json();
+          setFifoEstimate(d.estimate);
+        }
+      } catch { /* ignore */ }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [showForm, form.mode, form.vehicle_id, form.distance_miles, form.date, form.is_round_trip, form.cost]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this trip?')) return;
@@ -720,6 +755,11 @@ function TripsPageInner() {
                             Fitness
                           </span>
                         )}
+                        {t.cost_source === 'fifo' && (
+                          <span className="text-xs bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded font-medium" title={`FIFO fuel cost: $${Number(t.fifo_cost).toFixed(2)}`}>
+                            FIFO
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-gray-600 text-xs">
@@ -939,10 +979,20 @@ function TripsPageInner() {
               <label htmlFor="trip-cost" className="block text-xs font-medium text-gray-600 mb-1">Cost ($)</label>
               <input
                 id="trip-cost"
-                type="number" step="0.01" value={form.cost} placeholder="0.00"
+                type="number" step="0.01" value={form.cost}
+                placeholder={fifoEstimate ? `Auto: $${fifoEstimate.estimatedCost.toFixed(2)}` : '0.00'}
                 onChange={(e) => setForm((f) => ({ ...f, cost: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
               />
+              {fifoEstimate && !form.cost && (
+                <p className="text-xs text-sky-600 mt-1">
+                  Est. fuel cost: ${fifoEstimate.estimatedCost.toFixed(2)} ({fifoEstimate.mpgUsed.toFixed(1)} MPG)
+                  {fifoEstimate.isPartial && <span className="text-amber-600 ml-1">(partial — tank low)</span>}
+                </p>
+              )}
+              {fifoEstimate && form.cost && (
+                <p className="text-xs text-gray-400 mt-1">Manual override — FIFO will not be used</p>
+              )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
