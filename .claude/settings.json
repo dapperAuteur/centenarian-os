@@ -19,7 +19,15 @@
       "Bash(git check-ignore:*)",
       "Read(//Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/**)",
       "Bash(for f:*)",
-      "Bash(do echo:*)"
+      "Bash(do echo:*)",
+      "Bash(curl -s \"https://api.switchy.io\")",
+      "Bash(curl -s \"https://api.switchy.io/v1\")",
+      "Bash(curl -s \"https://developers.switchy.io\" -L)",
+      "Bash(curl -s \"https://developers.switchy.io/docs/overview/index\" -L)",
+      "Bash(curl -s \"https://developers.switchy.io/docs/guides/how-to-query\" -L)",
+      "Bash(curl -s \"https://developers.switchy.io/docs/guides/how-to-create-a-link\" -L)",
+      "Bash(curl -s \"https://developers.switchy.io/docs/guides/how-to-update-a-link\" -L)",
+      "Bash(curl -s \"https://developers.switchy.io/docs/overview/authentication\" -L)"
     ],
     "additionalDirectories": [
       "/Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app/api/og/course"

@@ -28,6 +28,14 @@ export async function POST(request: NextRequest) {
   const db = getDb();
   let created = 0;
   let failed = 0;
+  const hasToken = !!process.env.SWITCHY_API_TOKEN;
+
+  if (!hasToken) {
+    return NextResponse.json(
+      { error: 'SWITCHY_API_TOKEN is not set. Add it to your .env.local file.', created: 0, failed: 0 },
+      { status: 400 },
+    );
+  }
 
   // Blog posts
   if (type === 'all' || type === 'blog') {

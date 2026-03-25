@@ -40,6 +40,7 @@ export default function LinksAndTrafficPage() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState<string | null>(null);
   const [syncResult, setSyncResult] = useState<{ created: number; failed: number } | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   // Filters
   const [excludeAdmin, setExcludeAdmin] = useState(true);
@@ -76,10 +77,14 @@ export default function LinksAndTrafficPage() {
   const sync = async (type: string) => {
     setSyncing(type);
     setSyncResult(null);
+    setSyncError(null);
     const res = await fetch(`/api/admin/shortlinks/sync?type=${type}`, { method: 'POST' });
+    const data = await res.json().catch(() => null);
     if (res.ok) {
-      setSyncResult(await res.json());
+      setSyncResult(data);
       loadCounts();
+    } else {
+      setSyncError(data?.error || `Sync failed (${res.status})`);
     }
     setSyncing(null);
   };
@@ -124,6 +129,11 @@ export default function LinksAndTrafficPage() {
       </div>
 
       {/* Sync result banner */}
+      {syncError && (
+        <div className="flex items-center gap-2 bg-red-900/30 border border-red-700/40 rounded-xl p-4" role="alert">
+          <p className="text-sm text-red-300">{syncError}</p>
+        </div>
+      )}
       {syncResult && (
         <div className="flex items-center gap-2 bg-lime-900/30 border border-lime-700/40 rounded-xl p-4">
           <CheckCircle2 className="w-5 h-5 text-lime-400 shrink-0" />
