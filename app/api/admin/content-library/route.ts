@@ -250,6 +250,18 @@ const TUTORIAL_SERIES = [
       { title: 'Using Coaching', order: 2, lessons: ['04', '05', '06', '07'] },
     ],
   },
+  {
+    slug: 'marketing',
+    title: 'Link Tracking & Marketing Analytics',
+    description: 'Understand tracked short links, share bars, OG metadata sync, and the admin traffic dashboard.',
+    category: 'Platform Guide',
+    tags: ['tutorial', 'marketing', 'analytics', 'short-links', 'seo'],
+    type: 'academy' as const,
+    modules: [
+      { title: 'Fundamentals', order: 1, lessons: ['01', '02', '03'] },
+      { title: 'Admin Tools', order: 2, lessons: ['04', '05'] },
+    ],
+  },
 ];
 
 // Parse front matter and extract content from a tutorial markdown file

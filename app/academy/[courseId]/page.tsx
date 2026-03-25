@@ -8,13 +8,15 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import {
-  BookOpen, Play, Lock, CheckCircle, Clock, Loader2, ArrowRight, Share2,
+  BookOpen, Play, Lock, CheckCircle, Clock, Loader2, ArrowRight,
   GitBranch, ClipboardList, Star, MessageCircle, Send, Shield, AlertTriangle,
   BookMarked, ChevronDown, Search,
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import PageViewTracker from '@/components/ui/PageViewTracker';
 import GlossaryTermRow from '@/components/academy/GlossaryTermRow';
+import CourseShareBar from '@/components/academy/CourseShareBar';
+import { buildCourseShareUrls } from '@/lib/academy/share';
 import type { GlossaryTerm } from '@/components/academy/GlossaryTermRow';
 
 interface Lesson {
@@ -74,6 +76,7 @@ interface Course {
   price_type: string;
   navigation_mode: 'linear' | 'cyoa';
   is_sequential: boolean;
+  short_link_url: string | null;
   enrolled: boolean;
   teacher_id: string;
   avg_rating: number;
@@ -288,14 +291,7 @@ function CourseDetailContent() {
     }
   }
 
-  async function handleShare() {
-    const url = window.location.href;
-    try {
-      await navigator.share({ title: course?.title, url });
-    } catch {
-      await navigator.clipboard.writeText(url);
-    }
-  }
+  const shareUrls = course ? buildCourseShareUrls(course) : null;
 
   async function handleSubmitReview() {
     if (!reviewRating) return;
@@ -960,13 +956,15 @@ function CourseDetailContent() {
                   );
                 })()}
 
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-800 text-gray-300 rounded-xl text-sm hover:bg-gray-700 transition mt-3 min-h-11"
-                >
-                  <Share2 className="w-4 h-4" /> Share Course
-                </button>
+                {shareUrls && (
+                  <CourseShareBar
+                    courseUrl={shareUrls.courseUrl}
+                    courseTitle={course!.title}
+                    emailUrl={shareUrls.email}
+                    linkedinUrl={shareUrls.linkedin}
+                    facebookUrl={shareUrls.facebook}
+                  />
+                )}
 
                 {course.enrolled && (
                   <Link

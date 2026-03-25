@@ -155,7 +155,7 @@ export default function LinksAndTrafficPage() {
               <button
                 key={opt.value}
                 onClick={() => setPathPrefix(opt.value)}
-                className={`px-2 py-1 text-xs rounded-lg transition ${
+                className={`min-h-11 px-3 py-1 text-xs rounded-lg transition ${
                   pathPrefix === opt.value
                     ? 'bg-fuchsia-600 text-white'
                     : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
@@ -175,8 +175,8 @@ export default function LinksAndTrafficPage() {
             No demo
           </label>
 
-          <button onClick={loadTraffic} className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition ml-auto">
-            <RefreshCw className={`w-4 h-4 text-gray-400 ${loading ? 'animate-spin' : ''}`} />
+          <button onClick={loadTraffic} aria-label="Refresh traffic data" className="min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-gray-800 hover:bg-gray-700 transition ml-auto">
+            <RefreshCw className={`w-4 h-4 text-gray-400 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -333,7 +333,7 @@ export default function LinksAndTrafficPage() {
                 <button
                   onClick={() => sync(key)}
                   disabled={syncing !== null || (data?.without || 0) === 0}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-fuchsia-600 text-white rounded-lg text-xs font-medium hover:bg-fuchsia-700 transition disabled:opacity-50"
+                  className="min-h-11 flex items-center gap-1.5 px-3 py-1.5 bg-fuchsia-600 text-white rounded-lg text-xs font-medium hover:bg-fuchsia-700 transition disabled:opacity-50"
                 >
                   {syncing === key ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
                   Sync
@@ -377,7 +377,7 @@ export default function LinksAndTrafficPage() {
           <button
             onClick={() => sync('all')}
             disabled={syncing !== null}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-800 text-white rounded-xl font-medium hover:bg-gray-700 transition disabled:opacity-50 text-sm"
+            className="min-h-11 inline-flex items-center gap-2 px-5 py-2.5 bg-gray-800 text-white rounded-xl font-medium hover:bg-gray-700 transition disabled:opacity-50 text-sm"
           >
             {syncing === 'all' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
             Sync All Content
