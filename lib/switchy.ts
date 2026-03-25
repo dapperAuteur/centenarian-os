@@ -26,15 +26,36 @@ interface CreateParams {
 }
 
 /**
+ * Normalises the Switchy API response into our SwitchyLink shape.
+ * The API may return the link nested under a `link` key or flat at the root.
+ * short_url may be returned as `short_url`, `shortUrl`, or constructed from domain + id.
+ */
+function parseSwitchyResponse(json: Record<string, unknown>, domain: string): SwitchyLink | null {
+  // Handle nested { link: { ... } } or flat response
+  const data = (json.link ?? json) as Record<string, unknown>;
+  const id = (data.id ?? data._id ?? '') as string;
+  const shortUrl = (data.short_url ?? data.shortUrl ?? (id ? `https://${domain}/${id}` : '')) as string;
+
+  if (!id || !shortUrl) {
+    console.error('[switchy] Unexpected response shape:', JSON.stringify(json).slice(0, 300));
+    return null;
+  }
+  return { id, short_url: shortUrl };
+}
+
+/**
  * Creates a short link in Switchy. Retries with a random suffix if slug is taken.
  * Returns null on failure (caller should handle gracefully).
  */
 export async function createShortLink(params: CreateParams): Promise<SwitchyLink | null> {
-  if (!process.env.SWITCHY_API_TOKEN) return null;
+  if (!process.env.SWITCHY_API_TOKEN) {
+    console.warn('[switchy] SWITCHY_API_TOKEN not set — skipping link creation');
+    return null;
+  }
 
   const domain = process.env.SWITCHY_DOMAIN ?? 'i.centenarianos.com';
 
-  const body = {
+  const link = {
     url: params.url,
     domain,
     id: params.slug,
@@ -44,28 +65,38 @@ export async function createShortLink(params: CreateParams): Promise<SwitchyLink
     tags: params.tags,
   };
 
-  const res = await fetch(`${API_BASE}/links/create`, {
-    method: 'POST',
-    headers: headers(),
-    body: JSON.stringify(body),
-  });
+  try {
+    const res = await fetch(`${API_BASE}/links/create`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({ link }),
+    });
 
-  if (!res.ok) {
-    // Slug collision — retry with 6-char random suffix
-    if (res.status === 409 || res.status === 422) {
-      const suffix = Math.random().toString(36).slice(2, 8);
-      const retry = await fetch(`${API_BASE}/links/create`, {
-        method: 'POST',
-        headers: headers(),
-        body: JSON.stringify({ ...body, id: `${params.slug}-${suffix}` }),
-      });
-      if (!retry.ok) return null;
-      return retry.json();
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => '');
+      // Slug collision — retry with 6-char random suffix
+      if (res.status === 409 || res.status === 422) {
+        const suffix = Math.random().toString(36).slice(2, 8);
+        const retry = await fetch(`${API_BASE}/links/create`, {
+          method: 'POST',
+          headers: headers(),
+          body: JSON.stringify({ link: { ...link, id: `${params.slug}-${suffix}` } }),
+        });
+        if (!retry.ok) {
+          console.error(`[switchy] Retry failed for slug ${params.slug}-${suffix}: ${retry.status}`);
+          return null;
+        }
+        return parseSwitchyResponse(await retry.json(), domain);
+      }
+      console.error(`[switchy] Failed to create link for ${params.slug}: ${res.status} ${errorText}`);
+      return null;
     }
+
+    return parseSwitchyResponse(await res.json(), domain);
+  } catch (err) {
+    console.error(`[switchy] Network error creating link for ${params.slug}:`, err);
     return null;
   }
-
-  return res.json();
 }
 
 interface UpdateParams {
