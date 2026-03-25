@@ -87,34 +87,34 @@ export default function RecipeShareBar({
       <button
         onClick={handleCopy}
         title="Copy link"
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-orange-600 hover:bg-orange-50 border border-gray-200 rounded-lg transition"
+        className="min-h-11 flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-orange-600 hover:bg-orange-50 border border-gray-200 rounded-lg transition"
       >
-        <Link2 className="w-4 h-4" />
+        <Link2 className="w-4 h-4" aria-hidden="true" />
         {copied ? 'Copied!' : 'Copy link'}
       </button>
 
       <button
         onClick={handleEmail}
         title={`Share "${recipeTitle}" via email`}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-orange-600 hover:bg-orange-50 border border-gray-200 rounded-lg transition"
+        className="min-h-11 flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-orange-600 hover:bg-orange-50 border border-gray-200 rounded-lg transition"
       >
-        <Mail className="w-4 h-4" />
+        <Mail className="w-4 h-4" aria-hidden="true" />
         Email
       </button>
 
       <button
         onClick={handleLinkedIn}
         title={`Share "${recipeTitle}" on LinkedIn`}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-blue-700 hover:bg-blue-50 border border-gray-200 rounded-lg transition"
+        className="min-h-11 flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-blue-700 hover:bg-blue-50 border border-gray-200 rounded-lg transition"
       >
-        <Linkedin className="w-4 h-4" />
+        <Linkedin className="w-4 h-4" aria-hidden="true" />
         LinkedIn
       </button>
 
       <button
         onClick={handleFacebook}
         title={`Share "${recipeTitle}" on Facebook`}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-[#1877F2] hover:bg-blue-50 border border-gray-200 rounded-lg transition"
+        className="min-h-11 flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-[#1877F2] hover:bg-blue-50 border border-gray-200 rounded-lg transition"
       >
         {/* Facebook brand icon */}
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

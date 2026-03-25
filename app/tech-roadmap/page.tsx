@@ -2,11 +2,20 @@ import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, Circle, Clock } from 'lucide-react';
 import SiteFooter from '@/components/ui/SiteFooter';
 
-const PHASES = [
+interface Phase {
+  id: number;
+  title: string;
+  status: 'completed' | 'in-progress' | 'planned';
+  quarter: string;
+  description: string;
+  items: { done: boolean; text: string }[];
+}
+
+const PHASES: Phase[] = [
   {
     id: 1,
     title: 'Phase 1: Core Infrastructure',
-    status: 'completed' as const,
+    status: 'completed',
     quarter: 'Q4 2025',
     description: 'Foundation — auth, planning, subscriptions, and admin.',
     items: [
@@ -23,7 +32,7 @@ const PHASES = [
   {
     id: 2,
     title: 'Phase 2: Nutrition & Recipes (Fuel Module)',
-    status: 'completed' as const,
+    status: 'completed',
     quarter: 'Q1 2026',
     description: 'Track what fuels your journey — ingredients, meals, recipes.',
     items: [
@@ -41,7 +50,7 @@ const PHASES = [
   {
     id: 3,
     title: 'Phase 3: Publishing Platform (Blog & Community)',
-    status: 'completed' as const,
+    status: 'completed',
     quarter: 'Q1 2026',
     description: 'A full content publishing system for the CentenarianOS community.',
     items: [
@@ -59,7 +68,7 @@ const PHASES = [
   {
     id: 4,
     title: 'Phase 4: Centenarian Academy (LMS)',
-    status: 'completed' as const,
+    status: 'completed',
     quarter: 'Q1–Q2 2026',
     description: 'A full learning management system — create, publish, sell, and take courses.',
     items: [
@@ -123,7 +132,7 @@ const PHASES = [
   {
     id: 5,
     title: 'Phase 5: Travel & Vehicle Tracking',
-    status: 'completed' as const,
+    status: 'completed',
     quarter: 'Q1–Q2 2026',
     description: 'Track every mile, every fill-up, and the real cost of getting around. Quantify bike savings against your personal car cost.',
     items: [
@@ -148,7 +157,7 @@ const PHASES = [
   {
     id: 6,
     title: 'Phase 6: Focus Engine & AI Insights',
-    status: 'completed' as const,
+    status: 'completed',
     quarter: 'Q2 2026',
     description: 'Turn daily data into actionable intelligence — focus, energy, and correlations.',
     items: [
@@ -165,7 +174,7 @@ const PHASES = [
   {
     id: 7,
     title: 'Phase 7: Demo Accounts & Onboarding',
-    status: 'completed' as const,
+    status: 'completed',
     quarter: 'Q1 2026',
     description: 'Public demo accounts and guided onboarding to showcase the full platform.',
     items: [
@@ -180,21 +189,21 @@ const PHASES = [
   {
     id: 8,
     title: 'Phase 8: Link Tracking & Marketing Analytics',
-    status: 'planned' as const,
+    status: 'completed',
     quarter: 'Q2–Q3 2026',
     description: 'Auto-generate tracked short links via Switchy.io so every share is measured.',
     items: [
-      { done: false, text: 'Switchy.io API integration — auto-create short link on every publish' },
-      { done: false, text: 'Custom domain short links (i.centenarianos.com/[slug])' },
-      { done: false, text: 'Share bars use Switchy short links (blog, recipes, courses)' },
-      { done: false, text: 'OG metadata (title, description, image) synced to Switchy on edit' },
-      { done: false, text: 'Admin backfill page — create short links for all existing content' },
+      { done: true, text: 'Switchy.io API integration — auto-create short link on every publish' },
+      { done: true, text: 'Custom domain short links (i.centenarianos.com/[slug])' },
+      { done: true, text: 'Share bars use Switchy short links (blog, recipes, courses)' },
+      { done: true, text: 'OG metadata (title, description, image) synced to Switchy on edit' },
+      { done: true, text: 'Admin backfill page — create short links for all existing content' },
     ],
   },
   {
     id: 9,
     title: 'Phase 9: Biometrics & Recovery',
-    status: 'in-progress' as const,
+    status: 'in-progress',
     quarter: 'Q1–Q2 2026',
     description: 'Integrate wearable data to close the loop between effort and recovery.',
     items: [
@@ -220,7 +229,7 @@ const PHASES = [
   {
     id: 10,
     title: 'Phase 10: Financial Dashboard',
-    status: 'completed' as const,
+    status: 'completed',
     quarter: 'Q1 2026',
     description: 'Full financial tracking — accounts, transactions, budgets, brands, and CSV workflows.',
     items: [
@@ -240,7 +249,7 @@ const PHASES = [
   {
     id: 11,
     title: 'Phase 11: Equipment & Asset Tracking',
-    status: 'completed' as const,
+    status: 'completed',
     quarter: 'Q1 2026',
     description: 'Track tools, gear, and possessions — purchase price, current value, and cross-module links.',
     items: [
@@ -255,7 +264,7 @@ const PHASES = [
   {
     id: 12,
     title: 'Phase 12: Cross-Module Connections',
-    status: 'completed' as const,
+    status: 'completed',
     quarter: 'Q1 2026',
     description: 'Link data across every module — activities, contacts, and locations.',
     items: [
@@ -270,7 +279,7 @@ const PHASES = [
   {
     id: 13,
     title: 'Phase 13: User Experience & Personalization',
-    status: 'in-progress' as const,
+    status: 'in-progress',
     quarter: 'Q2 2026',
     description: 'Reduce friction and let users tailor CentenarianOS to how they actually work.',
     items: [
@@ -284,7 +293,7 @@ const PHASES = [
   {
     id: 14,
     title: 'Phase 14: Intelligence & Automation',
-    status: 'completed' as const,
+    status: 'completed',
     quarter: 'Q1 2026',
     description: 'AI-powered data extraction and cross-module intelligence tools.',
     items: [

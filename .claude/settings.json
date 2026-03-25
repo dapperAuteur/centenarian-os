@@ -13,7 +13,10 @@
       "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app -type d -name \"\\(public\\)\")",
       "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os -type f -name *roadmap* -o -name *feature* -o -name *todo*)",
       "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/components -type d -name *marketing* -o -type d -name *hero* -o -type d -name *landing*)",
-      "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app -name opengraph* -o -name og* -type f)"
+      "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app -name opengraph* -o -name og* -type f)",
+      "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app -type d -name *admin* -o -type d -name *help* -o -type d -name *support* -o -type d -name *docs*)",
+      "Bash(head -100 /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app/api/og/blog/[username]/[slug]/route.tsx)",
+      "Bash(git check-ignore:*)"
     ],
     "additionalDirectories": [
       "/Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app/api/og/course"

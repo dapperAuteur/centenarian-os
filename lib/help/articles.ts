@@ -573,4 +573,27 @@ export const HELP_ARTICLES: HelpArticle[] = [
     title: 'How to manage settings and billing',
     content: `Go to Dashboard → Settings to configure your preferences: home page, clock format (12h/24h), fiscal year start, social sharing visibility, and scan auto-save. Set up multi-factor authentication (MFA) for account security. Go to Dashboard → Billing to manage your subscription — view your current plan, see payment history, or cancel. Lifetime members never see recurring charges. Connect wearables (Garmin, Oura, WHOOP) from Dashboard → Settings → Wearables for automatic health data sync.`,
   },
+
+  // ─── LINK TRACKING & MARKETING ──────────────────────────────────────────────
+
+  {
+    role: 'admin',
+    title: 'How short links work in CentenarianOS',
+    content: `Every blog post, recipe, and course automatically gets a tracked short link (i.centenarianos.com/...) when published. The Switchy.io API creates the link and stores its ID and URL in the database. Share bars on content pages use the short link when available, so every click is measured. OG metadata (title, description, image) is synced to Switchy whenever you edit published content. If Switchy is down, publishing still works — the short link is simply skipped and can be backfilled later from Admin → Links & Traffic.`,
+  },
+  {
+    role: 'admin',
+    title: 'How to backfill short links for existing content',
+    content: `Go to Admin → Links & Traffic. The Short Link Management section shows how many blog posts, recipes, and courses have short links vs. missing them. Click the Sync button next to any content type to create missing links, or click Sync All Content at the bottom. Feature pages are also synced. The process runs one link at a time to respect API rate limits. Failed links can be retried by running Sync again — it only targets items that still have no short link.`,
+  },
+  {
+    role: 'admin',
+    title: 'Reading the traffic dashboard',
+    content: `The Links & Traffic page (Admin → Links & Traffic) shows total page views, unique pages, average views per day, and total short links. Filter by date range, path prefix (Blog, Recipes, Academy, Features, etc.), and user type (exclude admin and demo traffic with checkboxes). The Traffic Over Time chart shows daily view counts. Top Pages lists the most viewed paths. The Referrer Breakdown and UTM Sources sections show where traffic originates. Visitor types (anonymous, real, admin, demo, tutorial) are displayed as percentage bars.`,
+  },
+  {
+    role: 'all',
+    title: 'How to share content with tracked links',
+    content: `Blog posts, recipes, and courses each have a Share section with Copy Link, Email, LinkedIn, and Facebook buttons. These buttons use tracked short links (i.centenarianos.com/...) so every share click is measured. Clicking Copy Link copies the short URL to your clipboard. Clicking Email opens your email client with the title and link pre-filled. LinkedIn and Facebook buttons open a share dialog in a new tab. If no short link exists yet (e.g. the content was published before link tracking was enabled), the full URL is used as a fallback.`,
+  },
 ];
