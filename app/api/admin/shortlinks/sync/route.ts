@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
-import { createShortLink, toSwitchySlug } from '@/lib/switchy';
+import { createShortLink, updateShortLink, toSwitchySlug } from '@/lib/switchy';
 import { MODULES } from '@/lib/features/modules';
 
 function getDb() {
@@ -153,6 +153,58 @@ export async function POST(request: NextRequest) {
       // 409/422 = already exists (not a failure)
       await delay(100);
     }
+  }
+
+  // Bulk-update existing links to add pixels
+  if (type === 'pixels') {
+    const pixelIds = process.env.SWITCHY_PIXEL_IDS
+      ? process.env.SWITCHY_PIXEL_IDS.split(',').map((s) => s.trim()).filter(Boolean)
+      : [];
+
+    if (pixelIds.length === 0) {
+      return NextResponse.json({ error: 'SWITCHY_PIXEL_IDS is not set.' }, { status: 400 });
+    }
+
+    let updated = 0;
+    let pixelFailed = 0;
+
+    // Update blog posts with existing short links
+    const { data: blogLinks } = await db
+      .from('blog_posts')
+      .select('short_link_id')
+      .not('short_link_id', 'is', null);
+
+    for (const row of blogLinks || []) {
+      const ok = await updateShortLink({ linkId: row.short_link_id });
+      if (ok) updated++; else pixelFailed++;
+      await delay(100);
+    }
+
+    // Update recipes with existing short links
+    const { data: recipeLinks } = await db
+      .from('recipes')
+      .select('short_link_id')
+      .not('short_link_id', 'is', null);
+
+    for (const row of recipeLinks || []) {
+      const ok = await updateShortLink({ linkId: row.short_link_id });
+      if (ok) updated++; else pixelFailed++;
+      await delay(100);
+    }
+
+    // Update courses with existing short links
+    const { data: courseLinks } = await db
+      .from('courses')
+      .select('short_link_id')
+      .not('short_link_id', 'is', null);
+
+    for (const row of courseLinks || []) {
+      const ok = await updateShortLink({ linkId: row.short_link_id });
+      if (ok) updated++; else pixelFailed++;
+      await delay(100);
+    }
+
+    return NextResponse.json({ updated, failed: pixelFailed });
   }
 
   return NextResponse.json({ created, failed });

@@ -39,7 +39,7 @@ export default function LinksAndTrafficPage() {
   const [traffic, setTraffic] = useState<TrafficData | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState<string | null>(null);
-  const [syncResult, setSyncResult] = useState<{ created: number; failed: number } | null>(null);
+  const [syncResult, setSyncResult] = useState<{ created?: number; updated?: number; failed: number } | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
 
   // Filters
@@ -138,7 +138,9 @@ export default function LinksAndTrafficPage() {
         <div className="flex items-center gap-2 bg-lime-900/30 border border-lime-700/40 rounded-xl p-4">
           <CheckCircle2 className="w-5 h-5 text-lime-400 shrink-0" />
           <p className="text-sm text-lime-300">
-            Created {syncResult.created} short links{syncResult.failed > 0 ? `, ${syncResult.failed} failed` : ''}
+            {syncResult.created !== undefined && `Created ${syncResult.created} short links`}
+            {syncResult.updated !== undefined && `Updated ${syncResult.updated} links with pixels`}
+            {syncResult.failed > 0 ? `, ${syncResult.failed} failed` : ''}
           </p>
         </div>
       )}
@@ -382,8 +384,8 @@ export default function LinksAndTrafficPage() {
           </div>
         </div>
 
-        {/* Sync All */}
-        <div className="mt-4 text-center">
+        {/* Sync All + Sync Pixels */}
+        <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             onClick={() => sync('all')}
             disabled={syncing !== null}
@@ -391,6 +393,15 @@ export default function LinksAndTrafficPage() {
           >
             {syncing === 'all' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
             Sync All Content
+          </button>
+          <button
+            onClick={() => sync('pixels')}
+            disabled={syncing !== null}
+            className="min-h-11 inline-flex items-center gap-2 px-5 py-2.5 bg-fuchsia-900 text-white rounded-xl font-medium hover:bg-fuchsia-800 transition disabled:opacity-50 text-sm"
+            aria-label="Add marketing pixels to all existing short links"
+          >
+            {syncing === 'pixels' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+            Sync Pixels to All Links
           </button>
         </div>
       </div>
