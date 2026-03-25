@@ -9,11 +9,12 @@ import {
 import {
   Bike, Car, Flame, Leaf, DollarSign, Gauge,
   Plus, ChevronRight, AlertCircle, Upload, Zap,
-  Repeat, Wrench, Play, Download,
+  Repeat, Wrench, Play, Download, MapPin,
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Modal from '@/components/ui/Modal';
 import MultiStopForm from '@/components/travel/MultiStopForm';
+import GoogleMapsImportModal from '@/components/travel/GoogleMapsImportModal';
 import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 
 interface Summary {
@@ -139,6 +140,12 @@ export default function TravelPage() {
 
   // Add trip modal state
   const [showAddTrip, setShowAddTrip] = useState(false);
+  const [showMapsImport, setShowMapsImport] = useState(false);
+  const [importedRoute, setImportedRoute] = useState<{
+    name: string | null;
+    isRoundTrip: boolean;
+    legs: Array<{ mode: string; origin: string | null; destination: string | null; distance_miles: number | null; duration_min: number | null; cost: number | null; purpose: string | null; vehicle_id: string | null }>;
+  } | null>(null);
   const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
   const [savingTrip, setSavingTrip] = useState(false);
 
@@ -361,8 +368,15 @@ export default function TravelPage() {
             Log Commute
           </button>
           <button
+            onClick={() => setShowMapsImport(true)}
+            className="flex items-center gap-1.5 px-3 py-2 border border-sky-200 text-sky-700 rounded-xl text-sm font-medium hover:bg-sky-50 transition min-h-11"
+          >
+            <MapPin className="w-4 h-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Maps</span>
+          </button>
+          <button
             onClick={() => setShowAddTrip(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-sky-600 text-white rounded-xl text-sm font-medium hover:bg-sky-700 transition"
+            className="flex items-center gap-1.5 px-3 py-2 bg-sky-600 text-white rounded-xl text-sm font-medium hover:bg-sky-700 transition min-h-11"
           >
             <Plus className="w-4 h-4" />
             Add Trip
@@ -793,6 +807,34 @@ export default function TravelPage() {
           </Link>
         ))}
       </div>
+
+      {/* Google Maps Import Modal */}
+      <GoogleMapsImportModal
+        isOpen={showMapsImport}
+        onClose={() => setShowMapsImport(false)}
+        onImported={(route) => {
+          setImportedRoute(route);
+          setShowMapsImport(false);
+        }}
+      />
+
+      {/* Multi-Stop Form from Maps Import */}
+      {importedRoute && (
+        <MultiStopForm
+          vehicles={vehicles.filter((v) => v.active)}
+          brands={brands}
+          templates={templates}
+          initialRoute={{
+            name: importedRoute.name,
+            date: new Date().toISOString().split('T')[0],
+            notes: null,
+            is_round_trip: importedRoute.isRoundTrip,
+          }}
+          initialLegs={importedRoute.legs}
+          onClose={() => setImportedRoute(null)}
+          onSaved={() => { setImportedRoute(null); load(); }}
+        />
+      )}
 
       {/* Add Trip Modal — uses unified MultiStopForm */}
       {showAddTrip && (
