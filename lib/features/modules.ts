@@ -129,7 +129,7 @@ export const MODULES: ModuleData[] = [
       },
       {
         title: 'Doodle Canvas',
-        description: 'Open a full-screen drawing canvas during any focus session. Sketch diagrams, wireframes, or quick ideas with tldraw — then save as an image you can reuse in blog posts and other modules.',
+        description: 'Open a full-screen drawing canvas during any focus session. Sketch diagrams, wireframes, or quick ideas — then save as an image you can reuse in blog posts and other modules.',
       },
       {
         title: 'Daily Debrief',
