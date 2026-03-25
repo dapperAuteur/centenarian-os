@@ -9,8 +9,9 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ChevronLeft, Plus, ClipboardList, ChevronDown, ChevronUp,
-  Loader2, CheckCircle, Clock, Save,
+  Loader2, CheckCircle, Clock, Save, MessageCircle,
 } from 'lucide-react';
+import SubmissionMessageThread from '@/components/academy/SubmissionMessageThread';
 
 interface Assignment {
   id: string;
@@ -58,6 +59,7 @@ export default function CourseAssignmentsPage() {
   const [submissions, setSubmissions] = useState<Record<string, Submission[]>>({});
   const [gradingId, setGradingId] = useState<string | null>(null);
   const [gradeForm, setGradeForm] = useState({ grade: '', teacher_feedback: '' });
+  const [threadOpen, setThreadOpen] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -311,6 +313,7 @@ export default function CourseAssignmentsPage() {
                 <button
                   type="button"
                   onClick={() => toggleExpand(a.id)}
+                  aria-expanded={isExpanded}
                   className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-gray-800/50 transition min-h-14"
                 >
                   <ClipboardList className="w-4 h-4 text-fuchsia-400 shrink-0" />
@@ -449,6 +452,26 @@ export default function CourseAssignmentsPage() {
                               >
                                 {sub.grade ? 'Edit Grade' : 'Grade Submission'}
                               </button>
+                            )}
+
+                            {/* Message thread toggle */}
+                            <button
+                              type="button"
+                              onClick={() => setThreadOpen(threadOpen === sub.id ? null : sub.id)}
+                              aria-expanded={threadOpen === sub.id}
+                              className="flex items-center gap-1.5 text-sm text-sky-400 hover:text-sky-300 transition mt-2 py-1 min-h-11"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                              {threadOpen === sub.id ? 'Hide Thread' : 'Message Student'}
+                            </button>
+                            {threadOpen === sub.id && (
+                              <div className="mt-3">
+                                <SubmissionMessageThread
+                                  assignmentId={a.id}
+                                  submissionId={sub.id}
+                                  isTeacher={true}
+                                />
+                              </div>
                             )}
                           </div>
                         ))}

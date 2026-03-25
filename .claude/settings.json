@@ -8,7 +8,15 @@
       "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os -type f \\\\\\(-name seed* -o -name *import* \\\\\\) -path */lib/* -o -path */scripts/*)",
       "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os -path */supabase/migrations/* -name *academy* -o -name *tutorial*)",
       "Bash(find node_modules/tldraw -name *.d.ts -maxdepth 3)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os -type f -name *roadmap* -o -name *phases*)",
+      "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app -type d -name \"\\(public\\)\")",
+      "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os -type f -name *roadmap* -o -name *feature* -o -name *todo*)",
+      "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/components -type d -name *marketing* -o -type d -name *hero* -o -type d -name *landing*)",
+      "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app -name opengraph* -o -name og* -type f)"
+    ],
+    "additionalDirectories": [
+      "/Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app/api/og/course"
     ]
   }
 }

@@ -62,6 +62,22 @@ export async function POST(request: NextRequest) {
         }, { onConflict: 'user_id,course_id,attempt_number' });
 
       if (error) logError({ source: 'webhook', module: 'academy', message: 'Enrollment upsert failed', metadata: { error: error.message, courseId } });
+
+      // Increment promo code usage if one was applied
+      const usedPromoCode = session.metadata?.promo_code;
+      if (usedPromoCode) {
+        const { data: promo } = await db
+          .from('promo_codes')
+          .select('id, uses_count')
+          .ilike('code', usedPromoCode)
+          .maybeSingle();
+        if (promo) {
+          await db
+            .from('promo_codes')
+            .update({ uses_count: promo.uses_count + 1 })
+            .eq('id', promo.id);
+        }
+      }
       break;
     }
 

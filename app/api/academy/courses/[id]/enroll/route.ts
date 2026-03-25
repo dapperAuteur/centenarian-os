@@ -74,12 +74,45 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'You cannot enroll in your own course' }, { status: 400 });
   }
 
-  // Parse optional reattempt flag from request body
+  // Parse optional reattempt flag and promo_code from request body
   let reattempt = false;
+  let promoCode: string | null = null;
   try {
     const reqBody = await request.clone().json();
     reattempt = reqBody?.reattempt === true;
+    if (typeof reqBody?.promo_code === 'string' && reqBody.promo_code.trim()) {
+      promoCode = reqBody.promo_code.trim();
+    }
   } catch { /* no body or invalid JSON — default enrollment */ }
+
+  // Validate promo code if provided
+  let stripeCouponId: string | null = null;
+  let promoDiscountPercent: number | null = null;
+  if (promoCode) {
+    const { data: promo } = await db
+      .from('promo_codes')
+      .select('id, stripe_coupon_id, teacher_id, course_id, max_uses, uses_count, expires_at, discount_percent')
+      .ilike('code', promoCode)
+      .maybeSingle();
+
+    if (!promo) {
+      return NextResponse.json({ error: 'Invalid promo code' }, { status: 400 });
+    }
+    if (promo.teacher_id !== course.teacher_id) {
+      return NextResponse.json({ error: 'Promo code is not valid for this course' }, { status: 400 });
+    }
+    if (promo.course_id && promo.course_id !== courseId) {
+      return NextResponse.json({ error: 'Promo code is not valid for this course' }, { status: 400 });
+    }
+    if (promo.max_uses && promo.uses_count >= promo.max_uses) {
+      return NextResponse.json({ error: 'Promo code has reached its usage limit' }, { status: 400 });
+    }
+    if (promo.expires_at && new Date(promo.expires_at) < new Date()) {
+      return NextResponse.json({ error: 'Promo code has expired' }, { status: 400 });
+    }
+    stripeCouponId = promo.stripe_coupon_id;
+    promoDiscountPercent = promo.discount_percent;
+  }
 
   // Check existing enrollments (ordered by latest attempt)
   const { data: existingEnrollments } = await db
@@ -216,6 +249,21 @@ export async function POST(request: NextRequest, { params }: Params) {
     await db.from('profiles').update({ stripe_customer_id: customerId }).eq('id', user.id);
   }
 
+  // For Connect teachers, the coupon was created on the platform account but checkout
+  // runs on the connected account. Create a matching coupon on the connected account.
+  let connectCouponId: string | null = null;
+  if (stripeCouponId && !isPlatformTeacher && teacherProfile?.stripe_connect_account_id && promoDiscountPercent) {
+    try {
+      const connectCoupon = await stripe.coupons.create(
+        { percent_off: promoDiscountPercent, duration: 'once', name: `PROMO_${promoCode}` },
+        { stripeAccount: teacherProfile.stripe_connect_account_id },
+      );
+      connectCouponId = connectCoupon.id;
+    } catch {
+      // If coupon creation fails on Connect account, proceed without discount
+    }
+  }
+
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? request.headers.get('origin') ?? 'http://localhost:3000';
 
   if (course.price_type === 'one_time') {
@@ -249,9 +297,10 @@ export async function POST(request: NextRequest, { params }: Params) {
         customer: customerId,
         mode: 'payment',
         line_items: [{ price: priceId, quantity: 1 }],
+        ...(stripeCouponId && { discounts: [{ coupon: stripeCouponId }] }),
         success_url: `${baseUrl}/academy/${courseId}?enrolled=true&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/academy/${courseId}`,
-        metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment', attempt_number: String(attemptNumber) },
+        metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment', attempt_number: String(attemptNumber), ...(promoCode && { promo_code: promoCode }) },
       });
       return NextResponse.json({ url: session.url });
     }
@@ -264,9 +313,10 @@ export async function POST(request: NextRequest, { params }: Params) {
         application_fee_amount: applicationFee,
         transfer_data: { destination: teacherProfile!.stripe_connect_account_id },
       },
+      ...(connectCouponId && { discounts: [{ coupon: connectCouponId }] }),
       success_url: `${baseUrl}/academy/${courseId}?enrolled=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/academy/${courseId}`,
-      metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment', attempt_number: String(attemptNumber) },
+      metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment', attempt_number: String(attemptNumber), ...(promoCode && { promo_code: promoCode }) },
     }, { stripeAccount: teacherProfile!.stripe_connect_account_id });
 
     return NextResponse.json({ url: session.url });
@@ -308,6 +358,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       customer: customerId,
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
+      ...(stripeCouponId && { discounts: [{ coupon: stripeCouponId }] }),
       ...(trialDays > 0 && {
         subscription_data: {
           trial_period_days: trialDays,
@@ -316,7 +367,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       }),
       success_url: `${baseUrl}/academy/${courseId}?enrolled=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/academy/${courseId}`,
-      metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment', attempt_number: String(attemptNumber) },
+      metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment', attempt_number: String(attemptNumber), ...(promoCode && { promo_code: promoCode }) },
     });
     return NextResponse.json({ url: session.url });
   }
@@ -325,6 +376,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     customer: customerId,
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
+    ...(connectCouponId && { discounts: [{ coupon: connectCouponId }] }),
     subscription_data: {
       application_fee_percent: feePercent,
       transfer_data: { destination: teacherProfile!.stripe_connect_account_id },
@@ -335,7 +387,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     },
     success_url: `${baseUrl}/academy/${courseId}?enrolled=true&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/academy/${courseId}`,
-    metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment', attempt_number: String(attemptNumber) },
+    metadata: { supabase_user_id: user.id, course_id: courseId, type: 'course_enrollment', attempt_number: String(attemptNumber), ...(promoCode && { promo_code: promoCode }) },
   }, { stripeAccount: teacherProfile!.stripe_connect_account_id });
 
   return NextResponse.json({ url: session.url });

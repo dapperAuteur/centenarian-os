@@ -27,9 +27,14 @@ Course messaging is a per-course inbox — a private conversation thread between
 
 ### Accessing Course Messages
 
-From the course detail page, click the **Messages** tab (next to Lessons and Assignments). This opens your message thread with the teacher for this course.
+You can access your messages from two places:
 
-The first time you open it, the thread is empty — you initiate the conversation.
+1. **My Courses → Messages** — your unified inbox showing all conversations across all courses
+2. **Course detail page → Messages tab** — opens the thread for that specific course
+
+From the inbox, click any conversation to open the full thread. On mobile, the conversation list hides when you open a thread — tap the back arrow to return.
+
+The first time you open a thread, it's empty — you initiate the conversation.
 
 ---
 
@@ -50,7 +55,11 @@ Keep messages specific. Reference the lesson number or topic so the teacher can 
 
 When the teacher replies, you'll receive a notification (the bell icon in the top nav). Click the notification to go directly to the message thread.
 
-Replies appear chronologically in the thread — newest messages at the bottom. The conversation scrolls like a standard chat thread.
+Replies appear chronologically in the thread — newest messages at the bottom. The conversation auto-refreshes every 30 seconds, so new messages appear without needing to reload the page.
+
+### Assignment Feedback Threads
+
+Beyond course messages, each assignment submission has its own feedback thread. After you submit work, you and your teacher can exchange messages directly on that submission. The teacher's messages appear in fuchsia; yours in gray. This thread also auto-refreshes every 30 seconds.
 
 ---
 
@@ -92,9 +101,10 @@ Teachers set their own availability. Some respond within hours; others check wee
 
 ## Key Takeaways
 
-- Course messages live on the Messages tab of the course detail page
+- Access messages from My Courses → Messages (unified inbox) or the course detail page
 - One private thread per course between you and the teacher
+- Assignment submissions have their own separate feedback threads
+- Messages auto-refresh every 30 seconds — no need to reload
 - Type your message and click Send — no draft mode
-- Replies show as notifications in the top nav — click through to the thread
 - All message history is preserved permanently
 - Two courses by the same teacher = two separate threads (one per course)

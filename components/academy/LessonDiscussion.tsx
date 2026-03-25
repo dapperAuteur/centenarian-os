@@ -351,7 +351,7 @@ export default function LessonDiscussion({ courseId, lessonId, currentUserId, is
           {posts.length === 0 ? (
             <p className="text-center text-gray-400 text-sm py-6">No discussion yet. Be the first to post!</p>
           ) : (
-            <div className="divide-y divide-gray-800">
+            <div className="divide-y divide-gray-800" role="list" aria-label="Discussion posts">
               {posts.map((post) => renderPost(post))}
             </div>
           )}
