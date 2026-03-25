@@ -55,6 +55,10 @@ export async function createShortLink(params: CreateParams): Promise<SwitchyLink
 
   const domain = process.env.SWITCHY_DOMAIN ?? 'i.centenarianos.com';
 
+  const pixelIds = process.env.SWITCHY_PIXEL_IDS
+    ? process.env.SWITCHY_PIXEL_IDS.split(',').map((s) => s.trim()).filter(Boolean)
+    : [];
+
   const link = {
     url: params.url,
     domain,
@@ -63,6 +67,7 @@ export async function createShortLink(params: CreateParams): Promise<SwitchyLink
     description: params.description,
     image: params.image,
     tags: params.tags,
+    ...(pixelIds.length > 0 && { pixels: pixelIds }),
   };
 
   try {

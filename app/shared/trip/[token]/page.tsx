@@ -33,7 +33,21 @@ interface Trip {
   pickup_time: string | null;
   return_address: string | null;
   return_time: string | null;
+  loyalty_program: string | null;
+  loyalty_number: string | null;
   vehicles?: { nickname: string; type: string } | null;
+}
+
+interface IncludedSections {
+  transport?: boolean;
+  booking?: boolean;
+  accommodation?: boolean;
+  pickupReturn?: boolean;
+  budget?: boolean;
+  notes?: boolean;
+  packing?: boolean;
+  loyalty?: boolean;
+  stats?: boolean;
 }
 
 interface SharedData {
@@ -44,6 +58,7 @@ interface SharedData {
   equipment_items: { name: string; relationship: string | null }[];
   budget: number | null;
   total_cost: number | null;
+  included_sections: IncludedSections | null;
 }
 
 function fmtDate(d: string) {
@@ -99,10 +114,19 @@ export default function SharedTripPage() {
     );
   }
 
-  const { trips, equipment_items, packing_notes, budget, total_cost } = data;
+  const { trips, equipment_items, packing_notes, budget, total_cost, included_sections: sec } = data;
+
+  // If included_sections is null, show everything (backwards compatible)
+  const show = (key: keyof IncludedSections) => sec === null || sec[key] !== false;
+
   const hasBooking = (t: Trip) =>
-    t.confirmation_number || t.carrier_name || t.seat_assignment ||
-    t.accommodation_name || t.pickup_address;
+    t.confirmation_number || t.carrier_name || t.seat_assignment;
+  const hasAccommodation = (t: Trip) =>
+    t.accommodation_name || t.accommodation_address || t.check_in_date || t.check_out_date;
+  const hasPickupReturn = (t: Trip) =>
+    t.pickup_address || t.return_address;
+  const hasLoyalty = (t: Trip) =>
+    t.loyalty_program || t.loyalty_number;
 
   const totalMiles = trips.reduce((s, t) => s + (Number(t.distance_miles) || 0), 0);
   const totalMin = trips.reduce((s, t) => s + (Number(t.duration_min) || 0), 0);
@@ -121,7 +145,7 @@ export default function SharedTripPage() {
         </header>
 
         {/* Totals summary (multi-stop) */}
-        {trips.length > 1 && (totalMiles > 0 || totalMin > 0 || totalCost > 0) && (
+        {show('stats') && trips.length > 1 && (totalMiles > 0 || totalMin > 0 || totalCost > 0) && (
           <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">Trip Totals</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
@@ -154,7 +178,7 @@ export default function SharedTripPage() {
         )}
 
         {/* Budget bar */}
-        {budget && budget > 0 && totalCost > 0 && (
+        {show('budget') && budget && budget > 0 && totalCost > 0 && (
           <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
             <div className="flex items-center justify-between text-sm mb-2">
               <span className="font-medium text-gray-700">Budget</span>
@@ -229,90 +253,80 @@ export default function SharedTripPage() {
                   </p>
 
                   {/* Stats */}
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-                    {trip.distance_miles && (
-                      <span>{Number(trip.distance_miles).toFixed(1)} mi</span>
-                    )}
-                    {trip.duration_min && <span>{trip.duration_min} min</span>}
-                    {trip.cost && <span>${Number(trip.cost).toFixed(2)}</span>}
-                    {trip.co2_kg && (
-                      <span>{Number(trip.co2_kg).toFixed(1)} kg CO2</span>
-                    )}
-                  </div>
+                  {show('stats') && (
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                      {trip.distance_miles && (
+                        <span>{Number(trip.distance_miles).toFixed(1)} mi</span>
+                      )}
+                      {trip.duration_min && <span>{trip.duration_min} min</span>}
+                      {show('budget') && trip.cost && <span>${Number(trip.cost).toFixed(2)}</span>}
+                      {trip.co2_kg && (
+                        <span>{Number(trip.co2_kg).toFixed(1)} kg CO₂</span>
+                      )}
+                    </div>
+                  )}
 
                   {/* Notes */}
-                  {trip.notes && (
+                  {show('notes') && trip.notes && (
                     <p className="text-xs text-gray-400 italic mt-2">{trip.notes}</p>
                   )}
 
                   {/* Booking details */}
-                  {hasBooking(trip) && (
+                  {show('booking') && hasBooking(trip) && (
                     <div className="mt-3 pt-3 border-t border-dashed border-gray-200 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
                       {trip.confirmation_number && (
-                        <span>
-                          <strong className="text-gray-700">Conf #</strong>{' '}
-                          {trip.confirmation_number}
-                        </span>
+                        <span><strong className="text-gray-700">Conf #</strong> {trip.confirmation_number}</span>
                       )}
                       {trip.carrier_name && (
-                        <span>
-                          <strong className="text-gray-700">Carrier:</strong>{' '}
-                          {trip.carrier_name}
-                        </span>
+                        <span><strong className="text-gray-700">Carrier:</strong> {trip.carrier_name}</span>
                       )}
                       {trip.seat_assignment && (
-                        <span>
-                          <strong className="text-gray-700">Seat:</strong>{' '}
-                          {trip.seat_assignment}
-                        </span>
+                        <span><strong className="text-gray-700">Seat:</strong> {trip.seat_assignment}</span>
                       )}
                       {trip.terminal && (
-                        <span>
-                          <strong className="text-gray-700">Terminal:</strong>{' '}
-                          {trip.terminal}
-                        </span>
+                        <span><strong className="text-gray-700">Terminal:</strong> {trip.terminal}</span>
                       )}
                       {trip.gate && (
-                        <span>
-                          <strong className="text-gray-700">Gate:</strong> {trip.gate}
-                        </span>
+                        <span><strong className="text-gray-700">Gate:</strong> {trip.gate}</span>
                       )}
+                    </div>
+                  )}
+
+                  {/* Accommodation */}
+                  {show('accommodation') && hasAccommodation(trip) && (
+                    <div className="mt-2 pt-2 border-t border-dashed border-gray-200 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
                       {trip.accommodation_name && (
                         <span>
-                          <strong className="text-gray-700">Hotel:</strong>{' '}
-                          {trip.accommodation_name}
+                          <strong className="text-gray-700">Hotel:</strong> {trip.accommodation_name}
                           {trip.room_type ? ` (${trip.room_type})` : ''}
                         </span>
                       )}
-                      {trip.accommodation_address && (
-                        <span>{trip.accommodation_address}</span>
-                      )}
+                      {trip.accommodation_address && <span>{trip.accommodation_address}</span>}
                       {trip.check_in_date && (
-                        <span>
-                          <strong className="text-gray-700">Check-in:</strong>{' '}
-                          {fmtDate(trip.check_in_date)}
-                        </span>
+                        <span><strong className="text-gray-700">Check-in:</strong> {fmtDate(trip.check_in_date)}</span>
                       )}
                       {trip.check_out_date && (
-                        <span>
-                          <strong className="text-gray-700">Check-out:</strong>{' '}
-                          {fmtDate(trip.check_out_date)}
-                        </span>
+                        <span><strong className="text-gray-700">Check-out:</strong> {fmtDate(trip.check_out_date)}</span>
                       )}
+                    </div>
+                  )}
+
+                  {/* Pickup / Return */}
+                  {show('pickupReturn') && hasPickupReturn(trip) && (
+                    <div className="mt-2 pt-2 border-t border-dashed border-gray-200 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
                       {trip.pickup_address && (
-                        <span>
-                          <strong className="text-gray-700">Pickup:</strong>{' '}
-                          {trip.pickup_address}
-                          {trip.pickup_time ? ` at ${trip.pickup_time}` : ''}
-                        </span>
+                        <span><strong className="text-gray-700">Pickup:</strong> {trip.pickup_address}{trip.pickup_time ? ` at ${trip.pickup_time}` : ''}</span>
                       )}
                       {trip.return_address && (
-                        <span>
-                          <strong className="text-gray-700">Return:</strong>{' '}
-                          {trip.return_address}
-                          {trip.return_time ? ` at ${trip.return_time}` : ''}
-                        </span>
+                        <span><strong className="text-gray-700">Return:</strong> {trip.return_address}{trip.return_time ? ` at ${trip.return_time}` : ''}</span>
                       )}
+                    </div>
+                  )}
+
+                  {/* Loyalty */}
+                  {show('loyalty') && hasLoyalty(trip) && (
+                    <div className="mt-2 pt-2 border-t border-dashed border-gray-200 text-xs text-gray-500">
+                      <span><strong className="text-gray-700">Loyalty:</strong> {trip.loyalty_program}{trip.loyalty_number ? ` — #${trip.loyalty_number}` : ''}</span>
                     </div>
                   )}
                 </div>
@@ -322,7 +336,7 @@ export default function SharedTripPage() {
         </section>
 
         {/* Packing list */}
-        {(packing_notes || (equipment_items && equipment_items.length > 0)) && (
+        {show('packing') && (packing_notes || (equipment_items && equipment_items.length > 0)) && (
           <section className="mb-8">
             <h2 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wide">
               Packing List

@@ -43,7 +43,13 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { trip_id, route_id, email, expires_at } = body;
+
+  // Accept both direct trip_id/route_id and entity_type/entity_id formats
+  const trip_id = body.trip_id || (body.entity_type === 'trip' ? body.entity_id : null);
+  const route_id = body.route_id || (body.entity_type === 'route' ? body.entity_id : null);
+  const email = body.email || body.shared_with_email || null;
+  const expires_at = body.expires_at || null;
+  const included_sections = body.included_sections || null;
 
   if (!trip_id && !route_id) {
     return NextResponse.json({ error: 'trip_id or route_id is required' }, { status: 400 });
@@ -81,6 +87,7 @@ export async function POST(request: NextRequest) {
       shared_with,
       share_token,
       expires_at: expires_at || null,
+      included_sections,
     })
     .select()
     .single();

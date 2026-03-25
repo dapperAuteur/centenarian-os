@@ -10,6 +10,7 @@ interface TripShareModalProps {
   onClose: () => void;
   entityType: 'trip' | 'route';
   entityId: string;
+  includedSections?: { [key: string]: boolean } | null;
 }
 
 interface Share {
@@ -27,6 +28,7 @@ export default function TripShareModal({
   onClose,
   entityType,
   entityId,
+  includedSections,
 }: TripShareModalProps) {
   const [shares, setShares] = useState<Share[]>([]);
   const [loading, setLoading] = useState(false);
@@ -78,6 +80,7 @@ export default function TripShareModal({
       };
       if (!isPublic) body.shared_with_email = email.trim();
       if (expiresAt) body.expires_at = expiresAt;
+      if (includedSections) body.included_sections = includedSections;
 
       const res = await offlineFetch('/api/travel/shares', {
         method: 'POST',
