@@ -410,7 +410,7 @@ export default function AdminEducationPage() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <div className="shrink-0 px-4 py-3 sm:px-6 border-b border-gray-800">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="p-1.5 rounded-lg hover:bg-gray-800 transition text-gray-400"

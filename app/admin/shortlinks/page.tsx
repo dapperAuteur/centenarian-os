@@ -150,7 +150,7 @@ export default function LinksAndTrafficPage() {
             className="bg-gray-800 text-sm text-white rounded-lg px-2 py-1.5 border border-gray-700 scheme-dark"
           />
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-wrap">
             {prefixOptions.map((opt) => (
               <button
                 key={opt.value}
