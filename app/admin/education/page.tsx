@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Send, Loader2, Sparkles, Plus, Search, MessageSquare,
-  Trash2, Tag, StickyNote, X, ChevronLeft, RefreshCw, CheckCircle,
+  Trash2, Tag, StickyNote, X, ChevronLeft, RefreshCw, CheckCircle, Download,
 } from 'lucide-react';
 import { marked } from 'marked';
 
@@ -36,6 +36,8 @@ const MODES = [
   { key: 'onboarding', label: 'Onboarding' },
   { key: 'demo', label: 'Demo' },
   { key: 'general', label: 'General' },
+  { key: 'educator', label: 'Educator' },
+  { key: 'support', label: 'Support' },
 ] as const;
 
 type Mode = (typeof MODES)[number]['key'];
@@ -70,6 +72,18 @@ const SUGGESTIONS: Record<Mode, string[]> = {
     'How does the AI integration work across the platform?',
     'Explain the LMS / Academy system architecture.',
     'What wearable integrations are supported and how do they work?',
+  ],
+  educator: [
+    'How does the planner hierarchy work?',
+    'Explain the Fuel module to a new user',
+    'Walk me through the Academy enrollment flow',
+    'What are Life Categories and how do they work?',
+  ],
+  support: [
+    'A user can\'t see their enrolled courses',
+    'Student says their progress isn\'t saving',
+    'How to fix a failed Stripe Connect payout',
+    'User reports slow dashboard loading',
   ],
 };
 
@@ -443,6 +457,30 @@ export default function AdminEducationPage() {
               <span className={`text-[10px] ${syncStatus === 'error' ? 'text-red-400' : 'text-green-400'}`}>
                 {syncResult}
               </span>
+            )}
+
+            {/* Export chat button */}
+            {messages.length > 0 && (
+              <button
+                onClick={() => {
+                  const md = messages
+                    .map((m) => `**${m.role === 'user' ? 'You' : 'AI'}:**\n\n${m.text}`)
+                    .join('\n\n---\n\n');
+                  const date = new Date().toISOString().slice(0, 10);
+                  const blob = new Blob([md], { type: 'text/markdown' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `centos-education-${date}.md`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                aria-label="Export chat as markdown"
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-gray-400 hover:text-fuchsia-300 bg-gray-800 rounded-lg hover:bg-gray-700 transition"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export
+              </button>
             )}
 
             {/* Tags / Notes button */}

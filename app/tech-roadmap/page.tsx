@@ -1,6 +1,16 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, Circle, Clock } from 'lucide-react';
 import SiteFooter from '@/components/ui/SiteFooter';
+
+export const metadata: Metadata = {
+  title: 'Product Roadmap',
+  description: 'See what we\'ve built, what we\'re building, and what\'s planned for CentenarianOS — a multi-decade personal operating system.',
+  openGraph: {
+    title: 'Product Roadmap — CentenarianOS',
+    description: 'See what we\'ve built, what we\'re building, and what\'s planned for CentenarianOS.',
+  },
+};
 
 interface Phase {
   id: number;
@@ -281,10 +291,20 @@ const PHASES: Phase[] = [
     title: 'Phase 13: User Experience & Personalization',
     status: 'in-progress',
     quarter: 'Q2 2026',
-    description: 'Reduce friction and let users tailor CentenarianOS to how they actually work.',
+    description: 'ARIA compliance, mobile-first polish, SEO optimization, and marketing refresh across all public pages.',
     items: [
       { done: true, text: 'Dashboard home preference — choose which page you land on after login or clicking "Go to Dashboard"' },
       { done: true, text: 'Life Categories — user-defined life-area tags with analytics across all 11 module types' },
+      { done: true, text: 'ARIA compliance audit — aria-expanded on toggles, role="alert" on errors, accessible LoadingSpinner component' },
+      { done: true, text: 'Mobile touch targets — 44x44px minimum on all close buttons, FABs, nav links, and icon buttons' },
+      { done: true, text: 'SEO metadata on all public pages — recipes, coaching, demo, live, tech-roadmap, contribute' },
+      { done: true, text: 'JSON-LD structured data — FAQ schema, SoftwareApplication schema, breadcrumbs on public pages' },
+      { done: true, text: 'Sitemap expansion — exercises, workouts, and demo routes added' },
+      { done: true, text: 'Marketing page refresh — How It Works section, pricing FAQ, features category filters' },
+      { done: true, text: 'Help docs expansion — 12 new module areas covered in RAG help system' },
+      { done: true, text: 'Tutorial content — contacts and activity links tutorial modules, expanded exercise and workout guides' },
+      { done: true, text: 'Admin education tools — educator and support modes, chat export, help coverage dashboard' },
+      { done: true, text: 'Tailwind v4 compliance — fixed bg-gradient-to-*, flex-shrink-0 across marketing pages' },
       { done: false, text: 'Notification preferences — control which in-app alerts you receive' },
       { done: false, text: 'Custom dashboard widgets — pin your most-used modules to a personal home screen' },
       { done: false, text: 'Theme support — light, dark, and system modes' },
@@ -408,25 +428,25 @@ export default function RoadmapPage() {
             href="https://github.com/dapperAuteur/centenarian-os"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+            className="min-h-11 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
           >
             View on GitHub
           </a>
           <Link
             href="/contribute"
-            className="px-6 py-3 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-medium"
+            className="min-h-11 px-6 py-3 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-medium"
           >
             Contribute
           </Link>
           <Link
             href="/academy"
-            className="px-6 py-3 border border-fuchsia-300 text-fuchsia-700 rounded-lg hover:bg-fuchsia-50 transition-colors font-medium"
+            className="min-h-11 px-6 py-3 border border-fuchsia-300 text-fuchsia-700 rounded-lg hover:bg-fuchsia-50 transition-colors font-medium"
           >
             Try the Academy
           </Link>
           <Link
             href="/demo"
-            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+            className="min-h-11 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
           >
             Try the Demo
           </Link>

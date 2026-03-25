@@ -45,7 +45,7 @@ export default function FloatingActionsMenu({ userRole }: Props) {
           <button
             onClick={openHelp}
             title="Open help chat"
-            className="bg-gray-800 text-white rounded-full p-3 shadow-lg hover:bg-gray-700 border border-gray-700 transition-colors"
+            className="min-h-11 min-w-11 bg-gray-800 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-700 border border-gray-700 transition-colors"
             aria-label="Open help chat"
           >
             <HelpCircle className="w-5 h-5 text-fuchsia-400" />
@@ -64,7 +64,7 @@ export default function FloatingActionsMenu({ userRole }: Props) {
           <button
             onClick={openFeedback}
             title="Share feedback"
-            className="bg-gray-800 text-white rounded-full p-3 shadow-lg hover:bg-gray-700 border border-gray-700 transition-colors"
+            className="min-h-11 min-w-11 bg-gray-800 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-700 border border-gray-700 transition-colors"
             aria-label="Share feedback"
           >
             <MessageCircle className="w-5 h-5 text-fuchsia-400" />
@@ -75,8 +75,9 @@ export default function FloatingActionsMenu({ userRole }: Props) {
         <button
           onClick={() => setOpen((v) => !v)}
           title={open ? 'Close menu' : 'Help & Feedback'}
-          className="bg-fuchsia-600 text-white rounded-full p-3.5 shadow-lg hover:bg-fuchsia-700 transition-colors pointer-events-auto"
+          className="min-h-11 min-w-11 bg-fuchsia-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-fuchsia-700 transition-colors pointer-events-auto"
           aria-label={open ? 'Close menu' : 'Help & Feedback'}
+          aria-expanded={open}
         >
           {open
             ? <X className="w-5 h-5" />

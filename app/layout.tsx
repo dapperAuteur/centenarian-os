@@ -8,7 +8,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 import SocialReferralTracker from '@/components/SocialReferralTracker';
-import { organizationSchema } from '@/lib/seo/json-ld';
+import { organizationSchema, softwareApplicationSchema } from '@/lib/seo/json-ld';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -59,6 +59,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema()) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareApplicationSchema()) }}
         />
       </head>
       <body className={inter.className}>

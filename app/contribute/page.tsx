@@ -1,7 +1,17 @@
 // File: app/contribute/page.tsx
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, Code, FileText, Bug, Lightbulb, Heart, GitBranch } from 'lucide-react';
 import SiteFooter from '@/components/ui/SiteFooter';
+
+export const metadata: Metadata = {
+  title: 'Contribute',
+  description: 'Help build CentenarianOS — contribute code, improve documentation, report bugs, or suggest features. All skill levels welcome.',
+  openGraph: {
+    title: 'Contribute to CentenarianOS',
+    description: 'Help build the personal operating system for executing multi-decade goals. All skill levels welcome.',
+  },
+};
 
 export default function ContributePage() {
   return (
@@ -14,7 +24,7 @@ export default function ContributePage() {
             <span className="font-medium">Back to Home</span>
           </Link>
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-fuchsia-500 to-sky-500 rounded-lg"></div>
+            <div className="w-8 h-8 bg-linear-to-br from-fuchsia-500 to-sky-500 rounded-lg"></div>
             <span className="text-xl font-bold text-gray-900">CentenarianOS</span>
           </div>
         </nav>
@@ -146,7 +156,7 @@ export default function ContributePage() {
           <div className="space-y-6">
             
             <div className="flex items-start">
-              <div className="flex-shrink-0 w-10 h-10 bg-fuchsia-100 rounded-lg flex items-center justify-center font-bold text-fuchsia-600 mr-4">
+              <div className="shrink-0 w-10 h-10 bg-fuchsia-100 rounded-lg flex items-center justify-center font-bold text-fuchsia-600 mr-4">
                 1
               </div>
               <div>
@@ -161,7 +171,7 @@ export default function ContributePage() {
             </div>
 
             <div className="flex items-start">
-              <div className="flex-shrink-0 w-10 h-10 bg-fuchsia-100 rounded-lg flex items-center justify-center font-bold text-fuchsia-600 mr-4">
+              <div className="shrink-0 w-10 h-10 bg-fuchsia-100 rounded-lg flex items-center justify-center font-bold text-fuchsia-600 mr-4">
                 2
               </div>
               <div>
@@ -176,7 +186,7 @@ export default function ContributePage() {
             </div>
 
             <div className="flex items-start">
-              <div className="flex-shrink-0 w-10 h-10 bg-fuchsia-100 rounded-lg flex items-center justify-center font-bold text-fuchsia-600 mr-4">
+              <div className="shrink-0 w-10 h-10 bg-fuchsia-100 rounded-lg flex items-center justify-center font-bold text-fuchsia-600 mr-4">
                 3
               </div>
               <div>
@@ -191,7 +201,7 @@ export default function ContributePage() {
             </div>
 
             <div className="flex items-start">
-              <div className="flex-shrink-0 w-10 h-10 bg-fuchsia-100 rounded-lg flex items-center justify-center font-bold text-fuchsia-600 mr-4">
+              <div className="shrink-0 w-10 h-10 bg-fuchsia-100 rounded-lg flex items-center justify-center font-bold text-fuchsia-600 mr-4">
                 4
               </div>
               <div>
@@ -206,7 +216,7 @@ export default function ContributePage() {
             </div>
 
             <div className="flex items-start">
-              <div className="flex-shrink-0 w-10 h-10 bg-fuchsia-100 rounded-lg flex items-center justify-center font-bold text-fuchsia-600 mr-4">
+              <div className="shrink-0 w-10 h-10 bg-fuchsia-100 rounded-lg flex items-center justify-center font-bold text-fuchsia-600 mr-4">
                 5
               </div>
               <div>
@@ -301,7 +311,7 @@ export default function ContributePage() {
       </section>
 
       {/* Community */}
-      <section className="bg-gradient-to-r from-fuchsia-600 to-sky-600 py-16">
+      <section className="bg-linear-to-r from-fuchsia-600 to-sky-600 py-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <Heart className="w-16 h-16 text-white mx-auto mb-4" />
           <h2 className="text-3xl font-bold text-white mb-4">

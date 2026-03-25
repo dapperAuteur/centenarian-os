@@ -89,7 +89,7 @@ export default function MobileDrawer({
           <span className="text-lg font-bold text-gray-900">CentenarianOS</span>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition"
+            className="min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-gray-100 transition"
             aria-label="Close menu"
           >
             <X className="w-5 h-5 text-gray-500" />
