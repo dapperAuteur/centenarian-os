@@ -3,7 +3,7 @@
 // app/academy/my-courses/messages/page.tsx
 // Student course DM inbox: conversation list + message thread.
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import Link from 'next/link';
@@ -80,18 +80,24 @@ function MessagesContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const fetchMessages = useCallback(async (showLoading = false) => {
+    if (!activeConv) return;
+    if (showLoading) setLoadingMessages(true);
+    try {
+      const r = await offlineFetch(`/api/academy/courses/${activeConv.courseId}/messages?partner_id=${activeConv.partnerId}`);
+      const d = await r.json();
+      setMessages(Array.isArray(d) ? d : []);
+      if (showLoading) setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    } catch { /* ignore */ }
+    setLoadingMessages(false);
+  }, [activeConv]);
+
   useEffect(() => {
     if (!activeConv) return;
-    setLoadingMessages(true);
-    offlineFetch(`/api/academy/courses/${activeConv.courseId}/messages?partner_id=${activeConv.partnerId}`)
-      .then((r) => r.json())
-      .then((d) => {
-        setMessages(Array.isArray(d) ? d : []);
-        setLoadingMessages(false);
-        setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-      })
-      .catch(() => setLoadingMessages(false));
-  }, [activeConv]);
+    fetchMessages(true);
+    const interval = setInterval(() => fetchMessages(false), 30_000);
+    return () => clearInterval(interval);
+  }, [activeConv, fetchMessages]);
 
   async function handleSend() {
     if (!newMessage.trim() || !activeConv || sending) return;
@@ -141,13 +147,15 @@ function MessagesContent() {
               <p className="text-gray-600 text-xs mt-1">Start a conversation from a course page.</p>
             </div>
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-1" role="list" aria-label="Conversations">
               {conversations.map((conv) => {
                 const isActive = activeConv?.courseId === conv.course_id && activeConv?.partnerId === conv.partner_id;
                 return (
                   <button
                     key={`${conv.course_id}:${conv.partner_id}`}
                     type="button"
+                    role="listitem"
+                    aria-current={isActive ? 'true' : undefined}
                     onClick={() => setActiveConv({ courseId: conv.course_id, partnerId: conv.partner_id, partnerName: conv.partner_name })}
                     className={`w-full text-left p-3 rounded-xl transition ${
                       isActive ? 'bg-fuchsia-900/30 border border-fuchsia-700/50' : 'bg-gray-900 border border-gray-800 hover:border-gray-700'
@@ -191,15 +199,16 @@ function MessagesContent() {
                 <button
                   type="button"
                   onClick={() => setActiveConv(null)}
-                  className="lg:hidden p-1 text-gray-400 hover:text-white transition"
+                  aria-label="Back to conversations"
+                  className="lg:hidden p-1 min-h-11 min-w-11 flex items-center justify-center text-gray-400 hover:text-white transition"
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className="w-5 h-5" aria-hidden="true" />
                 </button>
                 <p className="font-medium text-white text-sm">{activeConv.partnerName}</p>
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0" style={{ maxHeight: 'calc(60vh - 8rem)' }}>
+              <div role="log" aria-label="Message history" className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0" style={{ maxHeight: 'calc(60vh - 8rem)' }}>
                 {loadingMessages ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin text-fuchsia-500" />
@@ -233,7 +242,9 @@ function MessagesContent() {
               {/* Reply input */}
               <div className="border-t border-gray-800 p-3">
                 <div className="flex items-center gap-2">
+                  <label htmlFor="student-dm-input" className="sr-only">Message</label>
                   <input
+                    id="student-dm-input"
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
@@ -245,9 +256,10 @@ function MessagesContent() {
                     type="button"
                     onClick={handleSend}
                     disabled={!newMessage.trim() || sending}
-                    className="p-2.5 bg-fuchsia-600 text-white rounded-xl hover:bg-fuchsia-700 transition disabled:opacity-50 min-h-11 min-w-11 flex items-center justify-center"
+                    aria-label="Send message"
+                    className="bg-fuchsia-600 text-white rounded-xl hover:bg-fuchsia-700 transition disabled:opacity-50 min-h-11 min-w-11 flex items-center justify-center"
                   >
-                    {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    {sending ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Send className="w-4 h-4" aria-hidden="true" />}
                   </button>
                 </div>
               </div>

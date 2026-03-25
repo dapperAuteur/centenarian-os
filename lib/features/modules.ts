@@ -383,8 +383,8 @@ export const MODULES: ModuleData[] = [
     features: [
       'Video, text, audio, quiz & map lessons',
       'Choose Your Own Adventure navigation',
-      'Assignments, certificates & badges',
-      '14 free tutorial course series',
+      'Course reviews, promo codes & free trials',
+      'Student-teacher DMs & submission threads',
     ],
     highlights: [
       {
@@ -397,11 +397,11 @@ export const MODULES: ModuleData[] = [
       },
       {
         title: 'Teach & Earn',
-        description: 'Become a teacher with a teacher subscription. Set your course price, and receive payouts via Stripe Connect. The platform handles payments.',
+        description: 'Become a teacher with a teacher subscription. Set your course price with promo codes and free trials, and receive payouts via Stripe Connect.',
       },
       {
-        title: 'Free Tutorial Library',
-        description: '15+ tutorial series teach every CentenarianOS module. Free for all users — the best way to learn the platform.',
+        title: 'Reviews & Messaging',
+        description: 'Students leave star ratings and reviews. Direct messaging between students and teachers. Threaded feedback on assignment submissions.',
       },
     ],
     dashboardPath: '/academy',

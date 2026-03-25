@@ -9,10 +9,10 @@ import { BookOpen, Users, DollarSign, Zap, CheckCircle, ArrowRight } from 'lucid
 import { useAuth } from '@/lib/hooks/useAuth';
 
 const BENEFITS = [
-  { icon: BookOpen,   title: 'Flexible Course Formats',   desc: 'Video, audio, text, slides — or mix them all. Linear or CYOA adventure paths.' },
-  { icon: Users,      title: 'Built-In Audience',          desc: 'Reach the CentenarianOS community of health-focused learners immediately.' },
-  { icon: DollarSign, title: 'Keep the Majority',          desc: 'Set your own price. CentOS takes a small platform fee; the rest goes to you via Stripe.' },
-  { icon: Zap,        title: 'Assignments & Live Sessions', desc: 'Grade submissions, give feedback, and host live streams — all in one place.' },
+  { icon: BookOpen,   title: 'Flexible Course Formats',   desc: 'Video, audio, text, slides — or mix them all. Linear or CYOA adventure paths with AI-powered crossroads.' },
+  { icon: Users,      title: 'Built-In Audience',          desc: 'Reach the CentenarianOS community. Students leave reviews, send direct messages, and re-enroll to deepen their learning.' },
+  { icon: DollarSign, title: 'Keep the Majority',          desc: 'Set your own price. Create promo codes and free trials. CentOS takes a small platform fee; the rest goes to you via Stripe.' },
+  { icon: Zap,        title: 'Assignments & Live Sessions', desc: 'Grade submissions with threaded feedback, host live streams, and let AI suggest learning paths for your catalog.' },
 ];
 
 export default function TeachLandingPage() {

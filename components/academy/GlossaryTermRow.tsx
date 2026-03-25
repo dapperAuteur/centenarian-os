@@ -23,7 +23,8 @@ export default function GlossaryTermRow({ term }: { term: GlossaryTerm }) {
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center gap-3 text-left"
+        aria-expanded={expanded}
+        className="w-full flex items-center gap-3 text-left min-h-11"
       >
         <div className="flex-1 min-w-0">
           <span className="text-sm font-semibold text-white">{term.term}</span>
@@ -31,7 +32,7 @@ export default function GlossaryTermRow({ term }: { term: GlossaryTerm }) {
             <span className="ml-2 text-xs text-gray-500 italic">({term.phonetic})</span>
           )}
         </div>
-        <ChevronDown className={`w-4 h-4 text-gray-600 shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-gray-600 shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`} aria-hidden="true" />
       </button>
       {expanded && term.definition && (
         <div

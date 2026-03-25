@@ -34,19 +34,23 @@ The following items from this plan have shipped and should be considered **DONE*
 | Data Hub (centralized import/export for 12+ modules) | — | Shipped |
 | Short links (admin) | 049 | Shipped (admin backfill only) |
 
+## ✅ Phase 4 — Centenarian Academy: COMPLETE
+
+All Phase 4 Academy items have been implemented:
+
+| Item | Status | Notes |
+|------|--------|-------|
+| 4-A: CYOA Crossroads UI | ✅ | Inline in lesson player |
+| 4-B: Threaded chat on submissions | ✅ | SubmissionMessageThread component, student + teacher pages |
+| 4-C: Course direct messages | ✅ | Student + teacher DM inboxes with auto-refresh |
+| 4-D: Teacher promo codes | ✅ | CRUD + Stripe checkout integration with discounts |
+| 4-E: Free trial periods | ✅ | trial_period_days on courses, Stripe subscription support |
+| 4-F: Course reviews & star ratings | ✅ | Reviews with trigger-based avg_rating, star picker UI |
+| 4-G: Progressive metric slots + re-enrollment | ✅ | attempt_number, metric_slots, "Take Again" button |
+| 4-H: AI-recommended learning paths (students) | ✅ | Gemini ranking + recommended section UI |
+| 4-I: AI path suggestions (teachers) | ✅ | Suggest button + draft cards |
+
 ## ⏳ Still Pending
-
-The following Phase 4 Academy items and later phases remain unimplemented. See sections below for implementation details.
-
-**Phase 4 remaining:**
-- 4-B: Threaded chat on assignment submissions (UI only — API exists)
-- 4-C: Course direct messages (no API or UI)
-- 4-D: Teacher promo codes (Stripe Coupons)
-- 4-E: Free trial periods for subscription courses
-- 4-F: Course reviews and star ratings
-- 4-G: Progressive metric slots + re-enrollment ("Take Again")
-- 4-H: AI-recommended learning paths for students (UI only — API exists)
-- 4-I: AI path suggestions for teachers
 
 **Phase 6:** Focus Engine correlation analysis (nutrition ↔ focus/energy)
 

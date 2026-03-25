@@ -254,7 +254,7 @@ export default function QuizPlayer({ quizContent, courseId, lessonId, onComplete
       <p className="text-white font-semibold text-base sm:text-lg mb-5">{currentQuestion.questionText}</p>
 
       {/* Options */}
-      <div className="space-y-2 mb-5">
+      <div className="space-y-2 mb-5" role="radiogroup" aria-label="Answer options">
         {currentQuestion.options.map((opt) => {
           let border = 'border-gray-700 hover:border-gray-600';
           let bg = 'bg-gray-800 hover:bg-gray-750';
@@ -286,6 +286,8 @@ export default function QuizPlayer({ quizContent, courseId, lessonId, onComplete
             <button
               key={opt.id}
               type="button"
+              role="radio"
+              aria-checked={selectedOptionId === opt.id}
               onClick={() => handleSelectOption(opt.id)}
               disabled={answered}
               className={`w-full text-left px-4 py-3 rounded-xl border ${border} ${bg} ${textColor} text-sm transition flex items-center gap-3 min-h-11 disabled:cursor-default`}

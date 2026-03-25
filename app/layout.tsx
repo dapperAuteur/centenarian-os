@@ -28,14 +28,14 @@ export const metadata: Metadata = {
     description: 'Multi-decade personal operating system for executing audacious goals through data-driven daily habits',
     url: SITE_URL,
     siteName: 'CentenarianOS',
-    images: [{ url: `${SITE_URL}/og-default.png`, width: 1200, height: 630, alt: 'CentenarianOS' }],
+    images: [{ url: `${SITE_URL}/api/og/default`, width: 1200, height: 630, alt: 'CentenarianOS' }],
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'CentenarianOS',
     description: 'Multi-decade personal operating system for executing audacious goals through data-driven daily habits',
-    images: [`${SITE_URL}/og-default.png`],
+    images: [`${SITE_URL}/api/og/default`],
   },
 };
 

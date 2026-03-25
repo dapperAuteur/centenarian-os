@@ -95,8 +95,10 @@ export default function AcademyPage() {
         {/* Search + filter */}
         <div className="dark-input flex flex-col sm:flex-row gap-3 mb-10">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <label htmlFor="course-search" className="sr-only">Search courses</label>
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" aria-hidden="true" />
             <input
+              id="course-search"
               type="text"
               placeholder="Search courses…"
               value={q}
@@ -105,16 +107,22 @@ export default function AcademyPage() {
             />
           </div>
           {categories.length > 0 && (
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full sm:w-auto px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
-            >
-              <option value="">All Categories</option>
-              {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <>
+              <label htmlFor="course-category" className="sr-only">Category</label>
+              <select
+                id="course-category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full sm:w-auto px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
+              >
+                <option value="">All Categories</option>
+                {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </>
           )}
+          <label htmlFor="course-sort" className="sr-only">Sort by</label>
           <select
+            id="course-sort"
             value={sortKey}
             onChange={(e) => setSortKey(e.target.value as SortKey)}
             className="w-full sm:w-auto px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
@@ -133,7 +141,7 @@ export default function AcademyPage() {
             <p>No courses found.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" role="list" aria-label="Courses">
             {sortedCourses.map((course) => (
               <Link
                 key={course.id}
