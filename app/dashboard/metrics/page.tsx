@@ -174,7 +174,7 @@ export default function MetricsDashboardPage() {
           </h1>
           <p className="text-gray-500 mt-1">Log your daily data from your wearable device</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <Link
             href="/dashboard/metrics/import"
             className="flex items-center gap-1.5 px-3 py-2 bg-fuchsia-100 text-fuchsia-700 rounded-lg text-sm font-medium hover:bg-fuchsia-200 transition min-h-10"

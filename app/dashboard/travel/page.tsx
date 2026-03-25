@@ -353,12 +353,12 @@ export default function TravelPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Travel</h1>
           <p className="text-sm text-gray-500 mt-0.5">Track your miles, fuel, and commute impact</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={logCommuteByBike}
             disabled={savingTrip}
