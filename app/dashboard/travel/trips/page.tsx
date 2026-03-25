@@ -3,11 +3,12 @@
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, Plus, ChevronDown, Search, Trash2, Play, Repeat } from 'lucide-react';
+import { ChevronLeft, Plus, ChevronDown, Search, Trash2, Play, Repeat, MapPin } from 'lucide-react';
 import PaginationBar from '@/components/ui/PaginationBar';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import MultiStopForm from '@/components/travel/MultiStopForm';
+import GoogleMapsImportModal from '@/components/travel/GoogleMapsImportModal';
 import RouteCard from '@/components/travel/RouteCard';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Modal from '@/components/ui/Modal';
@@ -187,6 +188,12 @@ function TripsPageInner() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [linkedTxDialog, setLinkedTxDialog] = useState<{ transactionId: string } | null>(null);
   const [showMultiStop, setShowMultiStop] = useState(false);
+  const [showMapsImport, setShowMapsImport] = useState(false);
+  const [importedRoute, setImportedRoute] = useState<{
+    name: string | null;
+    isRoundTrip: boolean;
+    legs: Array<{ mode: string; origin: string | null; destination: string | null; distance_miles: number | null; duration_min: number | null; cost: number | null; purpose: string | null; vehicle_id: string | null }>;
+  } | null>(null);
   const [showBookingDetails, setShowBookingDetails] = useState(false);
   const [editingRoute, setEditingRoute] = useState<{
     id: string;
@@ -475,6 +482,13 @@ function TripsPageInner() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowMapsImport(true)}
+            className="flex items-center gap-1.5 px-3 py-2 border border-sky-200 text-sky-700 rounded-xl text-sm font-medium hover:bg-sky-50 transition min-h-11"
+          >
+            <MapPin className="w-4 h-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Maps Import</span>
+          </button>
           <button
             onClick={() => setShowMultiStop(true)}
             className="flex items-center gap-1.5 px-3 py-2 bg-sky-600 text-white rounded-xl text-sm font-medium hover:bg-sky-700 transition min-h-11"
@@ -811,6 +825,34 @@ function TripsPageInner() {
           </button>
         </div>
       </Modal>
+
+      {/* Google Maps Import Modal */}
+      <GoogleMapsImportModal
+        isOpen={showMapsImport}
+        onClose={() => setShowMapsImport(false)}
+        onImported={(route) => {
+          setImportedRoute(route);
+          setShowMapsImport(false);
+        }}
+      />
+
+      {/* Multi-Stop Form from Maps Import */}
+      {importedRoute && (
+        <MultiStopForm
+          vehicles={vehicles}
+          brands={brands}
+          templates={templates}
+          initialRoute={{
+            name: importedRoute.name,
+            date: new Date().toISOString().split('T')[0],
+            notes: null,
+            is_round_trip: importedRoute.isRoundTrip,
+          }}
+          initialLegs={importedRoute.legs}
+          onClose={() => setImportedRoute(null)}
+          onSaved={() => { setImportedRoute(null); load(); }}
+        />
+      )}
 
       {/* Unified Trip / Multi-Stop Form Modal (create) */}
       {showMultiStop && (
