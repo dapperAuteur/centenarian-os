@@ -119,7 +119,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
   // Switchy short link — fire and forget
   if (data && isNowPublishing && !existing.short_link_id) {
-    const siteUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+    const rawUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+    const siteUrl = rawUrl ? `https://${rawUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}` : '';
     const db = getDb();
     const { data: profile } = await db.from('profiles').select('username').eq('id', user.id).maybeSingle();
     const username = profile?.username || user.id;

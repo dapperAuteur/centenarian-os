@@ -24,7 +24,10 @@ export async function POST(request: NextRequest) {
   }
 
   const type = request.nextUrl.searchParams.get('type') || 'all';
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+  const rawUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+  const siteUrl = rawUrl
+    ? `https://${rawUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}`
+    : '';
   const db = getDb();
   let created = 0;
   let failed = 0;

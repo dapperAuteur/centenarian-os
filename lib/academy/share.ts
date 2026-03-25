@@ -12,7 +12,8 @@ interface CourseShareUrls {
 export function buildCourseShareUrls(
   course: { id: string; title: string; short_link_url?: string | null },
 ): CourseShareUrls {
-  const base = process.env.NEXT_PUBLIC_APP_URL || '';
+  const raw = process.env.NEXT_PUBLIC_APP_URL || '';
+  const base = raw ? `https://${raw.replace(/^https?:\/\//, '').replace(/\/$/, '')}` : '';
   const fullUrl = `${base}/academy/${course.id}`;
   const courseUrl = course.short_link_url ?? fullUrl;
 
