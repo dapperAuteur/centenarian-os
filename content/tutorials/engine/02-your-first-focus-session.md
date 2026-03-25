@@ -49,6 +49,12 @@ The timer begins. The UI shows:
 - A pause button
 - A stop/end button
 
+Below the timer, you'll see tools for capturing ideas mid-session:
+- **Scratchpad** — a text area for quick notes (auto-saved locally, transferable to blog drafts or recipes)
+- **Voice Notes** — record audio notes without leaving the session
+- **Doodle Canvas** — open a full-screen drawing surface to sketch diagrams, wireframes, or ideas (see Lesson 10)
+- **Photos** — attach photos from your camera or gallery
+
 Work on whatever you set out to work on. The timer runs in the background — you don't need to keep the tab focused.
 
 If you get interrupted, click **Pause**. The timer freezes. Click **Resume** when you're ready to continue. The session logs actual focused time (paused time is excluded from the total).

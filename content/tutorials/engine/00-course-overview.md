@@ -30,6 +30,7 @@ This course covers every feature in the Engine — from running your first focus
 | 07 | Session History | Viewing, editing, duplicating, and deleting past sessions |
 | 08 | Engine Analytics | Four tabs: Overview, Trends, Pomodoro, Performance |
 | 09 | Focus Goals | Daily and weekly minute targets, goal progress, settings |
+| 10 | Doodle Canvas | Full-screen drawing during focus sessions, saving and reusing sketches |
 
 ---
 

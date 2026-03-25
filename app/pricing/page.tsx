@@ -160,7 +160,7 @@ export default function PricingPage() {
                 'Roadmap & goal hierarchy',
                 'Daily task planner (week/3-day/daily views)',
                 'Fuel & nutrition tracking (NCV framework)',
-                'Focus Engine (timer, debrief, pain log)',
+                'Focus Engine (timer, doodle canvas, debrief, pain log)',
                 'Travel tracking with public transport, booking details & budgets',
                 'Financial dashboard (accounts, budgets, invoices)',
                 'Budget forecasting & bank linking via Teller',
