@@ -271,7 +271,7 @@ export default function MetricsTrendsPage() {
       <DataCompletenessBar dataRange={data.data_range} />
 
       {/* Group Tabs */}
-      <div className="flex gap-1.5 border-b border-gray-200 pb-px">
+      <div className="flex gap-1.5 flex-wrap border-b border-gray-200 pb-px">
         {(Object.entries(GROUPS) as [MetricGroup, typeof GROUPS.core][]).map(([key, g]) => (
           <button
             key={key}

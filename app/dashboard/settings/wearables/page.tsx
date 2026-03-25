@@ -143,7 +143,7 @@ export default function WearableSettingsPage() {
               key={provider.key}
               className="border border-gray-200 rounded-2xl p-5 bg-white"
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="flex items-start gap-3">
                   <div className={`w-10 h-10 rounded-xl ${provider.color} flex items-center justify-center shrink-0`}>
                     <Watch className="w-5 h-5 text-white" />
@@ -176,7 +176,7 @@ export default function WearableSettingsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 flex-wrap">
                   {provider.hasOAuth ? (
                     provider.comingSoon ? (
                       <>
