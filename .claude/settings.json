@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(npm config:*)",
-      "Bash(NODE_TLS_REJECT_UNAUTHORIZED=0 npm install tldraw)"
+      "Bash(NODE_TLS_REJECT_UNAUTHORIZED=0 npm install tldraw)",
+      "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os -type f -name *roadmap* -o -name *tech-*)",
+      "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app/dashboard/lister -type f -name *.tsx)",
+      "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os -type f \\\\\\(-name seed* -o -name *import* \\\\\\) -path */lib/* -o -path */scripts/*)",
+      "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os -path */supabase/migrations/* -name *academy* -o -name *tutorial*)",
+      "Bash(find node_modules/tldraw -name *.d.ts -maxdepth 3)"
     ]
   }
 }

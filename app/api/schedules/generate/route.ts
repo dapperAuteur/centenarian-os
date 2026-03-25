@@ -48,7 +48,6 @@ async function generateForDate(
   db: Db,
   tmpl: TemplateRow,
   dateStr: string,
-  _backfillMode: boolean,
 ): Promise<{ created: boolean; error?: string }> {
   const date = new Date(dateStr + 'T00:00:00');
   const dayOfWeek = date.getDay();
@@ -198,7 +197,7 @@ export async function POST(request: NextRequest) {
   for (const dateStr of dates) {
     for (const tmpl of templates as TemplateRow[]) {
       try {
-        const result = await generateForDate(db, tmpl, dateStr, backfillMode);
+        const result = await generateForDate(db, tmpl, dateStr);
         if (result.created) {
           tasksGenerated++;
           if (dateStr > latestDate) latestDate = dateStr;

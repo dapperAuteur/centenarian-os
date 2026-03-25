@@ -28,7 +28,7 @@ export default function DoodleCanvas({ isOpen, onClose, onSaved, sessionId }: Do
     if (saved) {
       try {
         const snapshot = JSON.parse(saved);
-        editor.store.loadStoreSnapshot(snapshot);
+        editor.loadSnapshot(snapshot);
       } catch {
         // Ignore corrupted snapshots
       }
@@ -37,7 +37,7 @@ export default function DoodleCanvas({ isOpen, onClose, onSaved, sessionId }: Do
 
   const saveSnapshot = useCallback(() => {
     if (!editorRef.current) return;
-    const snapshot = editorRef.current.store.getStoreSnapshot();
+    const snapshot = editorRef.current.getSnapshot();
     localStorage.setItem(storageKey, JSON.stringify(snapshot));
   }, [storageKey]);
 
@@ -61,10 +61,9 @@ export default function DoodleCanvas({ isOpen, onClose, onSaved, sessionId }: Do
         return;
       }
 
-      const blob = await editor.exportToBlob({
-        ids: shapeIds,
+      const { blob } = await editor.toImage(shapeIds, {
         format: 'png',
-        opts: { background: true, padding: 16, scale: 2 },
+        scale: 2,
       });
 
       // Upload to Cloudinary

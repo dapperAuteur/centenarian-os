@@ -153,6 +153,7 @@ const PHASES = [
     description: 'Turn daily data into actionable intelligence — focus, energy, and correlations.',
     items: [
       { done: true, text: 'Pomodoro / focus timer linked to tasks' },
+      { done: true, text: 'Doodle canvas — full-screen drawing during focus sessions (tldraw)' },
       { done: true, text: 'Daily energy and focus rating system' },
       { done: true, text: 'Pain tracking and body check logging' },
       { done: true, text: 'AI-assisted weekly review generation (Gemini summarization)' },

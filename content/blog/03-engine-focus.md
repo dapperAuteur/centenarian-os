@@ -14,6 +14,7 @@ Have you ever worked for hours but felt like you got nothing done? That happens 
 The Engine is your daily work tracker. It has three parts that work together:
 
 - **Focus Timer** — A timer that helps you work in focused blocks of time. Like a sprint for your brain.
+- **Doodle Canvas** — A full-screen drawing surface you can open mid-session to sketch diagrams, wireframes, or ideas. Saved drawings become reusable images across the app.
 - **Daily Debrief** — A short check-in at the end of the day. You rate how your day went and write down what you learned.
 - **Pain Tracking** — A simple way to check in on how your body feels. You log where you hurt and how bad it is.
 

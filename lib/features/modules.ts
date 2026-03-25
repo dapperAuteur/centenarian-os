@@ -117,6 +117,7 @@ export const MODULES: ModuleData[] = [
     Icon: Brain,
     features: [
       'Pomodoro focus sessions linked to tasks',
+      'Doodle canvas — sketch ideas mid-session',
       'Daily energy/focus ratings',
       'Body check & pain tracking',
       'Weekly AI-powered reviews',
@@ -127,12 +128,12 @@ export const MODULES: ModuleData[] = [
         description: 'Start a Pomodoro session directly from a planner task. When the timer ends, the session is linked to the task so you see exactly where your time goes.',
       },
       {
-        title: 'Daily Debrief',
-        description: 'Rate your energy, focus, and mood each day. Track body sensations and pain. Over time, spot patterns between how you feel and what you accomplish.',
+        title: 'Doodle Canvas',
+        description: 'Open a full-screen drawing canvas during any focus session. Sketch diagrams, wireframes, or quick ideas with tldraw — then save as an image you can reuse in blog posts and other modules.',
       },
       {
-        title: 'Pain Tracking & History',
-        description: 'Log pain by body location, intensity, and sensation type. View trends over time to share with healthcare providers or identify triggers.',
+        title: 'Daily Debrief',
+        description: 'Rate your energy, focus, and mood each day. Track body sensations and pain. Over time, spot patterns between how you feel and what you accomplish.',
       },
       {
         title: 'AI-Powered Weekly Reviews',
