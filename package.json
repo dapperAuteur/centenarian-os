@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ericblade/quagga2": "^1.8.4",
+    "@excalidraw/excalidraw": "^0.18.0",
     "@stripe/stripe-js": "^8.7.0",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.75.1",
