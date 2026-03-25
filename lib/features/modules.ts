@@ -4,7 +4,7 @@
 import {
   Target, Utensils, Brain, Car, DollarSign, Heart, Dumbbell, Flame,
   Package, GraduationCap, BookOpen, TrendingUp, Database, ChartNetwork,
-  Camera, Tag, History, Library, type LucideIcon,
+  Camera, Tag, History, Library, ListChecks, type LucideIcon,
 } from 'lucide-react';
 
 export interface ModuleHighlight {
@@ -260,9 +260,9 @@ export const MODULES: ModuleData[] = [
   },
   {
     slug: 'workouts',
-    name: 'Workouts & Exercises',
-    tagline: 'Your gym, your library, your data',
-    description: 'Build custom workout templates from a personal exercise library. Track sets, reps, RPE, tempo, and supersets with post-workout feedback.',
+    name: 'Workouts',
+    tagline: 'Your gym, your templates, your data',
+    description: 'Build custom workout templates and log every session. Track sets, reps, RPE, tempo, and supersets with post-workout feedback.',
     color: 'border-cyan-500',
     iconColor: 'text-cyan-600',
     checkColor: 'text-cyan-600',
@@ -294,6 +294,44 @@ export const MODULES: ModuleData[] = [
     ],
     dashboardPath: '/dashboard/workouts',
     relatedSlugs: ['nomad', 'exercises', 'health-metrics'],
+  },
+  {
+    slug: 'exercises',
+    name: 'Exercise Library',
+    tagline: 'Catalog, customize, and share every movement',
+    description: 'Build a personal exercise library with instructions, form cues, video demos, muscle groups, and equipment tags. Search, filter, and drop exercises straight into workout templates.',
+    color: 'border-teal-500',
+    iconColor: 'text-teal-600',
+    checkColor: 'text-teal-600',
+    bgGradient: 'from-teal-600 to-teal-800',
+    Icon: ListChecks,
+    features: [
+      'Custom exercises with video, audio & form cues',
+      '10 auto-seeded categories (Push, Pull, Legs, Core, etc.)',
+      'Primary muscle groups & equipment linking',
+      'Like, copy & share exercises with the community',
+    ],
+    highlights: [
+      {
+        title: 'Rich Media Per Exercise',
+        description: 'Attach video demos, audio coaching cues, and written instructions. Upload via Cloudinary or paste a URL.',
+      },
+      {
+        title: 'Category & Muscle Tagging',
+        description: 'Organize exercises by category (Push, Pull, Legs, Core, Cardio, etc.) and tag primary muscle groups for easy filtering.',
+      },
+      {
+        title: 'Equipment Integration',
+        description: 'Link exercises to equipment items you own. See which gear gets the most use and plan workouts around what you have available.',
+      },
+      {
+        title: 'Community Sharing',
+        description: 'Make exercises public to share with other users. Like, copy, and mark exercises as completed. Track use count across your workouts.',
+      },
+    ],
+    dashboardPath: '/dashboard/exercises',
+    tutorialSlug: 'exercises',
+    relatedSlugs: ['workouts', 'nomad', 'equipment'],
   },
   {
     slug: 'nomad',
