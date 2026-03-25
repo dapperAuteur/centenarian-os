@@ -12,6 +12,8 @@ import {
   Image as ImageIcon,
   Sparkles,
   Package,
+  Trash2,
+  Plus,
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import type { DocumentType } from '@/lib/ocr/classify';
@@ -37,6 +39,23 @@ interface ItemMatch {
   }[];
   is_new: boolean;
 }
+
+interface EditableLineItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total: number;
+  category_hint: string | null;
+  matchResult: ItemMatch | null;
+  matchLoading: boolean;
+}
+
+const ITEM_CATEGORIES = [
+  'grocery', 'produce', 'dairy', 'meat', 'bakery', 'beverage',
+  'household', 'restaurant', 'clothing', 'electronics', 'hardware',
+  'equipment', 'recipe_ingredient', 'other',
+];
 
 interface ScanResultRouterProps {
   result: ScanResult;
@@ -86,6 +105,71 @@ export default function ScanResultRouter({
   const [itemMatches, setItemMatches] = useState<ItemMatch[]>([]);
   const [matchLoading, setMatchLoading] = useState(false);
 
+  // Editable line items state — initialized from OCR extraction
+  const [editableItems, setEditableItems] = useState<EditableLineItem[]>(() => {
+    if (result.documentType !== 'receipt') return [];
+    const receipt = result.extracted as unknown as ReceiptExtraction;
+    return (receipt.line_items || []).map((li) => ({
+      id: crypto.randomUUID(),
+      description: li.description,
+      quantity: li.quantity,
+      unit_price: li.unit_price,
+      total: li.total,
+      category_hint: li.category_hint || null,
+      matchResult: null,
+      matchLoading: false,
+    }));
+  });
+
+  const updateItem = useCallback((id: string, updates: Partial<EditableLineItem>) => {
+    setEditableItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const updated = { ...item, ...updates };
+        // Recompute total if qty or price changed
+        if (updates.quantity !== undefined || updates.unit_price !== undefined) {
+          updated.total = parseFloat((updated.quantity * updated.unit_price).toFixed(2));
+        }
+        return updated;
+      }),
+    );
+  }, []);
+
+  const removeItem = useCallback((id: string) => {
+    setEditableItems((prev) => prev.filter((item) => item.id !== id));
+  }, []);
+
+  const addItem = useCallback(() => {
+    setEditableItems((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        description: '',
+        quantity: 1,
+        unit_price: 0,
+        total: 0,
+        category_hint: null,
+        matchResult: null,
+        matchLoading: false,
+      },
+    ]);
+  }, []);
+
+  // Build modified ReceiptExtraction with edited items for the save callback
+  const getEditedExtraction = useCallback((): ReceiptExtraction => {
+    const base = extracted as unknown as ReceiptExtraction;
+    return {
+      ...base,
+      line_items: editableItems.map((item) => ({
+        description: item.description,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total: item.total,
+        category_hint: item.category_hint,
+      })),
+    };
+  }, [extracted, editableItems]);
+
   // Set initial contact name from extracted data
   useEffect(() => {
     const data = result.extracted;
@@ -132,6 +216,43 @@ export default function ScanResultRouter({
       matchItems(extracted);
     }
   }, [documentType, extracted, matchItems]);
+
+  // Sync initial match results into editable items once matching completes
+  useEffect(() => {
+    if (itemMatches.length === 0 || editableItems.length === 0) return;
+    setEditableItems((prev) =>
+      prev.map((item) => {
+        const match = itemMatches.find(
+          (m) => m.original_name.toLowerCase() === item.description.toLowerCase(),
+        );
+        return match ? { ...item, matchResult: match, matchLoading: false } : item;
+      }),
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemMatches]);
+
+  // Re-match a single item by name (debounced from the UI)
+  const rematchItem = useCallback(async (id: string, name: string, unitPrice: number, categoryHint: string | null) => {
+    if (!name.trim()) return;
+    updateItem(id, { matchLoading: true });
+    try {
+      const res = await offlineFetch('/api/ocr/match-items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: [{ name, unit_price: unitPrice, category_hint: categoryHint }],
+        }),
+      });
+      if (res.ok) {
+        const { results } = await res.json();
+        updateItem(id, { matchResult: results?.[0] ?? null, matchLoading: false });
+      } else {
+        updateItem(id, { matchLoading: false });
+      }
+    } catch {
+      updateItem(id, { matchLoading: false });
+    }
+  }, [updateItem]);
 
   // Re-extract with overridden document type
   const handleOverride = async (newType: DocumentType) => {
@@ -242,7 +363,11 @@ export default function ScanResultRouter({
       {documentType === 'receipt' && (
         <ReceiptPreview
           data={extracted as unknown as ReceiptExtraction}
-          itemMatches={itemMatches}
+          editableItems={editableItems}
+          onUpdateItem={updateItem}
+          onRemoveItem={removeItem}
+          onAddItem={addItem}
+          onRematchItem={rematchItem}
           matchLoading={matchLoading}
         />
       )}
@@ -267,7 +392,7 @@ export default function ScanResultRouter({
           <button
             onClick={() =>
               onCreateTransaction(
-                extracted as unknown as ReceiptExtraction,
+                getEditedExtraction(),
                 contactId,
                 result.scanImageId,
               )
@@ -318,13 +443,41 @@ export default function ScanResultRouter({
 
 function ReceiptPreview({
   data,
-  itemMatches,
-  matchLoading,
+  editableItems,
+  onUpdateItem,
+  onRemoveItem,
+  onAddItem,
+  onRematchItem,
+  matchLoading: initialMatchLoading,
 }: {
   data: ReceiptExtraction;
-  itemMatches: ItemMatch[];
+  editableItems: EditableLineItem[];
+  onUpdateItem: (id: string, updates: Partial<EditableLineItem>) => void;
+  onRemoveItem: (id: string) => void;
+  onAddItem: () => void;
+  onRematchItem: (id: string, name: string, unitPrice: number, categoryHint: string | null) => void;
   matchLoading: boolean;
 }) {
+  // Debounce timers for re-match
+  const [debounceTimers] = useState<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  const handleNameChange = (item: EditableLineItem, newName: string) => {
+    onUpdateItem(item.id, { description: newName });
+
+    // Clear existing timer for this item
+    const existing = debounceTimers.get(item.id);
+    if (existing) clearTimeout(existing);
+
+    // Set new debounced re-match
+    const timer = setTimeout(() => {
+      onRematchItem(item.id, newName, item.unit_price, item.category_hint);
+      debounceTimers.delete(item.id);
+    }, 500);
+    debounceTimers.set(item.id, timer);
+  };
+
+  const itemsTotal = editableItems.reduce((sum, item) => sum + item.total, 0);
+
   return (
     <div className="space-y-4">
       {/* Summary row */}
@@ -355,63 +508,122 @@ function ReceiptPreview({
         )}
       </div>
 
-      {/* Line items */}
-      {data.line_items?.length > 0 && (
-        <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2">
-            Line Items ({data.line_items.length})
+      {/* Editable line items */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-sm font-medium text-gray-700">
+            Line Items ({editableItems.length})
           </h4>
-          <div className="border border-gray-200 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left px-3 py-2 text-gray-600 font-medium">Item</th>
-                  <th className="text-right px-3 py-2 text-gray-600 font-medium">Qty</th>
-                  <th className="text-right px-3 py-2 text-gray-600 font-medium">Price</th>
-                  <th className="text-right px-3 py-2 text-gray-600 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {data.line_items.map((item, i) => {
-                  const match = itemMatches.find(
-                    (m) =>
-                      m.original_name.toLowerCase() === item.description.toLowerCase(),
-                  );
-                  return (
-                    <tr key={i} className="hover:bg-gray-50">
-                      <td className="px-3 py-2 text-gray-900">{item.description}</td>
-                      <td className="px-3 py-2 text-right text-gray-600">{item.quantity}</td>
-                      <td className="px-3 py-2 text-right text-gray-900">
-                        ${item.total.toFixed(2)}
-                      </td>
-                      <td className="px-3 py-2 text-right">
-                        {matchLoading ? (
-                          <span className="text-xs text-gray-400">...</span>
-                        ) : match && !match.is_new ? (
-                          <span className="inline-flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
-                            <Check className="w-3 h-3" />
-                            Found
-                            {match.matches[0]?.last_price != null && (
-                              <span className="text-green-600">
-                                (${match.matches[0].last_price.toFixed(2)})
-                              </span>
-                            )}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
-                            <Package className="w-3 h-3" />
-                            New
+          <span className="text-sm font-medium text-gray-900">
+            Items total: ${itemsTotal.toFixed(2)}
+          </span>
+        </div>
+
+        <div className="space-y-2">
+          {editableItems.map((item) => {
+            const match = item.matchResult;
+            return (
+              <div key={item.id} className="border border-gray-200 rounded-xl p-3 space-y-2">
+                {/* Row 1: Name + remove */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={item.description}
+                    onChange={(e) => handleNameChange(item, e.target.value)}
+                    placeholder="Item name..."
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm min-h-11"
+                    aria-label="Item name"
+                  />
+                  <button
+                    onClick={() => onRemoveItem(item.id)}
+                    className="min-h-11 min-w-11 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                    aria-label="Remove item"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Row 2: Qty + Price + Total + Status */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-1">
+                    <label className="text-xs text-gray-500">Qty</label>
+                    <input
+                      type="number"
+                      step="1"
+                      min="0"
+                      value={item.quantity}
+                      onChange={(e) => onUpdateItem(item.id, { quantity: Math.max(0, parseFloat(e.target.value) || 0) })}
+                      className="w-16 border border-gray-200 rounded-lg px-2 py-2 text-sm text-right min-h-11"
+                      aria-label="Quantity"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <label className="text-xs text-gray-500">$</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={item.unit_price}
+                      onChange={(e) => onUpdateItem(item.id, { unit_price: Math.max(0, parseFloat(e.target.value) || 0) })}
+                      className="w-20 border border-gray-200 rounded-lg px-2 py-2 text-sm text-right min-h-11"
+                      aria-label="Unit price"
+                    />
+                  </div>
+                  <span className="text-sm font-medium text-gray-900 ml-auto">
+                    ${item.total.toFixed(2)}
+                  </span>
+                  <div className="ml-2">
+                    {item.matchLoading || initialMatchLoading ? (
+                      <span className="text-xs text-gray-400">...</span>
+                    ) : match && !match.is_new ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                        <Check className="w-3 h-3" />
+                        Found
+                        {match.matches[0]?.last_price != null && (
+                          <span className="text-green-600">
+                            (${match.matches[0].last_price.toFixed(2)})
                           </span>
                         )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
+                        <Package className="w-3 h-3" />
+                        New
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Row 3: Category */}
+                <div>
+                  <select
+                    value={item.category_hint || ''}
+                    onChange={(e) => onUpdateItem(item.id, { category_hint: e.target.value || null })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm min-h-11 text-gray-700"
+                    aria-label="Item category"
+                  >
+                    <option value="">No category</option>
+                    {ITEM_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat} className="capitalize">
+                        {cat.replace('_', ' ')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            );
+          })}
         </div>
-      )}
+
+        {/* Add Item button */}
+        <button
+          onClick={onAddItem}
+          className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:text-gray-700 hover:border-gray-400 transition min-h-11"
+        >
+          <Plus className="w-4 h-4" />
+          Add Item
+        </button>
+      </div>
 
       {/* Tax / tip breakdown */}
       <div className="flex gap-4 text-sm text-gray-600">
