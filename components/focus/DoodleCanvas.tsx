@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useMemo } from 'react';
 import { Loader2, Save, Trash2, X } from 'lucide-react';
-import { Tldraw, type Editor } from 'tldraw';
-import 'tldraw/tldraw.css';
+import { Excalidraw, exportToBlob } from '@excalidraw/excalidraw';
+import type { ExcalidrawImperativeAPI, ExcalidrawInitialDataState } from '@excalidraw/excalidraw/types';
 
 interface DoodleCanvasProps {
   isOpen: boolean;
@@ -15,55 +15,55 @@ interface DoodleCanvasProps {
 const STORAGE_KEY_PREFIX = 'doodle_snapshot_';
 
 export default function DoodleCanvas({ isOpen, onClose, onSaved, sessionId }: DoodleCanvasProps) {
-  const editorRef = useRef<Editor | null>(null);
+  const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const [saving, setSaving] = useState(false);
 
   const storageKey = `${STORAGE_KEY_PREFIX}${sessionId}`;
 
-  const handleMount = useCallback((editor: Editor) => {
-    editorRef.current = editor;
-
-    // Restore previous snapshot if it exists
+  // Load initial data from localStorage (if any previous drawing exists)
+  const initialData = useMemo<ExcalidrawInitialDataState | undefined>(() => {
+    if (typeof window === 'undefined') return undefined;
     const saved = localStorage.getItem(storageKey);
-    if (saved) {
-      try {
-        const snapshot = JSON.parse(saved);
-        editor.loadSnapshot(snapshot);
-      } catch {
-        // Ignore corrupted snapshots
-      }
+    if (!saved) return undefined;
+    try {
+      return JSON.parse(saved) as ExcalidrawInitialDataState;
+    } catch {
+      return undefined;
     }
   }, [storageKey]);
 
   const saveSnapshot = useCallback(() => {
-    if (!editorRef.current) return;
-    const snapshot = editorRef.current.getSnapshot();
+    const api = apiRef.current;
+    if (!api) return;
+    const snapshot = {
+      elements: api.getSceneElements(),
+      appState: { viewBackgroundColor: api.getAppState().viewBackgroundColor },
+    };
     localStorage.setItem(storageKey, JSON.stringify(snapshot));
   }, [storageKey]);
 
   const handleSave = useCallback(async () => {
-    const editor = editorRef.current;
-    if (!editor) return;
+    const api = apiRef.current;
+    if (!api) return;
 
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
     if (!cloudName || !uploadPreset) return;
+
+    const elements = api.getSceneElements();
+    if (elements.length === 0) return;
 
     setSaving(true);
     try {
       // Save snapshot for re-editing
       saveSnapshot();
 
-      // Export all shapes as PNG
-      const shapeIds = [...editor.getCurrentPageShapeIds()];
-      if (shapeIds.length === 0) {
-        setSaving(false);
-        return;
-      }
-
-      const { blob } = await editor.toImage(shapeIds, {
-        format: 'png',
-        scale: 2,
+      // Export to PNG blob
+      const blob = await exportToBlob({
+        elements,
+        appState: { ...api.getAppState(), exportWithDarkMode: false },
+        files: api.getFiles(),
+        getDimensions: () => ({ width: 1920, height: 1080, scale: 2 }),
       });
 
       // Upload to Cloudinary
@@ -87,12 +87,7 @@ export default function DoodleCanvas({ isOpen, onClose, onSaved, sessionId }: Do
   }, [onSaved, onClose, saveSnapshot]);
 
   const handleClear = useCallback(() => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    const shapeIds = [...editor.getCurrentPageShapeIds()];
-    if (shapeIds.length > 0) {
-      editor.deleteShapes(shapeIds);
-    }
+    apiRef.current?.resetScene();
     localStorage.removeItem(storageKey);
   }, [storageKey]);
 
@@ -102,6 +97,9 @@ export default function DoodleCanvas({ isOpen, onClose, onSaved, sessionId }: Do
     <div
       className="fixed inset-0 z-60 flex flex-col bg-white"
       style={{ height: '100dvh' }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Doodle canvas"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 shrink-0">
@@ -113,12 +111,13 @@ export default function DoodleCanvas({ isOpen, onClose, onSaved, sessionId }: Do
             aria-label="Clear canvas"
           >
             <Trash2 className="w-4 h-4" aria-hidden="true" />
-            Clear
+            <span className="hidden sm:inline">Clear</span>
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
             className="flex items-center gap-1.5 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 transition disabled:opacity-50 min-h-11"
+            aria-label={saving ? 'Saving drawing' : 'Save drawing'}
           >
             {saving ? (
               <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
@@ -137,10 +136,21 @@ export default function DoodleCanvas({ isOpen, onClose, onSaved, sessionId }: Do
         </div>
       </div>
 
-      {/* Canvas — tldraw needs a sized container with position:relative */}
+      {/* Canvas */}
       <div className="relative flex-1 min-h-0 overflow-hidden">
         <div className="absolute inset-0">
-          <Tldraw onMount={handleMount} />
+          <Excalidraw
+            excalidrawAPI={(api) => { apiRef.current = api; }}
+            initialData={initialData}
+            UIOptions={{
+              canvasActions: {
+                loadScene: false,
+                saveToActiveFile: false,
+                export: false,
+                saveAsImage: false,
+              },
+            }}
+          />
         </div>
       </div>
     </div>

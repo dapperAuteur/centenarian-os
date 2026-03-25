@@ -7,7 +7,8 @@
       "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app/dashboard/lister -type f -name *.tsx)",
       "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os -type f \\\\\\(-name seed* -o -name *import* \\\\\\) -path */lib/* -o -path */scripts/*)",
       "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os -path */supabase/migrations/* -name *academy* -o -name *tutorial*)",
-      "Bash(find node_modules/tldraw -name *.d.ts -maxdepth 3)"
+      "Bash(find node_modules/tldraw -name *.d.ts -maxdepth 3)",
+      "Bash(npm uninstall:*)"
     ]
   }
 }
