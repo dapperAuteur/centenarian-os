@@ -180,3 +180,6 @@ files/bugs/security-risks.md
 
 plans/
 .env*.local
+
+.claude
+
