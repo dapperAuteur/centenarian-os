@@ -486,6 +486,21 @@ export default function PlannerPage() {
     }
   };
 
+  const handleSyncRevenue = async () => {
+    const res = await offlineFetch('/api/schedules/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ syncRevenue: true }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      alert(`Revenue synced on ${data.tasksSynced} tasks.`);
+      await loadTasks();
+    } else {
+      alert('Sync failed.');
+    }
+  };
+
   const handleConfirmDay = async (data: ConfirmDayData) => {
     // Mark task completed with revenue
     const { error } = await supabase
@@ -1028,12 +1043,23 @@ export default function PlannerPage() {
               <CalendarClock className="w-4 h-4 text-sky-500" />
               Active Schedules
             </h3>
-            <button
-              onClick={() => setShowScheduleModal(true)}
-              className="min-h-11 text-xs text-sky-600 hover:text-sky-700 font-medium"
-            >
-              + New
-            </button>
+            <div className="flex items-center gap-3">
+              {scheduleTemplates.some(t => t.is_active && t.template_type === 'work') && (
+                <button
+                  onClick={handleSyncRevenue}
+                  className="min-h-11 text-xs text-amber-600 hover:text-amber-700 font-medium"
+                  title="Update revenue on existing tasks that have $0"
+                >
+                  Sync Revenue
+                </button>
+              )}
+              <button
+                onClick={() => setShowScheduleModal(true)}
+                className="min-h-11 text-xs text-sky-600 hover:text-sky-700 font-medium"
+              >
+                + New
+              </button>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
             {scheduleTemplates.filter(t => t.is_active).map(tmpl => (

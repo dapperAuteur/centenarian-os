@@ -229,6 +229,7 @@ async function generatePaydayTask(
  *   { targetDate?: string }                — single date (default: today)
  *   { fromDate: string, toDate: string }   — backfill range
  *   { templateId?: string }                — optional: only generate for one template
+ *   { syncRevenue: true }                  — update revenue on existing tasks that have revenue=0
  */
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -276,6 +277,37 @@ export async function POST(request: NextRequest) {
     for (const f of financeRows) {
       financeMap[f.template_id] = f as FinanceRow;
     }
+  }
+
+  // ── Sync revenue on existing tasks that were created before revenue was set ──
+  if (body.syncRevenue) {
+    let synced = 0;
+    for (const tmpl of templates as TemplateRow[]) {
+      const fin = financeMap[tmpl.id];
+      if (!fin) continue;
+      const rev = calcDailyRevenue(fin);
+      if (rev <= 0) continue;
+
+      const desc = payDescription(fin, tmpl.time_start, tmpl.time_end);
+
+      const { data: updated, error: syncErr } = await db
+        .from('tasks')
+        .update({
+          revenue: Math.round(rev * 100) / 100,
+          ...(desc ? { description: desc } : {}),
+        })
+        .eq('source_type', 'schedule')
+        .eq('source_id', tmpl.id)
+        .eq('revenue', 0)
+        .select('id');
+
+      if (!syncErr && updated) synced += updated.length;
+    }
+    return NextResponse.json({
+      success: true,
+      message: `Synced revenue on ${synced} existing tasks`,
+      tasksSynced: synced,
+    });
   }
 
   // Build list of dates
