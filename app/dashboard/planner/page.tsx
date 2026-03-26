@@ -1044,15 +1044,13 @@ export default function PlannerPage() {
               Active Schedules
             </h3>
             <div className="flex items-center gap-3">
-              {scheduleTemplates.some(t => t.is_active && t.template_type === 'work') && (
-                <button
-                  onClick={handleSyncRevenue}
-                  className="min-h-11 text-xs text-amber-600 hover:text-amber-700 font-medium"
-                  title="Update revenue on existing tasks that have $0"
-                >
-                  Sync Revenue
-                </button>
-              )}
+              <button
+                onClick={handleSyncRevenue}
+                className="min-h-11 text-xs text-amber-600 hover:text-amber-700 font-medium"
+                title="Update revenue on existing tasks that have $0"
+              >
+                Sync Revenue
+              </button>
               <button
                 onClick={() => setShowScheduleModal(true)}
                 className="min-h-11 text-xs text-sky-600 hover:text-sky-700 font-medium"
