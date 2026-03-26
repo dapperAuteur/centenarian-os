@@ -535,6 +535,29 @@ export interface ScheduleTemplateFinance {
   auto_invoice: boolean;
   invoice_template_id?: string;
   invoice_contact_id?: string;
+  line_item_templates?: PaycheckLineItemTemplate[];
+}
+
+export interface PaycheckLineItemTemplate {
+  line_type: 'earning' | 'tax' | 'deduction' | 'benefit';
+  description: string;
+  rate?: number;
+  hours?: number;
+  is_pretax?: boolean;
+}
+
+export interface PaycheckLineItem {
+  id: string;
+  pay_period_id: string;
+  line_type: 'earning' | 'tax' | 'deduction' | 'benefit';
+  description: string;
+  rate?: number;
+  hours?: number;
+  amount: number;
+  ytd_amount?: number;
+  is_pretax: boolean;
+  sort_order: number;
+  created_at: string;
 }
 
 export interface ScheduleException {

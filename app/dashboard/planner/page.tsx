@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Task, RecurringTask } from '@/lib/types';
 import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import Link from 'next/link';
-import { Calendar, DollarSign, Plus, Repeat, Upload, Download, Filter, Plane, MapPin, Briefcase, CalendarClock } from 'lucide-react';
+import { Calendar, DollarSign, Plus, Repeat, Upload, Download, Filter, Plane, MapPin, Briefcase, CalendarClock, Pencil, Trash2 } from 'lucide-react';
 import { EditTaskModal } from '@/components/EditTaskModal';
 import CreateRecurringTaskModal, { RecurringTaskData } from '@/components/planner/CreateRecurringTaskModal';
 import CreateTaskModal from '@/components/planner/CreateTaskModal';
@@ -19,10 +19,11 @@ import OutstandingInvoicesWidget from '@/components/planner/OutstandingInvoicesW
 import ExpectedPaymentsWidget from '@/components/planner/ExpectedPaymentsWidget';
 import type { ExpectedPayment } from '@/lib/types';
 import ScheduleTemplateModal, { ScheduleTemplateFormData } from '@/components/planner/ScheduleTemplateModal';
-import DayOffModal, { DayOffData } from '@/components/planner/DayOffModal';
+import WorkDayModal, { ConfirmDayData, DayOffData } from '@/components/planner/WorkDayModal';
 import PayPeriodCard, { ReconcileData } from '@/components/planner/PayPeriodCard';
+import PaycheckReconcileModal, { ReconcileSaveData } from '@/components/planner/PaycheckReconcileModal';
 import { getScheduleIndicators } from '@/components/planner/ScheduleCalendarOverlay';
-import type { ScheduleTemplate, ScheduleException, SchedulePayPeriod } from '@/lib/types';
+import type { ScheduleTemplate, ScheduleException, SchedulePayPeriod, ScheduleTemplateFinance } from '@/lib/types';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { OfflineSyncManager } from '@/lib/offline/sync-manager';
 
@@ -181,7 +182,7 @@ export default function PlannerPage() {
 
   // Recurring task state
   const [showRecurringModal, setShowRecurringModal] = useState(false);
-  const [, setRecurringTasks] = useState<RecurringTask[]>([]);
+  const [recurringTasks, setRecurringTasks] = useState<RecurringTask[]>([]);
 
   // Create task state
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
@@ -191,10 +192,22 @@ export default function PlannerPage() {
 
   // Schedule state
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState<ScheduleTemplate | null>(null);
   const [scheduleTemplates, setScheduleTemplates] = useState<ScheduleTemplate[]>([]);
   const [scheduleExceptions, setScheduleExceptions] = useState<ScheduleException[]>([]);
   const [schedulePayPeriods, setSchedulePayPeriods] = useState<SchedulePayPeriod[]>([]);
-  const [dayOffTarget, setDayOffTarget] = useState<{ templateId: string; date: string; name: string } | null>(null);
+  const [workDayTarget, setWorkDayTarget] = useState<{
+    templateId: string; date: string; name: string;
+    taskId?: string; taskCompleted?: boolean;
+    finance?: ScheduleTemplateFinance;
+  } | null>(null);
+  const [paycheckTarget, setPaycheckTarget] = useState<{
+    templateId: string; payPeriodId: string; scheduleName: string;
+    periodStart: string; periodEnd: string;
+    finance?: ScheduleTemplateFinance;
+    daysWorked?: number;
+    estimatedGross?: number; estimatedNet?: number;
+  } | null>(null);
   const [scheduleAccounts, setScheduleAccounts] = useState<{ id: string; name: string }[]>([]);
   const [scheduleCategories, setScheduleCategories] = useState<{ id: string; name: string }[]>([]);
 
@@ -394,24 +407,56 @@ export default function PlannerPage() {
   };
 
   const handleSaveSchedule = async (data: ScheduleTemplateFormData) => {
-    const res = await offlineFetch('/api/schedules', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error('Failed to create schedule');
+    if (editingSchedule) {
+      // Update existing
+      const res = await offlineFetch('/api/schedules', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingSchedule.id, ...data }),
+      });
+      if (!res.ok) throw new Error('Failed to update schedule');
+    } else {
+      // Create new
+      const res = await offlineFetch('/api/schedules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Failed to create schedule');
 
-    // Backfill from start_date (or today) through today
-    const today = new Date().toISOString().split('T')[0];
-    const fromDate = data.start_date || today;
-    await offlineFetch('/api/schedules/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fromDate, toDate: today }),
-    });
+      // Backfill from start_date (or today) through today
+      const today = new Date().toISOString().split('T')[0];
+      const fromDate = data.start_date || today;
+      await offlineFetch('/api/schedules/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fromDate, toDate: today }),
+      });
+    }
 
+    setEditingSchedule(null);
     await loadSchedules();
     await loadTasks();
+  };
+
+  const handleDeleteSchedule = async (scheduleId: string, scheduleName: string) => {
+    if (!confirm(`Delete schedule "${scheduleName}"? This will also remove all associated exceptions and pay periods. Generated tasks will remain.`)) return;
+    const res = await offlineFetch(`/api/schedules?id=${scheduleId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      alert('Failed to delete schedule');
+      return;
+    }
+    await loadSchedules();
+  };
+
+  const handleDeleteRecurringTask = async (taskId: string, taskName: string) => {
+    if (!confirm(`Delete recurring task "${taskName}"? Already-generated tasks will remain.`)) return;
+    const res = await offlineFetch(`/api/recurring-tasks?id=${taskId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      alert('Failed to delete recurring task');
+      return;
+    }
+    await loadRecurringTasks();
   };
 
   const handleBackfillSchedule = async (templateId: string) => {
@@ -441,14 +486,66 @@ export default function PlannerPage() {
     }
   };
 
-  const handleSaveDayOff = async (data: DayOffData) => {
-    if (!dayOffTarget) return;
-    const res = await offlineFetch(`/api/schedules/${dayOffTarget.templateId}/exceptions`, {
+  const handleConfirmDay = async (data: ConfirmDayData) => {
+    // Mark task completed with revenue
+    const { error } = await supabase
+      .from('tasks')
+      .update({
+        completed: true,
+        completed_at: new Date().toISOString(),
+        revenue: data.revenue,
+      })
+      .eq('id', data.taskId);
+
+    if (error) throw new Error('Failed to confirm work day');
+    await loadTasks();
+  };
+
+  const handleDayOff = async (data: DayOffData) => {
+    if (!workDayTarget) return;
+    const res = await offlineFetch(`/api/schedules/${workDayTarget.templateId}/exceptions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error('Failed to save day off');
+
+    // If task exists and exception is unpaid, set revenue to 0
+    if (workDayTarget.taskId && (data.exception_type === 'unpaid_off' || data.exception_type === 'skip')) {
+      await supabase
+        .from('tasks')
+        .update({ revenue: 0, activity: `${workDayTarget.name} (${data.exception_type === 'unpaid_off' ? 'Unpaid Day Off' : 'Skipped'})` })
+        .eq('id', workDayTarget.taskId);
+    }
+
+    await loadSchedules();
+    await loadTasks();
+  };
+
+  const handlePaycheckReconcile = async (data: ReconcileSaveData) => {
+    // Save line items
+    const res = await offlineFetch(
+      `/api/schedules/${data.templateId}/pay-periods/${data.payPeriodId}/line-items`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: data.lineItems, save_as_template: data.saveAsTemplate }),
+      }
+    );
+    if (!res.ok) throw new Error('Failed to save line items');
+
+    // Reconcile the pay period
+    await offlineFetch(`/api/schedules/${data.templateId}/pay-periods`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pay_period_id: data.payPeriodId,
+        actual_gross: data.actualGross,
+        actual_taxes: data.actualTaxes,
+        actual_net: data.actualNet,
+      }),
+    });
+
     await loadSchedules();
     await loadTasks();
   };
@@ -741,25 +838,41 @@ export default function PlannerPage() {
                 </h3>
                 {/* Schedule indicators */}
                 <div className="flex gap-1">
-                  {getScheduleIndicators(date, scheduleTemplates, exceptionMap).map(({ template, exception }) => (
-                    <button
-                      key={template.id}
-                      onClick={() => setDayOffTarget({ templateId: template.id, date, name: template.name })}
-                      className={`min-h-6 px-2 py-0.5 rounded text-[10px] font-medium ${
-                        exception
-                          ? 'bg-gray-100 text-gray-500 line-through'
-                          : template.template_type === 'work'
-                            ? 'bg-sky-100 text-sky-700'
-                            : template.template_type === 'fitness'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-purple-100 text-purple-700'
-                      }`}
-                      title={exception ? `${template.name} (${exception.exception_type})` : `${template.name} — Click to manage`}
-                    >
-                      {template.name}
-                      {exception && <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-gray-400" />}
-                    </button>
-                  ))}
+                  {getScheduleIndicators(date, scheduleTemplates, exceptionMap).map(({ template, exception }) => {
+                    const fin = template.finance;
+                    const dailyRev = fin
+                      ? fin.rate_type === 'hourly' ? fin.pay_rate * (fin.hours_per_day || 8) : fin.rate_type === 'daily' ? fin.pay_rate : 0
+                      : 0;
+                    // Find the task for this schedule+date to pass to WorkDayModal
+                    const matchTask = dateTasks.find(t => t.source_type === 'schedule' && t.source_id === template.id);
+                    return (
+                      <button
+                        key={template.id}
+                        onClick={() => setWorkDayTarget({
+                          templateId: template.id, date, name: template.name,
+                          taskId: matchTask?.id, taskCompleted: matchTask?.completed,
+                          finance: fin || undefined,
+                        })}
+                        className={`min-h-6 px-2 py-0.5 rounded text-[10px] font-medium ${
+                          matchTask?.completed
+                            ? 'bg-green-100 text-green-700'
+                            : exception
+                              ? 'bg-gray-100 text-gray-500 line-through'
+                              : template.template_type === 'work'
+                                ? 'bg-sky-100 text-sky-700'
+                                : template.template_type === 'fitness'
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-purple-100 text-purple-700'
+                        }`}
+                        title={exception ? `${template.name} (${exception.exception_type})` : `${template.name}${dailyRev > 0 ? ` — $${dailyRev.toFixed(0)}/day` : ''}`}
+                      >
+                        {matchTask?.completed && '✓ '}
+                        {template.name}
+                        {dailyRev > 0 && !exception && <span className="ml-1 opacity-60">${dailyRev.toFixed(0)}</span>}
+                        {exception && <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-gray-400" />}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               <div className="space-y-3">
@@ -897,7 +1010,21 @@ export default function PlannerPage() {
                   payPeriod={pp}
                   scheduleName={tmpl?.name || 'Schedule'}
                   showInvoiceButton={tmpl?.finance?.auto_invoice}
-                  onReconcile={handleReconcile}
+                  onReconcile={() => {
+                    if (tmpl) {
+                      setPaycheckTarget({
+                        templateId: tmpl.id,
+                        payPeriodId: pp.id,
+                        scheduleName: tmpl.name,
+                        periodStart: pp.period_start,
+                        periodEnd: pp.period_end,
+                        finance: tmpl.finance || undefined,
+                        daysWorked: pp.days_worked,
+                        estimatedGross: pp.estimated_gross || undefined,
+                        estimatedNet: pp.estimated_net || undefined,
+                      });
+                    }
+                  }}
                   onConvertToInvoice={handleConvertToInvoice}
                 />
               );
@@ -951,6 +1078,75 @@ export default function PlannerPage() {
                     Backfill
                   </button>
                 )}
+                <button
+                  onClick={() => { setEditingSchedule(tmpl); setShowScheduleModal(true); }}
+                  className="min-h-6 min-w-6 flex items-center justify-center rounded-full hover:bg-white/70 transition"
+                  aria-label={`Edit ${tmpl.name}`}
+                  title="Edit schedule"
+                >
+                  <Pencil className="w-3 h-3" aria-hidden="true" />
+                </button>
+                <button
+                  onClick={() => handleDeleteSchedule(tmpl.id, tmpl.name)}
+                  className="min-h-6 min-w-6 flex items-center justify-center rounded-full hover:bg-red-200 text-red-600 transition"
+                  aria-label={`Delete ${tmpl.name}`}
+                  title="Delete schedule"
+                >
+                  <Trash2 className="w-3 h-3" aria-hidden="true" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recurring Tasks Management */}
+      {recurringTasks.length > 0 && (
+        <div className="bg-white rounded-xl shadow-lg p-4 mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <Repeat className="w-4 h-4 text-purple-500" />
+              Recurring Tasks
+            </h3>
+            <button
+              onClick={() => setShowRecurringModal(true)}
+              className="min-h-11 text-xs text-purple-600 hover:text-purple-700 font-medium"
+            >
+              + New
+            </button>
+          </div>
+          <div className="space-y-2">
+            {recurringTasks.map(rt => (
+              <div key={rt.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className={`shrink-0 text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full ${
+                    rt.is_active ? 'bg-purple-100 text-purple-700' : 'bg-gray-200 text-gray-500'
+                  }`}>
+                    {rt.pattern.type}{rt.pattern.weekInterval && rt.pattern.weekInterval > 1 ? ` q${rt.pattern.weekInterval}w` : ''}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{rt.activity}</p>
+                    <p className="text-xs text-gray-500">
+                      {rt.pattern.daysOfWeek
+                        ? rt.pattern.daysOfWeek.map(d => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')
+                        : rt.pattern.type === 'daily' ? 'Every day'
+                        : rt.pattern.type === 'monthly' ? `Day ${rt.pattern.dayOfMonth}`
+                        : `Every ${rt.pattern.interval} days`
+                      }
+                      {' · '}{rt.time}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={() => handleDeleteRecurringTask(rt.id, rt.activity)}
+                    className="min-h-11 min-w-11 flex items-center justify-center text-red-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition"
+                    aria-label={`Delete ${rt.activity}`}
+                    title="Delete recurring task"
+                  >
+                    <Trash2 className="w-4 h-4" aria-hidden="true" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -959,18 +1155,52 @@ export default function PlannerPage() {
 
       <ScheduleTemplateModal
         isOpen={showScheduleModal}
-        onClose={() => setShowScheduleModal(false)}
+        onClose={() => { setShowScheduleModal(false); setEditingSchedule(null); }}
         onSave={handleSaveSchedule}
+        editData={editingSchedule}
         accounts={scheduleAccounts}
         categories={scheduleCategories}
       />
 
-      <DayOffModal
-        isOpen={!!dayOffTarget}
-        onClose={() => setDayOffTarget(null)}
-        onSave={handleSaveDayOff}
-        scheduleName={dayOffTarget?.name || ''}
-        date={dayOffTarget?.date}
+      <WorkDayModal
+        isOpen={!!workDayTarget}
+        onClose={() => setWorkDayTarget(null)}
+        scheduleName={workDayTarget?.name || ''}
+        date={workDayTarget?.date}
+        taskId={workDayTarget?.taskId}
+        taskCompleted={workDayTarget?.taskCompleted}
+        dailyRevenue={
+          workDayTarget?.finance
+            ? workDayTarget.finance.rate_type === 'hourly'
+              ? workDayTarget.finance.pay_rate * (workDayTarget.finance.hours_per_day || 8)
+              : workDayTarget.finance.rate_type === 'daily'
+                ? workDayTarget.finance.pay_rate
+                : 0
+            : 0
+        }
+        payRate={workDayTarget?.finance?.pay_rate}
+        rateType={workDayTarget?.finance?.rate_type}
+        hoursPerDay={workDayTarget?.finance?.hours_per_day || 8}
+        onConfirmDay={handleConfirmDay}
+        onDayOff={handleDayOff}
+      />
+
+      <PaycheckReconcileModal
+        isOpen={!!paycheckTarget}
+        onClose={() => setPaycheckTarget(null)}
+        templateId={paycheckTarget?.templateId || ''}
+        payPeriodId={paycheckTarget?.payPeriodId || ''}
+        scheduleName={paycheckTarget?.scheduleName || ''}
+        periodStart={paycheckTarget?.periodStart || ''}
+        periodEnd={paycheckTarget?.periodEnd || ''}
+        estimatedGross={paycheckTarget?.estimatedGross}
+        estimatedNet={paycheckTarget?.estimatedNet}
+        payRate={paycheckTarget?.finance?.pay_rate}
+        rateType={paycheckTarget?.finance?.rate_type}
+        hoursPerDay={paycheckTarget?.finance?.hours_per_day || 8}
+        daysWorked={paycheckTarget?.daysWorked}
+        lineItemTemplates={paycheckTarget?.finance?.line_item_templates}
+        onSave={handlePaycheckReconcile}
       />
     </div>
   );
