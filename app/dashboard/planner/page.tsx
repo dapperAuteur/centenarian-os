@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Task, RecurringTask } from '@/lib/types';
 import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import Link from 'next/link';
-import { Calendar, DollarSign, Plus, Repeat, Upload, Download, Filter, Plane, MapPin, Briefcase, CalendarClock } from 'lucide-react';
+import { Calendar, DollarSign, Plus, Repeat, Upload, Download, Filter, Plane, MapPin, Briefcase, CalendarClock, Pencil, Trash2 } from 'lucide-react';
 import { EditTaskModal } from '@/components/EditTaskModal';
 import CreateRecurringTaskModal, { RecurringTaskData } from '@/components/planner/CreateRecurringTaskModal';
 import CreateTaskModal from '@/components/planner/CreateTaskModal';
@@ -182,7 +182,7 @@ export default function PlannerPage() {
 
   // Recurring task state
   const [showRecurringModal, setShowRecurringModal] = useState(false);
-  const [, setRecurringTasks] = useState<RecurringTask[]>([]);
+  const [recurringTasks, setRecurringTasks] = useState<RecurringTask[]>([]);
 
   // Create task state
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
@@ -192,6 +192,7 @@ export default function PlannerPage() {
 
   // Schedule state
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState<ScheduleTemplate | null>(null);
   const [scheduleTemplates, setScheduleTemplates] = useState<ScheduleTemplate[]>([]);
   const [scheduleExceptions, setScheduleExceptions] = useState<ScheduleException[]>([]);
   const [schedulePayPeriods, setSchedulePayPeriods] = useState<SchedulePayPeriod[]>([]);
@@ -406,24 +407,56 @@ export default function PlannerPage() {
   };
 
   const handleSaveSchedule = async (data: ScheduleTemplateFormData) => {
-    const res = await offlineFetch('/api/schedules', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error('Failed to create schedule');
+    if (editingSchedule) {
+      // Update existing
+      const res = await offlineFetch('/api/schedules', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingSchedule.id, ...data }),
+      });
+      if (!res.ok) throw new Error('Failed to update schedule');
+    } else {
+      // Create new
+      const res = await offlineFetch('/api/schedules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Failed to create schedule');
 
-    // Backfill from start_date (or today) through today
-    const today = new Date().toISOString().split('T')[0];
-    const fromDate = data.start_date || today;
-    await offlineFetch('/api/schedules/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fromDate, toDate: today }),
-    });
+      // Backfill from start_date (or today) through today
+      const today = new Date().toISOString().split('T')[0];
+      const fromDate = data.start_date || today;
+      await offlineFetch('/api/schedules/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fromDate, toDate: today }),
+      });
+    }
 
+    setEditingSchedule(null);
     await loadSchedules();
     await loadTasks();
+  };
+
+  const handleDeleteSchedule = async (scheduleId: string, scheduleName: string) => {
+    if (!confirm(`Delete schedule "${scheduleName}"? This will also remove all associated exceptions and pay periods. Generated tasks will remain.`)) return;
+    const res = await offlineFetch(`/api/schedules?id=${scheduleId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      alert('Failed to delete schedule');
+      return;
+    }
+    await loadSchedules();
+  };
+
+  const handleDeleteRecurringTask = async (taskId: string, taskName: string) => {
+    if (!confirm(`Delete recurring task "${taskName}"? Already-generated tasks will remain.`)) return;
+    const res = await offlineFetch(`/api/recurring-tasks?id=${taskId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      alert('Failed to delete recurring task');
+      return;
+    }
+    await loadRecurringTasks();
   };
 
   const handleBackfillSchedule = async (templateId: string) => {
@@ -1045,6 +1078,75 @@ export default function PlannerPage() {
                     Backfill
                   </button>
                 )}
+                <button
+                  onClick={() => { setEditingSchedule(tmpl); setShowScheduleModal(true); }}
+                  className="min-h-6 min-w-6 flex items-center justify-center rounded-full hover:bg-white/70 transition"
+                  aria-label={`Edit ${tmpl.name}`}
+                  title="Edit schedule"
+                >
+                  <Pencil className="w-3 h-3" aria-hidden="true" />
+                </button>
+                <button
+                  onClick={() => handleDeleteSchedule(tmpl.id, tmpl.name)}
+                  className="min-h-6 min-w-6 flex items-center justify-center rounded-full hover:bg-red-200 text-red-600 transition"
+                  aria-label={`Delete ${tmpl.name}`}
+                  title="Delete schedule"
+                >
+                  <Trash2 className="w-3 h-3" aria-hidden="true" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recurring Tasks Management */}
+      {recurringTasks.length > 0 && (
+        <div className="bg-white rounded-xl shadow-lg p-4 mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <Repeat className="w-4 h-4 text-purple-500" />
+              Recurring Tasks
+            </h3>
+            <button
+              onClick={() => setShowRecurringModal(true)}
+              className="min-h-11 text-xs text-purple-600 hover:text-purple-700 font-medium"
+            >
+              + New
+            </button>
+          </div>
+          <div className="space-y-2">
+            {recurringTasks.map(rt => (
+              <div key={rt.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className={`shrink-0 text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full ${
+                    rt.is_active ? 'bg-purple-100 text-purple-700' : 'bg-gray-200 text-gray-500'
+                  }`}>
+                    {rt.pattern.type}{rt.pattern.weekInterval && rt.pattern.weekInterval > 1 ? ` q${rt.pattern.weekInterval}w` : ''}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{rt.activity}</p>
+                    <p className="text-xs text-gray-500">
+                      {rt.pattern.daysOfWeek
+                        ? rt.pattern.daysOfWeek.map(d => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')
+                        : rt.pattern.type === 'daily' ? 'Every day'
+                        : rt.pattern.type === 'monthly' ? `Day ${rt.pattern.dayOfMonth}`
+                        : `Every ${rt.pattern.interval} days`
+                      }
+                      {' · '}{rt.time}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={() => handleDeleteRecurringTask(rt.id, rt.activity)}
+                    className="min-h-11 min-w-11 flex items-center justify-center text-red-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition"
+                    aria-label={`Delete ${rt.activity}`}
+                    title="Delete recurring task"
+                  >
+                    <Trash2 className="w-4 h-4" aria-hidden="true" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -1053,8 +1155,9 @@ export default function PlannerPage() {
 
       <ScheduleTemplateModal
         isOpen={showScheduleModal}
-        onClose={() => setShowScheduleModal(false)}
+        onClose={() => { setShowScheduleModal(false); setEditingSchedule(null); }}
         onSave={handleSaveSchedule}
+        editData={editingSchedule}
         accounts={scheduleAccounts}
         categories={scheduleCategories}
       />
