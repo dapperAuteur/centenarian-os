@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, Plus, ChevronDown, Search, Trash2, Play, Repeat, MapPin } from 'lucide-react';
+import { ChevronLeft, Plus, ChevronDown, Search, Trash2, Play, Repeat, MapPin, Pencil } from 'lucide-react';
 import PaginationBar from '@/components/ui/PaginationBar';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
@@ -12,6 +12,7 @@ import GoogleMapsImportModal from '@/components/travel/GoogleMapsImportModal';
 import RouteCard from '@/components/travel/RouteCard';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Modal from '@/components/ui/Modal';
+import EditTemplateModal from '@/components/travel/EditTemplateModal';
 
 interface Trip {
   id: string;
@@ -208,6 +209,7 @@ function TripsPageInner() {
   }>>([]);
   const [templates, setTemplates] = useState<TripTemplate[]>([]);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<TripTemplate | null>(null);
   const [fifoEstimate, setFifoEstimate] = useState<{ estimatedCost: number; mpgUsed: number; isPartial: boolean } | null>(null);
   const limit = 50;
 
@@ -687,6 +689,15 @@ function TripsPageInner() {
                       title="Quick log"
                     >
                       <Play className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingTemplate(tmpl)}
+                      className="min-h-11 min-w-11 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                      aria-label={`Edit template ${tmpl.name}`}
+                      title="Edit"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="button"
@@ -1332,6 +1343,17 @@ function TripsPageInner() {
           </div>
         </form>
       </Modal>
+
+      {/* Edit Template Modal */}
+      {editingTemplate && (
+        <EditTemplateModal
+          template={editingTemplate}
+          vehicles={vehicles}
+          brands={brands}
+          onClose={() => setEditingTemplate(null)}
+          onSaved={() => { setEditingTemplate(null); load(); }}
+        />
+      )}
     </div>
   );
 }
