@@ -603,7 +603,7 @@ export default function PlannerPage() {
   const [milestoneNames, setMilestoneNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const ids = [...new Set([...tasks, ...backlogTasks].map(t => t.milestone_id).filter(Boolean))];
+    const ids = [...new Set([...tasks, ...backlogTasks].map(t => t.milestone_id).filter((id): id is string => !!id && id.length > 0))];
     if (ids.length === 0) return;
     supabase.from('milestones').select('id, name').in('id', ids).then(({ data }) => {
       if (data) {
