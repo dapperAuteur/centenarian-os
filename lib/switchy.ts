@@ -118,24 +118,36 @@ interface UpdateParams {
 export async function updateShortLink(params: UpdateParams): Promise<boolean> {
   if (!process.env.SWITCHY_API_TOKEN) return false;
 
+  const domain = process.env.SWITCHY_DOMAIN ?? 'i.centenarianos.com';
   const pixelIds = process.env.SWITCHY_PIXEL_IDS
     ? process.env.SWITCHY_PIXEL_IDS.split(',').map((s) => s.trim()).filter(Boolean)
     : [];
 
-  const res = await fetch(`${API_BASE}/links/${params.linkId}`, {
-    method: 'PUT',
-    headers: headers(),
-    body: JSON.stringify({
-      link: {
-        url: params.url,
-        title: params.title,
-        description: params.description,
-        image: params.image,
-        ...(pixelIds.length > 0 && { pixels: pixelIds }),
-      },
-    }),
-  });
-  return res.ok;
+  try {
+    // Use by-domain endpoint because short_link_id stores the slug, not the numeric ID
+    const res = await fetch(`${API_BASE}/links/by-domain/${domain}/${params.linkId}`, {
+      method: 'PUT',
+      headers: headers(),
+      body: JSON.stringify({
+        link: {
+          url: params.url,
+          title: params.title,
+          description: params.description,
+          image: params.image,
+          ...(pixelIds.length > 0 && { pixels: pixelIds }),
+        },
+      }),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => '');
+      console.error(`[switchy] Failed to update link ${params.linkId}: ${res.status} ${errorText}`);
+    }
+    return res.ok;
+  } catch (err) {
+    console.error(`[switchy] Network error updating link ${params.linkId}:`, err);
+    return false;
+  }
 }
 
 /** Slugifies a title for use as a Switchy link id with a content-type prefix. */
