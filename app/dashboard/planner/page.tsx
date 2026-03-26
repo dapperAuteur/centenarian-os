@@ -19,10 +19,11 @@ import OutstandingInvoicesWidget from '@/components/planner/OutstandingInvoicesW
 import ExpectedPaymentsWidget from '@/components/planner/ExpectedPaymentsWidget';
 import type { ExpectedPayment } from '@/lib/types';
 import ScheduleTemplateModal, { ScheduleTemplateFormData } from '@/components/planner/ScheduleTemplateModal';
-import DayOffModal, { DayOffData } from '@/components/planner/DayOffModal';
+import WorkDayModal, { ConfirmDayData, DayOffData } from '@/components/planner/WorkDayModal';
 import PayPeriodCard, { ReconcileData } from '@/components/planner/PayPeriodCard';
+import PaycheckReconcileModal, { ReconcileSaveData } from '@/components/planner/PaycheckReconcileModal';
 import { getScheduleIndicators } from '@/components/planner/ScheduleCalendarOverlay';
-import type { ScheduleTemplate, ScheduleException, SchedulePayPeriod } from '@/lib/types';
+import type { ScheduleTemplate, ScheduleException, SchedulePayPeriod, ScheduleTemplateFinance } from '@/lib/types';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { OfflineSyncManager } from '@/lib/offline/sync-manager';
 
@@ -194,7 +195,18 @@ export default function PlannerPage() {
   const [scheduleTemplates, setScheduleTemplates] = useState<ScheduleTemplate[]>([]);
   const [scheduleExceptions, setScheduleExceptions] = useState<ScheduleException[]>([]);
   const [schedulePayPeriods, setSchedulePayPeriods] = useState<SchedulePayPeriod[]>([]);
-  const [dayOffTarget, setDayOffTarget] = useState<{ templateId: string; date: string; name: string } | null>(null);
+  const [workDayTarget, setWorkDayTarget] = useState<{
+    templateId: string; date: string; name: string;
+    taskId?: string; taskCompleted?: boolean;
+    finance?: ScheduleTemplateFinance;
+  } | null>(null);
+  const [paycheckTarget, setPaycheckTarget] = useState<{
+    templateId: string; payPeriodId: string; scheduleName: string;
+    periodStart: string; periodEnd: string;
+    finance?: ScheduleTemplateFinance;
+    daysWorked?: number;
+    estimatedGross?: number; estimatedNet?: number;
+  } | null>(null);
   const [scheduleAccounts, setScheduleAccounts] = useState<{ id: string; name: string }[]>([]);
   const [scheduleCategories, setScheduleCategories] = useState<{ id: string; name: string }[]>([]);
 
@@ -441,14 +453,66 @@ export default function PlannerPage() {
     }
   };
 
-  const handleSaveDayOff = async (data: DayOffData) => {
-    if (!dayOffTarget) return;
-    const res = await offlineFetch(`/api/schedules/${dayOffTarget.templateId}/exceptions`, {
+  const handleConfirmDay = async (data: ConfirmDayData) => {
+    // Mark task completed with revenue
+    const { error } = await supabase
+      .from('tasks')
+      .update({
+        completed: true,
+        completed_at: new Date().toISOString(),
+        revenue: data.revenue,
+      })
+      .eq('id', data.taskId);
+
+    if (error) throw new Error('Failed to confirm work day');
+    await loadTasks();
+  };
+
+  const handleDayOff = async (data: DayOffData) => {
+    if (!workDayTarget) return;
+    const res = await offlineFetch(`/api/schedules/${workDayTarget.templateId}/exceptions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error('Failed to save day off');
+
+    // If task exists and exception is unpaid, set revenue to 0
+    if (workDayTarget.taskId && (data.exception_type === 'unpaid_off' || data.exception_type === 'skip')) {
+      await supabase
+        .from('tasks')
+        .update({ revenue: 0, activity: `${workDayTarget.name} (${data.exception_type === 'unpaid_off' ? 'Unpaid Day Off' : 'Skipped'})` })
+        .eq('id', workDayTarget.taskId);
+    }
+
+    await loadSchedules();
+    await loadTasks();
+  };
+
+  const handlePaycheckReconcile = async (data: ReconcileSaveData) => {
+    // Save line items
+    const res = await offlineFetch(
+      `/api/schedules/${data.templateId}/pay-periods/${data.payPeriodId}/line-items`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: data.lineItems, save_as_template: data.saveAsTemplate }),
+      }
+    );
+    if (!res.ok) throw new Error('Failed to save line items');
+
+    // Reconcile the pay period
+    await offlineFetch(`/api/schedules/${data.templateId}/pay-periods`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pay_period_id: data.payPeriodId,
+        actual_gross: data.actualGross,
+        actual_taxes: data.actualTaxes,
+        actual_net: data.actualNet,
+      }),
+    });
+
     await loadSchedules();
     await loadTasks();
   };
@@ -741,25 +805,41 @@ export default function PlannerPage() {
                 </h3>
                 {/* Schedule indicators */}
                 <div className="flex gap-1">
-                  {getScheduleIndicators(date, scheduleTemplates, exceptionMap).map(({ template, exception }) => (
-                    <button
-                      key={template.id}
-                      onClick={() => setDayOffTarget({ templateId: template.id, date, name: template.name })}
-                      className={`min-h-6 px-2 py-0.5 rounded text-[10px] font-medium ${
-                        exception
-                          ? 'bg-gray-100 text-gray-500 line-through'
-                          : template.template_type === 'work'
-                            ? 'bg-sky-100 text-sky-700'
-                            : template.template_type === 'fitness'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-purple-100 text-purple-700'
-                      }`}
-                      title={exception ? `${template.name} (${exception.exception_type})` : `${template.name} — Click to manage`}
-                    >
-                      {template.name}
-                      {exception && <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-gray-400" />}
-                    </button>
-                  ))}
+                  {getScheduleIndicators(date, scheduleTemplates, exceptionMap).map(({ template, exception }) => {
+                    const fin = template.finance;
+                    const dailyRev = fin
+                      ? fin.rate_type === 'hourly' ? fin.pay_rate * (fin.hours_per_day || 8) : fin.rate_type === 'daily' ? fin.pay_rate : 0
+                      : 0;
+                    // Find the task for this schedule+date to pass to WorkDayModal
+                    const matchTask = dateTasks.find(t => t.source_type === 'schedule' && t.source_id === template.id);
+                    return (
+                      <button
+                        key={template.id}
+                        onClick={() => setWorkDayTarget({
+                          templateId: template.id, date, name: template.name,
+                          taskId: matchTask?.id, taskCompleted: matchTask?.completed,
+                          finance: fin || undefined,
+                        })}
+                        className={`min-h-6 px-2 py-0.5 rounded text-[10px] font-medium ${
+                          matchTask?.completed
+                            ? 'bg-green-100 text-green-700'
+                            : exception
+                              ? 'bg-gray-100 text-gray-500 line-through'
+                              : template.template_type === 'work'
+                                ? 'bg-sky-100 text-sky-700'
+                                : template.template_type === 'fitness'
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-purple-100 text-purple-700'
+                        }`}
+                        title={exception ? `${template.name} (${exception.exception_type})` : `${template.name}${dailyRev > 0 ? ` — $${dailyRev.toFixed(0)}/day` : ''}`}
+                      >
+                        {matchTask?.completed && '✓ '}
+                        {template.name}
+                        {dailyRev > 0 && !exception && <span className="ml-1 opacity-60">${dailyRev.toFixed(0)}</span>}
+                        {exception && <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-gray-400" />}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               <div className="space-y-3">
@@ -897,7 +977,21 @@ export default function PlannerPage() {
                   payPeriod={pp}
                   scheduleName={tmpl?.name || 'Schedule'}
                   showInvoiceButton={tmpl?.finance?.auto_invoice}
-                  onReconcile={handleReconcile}
+                  onReconcile={() => {
+                    if (tmpl) {
+                      setPaycheckTarget({
+                        templateId: tmpl.id,
+                        payPeriodId: pp.id,
+                        scheduleName: tmpl.name,
+                        periodStart: pp.period_start,
+                        periodEnd: pp.period_end,
+                        finance: tmpl.finance || undefined,
+                        daysWorked: pp.days_worked,
+                        estimatedGross: pp.estimated_gross || undefined,
+                        estimatedNet: pp.estimated_net || undefined,
+                      });
+                    }
+                  }}
                   onConvertToInvoice={handleConvertToInvoice}
                 />
               );
@@ -965,12 +1059,45 @@ export default function PlannerPage() {
         categories={scheduleCategories}
       />
 
-      <DayOffModal
-        isOpen={!!dayOffTarget}
-        onClose={() => setDayOffTarget(null)}
-        onSave={handleSaveDayOff}
-        scheduleName={dayOffTarget?.name || ''}
-        date={dayOffTarget?.date}
+      <WorkDayModal
+        isOpen={!!workDayTarget}
+        onClose={() => setWorkDayTarget(null)}
+        scheduleName={workDayTarget?.name || ''}
+        date={workDayTarget?.date}
+        taskId={workDayTarget?.taskId}
+        taskCompleted={workDayTarget?.taskCompleted}
+        dailyRevenue={
+          workDayTarget?.finance
+            ? workDayTarget.finance.rate_type === 'hourly'
+              ? workDayTarget.finance.pay_rate * (workDayTarget.finance.hours_per_day || 8)
+              : workDayTarget.finance.rate_type === 'daily'
+                ? workDayTarget.finance.pay_rate
+                : 0
+            : 0
+        }
+        payRate={workDayTarget?.finance?.pay_rate}
+        rateType={workDayTarget?.finance?.rate_type}
+        hoursPerDay={workDayTarget?.finance?.hours_per_day || 8}
+        onConfirmDay={handleConfirmDay}
+        onDayOff={handleDayOff}
+      />
+
+      <PaycheckReconcileModal
+        isOpen={!!paycheckTarget}
+        onClose={() => setPaycheckTarget(null)}
+        templateId={paycheckTarget?.templateId || ''}
+        payPeriodId={paycheckTarget?.payPeriodId || ''}
+        scheduleName={paycheckTarget?.scheduleName || ''}
+        periodStart={paycheckTarget?.periodStart || ''}
+        periodEnd={paycheckTarget?.periodEnd || ''}
+        estimatedGross={paycheckTarget?.estimatedGross}
+        estimatedNet={paycheckTarget?.estimatedNet}
+        payRate={paycheckTarget?.finance?.pay_rate}
+        rateType={paycheckTarget?.finance?.rate_type}
+        hoursPerDay={paycheckTarget?.finance?.hours_per_day || 8}
+        daysWorked={paycheckTarget?.daysWorked}
+        lineItemTemplates={paycheckTarget?.finance?.line_item_templates}
+        onSave={handlePaycheckReconcile}
       />
     </div>
   );

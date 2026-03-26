@@ -9,7 +9,7 @@ interface PayPeriodCardProps {
   payPeriod: SchedulePayPeriod;
   scheduleName: string;
   showInvoiceButton?: boolean;
-  onReconcile: (data: ReconcileData) => Promise<void>;
+  onReconcile: ((data: ReconcileData) => Promise<void>) | (() => void);
   onConvertToInvoice?: (payPeriodId: string) => Promise<void>;
 }
 
