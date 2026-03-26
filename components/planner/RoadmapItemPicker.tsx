@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, ChevronRight } from 'lucide-react';
+import { Plus, ChevronRight, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useMilestoneHierarchy } from '@/lib/hooks/useMilestoneHierarchy';
 import type { TaskTag } from '@/lib/types';
@@ -166,6 +166,60 @@ export default function RoadmapItemPicker({ value, onChange, required }: Roadmap
     }
   };
 
+  const handleDelete = async (level: 'roadmap' | 'goal' | 'milestone', id: string, title: string) => {
+    const childWarning = level === 'roadmap'
+      ? 'and all its goals, milestones, and tasks'
+      : level === 'goal'
+        ? 'and all its milestones and tasks'
+        : 'and all its tasks';
+
+    if (!confirm(`Delete "${title}" ${childWarning}? This cannot be undone.`)) return;
+
+    try {
+      if (level === 'milestone') {
+        // Delete tasks under this milestone first, then the milestone
+        await supabase.from('tasks').delete().eq('milestone_id', id);
+        await supabase.from('milestones').delete().eq('id', id);
+        onChange('');
+      } else if (level === 'goal') {
+        // Delete tasks → milestones → goal
+        const { data: ms } = await supabase.from('milestones').select('id').eq('goal_id', id);
+        if (ms) {
+          for (const m of ms) {
+            await supabase.from('tasks').delete().eq('milestone_id', m.id);
+          }
+          await supabase.from('milestones').delete().eq('goal_id', id);
+        }
+        await supabase.from('goals').delete().eq('id', id);
+        setSelectedGoalId('');
+        onChange('');
+      } else if (level === 'roadmap') {
+        // Delete tasks → milestones → goals → roadmap
+        const { data: gs } = await supabase.from('goals').select('id').eq('roadmap_id', id);
+        if (gs) {
+          for (const g of gs) {
+            const { data: ms } = await supabase.from('milestones').select('id').eq('goal_id', g.id);
+            if (ms) {
+              for (const m of ms) {
+                await supabase.from('tasks').delete().eq('milestone_id', m.id);
+              }
+              await supabase.from('milestones').delete().eq('goal_id', g.id);
+            }
+          }
+          await supabase.from('goals').delete().eq('roadmap_id', id);
+        }
+        await supabase.from('roadmaps').delete().eq('id', id);
+        setSelectedRoadmapId('');
+        setSelectedGoalId('');
+        onChange('');
+      }
+      await reload();
+    } catch (err) {
+      console.error('Failed to delete:', err);
+      alert('Delete failed. Please try again.');
+    }
+  };
+
   if (loading) {
     return <div className="text-sm text-gray-500 py-2">Loading roadmap data...</div>;
   }
@@ -186,7 +240,7 @@ export default function RoadmapItemPicker({ value, onChange, required }: Roadmap
       </div>
 
       {/* Roadmap select */}
-      <div className="flex gap-2">
+      <div className="flex gap-1">
         <select
           value={selectedRoadmapId}
           onChange={e => handleRoadmapChange(e.target.value)}
@@ -200,16 +254,31 @@ export default function RoadmapItemPicker({ value, onChange, required }: Roadmap
         <button
           type="button"
           onClick={() => { setCreating('roadmap'); setNewTitle(''); }}
-          className="px-2 py-2 text-sky-600 hover:bg-sky-50 rounded-lg transition"
+          className="min-h-11 min-w-11 flex items-center justify-center text-sky-600 hover:bg-sky-50 rounded-lg transition"
           title="New Roadmap"
+          aria-label="New Roadmap"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4" aria-hidden="true" />
         </button>
+        {selectedRoadmapId && (
+          <button
+            type="button"
+            onClick={() => {
+              const r = roadmaps.find(r => r.id === selectedRoadmapId);
+              if (r) handleDelete('roadmap', r.id, r.title);
+            }}
+            className="min-h-11 min-w-11 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+            title="Delete Roadmap"
+            aria-label="Delete Roadmap"
+          >
+            <Trash2 className="w-4 h-4" aria-hidden="true" />
+          </button>
+        )}
       </div>
 
       {/* Goal select */}
       {selectedRoadmapId && (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <select
             value={selectedGoalId}
             onChange={e => handleGoalChange(e.target.value)}
@@ -223,17 +292,32 @@ export default function RoadmapItemPicker({ value, onChange, required }: Roadmap
           <button
             type="button"
             onClick={() => { setCreating('goal'); setNewTitle(''); }}
-            className="px-2 py-2 text-sky-600 hover:bg-sky-50 rounded-lg transition"
+            className="min-h-11 min-w-11 flex items-center justify-center text-sky-600 hover:bg-sky-50 rounded-lg transition"
             title="New Goal"
+            aria-label="New Goal"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4" aria-hidden="true" />
           </button>
+          {selectedGoalId && (
+            <button
+              type="button"
+              onClick={() => {
+                const g = filteredGoals.find(g => g.id === selectedGoalId);
+                if (g) handleDelete('goal', g.id, g.title);
+              }}
+              className="min-h-11 min-w-11 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+              title="Delete Goal"
+              aria-label="Delete Goal"
+            >
+              <Trash2 className="w-4 h-4" aria-hidden="true" />
+            </button>
+          )}
         </div>
       )}
 
       {/* Milestone select */}
       {selectedGoalId && (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <select
             value={value}
             onChange={e => onChange(e.target.value)}
@@ -248,11 +332,26 @@ export default function RoadmapItemPicker({ value, onChange, required }: Roadmap
           <button
             type="button"
             onClick={() => { setCreating('milestone'); setNewTitle(''); }}
-            className="px-2 py-2 text-sky-600 hover:bg-sky-50 rounded-lg transition"
+            className="min-h-11 min-w-11 flex items-center justify-center text-sky-600 hover:bg-sky-50 rounded-lg transition"
             title="New Milestone"
+            aria-label="New Milestone"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4" aria-hidden="true" />
           </button>
+          {value && (
+            <button
+              type="button"
+              onClick={() => {
+                const m = filteredMilestones.find(m => m.id === value);
+                if (m) handleDelete('milestone', m.id, m.title);
+              }}
+              className="min-h-11 min-w-11 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+              title="Delete Milestone"
+              aria-label="Delete Milestone"
+            >
+              <Trash2 className="w-4 h-4" aria-hidden="true" />
+            </button>
+          )}
         </div>
       )}
 
