@@ -561,8 +561,32 @@ export default function RoadmapPage() {
                           <button
                             onClick={() => handleArchiveRoadmap(roadmap.id, roadmap.title)}
                             className="p-2 hover:bg-white/30 rounded transition"
+                            title="Archive"
                           >
                             <Archive className="w-5 h-5 text-white" />
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (!confirm(`Permanently delete "${roadmap.title}" and all its goals, milestones, and tasks? This cannot be undone.`)) return;
+                              // Cascade delete: tasks → milestones → goals → roadmap
+                              const { data: gs } = await supabase.from('goals').select('id').eq('roadmap_id', roadmap.id);
+                              if (gs) {
+                                for (const g of gs) {
+                                  const { data: ms } = await supabase.from('milestones').select('id').eq('goal_id', g.id);
+                                  if (ms) {
+                                    for (const m of ms) await supabase.from('tasks').delete().eq('milestone_id', m.id);
+                                    await supabase.from('milestones').delete().eq('goal_id', g.id);
+                                  }
+                                }
+                                await supabase.from('goals').delete().eq('roadmap_id', roadmap.id);
+                              }
+                              await supabase.from('roadmaps').delete().eq('id', roadmap.id);
+                              loadData();
+                            }}
+                            className="p-2 hover:bg-red-500/30 rounded transition"
+                            title="Delete permanently"
+                          >
+                            <Trash2 className="w-5 h-5 text-red-300" />
                           </button>
                           <button
                             onClick={() => openGoalModal(roadmap.id)}
@@ -634,8 +658,25 @@ export default function RoadmapPage() {
                                     <button
                                       onClick={() => handleArchiveGoal(goal.id, goal.title)}
                                       className="p-2 hover:bg-gray-200 rounded"
+                                      title="Archive"
                                     >
                                       <Archive className="w-4 h-4 text-gray-500" />
+                                    </button>
+                                    <button
+                                      onClick={async () => {
+                                        if (!confirm(`Permanently delete "${goal.title}" and all its milestones and tasks? This cannot be undone.`)) return;
+                                        const { data: ms } = await supabase.from('milestones').select('id').eq('goal_id', goal.id);
+                                        if (ms) {
+                                          for (const m of ms) await supabase.from('tasks').delete().eq('milestone_id', m.id);
+                                          await supabase.from('milestones').delete().eq('goal_id', goal.id);
+                                        }
+                                        await supabase.from('goals').delete().eq('id', goal.id);
+                                        loadData();
+                                      }}
+                                      className="p-2 hover:bg-red-100 rounded"
+                                      title="Delete permanently"
+                                    >
+                                      <Trash2 className="w-4 h-4 text-red-500" />
                                     </button>
                                     <button
                                       onClick={() => openMilestoneModal(goal.id)}
@@ -717,8 +758,21 @@ export default function RoadmapPage() {
                                                 <button
                                                   onClick={() => handleArchiveMilestone(milestone.id, milestone.title)}
                                                   className="p-2 hover:bg-gray-100 rounded"
+                                                  title="Archive"
                                                 >
                                                   <Archive className="w-4 h-4 text-gray-500" />
+                                                </button>
+                                                <button
+                                                  onClick={async () => {
+                                                    if (!confirm(`Permanently delete "${milestone.title}" and all its tasks? This cannot be undone.`)) return;
+                                                    await supabase.from('tasks').delete().eq('milestone_id', milestone.id);
+                                                    await supabase.from('milestones').delete().eq('id', milestone.id);
+                                                    loadData();
+                                                  }}
+                                                  className="p-2 hover:bg-red-100 rounded"
+                                                  title="Delete permanently"
+                                                >
+                                                  <Trash2 className="w-4 h-4 text-red-500" />
                                                 </button>
                                                 <button
                                                   onClick={() => openTaskModal(milestone.id)}
