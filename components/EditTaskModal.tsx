@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Task } from '@/lib/types';
-import { DollarSign, MapPin, Calendar } from 'lucide-react';
+import { DollarSign, MapPin, Calendar, Archive, Trash2 } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import ActivityLinker from '@/components/ui/ActivityLinker';
@@ -222,20 +222,50 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
       </div>
 
       {/* Footer */}
-      <div className="bg-gray-50 border-t border-gray-200 p-6 flex gap-3">
-        <button
-          onClick={onClose}
-          className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex-1 px-6 py-3 bg-sky-600 text-white rounded-lg hover:bg-sky-700 font-semibold disabled:opacity-50"
-        >
-          {saving ? 'Saving...' : 'Save Changes'}
-        </button>
+      <div className="bg-gray-50 border-t border-gray-200 p-6 space-y-3">
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 min-h-11 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex-1 min-h-11 px-6 py-3 bg-sky-600 text-white rounded-lg hover:bg-sky-700 font-semibold disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
+        {task && (
+          <div className="flex gap-3">
+            <button
+              onClick={async () => {
+                if (!confirm('Archive this task? It can be restored from the Roadmap page.')) return;
+                await supabase.from('tasks').update({ status: 'archived', archived_at: new Date().toISOString() }).eq('id', task.id);
+                onSave();
+                onClose();
+              }}
+              className="flex-1 min-h-11 flex items-center justify-center gap-2 px-4 py-2 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 text-sm font-medium transition"
+            >
+              <Archive className="w-4 h-4" aria-hidden="true" />
+              Archive
+            </button>
+            <button
+              onClick={async () => {
+                if (!confirm('Permanently delete this task? This cannot be undone.')) return;
+                await supabase.from('tasks').delete().eq('id', task.id);
+                onSave();
+                onClose();
+              }}
+              className="flex-1 min-h-11 flex items-center justify-center gap-2 px-4 py-2 text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 text-sm font-medium transition"
+            >
+              <Trash2 className="w-4 h-4" aria-hidden="true" />
+              Delete
+            </button>
+          </div>
+        )}
       </div>
     </Modal>
   );
