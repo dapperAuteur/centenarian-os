@@ -68,7 +68,7 @@ export default function PaycheckReconcileModal({
   periodStart,
   periodEnd,
   estimatedGross = 0,
-  estimatedNet = 0,
+  estimatedNet: _estimatedNet = 0, // eslint-disable-line @typescript-eslint/no-unused-vars
   payRate = 0,
   rateType = 'daily',
   hoursPerDay = 8,

@@ -20,7 +20,7 @@ import ExpectedPaymentsWidget from '@/components/planner/ExpectedPaymentsWidget'
 import type { ExpectedPayment } from '@/lib/types';
 import ScheduleTemplateModal, { ScheduleTemplateFormData } from '@/components/planner/ScheduleTemplateModal';
 import WorkDayModal, { ConfirmDayData, DayOffData } from '@/components/planner/WorkDayModal';
-import PayPeriodCard, { ReconcileData } from '@/components/planner/PayPeriodCard';
+import PayPeriodCard from '@/components/planner/PayPeriodCard';
 import PaycheckReconcileModal, { ReconcileSaveData } from '@/components/planner/PaycheckReconcileModal';
 import { getScheduleIndicators } from '@/components/planner/ScheduleCalendarOverlay';
 import type { ScheduleTemplate, ScheduleException, SchedulePayPeriod, ScheduleTemplateFinance } from '@/lib/types';
@@ -548,19 +548,6 @@ export default function PlannerPage() {
 
     await loadSchedules();
     await loadTasks();
-  };
-
-  const handleReconcile = async (data: ReconcileData) => {
-    // Find which template this pay period belongs to
-    const period = schedulePayPeriods.find(p => p.id === data.pay_period_id);
-    if (!period) return;
-    const res = await offlineFetch(`/api/schedules/${period.template_id}/pay-periods`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error('Failed to reconcile');
-    await loadSchedules();
   };
 
   const handleConvertToInvoice = async (payPeriodId: string) => {
