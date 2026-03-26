@@ -38,7 +38,9 @@
       "Bash(curl -s -H 'Content-Type: application/json' -H 'Api-Authorization: $SWITCHY_API_TOKEN' https://api.switchy.io/v1/links/list)",
       "Bash(curl -s -X POST -H 'Content-Type: application/json' -H 'Api-Authorization: $SWITCHY_API_TOKEN' https://api.switchy.io/v1/links/list -d {\"\"limit\"\":1})",
       "Bash(curl -s -H 'Content-Type: application/json' -H 'Api-Authorization: $SWITCHY_API_TOKEN' https://api.switchy.io/v1/account)",
-      "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/components -name *ider* -o -name *menu* -o -name *nav*)"
+      "Bash(find /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/components -name *ider* -o -name *menu* -o -name *nav*)",
+      "Bash(SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL)",
+      "Bash(curl -s -H 'apikey: $SUPABASE_SERVICE_ROLE_KEY' -H 'Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY' \"$SUPABASE_URL/rest/v1/blog_posts?select=id,title,short_link_id,short_link_url&short_link_id=not.is.null&limit=3\")"
     ],
     "additionalDirectories": [
       "/Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app/api/og/course",
