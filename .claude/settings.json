@@ -42,11 +42,13 @@
       "Bash(SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL)",
       "Bash(curl -s -H 'apikey: $SUPABASE_SERVICE_ROLE_KEY' -H 'Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY' \"$SUPABASE_URL/rest/v1/blog_posts?select=id,title,short_link_id,short_link_url&short_link_id=not.is.null&limit=3\")",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git -C /Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os status -u)"
     ],
     "additionalDirectories": [
       "/Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app/api/og/course",
-      "/Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app/dashboard/travel/trips/[id]"
+      "/Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app/dashboard/travel/trips/[id]",
+      "/Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os/app/api/schedules/[id]/pay-periods/[periodId]"
     ]
   }
 }
