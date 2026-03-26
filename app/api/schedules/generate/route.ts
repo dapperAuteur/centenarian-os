@@ -298,7 +298,7 @@ export async function POST(request: NextRequest) {
         })
         .eq('source_type', 'schedule')
         .eq('source_id', tmpl.id)
-        .eq('revenue', 0)
+        .or('revenue.eq.0,revenue.is.null')
         .select('id');
 
       if (!syncErr && updated) synced += updated.length;
