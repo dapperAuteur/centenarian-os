@@ -487,18 +487,52 @@ export default function PlannerPage() {
   };
 
   const handleSyncRevenue = async () => {
+    // Try API first
     const res = await offlineFetch('/api/schedules/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ syncRevenue: true }),
     });
+
+    let synced = 0;
     if (res.ok) {
       const data = await res.json();
-      alert(`Revenue synced on ${data.tasksSynced} tasks.`);
-      await loadTasks();
-    } else {
-      alert('Sync failed.');
+      synced = data.tasksSynced || 0;
     }
+
+    // Client-side fallback: update visible tasks that have schedule source but no revenue
+    if (synced === 0) {
+      const workTemplates = scheduleTemplates.filter(t => t.is_active && t.finance);
+      for (const tmpl of workTemplates) {
+        const fin = tmpl.finance!;
+        const dailyRev = fin.rate_type === 'hourly'
+          ? fin.pay_rate * (fin.hours_per_day || 8)
+          : fin.rate_type === 'daily' ? fin.pay_rate : 0;
+        if (dailyRev <= 0) continue;
+
+        const { data: updated } = await supabase
+          .from('tasks')
+          .update({ revenue: Math.round(dailyRev * 100) / 100 })
+          .eq('source_type', 'schedule')
+          .eq('source_id', tmpl.id)
+          .is('revenue', null)
+          .select('id');
+
+        // Also update tasks with revenue = 0
+        const { data: updated2 } = await supabase
+          .from('tasks')
+          .update({ revenue: Math.round(dailyRev * 100) / 100 })
+          .eq('source_type', 'schedule')
+          .eq('source_id', tmpl.id)
+          .eq('revenue', 0)
+          .select('id');
+
+        synced += (updated?.length || 0) + (updated2?.length || 0);
+      }
+    }
+
+    alert(`Revenue synced on ${synced} tasks.`);
+    await loadTasks();
   };
 
   const handleConfirmDay = async (data: ConfirmDayData) => {
@@ -603,15 +637,24 @@ export default function PlannerPage() {
   const [milestoneNames, setMilestoneNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const ids = [...new Set([...tasks, ...backlogTasks].map(t => t.milestone_id).filter((id): id is string => !!id && id.length > 0))];
+    const ids = [...new Set(
+      [...tasks, ...backlogTasks]
+        .map(t => t.milestone_id)
+        .filter((id): id is string => !!id && id.length > 0)
+    )];
     if (ids.length === 0) return;
-    supabase.from('milestones').select('id, name').in('id', ids).then(({ data }) => {
-      if (data) {
-        const map: Record<string, string> = {};
-        data.forEach(m => { map[m.id] = m.name; });
-        setMilestoneNames(map);
+
+    // Batch in chunks of 50 to avoid Supabase URL length limits
+    const fetchMilestones = async () => {
+      const map: Record<string, string> = {};
+      for (let i = 0; i < ids.length; i += 50) {
+        const batch = ids.slice(i, i + 50);
+        const { data } = await supabase.from('milestones').select('id, name').in('id', batch);
+        if (data) data.forEach(m => { map[m.id] = m.name; });
       }
-    });
+      setMilestoneNames(map);
+    };
+    fetchMilestones();
   }, [tasks, backlogTasks, supabase]);
 
   const filteredTasks = useMemo(() => {
