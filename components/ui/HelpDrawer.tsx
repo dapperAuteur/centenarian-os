@@ -168,7 +168,7 @@ export default function HelpDrawer({ isOpen, onClose, userRole }: Props) {
         </div>
 
         {/* Input */}
-        <div className="px-4 py-3 border-t border-gray-800 shrink-0">
+        <div className="dark-input px-4 py-3 border-t border-gray-800 shrink-0">
           <div className="flex gap-2">
             <input
               type="text"
