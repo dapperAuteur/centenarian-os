@@ -379,7 +379,15 @@ export async function POST() {
 
   const existingTemplateNames = new Set((existingTemplates ?? []).map((t: { name: string }) => t.name));
 
-  // 6. Seed missing templates
+  // 6. Build category name → id map from global workout_categories
+  const { data: globalCats } = await db
+    .from('workout_categories')
+    .select('id, name')
+    .eq('is_global', true);
+  const catIdMap: Record<string, string> = {};
+  for (const c of globalCats ?? []) catIdMap[c.name] = c.id;
+
+  // 7. Seed missing templates
   let templatesSeeded = 0;
 
   for (const tmpl of TEMPLATES) {
@@ -391,6 +399,7 @@ export async function POST() {
         user_id: user.id,
         name: tmpl.name,
         category: tmpl.category,
+        category_id: catIdMap[tmpl.category] ?? null,
         estimated_duration_min: tmpl.estimated_duration_min,
         purpose: tmpl.purpose,
         visibility: 'public',

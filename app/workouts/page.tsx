@@ -36,16 +36,6 @@ export const metadata: Metadata = {
   alternates: { canonical: `${SITE_URL}/workouts` },
 };
 
-const CATEGORY_OPTIONS = ['AM', 'PM', 'WORKOUT_HOTEL', 'WORKOUT_GYM', 'friction', 'general'];
-const CATEGORY_LABELS: Record<string, string> = {
-  AM: 'AM Priming',
-  PM: 'PM Recovery',
-  WORKOUT_HOTEL: 'Hotel Workout',
-  WORKOUT_GYM: 'Full Gym',
-  friction: 'Friction Protocol',
-  general: 'General',
-};
-
 const PAGE_SIZE = 18;
 
 interface SearchParams {
@@ -74,13 +64,21 @@ export default async function WorkoutsPage({
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
+  // Fetch global workout categories for filter dropdown
+  const { data: categoryRows } = await db
+    .from('workout_categories')
+    .select('id, name')
+    .eq('is_global', true)
+    .order('sort_order', { ascending: true });
+  const categories = categoryRows ?? [];
+
   const sortCol =
     sort === 'newest' ? 'created_at' : sort === 'done' ? 'done_count' : 'like_count';
 
   let query = db
     .from('workout_templates')
     .select(
-      'id, name, description, category, estimated_duration_min, done_count, like_count, workout_template_exercises(exercise_id, name, sets, reps, weight_lbs, duration_sec, rpe, sort_order, phase, notes)',
+      'id, name, description, category, category_id, estimated_duration_min, done_count, like_count, workout_categories(name), workout_template_exercises(exercise_id, name, sets, reps, weight_lbs, duration_sec, rpe, sort_order, phase, notes)',
       { count: 'exact' },
     )
     .eq('visibility', 'public')
@@ -88,7 +86,7 @@ export default async function WorkoutsPage({
     .range(offset, offset + PAGE_SIZE - 1);
 
   if (search) query = query.ilike('name', `%${search}%`);
-  if (category) query = query.eq('category', category);
+  if (category) query = query.eq('category_id', category);
 
   const { data: templates, count } = await query;
   const total = count ?? 0;
@@ -168,9 +166,9 @@ export default async function WorkoutsPage({
               className="w-full sm:w-44 min-h-11 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900"
             >
               <option value="">All categories</option>
-              {CATEGORY_OPTIONS.map((c) => (
-                <option key={c} value={c}>
-                  {CATEGORY_LABELS[c]}
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
                 </option>
               ))}
             </select>

@@ -7,13 +7,18 @@ import TemplateExerciseRow, { TemplateExercise } from './TemplateExerciseRow';
 import WorkoutPurposeSelect from './WorkoutPurposeSelect';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
-const CATEGORIES = ['Strength', 'Cardio', 'HIIT', 'Yoga', 'Flexibility', 'Cycling', 'Running', 'Swimming', 'Other'];
+interface WorkoutCategory {
+  id: string;
+  name: string;
+  is_global: boolean;
+}
 
 interface TemplateData {
   id?: string;
   name: string;
   description?: string | null;
   category?: string | null;
+  category_id?: string | null;
   estimated_duration_min?: number | null;
   purpose?: string[];
   workout_template_exercises?: TemplateExercise[];
@@ -27,10 +32,11 @@ interface Props {
 }
 
 export default function WorkoutTemplateForm({ isOpen, onClose, onSaved, initial }: Props) {
-  const [form, setForm] = useState({ name: '', description: '', category: '', estimated_duration_min: '' });
+  const [form, setForm] = useState({ name: '', description: '', category_id: '', estimated_duration_min: '' });
   const [purpose, setPurpose] = useState<string[]>([]);
   const [exercises, setExercises] = useState<TemplateExercise[]>([]);
   const [equipment, setEquipment] = useState<{ id: string; name: string }[]>([]);
+  const [workoutCategories, setWorkoutCategories] = useState<WorkoutCategory[]>([]);
   const [saving, setSaving] = useState(false);
   const editingId = initial?.id;
 
@@ -40,13 +46,13 @@ export default function WorkoutTemplateForm({ isOpen, onClose, onSaved, initial 
         setForm({
           name: initial.name,
           description: initial.description ?? '',
-          category: initial.category ?? '',
+          category_id: initial.category_id ?? '',
           estimated_duration_min: initial.estimated_duration_min != null ? String(initial.estimated_duration_min) : '',
         });
         setPurpose(initial.purpose ?? []);
         setExercises(initial.workout_template_exercises?.map((ex) => ({ ...ex })) ?? []);
       } else {
-        setForm({ name: '', description: '', category: '', estimated_duration_min: '' });
+        setForm({ name: '', description: '', category_id: '', estimated_duration_min: '' });
         setPurpose([]);
         setExercises([{ name: '', sets: null, reps: null, weight_lbs: null, duration_sec: null, rest_sec: 60, notes: '', is_bodyweight: false, is_timed: false, per_side: false }]);
       }
@@ -55,6 +61,13 @@ export default function WorkoutTemplateForm({ isOpen, onClose, onSaved, initial 
         if (r.ok) {
           const data = await r.json();
           setEquipment((data ?? []).map((e: { id: string; name: string }) => ({ id: e.id, name: e.name })));
+        }
+      }).catch(() => {});
+      // Load workout categories
+      offlineFetch('/api/workouts/categories').then(async (r) => {
+        if (r.ok) {
+          const data = await r.json();
+          setWorkoutCategories(data.categories ?? []);
         }
       }).catch(() => {});
     }
@@ -71,7 +84,7 @@ export default function WorkoutTemplateForm({ isOpen, onClose, onSaved, initial 
       const payload = {
         name: form.name,
         description: form.description || null,
-        category: form.category || null,
+        category_id: form.category_id || null,
         estimated_duration_min: form.estimated_duration_min ? Number(form.estimated_duration_min) : null,
         purpose,
         exercises: exercises.filter((ex) => ex.name.trim()),
@@ -113,12 +126,12 @@ export default function WorkoutTemplateForm({ isOpen, onClose, onSaved, initial 
               <label htmlFor="wt-category" className="block text-xs font-medium text-gray-600 mb-1">Category</label>
               <select
                 id="wt-category"
-                value={form.category}
-                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                value={form.category_id}
+                onChange={(e) => setForm((f) => ({ ...f, category_id: e.target.value }))}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
               >
                 <option value="">Select...</option>
-                {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                {workoutCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div>

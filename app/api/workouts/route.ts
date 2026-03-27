@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { name, description, category, estimated_duration_min, purpose, exercises = [] } = body;
+  const { name, description, category, category_id, estimated_duration_min, purpose, exercises = [] } = body;
 
   if (!name?.trim()) {
     return NextResponse.json({ error: 'name is required' }, { status: 400 });
@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
       name: name.trim(),
       description: description ?? null,
       category: category ?? null,
+      category_id: category_id || null,
       estimated_duration_min: estimated_duration_min ? Number(estimated_duration_min) : null,
       purpose: Array.isArray(purpose) ? purpose : [],
     })
