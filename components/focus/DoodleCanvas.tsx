@@ -19,7 +19,7 @@ const EXCALIDRAW_UI_OPTIONS = {
   canvasActions: {
     loadScene: false,
     saveToActiveFile: false,
-    export: false,
+    export: false as const,
     saveAsImage: false,
   },
 };
