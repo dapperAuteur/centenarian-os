@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState, useMemo } from 'react';
+import { memo, useCallback, useRef, useState, useMemo } from 'react';
 import { Loader2, Save, Trash2, X } from 'lucide-react';
 import { Excalidraw, exportToBlob } from '@excalidraw/excalidraw';
 import type { ExcalidrawImperativeAPI, ExcalidrawInitialDataState } from '@excalidraw/excalidraw/types';
@@ -14,11 +14,26 @@ interface DoodleCanvasProps {
 
 const STORAGE_KEY_PREFIX = 'doodle_snapshot_';
 
-export default function DoodleCanvas({ isOpen, onClose, onSaved, sessionId }: DoodleCanvasProps) {
+// Stable UIOptions — never recreated across renders
+const EXCALIDRAW_UI_OPTIONS = {
+  canvasActions: {
+    loadScene: false,
+    saveToActiveFile: false,
+    export: false as const,
+    saveAsImage: false,
+  },
+};
+
+export default memo(function DoodleCanvas({ isOpen, onClose, onSaved, sessionId }: DoodleCanvasProps) {
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const [saving, setSaving] = useState(false);
 
   const storageKey = `${STORAGE_KEY_PREFIX}${sessionId}`;
+
+  // Stable callback for excalidrawAPI — prevents Excalidraw from re-initializing
+  const handleExcalidrawAPI = useCallback((api: ExcalidrawImperativeAPI) => {
+    apiRef.current = api;
+  }, []);
 
   // Load initial data from localStorage (if any previous drawing exists)
   const initialData = useMemo<ExcalidrawInitialDataState | undefined>(() => {
@@ -140,19 +155,12 @@ export default function DoodleCanvas({ isOpen, onClose, onSaved, sessionId }: Do
       <div className="relative flex-1 min-h-0 overflow-hidden">
         <div className="absolute inset-0">
           <Excalidraw
-            excalidrawAPI={(api) => { apiRef.current = api; }}
+            excalidrawAPI={handleExcalidrawAPI}
             initialData={initialData}
-            UIOptions={{
-              canvasActions: {
-                loadScene: false,
-                saveToActiveFile: false,
-                export: false,
-                saveAsImage: false,
-              },
-            }}
+            UIOptions={EXCALIDRAW_UI_OPTIONS}
           />
         </div>
       </div>
     </div>
   );
-}
+});
