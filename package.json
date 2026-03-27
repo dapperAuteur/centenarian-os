@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "prebuild": "node scripts/generate-content-manifest.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
