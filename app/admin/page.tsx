@@ -11,10 +11,10 @@ interface ModulePopularity { slug: string; label: string; count: number; percent
 interface TopCombo { slugs: string[]; count: number }
 
 interface Stats {
-  users: { total: number; free: number; monthly: number; lifetime: number; starter: number; newThisWeek: number };
+  users: { total: number; free: number; monthly: number; annual: number; lifetime: number; starter: number; newThisWeek: number };
   content: { recipes: number; publicRecipes: number; blogPosts: number; publicPosts: number; newRecipesThisWeek: number; newBlogThisWeek: number };
   featureUsage: { focusSessions: number; mealLogs: number; dailyLogs: number; roadmapTasks: number; recipeViews: number; blogViews: number };
-  revenue: { lifetimeRevenue: number; monthlyMRR: number };
+  revenue: { lifetimeRevenue: number; monthlyMRR: number; annualARR: number };
   starter: { total: number; modulePopularity: ModulePopularity[]; topCombos: TopCombo[]; estimatedMrrFloor: number };
   promoCodesPending: number;
 }
@@ -81,11 +81,12 @@ export default function AdminOverviewPage() {
 
       {/* Users */}
       <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-300 mb-3">Users</h2>
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
         <StatCard label="Total Users" value={stats.users.total} icon={Users} />
         <StatCard label="Free" value={stats.users.free} sub={`${Math.round(stats.users.free / Math.max(stats.users.total, 1) * 100)}% of users`} icon={Users} color="sky" />
         <StatCard label="Starter ($5.46)" value={stats.users.starter} sub={stats.starter.estimatedMrrFloor > 0 ? `$${stats.starter.estimatedMrrFloor}/mo floor` : 'pick-3'} icon={Sparkles} color="sky" />
         <StatCard label="Monthly ($10.60)" value={stats.users.monthly} sub={`$${Math.round(stats.revenue.monthlyMRR * 100) / 100}/mo MRR`} icon={Zap} color="fuchsia" />
+        <StatCard label="Annual ($103.29)" value={stats.users.annual ?? 0} sub={`$${Math.round((stats.revenue.annualARR ?? 0) * 100) / 100} ARR`} icon={Zap} color="sky" />
         <StatCard label="Lifetime ($103.29)" value={stats.users.lifetime} sub={`$${Math.round(stats.revenue.lifetimeRevenue * 100) / 100} total`} icon={DollarSign} color="lime" />
       </div>
 

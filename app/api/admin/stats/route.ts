@@ -87,6 +87,7 @@ export async function GET(_request: NextRequest) {
   const profiles = profilesRes.data ?? [];
   const free = profiles.filter((p) => p.subscription_status === 'free').length;
   const monthly = profiles.filter((p) => p.subscription_status === 'monthly').length;
+  const annual = profiles.filter((p) => p.subscription_status === 'annual').length;
   const lifetime = profiles.filter((p) => p.subscription_status === 'lifetime').length;
   const starter = profiles.filter((p) => p.subscription_status === 'starter').length;
   const paidLifetime = paidLifetimeRes.count ?? 0;
@@ -144,6 +145,7 @@ export async function GET(_request: NextRequest) {
       total: profilesRes.count ?? 0,
       free,
       monthly,
+      annual,
       lifetime,
       starter,
       giftedLifetime,
@@ -176,6 +178,7 @@ export async function GET(_request: NextRequest) {
     revenue: {
       lifetimeRevenue: totalPaidLifetime * 103.29,
       monthlyMRR: monthly * 10.60 + starter * 5.46,
+      annualARR: annual * 103.29,
     },
     founders: {
       limit: foundersLimit,

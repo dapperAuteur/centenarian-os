@@ -34,5 +34,6 @@ export async function GET() {
     count,
     remaining,
     active: remaining > 0,
+    annualAvailable: remaining <= 0,
   });
 }

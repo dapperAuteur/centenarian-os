@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 
-export type SubscriptionStatus = 'free' | 'monthly' | 'lifetime' | 'starter';
+export type SubscriptionStatus = 'free' | 'monthly' | 'annual' | 'lifetime' | 'starter';
 
 interface SubscriptionState {
   status: SubscriptionStatus;
