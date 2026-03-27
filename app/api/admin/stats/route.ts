@@ -54,6 +54,9 @@ export async function GET(_request: NextRequest) {
     recipeViewsRes,
     blogViewsRes,
     promoPendingRes,
+    paidLifetimeRes,
+    cashappVerifiedRes,
+    foundersLimitRes,
   ] = await Promise.all([
     db.from('profiles').select('subscription_status', { count: 'exact' }),
     db.from('profiles').select('id', { count: 'exact' }).gte('created_at', weekAgo),
@@ -68,12 +71,23 @@ export async function GET(_request: NextRequest) {
     db.from('recipe_events').select('id', { count: 'exact' }).eq('event_type', 'view'),
     db.from('blog_events').select('id', { count: 'exact' }).eq('event_type', 'view'),
     db.from('profiles').select('id', { count: 'exact' }).eq('subscription_status', 'lifetime').is('shirt_promo_code', null),
+    // Paid lifetime only (has stripe_customer_id = paid via Stripe, not gifted/invited)
+    db.from('profiles').select('id', { count: 'exact', head: true }).eq('subscription_status', 'lifetime').not('stripe_customer_id', 'is', null),
+    // Verified CashApp lifetime payments
+    db.from('cashapp_payments').select('id', { count: 'exact', head: true }).eq('status', 'verified'),
+    // Founders limit
+    db.from('platform_settings').select('value').eq('key', 'lifetime_founders_limit').maybeSingle(),
   ]);
 
   const profiles = profilesRes.data ?? [];
   const free = profiles.filter((p) => p.subscription_status === 'free').length;
   const monthly = profiles.filter((p) => p.subscription_status === 'monthly').length;
   const lifetime = profiles.filter((p) => p.subscription_status === 'lifetime').length;
+  const paidLifetime = paidLifetimeRes.count ?? 0;
+  const cashappVerified = cashappVerifiedRes.count ?? 0;
+  const giftedLifetime = lifetime - paidLifetime;
+  const foundersLimit = Number(foundersLimitRes.data?.value ?? '100');
+  const totalPaidLifetime = paidLifetime + cashappVerified;
 
   const publicRecipes = (recipesRes.data ?? []).filter((r) => r.visibility === 'public').length;
   const publicPosts = (blogPostsRes.data ?? []).filter((p) => p.visibility === 'public').length;
@@ -84,6 +98,7 @@ export async function GET(_request: NextRequest) {
       free,
       monthly,
       lifetime,
+      giftedLifetime,
       newThisWeek: newUsersRes.count ?? 0,
     },
     content: {
@@ -103,8 +118,14 @@ export async function GET(_request: NextRequest) {
       blogViews: blogViewsRes.count ?? 0,
     },
     revenue: {
-      lifetimeRevenue: lifetime * 103.29,
+      lifetimeRevenue: totalPaidLifetime * 103.29,
       monthlyMRR: monthly * 10.60,
+    },
+    founders: {
+      limit: foundersLimit,
+      paidLifetime: totalPaidLifetime,
+      remaining: Math.max(0, foundersLimit - totalPaidLifetime),
+      giftedLifetime,
     },
     promoCodesPending: promoPendingRes.count ?? 0,
   });
