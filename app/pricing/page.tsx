@@ -32,6 +32,11 @@ export default function PricingPage() {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [pendingPlan, setPendingPlan] = useState<'monthly' | 'lifetime' | null>(null);
   const [foundersRemaining, setFoundersRemaining] = useState<number | null>(null);
+  const [showCashApp, setShowCashApp] = useState(false);
+  const [cashAppName, setCashAppName] = useState('');
+  const [cashAppSubmitting, setCashAppSubmitting] = useState(false);
+  const [cashAppSubmitted, setCashAppSubmitted] = useState(false);
+  const [cashAppError, setCashAppError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/pricing/founders')
