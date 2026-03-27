@@ -94,7 +94,7 @@ export default async function WorkoutsPage({
 
   const ldSchema = {
     '@context': 'https://schema.org',
-    '@graph': (templates as WorkoutTemplate[] | null ?? []).map((wt) =>
+    '@graph': ((templates ?? []) as unknown as WorkoutTemplate[]).map((wt) =>
       workoutTemplateSchema({
         id: wt.id,
         name: wt.name,
@@ -208,7 +208,7 @@ export default async function WorkoutsPage({
             role="list"
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
           >
-            {(templates as WorkoutTemplate[]).map((wt) => (
+            {((templates ?? []) as unknown as WorkoutTemplate[]).map((wt) => (
               <li key={wt.id} role="listitem">
                 <PublicWorkoutCard wt={wt} />
               </li>
