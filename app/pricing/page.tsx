@@ -4,7 +4,7 @@
 // Public pricing page — no auth required
 
 import Link from 'next/link';
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Check, Shirt, Zap, ArrowLeft } from 'lucide-react';
@@ -30,6 +30,14 @@ export default function PricingPage() {
   const [error, setError] = useState<string | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [pendingPlan, setPendingPlan] = useState<'monthly' | 'lifetime' | null>(null);
+  const [foundersRemaining, setFoundersRemaining] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch('/api/pricing/founders')
+      .then((r) => r.json())
+      .then((d) => { if (d.active) setFoundersRemaining(d.remaining); })
+      .catch(() => {});
+  }, []);
 
   async function handleCheckout(plan: 'monthly' | 'lifetime') {
     setLoadingPlan(plan);
@@ -211,6 +219,19 @@ export default function PricingPage() {
                 <span className="text-4xl font-extrabold">$100</span>
                 <span className="text-gray-400 text-sm ml-1">one-time</span>
               </div>
+              {foundersRemaining !== null && (
+                <div className="mt-3">
+                  <p className="text-xs font-semibold text-lime-400 uppercase tracking-wider mb-1.5">
+                    Founder&apos;s Price — {foundersRemaining} of 100 remaining
+                  </p>
+                  <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-lime-400 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.max(2, ((100 - foundersRemaining) / 100) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
             <ul className="space-y-3 mb-8 flex-1">
               {[
