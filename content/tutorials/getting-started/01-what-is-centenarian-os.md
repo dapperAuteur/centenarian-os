@@ -67,7 +67,7 @@ Some parts of CentenarianOS are free for everyone:
 - Academy courses (browsing and taking free courses)
 - Live sessions
 
-Everything else requires a paid plan — Monthly ($10/mo) or Lifetime ($100 one-time). The next lesson covers pricing in detail.
+Everything else requires a paid plan — Monthly ($10.60/mo) or Lifetime ($103.29 one-time). The next lesson covers pricing in detail.
 
 ---
 

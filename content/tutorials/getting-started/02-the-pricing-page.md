@@ -19,12 +19,12 @@ CentenarianOS has two paid plans and a set of features that are free without any
 
 Navigate to `/pricing` to see the pricing page. Two cards are displayed:
 
-**Monthly — $10/month** (marked "Popular")
+**Monthly — $10.60/month** (marked "Popular")
 - Full access to every paid module
 - Cancel anytime through the Stripe Customer Portal
 - Billed monthly — no annual commitment required
 
-**Lifetime — $100 one-time** (marked "Best Value")
+**Lifetime — $103.29 one-time** (marked "Best Value")
 - Everything in Monthly
 - No recurring fees ever
 - Free CentenarianOS shirt shipped from AwesomeWebStore.com
@@ -106,7 +106,7 @@ Below the pricing cards, a link reads: "Want to try before you buy? Explore the 
 
 > [SCREEN: Navigate to /pricing — show the full pricing page]
 
-> [SCREENSHOT: Pricing page — callouts: Monthly card ($10/mo, "Popular"), Lifetime card ($100, "Best Value"), Feature list, "Explore the demo account" link]
+> [SCREENSHOT: Pricing page — callouts: Monthly card ($10.60/mo, "Popular"), Lifetime card ($103.29, "Best Value"), Feature list, "Explore the demo account" link]
 
 > [SCREEN: Hover over the Monthly plan features — show the check marks]
 
@@ -122,7 +122,7 @@ Below the pricing cards, a link reads: "Want to try before you buy? Explore the 
 
 ## Key Takeaways
 
-- Two plans: Monthly ($10/mo, cancel anytime) and Lifetime ($100 one-time, includes free shirt)
+- Two plans: Monthly ($10.60/mo, cancel anytime) and Lifetime ($103.29 one-time, includes free shirt)
 - Both plans have identical feature access — no tier gating
 - Free without subscription: blog, recipes, academy, live, billing, messages
 - New users: signup → redirect to /pricing → choose plan → Stripe checkout → dashboard

@@ -31,7 +31,7 @@ You have an account but no active subscription. Access is limited to Blog and Re
 
 **Monthly**
 Active monthly subscriber. Shows:
-- **""Monthly — $10/month""** in fuchsia
+- **""Monthly — $10.60/month""** in fuchsia
 - Your **renewal date** — ""Renews on [date]"" in gray, or ""Cancels on [date]"" in amber if you've canceled and are in the wind-down period
 - **Manage Subscription** button (CreditCard icon) — opens the Stripe Customer Portal
 
@@ -71,7 +71,7 @@ If you've canceled through the Stripe portal but your period hasn't ended yet, i
 
 If you're on a monthly plan, a dark card below the current plan section shows:
 
-> ""Upgrade to Lifetime for $100 — Pay once, own it forever — plus get a free CentenarianOS shirt.""
+> ""Upgrade to Lifetime for $103.29 — Pay once, own it forever — plus get a free CentenarianOS shirt.""
 
 Click **View Lifetime Plan** to go to `/pricing` and start the Lifetime checkout.
 
@@ -100,7 +100,7 @@ When you complete checkout on `/pricing` and Stripe redirects you back to `/dash
 
 > [SCREEN: Navigate to /dashboard/billing — show the page for a monthly subscriber]
 
-> [SCREENSHOT: Billing page — callouts: ""CURRENT PLAN"" label, ""Monthly — $10/month"" (fuchsia), renewal date, ""Manage Subscription"" button]
+> [SCREENSHOT: Billing page — callouts: ""CURRENT PLAN"" label, ""Monthly — $10.60/month"" (fuchsia), renewal date, ""Manage Subscription"" button]
 
 > [SCREEN: Click ""Manage Subscription"" — show the redirect to Stripe portal]
 
@@ -118,7 +118,7 @@ When you complete checkout on `/pricing` and Stripe redirects you back to `/dash
 
 > [SCREEN: Show the Lifetime Upgrade CTA (on monthly plan view)]
 
-> [SCREENSHOT: Dark lifetime CTA card — callouts: ""$100 one-time"", ""View Lifetime Plan"" button, shirt mention]
+> [SCREENSHOT: Dark lifetime CTA card — callouts: ""$103.29 one-time"", ""View Lifetime Plan"" button, shirt mention]
 
 > [SCREEN: End on the billing page — end lesson]
 
@@ -298,7 +298,7 @@ This lesson covers two billing transitions: upgrading from Monthly to Lifetime, 
 
 ### Upgrading to Lifetime
 
-Lifetime membership is a one-time $100 payment that replaces your monthly subscription permanently.
+Lifetime membership is a one-time $103.29 payment that replaces your monthly subscription permanently.
 
 **How to upgrade:**
 
@@ -306,7 +306,7 @@ Lifetime membership is a one-time $100 payment that replaces your monthly subscr
 2. In the dark **Upgrade to Lifetime** card, click **View Lifetime Plan**
 3. You're taken to `/pricing` where the Lifetime card is highlighted
 4. Click **Get Lifetime Access** on the Lifetime plan
-5. Stripe Checkout opens — pay $100 one-time
+5. Stripe Checkout opens — pay $103.29 one-time
 6. After payment, Stripe redirects you to `/dashboard/billing?success=true`
 7. The page confirms the payment (""Confirming your payment…"") and your plan badge updates to **""Lifetime Member""** (lime green)
 
@@ -382,13 +382,13 @@ If you have a billing issue not covered by self-service (duplicate charges, tech
 
 > [SCREEN: Navigate to /dashboard/billing — show the Lifetime upgrade CTA on a monthly plan]
 
-> [SCREENSHOT: Billing page — callout: Dark ""Upgrade to Lifetime for $100"" card, ""View Lifetime Plan"" button]
+> [SCREENSHOT: Billing page — callout: Dark ""Upgrade to Lifetime for $103.29"" card, ""View Lifetime Plan"" button]
 
 > [SCREEN: Click ""View Lifetime Plan"" → /pricing — show Lifetime card]
 
 > [SCREEN: Click ""Get Lifetime Access"" → Stripe Checkout]
 
-> [SCREENSHOT: Stripe Checkout for Lifetime — callout: ""$100 — one-time payment"" clearly shown]
+> [SCREENSHOT: Stripe Checkout for Lifetime — callout: ""$103.29 — one-time payment"" clearly shown]
 
 > [SCREEN: After payment — redirect back — ""Confirming your payment…"" → success banner]
 
@@ -408,7 +408,7 @@ If you have a billing issue not covered by self-service (duplicate charges, tech
 
 ## Key Takeaways
 
-- Upgrade to Lifetime: Billing page → ""View Lifetime Plan"" → Pricing → ""Get Lifetime Access"" → $100 Stripe checkout → lifetime badge + shirt promo code
+- Upgrade to Lifetime: Billing page → ""View Lifetime Plan"" → Pricing → ""Get Lifetime Access"" → $103.29 Stripe checkout → lifetime badge + shirt promo code
 - Monthly ends immediately when Lifetime payment processes — no prorated refund
 - Cancel monthly: Billing → Manage Subscription → Stripe Customer Portal → cancel; access continues until period-end date
 - After cancellation: ""Cancels on [date]"" in amber on billing page; full access until that date, then downgrade to free

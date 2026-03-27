@@ -30,7 +30,7 @@ You have an account but no active subscription. Access is limited to Blog and Re
 
 **Monthly**
 Active monthly subscriber. Shows:
-- **"Monthly — $10/month"** in fuchsia
+- **"Monthly — $10.60/month"** in fuchsia
 - Your **renewal date** — "Renews on [date]" in gray, or "Cancels on [date]" in amber if you've canceled and are in the wind-down period
 - **Manage Subscription** button (CreditCard icon) — opens the Stripe Customer Portal
 
@@ -70,7 +70,7 @@ If you've canceled through the Stripe portal but your period hasn't ended yet, i
 
 If you're on a monthly plan, a dark card below the current plan section shows:
 
-> "Upgrade to Lifetime for $100 — Pay once, own it forever — plus get a free CentenarianOS shirt."
+> "Upgrade to Lifetime for $103.29 — Pay once, own it forever — plus get a free CentenarianOS shirt."
 
 Click **View Lifetime Plan** to go to `/pricing` and start the Lifetime checkout.
 
@@ -99,7 +99,7 @@ When you complete checkout on `/pricing` and Stripe redirects you back to `/dash
 
 > [SCREEN: Navigate to /dashboard/billing — show the page for a monthly subscriber]
 
-> [SCREENSHOT: Billing page — callouts: "CURRENT PLAN" label, "Monthly — $10/month" (fuchsia), renewal date, "Manage Subscription" button]
+> [SCREENSHOT: Billing page — callouts: "CURRENT PLAN" label, "Monthly — $10.60/month" (fuchsia), renewal date, "Manage Subscription" button]
 
 > [SCREEN: Click "Manage Subscription" — show the redirect to Stripe portal]
 
@@ -117,7 +117,7 @@ When you complete checkout on `/pricing` and Stripe redirects you back to `/dash
 
 > [SCREEN: Show the Lifetime Upgrade CTA (on monthly plan view)]
 
-> [SCREENSHOT: Dark lifetime CTA card — callouts: "$100 one-time", "View Lifetime Plan" button, shirt mention]
+> [SCREENSHOT: Dark lifetime CTA card — callouts: "$103.29 one-time", "View Lifetime Plan" button, shirt mention]
 
 > [SCREEN: End on the billing page — end lesson]
 
