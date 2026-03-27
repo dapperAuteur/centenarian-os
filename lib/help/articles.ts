@@ -84,7 +84,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'teacher',
     title: 'How to connect Stripe for payouts',
-    content: `To receive payouts from paid course enrollments, go to Dashboard > Teaching > Payouts and click Connect with Stripe. Complete the Stripe Express onboarding including identity verification and bank details. Once onboarded your payout status shows Connected. Platform fees (default 15%) are deducted automatically at checkout and the remainder is sent to your bank. Free courses do not require Stripe Connect.`,
+    content: `To receive payouts from paid course enrollments, go to Dashboard > Teaching > Payouts and click Connect with Stripe. Complete the Stripe Express onboarding including identity verification and bank details. Once onboarded your payout status shows Connected. Platform fees (10%) are deducted automatically at checkout and the remainder is sent to your bank. Free courses do not require Stripe Connect.`,
   },
   {
     role: 'teacher',

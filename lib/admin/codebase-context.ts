@@ -93,9 +93,9 @@ Overview, Users (list + detail), Messages, Content moderation, Engagement analyt
 - **Admin Education Chat**: Persistent AI assistant for codebase Q&A with 5 modes (interview, investor, onboarding, demo, general), searchable history, tags, and notes
 
 ### Business Model
-- **Subscription plans**: Monthly ($10/mo) + Lifetime ($100 one-time) via Stripe checkout
+- **Subscription plans**: Monthly ($10.60/mo) + Lifetime ($103.29 one-time) via Stripe checkout
 - **Teacher plan**: Stripe metadata sets role='teacher', enables course creation + payouts
-- **Platform fee**: Configurable teacher_fee_percent (default 15%) on course enrollments
+- **Platform fee**: Configurable teacher_fee_percent (default 10%) on course enrollments
 - **Stripe Connect**: Express accounts for teacher payouts with application_fee_amount
 - **No free tier**: Signup redirects to /pricing; free routes limited to blog, recipes, billing
 - **Invited users**: Admin can grant trial or lifetime access without payment, with optional module restrictions
