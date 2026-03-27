@@ -103,8 +103,8 @@ export async function GET(_request: NextRequest) {
       blogViews: blogViewsRes.count ?? 0,
     },
     revenue: {
-      lifetimeRevenue: lifetime * 100,
-      monthlyMRR: monthly * 10,
+      lifetimeRevenue: lifetime * 103.29,
+      monthlyMRR: monthly * 10.60,
     },
     promoCodesPending: promoPendingRes.count ?? 0,
   });
