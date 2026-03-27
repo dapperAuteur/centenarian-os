@@ -159,7 +159,7 @@ export default function PricingPage() {
               <h2 className="text-xl font-bold text-gray-900 mb-1">Monthly</h2>
               <p className="text-gray-500 text-sm">Full access, cancel anytime</p>
               <div className="mt-4">
-                <span className="text-4xl font-extrabold text-gray-900">$10</span>
+                <span className="text-4xl font-extrabold text-gray-900">$10.60</span>
                 <span className="text-gray-500 text-sm ml-1">/month</span>
               </div>
             </div>
@@ -216,7 +216,7 @@ export default function PricingPage() {
               <h2 className="text-xl font-bold mb-1">Lifetime</h2>
               <p className="text-gray-400 text-sm">Pay once, own it forever</p>
               <div className="mt-4">
-                <span className="text-4xl font-extrabold">$100</span>
+                <span className="text-4xl font-extrabold">$103.29</span>
                 <span className="text-gray-400 text-sm ml-1">one-time</span>
               </div>
               {foundersRemaining !== null && (
@@ -284,7 +284,7 @@ export default function PricingPage() {
           <div className="max-w-3xl mx-auto space-y-6">
             {[
               { q: 'Can I try CentenarianOS before subscribing?', a: 'Yes! We offer a full-featured demo account you can explore without creating an account or entering payment info.' },
-              { q: 'What\'s the difference between Monthly and Lifetime?', a: 'Both plans give you full access to every module. Monthly is $10/month and can be canceled anytime. Lifetime is a one-time $100 payment that includes a free CentenarianOS shirt.' },
+              { q: 'What\'s the difference between Monthly and Lifetime?', a: 'Both plans give you full access to every module. Monthly is $10.60/month and can be canceled anytime. Lifetime is a one-time $103.29 payment that includes a free CentenarianOS shirt.' },
               { q: 'Can I switch from Monthly to Lifetime?', a: 'Yes. When you purchase Lifetime, your monthly subscription is automatically canceled. Note that monthly fees already paid are not credited toward the lifetime price.' },
               { q: 'Is my data private?', a: 'Absolutely. Your data is encrypted at rest and in transit. We never share or sell your data to third parties. Row-level security ensures only you can access your information.' },
               { q: 'What devices does CentenarianOS work on?', a: 'CentenarianOS is a progressive web app (PWA) that works on any modern browser — desktop, tablet, or phone. Install it to your home screen for a native app experience.' },

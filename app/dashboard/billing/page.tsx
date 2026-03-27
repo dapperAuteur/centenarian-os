@@ -157,7 +157,7 @@ export default function BillingPage() {
             <div>
               <span className="inline-flex items-center gap-2 text-lg font-bold text-fuchsia-700">
                 <Zap className="w-5 h-5" />
-                Monthly — $10/month
+                Monthly — $10.60/month
               </span>
               {cancelAtPeriodEnd && cancelAt ? (
                 <p className="text-sm text-amber-600 font-medium mt-1">
@@ -255,7 +255,7 @@ export default function BillingPage() {
           <div className="flex items-start gap-3">
             <Shirt className="w-5 h-5 text-lime-400 shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-bold mb-1">Upgrade to Lifetime for $100</h3>
+              <h3 className="font-bold mb-1">Upgrade to Lifetime for $103.29</h3>
               <p className="text-sm text-gray-400 mb-4">
                 Pay once, own it forever — plus get a free CentenarianOS shirt from AwesomeWebStore.com.
               </p>

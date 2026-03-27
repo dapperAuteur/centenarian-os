@@ -228,7 +228,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     .eq('key', 'teacher_fee_percent')
     .maybeSingle();
 
-  const feePercent = Number(feeSetting?.value ?? '15');
+  const feePercent = Number(feeSetting?.value ?? '10');
   const priceInCents = Math.round(Number(course.price) * 100);
   const applicationFee = Math.round(priceInCents * (feePercent / 100));
 
