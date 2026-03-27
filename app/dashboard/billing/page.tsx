@@ -152,12 +152,12 @@ export default function BillingPage() {
           </div>
         )}
 
-        {status === 'monthly' && (
+        {(status === 'monthly' || status === 'annual') && (
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <span className="inline-flex items-center gap-2 text-lg font-bold text-fuchsia-700">
                 <Zap className="w-5 h-5" />
-                Monthly — $10.60/month
+                {status === 'annual' ? 'Annual — $103.29/year' : 'Monthly — $10.60/month'}
               </span>
               {cancelAtPeriodEnd && cancelAt ? (
                 <p className="text-sm text-amber-600 font-medium mt-1">
@@ -249,21 +249,32 @@ export default function BillingPage() {
         </div>
       )}
 
-      {/* Upgrade to lifetime CTA for monthly members */}
-      {status === 'monthly' && (
+      {/* Upgrade CTA for monthly/annual members */}
+      {(status === 'monthly' || status === 'annual') && (
         <div className="bg-gray-900 text-white rounded-2xl p-6 mb-6">
           <div className="flex items-start gap-3">
             <Shirt className="w-5 h-5 text-lime-400 shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-bold mb-1">Upgrade to Lifetime for $103.29</h3>
-              <p className="text-sm text-gray-400 mb-4">
-                Pay once, own it forever — plus get a free CentenarianOS shirt from AwesomeWebStore.com.
-              </p>
+              {status === 'monthly' ? (
+                <>
+                  <h3 className="font-bold mb-1">Save with Annual or Lifetime</h3>
+                  <p className="text-sm text-gray-400 mb-4">
+                    Switch to Annual ($103.29/yr — save $23.91) or Lifetime ($103.29 one-time) on the pricing page.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3 className="font-bold mb-1">Upgrade to Lifetime for $103.29</h3>
+                  <p className="text-sm text-gray-400 mb-4">
+                    Pay once, own it forever — plus get a free CentenarianOS shirt from AwesomeWebStore.com.
+                  </p>
+                </>
+              )}
               <Link
                 href="/pricing"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-lime-500 text-gray-900 rounded-lg hover:bg-lime-400 transition-colors text-sm font-bold"
               >
-                View Lifetime Plan
+                View Plans
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>

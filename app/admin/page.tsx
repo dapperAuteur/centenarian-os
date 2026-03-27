@@ -77,10 +77,11 @@ export default function AdminOverviewPage() {
 
       {/* Users */}
       <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-300 mb-3">Users</h2>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <StatCard label="Total Users" value={stats.users.total} icon={Users} />
         <StatCard label="Free" value={stats.users.free} sub={`${Math.round(stats.users.free / Math.max(stats.users.total, 1) * 100)}% of users`} icon={Users} color="sky" />
         <StatCard label="Monthly ($10.60)" value={stats.users.monthly} sub={`$${stats.revenue.monthlyMRR}/mo MRR`} icon={Zap} color="fuchsia" />
+        <StatCard label="Annual ($103.29)" value={stats.users.annual ?? 0} sub={`$${stats.revenue.annualARR ?? 0} ARR`} icon={Zap} color="sky" />
         <StatCard label="Lifetime ($103.29)" value={stats.users.lifetime} sub={`$${stats.revenue.lifetimeRevenue} total`} icon={DollarSign} color="lime" />
       </div>
 

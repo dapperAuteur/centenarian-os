@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
   logInfo({ source: 'sync', module: 'stripe', message: 'Processing session', metadata: { sessionId: session_id, mode: session.mode, plan }, userId: user.id });
   const db = getServiceClient();
 
-  if (session.mode === 'subscription' && plan === 'monthly') {
+  if (session.mode === 'subscription' && (plan === 'monthly' || plan === 'annual')) {
     // Fetch subscription period end so we can show the renewal date immediately
     let subscriptionExpiresAt: string | null = null;
     try {
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     const { data: updated, error } = await db
       .from('profiles')
       .update({
-        subscription_status: 'monthly',
+        subscription_status: plan === 'annual' ? 'annual' : 'monthly',
         stripe_subscription_id: (session.subscription as string) ?? null,
         subscription_expires_at: subscriptionExpiresAt,
         cancel_at_period_end: false,

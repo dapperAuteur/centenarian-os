@@ -44,7 +44,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const supabase = createClient();
 
-  const isPaid = subStatus === 'monthly' || subStatus === 'lifetime';
+  const isPaid = subStatus === 'monthly' || subStatus === 'annual' || subStatus === 'lifetime';
   const [isAdmin, setIsAdmin] = useState(false);
   const [isTeacher, setIsTeacher] = useState(false);
   const [isDemoUser, setIsDemoUser] = useState(false);

@@ -27,11 +27,12 @@ const POLICIES = 'No Refunds. Cancel Anytime. Monthly fees are not transferable 
 
 export default function PricingPage() {
   const { user } = useAuth();
-  const [loadingPlan, setLoadingPlan] = useState<'monthly' | 'lifetime' | null>(null);
+  const [loadingPlan, setLoadingPlan] = useState<'monthly' | 'annual' | 'lifetime' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
-  const [pendingPlan, setPendingPlan] = useState<'monthly' | 'lifetime' | null>(null);
+  const [pendingPlan, setPendingPlan] = useState<'monthly' | 'annual' | 'lifetime' | null>(null);
   const [foundersRemaining, setFoundersRemaining] = useState<number | null>(null);
+  const [annualAvailable, setAnnualAvailable] = useState(false);
   const [showCashApp, setShowCashApp] = useState(false);
   const [cashAppName, setCashAppName] = useState('');
   const [cashAppSubmitting, setCashAppSubmitting] = useState(false);
@@ -41,7 +42,7 @@ export default function PricingPage() {
   useEffect(() => {
     fetch('/api/pricing/founders')
       .then((r) => r.json())
-      .then((d) => { if (d.active) setFoundersRemaining(d.remaining); })
+      .then((d) => { if (d.active) setFoundersRemaining(d.remaining); setAnnualAvailable(d.annualAvailable ?? false); })
       .catch(() => {});
   }, []);
 
@@ -235,61 +236,106 @@ export default function PricingPage() {
             </button>
           </div>
 
-          {/* Lifetime Plan */}
+          {/* Lifetime / Annual Plan — swaps when founders slots sell out */}
           <div className="bg-linear-to-b from-gray-900 to-gray-800 rounded-2xl border-2 border-gray-700 p-8 flex flex-col text-white relative">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
               <span className="bg-lime-500 text-gray-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
                 Best Value
               </span>
             </div>
-            <div className="mb-6">
-              <h2 className="text-xl font-bold mb-1">Lifetime</h2>
-              <p className="text-gray-400 text-sm">Pay once, own it forever</p>
-              <div className="mt-4">
-                <span className="text-4xl font-extrabold">$103.29</span>
-                <span className="text-gray-400 text-sm ml-1">one-time</span>
-              </div>
-              {foundersRemaining !== null && (
-                <div className="mt-3">
-                  <p className="text-xs font-semibold text-lime-400 uppercase tracking-wider mb-1.5">
-                    Founder&apos;s Price — {foundersRemaining} of 100 remaining
-                  </p>
-                  <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-lime-400 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.max(2, ((100 - foundersRemaining) / 100) * 100)}%` }}
-                    />
+
+            {annualAvailable ? (
+              <>
+                {/* Annual plan — shown after lifetime founders slots sell out */}
+                <div className="mb-6">
+                  <h2 className="text-xl font-bold mb-1">Annual</h2>
+                  <p className="text-gray-400 text-sm">Full access, billed yearly</p>
+                  <div className="mt-4">
+                    <span className="text-4xl font-extrabold">$103.29</span>
+                    <span className="text-gray-400 text-sm ml-1">/year</span>
                   </div>
+                  <p className="text-xs text-lime-400 mt-2">
+                    Save vs. monthly ($127.20/yr)
+                  </p>
                 </div>
-              )}
-            </div>
-            <ul className="space-y-3 mb-8 flex-1">
-              {[
-                'Everything in Monthly',
-                'No recurring fees ever',
-              ].map((f) => (
-                <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
-                  <Check className="w-4 h-4 text-lime-400 mt-0.5 shrink-0" aria-hidden="true" />
-                  {f}
-                </li>
-              ))}
-              <li className="flex items-start gap-2 text-sm text-lime-300 font-semibold">
-                <Shirt className="w-4 h-4 text-lime-400 mt-0.5 shrink-0" aria-hidden="true" />
-                Free CentenarianOS shirt from AwesomeWebStore.com
-              </li>
-            </ul>
-            <button
-              onClick={() => handleCheckout('lifetime')}
-              disabled={loadingPlan !== null}
-              className="w-full px-4 py-3 bg-lime-500 text-gray-900 rounded-lg hover:bg-lime-400 transition-colors font-bold text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {loadingPlan === 'lifetime' ? (
-                <span className="animate-spin inline-block w-4 h-4 border-2 border-gray-900 border-t-transparent rounded-full" />
-              ) : (
-                <Shirt className="w-4 h-4" />
-              )}
-              {loadingPlan === 'lifetime' ? 'Redirecting...' : 'Get Lifetime Access'}
-            </button>
+                <ul className="space-y-3 mb-8 flex-1">
+                  {[
+                    'Everything in Monthly',
+                    'Save $23.91/year vs monthly',
+                    'Annual commitment, cancel anytime',
+                  ].map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
+                      <Check className="w-4 h-4 text-lime-400 mt-0.5 shrink-0" aria-hidden="true" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => handleCheckout('annual')}
+                  disabled={loadingPlan !== null}
+                  className="w-full px-4 py-3 bg-lime-500 text-gray-900 rounded-lg hover:bg-lime-400 transition-colors font-bold text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {loadingPlan === 'annual' ? (
+                    <span className="animate-spin inline-block w-4 h-4 border-2 border-gray-900 border-t-transparent rounded-full" />
+                  ) : (
+                    <Zap className="w-4 h-4" />
+                  )}
+                  {loadingPlan === 'annual' ? 'Redirecting...' : 'Start Annual'}
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Lifetime founders plan — shown while slots remain */}
+                <div className="mb-6">
+                  <h2 className="text-xl font-bold mb-1">Lifetime</h2>
+                  <p className="text-gray-400 text-sm">Pay once, own it forever</p>
+                  <div className="mt-4">
+                    <span className="text-4xl font-extrabold">$103.29</span>
+                    <span className="text-gray-400 text-sm ml-1">one-time</span>
+                  </div>
+                  {foundersRemaining !== null && (
+                    <div className="mt-3">
+                      <p className="text-xs font-semibold text-lime-400 uppercase tracking-wider mb-1.5">
+                        Founder&apos;s Price — {foundersRemaining} of 100 remaining
+                      </p>
+                      <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-lime-400 rounded-full transition-all duration-500"
+                          style={{ width: `${Math.max(2, ((100 - foundersRemaining) / 100) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <ul className="space-y-3 mb-8 flex-1">
+                  {[
+                    'Everything in Monthly',
+                    'No recurring fees ever',
+                  ].map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
+                      <Check className="w-4 h-4 text-lime-400 mt-0.5 shrink-0" aria-hidden="true" />
+                      {f}
+                    </li>
+                  ))}
+                  <li className="flex items-start gap-2 text-sm text-lime-300 font-semibold">
+                    <Shirt className="w-4 h-4 text-lime-400 mt-0.5 shrink-0" aria-hidden="true" />
+                    Free CentenarianOS shirt from AwesomeWebStore.com
+                  </li>
+                </ul>
+                <button
+                  onClick={() => handleCheckout('lifetime')}
+                  disabled={loadingPlan !== null}
+                  className="w-full px-4 py-3 bg-lime-500 text-gray-900 rounded-lg hover:bg-lime-400 transition-colors font-bold text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {loadingPlan === 'lifetime' ? (
+                    <span className="animate-spin inline-block w-4 h-4 border-2 border-gray-900 border-t-transparent rounded-full" />
+                  ) : (
+                    <Shirt className="w-4 h-4" />
+                  )}
+                  {loadingPlan === 'lifetime' ? 'Redirecting...' : 'Get Lifetime Access'}
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -392,7 +438,7 @@ export default function PricingPage() {
           <div className="max-w-3xl mx-auto space-y-6">
             {[
               { q: 'Can I try CentenarianOS before subscribing?', a: 'Yes! We offer a full-featured demo account you can explore without creating an account or entering payment info.' },
-              { q: 'What\'s the difference between Monthly and Lifetime?', a: 'Both plans give you full access to every module. Monthly is $10.60/month and can be canceled anytime. Lifetime is a one-time $103.29 payment that includes a free CentenarianOS shirt.' },
+              { q: 'What are the plan options?', a: 'All plans give full access to every module. Monthly is $10.60/month (cancel anytime). Annual is $103.29/year (save vs monthly). Lifetime is a one-time $103.29 payment available to the first 100 members (Founder\'s Price) and includes a free CentenarianOS shirt. After lifetime slots sell out, Annual replaces it.' },
               { q: 'Can I switch from Monthly to Lifetime?', a: 'Yes. When you purchase Lifetime, your monthly subscription is automatically canceled. Note that monthly fees already paid are not credited toward the lifetime price.' },
               { q: 'Is my data private?', a: 'Absolutely. Your data is encrypted at rest and in transit. We never share or sell your data to third parties. Row-level security ensures only you can access your information.' },
               { q: 'What devices does CentenarianOS work on?', a: 'CentenarianOS is a progressive web app (PWA) that works on any modern browser — desktop, tablet, or phone. Install it to your home screen for a native app experience.' },
