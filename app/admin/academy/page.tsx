@@ -14,7 +14,7 @@ interface Settings {
 }
 
 const DEFAULT: Settings = {
-  teacher_fee_percent: '15',
+  teacher_fee_percent: '10',
   teacher_monthly_price_id: '',
   teacher_annual_price_id: '',
 };
