@@ -4,10 +4,11 @@
 // Public pricing page — no auth required
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { Check, Shirt, Zap, ArrowLeft } from 'lucide-react';
+import { Check, Shirt, Zap, ArrowLeft, DollarSign, CheckCircle } from 'lucide-react';
 import PurchaseModal from '@/components/PurchaseModal';
 import SiteFooter from '@/components/ui/SiteFooter';
 import PageViewTracker from '@/components/ui/PageViewTracker';
@@ -30,6 +31,11 @@ export default function PricingPage() {
   const [error, setError] = useState<string | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [pendingPlan, setPendingPlan] = useState<'monthly' | 'lifetime' | null>(null);
+  const [showCashApp, setShowCashApp] = useState(false);
+  const [cashAppName, setCashAppName] = useState('');
+  const [cashAppSubmitting, setCashAppSubmitting] = useState(false);
+  const [cashAppSubmitted, setCashAppSubmitted] = useState(false);
+  const [cashAppError, setCashAppError] = useState<string | null>(null);
 
   async function handleCheckout(plan: 'monthly' | 'lifetime') {
     setLoadingPlan(plan);
@@ -65,6 +71,30 @@ export default function PricingPage() {
     if (pendingPlan) {
       handleCheckout(pendingPlan);
       setPendingPlan(null);
+    }
+  }
+
+  async function handleCashAppSubmit() {
+    if (!user) {
+      setPendingPlan('lifetime');
+      setShowPurchaseModal(true);
+      return;
+    }
+    setCashAppSubmitting(true);
+    setCashAppError(null);
+    try {
+      const res = await fetch('/api/cashapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cashapp_name: cashAppName }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Submission failed');
+      setCashAppSubmitted(true);
+    } catch (err) {
+      setCashAppError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setCashAppSubmitting(false);
     }
   }
 
@@ -240,6 +270,84 @@ export default function PricingPage() {
               {loadingPlan === 'lifetime' ? 'Redirecting...' : 'Get Lifetime Access'}
             </button>
           </div>
+        </div>
+
+        {/* CashApp Option — Lifetime only */}
+        <div className="mt-12 max-w-3xl mx-auto">
+          <button
+            onClick={() => setShowCashApp(!showCashApp)}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl hover:bg-emerald-100 transition text-sm font-semibold"
+          >
+            <DollarSign className="w-4 h-4" />
+            Pay with CashApp — $100 Lifetime (no processing fees)
+          </button>
+
+          {showCashApp && (
+            <div className="mt-4 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+              {cashAppSubmitted ? (
+                <div className="text-center py-4">
+                  <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
+                  <h3 className="font-bold text-gray-900 mb-1">Payment Submitted!</h3>
+                  <p className="text-sm text-gray-600">
+                    We&apos;ll verify your CashApp payment and activate your lifetime membership shortly.
+                    Check your billing page for status updates.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex flex-col sm:flex-row items-center gap-6">
+                    <div className="shrink-0">
+                      <Image
+                        src="/images/cashapp-qr.jpg"
+                        alt="CashApp QR code for $centenarian"
+                        width={160}
+                        height={160}
+                        className="rounded-xl border border-gray-200"
+                      />
+                    </div>
+                    <div className="flex-1 text-center sm:text-left">
+                      <h3 className="font-bold text-gray-900 mb-2">Send $100 via CashApp</h3>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Scan the QR code or send <span className="font-bold text-emerald-700">$100</span> to{' '}
+                        <span className="font-mono font-bold text-emerald-700">$centenarian</span>
+                      </p>
+                      <ol className="text-sm text-gray-600 space-y-1.5 list-decimal list-inside">
+                        <li>Send $100 to <span className="font-mono font-semibold">$centenarian</span> on CashApp</li>
+                        <li>Enter your CashApp display name below</li>
+                        <li>Click &quot;I&apos;ve Paid&quot; — we&apos;ll verify and activate your account</li>
+                      </ol>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex flex-col sm:flex-row gap-3">
+                    <input
+                      type="text"
+                      value={cashAppName}
+                      onChange={(e) => setCashAppName(e.target.value)}
+                      placeholder="Your CashApp display name"
+                      className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500"
+                    />
+                    <button
+                      onClick={handleCashAppSubmit}
+                      disabled={cashAppSubmitting}
+                      className="px-6 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-semibold text-sm disabled:opacity-60 flex items-center justify-center gap-2 min-h-11"
+                    >
+                      {cashAppSubmitting ? (
+                        <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                      ) : (
+                        <CheckCircle className="w-4 h-4" />
+                      )}
+                      {cashAppSubmitting ? 'Submitting...' : "I've Paid"}
+                    </button>
+                  </div>
+
+                  {cashAppError && (
+                    <p className="mt-3 text-sm text-red-600 text-center">{cashAppError}</p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Policies */}
