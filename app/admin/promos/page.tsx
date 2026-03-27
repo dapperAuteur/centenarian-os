@@ -25,11 +25,7 @@ interface Campaign {
   created_at: string;
 }
 
-const DISCOUNT_LABELS: Record<string, string> = {
-  percentage: '% off',
-  fixed: '$ off',
-  free_months: 'free month(s)',
-};
+
 
 export default function AdminPromosPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);

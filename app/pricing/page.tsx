@@ -4,6 +4,7 @@
 // Public pricing page — no auth required
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
