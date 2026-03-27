@@ -45,6 +45,12 @@ export default function LandingPage() {
               <Link href="/recipes" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
                 Recipes
               </Link>
+              <Link href="/exercises" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
+                Exercises
+              </Link>
+              <Link href="/workouts" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
+                Workouts
+              </Link>
               <Link href="/coaching" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
                 Coaching
               </Link>
@@ -120,6 +126,20 @@ export default function LandingPage() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Recipes
+              </Link>
+              <Link
+                href="/exercises"
+                className="min-h-11 flex items-center text-gray-600 hover:text-gray-900 font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Exercises
+              </Link>
+              <Link
+                href="/workouts"
+                className="min-h-11 flex items-center text-gray-600 hover:text-gray-900 font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Workouts
               </Link>
               <Link
                 href="/coaching"
