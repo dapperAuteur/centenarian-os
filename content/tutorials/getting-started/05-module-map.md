@@ -137,7 +137,7 @@ These features work across multiple modules:
 
 - 5 nav groups: Operate (4 modules), Health (6), Life (6), Learn (4), AI (2 admin-only)
 - Free modules: Blog, Recipes, Academy, Live
-- Everything else requires Monthly ($10/mo) or Lifetime ($100)
+- Everything else requires Monthly ($10.60/mo) or Lifetime ($103.29)
 - Cross-module features: Saved Contacts, Activity Links, Life Categories, Contact Locations
 - All paths are bookmarkable — use the quick reference list above
 

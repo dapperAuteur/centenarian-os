@@ -80,8 +80,8 @@ export default function AdminOverviewPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard label="Total Users" value={stats.users.total} icon={Users} />
         <StatCard label="Free" value={stats.users.free} sub={`${Math.round(stats.users.free / Math.max(stats.users.total, 1) * 100)}% of users`} icon={Users} color="sky" />
-        <StatCard label="Monthly ($10)" value={stats.users.monthly} sub={`$${stats.revenue.monthlyMRR}/mo MRR`} icon={Zap} color="fuchsia" />
-        <StatCard label="Lifetime ($100)" value={stats.users.lifetime} sub={`$${stats.revenue.lifetimeRevenue} total`} icon={DollarSign} color="lime" />
+        <StatCard label="Monthly ($10.60)" value={stats.users.monthly} sub={`$${stats.revenue.monthlyMRR}/mo MRR`} icon={Zap} color="fuchsia" />
+        <StatCard label="Lifetime ($103.29)" value={stats.users.lifetime} sub={`$${stats.revenue.lifetimeRevenue} total`} icon={DollarSign} color="lime" />
       </div>
 
       {/* Content */}

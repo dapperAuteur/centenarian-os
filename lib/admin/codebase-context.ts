@@ -11,7 +11,7 @@ CentenarianOS is a comprehensive longevity-focused life-management platform. It 
 ### Tech Stack
 - **Framework**: Next.js 15 App Router (TypeScript, app/ directory structure)
 - **Styling**: Tailwind CSS v4 (utility-first, dark theme with fuchsia accents)
-- **Database**: Supabase (PostgreSQL + Row-Level Security), 126+ migrations
+- **Database**: Supabase (PostgreSQL + Row-Level Security), 173+ migrations
 - **Auth**: Supabase Auth (email/password, magic link)
 - **Payments**: Stripe (checkout sessions, webhooks, subscription management, Stripe Connect for teacher payouts)
 - **AI**: Google Gemini 2.5 Flash (chat, coaching, embeddings, vision/OCR)
@@ -101,7 +101,7 @@ Overview, Users (list + detail), Messages, Content moderation, Engagement analyt
 - **Invited users**: Admin can grant trial or lifetime access without payment, with optional module restrictions
 
 ### Database Architecture
-- **126+ migrations** in supabase/migrations/ (000 through 126)
+- **173+ migrations** in supabase/migrations/ (000 through 173)
 - **Key tables**: profiles, financial_accounts, financial_transactions, budget_categories, vehicles, trips, trip_routes, trip_shares, fuel_logs, vehicle_maintenance, equipment, equipment_categories, equipment_valuations, equipment_media, exercises, exercise_categories, workout_logs, workout_templates, courses, lessons, modules (academy), course_prerequisites, prerequisite_override_requests, gem_personas, language_coach_sessions, life_categories, entity_life_categories, activity_links, user_contacts, contact_locations, scan_images, receipt_line_items, item_prices, institutions, institution_offers, invited_users, teller_enrollments, admin_chats, admin_chat_messages, app_logs, usage_events, page_views, media_categories, media_items, media_notes, podcast_episodes, media_episode_links, social_likes, social_shares, social_bookmarks
 - **Patterns**: Soft-delete via is_active flags, .maybeSingle() for optional rows, service role for admin ops, fire-and-forget logging
 - **RLS**: Enabled on all user-facing tables. Service role key bypasses RLS for admin/webhook routes.

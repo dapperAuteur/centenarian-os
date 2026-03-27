@@ -238,7 +238,7 @@ export default function DemoPage() {
             Ready for Your Own Account?
           </h2>
           <p className="text-gray-600 mb-6 max-w-lg mx-auto">
-            Monthly ($10/mo) or Lifetime ($100 one-time) — both include every module, all future features, and full Academy access.
+            Monthly ($10.60/mo) or Lifetime ($103.29 one-time) — both include every module, all future features, and full Academy access.
           </p>
           <Link
             href="/pricing"
