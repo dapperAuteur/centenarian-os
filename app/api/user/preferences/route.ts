@@ -19,12 +19,12 @@ export async function GET() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('dashboard_home, scan_auto_save_images, likes_public, show_done_counts, clock_format, fiscal_year_start_month, fiscal_year_start_day')
+    .select('dashboard_home_centos, scan_auto_save_images, likes_public, show_done_counts, clock_format, fiscal_year_start_month, fiscal_year_start_day')
     .eq('id', user.id)
     .single();
 
   return NextResponse.json({
-    dashboard_home: profile?.dashboard_home ?? '/dashboard/blog',
+    dashboard_home: profile?.dashboard_home_centos ?? '/dashboard/blog',
     scan_auto_save_images: profile?.scan_auto_save_images ?? false,
     likes_public: profile?.likes_public ?? false,
     show_done_counts: profile?.show_done_counts ?? false,
@@ -48,7 +48,7 @@ export async function PATCH(request: Request) {
     if (!ALLOWED_HOMES.includes(dashboard_home)) {
       return NextResponse.json({ error: 'Invalid dashboard_home value' }, { status: 400 });
     }
-    updates.dashboard_home = dashboard_home;
+    updates.dashboard_home_centos = dashboard_home;
   }
 
   if (scan_auto_save_images !== undefined) {

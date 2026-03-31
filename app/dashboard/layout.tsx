@@ -8,7 +8,7 @@ import { useSubscription } from '@/lib/hooks/useSubscription';
 import { useUnreadCount } from '@/lib/hooks/useUnreadCount';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import DesktopNav from '@/components/nav/DesktopNav';
 import MobileBottomBar from '@/components/nav/MobileBottomBar';
 import FloatingActionsMenu from '@/components/ui/FloatingActionsMenu';
@@ -57,6 +57,12 @@ export default function DashboardLayout({
   // Only apply module restrictions to invited users who aren't paying subscribers or admins
   const allowedModules = isInvited && !isPaid && !isAdmin ? inviteModules : null;
   const unreadMessages = useUnreadCount();
+
+  // Coordinate sidebar drawer and bottom sheet so only one is open at a time
+  const drawerCloseRef = useRef<(() => void) | null>(null);
+  const sheetCloseRef = useRef<(() => void) | null>(null);
+  const onDrawerOpen = useCallback(() => sheetCloseRef.current?.(), []);
+  const onSheetOpen = useCallback(() => drawerCloseRef.current?.(), []);
 
   useEffect(() => {
     offlineFetch('/api/auth/me')
@@ -124,7 +130,7 @@ export default function DashboardLayout({
   return (
     <SyncProvider>
       <div className="min-h-screen bg-gray-50">
-        <DesktopNav {...navProps} />
+        <DesktopNav {...navProps} onDrawerOpen={onDrawerOpen} registerDrawerClose={(fn) => { drawerCloseRef.current = fn; }} />
         <MfaBanner />
         <OfflineIndicator />
 
@@ -144,7 +150,7 @@ export default function DashboardLayout({
         </div>
 
         {/* Mobile bottom tab bar — fixed, sits above safe area */}
-        <MobileBottomBar {...navProps} />
+        <MobileBottomBar {...navProps} onSheetOpen={onSheetOpen} registerSheetClose={(fn) => { sheetCloseRef.current = fn; }} />
 
         <FloatingActionsMenu />
       </div>
