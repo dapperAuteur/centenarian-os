@@ -23,11 +23,21 @@ export default function MobileBottomBar({
   unreadMessages,
   onLogout,
   allowedModules,
-}: Omit<DesktopNavProps, 'subLoading'>) {
+  onSheetOpen,
+  registerSheetClose,
+}: Omit<DesktopNavProps, 'subLoading'> & {
+  onSheetOpen?: () => void;
+  registerSheetClose?: (fn: () => void) => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [openSheet, setOpenSheet] = useState<string | null>(null); // group id | 'me' | null
   const visibleGroups = getVisibleGroups(isAdmin, allowedModules);
+
+  // Register close function so the layout can close sheets when the drawer opens
+  useEffect(() => {
+    registerSheetClose?.(() => setOpenSheet(null));
+  }, [registerSheetClose]);
 
   // Close sheet on route change
   useEffect(() => {
@@ -39,6 +49,7 @@ export default function MobileBottomBar({
   function handleTabPress(tabId: string) {
     if (tabId === 'me') {
       setOpenSheet('me');
+      onSheetOpen?.();
       return;
     }
     const group = visibleGroups.find((g) => g.id === tabId);
@@ -47,6 +58,7 @@ export default function MobileBottomBar({
     if (activeGroupId === tabId) {
       // Already in this group — open sheet to jump to a specific item
       setOpenSheet(tabId);
+      onSheetOpen?.();
     } else {
       // Navigate to the group's first item
       router.push(group.items[0].href);

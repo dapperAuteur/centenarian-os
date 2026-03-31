@@ -13,9 +13,9 @@ export default async function DashboardIndexPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('dashboard_home')
+    .select('dashboard_home_centos')
     .eq('id', user.id)
     .single();
 
-  redirect(profile?.dashboard_home ?? '/dashboard/blog');
+  redirect(profile?.dashboard_home_centos ?? '/dashboard/blog');
 }

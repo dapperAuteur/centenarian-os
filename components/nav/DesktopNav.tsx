@@ -34,6 +34,8 @@ export interface DesktopNavProps {
   onLogout: () => void;
   subLoading: boolean;
   allowedModules?: string[] | null;
+  onDrawerOpen?: () => void;
+  registerDrawerClose?: (fn: () => void) => void;
 }
 
 export default function DesktopNav({
@@ -46,6 +48,8 @@ export default function DesktopNav({
   onLogout,
   subLoading,
   allowedModules,
+  onDrawerOpen,
+  registerDrawerClose,
 }: DesktopNavProps) {
   const pathname = usePathname();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
@@ -53,6 +57,11 @@ export default function DesktopNav({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
   const visibleGroups = getVisibleGroups(isAdmin, allowedModules);
+
+  // Register close function so the layout can close the drawer when the bottom sheet opens
+  useEffect(() => {
+    registerDrawerClose?.(() => setDrawerOpen(false));
+  }, [registerDrawerClose]);
 
   // Close all dropdowns on route change
   useEffect(() => {
@@ -290,7 +299,7 @@ export default function DesktopNav({
         <div className="flex lg:hidden items-center justify-between h-16">
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setDrawerOpen(true)}
+              onClick={() => { setDrawerOpen(true); onDrawerOpen?.(); }}
               className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
               aria-label="Open menu"
             >
