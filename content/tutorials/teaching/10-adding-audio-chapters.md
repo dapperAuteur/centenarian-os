@@ -11,7 +11,23 @@
 
 ## Narrator Script
 
-When you create a video or audio lesson, you can add chapter markers and transcript data so students can jump to specific sections and follow along with text. This lesson covers how to add both.
+When you create a video or audio lesson, you can add chapter markers and transcript data so students can jump to specific sections and follow along with text. This lesson covers how to add both, including how to use YouTube for free video hosting with a branded player.
+
+---
+
+### Setting Up YouTube Videos
+
+The recommended way to add video to your lessons is through YouTube. Here's the process:
+
+1. **Upload to YouTube** — Upload your video to your YouTube channel. Set visibility to **Unlisted** (not Public, not Private). Unlisted means only people with the link or your app's embed can see it.
+
+2. **Restrict embedding** — In YouTube Studio, go to your video > Distribution > Embedding. Restrict embeds to your app's domain. This prevents the video from being played on other websites.
+
+3. **Paste the URL** — In the lesson editor (Curriculum tab), paste the YouTube URL into the content URL field. The app auto-detects YouTube and renders a fully branded player — students see your app's custom controls, not YouTube's.
+
+4. **Pull Captions** — After saving the lesson, click "Pull Captions" to automatically import YouTube's auto-generated transcripts. These populate the transcript panel so students can follow along with synced text.
+
+**Why YouTube?** Free hosting, unlimited storage, automatic adaptive streaming (works on slow connections), and auto-generated captions. The branded player hides YouTube's UI so students get a seamless experience.
 
 ---
 

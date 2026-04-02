@@ -23,9 +23,25 @@ The editor lives at `/dashboard/teaching/{username}/courses/{id}`.
 
 ---
 
-### Course Settings Panel
+### The Tabbed Editor
 
-At the top of the editor, a settings panel lets you update every course-level detail without going back to the creation form:
+The course editor is organized into **7 tabs** across the top:
+
+1. **Info** — Cover image, description, category
+2. **Pricing** — Price type, amount, free trial, visibility
+3. **Structure** — Navigation mode (Linear/CYOA), sequential modules, AI embeddings
+4. **Curriculum** — Modules and lessons (this is where you build content)
+5. **Extras** — Glossary and phonetic spelling
+6. **Prerequisites** — Required/recommended courses, student overrides, AI suggestions
+7. **Review** — Content health dashboard, publish toggle, course summary
+
+You can navigate between tabs freely — all changes save automatically on blur. The Review tab shows a content health check that flags missing descriptions, empty modules, and lessons without content URLs.
+
+---
+
+### Course Settings (Info + Pricing Tabs)
+
+The Info and Pricing tabs let you update every course-level detail:
 
 **Cover Image** — drag and drop or click to upload. Images are stored in Cloudinary. Click the X on an uploaded image to remove it.
 

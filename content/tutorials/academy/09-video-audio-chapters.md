@@ -15,6 +15,12 @@ Some lessons include video or audio content with chapter markers and synchronize
 
 ---
 
+### Branded Video Player
+
+Video lessons use a custom-branded player — you won't see standard YouTube controls. Instead, the player matches the app's look and feel with fuchsia accents, custom progress bar, and integrated chapter/transcript panels. All controls (play, pause, skip, speed, fullscreen) are part of the app's player, giving you a consistent experience across all lessons.
+
+---
+
 ### Chapter Markers
 
 When a video or audio lesson has chapters, you'll see them in two places:

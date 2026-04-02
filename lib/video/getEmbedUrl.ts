@@ -8,6 +8,13 @@ export interface EmbedResult {
 const YOUTUBE_ID_RE =
   /(?:youtube\.com\/(?:watch\?.*v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/;
 
+/** Extract the 11-char YouTube video ID from any YouTube URL, or null. */
+export function extractYouTubeId(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const match = url.match(YOUTUBE_ID_RE);
+  return match ? match[1] : null;
+}
+
 export function getEmbedUrl(url: string | null | undefined): EmbedResult {
   if (!url || !url.trim()) {
     return { provider: 'unknown', embedUrl: null };
@@ -27,7 +34,7 @@ export function getEmbedUrl(url: string | null | undefined): EmbedResult {
   if (ytMatch) {
     return {
       provider: 'youtube',
-      embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}?rel=0`,
+      embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}?rel=0&enablejsapi=1`,
     };
   }
 

@@ -94,12 +94,12 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'teacher',
     title: 'How to add modules and lessons to a course',
-    content: `On the course editor page (/dashboard/teaching/courses/[id]), click Add Module and enter the module title. Under each module click Add Lesson. Fill in the title, lesson type (video, text, audio, slides), content upload or embed URL, optional duration, and toggle Free Preview on if you want non-enrolled visitors to access this lesson. Drag lessons and modules to reorder them. When your curriculum is ready, toggle Published in the Settings panel to make the course live.`,
+    content: `The course editor is organized into tabs: Info, Pricing, Structure, Curriculum, Extras, Prerequisites, and Review. To add content, go to the Curriculum tab. Click Add Module and enter the module title. Under each module click Add Lesson. Fill in the title, lesson type (video, text, audio, slides, quiz), content URL, optional duration, and toggle Free Preview on if you want non-enrolled visitors to access this lesson. For video lessons, paste a YouTube URL (upload to YouTube first as Unlisted) — the app auto-detects YouTube and renders a branded player with custom controls, chapters, and transcript sync. When your curriculum is ready, go to the Review tab to check content health and publish.`,
   },
   {
     role: 'teacher',
-    title: 'How to upload video and audio content',
-    content: `For video and audio lessons, drag your file onto the upload area or click to browse. Cloudinary handles transcoding automatically so your video will be playable on any device. For slides lessons, paste an embed code (Google Slides, Canva, or any iframe). For text lessons, type directly in the rich text editor on the lesson form.`,
+    title: 'How to add video and audio content',
+    content: `For video lessons, the recommended approach is YouTube: upload your video to YouTube as Unlisted, restrict embedding to your domain (YouTube Studio > Distribution > Embedding), then paste the YouTube URL into the lesson content URL field. The app renders a fully branded custom player (no YouTube controls visible) with chapter markers, transcript sync, playback speed, and progress tracking. For auto-generated transcripts, click "Pull Captions" after saving — this pulls YouTube's auto-captions into the transcript field. You can also upload directly to Cloudinary for non-YouTube video or audio files. For slides lessons, paste an embed code (Google Slides, Canva, or any iframe). For text lessons, type directly in the rich text editor.`,
   },
   {
     role: 'teacher',

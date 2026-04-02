@@ -4,7 +4,7 @@
 // Lesson player: renders video, text, audio, or slides content.
 // Tracks progress and shows CYOA Crossroads or linear nav on completion.
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -17,12 +17,14 @@ import { offlineFetch } from '@/lib/offline/offline-fetch';
 import QuizPlayer from '@/components/academy/QuizPlayer';
 import AudioPlayer from '@/components/academy/AudioPlayer';
 import VideoPlayer from '@/components/academy/VideoPlayer';
+import YouTubePlayer from '@/components/academy/YouTubePlayer';
 import LessonDiscussion from '@/components/academy/LessonDiscussion';
 import PodcastLinks from '@/components/academy/PodcastLinks';
 import DocumentViewer from '@/components/academy/DocumentViewer';
 import type { DocumentItem } from '@/components/academy/DocumentViewer';
 import GlossaryTermRow from '@/components/academy/GlossaryTermRow';
 import type { GlossaryTerm } from '@/components/academy/GlossaryTermRow';
+import { extractYouTubeId } from '@/lib/video/getEmbedUrl';
 
 const MapViewer = dynamic(() => import('@/components/academy/MapViewer'), { ssr: false });
 import { renderTextContent } from '@/lib/academy/renderTextContent';
@@ -96,12 +98,58 @@ export default function LessonPlayerPage() {
   const [lessonGlossary, setLessonGlossary] = useState<GlossaryTerm[]>([]);
 
   const progressSaved = useRef(false);
+  const watchSecondsRef = useRef(0);
+  const lastSavedSecondsRef = useRef(0);
+
+  // Periodic progress save (every 30s of watch time change)
+  const saveWatchProgress = useCallback(async (seconds: number, isComplete = false) => {
+    if (seconds <= lastSavedSecondsRef.current && !isComplete) return;
+    lastSavedSecondsRef.current = seconds;
+    try {
+      await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/progress`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed: isComplete, watch_seconds: Math.floor(seconds) }),
+      });
+    } catch { /* silent — periodic save is best-effort */ }
+  }, [courseId, lessonId]);
+
+  const handleTimeUpdate = useCallback((seconds: number) => {
+    watchSecondsRef.current = seconds;
+  }, []);
+
+  // Periodic 30s save interval for video/audio watch progress
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (watchSecondsRef.current > lastSavedSecondsRef.current + 5) {
+        saveWatchProgress(watchSecondsRef.current);
+      }
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [saveWatchProgress]);
+
+  // Save progress on page unload
+  useEffect(() => {
+    const onUnload = () => {
+      if (watchSecondsRef.current > lastSavedSecondsRef.current) {
+        const body = JSON.stringify({ completed: false, watch_seconds: Math.floor(watchSecondsRef.current) });
+        navigator.sendBeacon(
+          `/api/academy/courses/${courseId}/lessons/${lessonId}/progress`,
+          new Blob([body], { type: 'application/json' }),
+        );
+      }
+    };
+    window.addEventListener('beforeunload', onUnload);
+    return () => window.removeEventListener('beforeunload', onUnload);
+  }, [courseId, lessonId]);
 
   useEffect(() => {
     setLoading(true);
     setCompleted(false);
     setCrossroads(null);
     progressSaved.current = false;
+    watchSecondsRef.current = 0;
+    lastSavedSecondsRef.current = 0;
 
     Promise.all([
       offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}`).then((r) => r.json()),
@@ -158,11 +206,7 @@ export default function LessonPlayerPage() {
     if (progressSaved.current) return;
     progressSaved.current = true;
 
-    await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/progress`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ completed: true }),
-    });
+    await saveWatchProgress(watchSecondsRef.current, true);
 
     setCompleted(true);
 
@@ -217,14 +261,28 @@ export default function LessonPlayerPage() {
         <h1 className="text-xl sm:text-2xl font-bold mb-6">{lesson.title}</h1>
 
         {/* Content area */}
-        {lesson.lesson_type === 'video' && lesson.content_url && (
-          <VideoPlayer
-            src={lesson.content_url}
-            chapters={lesson.audio_chapters}
-            transcript={lesson.transcript_content}
-            onEnded={markComplete}
-          />
-        )}
+        {lesson.lesson_type === 'video' && lesson.content_url && (() => {
+          const ytId = extractYouTubeId(lesson.content_url);
+          if (ytId) {
+            return (
+              <YouTubePlayer
+                videoId={ytId}
+                chapters={lesson.audio_chapters}
+                transcript={lesson.transcript_content}
+                onEnded={markComplete}
+                onTimeUpdate={handleTimeUpdate}
+              />
+            );
+          }
+          return (
+            <VideoPlayer
+              src={lesson.content_url!}
+              chapters={lesson.audio_chapters}
+              transcript={lesson.transcript_content}
+              onEnded={markComplete}
+            />
+          );
+        })()}
 
         {lesson.lesson_type === 'audio' && lesson.content_url && (
           <AudioPlayer
