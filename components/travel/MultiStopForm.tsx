@@ -28,15 +28,26 @@ interface Stop {
   trip_category: string;
   // Booking details
   confirmation_number: string;
+  booking_reference: string;
   carrier_name: string;
   seat_assignment: string;
   terminal: string;
   gate: string;
+  booking_url: string;
+  // Accommodation
   accommodation_name: string;
   accommodation_address: string;
+  room_type: string;
+  check_in_date: string;
+  check_out_date: string;
+  // Pickup / Return
   pickup_address: string;
+  pickup_time: string;
   return_address: string;
-  booking_url: string;
+  return_time: string;
+  // Loyalty
+  loyalty_program: string;
+  loyalty_number: string;
 }
 
 const HUMAN_POWERED_MODES = ['bike', 'walk', 'run', 'other'];
@@ -67,15 +78,23 @@ const BLANK_STOP: Stop = {
   tax_category: 'personal',
   trip_category: 'travel',
   confirmation_number: '',
+  booking_reference: '',
   carrier_name: '',
   seat_assignment: '',
   terminal: '',
   gate: '',
+  booking_url: '',
   accommodation_name: '',
   accommodation_address: '',
+  room_type: '',
+  check_in_date: '',
+  check_out_date: '',
   pickup_address: '',
+  pickup_time: '',
   return_address: '',
-  booking_url: '',
+  return_time: '',
+  loyalty_program: '',
+  loyalty_number: '',
 };
 
 interface TripTemplateStop {
@@ -120,6 +139,27 @@ interface LegData {
   purpose: string | null;
   vehicle_id: string | null;
   date?: string | null;
+  calories_burned?: number | null;
+  tax_category?: string | null;
+  trip_category?: string | null;
+  confirmation_number?: string | null;
+  booking_reference?: string | null;
+  carrier_name?: string | null;
+  seat_assignment?: string | null;
+  terminal?: string | null;
+  gate?: string | null;
+  booking_url?: string | null;
+  accommodation_name?: string | null;
+  accommodation_address?: string | null;
+  room_type?: string | null;
+  check_in_date?: string | null;
+  check_out_date?: string | null;
+  pickup_address?: string | null;
+  pickup_time?: string | null;
+  return_address?: string | null;
+  return_time?: string | null;
+  loyalty_program?: string | null;
+  loyalty_number?: string | null;
 }
 
 interface MultiStopFormProps {
@@ -178,6 +218,27 @@ function legsToStops(legs: LegData[], isRoundTrip: boolean, routeDate?: string):
       purpose: leg.purpose || 'errand',
       vehicle_id: leg.vehicle_id || '',
       date: leg.date || routeDate || '',
+      calories_burned: leg.calories_burned != null ? String(leg.calories_burned) : '',
+      tax_category: leg.tax_category || 'personal',
+      trip_category: leg.trip_category || 'travel',
+      confirmation_number: leg.confirmation_number || '',
+      booking_reference: leg.booking_reference || '',
+      carrier_name: leg.carrier_name || '',
+      seat_assignment: leg.seat_assignment || '',
+      terminal: leg.terminal || '',
+      gate: leg.gate || '',
+      booking_url: leg.booking_url || '',
+      accommodation_name: leg.accommodation_name || '',
+      accommodation_address: leg.accommodation_address || '',
+      room_type: leg.room_type || '',
+      check_in_date: leg.check_in_date || '',
+      check_out_date: leg.check_out_date || '',
+      pickup_address: leg.pickup_address || '',
+      pickup_time: leg.pickup_time || '',
+      return_address: leg.return_address || '',
+      return_time: leg.return_time || '',
+      loyalty_program: leg.loyalty_program || '',
+      loyalty_number: leg.loyalty_number || '',
     });
   }
   return stops;
@@ -314,15 +375,23 @@ export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved,
           tax_category: to.tax_category || 'personal',
           trip_category: HUMAN_POWERED_MODES.includes(to.mode) ? (to.trip_category || 'travel') : 'travel',
           confirmation_number: to.confirmation_number || null,
+          booking_reference: to.booking_reference || null,
           carrier_name: to.carrier_name || null,
           seat_assignment: to.seat_assignment || null,
           terminal: to.terminal || null,
           gate: to.gate || null,
+          booking_url: to.booking_url || null,
           accommodation_name: to.accommodation_name || null,
           accommodation_address: to.accommodation_address || null,
+          room_type: to.room_type || null,
+          check_in_date: to.check_in_date || null,
+          check_out_date: to.check_out_date || null,
           pickup_address: to.pickup_address || null,
+          pickup_time: to.pickup_time || null,
           return_address: to.return_address || null,
-          booking_url: to.booking_url || null,
+          return_time: to.return_time || null,
+          loyalty_program: to.loyalty_program || null,
+          loyalty_number: to.loyalty_number || null,
         });
       }
 
@@ -637,14 +706,23 @@ export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved,
                     </button>
                     {expandedBooking === idx && (
                       <div className="px-2 pb-2 space-y-2 border-t border-gray-100">
+                        {/* Booking */}
                         <div className="grid grid-cols-2 gap-2 mt-2">
                           <input type="text" value={stop.confirmation_number} placeholder="Confirmation #"
                             onChange={(e) => updateStop(idx, 'confirmation_number', e.target.value)}
                             className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Confirmation number" />
+                          <input type="text" value={stop.booking_reference} placeholder="Booking reference"
+                            onChange={(e) => updateStop(idx, 'booking_reference', e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Booking reference" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
                           <input type="text" value={stop.carrier_name}
                             placeholder={stop.mode === 'plane' ? 'Airline' : 'Carrier'}
                             onChange={(e) => updateStop(idx, 'carrier_name', e.target.value)}
                             className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Carrier name" />
+                          <input type="url" value={stop.booking_url} placeholder="Booking URL"
+                            onChange={(e) => updateStop(idx, 'booking_url', e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Booking URL" />
                         </div>
                         {stop.mode === 'plane' && (
                           <div className="grid grid-cols-3 gap-2">
@@ -659,6 +737,7 @@ export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved,
                               className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Gate" />
                           </div>
                         )}
+                        {/* Accommodation */}
                         <div className="grid grid-cols-2 gap-2">
                           <input type="text" value={stop.accommodation_name} placeholder="Hotel / Accommodation"
                             onChange={(e) => updateStop(idx, 'accommodation_name', e.target.value)}
@@ -667,17 +746,49 @@ export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved,
                             onChange={(e) => updateStop(idx, 'accommodation_address', e.target.value)}
                             className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Accommodation address" />
                         </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <input type="text" value={stop.room_type} placeholder="Room type"
+                            onChange={(e) => updateStop(idx, 'room_type', e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Room type" />
+                          <div>
+                            <label className="block text-[10px] text-gray-400 mb-0.5">Check-in</label>
+                            <input type="date" value={stop.check_in_date}
+                              onChange={(e) => updateStop(idx, 'check_in_date', e.target.value)}
+                              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Check-in date" />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-gray-400 mb-0.5">Check-out</label>
+                            <input type="date" value={stop.check_out_date}
+                              onChange={(e) => updateStop(idx, 'check_out_date', e.target.value)}
+                              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Check-out date" />
+                          </div>
+                        </div>
+                        {/* Pickup / Return */}
                         <div className="grid grid-cols-2 gap-2">
                           <input type="text" value={stop.pickup_address} placeholder="Pickup address"
                             onChange={(e) => updateStop(idx, 'pickup_address', e.target.value)}
                             className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Pickup address" />
+                          <input type="time" value={stop.pickup_time}
+                            onChange={(e) => updateStop(idx, 'pickup_time', e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Pickup time" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
                           <input type="text" value={stop.return_address} placeholder="Return address"
                             onChange={(e) => updateStop(idx, 'return_address', e.target.value)}
                             className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Return address" />
+                          <input type="time" value={stop.return_time}
+                            onChange={(e) => updateStop(idx, 'return_time', e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Return time" />
                         </div>
-                        <input type="url" value={stop.booking_url} placeholder="Booking URL"
-                          onChange={(e) => updateStop(idx, 'booking_url', e.target.value)}
-                          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Booking URL" />
+                        {/* Loyalty */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <input type="text" value={stop.loyalty_program} placeholder="Loyalty program"
+                            onChange={(e) => updateStop(idx, 'loyalty_program', e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Loyalty program" />
+                          <input type="text" value={stop.loyalty_number} placeholder="Loyalty #"
+                            onChange={(e) => updateStop(idx, 'loyalty_number', e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" aria-label="Loyalty number" />
+                        </div>
                       </div>
                     )}
                   </div>

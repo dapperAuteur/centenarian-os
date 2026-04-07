@@ -20,10 +20,12 @@ interface Trip {
   co2_kg: number | null;
   notes: string | null;
   confirmation_number: string | null;
+  booking_reference: string | null;
   carrier_name: string | null;
   seat_assignment: string | null;
   terminal: string | null;
   gate: string | null;
+  booking_url: string | null;
   accommodation_name: string | null;
   accommodation_address: string | null;
   room_type: string | null;
@@ -120,7 +122,7 @@ export default function SharedTripPage() {
   const show = (key: keyof IncludedSections) => sec === null || sec[key] !== false;
 
   const hasBooking = (t: Trip) =>
-    t.confirmation_number || t.carrier_name || t.seat_assignment;
+    t.confirmation_number || t.booking_reference || t.carrier_name || t.seat_assignment || t.terminal || t.gate || t.booking_url;
   const hasAccommodation = (t: Trip) =>
     t.accommodation_name || t.accommodation_address || t.check_in_date || t.check_out_date;
   const hasPickupReturn = (t: Trip) =>
@@ -277,6 +279,9 @@ export default function SharedTripPage() {
                       {trip.confirmation_number && (
                         <span><strong className="text-gray-700">Conf #</strong> {trip.confirmation_number}</span>
                       )}
+                      {trip.booking_reference && (
+                        <span><strong className="text-gray-700">Ref:</strong> {trip.booking_reference}</span>
+                      )}
                       {trip.carrier_name && (
                         <span><strong className="text-gray-700">Carrier:</strong> {trip.carrier_name}</span>
                       )}
@@ -288,6 +293,11 @@ export default function SharedTripPage() {
                       )}
                       {trip.gate && (
                         <span><strong className="text-gray-700">Gate:</strong> {trip.gate}</span>
+                      )}
+                      {trip.booking_url && (
+                        <a href={trip.booking_url} target="_blank" rel="noopener noreferrer" className="text-sky-500 hover:underline">
+                          View Booking
+                        </a>
                       )}
                     </div>
                   )}
