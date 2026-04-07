@@ -1,9 +1,32 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Copy, Trash2, Link2, Send } from 'lucide-react';
+import { Copy, Trash2, Link2, Send, ChevronDown, ChevronUp } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+
+const SECTION_KEYS = [
+  'transport', 'booking', 'accommodation', 'pickupReturn',
+  'budget', 'notes', 'packing', 'loyalty', 'stats',
+] as const;
+
+type SectionKey = typeof SECTION_KEYS[number];
+
+const SECTION_LABELS: Record<SectionKey, string> = {
+  transport: 'Transport Details',
+  booking: 'Booking Details',
+  accommodation: 'Accommodation',
+  pickupReturn: 'Pickup / Return',
+  budget: 'Budget & Costs',
+  notes: 'Notes',
+  packing: 'Packing List',
+  loyalty: 'Loyalty Info',
+  stats: 'Distance & Stats',
+};
+
+function allTrue(): Record<SectionKey, boolean> {
+  return Object.fromEntries(SECTION_KEYS.map((k) => [k, true])) as Record<SectionKey, boolean>;
+}
 
 interface TripShareModalProps {
   isOpen: boolean;
@@ -37,8 +60,25 @@ export default function TripShareModal({
   const [error, setError] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [sections, setSections] = useState<Record<SectionKey, boolean>>(allTrue);
+  const [showSections, setShowSections] = useState(false);
 
   const paramKey = entityType === 'route' ? 'route_id' : 'trip_id';
+
+  // Sync sections from prop when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      if (includedSections) {
+        const merged = allTrue();
+        for (const k of SECTION_KEYS) {
+          if (k in includedSections) merged[k] = !!includedSections[k];
+        }
+        setSections(merged);
+      } else {
+        setSections(allTrue());
+      }
+    }
+  }, [isOpen, includedSections]);
 
   const fetchShares = useCallback(async () => {
     setLoading(true);
@@ -80,7 +120,7 @@ export default function TripShareModal({
       };
       if (!isPublic) body.shared_with_email = email.trim();
       if (expiresAt) body.expires_at = expiresAt;
-      if (includedSections) body.included_sections = includedSections;
+      body.included_sections = sections;
 
       const res = await offlineFetch('/api/travel/shares', {
         method: 'POST',
@@ -188,6 +228,41 @@ export default function TripShareModal({
             min={new Date().toISOString().split('T')[0]}
             className="min-h-11 w-full sm:w-auto rounded-lg border border-gray-300 px-3 text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none"
           />
+        </div>
+
+        {/* Included sections */}
+        <div className="border-t border-gray-200 pt-4">
+          <button
+            type="button"
+            onClick={() => setShowSections((v) => !v)}
+            className="min-h-11 w-full flex items-center justify-between text-sm font-medium text-gray-700 px-2 rounded-lg hover:bg-gray-50 transition"
+            aria-expanded={showSections}
+            aria-label="Toggle included sections"
+          >
+            <span>Included Sections</span>
+            {showSections
+              ? <ChevronUp className="w-4 h-4 text-gray-400" aria-hidden="true" />
+              : <ChevronDown className="w-4 h-4 text-gray-400" aria-hidden="true" />}
+          </button>
+
+          {showSections && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 mt-2">
+              {SECTION_KEYS.map((key) => (
+                <label
+                  key={key}
+                  className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 min-h-11 px-2 rounded-lg hover:bg-gray-100 transition"
+                >
+                  <input
+                    type="checkbox"
+                    checked={sections[key]}
+                    onChange={() => setSections((prev) => ({ ...prev, [key]: !prev[key] }))}
+                    className="rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                  />
+                  <span>{SECTION_LABELS[key]}</span>
+                </label>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Create public link */}

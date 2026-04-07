@@ -52,10 +52,20 @@ export async function GET(request: NextRequest) {
   const trip_category = params.get('trip_category');
   const trip_status = params.get('trip_status');
   const search = params.get('search');
+  const sort = params.get('sort') || 'date';
+  const sortDir = params.get('sort_dir') || 'desc';
   const limit = Math.min(parseInt(params.get('limit') || '50'), 500);
   const offset = parseInt(params.get('offset') || '0');
 
   const jobId = params.get('job_id');
+
+  const SORTABLE = new Set([
+    'date', 'end_date', 'mode', 'origin', 'destination', 'distance_miles',
+    'duration_min', 'purpose', 'cost', 'trip_category', 'tax_category',
+    'co2_kg', 'trip_status', 'carrier_name', 'accommodation_name',
+    'calories_burned', 'budget_amount', 'created_at',
+  ]);
+  const orderCol = SORTABLE.has(sort) ? sort : 'date';
 
   // Build a helper to apply all shared filters to any query
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -81,7 +91,7 @@ export async function GET(request: NextRequest) {
       .from('trips')
       .select('*, vehicles(id, nickname, type)')
       .eq('user_id', user.id)
-      .order('date', { ascending: false })
+      .order(orderCol, { ascending: sortDir === 'asc' })
       .range(offset, offset + limit - 1)
   );
 
