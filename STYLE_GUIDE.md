@@ -105,14 +105,29 @@ These apply everywhere, always:
 
 ---
 
-## 6. Plan files
+## 6. Plan files (write the plan BEFORE you write code)
 
-Non-trivial work starts with a plan file in `plans/NN-slug.md` where `NN` is the next unused sequential number. For throwaway fixes, skip the plan file.
+Non-trivial work starts with a plan file at `plans/NN-slug.md`, where `NN` is the next unused sequential number. **Write the plan file first**, in the project's `plans/` directory — not in `~/.claude/plans/`, not in your head, not in chat scrollback. If the plan isn't written down in the project before coding starts, nothing else in this guide is being followed.
+
+For throwaway fixes (one-line tweaks, typos), skip the plan.
+
+**Rules:**
 
 - `plans/` is **gitignored** — these files are local-only. They are not committed, not shared, and not referenced by any production code path.
 - Numbering is strictly sequential. Never reuse a number, even if the original plan was abandoned — leave the gap.
 - Sub-plans that belong to a parent plan use the letter-suffix form: `04a-…`, `04b-…`.
 - Reference the plan in the commit body when it shaped the work: `Implements plans/NN-slug.md`. The reference is for local context only; readers without the plans directory will just ignore it.
+- If Claude Code's plan mode wrote a plan to `~/.claude/plans/<random-slug>.md`, **copy it to `plans/NN-slug.md` before any code is written**. The auto-generated path is a working draft; the project path is the source of truth.
+
+**Every plan file must have a matching validation file** at `plans/validate/NN-slug.md` (same number, same slug). The validation file is a manual checklist the human can run after the work merges, to prove the feature actually works end-to-end. It contains:
+
+- Prerequisites (env vars, migrations, fixtures)
+- Numbered checks with checkboxes (`- [ ] ...`)
+- Each check is something a person can do in a browser, terminal, or DB shell
+- A failure-modes section (what should happen when things go wrong)
+- A sign-off table at the bottom
+
+Both files (`plans/NN-slug.md` and `plans/validate/NN-slug.md`) are written **at the same time, before coding begins**. The validation file is the "definition of done" — if you can't write the checks before you start, you don't yet understand what success looks like.
 
 ---
 
