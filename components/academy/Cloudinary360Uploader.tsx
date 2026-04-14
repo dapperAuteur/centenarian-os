@@ -6,8 +6,7 @@
 // publish typical equirectangular MP4s (often 100–500 MB) directly from the lesson
 // editor without leaving CentenarianOS.
 //
-// Uses /api/blog/upload as the signing endpoint — that route is a generic
-// signing service, not blog-specific, and already gates on auth.
+// Uses the canonical /api/cloudinary/sign endpoint for signed uploads.
 
 import { CldUploadWidget } from 'next-cloudinary';
 import { Upload } from 'lucide-react';
@@ -31,7 +30,7 @@ export default function Cloudinary360Uploader({
   return (
     <div className="space-y-2">
       <CldUploadWidget
-        signatureEndpoint="/api/blog/upload"
+        signatureEndpoint="/api/cloudinary/sign"
         options={{
           resourceType: 'video',
           folder: FOLDER,

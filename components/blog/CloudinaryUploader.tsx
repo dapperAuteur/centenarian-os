@@ -11,7 +11,7 @@ interface CloudinaryUploaderProps {
 
 /**
  * Wraps next-cloudinary's CldUploadWidget with signed uploads.
- * Signs uploads via /api/blog/upload to keep the API secret server-side.
+ * Signs uploads via /api/cloudinary/sign to keep the API secret server-side.
  */
 export default function CloudinaryUploader({
   mediaType,
@@ -28,7 +28,7 @@ export default function CloudinaryUploader({
       </p>
 
       <CldUploadWidget
-        signatureEndpoint="/api/blog/upload"
+        signatureEndpoint="/api/cloudinary/sign"
         options={{
           resourceType: mediaType,
           folder: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_FOLDER || 'blog',

@@ -11,7 +11,7 @@ interface RecipeCloudinaryUploaderProps {
 
 /**
  * Wraps next-cloudinary's CldUploadWidget with signed uploads for recipe media.
- * Signs uploads via /api/recipes/upload to keep the API secret server-side.
+ * Signs uploads via /api/cloudinary/sign to keep the API secret server-side.
  */
 export default function RecipeCloudinaryUploader({
   mediaType,
@@ -28,7 +28,7 @@ export default function RecipeCloudinaryUploader({
       </p>
 
       <CldUploadWidget
-        signatureEndpoint="/api/recipes/upload"
+        signatureEndpoint="/api/cloudinary/sign"
         options={{
           resourceType: mediaType,
           folder: 'recipes',
