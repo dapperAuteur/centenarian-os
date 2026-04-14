@@ -18,11 +18,12 @@ Read CLAUDE.md first, then this file, before starting any task.
 
 Use one of these prefixes followed by a short kebab-case slug:
 
-| Prefix            | Use for                                                  | Example                     |
-|-------------------|----------------------------------------------------------|-----------------------------|
-| `feat/`           | New user-facing feature or new capability                | `feat/academy-360-video`    |
-| `fix/` or `bug/`  | Bug fix (interchangeable — pick one and stay consistent) | `fix/travel-roundtrip-co2`  |
-| `chore/`          | Tooling, deps, docs, refactor, non-user-visible cleanup  | `chore/style-guide`         |
+| Prefix            | Use for                                                       | Example                            |
+|-------------------|---------------------------------------------------------------|------------------------------------|
+| `feat/`           | New user-facing feature or new capability                     | `feat/academy-360-video`           |
+| `fix/` or `bug/`  | Bug fix (interchangeable — pick one and stay consistent)      | `fix/travel-roundtrip-co2`         |
+| `docs/`           | Documentation only — STYLE_GUIDE, READMEs, inline doc updates | `docs/style-guide-gitignored-dirs` |
+| `chore/`          | Tooling, deps, refactor, non-user-visible cleanup             | `chore/rename-cloudinary-sign-route` |
 
 Rules:
 - Lowercase, kebab-case, no spaces or underscores.
@@ -112,3 +113,16 @@ Non-trivial work starts with a plan file in `plans/NN-slug.md` where `NN` is the
 - Numbering is strictly sequential. Never reuse a number, even if the original plan was abandoned — leave the gap.
 - Sub-plans that belong to a parent plan use the letter-suffix form: `04a-…`, `04b-…`.
 - Reference the plan in the commit body when it shaped the work: `Implements plans/NN-slug.md`. The reference is for local context only; readers without the plans directory will just ignore it.
+
+---
+
+## 7. Gitignored working directories
+
+These directories exist in the repo but are **gitignored** — files inside them are local-only and will never appear in a commit or PR:
+
+- `plans/` — implementation plan files (see §6)
+- `content/` — tutorial scripts and other authoring drafts (`content/tutorials/<module>/NN-slug.md`)
+
+When you create a file in one of these directories you will not see it in `git status`. That is expected. If you want a file tracked, put it somewhere else — or open a separate decision to remove the directory from `.gitignore`, which has wider implications.
+
+A branch that only modifies files inside a gitignored directory will produce an empty commit. Don't push it — delete the local branch instead.
