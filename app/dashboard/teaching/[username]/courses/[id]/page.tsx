@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
 import LessonTextEditor from '@/components/academy/LessonTextEditor';
+import Cloudinary360Uploader from '@/components/academy/Cloudinary360Uploader';
 
 interface Lesson {
   id: string;
@@ -719,14 +720,20 @@ export default function CourseEditorPage() {
                                   className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
                                 />
                                 {editingLesson.lesson_type === '360video' && (
-                                  <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
-                                    <input type="checkbox"
-                                      checked={editingLesson.video_360_autoplay ?? false}
-                                      onChange={(e) => setEditingLesson((l) => ({ ...l, video_360_autoplay: e.target.checked }))}
-                                      className="accent-fuchsia-500"
+                                  <>
+                                    <Cloudinary360Uploader
+                                      currentUrl={editingLesson.content_url}
+                                      onUploadSuccess={(url) => setEditingLesson((l) => ({ ...l, content_url: url }))}
                                     />
-                                    Autoplay (muted) when lesson opens
-                                  </label>
+                                    <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+                                      <input type="checkbox"
+                                        checked={editingLesson.video_360_autoplay ?? false}
+                                        onChange={(e) => setEditingLesson((l) => ({ ...l, video_360_autoplay: e.target.checked }))}
+                                        className="accent-fuchsia-500"
+                                      />
+                                      Autoplay (muted) when lesson opens
+                                    </label>
+                                  </>
                                 )}
                               </>
                             ) : (
