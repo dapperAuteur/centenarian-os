@@ -10,7 +10,7 @@ import Link from 'next/link';
 import {
   ChevronLeft, ChevronRight, GitBranch, CheckCircle, Loader2,
   Play, FileText, Volume2, Presentation, ClipboardList, ArrowRight, HelpCircle,
-  BookMarked,
+  BookMarked, Globe,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -27,16 +27,18 @@ import type { GlossaryTerm } from '@/components/academy/GlossaryTermRow';
 import { extractYouTubeId } from '@/lib/video/getEmbedUrl';
 
 const MapViewer = dynamic(() => import('@/components/academy/MapViewer'), { ssr: false });
+const Lesson360VideoPlayer = dynamic(() => import('@/components/academy/Lesson360VideoPlayer'), { ssr: false });
 import { renderTextContent } from '@/lib/academy/renderTextContent';
 
 interface Lesson {
   id: string;
   title: string;
-  lesson_type: 'video' | 'text' | 'audio' | 'slides' | 'quiz';
+  lesson_type: 'video' | 'text' | 'audio' | 'slides' | 'quiz' | '360video';
   content_url: string | null;
   text_content: string | null;
   content_format: 'markdown' | 'tiptap';
   duration_seconds: number | null;
+  video_360_autoplay?: boolean | null;
   is_free_preview: boolean;
   order: number;
   course_id: string;
@@ -81,6 +83,7 @@ const LESSON_TYPE_ICON: Record<string, React.ElementType> = {
   audio: Volume2,
   slides: Presentation,
   quiz: HelpCircle,
+  '360video': Globe,
 };
 
 export default function LessonPlayerPage() {
@@ -283,6 +286,15 @@ export default function LessonPlayerPage() {
             />
           );
         })()}
+
+        {lesson.lesson_type === '360video' && lesson.content_url && (
+          <Lesson360VideoPlayer
+            src={lesson.content_url}
+            autoplay={lesson.video_360_autoplay ?? false}
+            onTimeUpdate={(t) => handleTimeUpdate(t)}
+            onEnded={markComplete}
+          />
+        )}
 
         {lesson.lesson_type === 'audio' && lesson.content_url && (
           <AudioPlayer
