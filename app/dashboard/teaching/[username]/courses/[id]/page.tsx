@@ -10,7 +10,7 @@ import Link from 'next/link';
 import {
   ChevronLeft, Plus, Loader2, Save, Globe, EyeOff, Trash2,
   GitBranch, Sparkles, Play, FileText, Volume2, Presentation, GripVertical,
-  CheckCircle, ClipboardList, Pencil, ChevronUp, ChevronDown, X, Eye,
+  CheckCircle, ClipboardList, Pencil, ChevronUp, ChevronDown, X, Eye, Compass,
 } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
 import LessonTextEditor from '@/components/academy/LessonTextEditor';
@@ -26,6 +26,7 @@ interface Lesson {
   order: number;
   is_free_preview: boolean;
   module_id: string | null;
+  video_360_autoplay?: boolean | null;
 }
 
 interface Module {
@@ -52,6 +53,7 @@ interface Course {
 
 const LESSON_TYPE_ICON: Record<string, React.ElementType> = {
   video: Play, text: FileText, audio: Volume2, slides: Presentation,
+  '360video': Compass,
 };
 
 export default function CourseEditorPage() {
@@ -66,7 +68,7 @@ export default function CourseEditorPage() {
   const [addingModule, setAddingModule] = useState(false);
   const [newModuleTitle, setNewModuleTitle] = useState('');
   const [addingLesson, setAddingLesson] = useState<string | null>(null);
-  const [newLesson, setNewLesson] = useState({ title: '', lesson_type: 'video', content_url: '', is_free_preview: false });
+  const [newLesson, setNewLesson] = useState({ title: '', lesson_type: 'video', content_url: '', is_free_preview: false, video_360_autoplay: false });
   const [feedback, setFeedback] = useState('');
   const [deleting, setDeleting] = useState(false);
 
@@ -204,7 +206,7 @@ export default function CourseEditorPage() {
       }),
     });
     if (r.ok) {
-      setNewLesson({ title: '', lesson_type: 'video', content_url: '', is_free_preview: course?.price_type === 'free' });
+      setNewLesson({ title: '', lesson_type: 'video', content_url: '', is_free_preview: course?.price_type === 'free', video_360_autoplay: false });
       setAddingLesson(null);
       fetchCourse();
     }
@@ -690,11 +692,13 @@ export default function CourseEditorPage() {
                                 value={editingLesson.lesson_type ?? 'video'}
                                 onChange={(e) => setEditingLesson((l) => ({ ...l, lesson_type: e.target.value }))}
                                 className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                                aria-label="Lesson type"
                               >
                                 <option value="video">Video</option>
                                 <option value="text">Text</option>
                                 <option value="audio">Audio</option>
                                 <option value="slides">Slides</option>
+                                <option value="360video">360° Video</option>
                               </select>
                               <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
                                 <input type="checkbox"
@@ -706,13 +710,25 @@ export default function CourseEditorPage() {
                               </label>
                             </div>
                             {editingLesson.lesson_type !== 'text' ? (
-                              <input
-                                type="url"
-                                value={editingLesson.content_url ?? ''}
-                                onChange={(e) => setEditingLesson((l) => ({ ...l, content_url: e.target.value }))}
-                                placeholder="Content URL (video, audio, or slides embed)…"
-                                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
-                              />
+                              <>
+                                <input
+                                  type="url"
+                                  value={editingLesson.content_url ?? ''}
+                                  onChange={(e) => setEditingLesson((l) => ({ ...l, content_url: e.target.value }))}
+                                  placeholder={editingLesson.lesson_type === '360video' ? 'Equirectangular MP4 URL (Cloudinary or external)…' : 'Content URL (video, audio, or slides embed)…'}
+                                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+                                />
+                                {editingLesson.lesson_type === '360video' && (
+                                  <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+                                    <input type="checkbox"
+                                      checked={editingLesson.video_360_autoplay ?? false}
+                                      onChange={(e) => setEditingLesson((l) => ({ ...l, video_360_autoplay: e.target.checked }))}
+                                      className="accent-fuchsia-500"
+                                    />
+                                    Autoplay (muted) when lesson opens
+                                  </label>
+                                )}
+                              </>
                             ) : (
                               <div className="space-y-2">
                                 <div className="flex gap-1 text-xs">
@@ -781,11 +797,13 @@ export default function CourseEditorPage() {
                       <div className="flex gap-2 flex-wrap items-center">
                         <select value={newLesson.lesson_type}
                           onChange={(e) => setNewLesson((l) => ({ ...l, lesson_type: e.target.value }))}
-                          className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-fuchsia-500">
+                          className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                          aria-label="Lesson type">
                           <option value="video">Video</option>
                           <option value="text">Text</option>
                           <option value="audio">Audio</option>
                           <option value="slides">Slides</option>
+                          <option value="360video">360° Video</option>
                         </select>
                         <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
                           <input type="checkbox" checked={newLesson.is_free_preview}
@@ -802,7 +820,7 @@ export default function CourseEditorPage() {
                   ) : (
                     <button type="button" onClick={() => {
                       const allFree = mod.lessons.length > 0 && mod.lessons.every((l) => l.is_free_preview);
-                      setNewLesson({ title: '', lesson_type: 'video', content_url: '', is_free_preview: course.price_type === 'free' || allFree });
+                      setNewLesson({ title: '', lesson_type: 'video', content_url: '', is_free_preview: course.price_type === 'free' || allFree, video_360_autoplay: false });
                       setAddingLesson(mod.id);
                     }}
                       className="w-full flex items-center gap-2 px-4 py-2.5 border-t border-gray-800 text-gray-600 hover:text-fuchsia-400 text-sm hover:bg-gray-800/30 transition">
