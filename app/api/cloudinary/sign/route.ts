@@ -1,15 +1,18 @@
-// app/api/recipes/upload/route.ts
+// app/api/cloudinary/sign/route.ts
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 
 /**
- * POST /api/recipes/upload
- * Returns Cloudinary signed upload parameters for client-side recipe media uploads.
- * Auth required — users can only upload to their own folder.
+ * POST /api/cloudinary/sign
  *
- * The client uses these params with the Cloudinary Upload Widget's
- * generateSignature callback to perform a secure signed upload.
+ * Canonical Cloudinary signing endpoint. Returns a signature for
+ * client-side signed uploads via next-cloudinary's CldUploadWidget.
+ * Auth required.
+ *
+ * The client (CldUploadWidget) sends `{ paramsToSign: { folder, timestamp, source, ... } }`
+ * and we sign exactly what the widget sends — nothing more, nothing less.
+ * Params excluded from the signature: file, resource_type, api_key, cloud_name.
  *
  * Returns: { signature }
  */
@@ -30,7 +33,6 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const paramsToSign: Record<string, string | number> = body.paramsToSign ?? body;
 
-  // Params excluded from Cloudinary signatures: file, resource_type, api_key, cloud_name
   const excluded = new Set(['file', 'resource_type', 'api_key', 'cloud_name']);
   const signableParams = Object.fromEntries(
     Object.entries(paramsToSign).filter(([k]) => !excluded.has(k))
