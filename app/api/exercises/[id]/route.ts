@@ -226,7 +226,7 @@ export async function DELETE(
 async function deleteCloudinaryAsset(publicId: string) {
   const { createHash } = await import('crypto');
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
-  const apiKey = process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY!;
+  const apiKey = process.env.CLOUDINARY_API_KEY!;
   const apiSecret = process.env.CLOUDINARY_API_SECRET!;
   const timestamp = Math.round(Date.now() / 1000);
   const paramString = `public_id=${publicId}&timestamp=${timestamp}`;
