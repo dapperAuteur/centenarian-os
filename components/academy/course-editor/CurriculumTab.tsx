@@ -167,7 +167,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
     if (newLesson.lesson_type === 'quiz' && quizQuestions.length > 0) {
       payload.quiz_content = { questions: quizQuestions, passingScore: quizPassingScore, attemptsAllowed: quizAttemptsAllowed };
     }
-    if (newLesson.lesson_type === 'audio' || newLesson.lesson_type === 'video') {
+    if (newLesson.lesson_type === 'audio' || newLesson.lesson_type === 'video' || newLesson.lesson_type === '360video') {
       if (audioChapters.length > 0) payload.audio_chapters = audioChapters;
       if (transcriptText.trim()) payload.transcript_content = parseTranscriptText(transcriptText);
     }
@@ -351,7 +351,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
       if (editingLesson.lesson_type === '360video') {
         payload.video_360_autoplay = editingLesson.video_360_autoplay ?? false;
       }
-      if (editingLesson.lesson_type === 'audio' || editingLesson.lesson_type === 'video') {
+      if (editingLesson.lesson_type === 'audio' || editingLesson.lesson_type === 'video' || editingLesson.lesson_type === '360video') {
         payload.audio_chapters = editingAudioChapters.length > 0 ? editingAudioChapters : null;
         payload.transcript_content = editingTranscriptText.trim()
           ? parseTranscriptText(editingTranscriptText)
@@ -634,7 +634,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                             </>
                           )}
                           {/* Chapter + transcript editor — audio & video only */}
-                          {(editingLesson.lesson_type === 'audio' || editingLesson.lesson_type === 'video') && (
+                          {(editingLesson.lesson_type === 'audio' || editingLesson.lesson_type === 'video' || editingLesson.lesson_type === '360video') && (
                             <div className="space-y-4 border border-gray-700 rounded-xl p-3 bg-gray-800/30">
                               <div>
                                 <div className="flex items-center justify-between mb-2">
@@ -809,7 +809,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                     )}
 
                     {/* Chapter/transcript editor — audio & video */}
-                    {(newLesson.lesson_type === 'audio' || newLesson.lesson_type === 'video') && (
+                    {(newLesson.lesson_type === 'audio' || newLesson.lesson_type === 'video' || newLesson.lesson_type === '360video') && (
                       <div className="space-y-4 border border-gray-700 rounded-xl p-3 bg-gray-800/30">
                         <div>
                           <div className="flex items-center justify-between mb-2">
