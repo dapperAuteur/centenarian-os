@@ -88,6 +88,8 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
   const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
   const [editingLesson, setEditingLesson] = useState<Partial<Lesson>>({});
   const [savingLesson, setSavingLesson] = useState(false);
+  const [editingAudioChapters, setEditingAudioChapters] = useState<Array<{ id: string; title: string; startTime: number; endTime: number }>>([]);
+  const [editingTranscriptText, setEditingTranscriptText] = useState('');
 
   // Quiz state
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestionDraft[]>([]);
@@ -276,11 +278,13 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
     onCourseUpdated();
   }
 
-  // Inline lesson editing — edit existing lesson title/type/URL/autoplay/free-preview
-  function startEditingLesson(lesson: Lesson) {
+  // Inline lesson editing — edit existing lesson title/type/URL/autoplay/free-preview/chapters/transcript
+  async function startEditingLesson(lesson: Lesson) {
     if (expandedLessonId === lesson.id) {
       setExpandedLessonId(null);
       setEditingLesson({});
+      setEditingAudioChapters([]);
+      setEditingTranscriptText('');
       return;
     }
     setExpandedLessonId(lesson.id);
@@ -292,6 +296,46 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
       is_free_preview: lesson.is_free_preview,
       video_360_autoplay: lesson.video_360_autoplay ?? false,
     });
+    // Fetch the full lesson to populate chapters + transcript, which
+    // aren't present on the lightweight course tree payload.
+    try {
+      const r = await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lesson.id}`);
+      if (r.ok) {
+        const data = await r.json();
+        const chapters = Array.isArray(data.audio_chapters)
+          ? data.audio_chapters.map((c: { id?: string; title: string; startTime: number; endTime: number }) => ({
+              id: c.id || crypto.randomUUID(),
+              title: c.title ?? '',
+              startTime: Number(c.startTime ?? 0),
+              endTime: Number(c.endTime ?? 0),
+            }))
+          : [];
+        setEditingAudioChapters(chapters);
+        const segments = Array.isArray(data.transcript_content) ? data.transcript_content : [];
+        const formatted = segments
+          .map((seg: { startTime: number; text: string }) => {
+            const s = Number(seg.startTime ?? 0);
+            const m = Math.floor(s / 60);
+            const ss = Math.floor(s % 60).toString().padStart(2, '0');
+            return `${m}:${ss} ${seg.text ?? ''}`;
+          })
+          .join('\n');
+        setEditingTranscriptText(formatted);
+      }
+    } catch {
+      /* user can still edit the surface-level fields without chapter/transcript prefill */
+    }
+  }
+
+  // Edit-mode chapter helpers — mirror the add-mode ones but mutate editingAudioChapters
+  function addEditingChapter() {
+    setEditingAudioChapters((prev) => [...prev, { id: crypto.randomUUID(), title: '', startTime: 0, endTime: 0 }]);
+  }
+  function updateEditingChapter(chId: string, updates: Partial<{ title: string; startTime: number; endTime: number }>) {
+    setEditingAudioChapters((prev) => prev.map((c) => c.id === chId ? { ...c, ...updates } : c));
+  }
+  function removeEditingChapter(chId: string) {
+    setEditingAudioChapters((prev) => prev.filter((c) => c.id !== chId));
   }
 
   async function saveEditingLesson() {
@@ -307,6 +351,12 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
       if (editingLesson.lesson_type === '360video') {
         payload.video_360_autoplay = editingLesson.video_360_autoplay ?? false;
       }
+      if (editingLesson.lesson_type === 'audio' || editingLesson.lesson_type === 'video') {
+        payload.audio_chapters = editingAudioChapters.length > 0 ? editingAudioChapters : null;
+        payload.transcript_content = editingTranscriptText.trim()
+          ? parseTranscriptText(editingTranscriptText)
+          : null;
+      }
       const r = await offlineFetch(`/api/academy/courses/${courseId}/lessons/${expandedLessonId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -315,6 +365,8 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
       if (r.ok) {
         setExpandedLessonId(null);
         setEditingLesson({});
+        setEditingAudioChapters([]);
+        setEditingTranscriptText('');
         setFeedback('Lesson saved');
         setTimeout(() => setFeedback(''), 2000);
         onCourseUpdated();
@@ -581,6 +633,72 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                               )}
                             </>
                           )}
+                          {/* Chapter + transcript editor — audio & video only */}
+                          {(editingLesson.lesson_type === 'audio' || editingLesson.lesson_type === 'video') && (
+                            <div className="space-y-4 border border-gray-700 rounded-xl p-3 bg-gray-800/30">
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h4 className="text-sm font-semibold text-gray-200">Chapter Markers</h4>
+                                  <button type="button" onClick={addEditingChapter} className="flex items-center gap-1 text-xs text-fuchsia-400 hover:text-fuchsia-300 transition">
+                                    <Plus className="w-3 h-3" /> Add Chapter
+                                  </button>
+                                </div>
+                                {editingAudioChapters.length === 0 && (
+                                  <p className="text-xs text-gray-500 text-center py-2">No chapters. Students can still watch without chapters.</p>
+                                )}
+                                <div className="space-y-2">
+                                  {editingAudioChapters.map((ch, ci) => (
+                                    <div key={ch.id} className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-500 shrink-0 w-5">{ci + 1}</span>
+                                      <input
+                                        type="text"
+                                        value={ch.title}
+                                        onChange={(e) => updateEditingChapter(ch.id, { title: e.target.value })}
+                                        placeholder="Chapter title…"
+                                        className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500"
+                                      />
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        step={1}
+                                        value={ch.startTime}
+                                        onChange={(e) => updateEditingChapter(ch.id, { startTime: Number(e.target.value) })}
+                                        className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                                        title="Start time (seconds)"
+                                        placeholder="Start"
+                                      />
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        step={1}
+                                        value={ch.endTime}
+                                        onChange={(e) => updateEditingChapter(ch.id, { endTime: Number(e.target.value) })}
+                                        className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                                        title="End time (seconds)"
+                                        placeholder="End"
+                                      />
+                                      <button type="button" onClick={() => removeEditingChapter(ch.id)} className="text-gray-400 hover:text-red-400 transition p-1 shrink-0" aria-label="Remove chapter">
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-semibold text-gray-200 mb-1.5">Transcript</label>
+                                <p className="text-xs text-gray-500 mb-2">
+                                  Paste timestamped transcript. Format: <code className="text-gray-400">MM:SS text</code> (one per line).
+                                </p>
+                                <textarea
+                                  value={editingTranscriptText}
+                                  onChange={(e) => setEditingTranscriptText(e.target.value)}
+                                  rows={6}
+                                  placeholder={'00:00 Introduction\n00:45 Today\'s topic\n03:20 First segment…'}
+                                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 resize-none font-mono"
+                                />
+                              </div>
+                            </div>
+                          )}
                           <div className="flex flex-col sm:flex-row gap-2">
                             <button
                               type="button"
@@ -592,7 +710,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                             </button>
                             <button
                               type="button"
-                              onClick={() => { setExpandedLessonId(null); setEditingLesson({}); }}
+                              onClick={() => { setExpandedLessonId(null); setEditingLesson({}); setEditingAudioChapters([]); setEditingTranscriptText(''); }}
                               className="px-4 py-2 bg-gray-800 text-gray-400 rounded-lg text-sm hover:bg-gray-700 transition min-h-11"
                             >
                               Cancel
