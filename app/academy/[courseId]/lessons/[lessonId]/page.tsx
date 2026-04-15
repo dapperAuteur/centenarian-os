@@ -40,6 +40,7 @@ interface Lesson {
   content_format: 'markdown' | 'tiptap';
   duration_seconds: number | null;
   video_360_autoplay?: boolean | null;
+  video_360_poster_url?: string | null;
   is_free_preview: boolean;
   order: number;
   course_id: string;
@@ -293,6 +294,7 @@ export default function LessonPlayerPage() {
           <Lesson360VideoPlayer
             src={lesson.content_url}
             autoplay={lesson.video_360_autoplay ?? false}
+            posterUrl={lesson.video_360_poster_url}
             onTimeUpdate={(t) => handleTimeUpdate(t)}
             onEnded={markComplete}
           />
@@ -301,6 +303,7 @@ export default function LessonPlayerPage() {
         {lesson.lesson_type === 'photo_360' && lesson.content_url && (
           <Lesson360PhotoPlayer
             src={lesson.content_url}
+            posterUrl={lesson.video_360_poster_url}
             onReady={markComplete}
           />
         )}

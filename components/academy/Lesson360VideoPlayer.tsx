@@ -16,6 +16,12 @@ import { useEffect, useRef, useState } from 'react';
 interface Lesson360VideoPlayerProps {
   src: string;
   autoplay?: boolean;
+  /**
+   * Optional 2D poster image URL shown under the PSV canvas while the
+   * heavy player chunk loads and as a no-WebGL fallback. Generated from
+   * the content URL at upload time via lib/cloudinary/poster.ts.
+   */
+  posterUrl?: string | null;
   /** Fires whenever the underlying video time updates (~4Hz). Use to upsert lesson_progress. */
   onTimeUpdate?: (currentTime: number, duration: number) => void;
   /** Fires when the video ends. Use to mark the lesson complete. */
@@ -25,6 +31,7 @@ interface Lesson360VideoPlayerProps {
 function Lesson360VideoPlayerInner({
   src,
   autoplay = false,
+  posterUrl,
   onTimeUpdate,
   onEnded,
 }: Lesson360VideoPlayerProps) {
@@ -109,10 +116,19 @@ function Lesson360VideoPlayerInner({
           className="w-full bg-black"
           style={{ height: 'min(70vh, 600px)' }}
         />
+        {loading && !error && posterUrl && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={posterUrl}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )}
         {loading && !error && (
           <div
             role="status"
-            className="absolute inset-0 flex items-center justify-center bg-black/80 text-white"
+            className="absolute inset-0 flex items-center justify-center bg-black/60 text-white"
           >
             <span className="text-sm">Loading 360° video…</span>
           </div>

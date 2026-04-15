@@ -15,11 +15,16 @@ import { useEffect, useRef, useState } from 'react';
 
 interface Lesson360PhotoPlayerProps {
   src: string;
+  /**
+   * Optional 2D poster image URL shown while PSV loads and as a
+   * no-WebGL fallback. Usually identical to src for photo lessons.
+   */
+  posterUrl?: string | null;
   /** Fires once when the viewer is ready. Use to mark the lesson complete. */
   onReady?: () => void;
 }
 
-function Lesson360PhotoPlayerInner({ src, onReady }: Lesson360PhotoPlayerProps) {
+function Lesson360PhotoPlayerInner({ src, posterUrl, onReady }: Lesson360PhotoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,10 +80,19 @@ function Lesson360PhotoPlayerInner({ src, onReady }: Lesson360PhotoPlayerProps) 
           className="w-full bg-black"
           style={{ height: 'min(70vh, 600px)' }}
         />
+        {loading && !error && posterUrl && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={posterUrl}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )}
         {loading && !error && (
           <div
             role="status"
-            className="absolute inset-0 flex items-center justify-center bg-black/80 text-white"
+            className="absolute inset-0 flex items-center justify-center bg-black/60 text-white"
           >
             <span className="text-sm">Loading 360° photo…</span>
           </div>
