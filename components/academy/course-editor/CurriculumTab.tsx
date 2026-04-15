@@ -544,17 +544,20 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                         )}
                         <button type="button" onClick={() => startEditingLesson(lesson)}
                           className={`p-2 transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center ${isEditingLesson ? 'text-fuchsia-400' : 'text-gray-400 hover:text-fuchsia-400'}`}
-                          aria-label="Edit lesson">
+                          aria-label="Edit lesson details, content, chapters, and transcript"
+                          title="Edit lesson (title, type, content URL, chapters, transcript)">
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button type="button" onClick={() => startEditingDocs(lesson.id)}
                           className={`p-2 transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center ${isEditingDocs ? 'text-fuchsia-400' : 'text-gray-400 hover:text-fuchsia-400'}`}
-                          aria-label="Edit documents">
+                          aria-label="Edit attached documents"
+                          title="Attach or edit documents">
                           <Paperclip className="w-3.5 h-3.5" />
                         </button>
                         <button type="button" onClick={() => deleteLesson(lesson.id)}
                           className="p-2 text-gray-400 hover:text-red-400 transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
-                          aria-label="Delete lesson">
+                          aria-label="Delete lesson"
+                          title="Delete lesson">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -677,7 +680,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                                         title="End time (seconds)"
                                         placeholder="End"
                                       />
-                                      <button type="button" onClick={() => removeEditingChapter(ch.id)} className="text-gray-400 hover:text-red-400 transition p-1 shrink-0" aria-label="Remove chapter">
+                                      <button type="button" onClick={() => removeEditingChapter(ch.id)} className="text-gray-400 hover:text-red-400 transition p-1 shrink-0" aria-label="Remove chapter" title="Remove chapter">
                                         <X className="w-3.5 h-3.5" />
                                       </button>
                                     </div>

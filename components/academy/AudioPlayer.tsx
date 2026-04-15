@@ -183,7 +183,7 @@ export default function AudioPlayer({ src, chapters, transcript, onEnded }: Audi
         <div className="flex items-center gap-2 sm:gap-3">
           <span className="text-xs text-gray-400 tabular-nums w-12 shrink-0">{formatTime(currentTime)}</span>
 
-          <button onClick={() => skipBy(-15)} className="min-h-11 min-w-11 flex items-center justify-center text-gray-300 hover:text-white transition" aria-label="Skip back 15 seconds">
+          <button onClick={() => skipBy(-15)} className="min-h-11 min-w-11 flex items-center justify-center text-gray-300 hover:text-white transition" aria-label="Skip back 15 seconds" title="Skip back 15 seconds">
             <SkipBack className="w-4 h-4" aria-hidden="true" />
           </button>
 
@@ -191,11 +191,12 @@ export default function AudioPlayer({ src, chapters, transcript, onEnded }: Audi
             onClick={togglePlay}
             className="min-h-11 min-w-11 flex items-center justify-center bg-fuchsia-600 text-white rounded-full hover:bg-fuchsia-700 transition shrink-0"
             aria-label={playing ? 'Pause' : 'Play'}
+            title={playing ? 'Pause' : 'Play'}
           >
             {playing ? <Pause className="w-5 h-5" aria-hidden="true" /> : <Play className="w-5 h-5 ml-0.5" aria-hidden="true" />}
           </button>
 
-          <button onClick={() => skipBy(30)} className="min-h-11 min-w-11 flex items-center justify-center text-gray-300 hover:text-white transition" aria-label="Skip forward 30 seconds">
+          <button onClick={() => skipBy(30)} className="min-h-11 min-w-11 flex items-center justify-center text-gray-300 hover:text-white transition" aria-label="Skip forward 30 seconds" title="Skip forward 30 seconds">
             <SkipForward className="w-4 h-4" aria-hidden="true" />
           </button>
 
@@ -208,12 +209,13 @@ export default function AudioPlayer({ src, chapters, transcript, onEnded }: Audi
             onClick={cycleSpeed}
             className="min-h-11 px-2 text-xs font-semibold text-gray-300 bg-gray-800 rounded-lg hover:text-white hover:bg-gray-700 transition tabular-nums min-w-10.5"
             aria-label={`Playback speed ${speed}x`}
+            title={`Playback speed (click to change from ${speed}x)`}
           >
             {speed}x
           </button>
 
           {/* Mute */}
-          <button onClick={toggleMute} className="min-h-11 min-w-11 flex items-center justify-center text-gray-300 hover:text-white transition" aria-label={muted ? 'Unmute' : 'Mute'}>
+          <button onClick={toggleMute} className="min-h-11 min-w-11 flex items-center justify-center text-gray-300 hover:text-white transition" aria-label={muted ? 'Unmute' : 'Mute'} title={muted ? 'Unmute' : 'Mute'}>
             {muted ? <VolumeX className="w-4 h-4" aria-hidden="true" /> : <Volume2 className="w-4 h-4" aria-hidden="true" />}
           </button>
 
@@ -222,8 +224,9 @@ export default function AudioPlayer({ src, chapters, transcript, onEnded }: Audi
             <button
               onClick={() => setShowChapters((s) => !s)}
               className={`min-h-11 min-w-11 flex items-center justify-center rounded-lg transition ${showChapters ? 'text-fuchsia-400 bg-fuchsia-900/30' : 'text-gray-400 hover:text-white'}`}
-              aria-label={showChapters ? 'Hide chapters' : 'Show chapters'}
+              aria-label={showChapters ? 'Hide chapter markers panel' : 'Show chapter markers panel'}
               aria-expanded={showChapters}
+              title={showChapters ? 'Hide chapter markers' : 'Show chapter markers'}
             >
               <ListMusic className="w-4 h-4" aria-hidden="true" />
             </button>
@@ -232,8 +235,9 @@ export default function AudioPlayer({ src, chapters, transcript, onEnded }: Audi
             <button
               onClick={() => setShowTranscript((s) => !s)}
               className={`min-h-11 min-w-11 flex items-center justify-center rounded-lg transition ${showTranscript ? 'text-fuchsia-400 bg-fuchsia-900/30' : 'text-gray-400 hover:text-white'}`}
-              aria-label={showTranscript ? 'Hide transcript' : 'Show transcript'}
+              aria-label={showTranscript ? 'Hide transcript panel' : 'Show transcript panel'}
               aria-expanded={showTranscript}
+              title={showTranscript ? 'Hide transcript' : 'Show transcript'}
             >
               <FileText className="w-4 h-4" aria-hidden="true" />
             </button>
