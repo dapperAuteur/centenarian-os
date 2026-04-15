@@ -10,7 +10,7 @@ import Link from 'next/link';
 import {
   ChevronLeft, ChevronRight, GitBranch, CheckCircle, Loader2,
   Play, FileText, Volume2, Presentation, ClipboardList, ArrowRight, HelpCircle,
-  BookMarked, Globe, Image as ImageIcon,
+  BookMarked, Globe, Image as ImageIcon, Map as MapIcon,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -29,12 +29,13 @@ import { extractYouTubeId } from '@/lib/video/getEmbedUrl';
 const MapViewer = dynamic(() => import('@/components/academy/MapViewer'), { ssr: false });
 const Lesson360VideoPlayer = dynamic(() => import('@/components/academy/Lesson360VideoPlayer'), { ssr: false });
 const Lesson360PhotoPlayer = dynamic(() => import('@/components/academy/Lesson360PhotoPlayer'), { ssr: false });
+const VirtualTourPlayer = dynamic(() => import('@/components/academy/VirtualTourPlayer'), { ssr: false });
 import { renderTextContent } from '@/lib/academy/renderTextContent';
 
 interface Lesson {
   id: string;
   title: string;
-  lesson_type: 'video' | 'text' | 'audio' | 'slides' | 'quiz' | '360video' | 'photo_360';
+  lesson_type: 'video' | 'text' | 'audio' | 'slides' | 'quiz' | '360video' | 'photo_360' | 'virtual_tour';
   content_url: string | null;
   text_content: string | null;
   content_format: 'markdown' | 'tiptap';
@@ -87,6 +88,7 @@ const LESSON_TYPE_ICON: Record<string, React.ElementType> = {
   quiz: HelpCircle,
   '360video': Globe,
   photo_360: ImageIcon,
+  virtual_tour: MapIcon,
 };
 
 export default function LessonPlayerPage() {
@@ -102,6 +104,8 @@ export default function LessonPlayerPage() {
   const [lessonAssignments, setLessonAssignments] = useState<{ id: string; title: string; due_date: string | null }[]>([]);
   const [currentUser, setCurrentUser] = useState<{ userId: string | null; isTeacher: boolean }>({ userId: null, isTeacher: false });
   const [lessonGlossary, setLessonGlossary] = useState<GlossaryTerm[]>([]);
+  const [virtualTour, setVirtualTour] = useState<import('@/lib/academy/tour-types').AssembledTour | null>(null);
+  const [tourError, setTourError] = useState<string | null>(null);
 
   const progressSaved = useRef(false);
   const watchSecondsRef = useRef(0);
@@ -193,6 +197,25 @@ export default function LessonPlayerPage() {
       .then((d) => setLessonAssignments(Array.isArray(d) ? d : []))
       .catch(() => {});
   }, [courseId, lessonId]);
+
+  // Fetch the assembled virtual tour when this is a virtual_tour lesson.
+  // The tour data (scenes + hotspots + links) lives in dedicated tables,
+  // not on the lesson row, so it needs its own round-trip.
+  useEffect(() => {
+    if (lesson?.lesson_type !== 'virtual_tour') return;
+    setVirtualTour(null);
+    setTourError(null);
+    offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/tour`)
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((data) => setVirtualTour(data))
+      .catch((err) => {
+        console.error('[VirtualTour] fetch error', err);
+        setTourError('Could not load this virtual tour. Try refreshing.');
+      });
+  }, [courseId, lessonId, lesson?.lesson_type]);
 
   useEffect(() => {
     offlineFetch('/api/auth/me')
@@ -306,6 +329,27 @@ export default function LessonPlayerPage() {
             posterUrl={lesson.video_360_poster_url}
             onReady={markComplete}
           />
+        )}
+
+        {lesson.lesson_type === 'virtual_tour' && (
+          <>
+            {tourError && (
+              <div role="alert" className="bg-gray-900 border border-red-900/40 rounded-xl p-4 text-sm text-red-300 mb-6">
+                {tourError}
+              </div>
+            )}
+            {!tourError && !virtualTour && (
+              <div role="status" className="bg-gray-900 border border-gray-800 rounded-xl sm:rounded-2xl mb-6 flex items-center justify-center text-white text-sm" style={{ height: 'min(70vh, 600px)' }}>
+                Loading virtual tour…
+              </div>
+            )}
+            {virtualTour && (
+              <VirtualTourPlayer
+                tour={virtualTour}
+                onReady={markComplete}
+              />
+            )}
+          </>
         )}
 
         {lesson.lesson_type === 'audio' && lesson.content_url && (

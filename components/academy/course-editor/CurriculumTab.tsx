@@ -599,6 +599,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                               <option value="quiz">Quiz</option>
                               <option value="360video">360° Video</option>
                               <option value="photo_360">360° Photo</option>
+                              <option value="virtual_tour">Virtual Tour (multi-scene)</option>
                             </select>
                             <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer min-h-11">
                               <input
@@ -610,7 +611,12 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                               Free preview
                             </label>
                           </div>
-                          {editingLesson.lesson_type !== 'text' && editingLesson.lesson_type !== 'quiz' && (
+                          {editingLesson.lesson_type === 'virtual_tour' && (
+                            <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-3 text-xs text-gray-300">
+                              Virtual tours contain multiple linked 360° scenes with hotspots. The full scene editor ships in the next release (plan 23b). For now, existing virtual tour lessons render with whatever scenes are already in the database; to author a new tour, use the API directly via <code className="text-gray-400">PUT /api/academy/courses/…/lessons/…/tour</code> or wait for the scene editor UI.
+                            </div>
+                          )}
+                          {editingLesson.lesson_type !== 'text' && editingLesson.lesson_type !== 'quiz' && editingLesson.lesson_type !== 'virtual_tour' && (
                             <>
                               <input
                                 type="url"
@@ -774,6 +780,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                         <option value="quiz">Quiz</option>
                         <option value="360video">360° Video</option>
                         <option value="photo_360">360° Photo</option>
+                        <option value="virtual_tour">Virtual Tour (multi-scene)</option>
                       </select>
                       <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer min-h-11">
                         <input type="checkbox" checked={newLesson.is_free_preview}
@@ -784,7 +791,12 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                     </div>
 
                     {/* Content URL / upload — all non-text, non-quiz types */}
-                    {newLesson.lesson_type !== 'text' && newLesson.lesson_type !== 'quiz' && (
+                    {newLesson.lesson_type === 'virtual_tour' && (
+                      <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-3 text-xs text-gray-300">
+                        Virtual tours contain multiple linked 360° scenes with hotspots. The full scene editor ships in the next release (plan 23b). You can still create the lesson shell now — use the API directly to seed scenes, or wait for the editor UI.
+                      </div>
+                    )}
+                    {newLesson.lesson_type !== 'text' && newLesson.lesson_type !== 'quiz' && newLesson.lesson_type !== 'virtual_tour' && (
                       <>
                         <input
                           type="url"
