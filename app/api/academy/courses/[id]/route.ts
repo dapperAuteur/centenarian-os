@@ -34,7 +34,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       created_at, teacher_id,
       profiles(username, display_name, avatar_url),
       course_modules(id, title, order,
-        lessons(id, title, lesson_type, duration_seconds, order, is_free_preview, content_url, text_content, created_at, updated_at)
+        lessons(id, title, lesson_type, duration_seconds, order, is_free_preview, content_url, text_content, video_360_autoplay, video_360_poster_url, created_at, updated_at)
       )
     `)
     .eq('id', id)

@@ -10,11 +10,18 @@
 import { CldUploadWidget } from 'next-cloudinary';
 import { Upload } from 'lucide-react';
 import { useState } from 'react';
+import { derivePosterUrl } from '@/lib/cloudinary/poster';
 
 type MediaKind = 'video' | 'image';
 
 interface Cloudinary360UploaderProps {
-  onUploadSuccess: (url: string) => void;
+  /**
+   * Fires on successful upload. The posterUrl is a flat 2D thumbnail
+   * derived from the Cloudinary URL (first-frame for videos, resized for
+   * images). Save it alongside content_url so the player and catalog can
+   * use it as a preview / no-WebGL fallback.
+   */
+  onUploadSuccess: (url: string, posterUrl: string | null) => void;
   currentUrl?: string | null;
   /** Which kind of 360 media this uploader handles. Defaults to 'video'. */
   resourceType?: MediaKind;
@@ -79,7 +86,8 @@ export default function Cloudinary360Uploader({
         onSuccess={(result) => {
           if (result.event === 'success' && result.info && typeof result.info === 'object') {
             const info = result.info as { secure_url: string };
-            onUploadSuccess(info.secure_url);
+            const posterUrl = derivePosterUrl(info.secure_url, resourceType);
+            onUploadSuccess(info.secure_url, posterUrl);
           }
         }}
         onError={(err) => {

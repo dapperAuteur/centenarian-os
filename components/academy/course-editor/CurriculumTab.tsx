@@ -27,6 +27,7 @@ interface Lesson {
   is_free_preview: boolean;
   module_id: string | null;
   video_360_autoplay?: boolean | null;
+  video_360_poster_url?: string | null;
 }
 
 interface Module {
@@ -82,7 +83,14 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
 
   // Lesson state
   const [addingLesson, setAddingLesson] = useState<string | null>(null);
-  const [newLesson, setNewLesson] = useState({ title: '', lesson_type: 'video', content_url: '', is_free_preview: false, video_360_autoplay: false });
+  const [newLesson, setNewLesson] = useState<{
+    title: string;
+    lesson_type: string;
+    content_url: string;
+    is_free_preview: boolean;
+    video_360_autoplay: boolean;
+    video_360_poster_url: string | null;
+  }>({ title: '', lesson_type: 'video', content_url: '', is_free_preview: false, video_360_autoplay: false, video_360_poster_url: null });
 
   // Inline lesson edit state
   const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
@@ -164,6 +172,9 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
     if (newLesson.lesson_type !== '360video') {
       delete payload.video_360_autoplay;
     }
+    if (newLesson.lesson_type !== '360video' && newLesson.lesson_type !== 'photo_360') {
+      delete payload.video_360_poster_url;
+    }
     if (newLesson.lesson_type === 'quiz' && quizQuestions.length > 0) {
       payload.quiz_content = { questions: quizQuestions, passingScore: quizPassingScore, attemptsAllowed: quizAttemptsAllowed };
     }
@@ -194,7 +205,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
       body: JSON.stringify(payload),
     });
     if (r.ok) {
-      setNewLesson({ title: '', lesson_type: 'video', content_url: '', is_free_preview: false, video_360_autoplay: false });
+      setNewLesson({ title: '', lesson_type: 'video', content_url: '', is_free_preview: false, video_360_autoplay: false, video_360_poster_url: null });
       setQuizQuestions([]); setQuizPassingScore(80); setQuizAttemptsAllowed(-1);
       setAudioChapters([]); setTranscriptText('');
       setMapCenter({ lat: 0, lng: 0 }); setMapZoom(3); setMapMarkers([]); setMapLines([]); setMapPolygons([]);
@@ -295,6 +306,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
       content_url: lesson.content_url,
       is_free_preview: lesson.is_free_preview,
       video_360_autoplay: lesson.video_360_autoplay ?? false,
+      video_360_poster_url: lesson.video_360_poster_url ?? null,
     });
     // Fetch the full lesson to populate chapters + transcript, which
     // aren't present on the lightweight course tree payload.
@@ -350,6 +362,9 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
       };
       if (editingLesson.lesson_type === '360video') {
         payload.video_360_autoplay = editingLesson.video_360_autoplay ?? false;
+      }
+      if (editingLesson.lesson_type === '360video' || editingLesson.lesson_type === 'photo_360') {
+        payload.video_360_poster_url = editingLesson.video_360_poster_url ?? null;
       }
       if (editingLesson.lesson_type === 'audio' || editingLesson.lesson_type === 'video' || editingLesson.lesson_type === '360video') {
         payload.audio_chapters = editingAudioChapters.length > 0 ? editingAudioChapters : null;
@@ -614,7 +629,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                                 <>
                                   <Cloudinary360Uploader
                                     currentUrl={editingLesson.content_url}
-                                    onUploadSuccess={(url) => setEditingLesson((l) => ({ ...l, content_url: url }))}
+                                    onUploadSuccess={(url, posterUrl) => setEditingLesson((l) => ({ ...l, content_url: url, video_360_poster_url: posterUrl }))}
                                   />
                                   <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer min-h-11">
                                     <input
@@ -631,7 +646,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                                 <Cloudinary360Uploader
                                   resourceType="image"
                                   currentUrl={editingLesson.content_url}
-                                  onUploadSuccess={(url) => setEditingLesson((l) => ({ ...l, content_url: url }))}
+                                  onUploadSuccess={(url, posterUrl) => setEditingLesson((l) => ({ ...l, content_url: url, video_360_poster_url: posterUrl }))}
                                 />
                               )}
                             </>
@@ -788,7 +803,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                           <>
                             <Cloudinary360Uploader
                               currentUrl={newLesson.content_url}
-                              onUploadSuccess={(url) => setNewLesson((l) => ({ ...l, content_url: url }))}
+                              onUploadSuccess={(url, posterUrl) => setNewLesson((l) => ({ ...l, content_url: url, video_360_poster_url: posterUrl }))}
                             />
                             <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer min-h-11">
                               <input
@@ -805,7 +820,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                           <Cloudinary360Uploader
                             resourceType="image"
                             currentUrl={newLesson.content_url}
-                            onUploadSuccess={(url) => setNewLesson((l) => ({ ...l, content_url: url }))}
+                            onUploadSuccess={(url, posterUrl) => setNewLesson((l) => ({ ...l, content_url: url, video_360_poster_url: posterUrl }))}
                           />
                         )}
                       </>

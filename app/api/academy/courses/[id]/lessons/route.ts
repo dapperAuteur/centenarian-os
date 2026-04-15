@@ -127,6 +127,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     title, lesson_type = 'video', content_url, text_content,
     duration_seconds, order = 0, module_id, quiz_content,
     audio_chapters, transcript_content, map_content, documents, podcast_links,
+    video_360_autoplay, video_360_poster_url,
   } = body;
   const is_free_preview = isFreeByDefault;
 
@@ -150,6 +151,8 @@ export async function POST(request: NextRequest, { params }: Params) {
       ...(map_content ? { map_content } : {}),
       ...(documents ? { documents } : {}),
       ...(podcast_links ? { podcast_links } : {}),
+      ...(typeof video_360_autoplay === 'boolean' ? { video_360_autoplay } : {}),
+      ...(video_360_poster_url ? { video_360_poster_url } : {}),
     })
     .select()
     .single();
