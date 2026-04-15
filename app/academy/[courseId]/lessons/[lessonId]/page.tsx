@@ -10,7 +10,7 @@ import Link from 'next/link';
 import {
   ChevronLeft, ChevronRight, GitBranch, CheckCircle, Loader2,
   Play, FileText, Volume2, Presentation, ClipboardList, ArrowRight, HelpCircle,
-  BookMarked, Globe,
+  BookMarked, Globe, Image as ImageIcon,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -28,12 +28,13 @@ import { extractYouTubeId } from '@/lib/video/getEmbedUrl';
 
 const MapViewer = dynamic(() => import('@/components/academy/MapViewer'), { ssr: false });
 const Lesson360VideoPlayer = dynamic(() => import('@/components/academy/Lesson360VideoPlayer'), { ssr: false });
+const Lesson360PhotoPlayer = dynamic(() => import('@/components/academy/Lesson360PhotoPlayer'), { ssr: false });
 import { renderTextContent } from '@/lib/academy/renderTextContent';
 
 interface Lesson {
   id: string;
   title: string;
-  lesson_type: 'video' | 'text' | 'audio' | 'slides' | 'quiz' | '360video';
+  lesson_type: 'video' | 'text' | 'audio' | 'slides' | 'quiz' | '360video' | 'photo_360';
   content_url: string | null;
   text_content: string | null;
   content_format: 'markdown' | 'tiptap';
@@ -84,6 +85,7 @@ const LESSON_TYPE_ICON: Record<string, React.ElementType> = {
   slides: Presentation,
   quiz: HelpCircle,
   '360video': Globe,
+  photo_360: ImageIcon,
 };
 
 export default function LessonPlayerPage() {
@@ -293,6 +295,13 @@ export default function LessonPlayerPage() {
             autoplay={lesson.video_360_autoplay ?? false}
             onTimeUpdate={(t) => handleTimeUpdate(t)}
             onEnded={markComplete}
+          />
+        )}
+
+        {lesson.lesson_type === 'photo_360' && lesson.content_url && (
+          <Lesson360PhotoPlayer
+            src={lesson.content_url}
+            onReady={markComplete}
           />
         )}
 

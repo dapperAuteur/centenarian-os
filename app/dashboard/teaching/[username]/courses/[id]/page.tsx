@@ -11,6 +11,7 @@ import {
   ChevronLeft, Plus, Loader2, Save, Globe, EyeOff, Trash2,
   GitBranch, Sparkles, Play, FileText, Volume2, Presentation, GripVertical,
   CheckCircle, ClipboardList, Pencil, ChevronUp, ChevronDown, X, Eye, Compass,
+  Image as ImageIcon,
 } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
 import LessonTextEditor from '@/components/academy/LessonTextEditor';
@@ -55,6 +56,7 @@ interface Course {
 const LESSON_TYPE_ICON: Record<string, React.ElementType> = {
   video: Play, text: FileText, audio: Volume2, slides: Presentation,
   '360video': Compass,
+  photo_360: ImageIcon,
 };
 
 export default function CourseEditorPage() {
@@ -700,6 +702,7 @@ export default function CourseEditorPage() {
                                 <option value="audio">Audio</option>
                                 <option value="slides">Slides</option>
                                 <option value="360video">360° Video</option>
+                                <option value="photo_360">360° Photo</option>
                               </select>
                               <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
                                 <input type="checkbox"
@@ -716,7 +719,13 @@ export default function CourseEditorPage() {
                                   type="url"
                                   value={editingLesson.content_url ?? ''}
                                   onChange={(e) => setEditingLesson((l) => ({ ...l, content_url: e.target.value }))}
-                                  placeholder={editingLesson.lesson_type === '360video' ? 'Equirectangular MP4 URL (Cloudinary or external)…' : 'Content URL (video, audio, or slides embed)…'}
+                                  placeholder={
+                                    editingLesson.lesson_type === '360video'
+                                      ? 'Equirectangular MP4 URL (Cloudinary or external)…'
+                                      : editingLesson.lesson_type === 'photo_360'
+                                      ? 'Equirectangular JPG/PNG URL (Cloudinary or external)…'
+                                      : 'Content URL (video, audio, or slides embed)…'
+                                  }
                                   className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
                                 />
                                 {editingLesson.lesson_type === '360video' && (
@@ -734,6 +743,13 @@ export default function CourseEditorPage() {
                                       Autoplay (muted) when lesson opens
                                     </label>
                                   </>
+                                )}
+                                {editingLesson.lesson_type === 'photo_360' && (
+                                  <Cloudinary360Uploader
+                                    resourceType="image"
+                                    currentUrl={editingLesson.content_url}
+                                    onUploadSuccess={(url) => setEditingLesson((l) => ({ ...l, content_url: url }))}
+                                  />
                                 )}
                               </>
                             ) : (
@@ -811,6 +827,7 @@ export default function CourseEditorPage() {
                           <option value="audio">Audio</option>
                           <option value="slides">Slides</option>
                           <option value="360video">360° Video</option>
+                          <option value="photo_360">360° Photo</option>
                         </select>
                         <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
                           <input type="checkbox" checked={newLesson.is_free_preview}
