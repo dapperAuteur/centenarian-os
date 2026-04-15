@@ -68,7 +68,7 @@ export default function PricingAccessTab({ course, saveCourseField }: TabProps) 
             className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
             placeholder="0 = no trial"
           />
-          <p className="text-gray-600 text-xs mt-1">0 = no trial. Max 30 days.</p>
+          <p className="text-gray-400 text-xs mt-1">0 = no trial. Max 30 days.</p>
         </div>
       )}
       <div>

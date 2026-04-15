@@ -62,7 +62,7 @@ export default function ExtrasTab({ course, courseId }: TabProps) {
         >
           <BookMarked className="w-4 h-4 text-fuchsia-400" />
           Glossary &amp; Phonetic Spelling
-          <ChevronDown className={`w-4 h-4 ml-auto text-gray-600 transition-transform ${showGlossary ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-4 h-4 ml-auto text-gray-400 transition-transform ${showGlossary ? 'rotate-180' : ''}`} />
         </button>
         {showGlossary && (
           <div className="p-4">
@@ -70,7 +70,7 @@ export default function ExtrasTab({ course, courseId }: TabProps) {
           </div>
         )}
       </div>
-      <p className="text-xs text-gray-600">
+      <p className="text-xs text-gray-400">
         Maps, documents, and podcast links are added per-lesson in the Curriculum tab.
       </p>
     </div>
