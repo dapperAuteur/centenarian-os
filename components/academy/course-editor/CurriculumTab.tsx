@@ -514,7 +514,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
 
       {/* Modules & Lessons */}
       {modules.length === 0 ? (
-        <div className="text-center py-10 text-gray-600 border border-dashed border-gray-800 rounded-xl">
+        <div className="text-center py-10 text-gray-400 border border-dashed border-gray-800 rounded-xl">
           <p className="text-sm">No modules yet. Add a module to organize your lessons.</p>
         </div>
       ) : (
@@ -524,9 +524,9 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
             return (
               <div key={mod.id} className="border border-gray-800 rounded-xl overflow-hidden">
                 <div className="flex items-center gap-3 px-4 py-3 bg-gray-800/50">
-                  <GripVertical className="w-4 h-4 text-gray-600 shrink-0" />
+                  <GripVertical className="w-4 h-4 text-gray-400 shrink-0" />
                   <p className="flex-1 font-medium text-white text-sm">{mod.title}</p>
-                  <span className="text-gray-600 text-xs">{lessons.length} lesson{lessons.length !== 1 ? 's' : ''}</span>
+                  <span className="text-gray-400 text-xs">{lessons.length} lesson{lessons.length !== 1 ? 's' : ''}</span>
                 </div>
 
                 {lessons.map((lesson) => {
@@ -536,24 +536,24 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                   return (
                     <div key={lesson.id} className="border-t border-gray-800">
                       <div className="flex items-center gap-3 px-4 py-3">
-                        <GripVertical className="w-3.5 h-3.5 text-gray-700 shrink-0" />
+                        <GripVertical className="w-3.5 h-3.5 text-gray-500 shrink-0" />
                         <Icon className="w-3.5 h-3.5 text-gray-500 shrink-0" />
                         <span className="flex-1 text-sm text-gray-300 min-w-0 truncate">{lesson.title}</span>
                         {lesson.is_free_preview && (
                           <span className="text-xs text-fuchsia-400 px-1.5 py-0.5 bg-fuchsia-900/30 rounded shrink-0">Preview</span>
                         )}
                         <button type="button" onClick={() => startEditingLesson(lesson)}
-                          className={`p-2 transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center ${isEditingLesson ? 'text-fuchsia-400' : 'text-gray-600 hover:text-fuchsia-400'}`}
+                          className={`p-2 transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center ${isEditingLesson ? 'text-fuchsia-400' : 'text-gray-400 hover:text-fuchsia-400'}`}
                           aria-label="Edit lesson">
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button type="button" onClick={() => startEditingDocs(lesson.id)}
-                          className={`p-2 transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center ${isEditingDocs ? 'text-fuchsia-400' : 'text-gray-600 hover:text-fuchsia-400'}`}
+                          className={`p-2 transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center ${isEditingDocs ? 'text-fuchsia-400' : 'text-gray-400 hover:text-fuchsia-400'}`}
                           aria-label="Edit documents">
                           <Paperclip className="w-3.5 h-3.5" />
                         </button>
                         <button type="button" onClick={() => deleteLesson(lesson.id)}
-                          className="p-2 text-gray-600 hover:text-red-400 transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
+                          className="p-2 text-gray-400 hover:text-red-400 transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
                           aria-label="Delete lesson">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -818,7 +818,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                               <Plus className="w-3 h-3" /> Add Chapter
                             </button>
                           </div>
-                          {audioChapters.length === 0 && <p className="text-xs text-gray-600 text-center py-2">No chapters. Students can still watch without chapters.</p>}
+                          {audioChapters.length === 0 && <p className="text-xs text-gray-400 text-center py-2">No chapters. Students can still watch without chapters.</p>}
                           <div className="space-y-2">
                             {audioChapters.map((ch, ci) => (
                               <div key={ch.id} className="flex items-center gap-2">
@@ -829,7 +829,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                                   className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500" title="Start time (seconds)" placeholder="Start (s)" />
                                 <input type="number" min={0} step={1} value={ch.endTime} onChange={(e) => updateAudioChapter(ch.id, { endTime: Number(e.target.value) })}
                                   className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500" title="End time (seconds)" placeholder="End (s)" />
-                                <button type="button" onClick={() => removeAudioChapter(ch.id)} className="text-gray-600 hover:text-red-400 transition p-1 shrink-0">
+                                <button type="button" onClick={() => removeAudioChapter(ch.id)} className="text-gray-400 hover:text-red-400 transition p-1 shrink-0">
                                   <X className="w-3.5 h-3.5" />
                                 </button>
                               </div>
@@ -855,7 +855,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                             <Plus className="w-3 h-3" /> Add Question
                           </button>
                         </div>
-                        {quizQuestions.length === 0 && <p className="text-xs text-gray-600 text-center py-3">No questions yet. Add your first question above.</p>}
+                        {quizQuestions.length === 0 && <p className="text-xs text-gray-400 text-center py-3">No questions yet. Add your first question above.</p>}
                         {quizQuestions.map((q, qi) => (
                           <div key={q.id} className="border border-gray-700 rounded-lg p-3 space-y-2">
                             <div className="flex items-start gap-2">
@@ -871,7 +871,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                                       <input type="text" value={opt.text} onChange={(e) => updateQuizOption(q.id, opt.id, e.target.value)}
                                         placeholder="Option text…" className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500" />
                                       {q.options.length > 2 && (
-                                        <button type="button" onClick={() => removeQuizOption(q.id, opt.id)} className="text-gray-600 hover:text-red-400 transition p-1">
+                                        <button type="button" onClick={() => removeQuizOption(q.id, opt.id)} className="text-gray-400 hover:text-red-400 transition p-1">
                                           <X className="w-3 h-3" />
                                         </button>
                                       )}
@@ -886,7 +886,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                                 <input type="text" value={q.citation} onChange={(e) => updateQuizQuestion(q.id, { citation: e.target.value })}
                                   placeholder="Citation (optional, APA format)…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-400 placeholder-gray-600 focus:outline-none focus:border-fuchsia-500" />
                               </div>
-                              <button type="button" onClick={() => removeQuizQuestion(q.id)} className="text-gray-600 hover:text-red-400 transition p-1 mt-2 shrink-0">
+                              <button type="button" onClick={() => removeQuizQuestion(q.id)} className="text-gray-400 hover:text-red-400 transition p-1 mt-2 shrink-0">
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
@@ -916,7 +916,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                             <Plus className="w-3 h-3" /> Add Platform
                           </button>
                         </div>
-                        {podcastLinks.length === 0 && <p className="text-xs text-gray-600 text-center py-2">No podcast links. Add links to Spotify, Apple Podcasts, YouTube, etc.</p>}
+                        {podcastLinks.length === 0 && <p className="text-xs text-gray-400 text-center py-2">No podcast links. Add links to Spotify, Apple Podcasts, YouTube, etc.</p>}
                         <div className="space-y-2">
                           {podcastLinks.map((link, li) => (
                             <div key={link.id} className="flex items-center gap-2">
@@ -925,13 +925,13 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                                 placeholder="https://open.spotify.com/episode/..." className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500" />
                               <input type="text" value={link.label} onChange={(e) => updatePodcastLink(link.id, { label: e.target.value })}
                                 placeholder="Label (auto-detected)" className="w-36 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500" />
-                              <button type="button" onClick={() => removePodcastLink(link.id)} className="text-gray-600 hover:text-red-400 transition p-1 shrink-0">
+                              <button type="button" onClick={() => removePodcastLink(link.id)} className="text-gray-400 hover:text-red-400 transition p-1 shrink-0">
                                 <X className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           ))}
                         </div>
-                        <p className="text-xs text-gray-600">Leave label blank to auto-detect platform from URL (Spotify, Apple, YouTube, etc.)</p>
+                        <p className="text-xs text-gray-400">Leave label blank to auto-detect platform from URL (Spotify, Apple, YouTube, etc.)</p>
                       </div>
                     )}
 
@@ -940,11 +940,11 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                       <button type="button" onClick={() => setShowMapSection((v) => !v)}
                         className="w-full flex items-center gap-2 px-3 py-2.5 bg-gray-800/50 text-sm font-semibold text-gray-300 hover:bg-gray-800 transition">
                         <Map className="w-3.5 h-3.5 text-fuchsia-400" /> Interactive Map
-                        <span className="text-xs text-gray-600 ml-1">
+                        <span className="text-xs text-gray-400 ml-1">
                           {mapMarkers.length > 0 || mapLines.length > 0 || mapPolygons.length > 0
                             ? `(${mapMarkers.length} markers, ${mapLines.length} lines, ${mapPolygons.length} polygons)` : '(optional)'}
                         </span>
-                        <ChevronDown className={`w-3.5 h-3.5 ml-auto text-gray-600 transition-transform ${showMapSection ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`w-3.5 h-3.5 ml-auto text-gray-400 transition-transform ${showMapSection ? 'rotate-180' : ''}`} />
                       </button>
                       {showMapSection && (
                         <div className="p-3 space-y-3 bg-gray-800/20">
@@ -999,7 +999,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                   </div>
                 ) : (
                   <button type="button" onClick={() => setAddingLesson(mod.id)}
-                    className="w-full flex items-center gap-2 px-4 py-3 border-t border-gray-800 text-gray-600 hover:text-fuchsia-400 text-sm hover:bg-gray-800/30 transition min-h-11">
+                    className="w-full flex items-center gap-2 px-4 py-3 border-t border-gray-800 text-gray-400 hover:text-fuchsia-400 text-sm hover:bg-gray-800/30 transition min-h-11">
                     <Plus className="w-3.5 h-3.5" /> Add Lesson
                   </button>
                 )}

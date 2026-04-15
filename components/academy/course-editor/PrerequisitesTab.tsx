@@ -211,7 +211,7 @@ export default function PrerequisitesTab({ course, courseId, saveCourseField, se
                   className={`px-2 py-1 rounded text-xs font-medium transition ${p.enforcement === 'required' ? 'bg-red-900/40 text-red-400 border border-red-800' : 'bg-amber-900/40 text-amber-400 border border-amber-800'}`}>
                   {p.enforcement === 'required' ? 'Required' : 'Recommended'}
                 </button>
-                <button type="button" onClick={() => removePrereqOrRec(p.id, 'prerequisite')} className="text-gray-600 hover:text-red-400 transition">
+                <button type="button" onClick={() => removePrereqOrRec(p.id, 'prerequisite')} className="text-gray-400 hover:text-red-400 transition">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -232,7 +232,7 @@ export default function PrerequisitesTab({ course, courseId, saveCourseField, se
                   {r.direction === 'before' ? 'Before' : 'After'}
                 </span>
                 {r.notes && <span className="text-xs text-gray-500 truncate max-w-32">{r.notes}</span>}
-                <button type="button" onClick={() => removePrereqOrRec(r.id, 'recommendation')} className="text-gray-600 hover:text-red-400 transition">
+                <button type="button" onClick={() => removePrereqOrRec(r.id, 'recommendation')} className="text-gray-400 hover:text-red-400 transition">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -271,7 +271,7 @@ export default function PrerequisitesTab({ course, courseId, saveCourseField, se
           </div>
         )}
         {prereqSearching && <p className="text-xs text-gray-500">Searching...</p>}
-        <p className="text-xs text-gray-600">Required = blocks enrollment. Recommended = shown as suggestion. Click badge to toggle.</p>
+        <p className="text-xs text-gray-400">Required = blocks enrollment. Recommended = shown as suggestion. Click badge to toggle.</p>
       </div>
 
       {/* Overrides */}
@@ -287,7 +287,7 @@ export default function PrerequisitesTab({ course, courseId, saveCourseField, se
                 <div key={o.id} className="flex items-center gap-2 bg-gray-800 rounded-lg px-3 py-2">
                   <span className="text-xs text-gray-300 flex-1">{o.student_name}</span>
                   {o.notes && <span className="text-xs text-gray-500 truncate max-w-32">{o.notes}</span>}
-                  <button type="button" onClick={() => revokeOverride(o.id)} className="text-gray-600 hover:text-red-400 transition">
+                  <button type="button" onClick={() => revokeOverride(o.id)} className="text-gray-400 hover:text-red-400 transition">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -304,7 +304,7 @@ export default function PrerequisitesTab({ course, courseId, saveCourseField, se
               Grant Override
             </button>
           </div>
-          <p className="text-xs text-gray-600 mt-1">Override lets a student enroll without completing required prerequisites.</p>
+          <p className="text-xs text-gray-400 mt-1">Override lets a student enroll without completing required prerequisites.</p>
 
           {/* Pending Override Requests */}
           {overrideRequests.length > 0 && (
@@ -347,7 +347,7 @@ export default function PrerequisitesTab({ course, courseId, saveCourseField, se
               </button>
             </div>
             {overrideQuestions.length === 0 ? (
-              <p className="text-xs text-gray-600">No custom questions. Students will submit a simple text reason.</p>
+              <p className="text-xs text-gray-400">No custom questions. Students will submit a simple text reason.</p>
             ) : (
               <div className="space-y-2">
                 {overrideQuestions.map((q) => (
@@ -362,7 +362,7 @@ export default function PrerequisitesTab({ course, courseId, saveCourseField, se
                       <option value="select">Select</option>
                     </select>
                     <button type="button" onClick={() => removeOverrideQuestion(q.id)}
-                      className="text-gray-600 hover:text-red-400 transition mt-0.5">
+                      className="text-gray-400 hover:text-red-400 transition mt-0.5">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -406,7 +406,7 @@ export default function PrerequisitesTab({ course, courseId, saveCourseField, se
               </div>
             ))}
             {(aiRecs.before ?? []).length === 0 && (aiRecs.after ?? []).length === 0 && (
-              <p className="text-xs text-gray-600">No AI suggestions available for this course.</p>
+              <p className="text-xs text-gray-400">No AI suggestions available for this course.</p>
             )}
           </div>
         )}

@@ -190,8 +190,8 @@ export default function CourseEditorLayout({ courseId }: Props) {
 
       {/* Save reminder */}
       <div className="mt-6 flex items-center gap-2">
-        <Save className="w-4 h-4 text-gray-600" />
-        <p className="text-gray-600 text-xs">Changes are saved automatically on blur.</p>
+        <Save className="w-4 h-4 text-gray-400" />
+        <p className="text-gray-400 text-xs">Changes are saved automatically on blur.</p>
       </div>
     </div>
   );
