@@ -326,16 +326,32 @@ textarea::placeholder {
 .dark-input input::placeholder {
   color: #6b7280; /* gray-500 */
 }
-/* Fix dark-on-dark <option> rendering: OS default popups ignore the <select>'s
- * styling and use system colors, which often shows dark text on a dark bg.
- * Explicitly styling the <option> children works in Chromium + Firefox. Safari
- * respects bg-color on options but falls back to system text color; acceptable
- * v1 compromise.
+/* Fix dark-on-dark <option> rendering.
  *
- * The attribute-selector rules catch selects that aren't wrapped in .dark-input
- * but have a dark Tailwind bg class applied directly. This is brittle but
- * covers ~every dark select in the app without per-file edits.
+ * Browsers (especially Safari and Chrome on macOS) largely ignore CSS color
+ * on <option> children and use native system colors instead. The reliable
+ * cross-browser fix is `color-scheme: dark` on the <select> itself — that
+ * tells the browser to render the native dropdown popup using its dark-mode
+ * system UI, so the options come out legible without us styling each option.
+ *
+ * We apply color-scheme: dark to any <select> that has a dark Tailwind bg
+ * class (bg-gray-800/900, bg-slate-800/900, etc.) or lives inside a
+ * .dark-input wrapper. The explicit option bg/color rules below stay as a
+ * fallback for browsers that DO style <option> elements.
  */
+.dark-input select,
+select.dark-select,
+select[class*="bg-gray-800"],
+select[class*="bg-gray-900"],
+select[class*="bg-slate-800"],
+select[class*="bg-slate-900"],
+select[class*="bg-zinc-800"],
+select[class*="bg-zinc-900"],
+select[class*="bg-neutral-800"],
+select[class*="bg-neutral-900"] {
+  color-scheme: dark;
+}
+
 .dark-input select option,
 select.dark-select option,
 select[class*="bg-gray-800"] option,
