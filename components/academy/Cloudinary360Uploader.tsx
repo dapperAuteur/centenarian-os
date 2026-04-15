@@ -22,19 +22,23 @@ interface Cloudinary360UploaderProps {
 
 const VIDEO_CONFIG = {
   folder: 'academy/360-videos',
-  maxFileSize: 500 * 1024 * 1024,
+  // Cloudinary free tier caps signed uploads at 100 MB total. The widget
+  // rejects larger files even when chunked, so we surface the real limit
+  // in the UI and keep this aligned. Teachers with larger 360 videos
+  // should host them elsewhere and paste a URL into the content_url field.
+  maxFileSize: 100 * 1024 * 1024,
   maxChunkSize: 20 * 1024 * 1024,
-  // Accepts common container formats plus Insta360 / GoPro-specific extensions.
-  // LRV = "Low Resolution Video", Insta360/GoPro proxy files that are really
-  // just MP4 containers with a different extension. INSV = Insta360 original
-  // stitched video. Cloudinary detects the real format from the file header,
-  // so we just need to let these extensions through the client-side filter.
-  clientAllowedFormats: ['mp4', 'mov', 'webm', 'mkv', 'lrv', 'insv', 'avi', 'm4v'],
+  // Accepts true 360 container formats. LRV was added earlier but removed:
+  // LRV is the low-resolution FLAT proxy file that Insta360 / GoPro cameras
+  // generate alongside the real recording — it is NOT equirectangular, so
+  // Photo Sphere Viewer renders it as a stretched flat video with no pan.
+  // INSV is kept because it IS the Insta360 original stitched 360 file.
+  clientAllowedFormats: ['mp4', 'mov', 'webm', 'mkv', 'insv', 'm4v'],
   label: {
-    upload: 'Upload 360° video (up to 500 MB)',
+    upload: 'Upload 360° video (up to 100 MB)',
     replace: 'Replace 360° video',
     aria: (current: boolean) => (current ? 'Replace 360 video' : 'Upload 360 video'),
-    helper: 'Equirectangular MP4, MOV, WebM, MKV, LRV, or INSV. Files over 20 MB upload in chunks.',
+    helper: 'Equirectangular MP4, MOV, WebM, MKV, or INSV — up to 100 MB (Cloudinary free-tier cap). For larger files, host externally and paste the URL above. LRV proxy files are not 360° — export the stitched equirectangular file from Insta360 Studio first.',
   },
 } as const;
 
