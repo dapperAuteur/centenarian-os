@@ -8,11 +8,13 @@ import { useState } from 'react';
 import {
   Plus, Loader2, Trash2, Upload, Download, Play, FileText, Volume2,
   Presentation, GripVertical, HelpCircle, X, Map, ChevronDown, Paperclip,
+  Compass, Image as ImageIcon, Pencil,
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import DataImporter from '@/components/academy/DataImporter';
 import LessonDocumentEditor from '@/components/academy/LessonDocumentEditor';
 import type { DocDraft } from '@/components/academy/LessonDocumentEditor';
+import Cloudinary360Uploader from '@/components/academy/Cloudinary360Uploader';
 
 interface Lesson {
   id: string;
@@ -24,6 +26,7 @@ interface Lesson {
   order: number;
   is_free_preview: boolean;
   module_id: string | null;
+  video_360_autoplay?: boolean | null;
 }
 
 interface Module {
@@ -62,6 +65,7 @@ interface QuizQuestionDraft {
 
 const LESSON_TYPE_ICON: Record<string, React.ElementType> = {
   video: Play, text: FileText, audio: Volume2, slides: Presentation, quiz: HelpCircle,
+  '360video': Compass, photo_360: ImageIcon,
 };
 
 interface TabProps {
@@ -78,7 +82,12 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
 
   // Lesson state
   const [addingLesson, setAddingLesson] = useState<string | null>(null);
-  const [newLesson, setNewLesson] = useState({ title: '', lesson_type: 'video', content_url: '', is_free_preview: false });
+  const [newLesson, setNewLesson] = useState({ title: '', lesson_type: 'video', content_url: '', is_free_preview: false, video_360_autoplay: false });
+
+  // Inline lesson edit state
+  const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
+  const [editingLesson, setEditingLesson] = useState<Partial<Lesson>>({});
+  const [savingLesson, setSavingLesson] = useState(false);
 
   // Quiz state
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestionDraft[]>([]);
@@ -150,6 +159,9 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
       module_id: moduleId,
       order: (course?.course_modules.find((m) => m.id === moduleId)?.lessons.length ?? 0),
     };
+    if (newLesson.lesson_type !== '360video') {
+      delete payload.video_360_autoplay;
+    }
     if (newLesson.lesson_type === 'quiz' && quizQuestions.length > 0) {
       payload.quiz_content = { questions: quizQuestions, passingScore: quizPassingScore, attemptsAllowed: quizAttemptsAllowed };
     }
@@ -180,7 +192,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
       body: JSON.stringify(payload),
     });
     if (r.ok) {
-      setNewLesson({ title: '', lesson_type: 'video', content_url: '', is_free_preview: false });
+      setNewLesson({ title: '', lesson_type: 'video', content_url: '', is_free_preview: false, video_360_autoplay: false });
       setQuizQuestions([]); setQuizPassingScore(80); setQuizAttemptsAllowed(-1);
       setAudioChapters([]); setTranscriptText('');
       setMapCenter({ lat: 0, lng: 0 }); setMapZoom(3); setMapMarkers([]); setMapLines([]); setMapPolygons([]);
@@ -262,6 +274,55 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
   async function deleteLesson(lessonId: string) {
     await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}`, { method: 'DELETE' });
     onCourseUpdated();
+  }
+
+  // Inline lesson editing — edit existing lesson title/type/URL/autoplay/free-preview
+  function startEditingLesson(lesson: Lesson) {
+    if (expandedLessonId === lesson.id) {
+      setExpandedLessonId(null);
+      setEditingLesson({});
+      return;
+    }
+    setExpandedLessonId(lesson.id);
+    setEditingLesson({
+      id: lesson.id,
+      title: lesson.title,
+      lesson_type: lesson.lesson_type,
+      content_url: lesson.content_url,
+      is_free_preview: lesson.is_free_preview,
+      video_360_autoplay: lesson.video_360_autoplay ?? false,
+    });
+  }
+
+  async function saveEditingLesson() {
+    if (!expandedLessonId || !editingLesson.title?.trim()) return;
+    setSavingLesson(true);
+    try {
+      const payload: Record<string, unknown> = {
+        title: editingLesson.title.trim(),
+        lesson_type: editingLesson.lesson_type,
+        content_url: editingLesson.content_url ?? null,
+        is_free_preview: editingLesson.is_free_preview ?? false,
+      };
+      if (editingLesson.lesson_type === '360video') {
+        payload.video_360_autoplay = editingLesson.video_360_autoplay ?? false;
+      }
+      const r = await offlineFetch(`/api/academy/courses/${courseId}/lessons/${expandedLessonId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (r.ok) {
+        setExpandedLessonId(null);
+        setEditingLesson({});
+        setFeedback('Lesson saved');
+        setTimeout(() => setFeedback(''), 2000);
+        onCourseUpdated();
+      }
+    } catch {
+      /* swallow — user can retry */
+    }
+    setSavingLesson(false);
   }
 
   // Inline document editing
@@ -419,6 +480,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                 {lessons.map((lesson) => {
                   const Icon = LESSON_TYPE_ICON[lesson.lesson_type] ?? Play;
                   const isEditingDocs = editingDocsLessonId === lesson.id;
+                  const isEditingLesson = expandedLessonId === lesson.id;
                   return (
                     <div key={lesson.id} className="border-t border-gray-800">
                       <div className="flex items-center gap-3 px-4 py-3">
@@ -428,6 +490,11 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                         {lesson.is_free_preview && (
                           <span className="text-xs text-fuchsia-400 px-1.5 py-0.5 bg-fuchsia-900/30 rounded shrink-0">Preview</span>
                         )}
+                        <button type="button" onClick={() => startEditingLesson(lesson)}
+                          className={`p-2 transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center ${isEditingLesson ? 'text-fuchsia-400' : 'text-gray-600 hover:text-fuchsia-400'}`}
+                          aria-label="Edit lesson">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
                         <button type="button" onClick={() => startEditingDocs(lesson.id)}
                           className={`p-2 transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center ${isEditingDocs ? 'text-fuchsia-400' : 'text-gray-600 hover:text-fuchsia-400'}`}
                           aria-label="Edit documents">
@@ -439,6 +506,100 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
+                      {isEditingLesson && (
+                        <div className="dark-input border-t border-gray-800 bg-gray-800/30 p-4 space-y-3">
+                          <input
+                            type="text"
+                            value={editingLesson.title ?? ''}
+                            onChange={(e) => setEditingLesson((l) => ({ ...l, title: e.target.value }))}
+                            placeholder="Lesson title…"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500 min-h-11"
+                          />
+                          <div className="flex flex-wrap gap-3 items-center">
+                            <select
+                              value={editingLesson.lesson_type ?? 'video'}
+                              onChange={(e) => setEditingLesson((l) => ({ ...l, lesson_type: e.target.value }))}
+                              className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
+                              aria-label="Lesson type"
+                            >
+                              <option value="video">Video</option>
+                              <option value="text">Text</option>
+                              <option value="audio">Audio</option>
+                              <option value="slides">Slides</option>
+                              <option value="quiz">Quiz</option>
+                              <option value="360video">360° Video</option>
+                              <option value="photo_360">360° Photo</option>
+                            </select>
+                            <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer min-h-11">
+                              <input
+                                type="checkbox"
+                                checked={editingLesson.is_free_preview ?? false}
+                                onChange={(e) => setEditingLesson((l) => ({ ...l, is_free_preview: e.target.checked }))}
+                                className="accent-fuchsia-500 w-4 h-4"
+                              />
+                              Free preview
+                            </label>
+                          </div>
+                          {editingLesson.lesson_type !== 'text' && editingLesson.lesson_type !== 'quiz' && (
+                            <>
+                              <input
+                                type="url"
+                                value={editingLesson.content_url ?? ''}
+                                onChange={(e) => setEditingLesson((l) => ({ ...l, content_url: e.target.value }))}
+                                placeholder={
+                                  editingLesson.lesson_type === '360video'
+                                    ? 'Equirectangular MP4 URL (Cloudinary or external)…'
+                                    : editingLesson.lesson_type === 'photo_360'
+                                    ? 'Equirectangular JPG/PNG URL (Cloudinary or external)…'
+                                    : 'Content URL (YouTube, Cloudinary, or external)…'
+                                }
+                                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500 min-h-11"
+                              />
+                              {editingLesson.lesson_type === '360video' && (
+                                <>
+                                  <Cloudinary360Uploader
+                                    currentUrl={editingLesson.content_url}
+                                    onUploadSuccess={(url) => setEditingLesson((l) => ({ ...l, content_url: url }))}
+                                  />
+                                  <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer min-h-11">
+                                    <input
+                                      type="checkbox"
+                                      checked={editingLesson.video_360_autoplay ?? false}
+                                      onChange={(e) => setEditingLesson((l) => ({ ...l, video_360_autoplay: e.target.checked }))}
+                                      className="accent-fuchsia-500 w-4 h-4"
+                                    />
+                                    Autoplay (muted) when lesson opens
+                                  </label>
+                                </>
+                              )}
+                              {editingLesson.lesson_type === 'photo_360' && (
+                                <Cloudinary360Uploader
+                                  resourceType="image"
+                                  currentUrl={editingLesson.content_url}
+                                  onUploadSuccess={(url) => setEditingLesson((l) => ({ ...l, content_url: url }))}
+                                />
+                              )}
+                            </>
+                          )}
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <button
+                              type="button"
+                              onClick={saveEditingLesson}
+                              disabled={savingLesson || !editingLesson.title?.trim()}
+                              className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-semibold hover:bg-fuchsia-700 transition disabled:opacity-50 min-h-11"
+                            >
+                              {savingLesson ? 'Saving…' : 'Save'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setExpandedLessonId(null); setEditingLesson({}); }}
+                              className="px-4 py-2 bg-gray-800 text-gray-400 rounded-lg text-sm hover:bg-gray-700 transition min-h-11"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       {isEditingDocs && (
                         <div className="px-4 pb-4 space-y-3">
                           <LessonDocumentEditor documents={editingDocs} onChange={setEditingDocs} defaultOpen />
@@ -468,12 +629,15 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                     <div className="flex flex-wrap gap-3 items-center">
                       <select value={newLesson.lesson_type}
                         onChange={(e) => setNewLesson((l) => ({ ...l, lesson_type: e.target.value }))}
-                        className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11">
+                        className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
+                        aria-label="Lesson type">
                         <option value="video">Video</option>
                         <option value="text">Text</option>
                         <option value="audio">Audio</option>
                         <option value="slides">Slides</option>
                         <option value="quiz">Quiz</option>
+                        <option value="360video">360° Video</option>
+                        <option value="photo_360">360° Photo</option>
                       </select>
                       <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer min-h-11">
                         <input type="checkbox" checked={newLesson.is_free_preview}
@@ -482,6 +646,49 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                         Free preview
                       </label>
                     </div>
+
+                    {/* Content URL / upload — all non-text, non-quiz types */}
+                    {newLesson.lesson_type !== 'text' && newLesson.lesson_type !== 'quiz' && (
+                      <>
+                        <input
+                          type="url"
+                          value={newLesson.content_url}
+                          onChange={(e) => setNewLesson((l) => ({ ...l, content_url: e.target.value }))}
+                          placeholder={
+                            newLesson.lesson_type === '360video'
+                              ? 'Equirectangular MP4 URL (Cloudinary or external)…'
+                              : newLesson.lesson_type === 'photo_360'
+                              ? 'Equirectangular JPG/PNG URL (Cloudinary or external)…'
+                              : 'Content URL (YouTube, Cloudinary, or external)…'
+                          }
+                          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500 min-h-11"
+                        />
+                        {newLesson.lesson_type === '360video' && (
+                          <>
+                            <Cloudinary360Uploader
+                              currentUrl={newLesson.content_url}
+                              onUploadSuccess={(url) => setNewLesson((l) => ({ ...l, content_url: url }))}
+                            />
+                            <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer min-h-11">
+                              <input
+                                type="checkbox"
+                                checked={newLesson.video_360_autoplay}
+                                onChange={(e) => setNewLesson((l) => ({ ...l, video_360_autoplay: e.target.checked }))}
+                                className="accent-fuchsia-500 w-4 h-4"
+                              />
+                              Autoplay (muted) when lesson opens
+                            </label>
+                          </>
+                        )}
+                        {newLesson.lesson_type === 'photo_360' && (
+                          <Cloudinary360Uploader
+                            resourceType="image"
+                            currentUrl={newLesson.content_url}
+                            onUploadSuccess={(url) => setNewLesson((l) => ({ ...l, content_url: url }))}
+                          />
+                        )}
+                      </>
+                    )}
 
                     {/* Chapter/transcript editor — audio & video */}
                     {(newLesson.lesson_type === 'audio' || newLesson.lesson_type === 'video') && (
