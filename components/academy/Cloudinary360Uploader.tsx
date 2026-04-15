@@ -1,10 +1,9 @@
 'use client';
 
 // components/academy/Cloudinary360Uploader.tsx
-// Signed Cloudinary upload widget for 360° video lessons. Wraps next-cloudinary's
-// CldUploadWidget with a 500 MB file cap and 20 MB chunked upload so teachers can
-// publish typical equirectangular MP4s (often 100–500 MB) directly from the lesson
-// editor without leaving CentenarianOS.
+// Signed Cloudinary upload widget for 360° lessons. Supports both equirectangular
+// video (the plan 20 default — 500 MB cap, chunked over 20 MB) and equirectangular
+// images (plan 21 — 25 MB cap, single-shot). Pass resourceType to switch modes.
 //
 // Uses the canonical /api/cloudinary/sign endpoint for signed uploads.
 
@@ -12,33 +11,61 @@ import { CldUploadWidget } from 'next-cloudinary';
 import { Upload } from 'lucide-react';
 import { useState } from 'react';
 
+type MediaKind = 'video' | 'image';
+
 interface Cloudinary360UploaderProps {
   onUploadSuccess: (url: string) => void;
   currentUrl?: string | null;
+  /** Which kind of 360 media this uploader handles. Defaults to 'video'. */
+  resourceType?: MediaKind;
 }
 
-const FOLDER = 'academy/360-videos';
-const MAX_BYTES = 500 * 1024 * 1024;
-const CHUNK_BYTES = 20 * 1024 * 1024;
+const VIDEO_CONFIG = {
+  folder: 'academy/360-videos',
+  maxFileSize: 500 * 1024 * 1024,
+  maxChunkSize: 20 * 1024 * 1024,
+  clientAllowedFormats: ['mp4', 'mov', 'webm'],
+  label: {
+    upload: 'Upload 360° video (up to 500 MB)',
+    replace: 'Replace 360° video',
+    aria: (current: boolean) => (current ? 'Replace 360 video' : 'Upload 360 video'),
+    helper: 'Equirectangular MP4 / MOV / WebM. Files over 20 MB upload in chunks.',
+  },
+} as const;
+
+const IMAGE_CONFIG = {
+  folder: 'academy/360-photos',
+  maxFileSize: 25 * 1024 * 1024,
+  maxChunkSize: 25 * 1024 * 1024, // effectively single-shot; images are small
+  clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
+  label: {
+    upload: 'Upload 360° photo (up to 25 MB)',
+    replace: 'Replace 360° photo',
+    aria: (current: boolean) => (current ? 'Replace 360 photo' : 'Upload 360 photo'),
+    helper: 'Equirectangular JPG / PNG / WebP.',
+  },
+} as const;
 
 export default function Cloudinary360Uploader({
   onUploadSuccess,
   currentUrl,
+  resourceType = 'video',
 }: Cloudinary360UploaderProps) {
   const [error, setError] = useState<string | null>(null);
+  const config = resourceType === 'image' ? IMAGE_CONFIG : VIDEO_CONFIG;
 
   return (
     <div className="space-y-2">
       <CldUploadWidget
         signatureEndpoint="/api/cloudinary/sign"
         options={{
-          resourceType: 'video',
-          folder: FOLDER,
-          maxFileSize: MAX_BYTES,
-          maxChunkSize: CHUNK_BYTES,
+          resourceType,
+          folder: config.folder,
+          maxFileSize: config.maxFileSize,
+          maxChunkSize: config.maxChunkSize,
           sources: ['local', 'url'],
           multiple: false,
-          clientAllowedFormats: ['mp4', 'mov', 'webm'],
+          clientAllowedFormats: [...config.clientAllowedFormats],
         }}
         onSuccess={(result) => {
           if (result.event === 'success' && result.info && typeof result.info === 'object') {
@@ -59,19 +86,17 @@ export default function Cloudinary360Uploader({
               open();
             }}
             className="min-h-11 w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-gray-700 rounded-xl text-sm text-gray-300 hover:border-fuchsia-500 hover:text-fuchsia-300 transition"
-            aria-label={currentUrl ? 'Replace 360 video' : 'Upload 360 video'}
+            aria-label={config.label.aria(!!currentUrl)}
           >
             <Upload className="w-4 h-4" aria-hidden="true" />
-            {currentUrl ? 'Replace 360° video' : 'Upload 360° video (up to 500 MB)'}
+            {currentUrl ? config.label.replace : config.label.upload}
           </button>
         )}
       </CldUploadWidget>
       {error && (
         <p role="alert" className="text-xs text-red-400">{error}</p>
       )}
-      <p className="text-xs text-gray-500">
-        Equirectangular MP4 / MOV / WebM. Files over 20 MB upload in chunks.
-      </p>
+      <p className="text-xs text-gray-500">{config.label.helper}</p>
     </div>
   );
 }
