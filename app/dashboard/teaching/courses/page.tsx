@@ -23,19 +23,17 @@ interface Course {
 export default function TeachingCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
-  const [username, setUsername] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    Promise.all([
-      offlineFetch('/api/academy/courses?mine=true').then((r) => r.json()),
-      offlineFetch('/api/auth/me').then((r) => r.json()),
-    ]).then(([coursesData, meData]) => {
-      setCourses(Array.isArray(coursesData) ? coursesData : []);
-      setUsername(meData.username ?? null);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    offlineFetch('/api/academy/courses?mine=true')
+      .then((r) => r.json())
+      .then((coursesData) => {
+        setCourses(Array.isArray(coursesData) ? coursesData : []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, [router]);
 
   async function handleDelete(courseId: string) {
@@ -136,7 +134,7 @@ export default function TeachingCoursesPage() {
                   {course.is_published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                 </button>
                 <Link
-                  href={username ? `/dashboard/teaching/${username}/courses/${course.id}` : '#'}
+                  href={`/dashboard/teaching/courses/${course.id}`}
                   className="w-11 h-11 flex items-center justify-center rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white transition"
                   title="Edit course"
                 >
