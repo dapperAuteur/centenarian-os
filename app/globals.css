@@ -326,3 +326,26 @@ textarea::placeholder {
 .dark-input input::placeholder {
   color: #6b7280; /* gray-500 */
 }
+/* Fix dark-on-dark <option> rendering: OS default popups ignore the <select>'s
+ * styling and use system colors, which often shows dark text on a dark bg.
+ * Explicitly styling the <option> children works in Chromium + Firefox. Safari
+ * respects bg-color on options but falls back to system text color; acceptable
+ * v1 compromise.
+ *
+ * The attribute-selector rules catch selects that aren't wrapped in .dark-input
+ * but have a dark Tailwind bg class applied directly. This is brittle but
+ * covers ~every dark select in the app without per-file edits.
+ */
+.dark-input select option,
+select.dark-select option,
+select[class*="bg-gray-800"] option,
+select[class*="bg-gray-900"] option,
+select[class*="bg-slate-800"] option,
+select[class*="bg-slate-900"] option,
+select[class*="bg-zinc-800"] option,
+select[class*="bg-zinc-900"] option,
+select[class*="bg-neutral-800"] option,
+select[class*="bg-neutral-900"] option {
+  background-color: #1f2937; /* gray-800 */
+  color: #e5e7eb;            /* gray-200 */
+}
