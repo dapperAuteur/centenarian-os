@@ -24,12 +24,17 @@ const VIDEO_CONFIG = {
   folder: 'academy/360-videos',
   maxFileSize: 500 * 1024 * 1024,
   maxChunkSize: 20 * 1024 * 1024,
-  clientAllowedFormats: ['mp4', 'mov', 'webm'],
+  // Accepts common container formats plus Insta360 / GoPro-specific extensions.
+  // LRV = "Low Resolution Video", Insta360/GoPro proxy files that are really
+  // just MP4 containers with a different extension. INSV = Insta360 original
+  // stitched video. Cloudinary detects the real format from the file header,
+  // so we just need to let these extensions through the client-side filter.
+  clientAllowedFormats: ['mp4', 'mov', 'webm', 'mkv', 'lrv', 'insv', 'avi', 'm4v'],
   label: {
     upload: 'Upload 360° video (up to 500 MB)',
     replace: 'Replace 360° video',
     aria: (current: boolean) => (current ? 'Replace 360 video' : 'Upload 360 video'),
-    helper: 'Equirectangular MP4 / MOV / WebM. Files over 20 MB upload in chunks.',
+    helper: 'Equirectangular MP4, MOV, WebM, MKV, LRV, or INSV. Files over 20 MB upload in chunks.',
   },
 } as const;
 
