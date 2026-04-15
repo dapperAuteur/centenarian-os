@@ -1,4 +1,4 @@
-date,time,activity,description,tag,priority,estimated_cost
-2026-03-01,09:00,Annual physical exam,Fasting blood work and checkup with Dr. Patel,health,3,30.00
-2026-03-01,14:00,Submit quarterly taxes,File Q1 estimated tax payment via IRS Direct Pay,finance,3,0
-2026-03-02,10:30,Grocery run,Restock weekly meal prep ingredients at Costco,errands,2,150.00
+roadmap_title,roadmap_start_date,roadmap_end_date,roadmap_description,goal_title,goal_category,goal_target_year,goal_description,milestone_title,milestone_target_date,milestone_description,date,time,activity,description,tag,priority,estimated_cost
+Longevity 2026,2026-01-01,2026-12-31,Year-long longevity focus,Zone 2 Base Building,FITNESS,2026,Build aerobic base to 5h/week,Complete first 50-mile week,2026-06-30,Steady-state endurance milestone,2026-04-18,06:00,90-min Zone 2 bike ride,Easy conversational pace,fitness,2,0
+Longevity 2026,,,,Zone 2 Base Building,FITNESS,2026,,Complete first 50-mile week,2026-06-30,,2026-04-20,06:00,60-min Zone 2 run,Heart rate under 140,fitness,2,0
+,,,,,,,,,,,2026-03-01,09:00,Annual physical exam,Fasting blood work and checkup,health,3,30.00
