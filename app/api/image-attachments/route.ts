@@ -120,7 +120,7 @@ export async function DELETE(request: NextRequest) {
 async function deleteCloudinaryAsset(publicId: string) {
   const { createHash } = await import('crypto');
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const apiKey = process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
   if (!cloudName || !apiKey || !apiSecret) return;
 
