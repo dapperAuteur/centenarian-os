@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   DollarSign, TrendingUp, TrendingDown, Plus, ArrowRight,
   Upload, Download, Settings, Loader2, CreditCard, Wallet, FileText, AlertTriangle,
-  ArrowRightLeft, RefreshCw, Building2, Landmark,
+  ArrowRightLeft, RefreshCw, Building2, Landmark, ScanLine,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -17,9 +17,6 @@ import CategorySelect from '@/components/finance/CategorySelect';
 import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import TransferModal from '@/components/finance/TransferModal';
 import Modal from '@/components/ui/Modal';
-import ScanButton from '@/components/scan/ScanButton';
-import type { ScanResult } from '@/components/scan/ScanButton';
-import type { ReceiptExtraction } from '@/lib/ocr/extractors';
 
 interface CategoryBreakdown {
   id: string;
@@ -196,21 +193,6 @@ export default function FinanceDashboardPage() {
     }
   };
 
-  const handleScanResult = (data: ScanResult) => {
-    const receipt = data.extracted as unknown as ReceiptExtraction;
-    setAddForm({
-      amount: receipt.total_amount ? String(receipt.total_amount) : '',
-      type: 'expense',
-      description: receipt.line_items?.map((li) => li.description).join(', ').slice(0, 500) || '',
-      vendor: receipt.vendor || '',
-      transaction_date: receipt.date || new Date().toISOString().split('T')[0],
-      category_id: '',
-      account_id: '',
-      brand_id: '',
-    });
-    setShowAdd(true);
-  };
-
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     const res = await offlineFetch('/api/finance/categories', {
@@ -280,12 +262,13 @@ export default function FinanceDashboardPage() {
             <Plus className="w-4 h-4" />
             Add Transaction
           </button>
-          <ScanButton
-            onResult={handleScanResult}
-            moduleHint="receipt"
-            label="Scan Receipt"
-            className="flex items-center gap-1.5 px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition cursor-pointer"
-          />
+          <Link
+            href="/dashboard/scan"
+            className="flex items-center gap-1.5 px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition"
+          >
+            <ScanLine className="w-4 h-4" aria-hidden="true" />
+            Scan Receipt
+          </Link>
           <button
             onClick={() => setShowTransfer(true)}
             className="flex items-center gap-1.5 px-3 py-2 bg-fuchsia-50 text-fuchsia-700 rounded-lg text-sm font-medium hover:bg-fuchsia-100 transition"
