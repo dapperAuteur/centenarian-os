@@ -7,6 +7,13 @@ import { stripe } from '@/lib/stripe';
 import Stripe from 'stripe';
 import { createShopifyPromoCode } from '@/lib/shopify/createPromoCode';
 import { logInfo, logError } from '@/lib/logging';
+import { isValidStarterSelection } from '@/lib/access/starter-modules';
+
+function parseSelectedModules(csv: string | undefined | null): string[] | null {
+  if (!csv) return null;
+  const slugs = csv.split(',').map((s) => s.trim()).filter(Boolean);
+  return isValidStarterSelection(slugs) ? slugs : null;
+}
 
 // Service-role client bypasses RLS — only used server-side in this webhook
 function getServiceClient() {
@@ -62,6 +69,46 @@ export async function POST(request: NextRequest) {
             stripe_subscription_id: session.subscription as string,
           }, { onConflict: 'user_id' });
         if (tpErr) logError({ source: 'webhook', module: 'stripe', message: 'Failed to upsert teacher_profile', metadata: { error: tpErr.message }, userId });
+      } else if (
+        session.mode === 'subscription' &&
+        (plan === 'starter-monthly' || plan === 'starter-annual')
+      ) {
+        const slugs = parseSelectedModules(session.metadata?.selected_modules);
+        if (!slugs) {
+          logError({
+            source: 'webhook', module: 'stripe',
+            message: 'Starter session missing valid selected_modules metadata',
+            metadata: { sessionId: session.id, raw: session.metadata?.selected_modules ?? null },
+            userId,
+          });
+          break;
+        }
+        let subscriptionExpiresAt: string | null = null;
+        try {
+          const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const s = sub as any;
+          const rawEnd: number | undefined = s.items?.data?.[0]?.current_period_end ?? s.current_period_end;
+          if (rawEnd && typeof rawEnd === 'number') {
+            subscriptionExpiresAt = new Date(rawEnd * 1000).toISOString();
+          }
+        } catch (err) {
+          logError({ source: 'webhook', module: 'stripe', message: 'Failed to retrieve subscription for period_end (starter)', metadata: { error: err instanceof Error ? err.message : String(err) }, userId });
+        }
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            subscription_status: 'starter',
+            selected_modules: slugs,
+            stripe_subscription_id: session.subscription as string,
+            subscription_expires_at: subscriptionExpiresAt,
+            cancel_at_period_end: false,
+            cancel_at: null,
+          })
+          .eq('id', userId);
+        if (error) {
+          logError({ source: 'webhook', module: 'stripe', message: 'Failed to update starter status', metadata: { error: error.message }, userId });
+        }
       } else if (session.mode === 'subscription' && plan === 'monthly') {
         // Expand subscription to get current_period_end for renewal date.
         // In Stripe API 2024-09-30+ (acacia/clover), this field moved to SubscriptionItem.
@@ -145,12 +192,17 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (profile && profile.subscription_status !== 'lifetime') {
+        // Clear selected_modules too — the schema invariant is that
+        // selected_modules is non-null iff subscription_status='starter'.
+        // Also triggers the client-side revocation purge (plan 25c) since
+        // the user's enrollments will be inactive after this downgrade.
         const { error } = await supabase
           .from('profiles')
           .update({
             subscription_status: 'free',
             stripe_subscription_id: null,
             subscription_expires_at: null,
+            selected_modules: null,
           })
           .eq('stripe_customer_id', customerId);
         if (error) {

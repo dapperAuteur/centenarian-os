@@ -992,4 +992,74 @@ The picker that was referenced by branches 2 + 3 as "TBD". New Starter-tier visu
 
 ### Next branch
 
-Branch 5 — `feat/starter-tier-stripe`. Extends `/api/stripe/checkout` to accept `plan: 'starter-monthly' | 'starter-annual'` + `selected_modules` in the request body. Creates the Stripe subscription, writes `subscription_status='starter'` + `selected_modules` to profile on webhook. Needs `STRIPE_STARTER_MONTHLY_PRICE_ID` and `STRIPE_STARTER_ANNUAL_PRICE_ID` set in env (owner already confirmed the dollar amounts; owner needs to create the actual prices in Stripe and share the `price_xxx` IDs before this branch can ship).
+Branch 5 — see §21 below.
+
+---
+
+## 21. Starter tier branch 5 shipped — `feat/starter-tier-stripe`
+
+Wires the backend half of what branch 4's picker was already calling. End-to-end Starter signup now works: visitor picks 3 modules → Stripe checkout → webhook writes `subscription_status='starter'` + `selected_modules` → dashboard layout immediately gates correctly. Also handles the downgrade path (subscription cancellation clears `selected_modules` to keep the schema invariant).
+
+### Env vars required (already set by owner in Vercel + `.env.local`)
+
+- `STRIPE_STARTER_MONTHLY_PRICE_ID` — $5.46/mo recurring price
+- `STRIPE_STARTER_ANNUAL_PRICE_ID` — $51.80/yr recurring price
+
+### Files modified
+
+- `app/api/stripe/checkout/route.ts`:
+  - `VALID_PLANS` gains `'starter-monthly'`, `'starter-annual'`.
+  - Body destructures `selected_modules` alongside `plan`. For Starter plans, validates with `isValidStarterSelection` before doing any Stripe work.
+  - Two new guard clauses: block Starter checkout when user is already `'monthly'` ("cancel Monthly first") or `'starter'` ("use the picker to swap"). Lifetime block unchanged.
+  - New Starter branch creates the checkout session with the resolved price ID, serializes the 3 slugs as a comma-joined string in metadata (Stripe metadata values are strings ≤500 chars; 3 slugs fit trivially), and stamps the same metadata on the subscription via `subscription_data.metadata` so downstream subscription events can route without re-fetching the session.
+- `app/api/stripe/webhook/route.ts`:
+  - New `parseSelectedModules(csv)` helper deserializes the CSV metadata and re-validates with `isValidStarterSelection` — defensive against truncation or manipulation.
+  - New Starter branch in the `checkout.session.completed` switch: retrieves the subscription to get `current_period_end`, writes `subscription_status='starter'` + `selected_modules` + subscription id + expiry to `profiles`.
+  - `customer.subscription.deleted` handler now clears `selected_modules` alongside the downgrade to `'free'`. Maintains the invariant "`selected_modules IS NULL` iff `subscription_status <> 'starter'`". Also implicitly arms plan 25c's revocation purger for any offline content tied to courses the downgraded user was enrolled in.
+- `app/api/stripe/sync/route.ts`:
+  - New Starter branch mirrors the webhook behavior for the billing-page-redirect fallback. Same CSV parse, same validation, same DB write. Returns `{ status: 'starter' }` on success.
+
+### Behavior delivered — end-to-end Starter signup
+
+1. Visitor lands on `/pricing`, clicks "Pick my 3 modules" → modal opens.
+2. Picks 3 modules + cadence, clicks "Continue — $5.46/mo" (or annual).
+3. Frontend POSTs `/api/stripe/checkout` with `{ plan: 'starter-monthly', selected_modules: ['finance','workouts','metrics'] }`.
+4. Checkout route validates, creates customer if missing, creates session with the Starter price, stamps metadata on session + subscription, returns the URL.
+5. Browser redirects to Stripe's hosted checkout.
+6. Visitor completes payment.
+7. Stripe fires `checkout.session.completed` → webhook parses `selected_modules` metadata, writes profile row.
+8. Browser lands on `/dashboard/billing?success=true&session_id=cs_xxx`.
+9. Billing page calls `/api/stripe/sync` as a safety net in case the webhook is delayed — idempotent; writes the same row if not already written.
+10. User refreshes any dashboard page — `useSubscription()` reads `subscription_status='starter'` + `selected_modules`, dashboard layout gates accordingly, nav shows only picked + always-included items.
+
+### Behavior delivered — downgrade
+
+- User cancels via Stripe customer portal or billing page.
+- Stripe fires `customer.subscription.deleted`.
+- Webhook downgrades to `'free'` and clears `selected_modules`.
+- User's next dashboard load: `hasAccess=false` (because `subStatus='free'`, not admin, not invited) → redirect to `/pricing`.
+- Plan 25c's `RevokedAssetsPurger` runs on the next `/academy/*` visit → deletes any offline-cached lessons tied to courses the user was enrolled in via Starter.
+
+### Merge order
+
+1. Branches 1–4 merged.
+2. Migration 182 applied.
+3. **Owner: create two Stripe products / prices** (done per user confirmation 2026-04-16):
+   - Starter Monthly — $5.46 USD recurring monthly
+   - Starter Annual — $51.80 USD recurring yearly
+4. **Owner: set env vars** `STRIPE_STARTER_MONTHLY_PRICE_ID` and `STRIPE_STARTER_ANNUAL_PRICE_ID` with the `price_xxx` values (done per user confirmation 2026-04-16).
+5. Merge `feat/starter-tier-stripe`.
+
+### Verification
+
+1. `/pricing` → Starter card → "Pick my 3 modules" → pick 3 → Continue Monthly → real Stripe checkout loads (use Stripe test mode + card `4242 4242 4242 4242`).
+2. Complete checkout → redirect to `/dashboard/billing?success=true&session_id=...`.
+3. Inspect `profiles` row: `subscription_status='starter'`, `selected_modules` array matches picks, `stripe_subscription_id` populated, `subscription_expires_at` ~1 month out (or ~1 year for annual).
+4. Navigate dashboard: only picked + always-included items in nav. `/dashboard/travel` (if not picked) → `/dashboard/upgrade?from=travel`.
+5. From Stripe dashboard or billing page: cancel subscription → within seconds webhook fires → `profiles` row reverts to `'free'` with `selected_modules=null` → user is bounced to `/pricing`.
+6. Try Starter checkout while already `'monthly'` → 400 with "Cancel your Monthly plan first".
+7. Try Starter checkout while already `'starter'` → 400 with "use the module picker to swap".
+
+### Next branch
+
+Branch 6 — `feat/starter-tier-admin-stats`. Admin dashboard widgets: Starter subscriber count, popular module combos, annual-vs-monthly split. Needs no new infra — just reads `profiles` aggregates via a new admin API route.
