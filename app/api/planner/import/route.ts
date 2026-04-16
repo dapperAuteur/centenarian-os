@@ -344,8 +344,26 @@ export async function POST(request: NextRequest) {
   const errors: string[] = [];
   let skipped = 0;
 
+  // Inherit hierarchy context from the most recent non-blank row above — lets CSV authors
+  // write grouped data (fill parent columns on the first row of each group, leave blank below).
+  const HIERARCHY_KEYS = [
+    'roadmap_title', 'roadmap_start_date', 'roadmap_end_date', 'roadmap_description',
+    'goal_title', 'goal_category', 'goal_target_year', 'goal_description',
+    'milestone_title', 'milestone_target_date', 'milestone_description',
+  ];
+  const inherited: Record<string, string> = {};
+
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
+
+    for (const key of HIERARCHY_KEYS) {
+      const v = row[key]?.trim();
+      if (v) {
+        inherited[key] = v;
+      } else if (inherited[key]) {
+        row[key] = inherited[key];
+      }
+    }
 
     if (!row.date || !validateDate(row.date)) {
       errors.push(`Row ${i + 1}: invalid or missing date`);
@@ -386,7 +404,8 @@ export async function POST(request: NextRequest) {
       user_id: user.id,
       milestone_id: milestoneId,
       date: row.date,
-      time: row.time?.trim() || null,
+      // tasks.time is NOT NULL in schema — default to 09:00 when missing
+      time: row.time?.trim() || '09:00',
       activity,
       description: row.description?.trim() || null,
       tag: resolvedTag,
