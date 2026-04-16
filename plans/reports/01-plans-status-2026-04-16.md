@@ -477,3 +477,54 @@ Finishes the offline trilogy. Turns out the Service Worker half was already in p
 |---|---|
 | 25 iOS validation pass | open — needs device |
 | 26 (Insta360 import) | blocked on §3 research |
+
+---
+
+## 14. Plan 26 research brief — `research/academy-insta360-import` (`2ac89b2`)
+
+Not code. Desk research answering three of four §3 questions from [plan 26](../26-academy-insta360-import.md) using public Insta360 documentation and GitHub repos. Brief lives at [plans/26-academy-insta360-import-research.md](../26-academy-insta360-import-research.md).
+
+### Findings at a glance
+
+| §3 question | Answer | Confidence |
+|---|---|---|
+| 1. Public SDK / documented file format? | **Yes.** Self-service application, ~3 business day approval. | High |
+| 2. Mobile share path from Insta360 app? | **No.** Hardcoded YouTube/Facebook/Street View only; no OS share sheet, no URL scheme. | High |
+| 3. NDA or commercial licensing? | No public evidence. Need direct confirmation for commercial SaaS redistribution. | Medium |
+| 4. Insta360 dominant among our teachers? | **Unknown — needs survey.** | — |
+
+### What's in the brief
+
+- **Findings for §3.1–§3.3** with source links (insta360.com/developer, onlinemanual.insta360.com, github.com/Insta360Develop).
+- **Devrel email draft** — three short questions covering the remaining commercial-terms gap. Ready to paste into a mail client, fill `{Name}`/`{Title}`, and send.
+- **Teacher-camera survey** — 5 questions with decision thresholds: >60% Insta360 → pursue full plan 26 (desktop-only); 40–60% → smaller v1 only; <40% → cancel plan 26 proper.
+- **Decision tree** mapping survey outcomes to action.
+
+### Key discovery: mobile path is dead
+
+Plan 26 §2 assumed a "Continue in CentenarianOS" deep-link from the Insta360 app's share menu. Insta360's app does not expose an OS share sheet or custom URL scheme — only hardcoded destinations. **Any mobile path requires users to export to Photos/Files first, which is the flow they already have.** If plan 26 proceeds at all, it's desktop-only.
+
+### Key discovery: desktop integration is a native-companion project
+
+The SDK doesn't expose a web/browser runtime. A real integration means shipping a native companion (Electron / Tauri) that uses the C++ CameraSDK to read Insta360 Studio exports and pipe them through our Cloudinary flow. That's a quarter-plus of work we haven't scoped — **if the survey unblocks the plan, we'd need to revisit prioritization before committing.**
+
+### Recommended immediate action
+
+Ship the **§4 smaller v1** (aspect-ratio warn + filename pattern title suggestion) on a separate branch. It's ~1 hour of work, zero external dependencies, valuable regardless of survey outcome. Run the survey and email devrel in parallel.
+
+### Next human actions
+
+1. Send the devrel email drafted in brief §4.
+2. Launch the 5-question teacher survey (brief §5).
+3. Greenlight the §4 smaller v1 branch independently.
+
+Research phase is complete once the email is sent and the survey is live.
+
+### Remaining backlog (updated)
+
+| Plan | Status |
+|---|---|
+| 25 iOS validation pass | open — needs device |
+| 26.0 smaller v1 (aspect ratio + filename hints) | ready — ~1 hour |
+| 26 full (desktop native companion) | blocked on survey + devrel reply |
+| 26 mobile deep-link | **cancelled** — Insta360 app doesn't expose it |
