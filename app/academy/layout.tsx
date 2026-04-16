@@ -28,6 +28,7 @@ export const metadata: Metadata = {
 
 import FloatingActionsMenu from '@/components/ui/FloatingActionsMenu';
 import SiteFooter from '@/components/ui/SiteFooter';
+import RevokedAssetsPurger from '@/components/academy/offline/RevokedAssetsPurger';
 
 export default function AcademyLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -36,6 +37,7 @@ export default function AcademyLayout({ children }: { children: React.ReactNode 
       <div className="flex-1">{children}</div>
       <SiteFooter />
       <FloatingActionsMenu />
+      <RevokedAssetsPurger />
     </div>
   );
 }
