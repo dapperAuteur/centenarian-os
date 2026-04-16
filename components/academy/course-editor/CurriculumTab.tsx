@@ -674,52 +674,70 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                           {(editingLesson.lesson_type === 'audio' || editingLesson.lesson_type === 'video' || editingLesson.lesson_type === '360video') && (
                             <div className="space-y-4 border border-gray-700 rounded-xl p-3 bg-gray-800/30">
                               <div>
-                                <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center justify-between mb-1">
                                   <h4 className="text-sm font-semibold text-gray-200">Chapter Markers</h4>
-                                  <button type="button" onClick={addEditingChapter} className="flex items-center gap-1 text-xs text-fuchsia-400 hover:text-fuchsia-300 transition">
-                                    <Plus className="w-3 h-3" /> Add Chapter
+                                  <button type="button" onClick={addEditingChapter} className="flex items-center gap-1 text-xs text-fuchsia-400 hover:text-fuchsia-300 transition min-h-11">
+                                    <Plus className="w-3 h-3" aria-hidden="true" /> Add Chapter
                                   </button>
                                 </div>
+                                <p className="text-xs text-gray-500 mb-3">
+                                  Break the lesson into sections learners can jump to from the player. Each chapter has a title and a start/end time in <strong className="text-gray-300">seconds from the beginning of the video</strong>. Example: a chapter from <code className="text-gray-400">0</code> to <code className="text-gray-400">45</code> covers the first 45 seconds; the next might start at <code className="text-gray-400">45</code> and end at <code className="text-gray-400">180</code> (3 minutes in). Chapters don&apos;t need to cover the full video — gaps are fine.
+                                </p>
                                 {editingAudioChapters.length === 0 && (
-                                  <p className="text-xs text-gray-500 text-center py-2">No chapters. Students can still watch without chapters.</p>
+                                  <p className="text-xs text-gray-500 text-center py-2 border border-dashed border-gray-700 rounded-lg">No chapters yet. Click &ldquo;Add Chapter&rdquo; to add one. Learners can still watch the lesson without chapters.</p>
                                 )}
-                                <div className="space-y-2">
-                                  {editingAudioChapters.map((ch, ci) => (
-                                    <div key={ch.id} className="flex items-center gap-2">
-                                      <span className="text-xs text-gray-500 shrink-0 w-5">{ci + 1}</span>
-                                      <input
-                                        type="text"
-                                        value={ch.title}
-                                        onChange={(e) => updateEditingChapter(ch.id, { title: e.target.value })}
-                                        placeholder="Chapter title…"
-                                        className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500"
-                                      />
-                                      <input
-                                        type="number"
-                                        min={0}
-                                        step={1}
-                                        value={ch.startTime}
-                                        onChange={(e) => updateEditingChapter(ch.id, { startTime: Number(e.target.value) })}
-                                        className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500"
-                                        title="Start time (seconds)"
-                                        placeholder="Start"
-                                      />
-                                      <input
-                                        type="number"
-                                        min={0}
-                                        step={1}
-                                        value={ch.endTime}
-                                        onChange={(e) => updateEditingChapter(ch.id, { endTime: Number(e.target.value) })}
-                                        className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500"
-                                        title="End time (seconds)"
-                                        placeholder="End"
-                                      />
-                                      <button type="button" onClick={() => removeEditingChapter(ch.id)} className="text-gray-400 hover:text-red-400 transition p-1 shrink-0" aria-label="Remove chapter" title="Remove chapter">
-                                        <X className="w-3.5 h-3.5" />
-                                      </button>
+                                {editingAudioChapters.length > 0 && (
+                                  <>
+                                    {/* Column headers — visible on sm+ only, inputs have their own aria-labels on mobile */}
+                                    <div className="hidden sm:flex items-center gap-2 mb-1 px-1">
+                                      <span className="text-[10px] uppercase tracking-wide text-gray-500 shrink-0 w-5">#</span>
+                                      <span className="flex-1 text-[10px] uppercase tracking-wide text-gray-500">Chapter title</span>
+                                      <span className="text-[10px] uppercase tracking-wide text-gray-500 w-20 text-center">Start (sec)</span>
+                                      <span className="text-[10px] uppercase tracking-wide text-gray-500 w-20 text-center">End (sec)</span>
+                                      <span className="w-5" aria-hidden="true" />
                                     </div>
-                                  ))}
-                                </div>
+                                    <div className="space-y-2">
+                                      {editingAudioChapters.map((ch, ci) => (
+                                        <div key={ch.id} className="flex items-center gap-2">
+                                          <span className="text-xs text-gray-500 shrink-0 w-5 tabular-nums">{ci + 1}</span>
+                                          <input
+                                            type="text"
+                                            value={ch.title}
+                                            onChange={(e) => updateEditingChapter(ch.id, { title: e.target.value })}
+                                            placeholder="e.g. Introduction"
+                                            aria-label={`Chapter ${ci + 1} title`}
+                                            className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500"
+                                          />
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            step={1}
+                                            value={ch.startTime}
+                                            onChange={(e) => updateEditingChapter(ch.id, { startTime: Number(e.target.value) })}
+                                            className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                                            title={`Chapter ${ci + 1} start time (seconds)`}
+                                            aria-label={`Chapter ${ci + 1} start time in seconds`}
+                                            placeholder="0"
+                                          />
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            step={1}
+                                            value={ch.endTime}
+                                            onChange={(e) => updateEditingChapter(ch.id, { endTime: Number(e.target.value) })}
+                                            className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                                            title={`Chapter ${ci + 1} end time (seconds)`}
+                                            aria-label={`Chapter ${ci + 1} end time in seconds`}
+                                            placeholder="45"
+                                          />
+                                          <button type="button" onClick={() => removeEditingChapter(ch.id)} className="text-gray-400 hover:text-red-400 transition p-1 shrink-0 min-h-11 min-w-11 flex items-center justify-center" aria-label={`Remove chapter ${ci + 1}`} title="Remove chapter">
+                                            <X className="w-3.5 h-3.5" aria-hidden="true" />
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </>
+                                )}
                               </div>
                               <div>
                                 <label className="block text-sm font-semibold text-gray-200 mb-1.5">Transcript</label>
@@ -855,29 +873,53 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                     {(newLesson.lesson_type === 'audio' || newLesson.lesson_type === 'video' || newLesson.lesson_type === '360video') && (
                       <div className="space-y-4 border border-gray-700 rounded-xl p-3 bg-gray-800/30">
                         <div>
-                          <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center justify-between mb-1">
                             <h4 className="text-sm font-semibold text-gray-200">Chapter Markers</h4>
-                            <button type="button" onClick={addAudioChapter} className="flex items-center gap-1 text-xs text-fuchsia-400 hover:text-fuchsia-300 transition">
-                              <Plus className="w-3 h-3" /> Add Chapter
+                            <button type="button" onClick={addAudioChapter} className="flex items-center gap-1 text-xs text-fuchsia-400 hover:text-fuchsia-300 transition min-h-11">
+                              <Plus className="w-3 h-3" aria-hidden="true" /> Add Chapter
                             </button>
                           </div>
-                          {audioChapters.length === 0 && <p className="text-xs text-gray-400 text-center py-2">No chapters. Students can still watch without chapters.</p>}
-                          <div className="space-y-2">
-                            {audioChapters.map((ch, ci) => (
-                              <div key={ch.id} className="flex items-center gap-2">
-                                <span className="text-xs text-gray-500 shrink-0 w-5">{ci + 1}</span>
-                                <input type="text" value={ch.title} onChange={(e) => updateAudioChapter(ch.id, { title: e.target.value })}
-                                  placeholder="Chapter title…" className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500" />
-                                <input type="number" min={0} step={1} value={ch.startTime} onChange={(e) => updateAudioChapter(ch.id, { startTime: Number(e.target.value) })}
-                                  className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500" title="Start time (seconds)" placeholder="Start (s)" />
-                                <input type="number" min={0} step={1} value={ch.endTime} onChange={(e) => updateAudioChapter(ch.id, { endTime: Number(e.target.value) })}
-                                  className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500" title="End time (seconds)" placeholder="End (s)" />
-                                <button type="button" onClick={() => removeAudioChapter(ch.id)} className="text-gray-400 hover:text-red-400 transition p-1 shrink-0">
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
+                          <p className="text-xs text-gray-500 mb-3">
+                            Break the lesson into sections learners can jump to from the player. Each chapter has a title and a start/end time in <strong className="text-gray-300">seconds from the beginning of the video</strong>. Example: a chapter from <code className="text-gray-400">0</code> to <code className="text-gray-400">45</code> covers the first 45 seconds; the next might start at <code className="text-gray-400">45</code> and end at <code className="text-gray-400">180</code> (3 minutes in). Chapters don&apos;t need to cover the full video — gaps are fine.
+                          </p>
+                          {audioChapters.length === 0 && (
+                            <p className="text-xs text-gray-500 text-center py-2 border border-dashed border-gray-700 rounded-lg">No chapters yet. Click &ldquo;Add Chapter&rdquo; to add one. Learners can still watch the lesson without chapters.</p>
+                          )}
+                          {audioChapters.length > 0 && (
+                            <>
+                              <div className="hidden sm:flex items-center gap-2 mb-1 px-1">
+                                <span className="text-[10px] uppercase tracking-wide text-gray-500 shrink-0 w-5">#</span>
+                                <span className="flex-1 text-[10px] uppercase tracking-wide text-gray-500">Chapter title</span>
+                                <span className="text-[10px] uppercase tracking-wide text-gray-500 w-20 text-center">Start (sec)</span>
+                                <span className="text-[10px] uppercase tracking-wide text-gray-500 w-20 text-center">End (sec)</span>
+                                <span className="w-5" aria-hidden="true" />
                               </div>
-                            ))}
-                          </div>
+                              <div className="space-y-2">
+                                {audioChapters.map((ch, ci) => (
+                                  <div key={ch.id} className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500 shrink-0 w-5 tabular-nums">{ci + 1}</span>
+                                    <input type="text" value={ch.title} onChange={(e) => updateAudioChapter(ch.id, { title: e.target.value })}
+                                      placeholder="e.g. Introduction"
+                                      aria-label={`Chapter ${ci + 1} title`}
+                                      className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500" />
+                                    <input type="number" min={0} step={1} value={ch.startTime} onChange={(e) => updateAudioChapter(ch.id, { startTime: Number(e.target.value) })}
+                                      className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                                      title={`Chapter ${ci + 1} start time (seconds)`}
+                                      aria-label={`Chapter ${ci + 1} start time in seconds`}
+                                      placeholder="0" />
+                                    <input type="number" min={0} step={1} value={ch.endTime} onChange={(e) => updateAudioChapter(ch.id, { endTime: Number(e.target.value) })}
+                                      className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+                                      title={`Chapter ${ci + 1} end time (seconds)`}
+                                      aria-label={`Chapter ${ci + 1} end time in seconds`}
+                                      placeholder="45" />
+                                    <button type="button" onClick={() => removeAudioChapter(ch.id)} className="text-gray-400 hover:text-red-400 transition p-1 shrink-0 min-h-11 min-w-11 flex items-center justify-center" aria-label={`Remove chapter ${ci + 1}`} title="Remove chapter">
+                                      <X className="w-3.5 h-3.5" aria-hidden="true" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
                         </div>
                         <div>
                           <label className="block text-sm font-semibold text-gray-200 mb-1.5">Transcript</label>

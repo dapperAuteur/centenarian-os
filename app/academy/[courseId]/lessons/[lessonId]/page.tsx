@@ -205,16 +205,36 @@ export default function LessonPlayerPage() {
     if (lesson?.lesson_type !== 'virtual_tour') return;
     setVirtualTour(null);
     setTourError(null);
-    offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/tour`)
-      .then(async (r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then((data) => setVirtualTour(data))
-      .catch((err) => {
-        console.error('[VirtualTour] fetch error', err);
-        setTourError('Could not load this virtual tour. Try refreshing.');
-      });
+    (async () => {
+      try {
+        const r = await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/tour`);
+        if (r.ok) {
+          const data = await r.json();
+          setVirtualTour(data);
+          return;
+        }
+        // Translate the server's reason code into an actionable message.
+        // The tour API returns { error, reason, enrollmentStatus? } on failures.
+        const body = await r.json().catch(() => ({} as { reason?: string; enrollmentStatus?: string }));
+        console.error('[VirtualTour] fetch error', r.status, body);
+        const messageByReason: Record<string, string> = {
+          not_authenticated: 'Please sign in to view this tour.',
+          course_not_found: 'This course no longer exists.',
+          lesson_not_found: 'This lesson no longer exists.',
+          not_enrolled:
+            'You\u2019re not enrolled in this course yet. Open the course page and enroll — or if you own the course, use the teacher dashboard to view the tour.',
+          enrollment_inactive: `Your enrollment is ${body.enrollmentStatus ?? 'not active'}. Contact the teacher to reactivate it.`,
+          write_requires_teacher: 'Only the course teacher can modify this tour.',
+        };
+        setTourError(
+          (body.reason && messageByReason[body.reason]) ??
+            `Could not load this virtual tour (HTTP ${r.status}). Try refreshing.`,
+        );
+      } catch (err) {
+        console.error('[VirtualTour] network error', err);
+        setTourError('Network error while loading the tour. Check your connection and refresh.');
+      }
+    })();
   }, [courseId, lessonId, lesson?.lesson_type]);
 
   useEffect(() => {
