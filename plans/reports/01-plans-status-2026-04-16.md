@@ -889,3 +889,51 @@ Branch 3 — `feat/starter-tier-upgrade-page`. Replaces the redirect target from
 | Starter tier branch 4 | pending — module picker on `/pricing` |
 | Starter tier branch 5 | pending — Stripe checkout + webhook (needs price IDs) |
 | Starter tier branch 6 | pending — admin stats |
+
+---
+
+## 19. Starter tier branch 3 shipped — `feat/starter-tier-upgrade-page`
+
+Better UX for the gate from branch 2. A Starter user hitting a forbidden route now lands on a personalized upgrade page instead of being silently redirected to `/dashboard/planner`.
+
+### Files added
+
+- `app/dashboard/upgrade/page.tsx` — client component with a `Suspense` wrapper for `useSearchParams`. Reads `?from=<moduleSlug>`, validates against `isModuleSlug`, and:
+  - Personalizes the headline ("Unlock Travel" vs. generic "Upgrade your plan" for direct hits).
+  - Renders a chip row of the Starter user's current picks (if they have any).
+  - Shows three CTA cards: **Swap a module** (→ `/pricing?action=swap`, branch 4 handles), **Pro Monthly** ($10.60/mo via existing `/api/stripe/checkout`), **Lifetime** ($103.29 via same endpoint).
+  - Footer reassurance: "A locked module's data is hidden, not deleted — re-select it anytime and everything is back."
+
+### Files modified
+
+- `lib/access/starter-modules.ts` — new `pathToModuleSlug(pathname)` reverse-lookup helper. Scans `STARTER_MODULES` for a prefix match and returns the slug, or `null` if the path doesn't belong to any pickable module. Used by the layout redirect to build the `?from=` query.
+- `app/dashboard/layout.tsx`:
+  - Adds `/dashboard/upgrade` to `FREE_ROUTE_PREFIXES` (must be reachable by every authenticated tier; otherwise a Starter user would loop trying to reach the upgrade page).
+  - Redirect effect now forks by tier: **Starter** → `/dashboard/upgrade?from=<slug>` (or `/dashboard/upgrade` when the slug can't be resolved). **Invited** → `/dashboard/planner` (their flow isn't part of the Starter funnel; their allowed_modules are free-text prefixes, not module slugs — reusing the upgrade page would show wrong copy).
+
+### Behavior delivered
+
+- Starter user picks Finance + Workouts + Metrics, clicks a `/dashboard/travel/trips/new` link → redirected to `/dashboard/upgrade?from=travel`. Page reads "Unlock Travel. Trips, vehicles, fuel logs, maintenance, routes. It's not one of your picked Starter modules — choose a path below." Current picks shown as chips. Three CTAs.
+- Direct navigation to `/dashboard/upgrade` (no query param) shows generic "Upgrade your plan" copy. Still useful.
+- Pro and Lifetime buttons fire the same `/api/stripe/checkout` endpoint the pricing page uses — no new infrastructure.
+- Swap button routes to `/pricing?action=swap` (branch 4 will read this query param and scroll to the module picker).
+
+### Merge order
+
+1. Branches 1 + 2 must be merged first.
+2. Migration 182 applied in prod.
+3. Merge `feat/starter-tier-upgrade-page`.
+4. No new migrations, no new env vars.
+
+### Verification
+
+1. Set your user to Starter with three picks (see §18 verification SQL).
+2. Type `/dashboard/travel` → should land on `/dashboard/upgrade?from=travel` with personalized copy.
+3. Type `/dashboard/upgrade` directly → generic copy, same three CTAs.
+4. Click "Pro — all modules" → Stripe checkout opens for Monthly plan.
+5. Click "Swap a module" → navigates to `/pricing?action=swap` (picker arrives in branch 4).
+6. Revert to `'monthly'` → `/dashboard/upgrade` is still reachable directly (no redirect loop since `allowedModules === null` for Monthly tier).
+
+### Next branch
+
+Branch 4 — `feat/starter-tier-module-picker`. Adds the 3-from-8 module picker component on `/pricing`, reads `?action=swap` query param to mount in swap mode, validates exactly 3 unique picks, hands off to Stripe checkout (branch 5 wires the actual Starter price IDs).

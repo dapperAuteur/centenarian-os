@@ -146,3 +146,20 @@ export function isValidStarterSelection(slugs: string[]): boolean {
   if (new Set(slugs).size !== slugs.length) return false;
   return slugs.every(isModuleSlug);
 }
+
+/**
+ * Reverse lookup: given a pathname the user tried to access, return
+ * the ModuleSlug that owns it, or null if it doesn't match any
+ * pickable module. Used by the dashboard layout when redirecting a
+ * Starter user off a forbidden route to the upgrade page, so the
+ * upgrade page can personalize the "unlock {module}" message.
+ */
+export function pathToModuleSlug(pathname: string): ModuleSlug | null {
+  for (const slug of STARTER_MODULE_SLUGS) {
+    const { prefixes } = STARTER_MODULES[slug];
+    if (prefixes.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
+      return slug;
+    }
+  }
+  return null;
+}
