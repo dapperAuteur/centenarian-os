@@ -13,8 +13,10 @@ import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { useToast } from '@/components/ui/ToastProvider';
 import { logError } from '@/lib/error-logging';
 import type { MediaAsset, MediaAssetReference } from '@/lib/academy/media-types';
+import { filterAssets, uniqueTags } from '@/lib/academy/media-search';
 import MediaGrid from './MediaGrid';
 import MediaDetailPanel from './MediaDetailPanel';
+import MediaFilterBar from './MediaFilterBar';
 import { Loader2, Library } from 'lucide-react';
 
 export default function MediaLibrary() {
@@ -22,7 +24,13 @@ export default function MediaLibrary() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const toast = useToast();
+
+  const toggleTag = useCallback((tag: string) => {
+    setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+  }, []);
 
   const fetchAssets = useCallback(async () => {
     setLoading(true);
@@ -45,6 +53,11 @@ export default function MediaLibrary() {
   const selectedAsset = useMemo(
     () => assets.find((a) => a.id === selectedId) ?? null,
     [assets, selectedId],
+  );
+  const availableTags = useMemo(() => uniqueTags(assets), [assets]);
+  const filtered = useMemo(
+    () => filterAssets(assets, query, selectedTags),
+    [assets, query, selectedTags],
   );
 
   async function handleSave(assetId: string, updates: Partial<Pick<MediaAsset, 'name' | 'description' | 'tags'>>) {
@@ -108,7 +121,19 @@ export default function MediaLibrary() {
       </header>
 
       <div className="flex flex-col lg:flex-row">
-        <section className="flex-1 p-4 sm:p-6 min-w-0">
+        <section className="flex-1 p-4 sm:p-6 min-w-0 space-y-4">
+          {!loading && !loadError && assets.length > 0 && (
+            <MediaFilterBar
+              query={query}
+              onQueryChange={setQuery}
+              availableTags={availableTags}
+              selectedTags={selectedTags}
+              onToggleTag={toggleTag}
+              resultCount={filtered.length}
+              totalCount={assets.length}
+            />
+          )}
+
           {loading && (
             <div role="status" className="flex items-center justify-center py-24 text-gray-400">
               <Loader2 className="w-5 h-5 animate-spin mr-2" aria-hidden="true" />
@@ -125,9 +150,14 @@ export default function MediaLibrary() {
               </p>
             </div>
           )}
-          {!loading && !loadError && assets.length > 0 && (
+          {!loading && !loadError && assets.length > 0 && filtered.length === 0 && (
+            <div className="text-center py-12 px-4 border border-dashed border-gray-800 rounded-xl">
+              <p className="text-sm text-gray-400">No assets match the current filters.</p>
+            </div>
+          )}
+          {!loading && !loadError && filtered.length > 0 && (
             <MediaGrid
-              assets={assets}
+              assets={filtered}
               selectedId={selectedId}
               onSelect={setSelectedId}
             />

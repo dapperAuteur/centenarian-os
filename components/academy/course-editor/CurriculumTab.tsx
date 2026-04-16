@@ -15,6 +15,10 @@ import DataImporter from '@/components/academy/DataImporter';
 import LessonDocumentEditor from '@/components/academy/LessonDocumentEditor';
 import type { DocDraft } from '@/components/academy/LessonDocumentEditor';
 import Cloudinary360Uploader from '@/components/academy/Cloudinary360Uploader';
+import MediaPickerModal from '@/components/academy/media-library/MediaPickerModal';
+import type { MediaAsset } from '@/lib/academy/media-types';
+import { derivePosterUrl } from '@/lib/cloudinary/poster';
+import { Library } from 'lucide-react';
 
 interface Lesson {
   id: string;
@@ -98,6 +102,13 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
   const [savingLesson, setSavingLesson] = useState(false);
   const [editingAudioChapters, setEditingAudioChapters] = useState<Array<{ id: string; title: string; startTime: number; endTime: number }>>([]);
   const [editingTranscriptText, setEditingTranscriptText] = useState('');
+
+  // Media library picker — shared for both add-form and inline-edit-form
+  // 360° flows. The target tells us which setter to call on pick.
+  const [pickerState, setPickerState] = useState<{
+    target: 'new' | 'editing';
+    kind: '360video' | 'photo_360';
+  } | null>(null);
 
   // Quiz state
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestionDraft[]>([]);
@@ -650,6 +661,14 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                                     currentUrl={editingLesson.content_url}
                                     onUploadSuccess={(url, posterUrl) => setEditingLesson((l) => ({ ...l, content_url: url, video_360_poster_url: posterUrl }))}
                                   />
+                                  <button
+                                    type="button"
+                                    onClick={() => setPickerState({ target: 'editing', kind: '360video' })}
+                                    className="w-full min-h-11 flex items-center justify-center gap-2 px-4 py-2 border border-gray-700 bg-gray-800 hover:bg-gray-700 rounded-xl text-sm text-gray-200 transition"
+                                  >
+                                    <Library className="w-4 h-4" aria-hidden="true" />
+                                    Pick from library
+                                  </button>
                                   <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer min-h-11">
                                     <input
                                       type="checkbox"
@@ -662,11 +681,21 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                                 </>
                               )}
                               {editingLesson.lesson_type === 'photo_360' && (
-                                <Cloudinary360Uploader
-                                  resourceType="image"
-                                  currentUrl={editingLesson.content_url}
-                                  onUploadSuccess={(url, posterUrl) => setEditingLesson((l) => ({ ...l, content_url: url, video_360_poster_url: posterUrl }))}
-                                />
+                                <>
+                                  <Cloudinary360Uploader
+                                    resourceType="image"
+                                    currentUrl={editingLesson.content_url}
+                                    onUploadSuccess={(url, posterUrl) => setEditingLesson((l) => ({ ...l, content_url: url, video_360_poster_url: posterUrl }))}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setPickerState({ target: 'editing', kind: 'photo_360' })}
+                                    className="w-full min-h-11 flex items-center justify-center gap-2 px-4 py-2 border border-gray-700 bg-gray-800 hover:bg-gray-700 rounded-xl text-sm text-gray-200 transition"
+                                  >
+                                    <Library className="w-4 h-4" aria-hidden="true" />
+                                    Pick from library
+                                  </button>
+                                </>
                               )}
                             </>
                           )}
@@ -848,6 +877,14 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                               currentUrl={newLesson.content_url}
                               onUploadSuccess={(url, posterUrl) => setNewLesson((l) => ({ ...l, content_url: url, video_360_poster_url: posterUrl }))}
                             />
+                            <button
+                              type="button"
+                              onClick={() => setPickerState({ target: 'new', kind: '360video' })}
+                              className="w-full min-h-11 flex items-center justify-center gap-2 px-4 py-2 border border-gray-700 bg-gray-800 hover:bg-gray-700 rounded-xl text-sm text-gray-200 transition"
+                            >
+                              <Library className="w-4 h-4" aria-hidden="true" />
+                              Pick from library
+                            </button>
                             <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer min-h-11">
                               <input
                                 type="checkbox"
@@ -860,11 +897,21 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                           </>
                         )}
                         {newLesson.lesson_type === 'photo_360' && (
+                          <>
                           <Cloudinary360Uploader
                             resourceType="image"
                             currentUrl={newLesson.content_url}
                             onUploadSuccess={(url, posterUrl) => setNewLesson((l) => ({ ...l, content_url: url, video_360_poster_url: posterUrl }))}
                           />
+                            <button
+                              type="button"
+                              onClick={() => setPickerState({ target: 'new', kind: 'photo_360' })}
+                              className="w-full min-h-11 flex items-center justify-center gap-2 px-4 py-2 border border-gray-700 bg-gray-800 hover:bg-gray-700 rounded-xl text-sm text-gray-200 transition"
+                            >
+                              <Library className="w-4 h-4" aria-hidden="true" />
+                              Pick from library
+                            </button>
+                          </>
                         )}
                       </>
                     )}
@@ -1092,6 +1139,27 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
             );
           })}
         </div>
+      )}
+
+      {/* Media library picker — reused across add + edit forms for 360° types */}
+      {pickerState && (
+        <MediaPickerModal
+          allowedKinds={pickerState.kind === '360video' ? ['panorama_video'] : ['panorama_image']}
+          title={pickerState.kind === '360video' ? 'Pick a 360° video' : 'Pick a 360° photo'}
+          onCancel={() => setPickerState(null)}
+          onPick={(asset: MediaAsset) => {
+            // Derive the poster from the asset's secure_url so the learner
+            // page's loading fallback + OG previews still work for picks.
+            const resourceType = pickerState.kind === '360video' ? 'video' : 'image';
+            const posterUrl = derivePosterUrl(asset.secure_url, resourceType);
+            if (pickerState.target === 'editing') {
+              setEditingLesson((l) => ({ ...l, content_url: asset.secure_url, video_360_poster_url: posterUrl }));
+            } else {
+              setNewLesson((l) => ({ ...l, content_url: asset.secure_url, video_360_poster_url: posterUrl }));
+            }
+            setPickerState(null);
+          }}
+        />
       )}
     </div>
   );
