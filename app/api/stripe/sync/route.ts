@@ -9,6 +9,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { stripe } from '@/lib/stripe';
 import { createShopifyPromoCode } from '@/lib/shopify/createPromoCode';
 import { logInfo, logError } from '@/lib/logging';
+import { isValidStarterSelection } from '@/lib/access/starter-modules';
 
 function getServiceClient() {
   return createServiceClient(
@@ -137,6 +138,49 @@ export async function POST(request: NextRequest) {
     }
     logInfo({ source: 'sync', module: 'stripe', message: 'Lifetime purchase synced', metadata: { sessionId: session_id }, userId: user.id });
     return NextResponse.json({ status: 'lifetime' });
+  }
+
+  if (session.mode === 'subscription' && (plan === 'starter-monthly' || plan === 'starter-annual')) {
+    const raw = session.metadata?.selected_modules ?? '';
+    const slugs = raw.split(',').map((s: string) => s.trim()).filter(Boolean);
+    if (!isValidStarterSelection(slugs)) {
+      logError({ source: 'sync', module: 'stripe', message: 'Starter session missing valid selected_modules', metadata: { sessionId: session_id, raw }, userId: user.id });
+      return NextResponse.json({ error: 'Checkout metadata missing — contact support' }, { status: 500 });
+    }
+    let subscriptionExpiresAt: string | null = null;
+    try {
+      const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const s = sub as any;
+      const rawEnd: number | undefined = s.items?.data?.[0]?.current_period_end ?? s.current_period_end;
+      if (rawEnd && typeof rawEnd === 'number') {
+        subscriptionExpiresAt = new Date(rawEnd * 1000).toISOString();
+      }
+    } catch (err) {
+      logError({ source: 'sync', module: 'stripe', message: 'Failed to retrieve subscription for period_end (starter)', metadata: { error: err instanceof Error ? err.message : String(err) }, userId: user.id });
+    }
+    const { data: updated, error } = await db
+      .from('profiles')
+      .update({
+        subscription_status: 'starter',
+        selected_modules: slugs,
+        stripe_subscription_id: (session.subscription as string) ?? null,
+        subscription_expires_at: subscriptionExpiresAt,
+        cancel_at_period_end: false,
+        cancel_at: null,
+      })
+      .eq('id', user.id)
+      .select('id');
+    if (error) {
+      logError({ source: 'sync', module: 'stripe', message: 'DB update failed for starter', metadata: { error: error.message }, userId: user.id });
+      return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
+    }
+    if (!updated || updated.length === 0) {
+      logError({ source: 'sync', module: 'stripe', message: 'No profile row found (starter)', metadata: { hint: 'run migration 036 to backfill profiles' }, userId: user.id });
+      return NextResponse.json({ error: 'Profile not found — account setup incomplete' }, { status: 404 });
+    }
+    logInfo({ source: 'sync', module: 'stripe', message: 'Starter subscription synced', metadata: { sessionId: session_id, cadence: plan }, userId: user.id });
+    return NextResponse.json({ status: 'starter' });
   }
 
   if (session.mode === 'subscription' && plan === 'teacher') {
