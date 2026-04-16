@@ -5,10 +5,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 
-export type SubscriptionStatus = 'free' | 'monthly' | 'lifetime';
+export type SubscriptionStatus = 'free' | 'monthly' | 'lifetime' | 'starter';
 
 interface SubscriptionState {
   status: SubscriptionStatus;
+  /** Starter-tier picked modules (null for every other tier). */
+  selectedModules: string[] | null;
   shirtPromoCode: string | null;
   cancelAtPeriodEnd: boolean;
   cancelAt: string | null;
@@ -21,6 +23,7 @@ export function useSubscription(): SubscriptionState {
   const { user, loading: authLoading } = useAuth();
   const [state, setState] = useState<Omit<SubscriptionState, 'refresh'>>({
     status: 'free',
+    selectedModules: null,
     shirtPromoCode: null,
     cancelAtPeriodEnd: false,
     cancelAt: null,
@@ -34,22 +37,23 @@ export function useSubscription(): SubscriptionState {
     if (authLoading) return;
 
     if (!user) {
-      setState({ status: 'free', shirtPromoCode: null, cancelAtPeriodEnd: false, cancelAt: null, subscriptionExpiresAt: null, loading: false });
+      setState({ status: 'free', selectedModules: null, shirtPromoCode: null, cancelAtPeriodEnd: false, cancelAt: null, subscriptionExpiresAt: null, loading: false });
       return;
     }
 
     supabase
       .from('profiles')
-      .select('subscription_status, shirt_promo_code, cancel_at_period_end, cancel_at, subscription_expires_at')
+      .select('subscription_status, selected_modules, shirt_promo_code, cancel_at_period_end, cancel_at, subscription_expires_at')
       .eq('id', user.id)
       .maybeSingle()
       .then(({ data, error }) => {
         if (error || !data) {
-          setState({ status: 'free', shirtPromoCode: null, cancelAtPeriodEnd: false, cancelAt: null, subscriptionExpiresAt: null, loading: false });
+          setState({ status: 'free', selectedModules: null, shirtPromoCode: null, cancelAtPeriodEnd: false, cancelAt: null, subscriptionExpiresAt: null, loading: false });
           return;
         }
         setState({
           status: (data.subscription_status as SubscriptionStatus) ?? 'free',
+          selectedModules: Array.isArray(data.selected_modules) ? data.selected_modules : null,
           shirtPromoCode: data.shirt_promo_code ?? null,
           cancelAtPeriodEnd: data.cancel_at_period_end ?? false,
           cancelAt: data.cancel_at ?? null,
