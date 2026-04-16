@@ -569,3 +569,188 @@ Half-sphere (180° VR180) and partial-sphere content is legitimately not 2:1 but
 | 26.0 smaller v1 | **shipped** (this branch) |
 | 26 full (desktop native companion) | blocked on survey + devrel reply |
 | 26 mobile deep-link | cancelled |
+
+---
+
+## 16. Starter tier design — `docs/starter-tier-access-design` (pre-code)
+
+Design artifact, not code. Answers the key question: **how does the app restrict a Starter ($4.99/mo, pick-3) user to their chosen modules?** Also adds STYLE_GUIDE §5a codifying the "report-per-branch" rule.
+
+Plan source: [plans/future/starter-tier-plan.md](../future/starter-tier-plan.md). This design doc converts it into a concrete access-control architecture before any code lands.
+
+### 16.1 — The good news: the enforcement primitive already exists
+
+`app/dashboard/layout.tsx:54-102` already implements **exactly** the pattern we need, just under a different name. The "invited user" flow stores an array of allowed route prefixes in `profiles.invite_modules`, and the dashboard layout redirects users hitting a route not in that list. Starter tier is the same mechanism with a different source of truth — we reuse it verbatim.
+
+Current flow for invited users:
+1. `/api/auth/me` reads `profiles.invite_modules` and returns it as `inviteModules`.
+2. Dashboard layout sets `allowedModules = isInvited && !isPaid && !isAdmin ? inviteModules : null`.
+3. Redirect effect: if `allowedModules && !isFreeRoute(pathname)` and the current path isn't in the list, `router.push('/dashboard/planner')`.
+4. `components/nav/NavConfig.ts:126-140` exports `getVisibleGroups(isAdmin, allowedModules)` which filters nav items client-side so users never see links to forbidden modules.
+
+**We extend this path, we do not rebuild it.**
+
+### 16.2 — Data model
+
+Single migration (sequential with existing numbering — next available is `182` per [MEMORY.md](../../../.claude/projects/.../memory/MEMORY.md) noting `181_offline_assets.sql` was last):
+
+```sql
+-- 182_starter_tier.sql
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS selected_modules TEXT[];
+
+-- Drop + re-add the CHECK constraint on subscription_status to allow 'starter'
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_subscription_status_check;
+ALTER TABLE public.profiles ADD CONSTRAINT profiles_subscription_status_check
+  CHECK (subscription_status IN ('free', 'monthly', 'lifetime', 'starter'));
+
+COMMENT ON COLUMN public.profiles.selected_modules IS
+  'Starter-tier users: array of module slugs they picked at checkout (max 3). NULL for all other tiers.';
+```
+
+TEXT[] rather than JSONB because we only store a flat array of strings and want Postgres-native array ops (`ANY`, `contains`) if we ever query "which users have module X selected".
+
+### 16.3 — Module → route-prefix mapping
+
+A Starter user picks **modules**, but the layout enforces **route prefixes**. Some modules span multiple prefixes (Finance → `/dashboard/finance` plus `/dashboard/finance/forecast`). We need a single source of truth mapping module slug → list of route prefixes.
+
+New file: `lib/access/starter-modules.ts`
+
+```ts
+export type ModuleSlug =
+  | 'planner' | 'engine' | 'fuel' | 'metrics' | 'workouts'
+  | 'finance' | 'travel' | 'equipment' | 'correlations' | 'academy';
+
+export const STARTER_MODULES: Record<ModuleSlug, {
+  label: string;
+  prefixes: string[];  // every URL a Starter user with this module gets access to
+  description: string;
+  icon: keyof typeof iconMap;  // lucide icon slug for the picker UI
+}> = {
+  planner: {
+    label: 'Planner',
+    prefixes: ['/dashboard/planner', '/dashboard/weekly-review', '/dashboard/retrospective', '/dashboard/roadmap'],
+    description: 'Daily tasks, recurring schedules, goals, roadmaps',
+    icon: 'CalendarClock',
+  },
+  engine: {
+    label: 'Engine',
+    prefixes: ['/dashboard/engine'],
+    description: 'Focus sessions, analytics, doodle canvas',
+    icon: 'Briefcase',
+  },
+  fuel:     { label: 'Fuel',      prefixes: ['/dashboard/fuel'],     description: 'Supplement protocols, daily fuel logs',             icon: 'Utensils' },
+  metrics:  { label: 'Metrics',   prefixes: ['/dashboard/metrics'],  description: 'RHR, steps, sleep, body composition, wearable sync', icon: 'HeartPulse' },
+  workouts: { label: 'Workouts',  prefixes: ['/dashboard/workouts', '/dashboard/exercises'], description: 'Exercise library, templates, logs, Nomad OS', icon: 'Dumbbell' },
+  finance:  { label: 'Finance',   prefixes: ['/dashboard/finance'],  description: 'Transactions, accounts, budgets, invoices',         icon: 'DollarSign' },
+  travel:   { label: 'Travel',    prefixes: ['/dashboard/travel', '/dashboard/fuel-logs', '/dashboard/maintenance'], description: 'Trips, vehicles, fuel logs, maintenance, routes', icon: 'Navigation' },
+  equipment:{ label: 'Equipment', prefixes: ['/dashboard/equipment'], description: 'Asset tracking, valuations, media gallery',         icon: 'Package' },
+  correlations: { label: 'Correlations', prefixes: ['/dashboard/correlations', '/dashboard/analytics'], description: 'Cross-module analytics, AI insights', icon: 'TrendingUp' },
+  academy:  { label: 'Academy (student)', prefixes: ['/academy'], description: 'Enroll in teacher-published courses', icon: 'GraduationCap' },
+};
+
+/** Expand a user's selected module slugs into the full list of allowed prefixes.
+ *  Free routes are always allowed (handled by the dashboard layout's isFreeRoute()). */
+export function expandToPrefixes(slugs: string[]): string[] {
+  return slugs.flatMap((slug) => STARTER_MODULES[slug as ModuleSlug]?.prefixes ?? []);
+}
+```
+
+### 16.4 — Enforcement: three layers, one source of truth
+
+Defense-in-depth. Each layer serves a different purpose; they are not redundant.
+
+| Layer | Where | Purpose | Bypass if broken |
+|---|---|---|---|
+| **1. Nav filter (UX)** | `NavConfig.getVisibleGroups(isAdmin, allowedPrefixes)` — already supports this signature | Users never see links to modules they can't access. Removes confusion. | User could still type `/dashboard/finance` into the address bar. |
+| **2. Dashboard layout redirect (gate)** | `app/dashboard/layout.tsx` existing `useEffect` that redirects invited users — extend the condition to also run for Starter users | Authoritative access gate. Even a user who types the URL directly gets bounced. | Client-only; could theoretically be bypassed with JS disabled, but the APIs still enforce RLS. |
+| **3. Dashboard index redirect (fallback)** | `app/dashboard/page.tsx` — when redirecting to default home, land on a selected module if possible | Starter user who'd normally get bounced to `/dashboard/planner` they don't own lands on their first selected module instead. | Cosmetic; layer 2 still catches this. |
+
+**What we deliberately do NOT do:** route-level checks inside each module page. Reason: the dashboard layout already guards the entire dashboard subtree. Scattering access checks across 50+ page.tsx files is a maintenance burden and a footgun (miss one → silent bypass).
+
+**Teaser pages:** when a Starter user tries a forbidden prefix, the layout currently redirects to `/dashboard/planner`. We change that target to a new `/dashboard/upgrade?from=<module>` page that shows:
+- "Upgrade to unlock {Module}" headline
+- One-click upgrade button (Stripe checkout at Pro / Lifetime price)
+- "Or swap a module" link to the module picker
+
+This is a better learner experience than a silent redirect to planner.
+
+### 16.5 — isPaid logic changes
+
+`lib/hooks/useSubscription.ts` currently exports `SubscriptionStatus = 'free' | 'monthly' | 'lifetime'`. Extend:
+
+```ts
+export type SubscriptionStatus = 'free' | 'monthly' | 'lifetime' | 'starter';
+```
+
+And in `app/dashboard/layout.tsx:47`:
+
+```ts
+// Before
+const isPaid = subStatus === 'monthly' || subStatus === 'lifetime';
+
+// After
+const isPaid = subStatus === 'monthly' || subStatus === 'lifetime' || subStatus === 'starter';
+const isStarter = subStatus === 'starter';
+// Existing invite logic stays as-is; starter adds a parallel branch.
+const allowedModules = isInvited && !isPaid && !isAdmin
+  ? inviteModules
+  : isStarter && !isAdmin
+    ? expandToPrefixes(selectedModules ?? [])
+    : null;
+```
+
+Admins bypass `allowedModules` entirely (they get the full app regardless of subscription). Lifetime and Monthly users have `allowedModules = null` which unlocks everything.
+
+### 16.6 — The four "open questions" from the plan
+
+Answering inline so the coding branch doesn't re-litigate these:
+
+1. **Should Starter users get Data Hub (import/export)?** **Yes, scoped.** Data Hub is per-module — Finance import/export only works if Finance is selected. Implementation: the Data Hub landing page at `/dashboard/data` filters the module cards by `allowedPrefixes`. Already compatible because each Data Hub link targets a specific module's prefix.
+2. **Should Starter users get Life Categories?** **Yes, unrestricted.** Life Categories is a meta-tagging feature that makes other modules useful. Charging for it separately creates a "I can't tag my Finance entries because I don't have Categories" trap.
+3. **Should Academy count as one of the 3?** **Yes.** Keeps the picker honest — Academy is a real module with its own value and server cost (enrollments, progress tracking, teacher payouts). Users who want it get it; users who don't, don't.
+4. **Cross-module features like Activity Links across locked modules?** **Yes, degraded gracefully.** If a user has Finance but not Travel, Activity Link dropdowns still show Travel entities for linking purposes (read-only surface) — but clicking them redirects to the `/dashboard/upgrade` teaser. This keeps linking coherent for users who upgrade later (their old links still make sense).
+
+### 16.7 — Implementation plan (ordered)
+
+One branch per logical change per STYLE_GUIDE §1. Rough sequencing:
+
+| # | Branch | Scope |
+|---|---|---|
+| 1 | `feat/starter-tier-schema` | Migration 182, `SubscriptionStatus` enum, `STARTER_MODULES` map in `lib/access/starter-modules.ts`. No UI changes. |
+| 2 | `feat/starter-tier-gating` | Dashboard layout + NavConfig + `/api/auth/me` changes to enforce `allowedModules` for Starter users. Admins tested for regression. |
+| 3 | `feat/starter-tier-upgrade-page` | `/dashboard/upgrade` teaser page. Forbidden-module redirects land here. |
+| 4 | `feat/starter-tier-module-picker` | Client component on `/pricing` for Starter checkout. Max-3 checkbox grid with descriptions + lock icons. |
+| 5 | `feat/starter-tier-stripe` | `STRIPE_STARTER_PRICE_ID` env var, checkout route handles `plan=starter` with `selected_modules` metadata, webhook handler writes to `profiles.selected_modules`. |
+| 6 | `feat/starter-tier-admin-stats` | Admin dashboard: Starter subscriber count + top-3-module-combos widget. |
+
+**Pre-flight gate:** confirm Stripe price creation + env var with owner before branch 5.
+
+### 16.8 — Migration order for merge
+
+1. Land branches in the order above (each PR rebased on the previous if needed).
+2. Run `supabase/migrations/182_starter_tier.sql` against production before the branch-5 webhook deployment.
+3. Create the Stripe price in dashboard; copy the `price_xxx` into `STRIPE_STARTER_PRICE_ID`.
+4. Enable a feature flag `NEXT_PUBLIC_STARTER_TIER_ENABLED=true` (new) on the pricing page so we can stage the rollout.
+5. Soft-launch: DM 3 existing free users, walk them through Starter checkout, confirm access behaves as designed.
+
+### 16.9 — Risks + tradeoffs
+
+- **Risk: a Starter user changes their mind and swaps modules, then loses data in a newly-locked module.** Data isn't deleted — only hidden. If they re-select the module later, everything is back. Clarify this in the picker: *"Your data isn't deleted — you can re-select a module anytime."*
+- **Tradeoff: Option B (change anytime) from the plan doc wins.** No billing-cycle restriction, no change history. Reason: revenue from Starter is acquisition, not retention-via-lock-in. Friction around swapping modules would tank satisfaction without meaningfully protecting revenue.
+- **Risk: cross-app shared DB (see CLAUDE.md).** `selected_modules` column is additive and has no semantic meaning outside CentenarianOS — safe. `subscription_status` gaining `'starter'` is a CHECK constraint change; any other app reading this column will silently ignore unknown values, which is the correct behavior.
+- **Risk: feature flag toggled off mid-flight.** If a Starter user is already subscribed when we roll back the flag, they lose access. Mitigation: flag gates the **picker** (checkout path), not the **gating** (already-subscribed users). Users with `subscription_status='starter'` always get their modules regardless of flag state.
+
+### 16.10 — Next actions
+
+1. Get owner sign-off on §16.3 mapping (is the module → prefixes mapping correct?) and §16.6 answers.
+2. Owner creates Stripe $4.99/mo recurring price, shares the price ID.
+3. Claude opens branch 1 (`feat/starter-tier-schema`).
+
+### Remaining backlog (updated)
+
+| Plan | Status |
+|---|---|
+| 25 iOS validation pass | open — needs device |
+| 26.0 smaller v1 | shipped |
+| 26 full | blocked on survey + devrel reply |
+| Starter tier (§16 above) | **designed, awaiting owner sign-off on module→prefix mapping** |
