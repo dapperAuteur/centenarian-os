@@ -1215,3 +1215,49 @@ Screenshot at [plans/bugs/Bugs-checkmarks-Screenshot 2026-04-16 at 18.02.41.png]
 Tech roadmap was also listed as broken but uses lucide's `CheckCircle2` component throughout — renders correctly with no fix needed. If the owner sees something different on `/tech-roadmap`, include a URL/screenshot and we'll reopen.
 
 Bug closed.
+
+---
+
+## 25. Strategic pivot — `docs/bvc-direction-and-plan-33`
+
+Owner-signed direction 2026-04-16 after reviewing `plans/ecosystem/`. Full detail at [`../ecosystem/centenarianos-direction.md`](../ecosystem/centenarianos-direction.md). Summary:
+
+### 25.1 — Five directional decisions
+
+1. **Stop adding Academy features; start producing BVC content.** Infrastructure audit (direction doc §3) puts Academy at ~90% complete for BVC Episode 1 needs. Ship Episode 1 against what exists; fix gaps only if encountered.
+2. **Plan 26 full cancelled.** Native Insta360 companion would cross into Wanderlearn's scope. Plan 26.0 (already shipped) is the terminal work. Research brief stays as historical context.
+3. **Starter tier stays CentOS-only for 90 days.** Re-evaluate propagation after subscription data comes in. Marketing must not claim "WitUS pricing" for the $5.46 tier until validated.
+4. **Magic-link auth is a long-term priority.** Added as plan 34 (backlog stub). Every new auth change must move toward magic-link, not away.
+5. **DB-sharing with Work.WitUS flagged as architectural debt.** Not deciding today — keep current shared-DB rules from CLAUDE.md, revisit when owner picks a direction.
+
+### 25.2 — Files added
+
+- [`../ecosystem/centenarianos-direction.md`](../ecosystem/centenarianos-direction.md) — captures the five decisions above + Academy infra completeness audit. Pointed at from STYLE_GUIDE §6a.
+- [`../33-bvc-episode-1-coffee.md`](../33-bvc-episode-1-coffee.md) — content-production plan for the Academy's flagship episode. Strict editorial rules from the ecosystem doc. Lesson arc drafted for owner approval.
+- [`../34-auth-magic-link-migration.md`](../34-auth-magic-link-migration.md) — backlog stub for the magic-link migration. Phased approach (A–D) so we can watch delivery reliability.
+
+### 25.3 — Files modified
+
+- [`../../STYLE_GUIDE.md`](../../STYLE_GUIDE.md): added **§6a — Ecosystem + direction docs are required reading before proposing features**. Claude must read the three ecosystem docs before scoping any new feature and surface conflicts before coding. Updated §7 gitignore exception list to include `plans/ecosystem/`.
+
+### 25.4 — Remaining backlog (post-pivot)
+
+| Plan | Status |
+|---|---|
+| **33** BVC Episode 1 (Coffee) | **ready — awaiting owner approval of lesson arc §4** |
+| 25 iOS validation pass | open — needs device |
+| 26.0 smaller v1 | shipped |
+| **26 full** | **cancelled — see §25.1.2** |
+| 30 Stripe fee calculator | ready — ~1–2 hrs |
+| 31 i18n EN+ES + SEO | phased, 1–2 weeks |
+| 32 admin email verification | shipped |
+| **34** Magic-link auth migration | backlog stub |
+| Starter tier | shipped, 90-day monitoring |
+| BVC Episodes 2–7 | not planned — wait for Episode 1 validation |
+| Academy → FlashLearnAI deep-link | not planned — post-Episode 1 |
+| Academy → Wanderlearn preview blocks | not planned — post-Episode 1 |
+| Fly.WitUS → CentOS activity import | not planned — post-Episode 1 |
+
+### 25.5 — Next action for the human
+
+Owner confirms the §4 lesson arc in [plan 33](../33-bvc-episode-1-coffee.md) (or revises), sets course pricing, starts drafting Lesson 1 content. Claude's role during plan 33 is primarily editorial assistance + Academy CSV-import wiring, not new code.
