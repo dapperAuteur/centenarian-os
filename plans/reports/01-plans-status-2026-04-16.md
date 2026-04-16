@@ -528,3 +528,44 @@ Research phase is complete once the email is sent and the survey is live.
 | 26.0 smaller v1 (aspect ratio + filename hints) | ready — ~1 hour |
 | 26 full (desktop native companion) | blocked on survey + devrel reply |
 | 26 mobile deep-link | **cancelled** — Insta360 app doesn't expose it |
+
+---
+
+## 15. Plan 26.0 shipped — `feat/academy-360-upload-hints` (`6966c6b`)
+
+The research-brief §4 smaller v1. Brand-agnostic upload quality-of-life that doesn't depend on any external research outcome.
+
+### Files added
+
+- `lib/academy/camera-filename.ts` — pattern matcher that recognizes common 360° camera filenames and produces a suggested lesson title:
+  - Insta360 X/ONE X video: `VID_YYYYMMDD_HHMMSS_XX_XXX` → "Insta360 recording — {formatted date}"
+  - Insta360 photo: `IMG_YYYYMMDD_HHMMSS_XX` → "Insta360 photo — {formatted date}"
+  - GoPro Max: `GS######` → "GoPro Max recording"
+  - Ricoh Theta (new): `R#####` → "Ricoh Theta recording"
+  - Ricoh Theta (old, date-based): `yymmddhhmmss` → "Ricoh Theta — {date}"
+  - Also exports `checkEquirectangularRatio(width, height)` returning `'ok' | 'suspect' | null` for the 2:1 check.
+
+### Files modified
+
+- `components/academy/Cloudinary360Uploader.tsx` — new `onTitleSuggestion` callback. After a successful upload, inspects `info.width / info.height` and shows a non-blocking amber warning if the ratio isn't in [1.95, 2.05] ("This file is W×H (X.YZ:1). Equirectangular 360° media should be 2:1 — export the stitched version from your camera's desktop app and re-upload."). Parses `info.original_filename` through `suggestTitleFromFilename` and fires the callback when a pattern matches.
+- `components/academy/course-editor/CurriculumTab.tsx` — passes `onTitleSuggestion` into all four upload sites (edit/new × video/photo). Handler only applies the suggestion when the current title is empty, so teacher input is never clobbered.
+
+### Why non-blocking on the ratio check
+
+Half-sphere (180° VR180) and partial-sphere content is legitimately not 2:1 but still valuable. Raw dual-fisheye INSV files are 2:1 (two circles side by side) and would pass the ratio check despite being unplayable — so the ratio check alone isn't sufficient to guarantee equirectangular. We warn rather than reject so teachers can self-diagnose the "stretched / frozen preview" failure mode without being blocked when they know what they're doing.
+
+### Verification
+
+1. Open teacher course editor → add new lesson → pick 360 video type.
+2. Upload a real Insta360 export (e.g. `VID_20260411_143022_00_012.mp4`). The lesson title should auto-fill "Insta360 recording — {date}" if it was blank; an existing title is preserved.
+3. Upload a non-equirectangular file (e.g. a plain 16:9 MP4 — the widget rejects-not-equirectangular formats client-side but if you paste a Cloudinary URL directly, the check would only trigger via the upload path). Amber warning banner appears under the upload button.
+4. Type a title first, then upload → title stays as typed.
+
+### Remaining backlog (unchanged from §14 except 26.0 status)
+
+| Plan | Status |
+|---|---|
+| 25 iOS validation pass | open — needs device |
+| 26.0 smaller v1 | **shipped** (this branch) |
+| 26 full (desktop native companion) | blocked on survey + devrel reply |
+| 26 mobile deep-link | cancelled |
