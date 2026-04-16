@@ -619,14 +619,26 @@ TEXT[] rather than JSONB because we only store a flat array of strings and want 
 
 ### 16.3 — Module → route-prefix mapping
 
-A Starter user picks **modules**, but the layout enforces **route prefixes**. Each module maps to one or more top-level dashboard routes. Mapping verified against the actual directory listing in `app/dashboard/`. Sub-routes are included automatically because the layout uses `pathname.startsWith(prefix + '/')`.
+A Starter user picks **3 modules from 8**, but the layout enforces **route prefixes**. Each pickable module maps to one or more top-level dashboard routes. Mapping verified against the actual directory listing in `app/dashboard/`. Sub-routes are included automatically because the layout uses `pathname.startsWith(prefix + '/')`.
 
-New file: `lib/access/starter-modules.ts`
+**Always-included (for Starter and every other tier) — don't count toward the 3:**
+
+| Route | Reason |
+|---|---|
+| `/dashboard/planner`, `/dashboard/weekly-review`, `/dashboard/retrospective` | Owner decision 2026-04-16: Planner is universal baseline. |
+| `/dashboard/roadmap` | Same — paired with Planner. |
+| `/academy` | Decision C: Academy (student) always included; teachers bring content, platform takes fees on paid courses. |
+| `/dashboard/categories` | Decision B: Life Categories unrestricted — makes every other module better, doesn't make sense as a separate gate. |
+| `/dashboard/data` | Decision A: **full import/export unrestricted**. Users can export their entire data set — including modules they don't currently have access to. This is a data-rights call: locking someone out of their own data on downgrade is hostile. |
+| `/dashboard/blog`, `/dashboard/recipes`, `/dashboard/discover`, `/dashboard/billing`, `/dashboard/messages`, `/dashboard/feedback`, `/dashboard/settings`, `/dashboard/teaching` | Existing `FREE_ROUTE_PREFIXES` in `app/dashboard/layout.tsx`. |
+
+**Pickable modules (Starter picks 3 from 8):**
 
 ```ts
+// lib/access/starter-modules.ts
 export type ModuleSlug =
-  | 'planner' | 'engine' | 'fuel' | 'metrics' | 'workouts'
-  | 'finance' | 'travel' | 'equipment' | 'correlations' | 'academy';
+  | 'engine' | 'fuel' | 'metrics' | 'workouts'
+  | 'finance' | 'travel' | 'equipment' | 'correlations';
 
 export const STARTER_MODULES: Record<ModuleSlug, {
   label: string;
@@ -634,28 +646,37 @@ export const STARTER_MODULES: Record<ModuleSlug, {
   description: string;
   icon: string;
 }> = {
-  planner:      { label: 'Planner',           prefixes: ['/dashboard/planner', '/dashboard/weekly-review', '/dashboard/retrospective', '/dashboard/roadmap'], description: 'Daily tasks, recurring schedules, goals, roadmaps, weekly review',   icon: 'CalendarClock' },
-  engine:       { label: 'Engine',            prefixes: ['/dashboard/engine'],                            description: 'Focus sessions, analytics, doodle canvas',                          icon: 'Briefcase' },
-  fuel:         { label: 'Fuel',              prefixes: ['/dashboard/fuel', '/dashboard/scan'],           description: 'Supplement protocols, daily fuel logs, ingredient scan',            icon: 'Utensils' },
-  metrics:      { label: 'Health Metrics',    prefixes: ['/dashboard/metrics'],                           description: 'RHR, steps, sleep, body composition, wearable sync',                icon: 'HeartPulse' },
-  workouts:     { label: 'Workouts',          prefixes: ['/dashboard/workouts', '/dashboard/exercises'],  description: 'Exercise library, templates, logs, Nomad OS',                       icon: 'Dumbbell' },
-  finance:      { label: 'Finance',           prefixes: ['/dashboard/finance'],                           description: 'Transactions, accounts, budgets, invoices, forecast',               icon: 'DollarSign' },
-  travel:       { label: 'Travel',            prefixes: ['/dashboard/travel'],                            description: 'Trips, vehicles, fuel logs, maintenance, routes',                   icon: 'Navigation' },
-  equipment:    { label: 'Equipment',         prefixes: ['/dashboard/equipment', '/dashboard/media'],     description: 'Asset tracking, valuations, media library & gallery',               icon: 'Package' },
-  correlations: { label: 'Correlations',      prefixes: ['/dashboard/correlations', '/dashboard/analytics'], description: 'Cross-module analytics, AI insights',                           icon: 'TrendingUp' },
-  academy:      { label: 'Academy (student)', prefixes: ['/academy'],                                     description: 'Enroll in teacher-published courses',                               icon: 'GraduationCap' },
+  engine:       { label: 'Engine',         prefixes: ['/dashboard/engine'],                               description: 'Focus sessions, analytics, doodle canvas',                    icon: 'Briefcase' },
+  fuel:         { label: 'Fuel',           prefixes: ['/dashboard/fuel', '/dashboard/scan'],              description: 'Supplement protocols, daily fuel logs, ingredient scan',      icon: 'Utensils' },
+  metrics:      { label: 'Health Metrics', prefixes: ['/dashboard/metrics'],                              description: 'RHR, steps, sleep, body composition, wearable sync',          icon: 'HeartPulse' },
+  workouts:     { label: 'Workouts',       prefixes: ['/dashboard/workouts', '/dashboard/exercises'],     description: 'Exercise library, templates, logs, Nomad OS',                 icon: 'Dumbbell' },
+  finance:      { label: 'Finance',        prefixes: ['/dashboard/finance'],                              description: 'Transactions, accounts, budgets, invoices, forecast',         icon: 'DollarSign' },
+  travel:       { label: 'Travel',         prefixes: ['/dashboard/travel'],                               description: 'Trips, vehicles, fuel logs, maintenance, routes',             icon: 'Navigation' },
+  equipment:    { label: 'Equipment',      prefixes: ['/dashboard/equipment', '/dashboard/media'],        description: 'Asset tracking, valuations, media library & gallery',        icon: 'Package' },
+  correlations: { label: 'Correlations',   prefixes: ['/dashboard/correlations', '/dashboard/analytics'], description: 'Cross-module analytics, AI insights',                         icon: 'TrendingUp' },
 };
 
+export const STARTER_ALWAYS_INCLUDED_PREFIXES = [
+  '/dashboard/planner',
+  '/dashboard/weekly-review',
+  '/dashboard/retrospective',
+  '/dashboard/roadmap',
+  '/academy',
+  '/dashboard/categories',
+  '/dashboard/data',
+];
+
 export function expandToPrefixes(slugs: string[]): string[] {
-  return slugs.flatMap((slug) => STARTER_MODULES[slug as ModuleSlug]?.prefixes ?? []);
+  const picked = slugs.flatMap((slug) => STARTER_MODULES[slug as ModuleSlug]?.prefixes ?? []);
+  return [...STARTER_ALWAYS_INCLUDED_PREFIXES, ...picked];
 }
 ```
 
 **Bundled decisions (not asking):**
 - Scan bundles with Fuel (scan reads ingredients / supplement labels — only useful alongside fuel logging).
-- Media library bundles with Equipment (primary consumer — equipment media gallery is the heaviest user of the library).
-- Weekly-review, retrospective, roadmap bundle with Planner (all Operate-group tools).
-- Life Categories, Data Hub remain **unrestricted** per §16.6.
+- Media library bundles with Equipment (primary consumer — equipment media gallery is the heaviest user).
+- Exercises bundles with Workouts (library is the builder surface for workouts).
+- Analytics bundles with Correlations (same cross-module analytics surface).
 
 ### 16.4 — Enforcement: three layers, one source of truth
 
@@ -703,14 +724,16 @@ const allowedModules = isInvited && !isPaid && !isAdmin
 
 Admins bypass `allowedModules` entirely (they get the full app regardless of subscription). Lifetime and Monthly users have `allowedModules = null` which unlocks everything.
 
-### 16.6 — The four "open questions" from the plan
+### 16.6 — Owner decisions (locked in 2026-04-16)
 
-Answering inline so the coding branch doesn't re-litigate these:
+1. **Data Hub (import/export):** **full access, unrestricted.** Owner call — data-rights over product gating. A Starter user can export any data they own, including from modules they no longer have access to. `/dashboard/data` and `/api/*/export` endpoints do not filter by `selected_modules`.
+2. **Life Categories:** **unrestricted.** `/dashboard/categories` always included.
+3. **Academy (student):** **always included, does not count as 1 of 3.** `/academy` is always accessible. Teachers bring the content; platform revenue comes from fees on paid course enrollments, not from gating student access.
+4. **Activity Links across locked modules:** **show + redirect + upgrade CTA.** When a Starter user with Finance (but not Travel) opens an Activity Link picker, Travel entities still appear. Clicking a linked Travel entity redirects to `/dashboard/upgrade?from=travel` which shows the upgrade prompt. Existing links stay visible on source entities (read-only) so the user's prior context isn't lost.
 
-1. **Should Starter users get Data Hub (import/export)?** **Yes, scoped.** Data Hub is per-module — Finance import/export only works if Finance is selected. Implementation: the Data Hub landing page at `/dashboard/data` filters the module cards by `allowedPrefixes`. Already compatible because each Data Hub link targets a specific module's prefix.
-2. **Should Starter users get Life Categories?** **Yes, unrestricted.** Life Categories is a meta-tagging feature that makes other modules useful. Charging for it separately creates a "I can't tag my Finance entries because I don't have Categories" trap.
-3. **Should Academy count as one of the 3?** **Yes.** Keeps the picker honest — Academy is a real module with its own value and server cost (enrollments, progress tracking, teacher payouts). Users who want it get it; users who don't, don't.
-4. **Cross-module features like Activity Links across locked modules?** **Yes, degraded gracefully.** If a user has Finance but not Travel, Activity Link dropdowns still show Travel entities for linking purposes (read-only surface) — but clicking them redirects to the `/dashboard/upgrade` teaser. This keeps linking coherent for users who upgrade later (their old links still make sense).
+**Additional owner decision:** `/dashboard/planner` and `/dashboard/roadmap` (and the Operate-group sub-tools: weekly-review, retrospective) are **always included for every tier**. They are not part of the 3-picker.
+
+Net effect: Starter picks **3 of 8** modules (Engine, Fuel, Metrics, Workouts, Finance, Travel, Equipment, Correlations). Every other tier gets all of those unrestricted.
 
 ### 16.7 — Implementation plan (ordered)
 
@@ -742,39 +765,19 @@ One branch per logical change per STYLE_GUIDE §1. Rough sequencing:
 - **Risk: cross-app shared DB (see CLAUDE.md).** `selected_modules` column is additive and has no semantic meaning outside CentenarianOS — safe. `subscription_status` gaining `'starter'` is a CHECK constraint change; any other app reading this column will silently ignore unknown values, which is the correct behavior.
 - **Risk: feature flag toggled off mid-flight.** If a Starter user is already subscribed when we roll back the flag, they lose access. Mitigation: flag gates the **picker** (checkout path), not the **gating** (already-subscribed users). Users with `subscription_status='starter'` always get their modules regardless of flag state.
 
-### 16.10 — Sign-off needed (four yes/no decisions, nothing to read)
+### 16.10 — All decisions locked
 
-Everything below is a product call — there's nothing in the repo to read. Pick the answer you want; the defaults are the ones I recommended.
+- ✅ Pricing: $5.46/mo, $51.80/yr (monthly + annual price IDs documented)
+- ✅ Access mechanism: extend existing invited-user layer (§16.1, §16.4, §16.5)
+- ✅ Data model: migration 182 (§16.2)
+- ✅ Module list: 3-from-8 picker + 7 always-included prefixes (§16.3)
+- ✅ Four open questions: owner-decided (§16.6)
 
-**A. Data Hub (import/export) for Starter users**
-- Default: scoped — Finance import/export only works if Finance is selected.
-- Alternative: fully locked (Pro/Lifetime only).
-- **Your call:** [ ] default (scoped)  [ ] fully locked
+**No further sign-off needed to open branch 1.** Owner still needs to create the two Stripe prices and share the IDs before branch 5 (Stripe integration) can land — branches 1–4 can proceed without them.
 
-**B. Life Categories (tagging) for Starter users**
-- Default: unrestricted — tagging makes every other module more useful, not a separate product.
-- Alternative: locked to Pro/Lifetime, or lock if "Correlations" isn't one of their 3.
-- **Your call:** [ ] default (unrestricted)  [ ] locked  [ ] locked unless Correlations
+### 16.11 — Ready to code
 
-**C. Academy (student, free enrollment)**
-- Default: counts as 1 of the 3 — it's a full module with server cost.
-- Alternative: always included, doesn't count against the 3 (since teachers publish content and we take platform fees on paid courses).
-- **Your call:** [ ] default (counts as 1)  [ ] always included
-
-**D. Activity Links across locked modules (e.g. Starter has Finance but not Travel — can a Finance transaction still *link to* a Travel trip that existed before locking?)**
-- Default: graceful degrade — dropdowns still show linkable entities; clicking through to a locked module redirects to the upgrade teaser.
-- Alternative: hide locked-module entities entirely from link pickers.
-- **Your call:** [ ] default (show + redirect)  [ ] hide entirely
-
----
-
-### 16.11 — Next actions
-
-1. Answer A–D above in chat, or say "defaults" to ship my recommendations.
-2. Confirm `STRIPE_STARTER_MONTHLY_PRICE_ID` and `STRIPE_STARTER_ANNUAL_PRICE_ID` are set in `.env.local` (you mentioned the values — IDs need to be set, even if empty for now).
-3. I open branch 1 (`feat/starter-tier-schema`). Branches 2–6 sequence from there per §16.7.
-
-**Sign-off on §16.3 is no longer asked** — I verified every prefix against `app/dashboard/` directly, and bundled the utility modules (Scan, Media) with their primary consumers (Fuel, Equipment). If you spot a routing mistake later, it's one file to edit (`lib/access/starter-modules.ts`).
+Next: open `feat/starter-tier-schema` (branch 1 in §16.7), stacked on this design branch.
 
 ### Remaining backlog (updated)
 
