@@ -14,6 +14,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { FileText } from 'lucide-react';
 import TranscriptPanel, { type TranscriptSegment } from './TranscriptPanel';
+import { resolveAssetUrl, releaseResolvedUrl } from '@/lib/offline/asset-resolver';
 
 interface Lesson360VideoPlayerProps {
   src: string;
@@ -57,6 +58,7 @@ function Lesson360VideoPlayerInner({
     let viewer: import('@photo-sphere-viewer/core').Viewer | null = null;
     let cancelled = false;
     let endedFired = false;
+    let resolvedSrc = '';
 
     (async () => {
       try {
@@ -71,10 +73,17 @@ function Lesson360VideoPlayerInner({
 
         if (cancelled || !containerRef.current) return;
 
+        // If the teacher saved this asset offline, play the cached blob
+        // instead of fetching from Cloudinary. resolveAssetUrl returns
+        // the original URL when no cache exists, so this is transparent
+        // to parents that never opt in to caching.
+        resolvedSrc = await resolveAssetUrl(src);
+        if (cancelled) return;
+
         viewer = new Viewer({
           container: containerRef.current,
           adapter: EquirectangularVideoAdapter,
-          panorama: { source: src },
+          panorama: { source: resolvedSrc },
           keyboard: 'always',
           navbar: [
             'videoPlay',
@@ -121,6 +130,7 @@ function Lesson360VideoPlayerInner({
       cancelled = true;
       videoPluginRef.current = null;
       viewer?.destroy();
+      releaseResolvedUrl(resolvedSrc);
     };
   }, [src, autoplay, onTimeUpdate, onEnded]);
 
