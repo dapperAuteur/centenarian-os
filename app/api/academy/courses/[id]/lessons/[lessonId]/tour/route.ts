@@ -111,7 +111,13 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 interface PutPayload {
   scenes: Array<Omit<TourScene, 'id' | 'lesson_id'> & { id?: string }>;
-  hotspots: Array<Omit<TourHotspot, 'id' | 'scene_id'> & { id?: string; scene_slug: string }>;
+  hotspots: Array<Omit<TourHotspot, 'id' | 'scene_id' | 'target_scene_id'> & {
+    id?: string;
+    scene_slug: string;
+    // Scene-jump hotspots reference their target by slug so the editor can
+    // wire links between scenes that don't yet have server-side ids.
+    target_scene_slug?: string | null;
+  }>;
   scene_links: Array<Omit<TourSceneLink, 'id' | 'from_scene_id' | 'to_scene_id'> & {
     id?: string;
     from_scene_slug: string;
@@ -167,11 +173,12 @@ export async function PUT(request: NextRequest, { params }: Params) {
     slugToId.set(row.slug, row.id);
   }
 
-  // Hotspots
+  // Hotspots — resolve target_scene_slug → target_scene_id via the slug map.
   const hotspotRows = (body.hotspots ?? [])
     .map((h) => {
       const sceneId = slugToId.get(h.scene_slug);
       if (!sceneId) return null;
+      const targetSceneId = h.target_scene_slug ? (slugToId.get(h.target_scene_slug) ?? null) : null;
       return {
         scene_id: sceneId,
         hotspot_type: h.hotspot_type,
@@ -181,7 +188,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
         body: h.body ?? null,
         audio_url: h.audio_url ?? null,
         external_url: h.external_url ?? null,
-        target_scene_id: h.target_scene_id ?? null,
+        target_scene_id: targetSceneId,
         icon: h.icon ?? 'info',
       };
     })
