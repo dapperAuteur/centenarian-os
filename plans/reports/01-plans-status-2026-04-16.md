@@ -428,3 +428,52 @@ Batch save + storage management. Sits on top of 25a's per-asset plumbing so a le
 |---|---|
 | 25c (SW shell + revocation purge + iOS validation) | next |
 | 26 (Insta360 import) | blocked on §3 research |
+
+---
+
+## 13. Plan 25c shipped — `feat/academy-360-offline-service-worker` (`a4e12c8`)
+
+Finishes the offline trilogy. Turns out the Service Worker half was already in place from earlier site-wide work, so the substantive new code is the enrollment-revocation purge; iOS validation stays a manual sign-off.
+
+### Pre-existing, confirmed adequate for plan 25c
+
+- `public/sw.js` — `CACHE_VERSION = 'centos-v5'`, handles navigation (network-first with `/offline.html` fallback), static assets (cache-first), and API (stale-while-revalidate). Registered in production by `components/ServiceWorkerRegistration.tsx` from the root layout. No bump needed — the SW has no offline-plan-specific logic that needs updating.
+- `public/offline.html` — minimal branded fallback page; copy already makes sense for academy users ("Previously visited pages are still available").
+
+### Files added
+
+- `app/api/offline/assets/purge-revoked/route.ts` — POST endpoint. Server computes the set difference `(user's ledger rows with course_id) ∖ (user's active enrollments)` and deletes those rows. Returns `{ revoked_urls, count }` so the client can mirror the purge into IndexedDB. Trust boundary sits on the server — the ledger is authoritative; the client is untrusted.
+- `lib/offline/purge-revoked.ts` — `purgeRevoked()` wraps the endpoint and fans the returned URLs into `deleteBlob(url)` calls via `Promise.allSettled`. Failed local deletes show up later as orphan blobs in the storage manager, which is fine.
+- `components/academy/offline/RevokedAssetsPurger.tsx` — invisible mount component. Runs once per SPA session (module-level flag de-dupes across academy navigations), waits 1.5s so it doesn't compete with auth/enrollment mount-time work, and toasts the user when any lessons were removed so the shrink isn't silent.
+
+### Files modified
+
+- `app/academy/layout.tsx` — mounts `<RevokedAssetsPurger />`. Non-academy surfaces keep zero overhead.
+
+### Behavior delivered
+
+- When a teacher revokes a student's enrollment (or a Stripe subscription cancels, or the student unenrolls themselves), the student's next visit to any `/academy/*` page triggers an auto-purge. Ledger rows vanish server-side immediately; matching IndexedDB blobs are deleted client-side a second later.
+- User sees a gentle info toast: "Removed N offline lessons from courses you no longer have access to." — no modal, no blocker, just a notice.
+- Re-enrolling in the same course after revocation lets them re-save lessons normally. Cache key is the Cloudinary URL, so if the teacher hasn't replaced the media, a fresh save is a no-op download (browser HTTP cache may even serve it instantly).
+- Rows with `course_id = null` (posters unlinked from a lesson, stray uploads) are never auto-purged — enrollment gating doesn't apply to them. Users can still purge manually in the storage manager.
+
+### What's NOT in this branch (out of scope for a code-only plan)
+
+- **iOS Safari real-device validation** — `plans/validate/25-academy-360-offline.md §11` already lists the exact checklist (50 MB video, 150 MB video, safari close/reopen, cross-domain navigation). Needs real hardware, sign off after merge.
+- **Periodic orphan URL cleanup** — `plan 25 §10`: when a teacher replaces a lesson's `content_url`, the old ledger row becomes orphaned (no lesson references it). Out of scope here — the storage manager already flags these for user cleanup and a background cron is overkill for v1.
+
+### Merge order
+
+1. Merge `a4e12c8` to `main` (depends on `4f180f1` from plan 25b — merge that first if not already).
+2. No new migration. Reuses 181 (offline_assets).
+3. As enrolled student: save a 360° lesson offline → confirm blob + ledger exist.
+4. As admin/teacher: `UPDATE enrollments SET status='cancelled' WHERE user_id=...` for that student's row (or cancel via the teacher UI if it exists).
+5. As the student: reload any `/academy/*` page → within ~2 s, see the "Removed N offline lessons…" toast. IndexedDB + ledger should both be empty for that course.
+6. Re-enroll → `SaveCourseOfflineButton` appears again and works.
+
+### Remaining backlog
+
+| Plan | Status |
+|---|---|
+| 25 iOS validation pass | open — needs device |
+| 26 (Insta360 import) | blocked on §3 research |
