@@ -207,13 +207,25 @@ export default function LessonPlayerPage() {
     setTourError(null);
     offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/tour`)
       .then(async (r) => {
+        if (r.status === 403) {
+          throw new Error('forbidden');
+        }
+        if (r.status === 404) {
+          throw new Error('not_found');
+        }
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
       .then((data) => setVirtualTour(data))
       .catch((err) => {
         console.error('[VirtualTour] fetch error', err);
-        setTourError('Could not load this virtual tour. Try refreshing.');
+        if (err instanceof Error && err.message === 'forbidden') {
+          setTourError('You need to enroll in this course to view the tour — or open it via the teacher dashboard if you own the course.');
+        } else if (err instanceof Error && err.message === 'not_found') {
+          setTourError('This tour doesn\u2019t exist yet. If you\u2019re the teacher, add scenes from the tour editor first.');
+        } else {
+          setTourError('Could not load this virtual tour. Check your connection and refresh.');
+        }
       });
   }, [courseId, lessonId, lesson?.lesson_type]);
 
