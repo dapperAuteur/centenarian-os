@@ -338,6 +338,7 @@ export default function LessonPlayerPage() {
             src={lesson.content_url}
             autoplay={lesson.video_360_autoplay ?? false}
             posterUrl={lesson.video_360_poster_url}
+            transcript={lesson.transcript_content}
             onTimeUpdate={(t) => handleTimeUpdate(t)}
             onEnded={markComplete}
           />

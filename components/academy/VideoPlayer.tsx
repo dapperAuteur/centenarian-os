@@ -9,18 +9,13 @@ import {
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX,
   ListMusic, FileText, ChevronDown, ChevronUp, Maximize, Minimize,
 } from 'lucide-react';
+import TranscriptPanel, { type TranscriptSegment } from './TranscriptPanel';
 
 interface VideoChapter {
   id: string;
   title: string;
   startTime: number;
   endTime: number;
-}
-
-interface TranscriptSegment {
-  startTime: number;
-  endTime: number;
-  text: string;
 }
 
 interface VideoPlayerProps {
@@ -43,7 +38,6 @@ function formatTime(seconds: number): string {
 export default function VideoPlayer({ src, chapters, transcript, onEnded }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const transcriptRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
 
   const [playing, setPlaying] = useState(false);
@@ -62,10 +56,6 @@ export default function VideoPlayer({ src, chapters, transcript, onEnded }: Vide
   const currentChapter = sortedChapters.find(
     (ch) => currentTime >= ch.startTime && currentTime < ch.endTime,
   );
-
-  const activeSegmentIndex = transcript?.findIndex(
-    (seg) => currentTime >= seg.startTime && currentTime < seg.endTime,
-  ) ?? -1;
 
   useEffect(() => {
     const video = videoRef.current;
@@ -90,13 +80,6 @@ export default function VideoPlayer({ src, chapters, transcript, onEnded }: Vide
       video.removeEventListener('pause', onPause);
     };
   }, [onEnded]);
-
-  // Auto-scroll transcript
-  useEffect(() => {
-    if (!showTranscript || activeSegmentIndex < 0) return;
-    const el = transcriptRef.current?.querySelector(`[data-seg="${activeSegmentIndex}"]`);
-    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [activeSegmentIndex, showTranscript]);
 
   // Track fullscreen changes
   useEffect(() => {
@@ -329,34 +312,12 @@ export default function VideoPlayer({ src, chapters, transcript, onEnded }: Vide
 
       {/* Transcript panel */}
       {hasTranscript && showTranscript && (
-        <div className="border-t border-gray-800">
-          <button
-            onClick={() => setShowTranscript(false)}
-            className="w-full flex items-center justify-between px-4 sm:px-6 min-h-11 text-xs text-gray-300 hover:text-white transition"
-            aria-label="Collapse transcript"
-            aria-expanded="true"
-          >
-            <span className="font-semibold uppercase tracking-wide">Transcript</span>
-            <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" />
-          </button>
-          <div ref={transcriptRef} className="px-4 sm:px-6 pb-4 max-h-72 overflow-y-auto space-y-0.5">
-            {transcript!.map((seg, i) => (
-              <button
-                key={i}
-                data-seg={i}
-                onClick={() => seekTo(seg.startTime)}
-                className={`w-full text-left flex gap-3 px-2 py-1.5 rounded-lg text-sm transition ${
-                  i === activeSegmentIndex
-                    ? 'bg-fuchsia-900/20 text-white'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
-                }`}
-              >
-                <span className="tabular-nums text-xs shrink-0 w-10 text-right mt-0.5 opacity-60">{formatTime(seg.startTime)}</span>
-                <span className="flex-1">{seg.text}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+        <TranscriptPanel
+          transcript={transcript!}
+          currentTime={currentTime}
+          onSeek={seekTo}
+          onCollapse={() => setShowTranscript(false)}
+        />
       )}
     </div>
   );

@@ -12,6 +12,8 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
+import { FileText } from 'lucide-react';
+import TranscriptPanel, { type TranscriptSegment } from './TranscriptPanel';
 
 interface Lesson360VideoPlayerProps {
   src: string;
@@ -22,6 +24,11 @@ interface Lesson360VideoPlayerProps {
    * the content URL at upload time via lib/cloudinary/poster.ts.
    */
   posterUrl?: string | null;
+  /**
+   * Optional timestamped transcript. When present, a toggle button
+   * appears that opens the shared TranscriptPanel below the player.
+   */
+  transcript?: TranscriptSegment[] | null;
   /** Fires whenever the underlying video time updates (~4Hz). Use to upsert lesson_progress. */
   onTimeUpdate?: (currentTime: number, duration: number) => void;
   /** Fires when the video ends. Use to mark the lesson complete. */
@@ -32,12 +39,17 @@ function Lesson360VideoPlayerInner({
   src,
   autoplay = false,
   posterUrl,
+  transcript,
   onTimeUpdate,
   onEnded,
 }: Lesson360VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const videoPluginRef = useRef<{ setTime: (t: number) => void } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [showTranscript, setShowTranscript] = useState(false);
+  const hasTranscript = !!(transcript && transcript.length > 0);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -79,6 +91,10 @@ function Lesson360VideoPlayerInner({
         });
 
         const videoPlugin = viewer.getPlugin<InstanceType<typeof VideoPlugin>>(VideoPlugin);
+        if (videoPlugin) {
+          // Stash so the transcript panel can call setTime to seek.
+          videoPluginRef.current = videoPlugin;
+        }
 
         viewer.addEventListener('ready', () => {
           if (!cancelled) setLoading(false);
@@ -86,6 +102,7 @@ function Lesson360VideoPlayerInner({
 
         videoPlugin?.addEventListener('progress', (e) => {
           if (cancelled) return;
+          setCurrentTime(e.time);
           onTimeUpdate?.(e.time, e.duration);
           if (!endedFired && e.duration > 0 && e.progress >= 1) {
             endedFired = true;
@@ -102,6 +119,7 @@ function Lesson360VideoPlayerInner({
 
     return () => {
       cancelled = true;
+      videoPluginRef.current = null;
       viewer?.destroy();
     };
   }, [src, autoplay, onTimeUpdate, onEnded]);
@@ -141,10 +159,35 @@ function Lesson360VideoPlayerInner({
             {error}
           </div>
         )}
+        {/* Transcript toggle — top-right corner, only when a transcript is provided */}
+        {hasTranscript && !loading && !error && (
+          <button
+            type="button"
+            onClick={() => setShowTranscript((s) => !s)}
+            className={`absolute top-3 right-3 min-h-11 min-w-11 flex items-center justify-center rounded-lg transition backdrop-blur-sm ${
+              showTranscript
+                ? 'text-fuchsia-400 bg-fuchsia-900/40 border border-fuchsia-700'
+                : 'text-gray-200 bg-gray-900/80 border border-gray-700 hover:text-white'
+            }`}
+            aria-label={showTranscript ? 'Hide transcript panel' : 'Show transcript panel'}
+            aria-expanded={showTranscript}
+            title={showTranscript ? 'Hide transcript' : 'Show transcript'}
+          >
+            <FileText className="w-4 h-4" aria-hidden="true" />
+          </button>
+        )}
       </div>
       <p className="px-4 sm:px-6 py-3 text-xs text-gray-400 border-t border-gray-800">
         Drag to look around. Arrow keys pan, <kbd className="px-1 py-0.5 bg-gray-800 rounded">+</kbd>/<kbd className="px-1 py-0.5 bg-gray-800 rounded">−</kbd> zoom. On mobile, tap the gyroscope icon to look around by moving your phone.
       </p>
+      {hasTranscript && showTranscript && (
+        <TranscriptPanel
+          transcript={transcript!}
+          currentTime={currentTime}
+          onSeek={(s) => videoPluginRef.current?.setTime(s)}
+          onCollapse={() => setShowTranscript(false)}
+        />
+      )}
     </div>
   );
 }
