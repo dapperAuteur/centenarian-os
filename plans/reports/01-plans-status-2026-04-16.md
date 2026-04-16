@@ -1206,8 +1206,12 @@ Transaction creation path now:
 
 Bug closed.
 
-### 24.3 — Checkmarks on landing pages + tech roadmap are broken
+### 24.3 — Landing-page checkmarks fixed (shipped in `bug/landing-checkmark-icons`)
 
-User-reported visual regression. Need screenshots or at least the specific URLs to reproduce. Probably a CSS class change that affected icon rendering (e.g. Tailwind v4 migration artifact). Quick to fix once reproduced.
+Screenshot at [plans/bugs/Bugs-checkmarks-Screenshot 2026-04-16 at 18.02.41.png](../bugs/Bugs-checkmarks-Screenshot%202026-04-16%20at%2018.02.41.png) showed the literal string `&check;` rendering next to each feature bullet on the marketing pages. Root cause: JSX doesn't HTML-decode HTML entities the way raw HTML does — `&check;` inside a `<span>...</span>` JSX text node is emitted as the literal seven-character string.
 
-**Branch name when ready:** `bug/landing-checkmark-icons`.
+**Fixed in [app/page.tsx:271](../../app/page.tsx#L271) and [app/features/page.tsx:80](../../app/features/page.tsx#L80):** replaced `&check;` with the Unicode checkmark `✓` (U+2713) and added `aria-hidden="true"` so screen readers don't announce it (the list-item text is the meaningful content).
+
+Tech roadmap was also listed as broken but uses lucide's `CheckCircle2` component throughout — renders correctly with no fix needed. If the owner sees something different on `/tech-roadmap`, include a URL/screenshot and we'll reopen.
+
+Bug closed.
