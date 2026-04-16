@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, Play, CheckCircle, Clock, GraduationCap, RotateCcw, Loader2 } from 'lucide-react';
+import { BookOpen, Play, CheckCircle, Clock, GraduationCap, RotateCcw, Loader2, HardDrive } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface EnrolledCourse {
@@ -66,11 +66,20 @@ export default function MyCoursesPage() {
 
   return (
     <div className="text-white max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-      <div className="mb-8 sm:mb-10">
-        <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3 mb-2">
-          <GraduationCap className="w-7 sm:w-8 h-7 sm:h-8 text-fuchsia-400" /> My Courses
-        </h1>
-        <p className="text-gray-400 text-sm sm:text-base">Track your progress and continue learning.</p>
+      <div className="mb-8 sm:mb-10 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3 mb-2">
+            <GraduationCap className="w-7 sm:w-8 h-7 sm:h-8 text-fuchsia-400" /> My Courses
+          </h1>
+          <p className="text-gray-400 text-sm sm:text-base">Track your progress and continue learning.</p>
+        </div>
+        <Link
+          href="/academy/offline"
+          className="min-h-11 inline-flex items-center gap-2 px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 rounded-lg transition self-start"
+        >
+          <HardDrive className="w-4 h-4" aria-hidden="true" />
+          Offline storage
+        </Link>
       </div>
 
       {courses.length === 0 ? (

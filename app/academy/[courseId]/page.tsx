@@ -18,6 +18,9 @@ import GlossaryTermRow from '@/components/academy/GlossaryTermRow';
 import CourseShareBar from '@/components/academy/CourseShareBar';
 import { buildCourseShareUrls } from '@/lib/academy/share';
 import type { GlossaryTerm } from '@/components/academy/GlossaryTermRow';
+import SaveCourseOfflineButton, {
+  type OfflineLessonAsset,
+} from '@/components/academy/offline/SaveCourseOfflineButton';
 
 interface Lesson {
   id: string;
@@ -30,6 +33,8 @@ interface Lesson {
   module_locked?: boolean;
   is_new?: boolean;
   is_updated?: boolean;
+  content_url?: string | null;
+  video_360_poster_url?: string | null;
 }
 
 interface Module {
@@ -335,6 +340,41 @@ function CourseDetailContent() {
   const totalDuration = allLessons.reduce((sum, l) => sum + (l.duration_seconds ?? 0), 0);
   const modules = [...course.course_modules].sort((a, b) => a.order - b.order);
 
+  // Collect every 360° asset the learner can legitimately cache. We
+  // include the poster image when present so the low-bandwidth preview
+  // also works offline. Only show the batch-save control to enrolled
+  // learners — otherwise it would tempt non-enrolled users into a dead
+  // download (the content URLs require auth-gated access anyway).
+  const offlineAssets: OfflineLessonAsset[] = [];
+  if (course.enrolled) {
+    for (const lesson of allLessons) {
+      if (lesson.locked || lesson.module_locked) continue;
+      if (lesson.lesson_type === '360video' && lesson.content_url) {
+        offlineAssets.push({
+          lessonId: lesson.id,
+          assetUrl: lesson.content_url,
+          assetKind: 'panorama_video',
+        });
+      } else if (lesson.lesson_type === 'photo_360' && lesson.content_url) {
+        offlineAssets.push({
+          lessonId: lesson.id,
+          assetUrl: lesson.content_url,
+          assetKind: 'panorama_image',
+        });
+      }
+      if (
+        (lesson.lesson_type === '360video' || lesson.lesson_type === 'photo_360') &&
+        lesson.video_360_poster_url
+      ) {
+        offlineAssets.push({
+          lessonId: lesson.id,
+          assetUrl: lesson.video_360_poster_url,
+          assetKind: 'poster',
+        });
+      }
+    }
+  }
+
   return (
     <div className="text-white">
       <PageViewTracker path={`/academy/${courseId}`} />
@@ -460,7 +500,12 @@ function CourseDetailContent() {
             )}
 
             {/* Curriculum */}
-            <h2 className="text-lg font-bold mb-4">Curriculum</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <h2 className="text-lg font-bold">Curriculum</h2>
+              {offlineAssets.length > 0 && (
+                <SaveCourseOfflineButton courseId={course.id} assets={offlineAssets} />
+              )}
+            </div>
             <div className="space-y-3">
               {modules.map((mod) => {
                 const modLessons = [...mod.lessons].sort((a, b) => a.order - b.order);
