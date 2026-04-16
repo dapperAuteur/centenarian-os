@@ -205,22 +205,12 @@ export default function LessonPlayerPage() {
     if (lesson?.lesson_type !== 'virtual_tour') return;
     setVirtualTour(null);
     setTourError(null);
-    Promise.all([
-      offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/tour`).then(async (r) => {
-        if (!r.ok) throw new Error(`Tour HTTP ${r.status}`);
+    offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/tour`)
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
-      }),
-      offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/progress`).then(async (r) => {
-        if (!r.ok) return null;
-        return r.json();
-      }).catch(() => null),
-    ])
-      .then(([tourData, progressData]) => {
-        setVirtualTour(tourData);
-        if (progressData?.tour_progress?.visited_hotspot_ids) {
-          setTourVisitedIds(new Set(progressData.tour_progress.visited_hotspot_ids));
-        }
       })
+      .then((data) => setVirtualTour(data))
       .catch((err) => {
         console.error('[VirtualTour] fetch error', err);
         setTourError('Could not load this virtual tour. Try refreshing.');

@@ -14,6 +14,8 @@ import type { HotspotType } from '@/lib/academy/tour-types';
 
 interface HotspotFormModalProps {
   initial: EditorHotspot | null;
+  /** Pre-fill yaw/pitch when creating a new hotspot (from the preview's "Place hotspot here" button). */
+  initialPosition?: { yaw: number; pitch: number };
   allScenes: EditorScene[];
   onSave: (hotspot: EditorHotspot) => void;
   onCancel: () => void;
@@ -31,10 +33,22 @@ const DEFAULT_HOTSPOT: Omit<EditorHotspot, 'local_id'> = {
   icon: 'info',
 };
 
-export default function HotspotFormModal({ initial, allScenes, onSave, onCancel }: HotspotFormModalProps) {
-  const [state, setState] = useState<EditorHotspot>(() =>
-    initial ?? { ...DEFAULT_HOTSPOT, local_id: crypto.randomUUID() },
-  );
+// PSV expresses angles in radians. Yaw: full horizontal rotation (0 to 2π
+// or -π to π — we accept either). Pitch: vertical, clamped to ±π/2.
+const PITCH_MIN = -Math.PI / 2;
+const PITCH_MAX = Math.PI / 2;
+const YAW_MIN = -Math.PI * 2;
+const YAW_MAX = Math.PI * 2;
+
+export default function HotspotFormModal({ initial, initialPosition, allScenes, onSave, onCancel }: HotspotFormModalProps) {
+  const [state, setState] = useState<EditorHotspot>(() => {
+    if (initial) return initial;
+    return {
+      ...DEFAULT_HOTSPOT,
+      local_id: crypto.randomUUID(),
+      ...(initialPosition ? { yaw: initialPosition.yaw, pitch: initialPosition.pitch } : {}),
+    };
+  });
   const [error, setError] = useState<string | null>(null);
 
   // Close on Esc
@@ -83,14 +97,17 @@ export default function HotspotFormModal({ initial, allScenes, onSave, onCancel 
       role="dialog"
       aria-modal="true"
       aria-labelledby="hotspot-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 dark-input"
+      // Dock to the right on desktop (doesn't cover the scene preview on
+      // the left), full-screen modal on mobile. Backdrop is transparent on
+      // desktop so the preview stays interactive behind; opaque on mobile.
+      className="fixed inset-0 z-50 flex items-end sm:items-stretch sm:justify-end bg-black/70 sm:bg-black/20 dark-input"
       onClick={(e) => {
         if (e.target === e.currentTarget) onCancel();
       }}
     >
       <form
         onSubmit={handleSubmit}
-        className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="bg-gray-900 border-t sm:border-t-0 sm:border-l border-gray-700 rounded-t-2xl sm:rounded-none w-full sm:w-96 sm:h-full overflow-y-auto shadow-2xl"
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
           <h2 id="hotspot-modal-title" className="text-base font-semibold text-white">
@@ -195,22 +212,30 @@ export default function HotspotFormModal({ initial, allScenes, onSave, onCancel 
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="hotspot-yaw" className="block text-xs text-gray-400 mb-1">Yaw (radians)</label>
+              <label htmlFor="hotspot-yaw" className="block text-xs text-gray-400 mb-1">
+                Yaw <span className="text-gray-500">(−6.28 to 6.28)</span>
+              </label>
               <input
                 id="hotspot-yaw"
                 type="number"
                 step="0.01"
+                min={YAW_MIN}
+                max={YAW_MAX}
                 value={state.yaw}
                 onChange={(e) => update('yaw', Number(e.target.value))}
                 className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
               />
             </div>
             <div>
-              <label htmlFor="hotspot-pitch" className="block text-xs text-gray-400 mb-1">Pitch (radians)</label>
+              <label htmlFor="hotspot-pitch" className="block text-xs text-gray-400 mb-1">
+                Pitch <span className="text-gray-500">(−1.57 to 1.57)</span>
+              </label>
               <input
                 id="hotspot-pitch"
                 type="number"
                 step="0.01"
+                min={PITCH_MIN}
+                max={PITCH_MAX}
                 value={state.pitch}
                 onChange={(e) => update('pitch', Number(e.target.value))}
                 className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
@@ -219,7 +244,7 @@ export default function HotspotFormModal({ initial, allScenes, onSave, onCancel 
           </div>
 
           <p className="text-xs text-gray-500">
-            Yaw is horizontal rotation (0 = forward, ≈1.57 = right, ≈3.14 = back). Pitch is vertical (0 = level, positive = up). v1 accepts raw numbers; a later release will add click-to-place.
+            Angles are in radians. <strong className="text-gray-400">Yaw</strong>: 0 = forward, ≈1.57 = right, ≈3.14 = back, ≈−1.57 = left. <strong className="text-gray-400">Pitch</strong>: 0 = level, 1.57 = straight up, −1.57 = straight down. Tip: drag the preview to the spot you want, then use the &ldquo;Place hotspot here&rdquo; button instead of entering numbers manually.
           </p>
 
           {error && (

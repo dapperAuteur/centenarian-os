@@ -82,8 +82,16 @@ export default function TourEditor({ courseId, lessonId }: TourEditorProps) {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [hotspotModalState, setHotspotModalState] = useState<{ sceneSlug: string; hotspot: EditorHotspot | null } | null>(null);
-  const [linkModalState, setLinkModalState] = useState<{ sceneSlug: string; link: EditorSceneLink | null } | null>(null);
+  const [hotspotModalState, setHotspotModalState] = useState<{
+    sceneSlug: string;
+    hotspot: EditorHotspot | null;
+    initialPosition?: { yaw: number; pitch: number };
+  } | null>(null);
+  const [linkModalState, setLinkModalState] = useState<{
+    sceneSlug: string;
+    link: EditorSceneLink | null;
+    initialPosition?: { yaw: number; pitch: number };
+  } | null>(null);
 
   // Load the existing tour on mount
   useEffect(() => {
@@ -577,12 +585,22 @@ export default function TourEditor({ courseId, lessonId }: TourEditorProps) {
                 </div>
               </div>
 
-              {/* PSV preview — read-only, shows the scene as a learner sees it */}
+              {/* PSV preview — interactive; use the buttons below to stamp
+                  the current camera orientation into a new hotspot or scene link. */}
               <ScenePreviewPanel
                 key={selectedScene.slug}
                 panoramaUrl={selectedScene.panorama_url}
                 startYaw={selectedScene.start_yaw}
                 startPitch={selectedScene.start_pitch}
+                onUsePositionForHotspot={(yaw, pitch) =>
+                  setHotspotModalState({ sceneSlug: selectedScene.slug, hotspot: null, initialPosition: { yaw, pitch } })
+                }
+                onUsePositionForSceneLink={
+                  scenes.length >= 2
+                    ? (yaw, pitch) =>
+                        setLinkModalState({ sceneSlug: selectedScene.slug, link: null, initialPosition: { yaw, pitch } })
+                    : undefined
+                }
               />
 
               {/* Hotspots */}
@@ -697,6 +715,7 @@ export default function TourEditor({ courseId, lessonId }: TourEditorProps) {
       {hotspotModalState && (
         <HotspotFormModal
           initial={hotspotModalState.hotspot}
+          initialPosition={hotspotModalState.initialPosition}
           allScenes={scenes}
           onSave={(h) => saveHotspot(hotspotModalState.sceneSlug, h)}
           onCancel={() => setHotspotModalState(null)}
@@ -705,6 +724,7 @@ export default function TourEditor({ courseId, lessonId }: TourEditorProps) {
       {linkModalState && (
         <SceneLinkFormModal
           initial={linkModalState.link}
+          initialPosition={linkModalState.initialPosition}
           currentSceneSlug={linkModalState.sceneSlug}
           allScenes={scenes}
           onSave={(l) => saveSceneLink(linkModalState.sceneSlug, l)}

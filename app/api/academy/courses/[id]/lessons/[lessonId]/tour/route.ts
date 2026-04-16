@@ -37,7 +37,7 @@ function getDb() {
 async function requireCourseAuth(courseId: string, lessonId: string, writeAccess: boolean) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: 'Unauthorized', status: 401 as const };
+  if (!user) return { error: 'Unauthorized', reason: 'not_authenticated' as const, status: 401 as const };
 
   const db = getDb();
   const { data: course } = await db
@@ -45,7 +45,7 @@ async function requireCourseAuth(courseId: string, lessonId: string, writeAccess
     .select('teacher_id')
     .eq('id', courseId)
     .maybeSingle();
-  if (!course) return { error: 'Course not found', status: 404 as const };
+  if (!course) return { error: 'Course not found', reason: 'course_not_found' as const, status: 404 as const };
 
   // Confirm the lesson belongs to this course
   const { data: lesson } = await db
@@ -54,13 +54,15 @@ async function requireCourseAuth(courseId: string, lessonId: string, writeAccess
     .eq('id', lessonId)
     .eq('course_id', courseId)
     .maybeSingle();
-  if (!lesson) return { error: 'Lesson not found', status: 404 as const };
+  if (!lesson) return { error: 'Lesson not found', reason: 'lesson_not_found' as const, status: 404 as const };
 
   const isTeacher = course.teacher_id === user.id;
   const isAdmin = user.email === process.env.ADMIN_EMAIL;
 
   if (writeAccess) {
-    if (!isTeacher && !isAdmin) return { error: 'Forbidden', status: 403 as const };
+    if (!isTeacher && !isAdmin) {
+      return { error: 'Forbidden', reason: 'write_requires_teacher' as const, status: 403 as const };
+    }
     return { user, db, isTeacher, isAdmin };
   }
 
@@ -73,8 +75,18 @@ async function requireCourseAuth(courseId: string, lessonId: string, writeAccess
     .eq('course_id', courseId)
     .eq('user_id', user.id)
     .maybeSingle();
-  if (!enrollment || enrollment.status !== 'active') {
-    return { error: 'Forbidden', status: 403 as const };
+  if (!enrollment) {
+    // Specific reason — helps the client tell users "enroll first" vs.
+    // "your enrollment was revoked/paused".
+    return { error: 'Forbidden', reason: 'not_enrolled' as const, status: 403 as const };
+  }
+  if (enrollment.status !== 'active') {
+    return {
+      error: 'Forbidden',
+      reason: 'enrollment_inactive' as const,
+      status: 403 as const,
+      enrollmentStatus: enrollment.status,
+    };
   }
   return { user, db, isTeacher, isAdmin };
 }
@@ -82,7 +94,12 @@ async function requireCourseAuth(courseId: string, lessonId: string, writeAccess
 export async function GET(_req: NextRequest, { params }: Params) {
   const { id: courseId, lessonId } = await params;
   const auth = await requireCourseAuth(courseId, lessonId, false);
-  if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  if ('error' in auth) {
+    return NextResponse.json(
+      { error: auth.error, reason: auth.reason, ...('enrollmentStatus' in auth ? { enrollmentStatus: auth.enrollmentStatus } : {}) },
+      { status: auth.status },
+    );
+  }
   const { db } = auth;
 
   const { data: scenes, error: scenesError } = await db
@@ -128,7 +145,12 @@ interface PutPayload {
 export async function PUT(request: NextRequest, { params }: Params) {
   const { id: courseId, lessonId } = await params;
   const auth = await requireCourseAuth(courseId, lessonId, true);
-  if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  if ('error' in auth) {
+    return NextResponse.json(
+      { error: auth.error, reason: auth.reason, ...('enrollmentStatus' in auth ? { enrollmentStatus: auth.enrollmentStatus } : {}) },
+      { status: auth.status },
+    );
+  }
   const { db } = auth;
 
   const body = (await request.json()) as PutPayload;
