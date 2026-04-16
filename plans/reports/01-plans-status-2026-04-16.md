@@ -936,4 +936,60 @@ Better UX for the gate from branch 2. A Starter user hitting a forbidden route n
 
 ### Next branch
 
-Branch 4 — `feat/starter-tier-module-picker`. Adds the 3-from-8 module picker component on `/pricing`, reads `?action=swap` query param to mount in swap mode, validates exactly 3 unique picks, hands off to Stripe checkout (branch 5 wires the actual Starter price IDs).
+Branch 4 — see §20 below.
+
+---
+
+## 20. Starter tier branch 4 shipped — `feat/starter-tier-module-picker`
+
+The picker that was referenced by branches 2 + 3 as "TBD". New Starter-tier visual + flow on the pricing page, and the live swap path for existing subscribers. New-subscription checkout is wired to the expected API contract; branch 5 adds the backend half.
+
+### Files added
+
+- `components/pricing/StarterModulePicker.tsx` — presentational picker. Props: `mode` (`'new' | 'swap'`), `initialSelection`, `initialCadence`, `onSubmit`, `onCancel`, `externalError`. Internal state for picked set (max 3 enforced with friendly error when user hits cap), billing cadence, submitting flag. Renders 8 checkbox cards in a 2-col grid with per-module icons from the Lucide map, a live `X / 3` counter, a monthly/annual cadence toggle (hidden in swap mode — cadence changes go through Stripe's customer portal), and a fuchsia Continue button that resolves its label from cadence and mode.
+- `app/api/user/starter-modules/route.ts` — `PATCH` endpoint. Enforces: auth, `isValidStarterSelection` (exactly 3 unique valid slugs), `subscription_status='starter'` (only Starter tier can set this column — Lifetime/Monthly aren't module-gated). Uses the service-role client after the explicit auth check.
+
+### Files modified
+
+- `app/pricing/page.tsx`:
+  - New state `pickerMode: 'new' | 'swap' | null` + `pickerError`.
+  - Reads subscription via `useSubscription()` to know current tier + current picks.
+  - `SwapActionTrigger` child (Suspense-wrapped) reads `?action=swap` query from `/dashboard/upgrade`'s swap button and auto-opens the modal in swap mode; immediately strips the query via `router.replace` so refresh doesn't reopen.
+  - New `handleStarterSubmit(slugs, cadence)` forks by mode: swap → PATCH; new → POST `/api/stripe/checkout` with `plan: 'starter-monthly' | 'starter-annual'` and `selected_modules` metadata. Auth failures open the `PurchaseModal` as with existing plans.
+  - Grid layout: `md:grid-cols-2 max-w-3xl` → `md:grid-cols-2 lg:grid-cols-3 max-w-6xl`. Starter card is leftmost; Monthly (Popular) middle; Lifetime (Best Value) right.
+  - Starter card: "Start Small" badge, $5.46/mo price + "or $51.80/year (save 21%)" secondary line, five feature bullets focused on flexibility. CTA text forks by subscription: existing Starter subscribers see "Change your 3 modules" (opens swap mode); everyone else sees "Pick my 3 modules" (opens new mode).
+  - Modal mount at the end wraps `<StarterModulePicker>` with the shared `Modal` component (size lg).
+
+### Behavior delivered
+
+- **New signup path:** visitor clicks "Pick my 3 modules" → modal opens → visitor toggles cadence + picks 3 → Continue → `/api/stripe/checkout` fires with the Starter plan slug. Branch 5 must implement the backend handler for this request; until then, the response will 400 and the picker surfaces "Starter checkout is coming soon" via `externalError`. The picker UI is fully usable for validation.
+- **Swap path (fully live):** existing Starter user on `/dashboard/upgrade` clicks "Swap a module" → lands on `/pricing?action=swap` → picker auto-opens in swap mode pre-populated with their current 3 picks → they change one → Continue → PATCH `/api/user/starter-modules` → subscription hook refreshes → modal closes → nav visibility updates within the same render cycle because layout reads from `useSubscription()`.
+- **Edge cases handled:** trying to check a 4th module surfaces the "uncheck one to swap" message; canceling the modal resets state; submitting with <3 picks shows validation error; not-logged-in visitors hit the existing `PurchaseModal` auth flow on Continue.
+
+### Swap-path accessibility notes
+
+- Cadence toggle uses `<fieldset>` + `<legend className="sr-only">` + radio inputs hidden via `sr-only` with styled labels. Screen readers announce the group and current selection. Keyboard nav works via Tab + arrow keys (browser default for radios in a fieldset).
+- Live counter has `aria-live="polite"` so screen readers announce the updated count on each pick.
+- Each module card's label wraps the input with `aria-describedby` pointing at the description span — screen readers read label + description together.
+
+### Merge order
+
+1. Branches 1 + 2 + 3 must be merged first.
+2. Migration 182 applied in prod.
+3. Merge `feat/starter-tier-module-picker`.
+4. No new env vars yet (those come with branch 5).
+
+### Verification
+
+1. Fresh Incognito session → visit `/pricing` → Starter card renders with "Start Small" badge, "Pick my 3 modules" CTA.
+2. Click CTA → modal opens, 8 module cards in 2×4 grid, cadence toggle shows Monthly/Annual.
+3. Pick 3 → Continue label becomes "Continue — $5.46/mo" → click → expect 400 until branch 5, friendly error visible in picker.
+4. Toggle cadence to Annual → label changes to "Continue — $51.80/yr".
+5. Log in as existing Starter user (seeded per §18 verification SQL) → pricing Starter card reads "Change your 3 modules".
+6. Click → modal opens in swap mode, current 3 picks pre-checked, no cadence toggle.
+7. Uncheck one + check another → Continue → PATCH fires → modal closes → reload page → picker reopened in swap mode shows the new selection.
+8. Hit `/pricing?action=swap` directly (matches the `/dashboard/upgrade` swap button) → picker auto-opens in swap mode → URL updates to `/pricing` (no refresh loop).
+
+### Next branch
+
+Branch 5 — `feat/starter-tier-stripe`. Extends `/api/stripe/checkout` to accept `plan: 'starter-monthly' | 'starter-annual'` + `selected_modules` in the request body. Creates the Stripe subscription, writes `subscription_status='starter'` + `selected_modules` to profile on webhook. Needs `STRIPE_STARTER_MONTHLY_PRICE_ID` and `STRIPE_STARTER_ANNUAL_PRICE_ID` set in env (owner already confirmed the dollar amounts; owner needs to create the actual prices in Stripe and share the `price_xxx` IDs before this branch can ship).

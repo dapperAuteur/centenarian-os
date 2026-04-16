@@ -6,12 +6,16 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { Check, Shirt, Zap, ArrowLeft, DollarSign, CheckCircle } from 'lucide-react';
+import { useSubscription } from '@/lib/hooks/useSubscription';
+import { Check, Shirt, Zap, ArrowLeft, DollarSign, CheckCircle, Sparkles } from 'lucide-react';
 import PurchaseModal from '@/components/PurchaseModal';
 import SiteFooter from '@/components/ui/SiteFooter';
 import PageViewTracker from '@/components/ui/PageViewTracker';
+import Modal from '@/components/ui/Modal';
+import StarterModulePicker, { type BillingCadence, type PickerMode } from '@/components/pricing/StarterModulePicker';
+import type { ModuleSlug } from '@/lib/access/starter-modules';
 
 function FromSignupBanner() {
   const searchParams = useSearchParams();
@@ -23,10 +27,33 @@ function FromSignupBanner() {
   );
 }
 
+/**
+ * Read the ?action=swap query param and invoke onSwap once on mount.
+ * Used by Starter subscribers coming from /dashboard/upgrade's
+ * "Swap a module" CTA. Lives inside Suspense since useSearchParams
+ * requires it. Effectively an imperative side-effect triggered by URL.
+ */
+function SwapActionTrigger({ onSwap }: { onSwap: () => void }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  useEffect(() => {
+    if (searchParams.get('action') === 'swap') {
+      onSwap();
+      // Strip the query so refresh doesn't reopen the picker after close.
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('action');
+      const qs = params.toString();
+      router.replace(qs ? `/pricing?${qs}` : '/pricing', { scroll: false });
+    }
+  }, [searchParams, router, onSwap]);
+  return null;
+}
+
 const POLICIES = 'No Refunds. Cancel Anytime. Monthly fees are not transferable to lifetime membership.';
 
 export default function PricingPage() {
   const { user } = useAuth();
+  const { status: subStatus, selectedModules: currentModules, refresh: refreshSubscription } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<'monthly' | 'lifetime' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
@@ -37,6 +64,11 @@ export default function PricingPage() {
   const [cashAppSubmitting, setCashAppSubmitting] = useState(false);
   const [cashAppSubmitted, setCashAppSubmitted] = useState(false);
   const [cashAppError, setCashAppError] = useState<string | null>(null);
+
+  // Starter-tier picker state. `mode` null means the modal is closed.
+  const [pickerMode, setPickerMode] = useState<PickerMode | null>(null);
+  const [pickerError, setPickerError] = useState<string | null>(null);
+  const isExistingStarter = subStatus === 'starter';
 
   useEffect(() => {
     fetch('/api/pricing/founders')
@@ -80,6 +112,53 @@ export default function PricingPage() {
       handleCheckout(pendingPlan);
       setPendingPlan(null);
     }
+  }
+
+  /**
+   * Invoked from the StarterModulePicker when the user commits their 3
+   * picks. Two flows:
+   *   - 'swap' (existing Starter user changing picks): PATCH profile,
+   *     refresh the subscription hook, close modal.
+   *   - 'new' (future-starter): hits /api/stripe/checkout with the
+   *     starter plan and selected_modules metadata. Branch 5 will
+   *     implement the backend; until then the route will 400 and we
+   *     surface a friendly message via pickerError.
+   */
+  async function handleStarterSubmit(slugs: ModuleSlug[], cadence: BillingCadence) {
+    setPickerError(null);
+    if (pickerMode === 'swap') {
+      const res = await fetch('/api/user/starter-modules', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selected_modules: slugs }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? 'Could not save your picks.');
+      }
+      refreshSubscription();
+      setPickerMode(null);
+      return;
+    }
+    // New-subscription path. Stripe plan string is namespaced so branch
+    // 5's checkout handler can route on it without a separate flag.
+    const plan = cadence === 'annual' ? 'starter-annual' : 'starter-monthly';
+    const res = await fetch('/api/stripe/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan, selected_modules: slugs }),
+    });
+    if (res.status === 401) {
+      setPendingPlan(null);
+      setShowPurchaseModal(true);
+      setPickerMode(null);
+      return;
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.url) {
+      throw new Error(data.error ?? 'Starter checkout is coming soon — try Pro or Lifetime below for now.');
+    }
+    window.location.href = data.url;
   }
 
   async function handleCashAppSubmit() {
@@ -145,6 +224,9 @@ export default function PricingPage() {
         <Suspense fallback={null}>
           <FromSignupBanner />
         </Suspense>
+        <Suspense fallback={null}>
+          <SwapActionTrigger onSwap={() => setPickerMode('swap')} />
+        </Suspense>
 
         {/* Coaching CTA */}
         <Link
@@ -177,7 +259,57 @@ export default function PricingPage() {
           </div>
         )}
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          {/* Starter Plan — pick 3 modules */}
+          <div className="bg-white rounded-2xl border-2 border-sky-300 p-8 flex flex-col relative shadow-sm">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+              <span className="bg-sky-100 text-sky-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide border border-sky-200">
+                Start Small
+              </span>
+            </div>
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-1">Starter</h2>
+              <p className="text-gray-500 text-sm">Pick the 3 modules you&rsquo;ll actually use</p>
+              <div className="mt-4">
+                <span className="text-4xl font-extrabold text-gray-900">$5.46</span>
+                <span className="text-gray-500 text-sm ml-1">/month</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">or $51.80/year (save 21%)</p>
+            </div>
+            <ul className="space-y-3 mb-8 flex-1">
+              {[
+                'Pick any 3 of 8 paid modules',
+                'Planner, Roadmap, Academy always included',
+                'Life Categories, Data Hub (full export) always included',
+                'Swap modules any time — no cycle restrictions',
+                'Upgrade to Pro or Lifetime with one click',
+              ].map((f) => (
+                <li key={f} className="flex items-start gap-2 text-sm text-gray-700">
+                  <Check className="w-4 h-4 text-sky-500 mt-0.5 shrink-0" aria-hidden="true" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+            {isExistingStarter ? (
+              <button
+                onClick={() => setPickerMode('swap')}
+                className="w-full min-h-11 px-4 py-3 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors font-semibold text-sm flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" aria-hidden="true" />
+                Change your 3 modules
+              </button>
+            ) : (
+              <button
+                onClick={() => setPickerMode('new')}
+                disabled={loadingPlan !== null}
+                className="w-full min-h-11 px-4 py-3 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors font-semibold text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" aria-hidden="true" />
+                Pick my 3 modules
+              </button>
+            )}
+          </div>
+
           {/* Monthly Plan */}
           <div className="bg-white rounded-2xl border-2 border-fuchsia-400 p-8 flex flex-col relative shadow-lg">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -424,6 +556,24 @@ export default function PricingPage() {
         onClose={() => setShowPurchaseModal(false)}
         onAuthSuccess={handleAuthSuccess}
       />
+
+      <Modal
+        isOpen={pickerMode !== null}
+        onClose={() => { setPickerMode(null); setPickerError(null); }}
+        title={pickerMode === 'swap' ? 'Change your Starter modules' : 'Pick your 3 Starter modules'}
+        size="lg"
+      >
+        {pickerMode !== null && (
+          <StarterModulePicker
+            mode={pickerMode}
+            initialSelection={pickerMode === 'swap' ? (currentModules ?? []) : []}
+            initialCadence="monthly"
+            externalError={pickerError}
+            onSubmit={handleStarterSubmit}
+            onCancel={() => { setPickerMode(null); setPickerError(null); }}
+          />
+        )}
+      </Modal>
     </div>
   );
 }
