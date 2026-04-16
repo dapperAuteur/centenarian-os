@@ -1119,5 +1119,81 @@ Branches 1–6 ship a complete Pick-3-modules paid tier. Remaining work for the 
 | 26 full | blocked on survey + devrel reply |
 | 30 Stripe fee calculator | ready — ~1–2 hrs |
 | 31 i18n EN+ES + SEO | phased, 1–2 weeks |
-| 32 admin email verification dashboard | **new** — see §23 below |
+| 32 admin email verification dashboard | shipped (this series, §23) |
 | Starter tier | **fully shipped** (branches 1–6) |
+
+---
+
+## 23. Admin email verification — `feat/admin-email-verification`
+
+Plan 32 shipped in one branch. Admin can see who hasn't verified and nudge them.
+
+### Files added
+
+- `plans/32-admin-email-verification.md` — plan doc with scope, API shapes, and verification checklist.
+- `app/api/admin/users/[id]/resend-verification/route.ts` — POST endpoint. Admin-gated. Fetches the auth user by id, short-circuits when already verified, otherwise calls `auth.admin.generateLink({ type: 'magiclink', email })`. Magic link (not signup) because the target user already exists; clicking it both logs them in and confirms their email as a side effect.
+- `app/api/admin/users/resend-all-unverified/route.ts` — POST endpoint. Admin-gated. Lists all auth users, filters to `!email_confirmed_at`, caps at 100 per call (returns 413 with a clear error above that), runs `generateLink` sequentially to respect Supabase's per-email rate limits. Returns `{ attempted, succeeded, failed, alreadyVerified, skippedMissingEmail }`.
+
+### Files modified
+
+- `app/api/admin/users/route.ts` — response rows now include `email_confirmed_at: string | null` drawn from `db.auth.admin.listUsers()`.
+- `app/admin/users/page.tsx`:
+  - `UserRow` gains `email_confirmed_at` + the `starter` status value.
+  - New `Verified` column between `Email / Username` and `Plan`. Green checkmark with tooltip for verified users; amber `Resend` button (with `Mail` icon, `MailX` when no email on file, spinning loader while sending) for unverified.
+  - New filter pill `✉ Unverified`. Also accepts `?filter=unverified` via URL.
+  - New `starter` filter pill (was missing — needed for the pricing page to round-trip search URLs).
+  - Header gains a `Resend to all unverified` button (only when ≥1 unverified user exists) with a confirmation modal before firing.
+  - `STATUS_BADGE` map gains `starter: 'bg-sky-900/50 text-sky-300'`.
+  - Summary line under the page title calls out the unverified count in amber.
+  - Reload after per-row send (in case the user was already verified — toast explains).
+
+### Behavior delivered
+
+- Admin visits `/admin/users` — every row has a Verified cell. Header shows "X unverified" if any. Top-right shows a bulk resend button when there are unverified users.
+- Filter by `✉ Unverified` — table collapses to the unverified subset.
+- Click per-row `Resend` — toast "Verification email sent to foo@bar.com" (or "already verified — no email sent" if the status is stale). No refresh needed; users page reloads automatically to sync.
+- Click `Resend to all unverified` — confirmation modal shows the count. Confirm → toast with the success/failure/skip breakdown.
+- Over 100 unverified: the bulk endpoint returns 413 with a helpful message; admin should filter and resend per-row, or call again (each call processes the first 100 it sees).
+
+### Merge order
+
+1. Merge `feat/admin-email-verification`. No migrations, no new env vars.
+2. Standalone feature — doesn't depend on the Starter-tier series and can land before or after those.
+
+### Verification
+
+1. DB inspect: an unverified user has `auth.users.email_confirmed_at = NULL`.
+2. Admin `/admin/users` → their row shows the amber `Resend` button.
+3. Click → toast success → check inbox (or Supabase dashboard → Auth → Logs) for the magic link.
+4. Filter by `✉ Unverified` → only unverified users remain.
+5. Click `Resend to all unverified` → modal → confirm → expect one email per unverified user.
+6. As the user, click the magic link → log in + `email_confirmed_at` populated → admin sees green checkmark after reload.
+
+---
+
+## 24. Bug backlog (owner-reported 2026-04-16)
+
+Not plans, just captured bugs. Each needs its own branch when worked on.
+
+### 24.1 — "Recipe Ideas" button on `/dashboard/fuel` links to tech roadmap
+
+The CTA labeled "Recipe Ideas" currently routes to `/dashboard/roadmap` (the app's own planning roadmap), which is wrong on both product and UX grounds. A user who wants recipe ideas isn't expecting to see your engineering roadmap.
+
+**Clarifying question for owner:** what should this button actually link to? Two plausible targets:
+- **A — Recipes hub** (`/dashboard/recipes`) — obvious, but the user is on Fuel; they're probably looking for *what to eat right now*, not a recipe library to browse.
+- **B — Recipes filtered to fuel/meal-prep tag or category** — e.g., `/dashboard/recipes?category=fuel` or `?tag=meal-prep`. Requires the tag/category to exist; easy to add if not.
+- **C — AI recipe generator** — new page. Biggest lift but best fit for "ideas."
+
+Deferred until owner weighs in.
+
+### 24.2 — Refactor `/dashboard/finance` scan receipt to use `/dashboard/scan`
+
+The Finance module has its own receipt-scanning surface; the shared `/dashboard/scan` tool is reportedly better UI/UX. Refactor the Finance path to redirect into (or embed) the canonical scanner. Scope depends on whether the Finance scan has unique post-processing (auto-categorization into a budget category, etc.) that needs to be preserved.
+
+**Branch name when ready:** `bug/finance-use-shared-scanner`.
+
+### 24.3 — Checkmarks on landing pages + tech roadmap are broken
+
+User-reported visual regression. Need screenshots or at least the specific URLs to reproduce. Probably a CSS class change that affected icon rendering (e.g. Tailwind v4 migration artifact). Quick to fix once reproduced.
+
+**Branch name when ready:** `bug/landing-checkmark-icons`.

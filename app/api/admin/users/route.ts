@@ -47,15 +47,21 @@ export async function GET(_request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Get auth user emails via admin API
+  // Get auth user emails + email_confirmed_at via admin API
   const { data: authUsers } = await db.auth.admin.listUsers({ perPage: 1000 });
 
-  const emailMap = new Map(authUsers?.users?.map((u) => [u.id, u.email]) ?? []);
+  const authMap = new Map(
+    authUsers?.users?.map((u) => [u.id, { email: u.email ?? null, email_confirmed_at: u.email_confirmed_at ?? null }]) ?? [],
+  );
 
-  const users = (profiles ?? []).map((p) => ({
-    ...p,
-    email: emailMap.get(p.id) ?? null,
-  }));
+  const users = (profiles ?? []).map((p) => {
+    const auth = authMap.get(p.id);
+    return {
+      ...p,
+      email: auth?.email ?? null,
+      email_confirmed_at: auth?.email_confirmed_at ?? null,
+    };
+  });
 
   return NextResponse.json({ users });
 }
