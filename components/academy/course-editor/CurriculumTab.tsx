@@ -611,9 +611,22 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                               Free preview
                             </label>
                           </div>
-                          {editingLesson.lesson_type === 'virtual_tour' && (
+                          {editingLesson.lesson_type === 'virtual_tour' && editingLesson.id && (
+                            <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-3 space-y-2">
+                              <p className="text-xs text-gray-300">
+                                Virtual tours have their own full-screen editor for managing scenes, hotspots, and scene links. Save this lesson first, then open the tour editor.
+                              </p>
+                              <a
+                                href={`/dashboard/teaching/courses/${courseId}/tour/${editingLesson.id}`}
+                                className="inline-flex items-center gap-1.5 min-h-11 px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-sm font-semibold rounded-lg transition"
+                              >
+                                Open tour editor →
+                              </a>
+                            </div>
+                          )}
+                          {editingLesson.lesson_type === 'virtual_tour' && !editingLesson.id && (
                             <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-3 text-xs text-gray-300">
-                              Virtual tours contain multiple linked 360° scenes with hotspots. The full scene editor ships in the next release (plan 23b). For now, existing virtual tour lessons render with whatever scenes are already in the database; to author a new tour, use the API directly via <code className="text-gray-400">PUT /api/academy/courses/…/lessons/…/tour</code> or wait for the scene editor UI.
+                              Save this lesson first, then the tour editor link will appear here.
                             </div>
                           )}
                           {editingLesson.lesson_type !== 'text' && editingLesson.lesson_type !== 'quiz' && editingLesson.lesson_type !== 'virtual_tour' && (
@@ -793,7 +806,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                     {/* Content URL / upload — all non-text, non-quiz types */}
                     {newLesson.lesson_type === 'virtual_tour' && (
                       <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-3 text-xs text-gray-300">
-                        Virtual tours contain multiple linked 360° scenes with hotspots. The full scene editor ships in the next release (plan 23b). You can still create the lesson shell now — use the API directly to seed scenes, or wait for the editor UI.
+                        Virtual tours have their own full-screen editor. Create this lesson first, then click the pencil icon to open the tour editor where you can add scenes, hotspots, and scene links.
                       </div>
                     )}
                     {newLesson.lesson_type !== 'text' && newLesson.lesson_type !== 'quiz' && newLesson.lesson_type !== 'virtual_tour' && (
