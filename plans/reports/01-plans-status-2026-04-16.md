@@ -1187,11 +1187,24 @@ Owner decision 2026-04-16: option C — route to an AI recipe generator, with a 
 
 Bug closed.
 
-### 24.2 — Refactor `/dashboard/finance` scan receipt to use `/dashboard/scan`
+### 24.2 — Finance scanner uses `/dashboard/scan` (shipped in `bug/finance-use-shared-scanner`)
 
-The Finance module has its own receipt-scanning surface; the shared `/dashboard/scan` tool is reportedly better UI/UX. Refactor the Finance path to redirect into (or embed) the canonical scanner. Scope depends on whether the Finance scan has unique post-processing (auto-categorization into a budget category, etc.) that needs to be preserved.
+Finance page was using the shared `ScanButton` component inline — captured receipt, pre-filled the Add Transaction modal with extracted fields (amount, vendor, date, line-item description). Simple but minimal.
 
-**Branch name when ready:** `bug/finance-use-shared-scanner`.
+`/dashboard/scan` has the richer flow: auto-routing (receipt → finance, recipe → recipes, maintenance → travel), ScanResultRouter for reviewing + editing extracted fields, line-item price history recording, receipt_line_items persistence, and contact attachment. Owner's assessment of "better UI/UX" tracks.
+
+**Changes in [app/dashboard/finance/page.tsx](../../app/dashboard/finance/page.tsx):**
+- Removed `ScanButton` + `ScanResult` + `ReceiptExtraction` imports.
+- Removed `handleScanResult` handler (no longer needed — the scan page creates the transaction directly and links to the transaction detail page).
+- Replaced the inline `<ScanButton>` with a `<Link href="/dashboard/scan">` styled identically (same purple button + ScanLine icon).
+
+Transaction creation path now:
+1. User on `/dashboard/finance` clicks "Scan Receipt" → routes to `/dashboard/scan`.
+2. Capture/upload → Gemini OCR → `ScanResultRouter` preview.
+3. Confirm → `/api/finance/transactions` POST + line item price records + receipt_line_items + source linking.
+4. Success state links back to `/dashboard/finance/transactions/{id}` for review.
+
+Bug closed.
 
 ### 24.3 — Checkmarks on landing pages + tech roadmap are broken
 
