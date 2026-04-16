@@ -8,6 +8,15 @@ const __dirname = path.dirname(__filename);
 const nextConfig = {
   reactStrictMode: true,
 
+  // Expose CLOUDINARY_API_KEY to the client as NEXT_PUBLIC_CLOUDINARY_API_KEY
+  // so next-cloudinary's CldUploadWidget can find it. The API key is NOT a
+  // secret — it's a public identifier (like a username). Only the API_SECRET
+  // is private. This alias means you set one env var (CLOUDINARY_API_KEY) and
+  // both server routes and client components see it.
+  env: {
+    NEXT_PUBLIC_CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+  },
+
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'res.cloudinary.com' },
