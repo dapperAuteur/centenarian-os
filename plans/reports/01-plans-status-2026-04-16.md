@@ -820,4 +820,72 @@ Schema + types only. Zero UI, zero behavior changes for existing users. Lays the
 
 ### Next branch
 
-Branch 2 — `feat/starter-tier-gating`. Extends `app/dashboard/layout.tsx` to treat `subscription_status='starter'` the same way it treats invited users (both consume `allowedModules`), wires `selectedModules` through `/api/auth/me`, filters `NavConfig.getVisibleGroups` for Starter users. Still no new UI — just gate existing routes.
+Branch 2 — see §18 below.
+
+---
+
+## 18. Starter tier branch 2 shipped — `feat/starter-tier-gating`
+
+Gates. Extends the existing "invited user" access mechanism to cover Starter subscribers. Zero new UI surfaces — just wires the data from branch 1 into the already-built enforcement primitive in `app/dashboard/layout.tsx` and `components/nav/NavConfig.ts`.
+
+### Files modified
+
+- `app/dashboard/layout.tsx`:
+  - Imports `expandToPrefixes` from `lib/access/starter-modules.ts`.
+  - Reads `selectedModules` from `useSubscription()` (added in branch 1).
+  - Extends `isPaid` to include `subStatus === 'starter'`.
+  - New `isStarter` boolean derived from `subStatus`.
+  - `allowedModules` now resolves as: `null` for admins → `expandToPrefixes(selectedModules)` for Starter → `inviteModules` for invited non-paid non-admin → `null` otherwise.
+  - Redirect effect simplified: any user with a non-null `allowedModules` gets redirected off forbidden routes. Single code path covers both Starter and Invited (the two tiers that restrict).
+
+### Files NOT modified (and why)
+
+- `components/nav/NavConfig.ts` — already filters paid items against `allowedModules` with `href === m || href.startsWith(m + '/')`. The existing signature is exactly what Starter users need. Zero changes.
+- `app/api/auth/me/route.ts` — subscription data comes through `useSubscription()`, not this endpoint. Keeping the separation: this endpoint is admin/teacher/invited flags; `useSubscription` is subscription tier + selected modules.
+
+### Behavior delivered
+
+- A user with `subscription_status='starter'` and `selected_modules=['finance','workouts','metrics']` can access:
+  - All free routes (blog/recipes/billing/messages/feedback/settings/teaching).
+  - All always-included paid routes (planner family, academy, categories, data).
+  - The three picked module prefixes (finance/*, workouts/* + exercises/*, metrics/*).
+  - Every other paid route redirects to `/dashboard/planner` (always-included for Starter, so never loops).
+- Nav filters: Starter users don't see links to modules they can't access. Admins + Monthly + Lifetime users see everything (unchanged).
+- **Invited-user behavior is unchanged** — the existing `inviteModules` flow still works identically.
+
+### Known edge case (follow-up, not a regression)
+
+A handful of NavConfig entries live under `/dashboard/settings/*` but are marked `paid: true` (e.g., Wearables at `/dashboard/settings/wearables`). The nav filter hides them from Starter/Invited users even when the underlying module is picked (because `/dashboard/settings/wearables` doesn't match any picked prefix). Users can still reach the page by URL because `/dashboard/settings` is in `FREE_ROUTE_PREFIXES`. This is a pre-existing issue that also affected invited users; worth addressing in a NavConfig cleanup branch but out of scope here.
+
+### Merge order
+
+1. Branch 1 (`feat/starter-tier-schema`) must be merged first — this branch depends on `SubscriptionStatus` gaining `'starter'` and `useSubscription` exposing `selectedModules`.
+2. Migration 182 must be applied before this branch goes to production (subscription status check rejects 'starter' until it runs).
+3. Then merge `feat/starter-tier-gating`.
+
+### Verification
+
+1. Open DB console: `UPDATE profiles SET subscription_status='starter', selected_modules=ARRAY['finance','workouts','metrics'] WHERE id='<your-user-id>';`
+2. Refresh dashboard: nav shows only Finance, Workouts, Metrics paid items plus always-included (Planner family, Academy, Categories, Data).
+3. Type `/dashboard/travel` → redirects to `/dashboard/planner`.
+4. Type `/dashboard/finance` → loads normally.
+5. `UPDATE` back to `'free'` → user is kicked to `/pricing`.
+6. `UPDATE` to `'monthly'` → full access restored, no restrictions.
+
+### Next branch
+
+Branch 3 — `feat/starter-tier-upgrade-page`. Replaces the redirect target from `/dashboard/planner` to a new `/dashboard/upgrade?from=<module>` page with upgrade CTAs (Monthly / Annual / Lifetime). Same gate, friendlier UX.
+
+### Remaining backlog (updated with plans 30 + 31)
+
+| Plan | Status |
+|---|---|
+| 25 iOS validation pass | open — needs device |
+| 26.0 smaller v1 | shipped |
+| 26 full | blocked on survey + devrel reply |
+| **30: Stripe fee calculator** | **new** — see `plans/30-stripe-fee-calculator.md`. Small component, shows live "You receive $X after fees" on every price input. Est ~1–2 hrs. Added per owner request 2026-04-16. |
+| **31: i18n (EN + ES) + SEO metadata** | **new** — see `plans/31-i18n-en-es-plus-seo.md`. Phased: Phase 1 infra + pricing/home (1 day), Phase 2 public surfaces (3–5 days), Phase 3 authenticated app (5 days), Phase 4 errors/emails/legal (1–2 days). Added per owner request 2026-04-16. |
+| Starter tier branch 3 | next — `/dashboard/upgrade?from=X` page |
+| Starter tier branch 4 | pending — module picker on `/pricing` |
+| Starter tier branch 5 | pending — Stripe checkout + webhook (needs price IDs) |
+| Starter tier branch 6 | pending — admin stats |
