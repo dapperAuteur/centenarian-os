@@ -123,6 +123,20 @@ These apply everywhere, always:
 
 ---
 
+## 5a. Status reports are updated after every branch
+
+Every shipped branch **must** append a section to the active status report at `plans/reports/NN-plans-status-YYYY-MM-DD.md` describing what just landed. No exceptions — even bug fixes and docs-only branches get a section.
+
+- The report section is part of the same branch as the code. Don't split it into a follow-up "docs: update report" branch; reviewers and future readers benefit from diff-reading the report alongside the work.
+- One section per branch, numbered sequentially (`## N. Title — branch-name (commit-sha)`).
+- Include: files added/modified, behavior delivered, merge order, verification steps, and any remaining backlog changes.
+- If there's no active report, start one: `plans/reports/01-plans-status-YYYY-MM-DD.md` with today's date.
+- Reports live under `plans/` which is gitignored — use `git add -f` to track them. This is the one exception to §7.
+
+Why: conversations get summarized and context is lost; the report is the durable record of what actually shipped, in what order, and with what caveats. A future Claude (or human) reading only the report should be able to reconstruct the branch chain.
+
+---
+
 ## 6. Plan files
 
 Non-trivial work starts with a plan file in `plans/NN-slug.md` where `NN` is the next unused sequential number. For throwaway fixes, skip the plan file.
@@ -138,7 +152,7 @@ Non-trivial work starts with a plan file in `plans/NN-slug.md` where `NN` is the
 
 These directories exist in the repo but are **gitignored** — files inside them are local-only and will never appear in a commit or PR:
 
-- `plans/` — implementation plan files (see §6)
+- `plans/` — implementation plan files (see §6). Exception: status reports under `plans/reports/` are force-added so the durable record ships with the code — see §5a.
 - `content/` — tutorial scripts and other authoring drafts (`content/tutorials/<module>/NN-slug.md`)
 
 When you create a file in one of these directories you will not see it in `git status`. That is expected. If you want a file tracked, put it somewhere else — or open a separate decision to remove the directory from `.gitignore`, which has wider implications.
