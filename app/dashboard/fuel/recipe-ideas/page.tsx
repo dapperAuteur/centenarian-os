@@ -4,7 +4,8 @@
 // AI-generated recipe suggestions from current inventory
 
 import { useState } from 'react';
-import { Sparkles, Loader2, Clock, Users, ChefHat, Save, Check, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import { Sparkles, Loader2, Clock, Users, ChefHat, Save, Check, AlertCircle, BookOpen } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface RecipeIdea {
@@ -90,23 +91,32 @@ export default function RecipeIdeasPage() {
           </h1>
           <p className="text-gray-600 text-sm mt-1">AI-suggested recipes from your current inventory</p>
         </div>
-        <button
-          onClick={generate}
-          disabled={loading}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-lime-600 text-white rounded-xl font-medium text-sm hover:bg-lime-700 transition disabled:opacity-50 min-h-11 shrink-0"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Generating…
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4" />
-              {hasGenerated ? 'Regenerate' : 'Generate Ideas'}
-            </>
-          )}
-        </button>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
+          <Link
+            href="/recipes"
+            className="min-h-11 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-lime-700 bg-lime-50 hover:bg-lime-100 border border-lime-200 rounded-xl transition"
+          >
+            <BookOpen className="w-4 h-4" aria-hidden="true" />
+            Browse recipes
+          </Link>
+          <button
+            onClick={generate}
+            disabled={loading}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-lime-600 text-white rounded-xl font-medium text-sm hover:bg-lime-700 transition disabled:opacity-50 min-h-11"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Generating…
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                {hasGenerated ? 'Regenerate' : 'Generate Ideas'}
+              </>
+            )}
+          </button>
+        </div>
       </header>
 
       {/* Error */}

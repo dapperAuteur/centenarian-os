@@ -1175,16 +1175,17 @@ Plan 32 shipped in one branch. Admin can see who hasn't verified and nudge them.
 
 Not plans, just captured bugs. Each needs its own branch when worked on.
 
-### 24.1 — "Recipe Ideas" button on `/dashboard/fuel` links to tech roadmap
+### 24.1 — "Recipe Ideas" button fixed (shipped in `feat/ai-recipe-generator`)
 
-The CTA labeled "Recipe Ideas" currently routes to `/dashboard/roadmap` (the app's own planning roadmap), which is wrong on both product and UX grounds. A user who wants recipe ideas isn't expecting to see your engineering roadmap.
+Owner decision 2026-04-16: option C — route to an AI recipe generator, with a secondary link to the public recipes hub.
 
-**Clarifying question for owner:** what should this button actually link to? Two plausible targets:
-- **A — Recipes hub** (`/dashboard/recipes`) — obvious, but the user is on Fuel; they're probably looking for *what to eat right now*, not a recipe library to browse.
-- **B — Recipes filtered to fuel/meal-prep tag or category** — e.g., `/dashboard/recipes?category=fuel` or `?tag=meal-prep`. Requires the tag/category to exist; easy to add if not.
-- **C — AI recipe generator** — new page. Biggest lift but best fit for "ideas."
+**Surprise finding:** the full AI generator already existed at [app/dashboard/fuel/recipe-ideas/page.tsx](../../app/dashboard/fuel/recipe-ideas/page.tsx) with a live `/api/ai/recipe-ideas` Gemini-powered endpoint. The Fuel-page button had just been left pointing at `/tech-roadmap` with a `coming soon` flag. Zero new implementation needed — only wiring.
 
-Deferred until owner weighs in.
+**Changes:**
+- [app/dashboard/fuel/page.tsx](../../app/dashboard/fuel/page.tsx): Recipe Ideas card `href` → `/dashboard/fuel/recipe-ideas`, dropped the `comingSoon` flag and its UI branches (no other module used it).
+- [app/dashboard/fuel/recipe-ideas/page.tsx](../../app/dashboard/fuel/recipe-ideas/page.tsx): header now has a secondary "Browse recipes" CTA linking to `/recipes` (the public hub) alongside the primary "Generate Ideas" button. Satisfies owner request for the public-hub link.
+
+Bug closed.
 
 ### 24.2 — Refactor `/dashboard/finance` scan receipt to use `/dashboard/scan`
 
