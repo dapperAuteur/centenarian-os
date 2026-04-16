@@ -8,6 +8,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 import SocialReferralTracker from '@/components/SocialReferralTracker';
+import { ToastProvider } from '@/components/ui/ToastProvider';
 import { organizationSchema, softwareApplicationSchema } from '@/lib/seo/json-ld';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -66,18 +67,20 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
-        {children}
-        <SocialReferralTracker />
-        <Analytics />
-        {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
-          <Script
-            src={process.env.UMAMI_HOST_URL ? '/a/script.js' : (process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL || 'https://cloud.umami.is/script.js')}
-            data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
-            {...(process.env.UMAMI_HOST_URL ? { 'data-host-url': '/a' } : {})}
-            strategy="afterInteractive"
-          />
-        )}
-        <ServiceWorkerRegistration />
+        <ToastProvider>
+          {children}
+          <SocialReferralTracker />
+          <Analytics />
+          {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL || process.env.UMAMI_HOST_URL) && (
+            <Script
+              src={process.env.UMAMI_HOST_URL ? '/a/script.js' : (process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL || 'https://cloud.umami.is/script.js')}
+              data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+              {...(process.env.UMAMI_HOST_URL ? { 'data-host-url': '/a' } : {})}
+              strategy="afterInteractive"
+            />
+          )}
+          <ServiceWorkerRegistration />
+        </ToastProvider>
       </body>
     </html>
   );
