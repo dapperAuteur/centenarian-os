@@ -253,7 +253,7 @@ export default function PrerequisitesTab({ course, courseId, saveCourseField, se
             <input type="text" value={prereqSearch} onChange={(e) => setPrereqSearch(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); searchCoursesForPrereq(); } }}
               placeholder="Search courses by title..."
-              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500" />
+              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500" />
             <button type="button" onClick={searchCoursesForPrereq} disabled={prereqSearching}
               className="px-2 py-1.5 bg-fuchsia-600 text-white rounded-lg text-xs hover:bg-fuchsia-700 transition disabled:opacity-50">
               <Search className="w-3 h-3" />
@@ -296,9 +296,9 @@ export default function PrerequisitesTab({ course, courseId, saveCourseField, se
           )}
           <div className="flex flex-wrap gap-2">
             <input type="email" value={overrideEmail} onChange={(e) => setOverrideEmail(e.target.value)} placeholder="Student email..."
-              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500 min-w-40" />
+              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-w-40" />
             <input type="text" value={overrideNotes} onChange={(e) => setOverrideNotes(e.target.value)} placeholder="Notes (optional)..."
-              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500 min-w-40" />
+              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-w-40" />
             <button type="button" onClick={grantOverride}
               className="px-3 py-1.5 bg-fuchsia-600 text-white rounded-lg text-xs font-medium hover:bg-fuchsia-700 transition">
               Grant Override
@@ -354,7 +354,7 @@ export default function PrerequisitesTab({ course, courseId, saveCourseField, se
                   <div key={q.id} className="flex items-start gap-2 bg-gray-800/60 rounded-lg p-2">
                     <input type="text" value={q.question} onChange={(e) => updateOverrideQuestion(q.id, 'question', e.target.value)}
                       onBlur={saveOverrideQuestions} placeholder="Question text..."
-                      className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500" />
+                      className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500" />
                     <select value={q.type} onChange={(e) => { updateOverrideQuestion(q.id, 'type', e.target.value); setTimeout(saveOverrideQuestions, 50); }}
                       className="bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-xs text-white">
                       <option value="text">Text</option>

@@ -55,7 +55,7 @@ export default function CourseInfoTab({ course, saveCourseField }: TabProps) {
           defaultValue={course.description ?? ''}
           onBlur={(e) => { if (e.target.value !== course.description) saveCourseField({ description: e.target.value }); }}
           rows={3}
-          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500 resize-none"
+          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 resize-none"
           placeholder="What will students learn in this course?"
         />
       </div>
@@ -67,7 +67,7 @@ export default function CourseInfoTab({ course, saveCourseField }: TabProps) {
           value={categoryInput}
           onChange={(e) => setCategoryInput(e.target.value)}
           onBlur={(e) => { if (e.target.value !== (course.category ?? '')) saveCourseField({ category: e.target.value || null }); }}
-          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500 min-h-11"
+          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11"
           placeholder="Select or type a category…"
         />
         <datalist id="category-options">
