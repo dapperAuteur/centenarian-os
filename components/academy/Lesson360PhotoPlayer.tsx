@@ -12,6 +12,7 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
+import { resolveAssetUrl, releaseResolvedUrl } from '@/lib/offline/asset-resolver';
 
 interface Lesson360PhotoPlayerProps {
   src: string;
@@ -34,6 +35,7 @@ function Lesson360PhotoPlayerInner({ src, posterUrl, onReady }: Lesson360PhotoPl
 
     let viewer: import('@photo-sphere-viewer/core').Viewer | null = null;
     let cancelled = false;
+    let resolvedSrc = '';
 
     (async () => {
       try {
@@ -43,9 +45,14 @@ function Lesson360PhotoPlayerInner({ src, posterUrl, onReady }: Lesson360PhotoPl
 
         if (cancelled || !containerRef.current) return;
 
+        // Use the offline-cached blob URL if this asset has been saved
+        // for offline; otherwise resolveAssetUrl returns the original URL.
+        resolvedSrc = await resolveAssetUrl(src);
+        if (cancelled) return;
+
         viewer = new Viewer({
           container: containerRef.current,
-          panorama: src,
+          panorama: resolvedSrc,
           keyboard: 'always',
           navbar: ['zoom', 'caption', 'gyroscope', 'fullscreen'],
           plugins: [GyroscopePlugin],
@@ -67,6 +74,7 @@ function Lesson360PhotoPlayerInner({ src, posterUrl, onReady }: Lesson360PhotoPl
     return () => {
       cancelled = true;
       viewer?.destroy();
+      releaseResolvedUrl(resolvedSrc);
     };
   }, [src, onReady]);
 

@@ -29,6 +29,7 @@ import { extractYouTubeId } from '@/lib/video/getEmbedUrl';
 const MapViewer = dynamic(() => import('@/components/academy/MapViewer'), { ssr: false });
 const Lesson360VideoPlayer = dynamic(() => import('@/components/academy/Lesson360VideoPlayer'), { ssr: false });
 const Lesson360PhotoPlayer = dynamic(() => import('@/components/academy/Lesson360PhotoPlayer'), { ssr: false });
+const SaveOfflineButton = dynamic(() => import('@/components/academy/SaveOfflineButton'), { ssr: false });
 const VirtualTourPlayer = dynamic(() => import('@/components/academy/VirtualTourPlayer'), { ssr: false });
 import { renderTextContent } from '@/lib/academy/renderTextContent';
 
@@ -334,22 +335,42 @@ export default function LessonPlayerPage() {
         })()}
 
         {lesson.lesson_type === '360video' && lesson.content_url && (
-          <Lesson360VideoPlayer
-            src={lesson.content_url}
-            autoplay={lesson.video_360_autoplay ?? false}
-            posterUrl={lesson.video_360_poster_url}
-            transcript={lesson.transcript_content}
-            onTimeUpdate={(t) => handleTimeUpdate(t)}
-            onEnded={markComplete}
-          />
+          <>
+            <Lesson360VideoPlayer
+              src={lesson.content_url}
+              autoplay={lesson.video_360_autoplay ?? false}
+              posterUrl={lesson.video_360_poster_url}
+              transcript={lesson.transcript_content}
+              onTimeUpdate={(t) => handleTimeUpdate(t)}
+              onEnded={markComplete}
+            />
+            <div className="flex justify-end -mt-4 mb-6">
+              <SaveOfflineButton
+                assetUrl={lesson.content_url}
+                assetKind="panorama_video"
+                courseId={courseId}
+                lessonId={lessonId}
+              />
+            </div>
+          </>
         )}
 
         {lesson.lesson_type === 'photo_360' && lesson.content_url && (
-          <Lesson360PhotoPlayer
-            src={lesson.content_url}
-            posterUrl={lesson.video_360_poster_url}
-            onReady={markComplete}
-          />
+          <>
+            <Lesson360PhotoPlayer
+              src={lesson.content_url}
+              posterUrl={lesson.video_360_poster_url}
+              onReady={markComplete}
+            />
+            <div className="flex justify-end -mt-4 mb-6">
+              <SaveOfflineButton
+                assetUrl={lesson.content_url}
+                assetKind="panorama_image"
+                courseId={courseId}
+                lessonId={lessonId}
+              />
+            </div>
+          </>
         )}
 
         {lesson.lesson_type === 'virtual_tour' && (
