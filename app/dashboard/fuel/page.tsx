@@ -177,11 +177,10 @@ export default function FuelPage() {
     {
       title: 'Recipe Ideas',
       description: 'AI suggestions from inventory',
-      href: '/tech-roadmap',
+      href: '/dashboard/fuel/recipe-ideas',
       icon: '💡',
       stat: 0,
-      statLabel: 'coming soon',
-      comingSoon: true,
+      statLabel: 'AI-powered',
     },
   ];
 
@@ -299,16 +298,11 @@ export default function FuelPage() {
               href={module.href}
               className={`bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition transform hover:scale-105 relative ${
                 module.alert ? 'ring-2 ring-red-400' : ''
-              } ${module.comingSoon ? 'opacity-75' : ''}`}
+              }`}
             >
               {module.alert && (
                 <div className="absolute top-2 right-2">
                   <AlertTriangle className="w-5 h-5 text-red-600" />
-                </div>
-              )}
-              {module.comingSoon && (
-                <div className="absolute top-2 right-2 px-2 py-1 bg-amber-100 text-amber-800 rounded text-xs font-bold">
-                  SOON
                 </div>
               )}
               <div className="text-5xl mb-4">{module.icon}</div>
