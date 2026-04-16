@@ -786,4 +786,38 @@ Next: open `feat/starter-tier-schema` (branch 1 in §16.7), stacked on this desi
 | 25 iOS validation pass | open — needs device |
 | 26.0 smaller v1 | shipped |
 | 26 full | blocked on survey + devrel reply |
-| Starter tier (§16 above) | **designed, awaiting owner sign-off on module→prefix mapping** |
+| Starter tier branch 1 | see §17 below |
+
+---
+
+## 17. Starter tier branch 1 shipped — `feat/starter-tier-schema` (pending commit)
+
+Schema + types only. Zero UI, zero behavior changes for existing users. Lays the data-model foundation for branches 2–6 to hang gating and UI off.
+
+### Files added
+
+- `supabase/migrations/182_starter_tier.sql` — adds `profiles.selected_modules TEXT[]` (nullable) and widens the `subscription_status` CHECK to include `'starter'`. Additive — no existing rows need migration, no other app that reads profiles is affected. Column comment documents the pick-3 semantics.
+- `lib/access/starter-modules.ts` — the single source of truth for Starter access control. Exports:
+  - `ModuleSlug` union of the 8 pickable slugs.
+  - `STARTER_PICK_LIMIT = 3`.
+  - `STARTER_MODULES` map: each slug → `{ label, prefixes[], description, icon }`. Mirrors §16.3 exactly.
+  - `STARTER_ALWAYS_INCLUDED_PREFIXES` array: the 7 paid-tier routes that Starter gets unconditionally (planner family, academy, categories, data).
+  - `STARTER_MODULE_SLUGS`, `isModuleSlug`, `expandToPrefixes(slugs)`, `isValidStarterSelection(slugs)` helpers.
+
+### Files modified
+
+- `lib/hooks/useSubscription.ts` — `SubscriptionStatus` gains `'starter'`. `SubscriptionState` gains `selectedModules: string[] | null`. The profile-fetch query selects `selected_modules` and stores it defensively (`Array.isArray(...) ? ... : null`) so a missing column (e.g. during migration rollout) doesn't break the hook.
+
+### Behavior delivered
+
+- **None.** This branch is infrastructure. A user flipping `subscription_status='starter'` directly in the DB would currently get treated as `free` by `isPaid = status === 'monthly' || status === 'lifetime'` (branch 2 changes that). Nothing in the UI exposes the new column.
+
+### Merge order
+
+1. Run `psql ... -f supabase/migrations/182_starter_tier.sql` against the Supabase project.
+2. Merge `feat/starter-tier-schema` to `main`.
+3. `npx tsc --noEmit --skipLibCheck` before and after — both should return clean (verified in this branch).
+
+### Next branch
+
+Branch 2 — `feat/starter-tier-gating`. Extends `app/dashboard/layout.tsx` to treat `subscription_status='starter'` the same way it treats invited users (both consume `allowedModules`), wires `selectedModules` through `/api/auth/me`, filters `NavConfig.getVisibleGroups` for Starter users. Still no new UI — just gate existing routes.
