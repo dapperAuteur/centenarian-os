@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { useSubscription } from '@/lib/hooks/useSubscription';
 import { useUnreadCount } from '@/lib/hooks/useUnreadCount';
 import { createClient } from '@/lib/supabase/client';
+import { expandToPrefixes } from '@/lib/access/starter-modules';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import DesktopNav from '@/components/nav/DesktopNav';
@@ -39,12 +40,13 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { loading } = useAuth();
-  const { status: subStatus, loading: subLoading } = useSubscription();
+  const { status: subStatus, selectedModules, loading: subLoading } = useSubscription();
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
 
-  const isPaid = subStatus === 'monthly' || subStatus === 'lifetime';
+  const isStarter = subStatus === 'starter';
+  const isPaid = subStatus === 'monthly' || subStatus === 'lifetime' || isStarter;
   const [isAdmin, setIsAdmin] = useState(false);
   const [isTeacher, setIsTeacher] = useState(false);
   const [isDemoUser, setIsDemoUser] = useState(false);
@@ -54,8 +56,17 @@ export default function DashboardLayout({
   const [isInvited, setIsInvited] = useState(false);
   const [inviteModules, setInviteModules] = useState<string[] | null>(null);
   const hasAccess = isPaid || isAdmin || isInvited || isDemoUser;
-  // Only apply module restrictions to invited users who aren't paying subscribers or admins
-  const allowedModules = isInvited && !isPaid && !isAdmin ? inviteModules : null;
+  // Module restrictions apply to:
+  //   - Starter subscribers (limited to their picked modules + the always-included set)
+  //   - Invited non-paid non-admin users (limited to their invite's allowed_modules)
+  // Admins bypass in both cases. Monthly/Lifetime users get `null` = unrestricted.
+  const allowedModules = isAdmin
+    ? null
+    : isStarter
+      ? expandToPrefixes(selectedModules)
+      : isInvited && !isPaid
+        ? inviteModules
+        : null;
   const unreadMessages = useUnreadCount();
 
   // Coordinate sidebar drawer and bottom sheet so only one is open at a time
@@ -92,14 +103,18 @@ export default function DashboardLayout({
       router.push('/pricing');
       return;
     }
-    // Redirect invited users away from modules they don't have access to
-    if (isInvited && !isPaid && !isAdmin && allowedModules && !isFreeRoute(pathname)) {
+    // Redirect module-restricted users (Starter or Invited) away from forbidden routes.
+    // `allowedModules` is null for unrestricted tiers, so this gate is a no-op for
+    // Monthly / Lifetime / Admin users. Target is /dashboard/planner, which is in
+    // STARTER_ALWAYS_INCLUDED_PREFIXES so Starter users can always land there.
+    // Branch 3 replaces the target with /dashboard/upgrade?from=X for better UX.
+    if (allowedModules && !isFreeRoute(pathname)) {
       const allowed = allowedModules.some(
         (m) => pathname === m || pathname.startsWith(m + '/'),
       );
       if (!allowed) router.push('/dashboard/planner');
     }
-  }, [hasAccess, isInvited, isPaid, isAdmin, allowedModules, pathname, subLoading, loading, adminLoading, router]);
+  }, [hasAccess, allowedModules, pathname, subLoading, loading, adminLoading, router]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
