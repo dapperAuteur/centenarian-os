@@ -268,7 +268,7 @@ export default function LandingPage() {
               <ul className="space-y-1.5 text-sm text-gray-600">
                 {mod.features.map((f) => (
                   <li key={f} className="flex items-start">
-                    <span className={`${mod.checkColor} mr-2 shrink-0`}>&check;</span>
+                    <span className={`${mod.checkColor} mr-2 shrink-0`} aria-hidden="true">✓</span>
                     {f}
                   </li>
                 ))}
