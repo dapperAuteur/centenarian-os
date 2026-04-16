@@ -11,6 +11,8 @@ import { CldUploadWidget } from 'next-cloudinary';
 import { Upload } from 'lucide-react';
 import { useState } from 'react';
 import { derivePosterUrl } from '@/lib/cloudinary/poster';
+import { logError } from '@/lib/error-logging';
+import type { AssetKind } from '@/lib/academy/media-types';
 
 type MediaKind = 'video' | 'image';
 
@@ -85,9 +87,40 @@ export default function Cloudinary360Uploader({
         }}
         onSuccess={(result) => {
           if (result.event === 'success' && result.info && typeof result.info === 'object') {
-            const info = result.info as { secure_url: string };
+            const info = result.info as {
+              secure_url: string;
+              public_id?: string;
+              resource_type?: string;
+              original_filename?: string;
+              bytes?: number;
+              duration?: number;
+              width?: number;
+              height?: number;
+            };
             const posterUrl = derivePosterUrl(info.secure_url, resourceType);
             onUploadSuccess(info.secure_url, posterUrl);
+
+            // Register in the teacher's media library. Fire-and-forget —
+            // if it fails the upload still succeeded and the lesson still
+            // saves; the asset just won't appear in the library.
+            const assetKind: AssetKind = resourceType === 'image' ? 'panorama_image' : 'panorama_video';
+            fetch('/api/academy/media', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                cloudinary_public_id: info.public_id,
+                cloudinary_resource_type: resourceType,
+                secure_url: info.secure_url,
+                asset_kind: assetKind,
+                name: info.original_filename || info.public_id || `Upload ${new Date().toLocaleString()}`,
+                file_size_bytes: info.bytes ?? null,
+                duration_seconds: info.duration ?? null,
+                width: info.width ?? null,
+                height: info.height ?? null,
+              }),
+            }).catch((err) => {
+              logError(err, { module: 'Cloudinary360Uploader', context: { op: 'register-asset' } });
+            });
           }
         }}
         onError={(err) => {
