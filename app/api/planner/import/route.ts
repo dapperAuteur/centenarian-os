@@ -401,7 +401,7 @@ export async function POST(request: NextRequest) {
     const estimatedCost = row.estimated_cost ? parseFloat(row.estimated_cost) : null;
 
     payloads.push({
-      user_id: user.id,
+      // tasks has no user_id column — ownership is traversed milestone → goal → roadmap.user_id via RLS
       milestone_id: milestoneId,
       date: row.date,
       // tasks.time is NOT NULL in schema — default to 09:00 when missing
