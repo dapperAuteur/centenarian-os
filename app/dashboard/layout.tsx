@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { useSubscription } from '@/lib/hooks/useSubscription';
 import { useUnreadCount } from '@/lib/hooks/useUnreadCount';
 import { createClient } from '@/lib/supabase/client';
-import { expandToPrefixes } from '@/lib/access/starter-modules';
+import { expandToPrefixes, pathToModuleSlug } from '@/lib/access/starter-modules';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import DesktopNav from '@/components/nav/DesktopNav';
@@ -28,6 +28,11 @@ const FREE_ROUTE_PREFIXES = [
   '/dashboard/feedback',
   '/dashboard/teaching',
   '/dashboard/settings',
+  // Upgrade funnel must be reachable by every authenticated tier —
+  // Starter users are redirected here when they hit a forbidden route,
+  // so it cannot be gated by `allowedModules`. Free users never get
+  // here because their layout redirects them to /pricing first.
+  '/dashboard/upgrade',
 ];
 
 function isFreeRoute(pathname: string) {
@@ -105,14 +110,22 @@ export default function DashboardLayout({
     }
     // Redirect module-restricted users (Starter or Invited) away from forbidden routes.
     // `allowedModules` is null for unrestricted tiers, so this gate is a no-op for
-    // Monthly / Lifetime / Admin users. Target is /dashboard/planner, which is in
-    // STARTER_ALWAYS_INCLUDED_PREFIXES so Starter users can always land there.
-    // Branch 3 replaces the target with /dashboard/upgrade?from=X for better UX.
+    // Monthly / Lifetime / Admin users. Starter subscribers land on /dashboard/upgrade
+    // with a ?from=<moduleSlug> hint so the page can personalize copy. Invited users
+    // (whose allowed_modules are free-text route prefixes, not module slugs) fall back
+    // to /dashboard/planner — their flow isn't part of the Starter upgrade funnel.
     if (allowedModules && !isFreeRoute(pathname)) {
       const allowed = allowedModules.some(
         (m) => pathname === m || pathname.startsWith(m + '/'),
       );
-      if (!allowed) router.push('/dashboard/planner');
+      if (!allowed) {
+        if (isStarter) {
+          const slug = pathToModuleSlug(pathname);
+          router.push(slug ? `/dashboard/upgrade?from=${slug}` : '/dashboard/upgrade');
+        } else {
+          router.push('/dashboard/planner');
+        }
+      }
     }
   }, [hasAccess, allowedModules, pathname, subLoading, loading, adminLoading, router]);
 
