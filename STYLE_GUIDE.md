@@ -6,6 +6,22 @@ Read CLAUDE.md first, then this file, before starting any task.
 
 ---
 
+## 0. The golden rule: branch first, commit last
+
+**Every change — every feature, every bug fix, every chore, every doc edit — begins with creating a new branch off `main`. No exceptions, no direct commits to `main`, no "it's just a tiny fix."**
+
+The workflow for every task, from one-line typo fixes to multi-week features, is:
+
+1. `git checkout main && git pull` (start from latest)
+2. `git checkout -b <prefix>/<slug>` (new branch BEFORE any edits)
+3. Make the changes.
+4. When the work is done, `git commit` with a message that describes the changes actually made (see §3).
+5. Push the branch and open a PR (see §4).
+
+If you catch yourself editing files while `git branch --show-current` says `main`, stop, stash the work, branch, pop the stash, and continue. Never commit on `main`.
+
+---
+
 ## 1. One branch per logical change
 
 - Every feature, fix, or chore goes on its own branch off `main`.
@@ -33,6 +49,8 @@ Rules:
 ---
 
 ## 3. Conventional Commits
+
+**Write the commit message at the end of the work, after everything is done, and describe the changes that were actually made.** Not the intent, not the ticket title, not what was planned — what the commit actually does. If the commit body doesn't match the diff, rewrite the body before pushing.
 
 Every commit message follows [Conventional Commits](https://www.conventionalcommits.org/):
 
