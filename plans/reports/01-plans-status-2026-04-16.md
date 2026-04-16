@@ -1062,4 +1062,62 @@ Wires the backend half of what branch 4's picker was already calling. End-to-end
 
 ### Next branch
 
-Branch 6 — `feat/starter-tier-admin-stats`. Admin dashboard widgets: Starter subscriber count, popular module combos, annual-vs-monthly split. Needs no new infra — just reads `profiles` aggregates via a new admin API route.
+Branch 6 — see §22 below.
+
+---
+
+## 22. Starter tier branch 6 shipped — `feat/starter-tier-admin-stats`
+
+Final branch in the Starter-tier series. Adds visibility so the owner can watch Starter adoption and tune the module list based on actual picks.
+
+### Files modified
+
+- `app/api/admin/stats/route.ts`:
+  - Imports `STARTER_MODULE_SLUGS` + `STARTER_MODULES` from the access-control lib so the API is the one source of truth for module labels.
+  - Adds `starter` count alongside `free`/`monthly`/`lifetime` in the existing tier tally.
+  - New per-user fetch of `selected_modules` scoped to `subscription_status='starter'` — small dataset, one round trip.
+  - Computes `modulePopularity` (count + percentage per slug, sorted desc) and `topCombos` (top 5 3-module combinations, canonicalized by sorted-slug join so order-independent combinations are counted as the same combo).
+  - `revenue.monthlyMRR` now includes `starter * 5.46` as a floor (annual subscribers contribute more because the $51.80 pre-pay offsets ~12 months of MRR accrual — we underreport monthly burn rate rather than overreport).
+  - New `starter` response block: `{ total, modulePopularity, topCombos, estimatedMrrFloor }`. Rounded to 2 decimals.
+- `app/admin/page.tsx`:
+  - `Stats` interface extended with `starter` block and `users.starter`.
+  - Top users grid widens from 4 to 5 columns on desktop to fit the new Starter card (Sparkles icon, sky color to match the pricing page Starter card).
+  - New "Starter tier breakdown" section renders conditionally — only when `stats.starter.total > 0` so the overview stays clean before any Starter adoption.
+  - Two cards inside the breakdown section:
+    - **Module popularity:** progress-bar list with label + count + percentage, accessible via `role="progressbar"` + `aria-valuenow`.
+    - **Top module combos:** ranked ordered list (1–5) showing the combo and the subscriber count.
+
+### Behavior delivered
+
+- Before Starter has any subscribers: admin overview shows the new Starter card with `0` and no breakdown section.
+- After the first Starter signup: breakdown section appears, module popularity shows 100% for the three picked modules and 0% for the rest, combo #1 is that single user's picks.
+- As adoption grows: owner can see at a glance which modules are being picked ("Finance is in 80% of Starter carts — we're not going to kill it") and which 3-module combinations cluster ("Finance + Workouts + Metrics is the dominant combo — maybe we should offer a 'Health + Money' preset").
+
+### Merge order
+
+1. Branches 1–5 merged.
+2. Migration 182 applied.
+3. Merge `feat/starter-tier-admin-stats`. No new env vars, no new migrations.
+
+### Verification
+
+1. As admin, visit `/admin` → `Starter ($5.46)` card shows current count.
+2. With ≥1 active Starter subscriber (from branch 5 verification steps), Starter tier breakdown section appears.
+3. Module popularity list is sorted with most-picked at top; percentages sum to ~300% when everyone picks exactly 3.
+4. Top combos list groups users by canonical sorted-slug key — pick `['finance','workouts','metrics']` and a second user picks `['workouts','metrics','finance']` and they should count as the same combo.
+
+### Starter tier series — done
+
+Branches 1–6 ship a complete Pick-3-modules paid tier. Remaining work for the Starter tier is all operational (Stripe dashboard monitoring, customer support for swap questions) rather than engineering.
+
+### Remaining backlog
+
+| Plan | Status |
+|---|---|
+| 25 iOS validation pass | open — needs device |
+| 26.0 smaller v1 | shipped |
+| 26 full | blocked on survey + devrel reply |
+| 30 Stripe fee calculator | ready — ~1–2 hrs |
+| 31 i18n EN+ES + SEO | phased, 1–2 weeks |
+| 32 admin email verification dashboard | **new** — see §23 below |
+| Starter tier | **fully shipped** (branches 1–6) |
