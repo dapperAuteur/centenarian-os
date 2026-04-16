@@ -5,13 +5,17 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Users, ChefHat, BookOpen, DollarSign, Zap, AlertTriangle, Timer, Utensils, CalendarDays, Map } from 'lucide-react';
+import { Users, ChefHat, BookOpen, DollarSign, Zap, AlertTriangle, Timer, Utensils, CalendarDays, Map, Sparkles } from 'lucide-react';
+
+interface ModulePopularity { slug: string; label: string; count: number; percentage: number }
+interface TopCombo { slugs: string[]; count: number }
 
 interface Stats {
-  users: { total: number; free: number; monthly: number; lifetime: number; newThisWeek: number };
+  users: { total: number; free: number; monthly: number; lifetime: number; starter: number; newThisWeek: number };
   content: { recipes: number; publicRecipes: number; blogPosts: number; publicPosts: number; newRecipesThisWeek: number; newBlogThisWeek: number };
   featureUsage: { focusSessions: number; mealLogs: number; dailyLogs: number; roadmapTasks: number; recipeViews: number; blogViews: number };
   revenue: { lifetimeRevenue: number; monthlyMRR: number };
+  starter: { total: number; modulePopularity: ModulePopularity[]; topCombos: TopCombo[]; estimatedMrrFloor: number };
   promoCodesPending: number;
 }
 
@@ -77,12 +81,75 @@ export default function AdminOverviewPage() {
 
       {/* Users */}
       <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-300 mb-3">Users</h2>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <StatCard label="Total Users" value={stats.users.total} icon={Users} />
         <StatCard label="Free" value={stats.users.free} sub={`${Math.round(stats.users.free / Math.max(stats.users.total, 1) * 100)}% of users`} icon={Users} color="sky" />
-        <StatCard label="Monthly ($10.60)" value={stats.users.monthly} sub={`$${stats.revenue.monthlyMRR}/mo MRR`} icon={Zap} color="fuchsia" />
-        <StatCard label="Lifetime ($103.29)" value={stats.users.lifetime} sub={`$${stats.revenue.lifetimeRevenue} total`} icon={DollarSign} color="lime" />
+        <StatCard label="Starter ($5.46)" value={stats.users.starter} sub={stats.starter.estimatedMrrFloor > 0 ? `$${stats.starter.estimatedMrrFloor}/mo floor` : 'pick-3'} icon={Sparkles} color="sky" />
+        <StatCard label="Monthly ($10.60)" value={stats.users.monthly} sub={`$${Math.round(stats.revenue.monthlyMRR * 100) / 100}/mo MRR`} icon={Zap} color="fuchsia" />
+        <StatCard label="Lifetime ($103.29)" value={stats.users.lifetime} sub={`$${Math.round(stats.revenue.lifetimeRevenue * 100) / 100} total`} icon={DollarSign} color="lime" />
       </div>
+
+      {/* Starter breakdown — only render when any Starter subscribers exist */}
+      {stats.starter.total > 0 && (
+        <>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-300 mb-3">
+            Starter tier breakdown
+          </h2>
+          <div className="grid lg:grid-cols-2 gap-4 mb-8">
+            {/* Module popularity */}
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+              <h3 className="text-sm font-semibold text-white mb-1">Module popularity</h3>
+              <p className="text-xs text-gray-500 mb-4">What percentage of Starter users picked each module.</p>
+              <ul className="space-y-2" role="list">
+                {stats.starter.modulePopularity.map((m) => (
+                  <li key={m.slug} className="flex items-center gap-3">
+                    <span className="w-28 text-xs text-gray-300 shrink-0">{m.label}</span>
+                    <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-sky-500 transition-all"
+                        style={{ width: `${m.percentage}%` }}
+                        role="progressbar"
+                        aria-valuenow={m.percentage}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                      />
+                    </div>
+                    <span className="w-16 text-right text-xs text-gray-400 tabular-nums">
+                      {m.count} ({m.percentage}%)
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Top combos */}
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+              <h3 className="text-sm font-semibold text-white mb-1">Top module combos</h3>
+              <p className="text-xs text-gray-500 mb-4">Most-picked 3-module combinations (order-independent).</p>
+              {stats.starter.topCombos.length === 0 ? (
+                <p className="text-xs text-gray-500 italic">No subscribers with complete picks yet.</p>
+              ) : (
+                <ol className="space-y-2" role="list">
+                  {stats.starter.topCombos.map((combo, i) => {
+                    const label = combo.slugs
+                      .map((s) => stats.starter.modulePopularity.find((m) => m.slug === s)?.label ?? s)
+                      .join(' + ');
+                    return (
+                      <li key={combo.slugs.join(',')} className="flex items-start gap-3 text-xs">
+                        <span className="w-5 text-gray-500 font-semibold shrink-0">#{i + 1}</span>
+                        <span className="flex-1 text-gray-200">{label}</span>
+                        <span className="text-sky-400 font-semibold tabular-nums shrink-0">
+                          {combo.count} user{combo.count === 1 ? '' : 's'}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ol>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Content */}
       <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-300 mb-3">Content</h2>

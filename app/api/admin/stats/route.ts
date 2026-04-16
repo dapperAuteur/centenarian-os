@@ -5,6 +5,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import {
+  STARTER_MODULE_SLUGS,
+  STARTER_MODULES,
+  type ModuleSlug,
+} from '@/lib/access/starter-modules';
 
 function getServiceClient() {
   return createClient(
@@ -83,11 +88,53 @@ export async function GET(_request: NextRequest) {
   const free = profiles.filter((p) => p.subscription_status === 'free').length;
   const monthly = profiles.filter((p) => p.subscription_status === 'monthly').length;
   const lifetime = profiles.filter((p) => p.subscription_status === 'lifetime').length;
+  const starter = profiles.filter((p) => p.subscription_status === 'starter').length;
   const paidLifetime = paidLifetimeRes.count ?? 0;
   const cashappVerified = cashappVerifiedRes.count ?? 0;
   const giftedLifetime = lifetime - paidLifetime;
   const foundersLimit = Number(foundersLimitRes.data?.value ?? '100');
   const totalPaidLifetime = paidLifetime + cashappVerified;
+
+  // Starter-tier module popularity + top combos. Only fetch the
+  // selected_modules column for actual Starter subscribers — small
+  // dataset, runs once per admin dashboard load.
+  const { data: starterRows } = await db
+    .from('profiles')
+    .select('selected_modules')
+    .eq('subscription_status', 'starter');
+
+  const moduleCounts: Record<ModuleSlug, number> = Object.fromEntries(
+    STARTER_MODULE_SLUGS.map((s) => [s, 0]),
+  ) as Record<ModuleSlug, number>;
+  const comboCounts = new Map<string, number>();
+
+  for (const row of starterRows ?? []) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const raw = (row as any).selected_modules;
+    if (!Array.isArray(raw)) continue;
+    const slugs = raw.filter((s: unknown): s is ModuleSlug =>
+      typeof s === 'string' && (STARTER_MODULE_SLUGS as readonly string[]).includes(s),
+    );
+    for (const slug of slugs) moduleCounts[slug]++;
+    // Canonicalize order so [finance, travel, workouts] and
+    // [workouts, finance, travel] hash to the same combo key.
+    const key = [...slugs].sort().join(',');
+    comboCounts.set(key, (comboCounts.get(key) ?? 0) + 1);
+  }
+
+  const modulePopularity = STARTER_MODULE_SLUGS
+    .map((slug) => ({
+      slug,
+      label: STARTER_MODULES[slug].label,
+      count: moduleCounts[slug],
+      percentage: starter > 0 ? Math.round((moduleCounts[slug] / starter) * 100) : 0,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  const topCombos = Array.from(comboCounts.entries())
+    .map(([key, count]) => ({ slugs: key.split(','), count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
 
   const publicRecipes = (recipesRes.data ?? []).filter((r) => r.visibility === 'public').length;
   const publicPosts = (blogPostsRes.data ?? []).filter((p) => p.visibility === 'public').length;
@@ -98,8 +145,17 @@ export async function GET(_request: NextRequest) {
       free,
       monthly,
       lifetime,
+      starter,
       giftedLifetime,
       newThisWeek: newUsersRes.count ?? 0,
+    },
+    starter: {
+      total: starter,
+      modulePopularity,
+      topCombos,
+      // MRR is an underestimate — we can't distinguish monthly vs annual
+      // subscribers without Stripe API calls per user. Treat as floor.
+      estimatedMrrFloor: Math.round(starter * 5.46 * 100) / 100,
     },
     content: {
       recipes: recipesRes.count ?? 0,
@@ -119,7 +175,7 @@ export async function GET(_request: NextRequest) {
     },
     revenue: {
       lifetimeRevenue: totalPaidLifetime * 103.29,
-      monthlyMRR: monthly * 10.60,
+      monthlyMRR: monthly * 10.60 + starter * 5.46,
     },
     founders: {
       limit: foundersLimit,
