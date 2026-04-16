@@ -14,6 +14,23 @@ function getDb() {
 
 type Params = { params: Promise<{ id: string; lessonId: string }> };
 
+export async function GET(_req: NextRequest, { params }: Params) {
+  const { lessonId } = await params;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const db = getDb();
+  const { data } = await db
+    .from('lesson_progress')
+    .select('completed_at, watch_seconds, tour_progress')
+    .eq('user_id', user.id)
+    .eq('lesson_id', lessonId)
+    .maybeSingle();
+
+  return NextResponse.json(data ?? { completed_at: null, watch_seconds: 0, tour_progress: null });
+}
+
 export async function POST(request: NextRequest, { params }: Params) {
   const { id: courseId, lessonId } = await params;
   const supabase = await createClient();
@@ -39,7 +56,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   }
 
   const body = await request.json();
-  const { completed = false, watch_seconds = 0, quiz_answers } = body;
+  const { completed = false, watch_seconds = 0, quiz_answers, tour_progress } = body;
 
   // Quiz scoring: if quiz_answers provided, fetch lesson quiz_content and auto-score
   if (quiz_answers && Array.isArray(quiz_answers)) {
@@ -119,6 +136,43 @@ export async function POST(request: NextRequest, { params }: Params) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     return NextResponse.json({ score, passed, explanations, attempts });
+  }
+
+  // Tour progress: merge visited hotspot ids without overwriting prior state
+  if (tour_progress && typeof tour_progress === 'object') {
+    const newVisited: string[] = Array.isArray(tour_progress.visited_hotspot_ids)
+      ? tour_progress.visited_hotspot_ids
+      : [];
+
+    // Fetch existing tour_progress to merge (don't lose hotspots visited in
+    // an earlier session that weren't re-sent in this payload).
+    const { data: existing } = await db
+      .from('lesson_progress')
+      .select('tour_progress')
+      .eq('user_id', user.id)
+      .eq('lesson_id', lessonId)
+      .maybeSingle();
+
+    const previousVisited: string[] =
+      Array.isArray(existing?.tour_progress?.visited_hotspot_ids)
+        ? existing.tour_progress.visited_hotspot_ids
+        : [];
+
+    const mergedVisited = [...new Set([...previousVisited, ...newVisited])];
+
+    const { error } = await db
+      .from('lesson_progress')
+      .upsert({
+        user_id: user.id,
+        lesson_id: lessonId,
+        watch_seconds,
+        tour_progress: { visited_hotspot_ids: mergedVisited },
+        completed_at: completed ? new Date().toISOString() : null,
+      }, { onConflict: 'user_id,lesson_id' });
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    return NextResponse.json({ ok: true, tour_progress: { visited_hotspot_ids: mergedVisited } });
   }
 
   // Standard (non-quiz) progress tracking

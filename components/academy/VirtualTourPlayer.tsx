@@ -13,23 +13,35 @@
 // the onHotspotOpen callback to lesson_progress.
 
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { X, ExternalLink } from 'lucide-react';
 import type { AssembledTour, TourHotspot } from '@/lib/academy/tour-types';
 
 interface VirtualTourPlayerProps {
   tour: AssembledTour;
-  /** Fires when a hotspot is opened for the first time. Plan 23b wires this to completion tracking. */
-  onHotspotOpen?: (hotspotId: string) => void;
-  /** Fires the first time the entry scene finishes loading. Used as a "started tour" signal. */
+  /** Set of hotspot IDs already visited (from persisted progress). */
+  initialVisitedIds?: Set<string>;
+  /** Fires when a hotspot is opened for the first time with the full visited set so far. */
+  onHotspotVisited?: (visitedIds: Set<string>) => void;
+  /** Fires when every hotspot in the tour has been visited. */
+  onAllHotspotsVisited?: () => void;
+  /** Fires the first time the entry scene finishes loading. */
   onReady?: () => void;
 }
 
-function VirtualTourPlayerInner({ tour, onHotspotOpen, onReady }: VirtualTourPlayerProps) {
+function VirtualTourPlayerInner({
+  tour,
+  initialVisitedIds,
+  onHotspotVisited,
+  onAllHotspotsVisited,
+  onReady,
+}: VirtualTourPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeHotspot, setActiveHotspot] = useState<TourHotspot | null>(null);
+  const [visitedIds, setVisitedIds] = useState<Set<string>>(initialVisitedIds ?? new Set());
+  const totalHotspots = useMemo(() => tour.scenes.reduce((n, s) => n + s.hotspots.length, 0), [tour]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -107,9 +119,6 @@ function VirtualTourPlayerInner({ tour, onHotspotOpen, onReady }: VirtualTourPla
           }
         });
 
-        // MarkersPlugin types come from a local shim while the real package
-        // can't be installed (see types/photo-sphere-viewer-plugins.d.ts).
-        // Type the event handler parameter explicitly to satisfy strict TS.
         const markersPlugin = viewer.getPlugin(MarkersPlugin) as {
           addEventListener: (
             event: 'select-marker',
@@ -121,7 +130,13 @@ function VirtualTourPlayerInner({ tour, onHotspotOpen, onReady }: VirtualTourPla
           const hotspot = e.marker.data?.hotspot;
           if (!hotspot) return;
           setActiveHotspot(hotspot);
-          onHotspotOpen?.(hotspot.id);
+          setVisitedIds((prev) => {
+            if (prev.has(hotspot.id)) return prev;
+            const next = new Set(prev);
+            next.add(hotspot.id);
+            onHotspotVisited?.(next);
+            return next;
+          });
 
           if (hotspot.hotspot_type === 'link' && hotspot.external_url) {
             window.open(hotspot.external_url, '_blank', 'noopener,noreferrer');
@@ -139,7 +154,14 @@ function VirtualTourPlayerInner({ tour, onHotspotOpen, onReady }: VirtualTourPla
       cancelled = true;
       viewer?.destroy();
     };
-  }, [tour, onHotspotOpen, onReady]);
+  }, [tour, onHotspotVisited, onReady]);
+
+  // Fire completion when every hotspot is visited
+  useEffect(() => {
+    if (totalHotspots > 0 && visitedIds.size >= totalHotspots) {
+      onAllHotspotsVisited?.();
+    }
+  }, [visitedIds.size, totalHotspots, onAllHotspotsVisited]);
 
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-xl sm:rounded-2xl overflow-hidden mb-6">
@@ -151,6 +173,20 @@ function VirtualTourPlayerInner({ tour, onHotspotOpen, onReady }: VirtualTourPla
           className="w-full bg-black"
           style={{ height: 'min(70vh, 600px)' }}
         />
+        {/* Hotspot progress badge */}
+        {!loading && totalHotspots > 0 && (
+          <div
+            className="absolute top-3 left-3 bg-gray-900/90 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-200 backdrop-blur-sm pointer-events-none"
+            role="status"
+            aria-label={`${visitedIds.size} of ${totalHotspots} hotspots visited`}
+          >
+            <span className={visitedIds.size >= totalHotspots ? 'text-green-400' : 'text-fuchsia-400'}>
+              {visitedIds.size}
+            </span>
+            <span className="text-gray-500"> / {totalHotspots} hotspots</span>
+            {visitedIds.size >= totalHotspots && <span className="ml-1.5 text-green-400">✓</span>}
+          </div>
+        )}
         {loading && !error && (
           <div
             role="status"

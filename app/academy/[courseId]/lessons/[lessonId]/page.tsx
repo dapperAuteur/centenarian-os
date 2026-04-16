@@ -106,6 +106,7 @@ export default function LessonPlayerPage() {
   const [lessonGlossary, setLessonGlossary] = useState<GlossaryTerm[]>([]);
   const [virtualTour, setVirtualTour] = useState<import('@/lib/academy/tour-types').AssembledTour | null>(null);
   const [tourError, setTourError] = useState<string | null>(null);
+  const [tourVisitedIds, setTourVisitedIds] = useState<Set<string>>(new Set());
 
   const progressSaved = useRef(false);
   const watchSecondsRef = useRef(0);
@@ -198,19 +199,28 @@ export default function LessonPlayerPage() {
       .catch(() => {});
   }, [courseId, lessonId]);
 
-  // Fetch the assembled virtual tour when this is a virtual_tour lesson.
-  // The tour data (scenes + hotspots + links) lives in dedicated tables,
-  // not on the lesson row, so it needs its own round-trip.
+  // Fetch the assembled virtual tour + any existing progress when this is
+  // a virtual_tour lesson.
   useEffect(() => {
     if (lesson?.lesson_type !== 'virtual_tour') return;
     setVirtualTour(null);
     setTourError(null);
-    offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/tour`)
-      .then(async (r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    Promise.all([
+      offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/tour`).then(async (r) => {
+        if (!r.ok) throw new Error(`Tour HTTP ${r.status}`);
         return r.json();
+      }),
+      offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/progress`).then(async (r) => {
+        if (!r.ok) return null;
+        return r.json();
+      }).catch(() => null),
+    ])
+      .then(([tourData, progressData]) => {
+        setVirtualTour(tourData);
+        if (progressData?.tour_progress?.visited_hotspot_ids) {
+          setTourVisitedIds(new Set(progressData.tour_progress.visited_hotspot_ids));
+        }
       })
-      .then((data) => setVirtualTour(data))
       .catch((err) => {
         console.error('[VirtualTour] fetch error', err);
         setTourError('Could not load this virtual tour. Try refreshing.');
@@ -346,7 +356,18 @@ export default function LessonPlayerPage() {
             {virtualTour && (
               <VirtualTourPlayer
                 tour={virtualTour}
-                onReady={markComplete}
+                initialVisitedIds={tourVisitedIds}
+                onHotspotVisited={(visited) => {
+                  setTourVisitedIds(visited);
+                  offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/progress`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      tour_progress: { visited_hotspot_ids: [...visited] },
+                    }),
+                  }).catch(() => {});
+                }}
+                onAllHotspotsVisited={markComplete}
               />
             )}
           </>
