@@ -574,9 +574,17 @@ Half-sphere (180° VR180) and partial-sphere content is legitimately not 2:1 but
 
 ## 16. Starter tier design — `docs/starter-tier-access-design` (pre-code)
 
-Design artifact, not code. Answers the key question: **how does the app restrict a Starter ($4.99/mo, pick-3) user to their chosen modules?** Also adds STYLE_GUIDE §5a codifying the "report-per-branch" rule.
+Design artifact, not code. Answers the key question: **how does the app restrict a Starter (pick-3) user to their chosen modules?** Also adds STYLE_GUIDE §5a codifying the "report-per-branch" rule.
 
 Plan source: [plans/future/starter-tier-plan.md](../future/starter-tier-plan.md). This design doc converts it into a concrete access-control architecture before any code lands.
+
+**Pricing (owner-confirmed, 2026-04-16):**
+- Monthly: **$5.46/mo** (net $5 after Stripe fees) — env: `STRIPE_STARTER_MONTHLY_PRICE_ID`
+- Annual: **$51.80/yr** (net $50 after Stripe fees) — env: `STRIPE_STARTER_ANNUAL_PRICE_ID`
+- Annual savings: $65.52 (12 × monthly) − $51.80 = **$13.72/yr, ~21% off**
+- Consistent with owner's "price net-of-Stripe-fees" pricing convention for all products.
+
+All prices are **same modules, same gates** — only the billing cadence differs. The Pick-3 constraint applies identically to both.
 
 ### 16.1 — The good news: the enforcement primitive already exists
 
@@ -611,7 +619,7 @@ TEXT[] rather than JSONB because we only store a flat array of strings and want 
 
 ### 16.3 — Module → route-prefix mapping
 
-A Starter user picks **modules**, but the layout enforces **route prefixes**. Some modules span multiple prefixes (Finance → `/dashboard/finance` plus `/dashboard/finance/forecast`). We need a single source of truth mapping module slug → list of route prefixes.
+A Starter user picks **modules**, but the layout enforces **route prefixes**. Each module maps to one or more top-level dashboard routes. Mapping verified against the actual directory listing in `app/dashboard/`. Sub-routes are included automatically because the layout uses `pathname.startsWith(prefix + '/')`.
 
 New file: `lib/access/starter-modules.ts`
 
@@ -622,38 +630,32 @@ export type ModuleSlug =
 
 export const STARTER_MODULES: Record<ModuleSlug, {
   label: string;
-  prefixes: string[];  // every URL a Starter user with this module gets access to
+  prefixes: string[];
   description: string;
-  icon: keyof typeof iconMap;  // lucide icon slug for the picker UI
+  icon: string;
 }> = {
-  planner: {
-    label: 'Planner',
-    prefixes: ['/dashboard/planner', '/dashboard/weekly-review', '/dashboard/retrospective', '/dashboard/roadmap'],
-    description: 'Daily tasks, recurring schedules, goals, roadmaps',
-    icon: 'CalendarClock',
-  },
-  engine: {
-    label: 'Engine',
-    prefixes: ['/dashboard/engine'],
-    description: 'Focus sessions, analytics, doodle canvas',
-    icon: 'Briefcase',
-  },
-  fuel:     { label: 'Fuel',      prefixes: ['/dashboard/fuel'],     description: 'Supplement protocols, daily fuel logs',             icon: 'Utensils' },
-  metrics:  { label: 'Metrics',   prefixes: ['/dashboard/metrics'],  description: 'RHR, steps, sleep, body composition, wearable sync', icon: 'HeartPulse' },
-  workouts: { label: 'Workouts',  prefixes: ['/dashboard/workouts', '/dashboard/exercises'], description: 'Exercise library, templates, logs, Nomad OS', icon: 'Dumbbell' },
-  finance:  { label: 'Finance',   prefixes: ['/dashboard/finance'],  description: 'Transactions, accounts, budgets, invoices',         icon: 'DollarSign' },
-  travel:   { label: 'Travel',    prefixes: ['/dashboard/travel', '/dashboard/fuel-logs', '/dashboard/maintenance'], description: 'Trips, vehicles, fuel logs, maintenance, routes', icon: 'Navigation' },
-  equipment:{ label: 'Equipment', prefixes: ['/dashboard/equipment'], description: 'Asset tracking, valuations, media gallery',         icon: 'Package' },
-  correlations: { label: 'Correlations', prefixes: ['/dashboard/correlations', '/dashboard/analytics'], description: 'Cross-module analytics, AI insights', icon: 'TrendingUp' },
-  academy:  { label: 'Academy (student)', prefixes: ['/academy'], description: 'Enroll in teacher-published courses', icon: 'GraduationCap' },
+  planner:      { label: 'Planner',           prefixes: ['/dashboard/planner', '/dashboard/weekly-review', '/dashboard/retrospective', '/dashboard/roadmap'], description: 'Daily tasks, recurring schedules, goals, roadmaps, weekly review',   icon: 'CalendarClock' },
+  engine:       { label: 'Engine',            prefixes: ['/dashboard/engine'],                            description: 'Focus sessions, analytics, doodle canvas',                          icon: 'Briefcase' },
+  fuel:         { label: 'Fuel',              prefixes: ['/dashboard/fuel', '/dashboard/scan'],           description: 'Supplement protocols, daily fuel logs, ingredient scan',            icon: 'Utensils' },
+  metrics:      { label: 'Health Metrics',    prefixes: ['/dashboard/metrics'],                           description: 'RHR, steps, sleep, body composition, wearable sync',                icon: 'HeartPulse' },
+  workouts:     { label: 'Workouts',          prefixes: ['/dashboard/workouts', '/dashboard/exercises'],  description: 'Exercise library, templates, logs, Nomad OS',                       icon: 'Dumbbell' },
+  finance:      { label: 'Finance',           prefixes: ['/dashboard/finance'],                           description: 'Transactions, accounts, budgets, invoices, forecast',               icon: 'DollarSign' },
+  travel:       { label: 'Travel',            prefixes: ['/dashboard/travel'],                            description: 'Trips, vehicles, fuel logs, maintenance, routes',                   icon: 'Navigation' },
+  equipment:    { label: 'Equipment',         prefixes: ['/dashboard/equipment', '/dashboard/media'],     description: 'Asset tracking, valuations, media library & gallery',               icon: 'Package' },
+  correlations: { label: 'Correlations',      prefixes: ['/dashboard/correlations', '/dashboard/analytics'], description: 'Cross-module analytics, AI insights',                           icon: 'TrendingUp' },
+  academy:      { label: 'Academy (student)', prefixes: ['/academy'],                                     description: 'Enroll in teacher-published courses',                               icon: 'GraduationCap' },
 };
 
-/** Expand a user's selected module slugs into the full list of allowed prefixes.
- *  Free routes are always allowed (handled by the dashboard layout's isFreeRoute()). */
 export function expandToPrefixes(slugs: string[]): string[] {
   return slugs.flatMap((slug) => STARTER_MODULES[slug as ModuleSlug]?.prefixes ?? []);
 }
 ```
+
+**Bundled decisions (not asking):**
+- Scan bundles with Fuel (scan reads ingredients / supplement labels — only useful alongside fuel logging).
+- Media library bundles with Equipment (primary consumer — equipment media gallery is the heaviest user of the library).
+- Weekly-review, retrospective, roadmap bundle with Planner (all Operate-group tools).
+- Life Categories, Data Hub remain **unrestricted** per §16.6.
 
 ### 16.4 — Enforcement: three layers, one source of truth
 
@@ -720,7 +722,7 @@ One branch per logical change per STYLE_GUIDE §1. Rough sequencing:
 | 2 | `feat/starter-tier-gating` | Dashboard layout + NavConfig + `/api/auth/me` changes to enforce `allowedModules` for Starter users. Admins tested for regression. |
 | 3 | `feat/starter-tier-upgrade-page` | `/dashboard/upgrade` teaser page. Forbidden-module redirects land here. |
 | 4 | `feat/starter-tier-module-picker` | Client component on `/pricing` for Starter checkout. Max-3 checkbox grid with descriptions + lock icons. |
-| 5 | `feat/starter-tier-stripe` | `STRIPE_STARTER_PRICE_ID` env var, checkout route handles `plan=starter` with `selected_modules` metadata, webhook handler writes to `profiles.selected_modules`. |
+| 5 | `feat/starter-tier-stripe` | Both `STRIPE_STARTER_MONTHLY_PRICE_ID` + `STRIPE_STARTER_ANNUAL_PRICE_ID` env vars, checkout route handles `plan=starter-monthly` and `plan=starter-annual` with `selected_modules` metadata, webhook handler writes `subscription_status='starter'` and `profiles.selected_modules`. |
 | 6 | `feat/starter-tier-admin-stats` | Admin dashboard: Starter subscriber count + top-3-module-combos widget. |
 
 **Pre-flight gate:** confirm Stripe price creation + env var with owner before branch 5.
@@ -740,11 +742,39 @@ One branch per logical change per STYLE_GUIDE §1. Rough sequencing:
 - **Risk: cross-app shared DB (see CLAUDE.md).** `selected_modules` column is additive and has no semantic meaning outside CentenarianOS — safe. `subscription_status` gaining `'starter'` is a CHECK constraint change; any other app reading this column will silently ignore unknown values, which is the correct behavior.
 - **Risk: feature flag toggled off mid-flight.** If a Starter user is already subscribed when we roll back the flag, they lose access. Mitigation: flag gates the **picker** (checkout path), not the **gating** (already-subscribed users). Users with `subscription_status='starter'` always get their modules regardless of flag state.
 
-### 16.10 — Next actions
+### 16.10 — Sign-off needed (four yes/no decisions, nothing to read)
 
-1. Get owner sign-off on §16.3 mapping (is the module → prefixes mapping correct?) and §16.6 answers.
-2. Owner creates Stripe $4.99/mo recurring price, shares the price ID.
-3. Claude opens branch 1 (`feat/starter-tier-schema`).
+Everything below is a product call — there's nothing in the repo to read. Pick the answer you want; the defaults are the ones I recommended.
+
+**A. Data Hub (import/export) for Starter users**
+- Default: scoped — Finance import/export only works if Finance is selected.
+- Alternative: fully locked (Pro/Lifetime only).
+- **Your call:** [ ] default (scoped)  [ ] fully locked
+
+**B. Life Categories (tagging) for Starter users**
+- Default: unrestricted — tagging makes every other module more useful, not a separate product.
+- Alternative: locked to Pro/Lifetime, or lock if "Correlations" isn't one of their 3.
+- **Your call:** [ ] default (unrestricted)  [ ] locked  [ ] locked unless Correlations
+
+**C. Academy (student, free enrollment)**
+- Default: counts as 1 of the 3 — it's a full module with server cost.
+- Alternative: always included, doesn't count against the 3 (since teachers publish content and we take platform fees on paid courses).
+- **Your call:** [ ] default (counts as 1)  [ ] always included
+
+**D. Activity Links across locked modules (e.g. Starter has Finance but not Travel — can a Finance transaction still *link to* a Travel trip that existed before locking?)**
+- Default: graceful degrade — dropdowns still show linkable entities; clicking through to a locked module redirects to the upgrade teaser.
+- Alternative: hide locked-module entities entirely from link pickers.
+- **Your call:** [ ] default (show + redirect)  [ ] hide entirely
+
+---
+
+### 16.11 — Next actions
+
+1. Answer A–D above in chat, or say "defaults" to ship my recommendations.
+2. Confirm `STRIPE_STARTER_MONTHLY_PRICE_ID` and `STRIPE_STARTER_ANNUAL_PRICE_ID` are set in `.env.local` (you mentioned the values — IDs need to be set, even if empty for now).
+3. I open branch 1 (`feat/starter-tier-schema`). Branches 2–6 sequence from there per §16.7.
+
+**Sign-off on §16.3 is no longer asked** — I verified every prefix against `app/dashboard/` directly, and bundled the utility modules (Scan, Media) with their primary consumers (Fuel, Equipment). If you spot a routing mistake later, it's one file to edit (`lib/access/starter-modules.ts`).
 
 ### Remaining backlog (updated)
 
