@@ -660,6 +660,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                                   <Cloudinary360Uploader
                                     currentUrl={editingLesson.content_url}
                                     onUploadSuccess={(url, posterUrl) => setEditingLesson((l) => ({ ...l, content_url: url, video_360_poster_url: posterUrl }))}
+                                    onTitleSuggestion={(suggested) => setEditingLesson((l) => (l.title?.trim() ? l : { ...l, title: suggested }))}
                                   />
                                   <button
                                     type="button"
@@ -686,6 +687,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                                     resourceType="image"
                                     currentUrl={editingLesson.content_url}
                                     onUploadSuccess={(url, posterUrl) => setEditingLesson((l) => ({ ...l, content_url: url, video_360_poster_url: posterUrl }))}
+                                    onTitleSuggestion={(suggested) => setEditingLesson((l) => (l.title?.trim() ? l : { ...l, title: suggested }))}
                                   />
                                   <button
                                     type="button"
@@ -876,6 +878,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                             <Cloudinary360Uploader
                               currentUrl={newLesson.content_url}
                               onUploadSuccess={(url, posterUrl) => setNewLesson((l) => ({ ...l, content_url: url, video_360_poster_url: posterUrl }))}
+                              onTitleSuggestion={(suggested) => setNewLesson((l) => (l.title?.trim() ? l : { ...l, title: suggested }))}
                             />
                             <button
                               type="button"
@@ -902,6 +905,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                             resourceType="image"
                             currentUrl={newLesson.content_url}
                             onUploadSuccess={(url, posterUrl) => setNewLesson((l) => ({ ...l, content_url: url, video_360_poster_url: posterUrl }))}
+                            onTitleSuggestion={(suggested) => setNewLesson((l) => (l.title?.trim() ? l : { ...l, title: suggested }))}
                           />
                             <button
                               type="button"

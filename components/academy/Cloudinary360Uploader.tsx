@@ -8,11 +8,12 @@
 // Uses the canonical /api/cloudinary/sign endpoint for signed uploads.
 
 import { CldUploadWidget } from 'next-cloudinary';
-import { Upload } from 'lucide-react';
+import { AlertTriangle, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { derivePosterUrl } from '@/lib/cloudinary/poster';
 import { logError } from '@/lib/error-logging';
 import type { AssetKind } from '@/lib/academy/media-types';
+import { checkEquirectangularRatio, suggestTitleFromFilename } from '@/lib/academy/camera-filename';
 
 type MediaKind = 'video' | 'image';
 
@@ -24,6 +25,12 @@ interface Cloudinary360UploaderProps {
    * use it as a preview / no-WebGL fallback.
    */
   onUploadSuccess: (url: string, posterUrl: string | null) => void;
+  /**
+   * Fires after an upload when the filename matches a known 360° camera
+   * pattern. Parent should apply the suggestion only when the lesson
+   * title is empty — don't clobber a teacher's existing title.
+   */
+  onTitleSuggestion?: (title: string) => void;
   currentUrl?: string | null;
   /** Which kind of 360 media this uploader handles. Defaults to 'video'. */
   resourceType?: MediaKind;
@@ -66,10 +73,12 @@ const IMAGE_CONFIG = {
 
 export default function Cloudinary360Uploader({
   onUploadSuccess,
+  onTitleSuggestion,
   currentUrl,
   resourceType = 'video',
 }: Cloudinary360UploaderProps) {
   const [error, setError] = useState<string | null>(null);
+  const [ratioWarning, setRatioWarning] = useState<string | null>(null);
   const config = resourceType === 'image' ? IMAGE_CONFIG : VIDEO_CONFIG;
 
   return (
@@ -99,6 +108,25 @@ export default function Cloudinary360Uploader({
             };
             const posterUrl = derivePosterUrl(info.secure_url, resourceType);
             onUploadSuccess(info.secure_url, posterUrl);
+
+            // Equirectangular sanity check: a true 360° file has a 2:1
+            // width:height ratio. Don't block the upload — some teachers
+            // use 180° or partial-sphere files — but surface a warning so
+            // they can catch the common "I forgot to stitch" mistake.
+            const ratioState = checkEquirectangularRatio(info.width, info.height);
+            if (ratioState === 'suspect') {
+              setRatioWarning(
+                `This file is ${info.width}×${info.height} (${(info.width! / info.height!).toFixed(2)}:1). Equirectangular 360° media should be 2:1 — if your preview looks stretched or frozen, export the stitched version from your camera's desktop app and re-upload.`,
+              );
+            } else {
+              setRatioWarning(null);
+            }
+
+            // Filename-based title hint — parent decides whether to apply.
+            if (onTitleSuggestion) {
+              const suggestion = suggestTitleFromFilename({ originalFilename: info.original_filename });
+              if (suggestion) onTitleSuggestion(suggestion.title);
+            }
 
             // Register in the teacher's media library. Fire-and-forget —
             // if it fails the upload still succeeded and the lesson still
@@ -145,6 +173,15 @@ export default function Cloudinary360Uploader({
       </CldUploadWidget>
       {error && (
         <p role="alert" className="text-xs text-red-400">{error}</p>
+      )}
+      {ratioWarning && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 text-xs text-amber-300 bg-amber-950/40 border border-amber-900/60 rounded-lg p-2.5"
+        >
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
+          <span>{ratioWarning}</span>
+        </div>
       )}
       <p className="text-xs text-gray-500">{config.label.helper}</p>
     </div>
