@@ -1,0 +1,44 @@
+[
+  {
+    "id": "teacher-resources",
+    "title": "BVC Coffee — Teacher Resources (PDF)",
+    "description": "Full teacher guide: IAS + Common Core alignment, 4 classroom activities with handouts, project rubrics, knowledge-check answer key, differentiation strategies, bibliography.",
+    "url": "REPLACE_WITH_CLOUDINARY_URL_AFTER_UPLOADING_teacher-resources.pdf",
+    "source_url": null
+  },
+  {
+    "id": "womens-petition-1674",
+    "title": "The Women's Petition Against Coffee (1674)",
+    "description": "Satirical London broadside. Useful for ELA rhetorical analysis and Social Studies as primary-source evidence of coffeehouse cultural impact.",
+    "url": "https://www.bl.uk/collection-items/the-womens-petition-against-coffee",
+    "source_url": "British Library Digital Collections"
+  },
+  {
+    "id": "mens-answer-1674",
+    "title": "The Men's Answer to the Women's Petition (1674)",
+    "description": "Counter-broadside. Pairs with the Women's Petition for rhetorical-rebuttal analysis.",
+    "url": "https://www.bl.uk/collection-items/the-mens-answer-to-the-womens-petition-against-coffee",
+    "source_url": "British Library Digital Collections"
+  },
+  {
+    "id": "royal-proclamation-1675",
+    "title": "Royal Proclamation for the Suppression of Coffee Houses (1675)",
+    "description": "Charles II's 11-day coffeehouse ban. Useful for Social Studies discussion of state power vs. public sphere.",
+    "url": "https://www.bl.uk/collection-items/royal-proclamation-for-the-suppression-of-coffee-houses",
+    "source_url": "British Library Digital Collections"
+  },
+  {
+    "id": "colonial-plantation-records",
+    "title": "Colonial Coffee Plantation Records (18th c.)",
+    "description": "Primary-source business documents from Caribbean/Brazilian coffee plantations. Use for critical reading of economic rhetoric and dehumanizing labor language.",
+    "url": "https://www.loc.gov/collections/?q=colonial+coffee+plantation+records",
+    "source_url": "Library of Congress Digital Collections"
+  },
+  {
+    "id": "bunn-2015",
+    "title": "Bunn et al. (2015) — climate change profile of global coffee production (PLOS ONE)",
+    "description": "The peer-reviewed paper behind the '50% of coffee land unsuitable by 2050' projection. Open-access.",
+    "url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0140660",
+    "source_url": "PLOS ONE open access"
+  }
+]
