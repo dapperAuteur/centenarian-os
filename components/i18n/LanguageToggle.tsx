@@ -11,7 +11,7 @@
 // Spanish prepends /es/.
 
 import { useState, useTransition } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Globe, Check } from 'lucide-react';
 import { LOCALES, LOCALE_LABELS, DEFAULT_LOCALE, type Locale } from '@/lib/i18n/config';
 
@@ -34,17 +34,34 @@ function buildLocalizedPath(pathname: string, targetLocale: Locale): string {
 export default function LanguageToggle({ currentLocale, className = '' }: Props) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   function handlePick(locale: Locale) {
     if (locale === currentLocale) { setOpen(false); return; }
-    startTransition(() => {
+    startTransition(async () => {
+      // 1. Set the cookie server-side first. This matters when navigating
+      //    to the canonical (un-prefixed) English URL — without the cookie
+      //    update, a sticky `centos_locale=es` would keep rendering Spanish.
+      try {
+        await fetch('/api/i18n/set-locale', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ locale }),
+        });
+      } catch {
+        // Non-fatal — fall through to the navigation and let middleware
+        // set the cookie from the URL prefix (works for ES, not EN).
+      }
+      // 2. Full-page navigation. `router.push()` would use Next.js's
+      //    client-side Router Cache which serves the STALE root-layout
+      //    RSC payload (cached from the previous locale) — so dict
+      //    changes wouldn't show until a manual refresh.
+      //    `window.location.assign()` bypasses the cache and forces
+      //    a fresh server render with the new cookie + header state.
       const newPath = buildLocalizedPath(pathname ?? '/', locale);
       const qs = searchParams?.toString();
-      router.push(qs ? `${newPath}?${qs}` : newPath);
-      setOpen(false);
+      window.location.assign(qs ? `${newPath}?${qs}` : newPath);
     });
   }
 
