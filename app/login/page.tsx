@@ -1,6 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // File: app/login/page.tsx
-// User authentication — password login or email OTP (6-digit code).
+// User authentication — password login OR email sign-in (magic link + 6-digit code).
+// Supabase's email-OTP flow delivers BOTH a clickable magic link and a 6-digit
+// code in the same email; users can choose whichever is more convenient. This
+// page surfaces both paths and listens for the session that's established when
+// the link is clicked (same tab OR another).
+//
+// Plan 34 Phase A — adds the magic-link UX without removing the existing
+// password or OTP-code paths. Controlled by NEXT_PUBLIC_AUTH_EMAIL_ENABLED
+// (default: enabled) so a delivery issue can be rolled back via env change
+// without a redeploy.
 
 'use client';
 
@@ -15,6 +24,11 @@ import { getAalAndFactors, needsMfaVerification } from '@/lib/mfa/helpers';
 
 type LoginTab = 'password' | 'otp';
 type OtpStep = 'email' | 'code';
+
+// Feature flag — set NEXT_PUBLIC_AUTH_EMAIL_ENABLED=false at the platform
+// level to hide the email-sign-in tab without shipping code. Default on.
+const EMAIL_AUTH_ENABLED =
+  process.env.NEXT_PUBLIC_AUTH_EMAIL_ENABLED !== 'false';
 
 export default function LoginPage() {
   return (
@@ -61,6 +75,30 @@ function LoginContent() {
     checkMfa();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
+
+  // Magic-link support — when a user clicks the link in their email (this
+  // tab or another), Supabase broadcasts a SIGNED_IN event. We catch it
+  // and redirect to the dashboard without requiring the user to type the
+  // 6-digit code. Only listens while on the code-entry step so we don't
+  // fight the password form's own flow.
+  useEffect(() => {
+    if (tab !== 'otp' || otpStep !== 'code') return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') {
+        // Let the MFA branch handle aal2 if required; otherwise redirect.
+        getAalAndFactors(supabase).then(({ currentLevel, nextLevel }) => {
+          if (needsMfaVerification(currentLevel, nextLevel)) {
+            setMfaRequired(true);
+          } else {
+            router.push(dashboardRedirect);
+            router.refresh();
+          }
+        });
+      }
+    });
+    return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, otpStep, dashboardRedirect]);
 
   function switchTab(t: LoginTab) {
     setTab(t);
@@ -235,17 +273,19 @@ function LoginContent() {
             >
               Password
             </button>
-            <button
-              type="button"
-              onClick={() => switchTab('otp')}
-              className={`flex-1 py-2 text-sm font-medium transition ${
-                tab === 'otp'
-                  ? 'bg-sky-600 hover:bg-sky-700 text-white'
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              Email Code
-            </button>
+            {EMAIL_AUTH_ENABLED && (
+              <button
+                type="button"
+                onClick={() => switchTab('otp')}
+                className={`flex-1 py-2 text-sm font-medium transition ${
+                  tab === 'otp'
+                    ? 'bg-sky-600 hover:bg-sky-700 text-white'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                Email link
+              </button>
+            )}
           </div>
 
           {/* ── Password tab ──────────────────────────────────────────── */}
@@ -310,8 +350,8 @@ function LoginContent() {
             </form>
           )}
 
-          {/* ── Email Code tab ──────────────────────────────────────── */}
-          {tab === 'otp' && (
+          {/* ── Email link tab ──────────────────────────────────────── */}
+          {EMAIL_AUTH_ENABLED && tab === 'otp' && (
             <div className="space-y-6">
               {otpError && (
                 <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm" role="alert">
@@ -334,8 +374,8 @@ function LoginContent() {
                       className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent form-input border-gray-300 focus:ring-sky-500"
                       placeholder="you@example.com"
                     />
-                    <p className="text-xs mt-1.5 text-gray-400">
-                      We&apos;ll send a 6-digit code to this address. Only existing accounts can use this method.
+                    <p className="text-xs mt-1.5 text-gray-500">
+                      We&apos;ll email you a <strong className="text-gray-700">sign-in link</strong> and a backup 6-digit code — use whichever is easier. Existing accounts only.
                     </p>
                   </div>
 
@@ -344,17 +384,23 @@ function LoginContent() {
                     disabled={otpLoading}
                     className="w-full text-white py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 bg-sky-600 hover:bg-sky-700"
                   >
-                    {otpLoading ? 'Sending...' : 'Send Code'}
+                    {otpLoading ? 'Sending...' : 'Send sign-in link'}
                   </button>
                 </form>
               ) : (
                 <form onSubmit={handleVerifyCode} className="space-y-6">
                   <div>
-                    <p className="text-sm mb-4 text-gray-600">
-                      We sent a 6-digit code to <span className="font-medium text-gray-900">{otpEmail}</span>. Enter it below to sign in.
-                    </p>
+                    <div className="bg-sky-50 border border-sky-200 rounded-lg p-3 mb-4 text-sm text-sky-900">
+                      <p className="font-medium mb-1">Check your inbox — <span className="font-semibold">{otpEmail}</span></p>
+                      <p className="text-sky-800">
+                        <strong>Easiest:</strong> click the sign-in link in the email. You&rsquo;ll be signed in automatically and this page will redirect.
+                      </p>
+                      <p className="text-sky-800 mt-1">
+                        <strong>Or:</strong> enter the 6-digit code below.
+                      </p>
+                    </div>
                     <label htmlFor="otp-code" className="block text-sm font-medium mb-1 text-gray-700">
-                      6-digit code
+                      6-digit code (optional if you clicked the link)
                     </label>
                     <input
                       id="otp-code"
