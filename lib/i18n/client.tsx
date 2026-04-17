@@ -8,14 +8,7 @@
 // Plan 31 Phase 1.
 
 import { createContext, useCallback, useContext } from 'react';
-import type { Locale } from './config';
-
-type Dict = Record<string, string>;
-
-export interface LocaleBundle {
-  locale: Locale;
-  dictionaries: Record<string, Dict>;
-}
+import type { Locale, LocaleBundle } from './config';
 
 const LocaleContext = createContext<LocaleBundle | null>(null);
 
@@ -56,13 +49,8 @@ export function useTranslations(namespace: string): (key: string) => string {
   );
 }
 
-/**
- * Bundle a set of namespaces for the current locale. Called from the
- * server layout; passes the shape to LocaleProvider.
- */
-export function buildLocaleBundle(
-  locale: Locale,
-  dictionaries: Record<string, Dict>,
-): LocaleBundle {
-  return { locale, dictionaries };
-}
+// Note on LocaleBundle construction: the server root layout builds
+// the bundle inline as a plain object literal and passes it to
+// <LocaleProvider value={...}>. Exporting a helper from this module
+// would make it client-only (every export of a 'use client' module
+// is), which the server component can't invoke.

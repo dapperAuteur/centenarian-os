@@ -8,6 +8,18 @@ export type Locale = typeof LOCALES[number];
 
 export const DEFAULT_LOCALE: Locale = 'en';
 
+/**
+ * Shape the server root layout hands to the client LocaleProvider.
+ * Defined here (not in client.tsx) so server code can import the type
+ * without crossing the 'use client' boundary — a client module's
+ * exports can only be imported by other client code.
+ */
+export type Dict = Record<string, string>;
+export interface LocaleBundle {
+  locale: Locale;
+  dictionaries: Record<string, Dict>;
+}
+
 // Cookie name for the user's chosen locale. Written by the server via
 // /api/i18n/set-locale. Read everywhere we need to branch on language.
 // 1-year TTL to survive browser clears reasonably.

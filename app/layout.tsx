@@ -11,7 +11,8 @@ import SocialReferralTracker from '@/components/SocialReferralTracker';
 import { ToastProvider } from '@/components/ui/ToastProvider';
 import { organizationSchema, softwareApplicationSchema } from '@/lib/seo/json-ld';
 import { getLocale, getDictionary } from '@/lib/i18n/server';
-import { LocaleProvider, buildLocaleBundle } from '@/lib/i18n/client';
+import { LocaleProvider } from '@/lib/i18n/client';
+import type { LocaleBundle } from '@/lib/i18n/config';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -73,7 +74,13 @@ export default async function RootLayout({
     getDictionary('home'),
     getDictionary('pricing'),
   ]);
-  const bundle = buildLocaleBundle(locale, { common, home, pricing });
+  // Construct the bundle as a plain object — a helper from the
+  // 'use client' module would cross the RSC boundary and fail at
+  // runtime ("call client function from server").
+  const bundle: LocaleBundle = {
+    locale,
+    dictionaries: { common, home, pricing },
+  };
   return (
     <html lang={locale}>
       <head>
