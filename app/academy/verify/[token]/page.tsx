@@ -148,9 +148,9 @@ export default async function VerifyCertificatePage({ params }: Params) {
         </div>
 
         <p className="mt-8 text-center text-xs text-gray-500 max-w-md mx-auto">
-          This certificate's authenticity can be verified by visiting the URL in a browser.
+          This certificate&apos;s authenticity can be verified by visiting the URL in a browser.
           The token is unique and unguessable — seeing this page means the record exists in
-          CentenarianOS Academy's database.
+          CentenarianOS Academy&apos;s database.
         </p>
       </div>
     </div>
