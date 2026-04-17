@@ -20,31 +20,45 @@ import {
 import enCommon from '@/locales/en/common.json';
 import enHome from '@/locales/en/home.json';
 import enPricing from '@/locales/en/pricing.json';
+import enBlog from '@/locales/en/blog.json';
+import enAcademy from '@/locales/en/academy.json';
 import esCommon from '@/locales/es/common.json';
 import esHome from '@/locales/es/home.json';
 import esPricing from '@/locales/es/pricing.json';
+import esBlog from '@/locales/es/blog.json';
+import esAcademy from '@/locales/es/academy.json';
 
 type Dict = Record<string, string>;
 
-export type Namespace = 'common' | 'home' | 'pricing';
+export type Namespace = 'common' | 'home' | 'pricing' | 'blog' | 'academy';
 
 const DICTS: Record<Locale, Record<Namespace, Dict>> = {
-  en: { common: enCommon, home: enHome, pricing: enPricing },
-  es: { common: esCommon, home: esHome, pricing: esPricing },
+  en: { common: enCommon, home: enHome, pricing: enPricing, blog: enBlog, academy: enAcademy },
+  es: { common: esCommon, home: esHome, pricing: esPricing, blog: esBlog, academy: esAcademy },
 };
 
 /**
  * Resolve the active locale for the current request. Priority:
- *   1. The LOCALE_COOKIE if set and supported.
- *   2. Accept-Language header.
- *   3. DEFAULT_LOCALE.
+ *   1. `x-locale` request header (set by middleware from URL prefix
+ *      like /es/pricing — Phase 2).
+ *   2. The LOCALE_COOKIE if set and supported.
+ *   3. Accept-Language header.
+ *   4. DEFAULT_LOCALE.
+ *
+ * The URL prefix wins over the cookie so a shared link like
+ * centenarianos.com/es/pricing renders in Spanish regardless of the
+ * recipient's saved preference — the sender's explicit intent beats
+ * the recipient's default.
  */
 export async function getLocale(): Promise<Locale> {
+  const headerStore = await headers();
+  const fromHeader = headerStore.get('x-locale');
+  if (isSupportedLocale(fromHeader)) return fromHeader;
+
   const cookieStore = await cookies();
   const fromCookie = cookieStore.get(LOCALE_COOKIE)?.value;
   if (isSupportedLocale(fromCookie)) return fromCookie;
 
-  const headerStore = await headers();
   return pickLocaleFromAcceptLanguage(headerStore.get('accept-language'));
 }
 
