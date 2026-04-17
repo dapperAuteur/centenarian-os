@@ -1,0 +1,71 @@
+name: Accessibility
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      enforce:
+        description: 'Fail on critical/serious violations (true/false)'
+        required: false
+        default: 'true'
+
+jobs:
+  axe:
+    runs-on: ubuntu-latest
+    # Baseline mode for initial rollout: don't block PRs yet while the
+    # first scan is fixed. Flip `continue-on-error` to false (or delete
+    # the line) once the baseline is green on main.
+    continue-on-error: true
+    timeout-minutes: 15
+    env:
+      # Reasonable defaults for a public-route-only smoke test.
+      # Dev server needs these env vars to not crash during boot —
+      # tests never hit Supabase or Stripe, but Next.js reads them
+      # at module load for client-side hooks.
+      NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: stub-anon-key
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build app
+        run: npm run build
+
+      - name: Start dev server
+        run: npm run start &
+        env:
+          PORT: 3000
+
+      - name: Wait for server
+        run: npx wait-on http://localhost:3000 --timeout 120000
+
+      - name: Run axe smoke suite
+        run: |
+          if [ "${{ github.event.inputs.enforce }}" = "false" ]; then
+            SKIP_ENFORCEMENT=1 npm run test:a11y:baseline
+          else
+            npm run test:a11y
+          fi
+
+      - name: Upload a11y report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-report
+          path: playwright-report/a11y
+          retention-days: 7
