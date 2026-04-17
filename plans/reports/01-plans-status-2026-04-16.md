@@ -1585,3 +1585,90 @@ Budget ~1 day for remediation after the baseline scan, same day as the install.
 | 38 classroom/family plan | blocked on demand |
 | BVC Episodes 2–7 / Season 2+3 | content exists; phased load |
 | Starter tier | shipped, 90-day monitoring |
+
+---
+
+## 30. Plan 35 shipped — Academy completion certificates — `feat/academy-completion-certificates`
+
+End-to-end completion certificates. When a student finishes every lesson in a course, the system records the completion, sends a congratulations email with a verification link, shows a certificate callout on the last-lesson page, and surfaces a "Certificate" button on `/academy/my-courses`. Anyone with the verification URL can view the HTML certificate and download a branded PDF.
+
+Scope matched plan 35 §1–§6. Client-side PDF via existing `jspdf` dependency (already in the bundle — no npm install needed). No Cloudinary storage of PDFs: the HTML verification page is the canonical artifact; PDFs regenerate on demand.
+
+### 30.1 — Files added
+
+- [`supabase/migrations/183_course_completions.sql`](../../supabase/migrations/183_course_completions.sql) — one row per `(user_id, course_id)` with a 32-hex-char `verification_token`. RLS: users read own; teachers read their own courses' completions; service role (used by the public verify page) bypasses.
+- [`app/api/academy/courses/[id]/complete/route.ts`](../../app/api/academy/courses/%5Bid%5D/complete/route.ts) — POST. Idempotent: counts completed lessons vs. total; if all done, upserts completion row (race-safe via `UNIQUE(user_id, course_id)`), fires Resend email, returns `{ completed, token, completionAlreadyExisted }`. If not all done, returns `{ completed: false, remainingLessons, totalLessons }`. Safe to call on every lesson completion — endpoint decides.
+- [`app/academy/verify/[token]/page.tsx`](../../app/academy/verify/%5Btoken%5D/page.tsx) — **public** server-rendered verification. Service-role reads the completion by token (no RLS dependency — the token is the access check). Renders the branded card, the download button, and a "this page's existence is the verification" footer note. `robots: { index: false, follow: false }` to keep certs out of search engines.
+- [`components/academy/CertificateDownloadButton.tsx`](../../components/academy/CertificateDownloadButton.tsx) — client component. Dynamically imports `jspdf` on click so the ~200KB library doesn't land on the initial page bundle. Landscape letter, fuchsia border, centered student name (wraps if long), course title, completed date + teacher in a footer row, and the verification URL printed on the cert so third parties can re-verify from a printed copy. Filename: `{Student_Name}-{Course_Title}-certificate.pdf`.
+
+### 30.2 — Files modified
+
+- [`app/academy/[courseId]/lessons/[lessonId]/page.tsx`](../../app/academy/%5BcourseId%5D/lessons/%5BlessonId%5D/page.tsx):
+  - New `courseCompletion` state.
+  - `markComplete()` now calls `POST /api/academy/courses/[id]/complete` fire-and-forget after the lesson's own progress is saved.
+  - When the response says the course is complete, a gradient callout ("Course complete — certificate earned 🎓") renders above the CYOA/linear navigation with a "View certificate →" button pointing at `/academy/verify/{token}`. Distinguishes first-issue vs. revisit via `completionAlreadyExisted`.
+  - Tailwind v4 canonicals: `bg-linear-to-br` (not `bg-gradient-to-br`). Caught by linter; fixed.
+- [`app/api/academy/my-courses/route.ts`](../../app/api/academy/my-courses/route.ts) — one extra query fetching `course_completions` for the user filtered by their enrolled courses. Each result row gains `certificate_token: string | null`.
+- [`app/academy/my-courses/page.tsx`](../../app/academy/my-courses/page.tsx) — `EnrolledCourse` interface gains `certificate_token`. When non-null, a fuchsia "Certificate" button (Award icon) renders alongside "Start/Continue/Review" and "Take Again". Student can jump to the verification page from their course list.
+
+### 30.3 — Behavior
+
+- Student completes final lesson → `markComplete` fires → lesson's own `completed_at` saves → `/complete` endpoint validates course-is-done → inserts row + token → sends email → client callout shows "certificate earned 🎓" with View button.
+- Student visits `/academy/my-courses` → any course with a token shows "Certificate" button.
+- Anyone with the verification URL sees the student name, course title, teacher name, completion date, and a download-PDF action. URL can be shared to LinkedIn, pasted in school applications, etc.
+- Email arrives with subject "Congratulations — you completed {course title}" and a big "View your certificate" CTA.
+- Re-completing a course (e.g., via `Take Again` re-enrollment) is a no-op on the completion row — original `verification_token` and `completed_at` preserved (idempotent upsert).
+
+### 30.4 — Security + trust model
+
+- Verification URL is public-by-token. 32 hex chars from `gen_random_bytes(16)` — unguessable (2^128 keyspace).
+- No RLS on `SELECT` via token because service role is used; RLS enforces user-scoped reads for `/api/academy/my-courses`.
+- Page is `robots: noindex, nofollow` so search engines can't enumerate certs.
+- PDF's verification-URL footer lets paper copies be re-verified online.
+- Not in scope: cryptographic signing of the PDF itself. A determined actor could fake a PDF; the verification URL is the authoritative source.
+
+### 30.5 — Merge order
+
+1. Run `psql ... -f supabase/migrations/183_course_completions.sql` against Supabase before merging.
+2. Verify `RESEND_API_KEY` is set in Vercel (already required by other admin-email flows — no new env var).
+3. Merge `feat/academy-completion-certificates` to main.
+
+### 30.6 — Verification
+
+1. Create a test course with 2 lessons, enroll with a test user.
+2. Complete lesson 1 → no completion callout (course not done).
+3. Complete lesson 2 → "Course complete — certificate earned 🎓" callout renders with View button.
+4. Check inbox — email arrives with the verification URL and a "View your certificate" CTA.
+5. Open URL (Incognito or other browser) — no login required, cert renders with student + course + teacher + date.
+6. Click "Download PDF" — landscape letter PDF downloads with branded layout.
+7. Open a non-existent token URL → 404.
+8. Visit `/academy/my-courses` → completed course shows "Certificate" button; click → same verification page.
+9. `POST /api/academy/courses/[id]/complete` a second time for the same course → returns `completionAlreadyExisted: true` + same token.
+10. As teacher: RLS query `SELECT * FROM course_completions WHERE course_id = '{yours}'` succeeds.
+
+### 30.7 — What's NOT built (deferred)
+
+- Puppeteer-rendered PDFs with full CSS fidelity — current client-side jspdf renders are adequate for v1; revisit if teachers demand richer templates.
+- Cloudinary storage of generated PDFs — regenerating on demand is simpler and avoids stale-PDF issues if the template evolves.
+- Certificate badge on user profile page — not scoped in plan 35. Add when profiles become more prominent.
+- Third-party credential registries (Credly, Accredible) — track demand first.
+- Template versioning / signed artifact — v1 trusts the verification URL as source of truth.
+
+### 30.8 — Remaining backlog
+
+| Plan | Status |
+|---|---|
+| 33 BVC Episode 1 Coffee | content loaded; owner to import + record audio |
+| 25 iOS validation pass | open — needs device |
+| 26 full | cancelled |
+| 30 Stripe fee calculator | shipped |
+| 31 i18n EN+ES + SEO | phased |
+| 32 admin email verification | shipped |
+| 34 Magic-link auth migration | backlog stub |
+| **35 completion certificates** | **shipped this branch** |
+| 36 teacher analytics heatmap | backlog, 1–2 days |
+| 37 a11y axe-core CI (Phase A) | shipped, baseline mode |
+| 37 Phase B | follow-up |
+| 38 classroom/family plan | blocked on demand |
+| BVC Episodes 2–7 / Season 2+3 | content exists; phased load |
+| Starter tier | shipped, 90-day monitoring |

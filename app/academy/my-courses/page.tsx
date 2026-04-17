@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, Play, CheckCircle, Clock, GraduationCap, RotateCcw, Loader2, HardDrive } from 'lucide-react';
+import { BookOpen, Play, CheckCircle, Clock, GraduationCap, RotateCcw, Loader2, HardDrive, Award } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface EnrolledCourse {
@@ -23,6 +23,7 @@ interface EnrolledCourse {
   progress_pct: number;
   new_lesson_count: number;
   updated_lesson_count: number;
+  certificate_token: string | null;
   profiles: { username: string; display_name: string | null } | null;
 }
 
@@ -194,6 +195,15 @@ export default function MyCoursesPage() {
                         ? 'Review'
                         : 'Continue'}
                     </Link>
+                    {course.certificate_token && (
+                      <Link
+                        href={`/academy/verify/${course.certificate_token}`}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-lg text-xs font-semibold transition min-h-9"
+                      >
+                        <Award className="w-3 h-3" aria-hidden="true" />
+                        Certificate
+                      </Link>
+                    )}
                     {course.progress_pct === 100 && (
                       <button
                         type="button"
