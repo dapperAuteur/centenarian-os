@@ -148,11 +148,29 @@ Non-trivial work starts with a plan file in `plans/NN-slug.md` where `NN` is the
 
 ---
 
+## 6a. Ecosystem + direction docs are required reading before proposing features
+
+Before proposing or scoping any new feature, read the relevant docs in **`plans/ecosystem/`** to confirm the feature belongs in this app at all.
+
+**Mandatory reads for CentenarianOS work:**
+
+- [`plans/ecosystem/README.md`](plans/ecosystem/README.md) — the ecosystem-wide scope rules and "one job" principle. Includes the Redundancy Test — before building a new feature, answer: does another WitUS app already own this data or workflow?
+- [`plans/ecosystem/centenarianos.md`](plans/ecosystem/centenarianos.md) — what CentOS owns and what it explicitly does NOT own. If a proposed feature falls under "not owned," link to the correct app instead of building here.
+- [`plans/ecosystem/centenarianos-direction.md`](plans/ecosystem/centenarianos-direction.md) — point-in-time directional decisions the owner has made (cancelled plans, strategic pivots, what's next). Overrides older plans when in conflict.
+
+When a proposed feature conflicts with anything in these docs, surface the conflict to the owner before coding. Do not build first and resolve later — by then you've already invested time in the wrong place.
+
+These three docs live in `plans/` which is gitignored; force-add (`git add -f`) is required when committing updates.
+
+---
+
 ## 7. Gitignored working directories
 
 These directories exist in the repo but are **gitignored** — files inside them are local-only and will never appear in a commit or PR:
 
-- `plans/` — implementation plan files (see §6). Exception: status reports under `plans/reports/` are force-added so the durable record ships with the code — see §5a.
+- `plans/` — implementation plan files (see §6). Exceptions that are force-added (`git add -f`) because they must ship with the code:
+  - Status reports under `plans/reports/` (see §5a)
+  - Ecosystem + direction docs under `plans/ecosystem/` (see §6a)
 - `content/` — tutorial scripts and other authoring drafts (`content/tutorials/<module>/NN-slug.md`)
 
 When you create a file in one of these directories you will not see it in `git status`. That is expected. If you want a file tracked, put it somewhere else — or open a separate decision to remove the directory from `.gitignore`, which has wider implications.
