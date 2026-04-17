@@ -1675,11 +1675,11 @@ Scope matched plan 35 §1–§6. Client-side PDF via existing `jspdf` dependency
 
 ---
 
-## 30. Plan 36 shipped — teacher cohort heatmap — `feat/teacher-cohort-heatmap`
+## 31. Plan 36 shipped — teacher cohort heatmap — `feat/teacher-cohort-heatmap`
 
 Students × lessons grid on the teacher course page so an instructor can see where a cohort is stuck at a glance. Ships per plan 36 §2 (scope) + §3 (data shape) + §5 (UI component) + §6 (mount point).
 
-### 30.1 — Files added
+### 31.1 — Files added
 
 - [`app/api/academy/courses/[id]/cohort/route.ts`](../../app/api/academy/courses/%5Bid%5D/cohort/route.ts) — GET aggregate endpoint. Teacher-ownership or admin-bypass gated. Returns `{ course, students[], lessons[], progress[], summary }`:
   - `students`: enrollment rows joined to profiles, preserving enrolled-at order.
@@ -1690,11 +1690,11 @@ Students × lessons grid on the teacher course page so an instructor can see whe
 - [`components/academy/teacher/CohortHeatmap.tsx`](../../components/academy/teacher/CohortHeatmap.tsx) — presentational. Sticky-left student-name column, scrolling lesson columns on mobile. Cell states: gray (not started) / amber (in progress) / green (completed), with a quiz-score overlay on quiz cells. `role="grid"` on the table, `role="gridcell"` + `aria-label` on each cell so screen readers announce "{student}: {lesson} — {state}". The most-stuck lesson's column header gets a subtle red tint. Uses a `useMemo`-cached lookup map for O(1) cell access during render.
 - [`app/dashboard/teaching/courses/[id]/cohort/page.tsx`](../../app/dashboard/teaching/courses/%5Bid%5D/cohort/page.tsx) — client page. Fetches the endpoint, renders loader / error / empty-state / heatmap. Summary-stat cards above the grid. "Export CSV" button: builds a local CSV of rows = students, columns = lessons, cells = `'' | 'in_progress' | 'completed' | 'completed (78%)'` (for quizzes). Filename: `{course-slug}-cohort-{date}.csv`.
 
-### 30.2 — Files modified
+### 31.2 — Files modified
 
 - [`components/academy/course-editor/CourseEditorLayout.tsx`](../../components/academy/course-editor/CourseEditorLayout.tsx) — action bar gains a "Cohort" link (Users icon) before Assignments + Preview. One line of nav, zero interference with existing tab state.
 
-### 30.3 — Behavior
+### 31.3 — Behavior
 
 - Teacher visits `/dashboard/teaching/courses/{id}` → clicks "Cohort" in the header action bar.
 - Cohort page loads → fetches `/api/academy/courses/{id}/cohort` → renders summary cards + heatmap + legend.
@@ -1704,20 +1704,20 @@ Students × lessons grid on the teacher course page so an instructor can see whe
 - Hover any cell → tooltip with student name, lesson title, state, completion date (for completed) or score (for quizzes).
 - Click "Export CSV" → downloads the full grid for offline analysis (Excel / Sheets).
 
-### 30.4 — Empty states + edge cases
+### 31.4 — Empty states + edge cases
 
 - No students yet: heatmap hides; summary cards + an "Award" empty-state replace the grid with copy nudging the teacher to wait for enrollments.
 - No lessons yet: course has no structure to rank students against; we still render the students column, and `most_stuck_lesson_id` is null.
 - A student with a re-enrollment (`attempt_number > 1`): row shows "attempt 2" in a small subtitle.
 - Quiz cells: if the student has a `quiz_score`, we render that number instead of the state icon — teachers see completion AND performance at a glance.
 
-### 30.5 — Performance
+### 31.5 — Performance
 
 - Single course load. Endpoint does 4 queries in parallel (enrollments, lessons, lesson_progress, profiles). No N+1.
 - Client render: `useMemo`-cached lookup map built once from the flat progress array. O(students × lessons) render without re-mapping every cell.
 - Scale ceiling: plan 36 noted "cap initial query at 200 students." BVC is nowhere near that; defer pagination until it matters.
 
-### 30.6 — Out of scope (future)
+### 31.6 — Out of scope (future)
 
 Per plan 36 §2:
 
@@ -1726,13 +1726,13 @@ Per plan 36 §2:
 - Email-student-nudge-on-stuck. Separate plan; needs opt-in design.
 - Attempt-history view (see student's earlier attempts). Currently collapses to latest.
 
-### 30.7 — Merge order
+### 31.7 — Merge order
 
 1. Branch is off main. No plan dependencies.
 2. No migrations, no env vars, no API dependencies.
 3. Merge `feat/teacher-cohort-heatmap`.
 
-### 30.8 — Verification
+### 31.8 — Verification
 
 1. As teacher with a course that has ≥ 1 enrolled student → visit `/dashboard/teaching/courses/{id}/cohort` (or click "Cohort" from the course editor header).
 2. Summary stats render (enrolled count, avg completion, median time, most-stuck lesson).
@@ -1743,7 +1743,7 @@ Per plan 36 §2:
 7. As non-owner (different teacher) → visit the same URL → 403.
 8. Mobile viewport → student-name column stays pinned, lesson columns scroll horizontally.
 
-### 30.9 — Remaining backlog
+### 31.9 — Remaining backlog
 
 | Plan | Status |
 |---|---|
@@ -1756,6 +1756,88 @@ Per plan 36 §2:
 | 34 Magic-link auth migration | backlog stub |
 | 35 completion certificates | server-side + verify page shipped; UI integrations under owner review |
 | **36 teacher analytics heatmap** | **shipped this branch** |
+| 37 a11y axe-core CI (Phase A) | shipped, baseline mode |
+| 37 Phase B | follow-up |
+| 38 classroom/family plan | blocked on demand |
+| BVC Episodes 2–7 / Season 2+3 | content exists; phased load |
+| Starter tier | shipped, 90-day monitoring |
+
+---
+
+## 32. Plan 34 Phase A shipped — magic-link login UX — `feat/auth-magic-link-phase-a`
+
+First of four phases (A–D) in plan 34's magic-link migration. Phase A surfaces the magic link that Supabase has been silently including in its OTP emails this whole time — renames the tab, clarifies the dual-path copy (link OR code), and adds a session listener so clicking the link in another tab redirects the original tab. No forced migration: password login and code entry still work identically. Behind a feature flag for rapid rollback.
+
+### 32.1 — What was already there
+
+Key finding: Supabase's `signInWithOtp({ email, options: { shouldCreateUser: false } })` has been wired on `/login` since the OTP tab shipped, and the default email template already includes BOTH a 6-digit code AND a clickable magic link. The callback route at `/auth/callback` already handles the PKCE exchange. Users who clicked the link have been signing in correctly — they just weren't told the link existed.
+
+**Net effect of Phase A: UX clarity + session-aware redirect. No new Supabase method calls, no email template changes.**
+
+### 32.2 — Files modified
+
+- [`app/login/page.tsx`](../../app/login/page.tsx):
+  - Top comment rewritten to reflect the dual-path model.
+  - New `EMAIL_AUTH_ENABLED` constant (reads `NEXT_PUBLIC_AUTH_EMAIL_ENABLED`, defaults on). Hides the email-sign-in tab entirely when set to `'false'` — rolls back via env change without a code deploy.
+  - Tab label renamed "Email Code" → "Email link".
+  - Email-form helper copy changed from "We'll send a 6-digit code" → "We'll email you a sign-in link and a backup 6-digit code — use whichever is easier."
+  - Submit button label "Send Code" → "Send sign-in link".
+  - Post-send screen: replaced the plain "enter the 6-digit code" heading with a sky-themed info box that calls out two paths: **Easiest**: click the link in the email (auto-redirects); **Or**: enter the 6-digit code below. The code-entry field label is demoted to "(optional if you clicked the link)".
+  - New `useEffect` that listens for `onAuthStateChange` events while the user is on the code-entry step. When `SIGNED_IN` fires (e.g., the user clicked the link in another tab), the original tab redirects to the dashboard — or routes to MFA if aal2 is required. Subscription cleanup on tab switch or unmount.
+
+### 32.3 — Behavior
+
+- User visits `/login` → Password tab selected by default (unchanged).
+- Clicks "Email link" tab → form asks for email, helper text mentions both paths.
+- Submits → sky info box replaces the form: "Check your inbox — {email}. Easiest: click the sign-in link. Or: enter the 6-digit code below."
+- Path A (link click in same tab): browser navigates to `/auth/callback` → exchanges code → redirects to dashboard.
+- Path B (link click in another tab/browser/device): that tab signs in. The original tab's auth listener fires `SIGNED_IN`, runs MFA check, and redirects to dashboard within ~1 second.
+- Path C (type code into original tab): existing `verifyOtp` flow, unchanged.
+- Setting `NEXT_PUBLIC_AUTH_EMAIL_ENABLED=false` in Vercel: email-sign-in tab hides; users see only password login. No redeploy needed beyond env var propagation.
+
+### 32.4 — What's NOT in Phase A (by design)
+
+Per plan 34:
+
+- **Phase B:** magic-link becomes the default path on `/signup`. Password signup hidden behind an expander.
+- **Phase C:** magic-link becomes the default on `/login` too (password hidden behind expander).
+- **Phase D:** 30-day delivery-reliability watch window, then treat magic-link as the primary path.
+
+Each phase is its own deploy + watch. Phase A is conservative — no user is forced off password login, and the tab can be hidden entirely via env flag.
+
+### 32.5 — Verification
+
+1. `/login` → Password tab works unchanged.
+2. Email link tab → enters email → submits → confirmation screen with dual-path copy.
+3. Check inbox → email includes both a link and a 6-digit code.
+4. Same-tab link click → callback → dashboard.
+5. Cross-tab link click → tab A auto-redirects to dashboard within ~1 second.
+6. Code entry still works unchanged.
+7. `NEXT_PUBLIC_AUTH_EMAIL_ENABLED=false` → reload → email tab hidden.
+8. MFA-enabled users still flow through the MFA verify step.
+
+### 32.6 — Merge order
+
+1. Merge `feat/auth-magic-link-phase-a` to main. No migrations, no new env vars (flag is optional, defaults on).
+2. Optional: set `NEXT_PUBLIC_AUTH_EMAIL_ENABLED` in Vercel for an operational rollback path.
+3. Watch Resend delivery for ~1 week before opening Phase B.
+
+### 32.7 — Remaining backlog
+
+| Plan | Status |
+|---|---|
+| 33 BVC Episode 1 Coffee | content loaded; owner to import + record audio |
+| 25 iOS validation pass | open — needs device |
+| 26 full | cancelled |
+| 30 Stripe fee calculator | shipped |
+| 31 i18n EN+ES + SEO | phased |
+| 32 admin email verification | shipped |
+| **34 magic-link auth — Phase A** | **shipped this branch** |
+| 34 Phase B (signup default) | follow-up after Phase A watch window |
+| 34 Phase C (login default) | follow-up after Phase B |
+| 34 Phase D (30-day watch) | follow-up |
+| 35 completion certificates | server-side + verify page shipped; UI integrations under owner review |
+| 36 teacher analytics heatmap | shipped |
 | 37 a11y axe-core CI (Phase A) | shipped, baseline mode |
 | 37 Phase B | follow-up |
 | 38 classroom/family plan | blocked on demand |
