@@ -1,44 +1,50 @@
 'use client';
 
 // components/i18n/LanguageToggle.tsx
-// Dropdown switch between EN / ES. POSTs the chosen locale to the
-// set-locale cookie endpoint, then reloads the current page so every
-// server component picks up the new dictionary.
+// Dropdown switch between EN / ES. Phase 2: navigates to the
+// locale-prefixed URL so the address bar reflects the choice and
+// shareable links carry the language intent. Middleware strips the
+// prefix server-side and sets the x-locale header + cookie.
 //
-// Plan 31 Phase 1. Appears in the site header for marketing surfaces;
-// authenticated surfaces come in a later phase.
+// English is the default locale and served at canonical (un-prefixed)
+// URLs. Switching TO English strips any /es/ prefix. Switching TO
+// Spanish prepends /es/.
 
 import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Globe, Check } from 'lucide-react';
-import { LOCALES, LOCALE_LABELS, type Locale } from '@/lib/i18n/config';
+import { LOCALES, LOCALE_LABELS, DEFAULT_LOCALE, type Locale } from '@/lib/i18n/config';
 
 interface Props {
   currentLocale: Locale;
   className?: string;
 }
 
+const LOCALE_PREFIX_RE = new RegExp(`^/(${LOCALES.join('|')})(/|$)`);
+
+function buildLocalizedPath(pathname: string, targetLocale: Locale): string {
+  // Strip any existing locale prefix so we start from canonical.
+  const canonical = pathname.replace(LOCALE_PREFIX_RE, '/');
+  // Default locale keeps canonical URLs; non-default prepends prefix.
+  if (targetLocale === DEFAULT_LOCALE) return canonical === '' ? '/' : canonical;
+  const prefixed = `/${targetLocale}${canonical}`;
+  return prefixed === `/${targetLocale}` ? `/${targetLocale}` : prefixed;
+}
+
 export default function LanguageToggle({ currentLocale, className = '' }: Props) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   function handlePick(locale: Locale) {
     if (locale === currentLocale) { setOpen(false); return; }
-    startTransition(async () => {
-      const res = await fetch('/api/i18n/set-locale', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ locale }),
-      });
-      if (!res.ok) {
-        // Fall back to an alert — toast provider isn't guaranteed on
-        // marketing pages.
-        alert('Could not change language. Try again.');
-        return;
-      }
+    startTransition(() => {
+      const newPath = buildLocalizedPath(pathname ?? '/', locale);
+      const qs = searchParams?.toString();
+      router.push(qs ? `${newPath}?${qs}` : newPath);
       setOpen(false);
-      router.refresh();
     });
   }
 

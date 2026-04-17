@@ -1,10 +1,75 @@
 // File: middleware.ts
-// Protects dashboard routes, refreshes auth tokens
+// Protects dashboard routes, refreshes auth tokens, and handles
+// locale-prefixed public URLs (/en/* and /es/*) for plan 31 Phase 2.
+//
+// Locale handling is cheap (regex + header set); auth work is
+// pathname-gated to the protected subtree so expanding the matcher
+// to cover public pages doesn't balloon Supabase call volume.
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import {
+  LOCALES,
+  LOCALE_COOKIE,
+  LOCALE_COOKIE_MAX_AGE,
+  isSupportedLocale,
+} from '@/lib/i18n/config';
+
+// Regex that captures `/en` or `/es` at the start of a path, optionally
+// followed by the rest of the URL. Keep in sync with LOCALES.
+const LOCALE_PREFIX_RE = new RegExp(`^/(${LOCALES.join('|')})(/.*)?$`);
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // 1. Locale-prefix rewrite. Users can visit /es/pricing or /en/pricing;
+  //    middleware strips the prefix (so the app routes resolve to the
+  //    existing /pricing page) and sets an x-locale request header
+  //    that getLocale() reads server-side. Cookie is also refreshed so
+  //    subsequent un-prefixed requests preserve the choice.
+  const localeMatch = pathname.match(LOCALE_PREFIX_RE);
+  if (localeMatch) {
+    const urlLocale = localeMatch[1];
+    const restOfPath = localeMatch[2] ?? '/';
+    if (isSupportedLocale(urlLocale)) {
+      const rewrittenUrl = request.nextUrl.clone();
+      rewrittenUrl.pathname = restOfPath;
+      // Pass the locale to server components via request header.
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set('x-locale', urlLocale);
+      const rewritten = NextResponse.rewrite(rewrittenUrl, {
+        request: { headers: requestHeaders },
+      });
+      // Refresh cookie so cross-request navigations keep the locale
+      // even when the user clicks a non-prefixed internal link.
+      rewritten.cookies.set({
+        name: LOCALE_COOKIE,
+        value: urlLocale,
+        maxAge: LOCALE_COOKIE_MAX_AGE,
+        path: '/',
+        sameSite: 'lax',
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+      });
+      return rewritten;
+    }
+    // Fallthrough: /en-US, /fr, etc. — not supported. Let the app
+    // render its 404 rather than silently 200-ing with default locale.
+  }
+
+  // 2. For paths that don't need auth work, return early after locale
+  //    handling. Plays the locale cookie forward with default value
+  //    so the Accept-Language fallback stays idempotent.
+  const isProtectedPath =
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/admin') ||
+    pathname === '/login' ||
+    pathname === '/signup';
+  if (!isProtectedPath) {
+    // No auth call needed. Public route, non-prefixed — pass through.
+    return NextResponse.next({ request: { headers: request.headers } });
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -58,7 +123,6 @@ export async function middleware(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-  const { pathname } = request.nextUrl;
 
   // MFA enforcement — if user has MFA enrolled but hasn't verified yet, redirect to login
   if (user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin'))) {
@@ -111,5 +175,12 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/dashboard/:path*', '/login', '/signup'],
+  // Covers auth-protected subtree + all public routes that might use
+  // a locale prefix. Excludes _next, api, static assets, and files
+  // with extensions (favicons, images). Locale handling is cheap;
+  // auth work is pathname-gated above so public pages don't hit
+  // Supabase.
+  matcher: [
+    '/((?!_next/static|_next/image|api/|favicon|.*\\..*).*)',
+  ],
 };

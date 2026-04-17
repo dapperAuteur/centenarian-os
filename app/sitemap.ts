@@ -19,34 +19,58 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date().toISOString();
 
   // ── Static routes ──────────────────────────────────────────────────────────
-  const staticRoutes: MetadataRoute.Sitemap = [
-    { url: `${SITE_URL}/`,             lastModified: now, changeFrequency: 'weekly',  priority: 1.0 },
-    { url: `${SITE_URL}/pricing`,      lastModified: now, changeFrequency: 'monthly', priority: 0.9 },
-    { url: `${SITE_URL}/features`,     lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${SITE_URL}/academy`,      lastModified: now, changeFrequency: 'weekly',  priority: 0.8 },
-    { url: `${SITE_URL}/academy/paths`,lastModified: now, changeFrequency: 'weekly',  priority: 0.7 },
-    { url: `${SITE_URL}/blog`,         lastModified: now, changeFrequency: 'daily',   priority: 0.8 },
-    { url: `${SITE_URL}/recipes`,      lastModified: now, changeFrequency: 'daily',   priority: 0.7 },
-    { url: `${SITE_URL}/recipes/cooks`,lastModified: now, changeFrequency: 'weekly',  priority: 0.6 },
-    { url: `${SITE_URL}/institutions`, lastModified: now, changeFrequency: 'weekly',  priority: 0.6 },
-    { url: `${SITE_URL}/coaching`,     lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${SITE_URL}/tech-roadmap`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${SITE_URL}/contribute`,   lastModified: now, changeFrequency: 'monthly', priority: 0.4 },
-    { url: `${SITE_URL}/live`,         lastModified: now, changeFrequency: 'weekly',  priority: 0.4 },
-    { url: `${SITE_URL}/privacy`,      lastModified: now, changeFrequency: 'yearly',  priority: 0.3 },
-    { url: `${SITE_URL}/terms`,        lastModified: now, changeFrequency: 'yearly',  priority: 0.3 },
-    { url: `${SITE_URL}/safety`,       lastModified: now, changeFrequency: 'yearly',  priority: 0.3 },
-    { url: `${SITE_URL}/exercises`,   lastModified: now, changeFrequency: 'weekly',  priority: 0.6 },
-    { url: `${SITE_URL}/workouts`,    lastModified: now, changeFrequency: 'weekly',  priority: 0.6 },
-    { url: `${SITE_URL}/demo`,        lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
-    // Feature module landing pages (from MODULES static list)
-    ...MODULES.map((m) => ({
-      url: `${SITE_URL}/features/${m.slug}`,
-      lastModified: now,
-      changeFrequency: 'monthly' as const,
-      priority: 0.8 as number,
-    })),
+  // Phase 2 of plan 31: each public route emits BOTH the canonical EN
+  // URL (un-prefixed) and an ES variant (/es/*), each with hreflang
+  // alternates pointing at the full language set. Google's spec: every
+  // URL entry in the sitemap must link to every language variant.
+  type StaticRoute = { path: string; changeFrequency: 'weekly' | 'monthly' | 'daily' | 'yearly'; priority: number };
+  const STATIC_PATHS: StaticRoute[] = [
+    { path: '/',               changeFrequency: 'weekly',  priority: 1.0 },
+    { path: '/pricing',        changeFrequency: 'monthly', priority: 0.9 },
+    { path: '/features',       changeFrequency: 'monthly', priority: 0.8 },
+    { path: '/academy',        changeFrequency: 'weekly',  priority: 0.8 },
+    { path: '/academy/paths',  changeFrequency: 'weekly',  priority: 0.7 },
+    { path: '/blog',           changeFrequency: 'daily',   priority: 0.8 },
+    { path: '/recipes',        changeFrequency: 'daily',   priority: 0.7 },
+    { path: '/recipes/cooks',  changeFrequency: 'weekly',  priority: 0.6 },
+    { path: '/institutions',   changeFrequency: 'weekly',  priority: 0.6 },
+    { path: '/coaching',       changeFrequency: 'monthly', priority: 0.5 },
+    { path: '/tech-roadmap',   changeFrequency: 'monthly', priority: 0.5 },
+    { path: '/contribute',     changeFrequency: 'monthly', priority: 0.4 },
+    { path: '/live',           changeFrequency: 'weekly',  priority: 0.4 },
+    { path: '/privacy',        changeFrequency: 'yearly',  priority: 0.3 },
+    { path: '/terms',          changeFrequency: 'yearly',  priority: 0.3 },
+    { path: '/safety',         changeFrequency: 'yearly',  priority: 0.3 },
+    { path: '/exercises',      changeFrequency: 'weekly',  priority: 0.6 },
+    { path: '/workouts',       changeFrequency: 'weekly',  priority: 0.6 },
+    { path: '/demo',           changeFrequency: 'monthly', priority: 0.5 },
+    ...MODULES.map((m) => ({ path: `/features/${m.slug}`, changeFrequency: 'monthly' as const, priority: 0.8 })),
   ];
+
+  function localizedUrl(path: string, locale: string): string {
+    // EN is the default locale — served at canonical URLs.
+    if (locale === 'en') return `${SITE_URL}${path}`;
+    // Avoid `/es//` when path = '/'.
+    return path === '/' ? `${SITE_URL}/${locale}` : `${SITE_URL}/${locale}${path}`;
+  }
+
+  function alternatesFor(path: string): { languages: Record<string, string> } {
+    const languages: Record<string, string> = {
+      'x-default': `${SITE_URL}${path}`,
+    };
+    for (const l of LOCALES) languages[l] = localizedUrl(path, l);
+    return { languages };
+  }
+
+  const staticRoutes: MetadataRoute.Sitemap = STATIC_PATHS.flatMap((r) =>
+    LOCALES.map((locale) => ({
+      url: localizedUrl(r.path, locale),
+      lastModified: now,
+      changeFrequency: r.changeFrequency,
+      priority: r.priority,
+      alternates: alternatesFor(r.path),
+    })),
+  );
 
   // ── Dynamic: public profiles ───────────────────────────────────────────────
   const { data: profiles } = await db

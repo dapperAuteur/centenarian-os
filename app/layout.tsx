@@ -69,17 +69,19 @@ export default async function RootLayout({
   // Load the three Phase-1 namespaces server-side and pass them to the
   // client LocaleProvider. Future phases extend this list as more
   // surfaces migrate. Total payload is ~1-2 KB gzipped per locale.
-  const [common, home, pricing] = await Promise.all([
+  const [common, home, pricing, blog, academy] = await Promise.all([
     getDictionary('common'),
     getDictionary('home'),
     getDictionary('pricing'),
+    getDictionary('blog'),
+    getDictionary('academy'),
   ]);
   // Construct the bundle as a plain object — a helper from the
   // 'use client' module would cross the RSC boundary and fail at
   // runtime ("call client function from server").
   const bundle: LocaleBundle = {
     locale,
-    dictionaries: { common, home, pricing },
+    dictionaries: { common, home, pricing, blog, academy },
   };
   return (
     <html lang={locale}>

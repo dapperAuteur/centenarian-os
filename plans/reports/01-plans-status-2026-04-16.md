@@ -1946,3 +1946,99 @@ Plan 31 recommended `next-intl` but allowed a custom fallback. Phase 1 ships in-
 | 38 classroom/family plan | blocked on demand |
 | BVC Episodes 2–7 / Season 2+3 | content exists; phased load |
 | Starter tier | shipped, 90-day monitoring |
+
+---
+
+## 34. Plan 31 Phase 2 shipped — prefixed locale URLs + per-URL hreflang — `feat/i18n-seo-phase-2`
+
+Adds the URL-scheme piece plan 31 originally recommended (prefixed `/en/*` + `/es/*`) via middleware rewrites rather than a full route-tree migration. Existing URLs keep working (English default, served canonically); new `/es/*` URLs render in Spanish. Search engines see two URL sets per page with mutual hreflang alternates.
+
+### 34.1 — Design choices
+
+- **Rewrite over redirect:** middleware rewrites `/es/pricing` internally to `/pricing`, sets `x-locale: es` on the request headers, and refreshes the locale cookie. The browser URL stays `/es/pricing`; the server renders the same components but `getLocale()` returns `'es'`. Zero page-tree duplication.
+- **EN is canonical un-prefixed:** every existing bookmark, share, and back-link keeps working and retains its link equity. ES URLs are the only ones that need the prefix.
+- **URL prefix wins over cookie:** if a user with cookie=en follows a link to `/es/pricing`, they see Spanish. Sender's explicit intent beats recipient's saved default.
+- **Sitemap emits both variants per route** with cross-linked hreflang alternates — what Google's spec asks for.
+
+### 34.2 — Files modified
+
+- [`middleware.ts`](../../middleware.ts):
+  - `LOCALE_PREFIX_RE` regex compiled at module load.
+  - First branch of `middleware()`: on a locale-prefixed URL, rewrite to the un-prefixed path + set `x-locale` header + refresh the cookie. Returns immediately.
+  - Early-return `NextResponse.next()` for public non-prefixed, non-auth routes so the Supabase auth call doesn't run for every marketing page.
+  - Matcher expanded to `['/((?!_next/static|_next/image|api/|favicon|.*\\..*).*)']`. Auth work stays pathname-gated.
+- [`lib/i18n/server.ts`](../../lib/i18n/server.ts):
+  - `getLocale()` priority: header → cookie → Accept-Language → default.
+  - `Namespace` union expanded to include `blog` + `academy`. DICTS map updated.
+- [`components/i18n/LanguageToggle.tsx`](../../components/i18n/LanguageToggle.tsx):
+  - Rewritten: navigates to the locale-prefixed URL instead of POST+refresh. Strips existing prefix, preserves query string. Middleware handles the cookie via the rewrite. Old POST endpoint stays for server-action use.
+- [`app/layout.tsx`](../../app/layout.tsx): bundles all five namespaces (common, home, pricing, blog, academy) into the `LocaleProvider` value.
+- [`app/sitemap.ts`](../../app/sitemap.ts): refactored static routes into `STATIC_PATHS` array; `localizedUrl(path, locale)` + `alternatesFor(path)` helpers emit one entry per locale per route with `x-default` + `en` + `es` alternates.
+
+### 34.3 — Files added
+
+- [`locales/en/blog.json`](../../locales/en/blog.json) + [`locales/es/blog.json`](../../locales/es/blog.json) — blog landing dictionary.
+- [`locales/en/academy.json`](../../locales/en/academy.json) + [`locales/es/academy.json`](../../locales/es/academy.json) — Academy catalog dictionary.
+
+### 34.4 — Behavior
+
+- `/es/pricing` → middleware rewrites to `/pricing` + sets `x-locale: es` + cookie → pricing page renders in Spanish.
+- `/pricing` (no prefix) → cookie or Accept-Language decides the locale.
+- Globe toggle on `/pricing` → navigates to `/es/pricing` (and back).
+- Bookmarked `/es/pricing` reloads in Spanish regardless of prior cookie.
+- Sitemap lists each public route twice, with mutual hreflang alternates.
+
+### 34.5 — What's NOT in Phase 2 (by design)
+
+Deferred to Phase 2B branches:
+
+- Full string migration of public blog, blog post detail, course detail, teacher profile, coaching, features pages. **Dictionaries now exist** for blog + academy; migrating the page JSX is an incremental per-file pass.
+- schema.org JSON-LD (Article, Course, Person, Recipe). Extend `lib/seo/json-ld.ts` in Phase 2B.
+- Per-locale OG image variants.
+- Human review of Spanish translations (still machine-style first pass).
+
+### 34.6 — Perf footprint
+
+Middleware now runs on every HTML URL. Added work: one regex match (~microseconds); for locale-prefixed URLs add a header clone + cookie set + internal rewrite; for non-prefixed non-auth URLs immediate `NextResponse.next()`. Auth flow unchanged — Supabase call still pathname-gated. No measurable overhead for non-auth routes.
+
+### 34.7 — Verification
+
+1. `/es/pricing` → URL stays, Spanish title + subtitle, `<html lang="es">`.
+2. `/pricing` fresh → English (or Spanish if Accept-Language=es).
+3. Cookie=es + `/pricing` → Spanish.
+4. Cookie=es + `/en/pricing` → English (URL prefix wins).
+5. Globe on `/pricing` → `/es/pricing`. Globe on `/es/pricing` → `/pricing`.
+6. `/pricing?from=signup` → `/es/pricing?from=signup` (query preserved).
+7. `/sitemap.xml` lists both variants per route with alternates.
+8. `/es/nonexistent` → 404 (rewrite to `/nonexistent`, normal 404).
+9. Auth flow: `/dashboard/planner` still redirects unauth to login; MFA unchanged.
+
+### 34.8 — Merge order
+
+1. Branch stacked on `feat/i18n-seo-phase-1`. Merge Phase 1 first if not yet.
+2. Merge `feat/i18n-seo-phase-2`.
+3. Resubmit sitemap in Google Search Console for re-crawl.
+
+### 34.9 — Remaining backlog
+
+| Plan | Status |
+|---|---|
+| 33 BVC Episode 1 Coffee | content loaded; owner to import + record audio |
+| 25 iOS validation pass | open — needs device |
+| 26 full | cancelled |
+| 30 Stripe fee calculator | shipped |
+| 31 i18n — Phase 1 | shipped |
+| **31 i18n — Phase 2** | **shipped this branch (prefixed URLs + sitemap hreflang)** |
+| 31 Phase 2B | follow-up (JSON-LD schema, per-locale OG, human ES review, page JSX migrations) |
+| 31 Phase 3 (authenticated app) | follow-up |
+| 31 Phase 4 (emails + errors + legal) | follow-up |
+| 32 admin email verification | shipped |
+| 34 magic-link auth — Phase A | shipped |
+| 34 Phase B/C/D | follow-up |
+| 35 completion certificates | shipped (server-side + verify page); UI integrations under owner review |
+| 36 teacher analytics heatmap | shipped |
+| 37 a11y axe-core CI (Phase A) | shipped, baseline mode |
+| 37 Phase B | follow-up |
+| 38 classroom/family plan | blocked on demand |
+| BVC Episodes 2–7 / Season 2+3 | content exists; phased load |
+| Starter tier | shipped, 90-day monitoring |
