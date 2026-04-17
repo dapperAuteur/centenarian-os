@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { MODULES } from '@/lib/features/modules';
+import { LOCALES } from '@/lib/i18n/config';
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL
   ? `https://${process.env.NEXT_PUBLIC_APP_URL.replace(/^https?:\/\//, '')}`

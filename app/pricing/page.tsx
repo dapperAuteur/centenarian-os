@@ -16,6 +16,7 @@ import PageViewTracker from '@/components/ui/PageViewTracker';
 import Modal from '@/components/ui/Modal';
 import StarterModulePicker, { type BillingCadence, type PickerMode } from '@/components/pricing/StarterModulePicker';
 import type { ModuleSlug } from '@/lib/access/starter-modules';
+import { useTranslations } from '@/lib/i18n/client';
 
 function FromSignupBanner() {
   const searchParams = useSearchParams();
@@ -54,6 +55,7 @@ const POLICIES = 'No Refunds. Cancel Anytime. Monthly fees are not transferable 
 export default function PricingPage() {
   const { user } = useAuth();
   const { status: subStatus, selectedModules: currentModules, refresh: refreshSubscription } = useSubscription();
+  const t = useTranslations('pricing');
   const [loadingPlan, setLoadingPlan] = useState<'monthly' | 'lifetime' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
@@ -246,10 +248,10 @@ export default function PricingPage() {
 
         <div className="text-center mb-12">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-4">
-            Simple, Transparent Pricing
+            {t('hero.title')}
           </h1>
           <p className="text-lg text-gray-600">
-            Choose a plan and unlock your full personal operating system.
+            {t('hero.subtitle')}
           </p>
         </div>
 

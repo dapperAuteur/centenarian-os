@@ -1843,3 +1843,106 @@ Each phase is its own deploy + watch. Phase A is conservative — no user is for
 | 38 classroom/family plan | blocked on demand |
 | BVC Episodes 2–7 / Season 2+3 | content exists; phased load |
 | Starter tier | shipped, 90-day monitoring |
+
+---
+
+## 33. Plan 31 Phase 1 shipped — i18n infra + SEO hreflang — `feat/i18n-seo-phase-1`
+
+Proof-of-concept i18n on home + pricing with cookie-based locale switching. Infrastructure is hand-rolled (no `next-intl`) to avoid a big npm dependency for Phase 1 — if Phase 2+ needs richer features (ICU pluralization, relative-time formatting), migrate then.
+
+**Scope choice:** plan 31 recommended prefixed URLs (`/en/*`, `/es/*`) for SEO. Phase 1 ships cookie-based detection instead — preserves every existing URL, proves the pattern on one surface, and defers the URL-scheme migration to Phase 2 when multiple surfaces are ready to switch at once. hreflang alternates are still set at the root; SEO juice stays with the canonical URLs for now.
+
+### 33.1 — Files added
+
+- [`lib/i18n/config.ts`](../../lib/i18n/config.ts) — `LOCALES`, `DEFAULT_LOCALE`, `LOCALE_COOKIE`, `isSupportedLocale`, `pickLocaleFromAcceptLanguage`, `LOCALE_LABELS`. Minimal constants module so a future next-intl migration only has to remap a few names.
+- [`lib/i18n/server.ts`](../../lib/i18n/server.ts) — `getLocale()` reads cookie first → Accept-Language fallback → `DEFAULT_LOCALE`. `getTranslations(namespace)` returns a `t(key)` function with English-fallback-then-key-self chain so missing keys never render as `undefined`. `getDictionary(namespace)` returns the merged EN+target dict for bundle-into-client use. Marked `'server-only'`.
+- [`lib/i18n/client.tsx`](../../lib/i18n/client.tsx) — `<LocaleProvider>` React context, `useLocale()`, `useTranslations(namespace)`, `buildLocaleBundle()` helper. Server layout resolves, client components consume. ~1 KB gzipped total per locale payload.
+- `locales/en/{common,home,pricing}.json` — authoritative English copy.
+- `locales/es/{common,home,pricing}.json` — first-pass Spanish translations (machine-style; human review recommended per plan 31 §6).
+- [`components/i18n/LanguageToggle.tsx`](../../components/i18n/LanguageToggle.tsx) — dropdown (Globe icon + EN/ES). POSTs choice to `/api/i18n/set-locale`, then `router.refresh()` so the server layout re-renders with the new cookie.
+- [`app/api/i18n/set-locale/route.ts`](../../app/api/i18n/set-locale/route.ts) — POST endpoint. Validates against `LOCALES`, writes `centos_locale` cookie with 1-year TTL, path=/, SameSite=Lax.
+
+### 33.2 — Files modified
+
+- [`app/layout.tsx`](../../app/layout.tsx):
+  - `RootLayout` is now async — `await getLocale()` + dictionary loads.
+  - `<html lang="en">` → `<html lang={locale}>`.
+  - Wraps `ToastProvider` in `<LocaleProvider value={bundle}>` so every nested client component gets the dictionaries.
+  - Added `alternates.languages` to the site metadata so the home page emits `<link rel="alternate" hreflang="en"...>` + `es` + `x-default`. Phase 1 points all three to the same URL (cookie-based); Phase 2 will point to prefixed URLs.
+- [`app/page.tsx`](../../app/page.tsx):
+  - `useTranslations('home')` + `useLocale()` hooks.
+  - Hero subtitle + three CTA buttons (Start Your Journey / Try the Demo / View Tech Roadmap) now use translation keys.
+  - `<LanguageToggle>` added to the desktop nav after the primary CTA.
+- [`app/pricing/page.tsx`](../../app/pricing/page.tsx): `useTranslations('pricing')` hook; `<h1>` title and subtitle use translation keys. (Other copy on this page remains English — scope trim for Phase 1.)
+- [`app/sitemap.ts`](../../app/sitemap.ts) — imports `LOCALES` for future hreflang expansion; existing 200+-route sitemap untouched. Per-URL language alternates come in Phase 2 when URL scheme changes.
+
+### 33.3 — Behavior
+
+- Fresh visitor with `Accept-Language: es-MX,es;q=0.9,en;q=0.8` → home renders in Spanish, `<html lang="es">`.
+- Visitor clicks the Globe → dropdown → "English" → cookie set → page refresh → home renders in English.
+- Cookie persists across sessions (1-year TTL). Logged-in and anonymous users both see the same locale behavior.
+- Existing URLs unchanged. Search engines see hreflang alternates at the site level pointing to the same canonical URLs — acceptable for Phase 1, replaced with prefixed alternates in Phase 2.
+- All dashboard / teacher / academy routes stay English-only for now. The infrastructure is ready to extend them; scope creep is the only obstacle.
+
+### 33.4 — Deferred to Phase 2 (per plan 31 §3)
+
+- Prefixed URL scheme (`/en/*`, `/es/*`) with middleware-based locale routing.
+- Migration of public blog, recipes, academy catalog, course detail, teacher profile, coaching, features pages.
+- schema.org/Article, schema.org/Course JSON-LD generation per locale.
+- OG image variants per locale.
+- Human review of Spanish translations.
+
+### 33.5 — Deferred to Phase 3
+
+Dashboard authenticated surfaces — largest string count, ~70% of the app.
+
+### 33.6 — Deferred to Phase 4
+
+Error boundaries, transactional emails, legal pages.
+
+### 33.7 — Migration note — why in-house not next-intl
+
+Plan 31 recommended `next-intl` but allowed a custom fallback. Phase 1 ships in-house because:
+
+- No new npm dependency needed (owner's school network blocks npm; every new package adds a delay to local dev feedback).
+- Phase 1 strings are static — we don't need `next-intl`'s richer features (ICU pluralization, date/number formatting, namespace auto-splitting) yet.
+- The API surface (`useTranslations`, `getLocale`, `getTranslations`) mirrors `next-intl`'s so a swap in Phase 2+ is a 1-hour refactor, not a rewrite.
+
+### 33.8 — Merge order
+
+1. Branch is off main. No migrations, no env vars.
+2. Merge `feat/i18n-seo-phase-1` to main.
+3. Watch for ~48 hours for any server-component render regressions before opening Phase 2.
+
+### 33.9 — Verification
+
+1. Fresh Incognito with browser language Spanish → visit `/` → Spanish copy + `<html lang="es">`.
+2. Click the Globe in the top nav → select "English" → page reloads in English.
+3. Cookie inspection: `centos_locale=en`, Max-Age=31536000.
+4. Visit `/pricing` in Spanish → heading and subtitle translated; rest of the page remains English (Phase 1 scope).
+5. View-source on `/` → `<link rel="alternate" hreflang="en" ... />` + `es` + `x-default` in `<head>`.
+6. `Accept-Language: es` + no cookie → Spanish.
+7. `Accept-Language: en` + cookie `centos_locale=es` → Spanish (cookie has priority).
+
+### 33.10 — Remaining backlog
+
+| Plan | Status |
+|---|---|
+| 33 BVC Episode 1 Coffee | content loaded; owner to import + record audio |
+| 25 iOS validation pass | open — needs device |
+| 26 full | cancelled |
+| 30 Stripe fee calculator | shipped |
+| **31 i18n + SEO — Phase 1** | **shipped this branch** |
+| 31 Phase 2 (public surfaces, prefixed URLs) | follow-up |
+| 31 Phase 3 (authenticated app) | follow-up |
+| 31 Phase 4 (emails + errors + legal) | follow-up |
+| 32 admin email verification | shipped |
+| 34 magic-link auth — Phase A | shipped |
+| 34 Phase B/C/D | follow-up after Phase A watch window |
+| 35 completion certificates | server-side + verify page shipped; UI integrations under owner review |
+| 36 teacher analytics heatmap | shipped |
+| 37 a11y axe-core CI (Phase A) | shipped, baseline mode |
+| 37 Phase B | follow-up |
+| 38 classroom/family plan | blocked on demand |
+| BVC Episodes 2–7 / Season 2+3 | content exists; phased load |
+| Starter tier | shipped, 90-day monitoring |
