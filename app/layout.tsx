@@ -10,6 +10,9 @@ import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 import SocialReferralTracker from '@/components/SocialReferralTracker';
 import { ToastProvider } from '@/components/ui/ToastProvider';
 import { organizationSchema, softwareApplicationSchema } from '@/lib/seo/json-ld';
+import { getLocale, getDictionary } from '@/lib/i18n/server';
+import { LocaleProvider } from '@/lib/i18n/client';
+import type { LocaleBundle } from '@/lib/i18n/config';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -38,6 +41,16 @@ export const metadata: Metadata = {
     description: 'Multi-decade personal operating system for executing audacious goals through data-driven daily habits',
     images: [`${SITE_URL}/api/og/default`],
   },
+  alternates: {
+    canonical: SITE_URL,
+    // Plan 31 Phase 1 — hreflang for EN + ES. Phase 2 will expand to
+    // per-page canonicals (blog posts, academy courses).
+    languages: {
+      en: SITE_URL,
+      es: SITE_URL,
+      'x-default': SITE_URL,
+    },
+  },
 };
 
 // Viewport must be a separate export in Next.js 15+
@@ -47,13 +60,29 @@ export const viewport: Viewport = {
   maximumScale: 5, // Allow zoom for accessibility
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
+  // Load the three Phase-1 namespaces server-side and pass them to the
+  // client LocaleProvider. Future phases extend this list as more
+  // surfaces migrate. Total payload is ~1-2 KB gzipped per locale.
+  const [common, home, pricing] = await Promise.all([
+    getDictionary('common'),
+    getDictionary('home'),
+    getDictionary('pricing'),
+  ]);
+  // Construct the bundle as a plain object — a helper from the
+  // 'use client' module would cross the RSC boundary and fail at
+  // runtime ("call client function from server").
+  const bundle: LocaleBundle = {
+    locale,
+    dictionaries: { common, home, pricing },
+  };
   return (
-    <html lang="en">
+    <html lang={locale}>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0d9488" />
@@ -67,8 +96,9 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
-        <ToastProvider>
-          {children}
+        <LocaleProvider value={bundle}>
+          <ToastProvider>
+            {children}
           <SocialReferralTracker />
           <Analytics />
           {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL || process.env.UMAMI_HOST_URL) && (
@@ -80,7 +110,8 @@ export default function RootLayout({
             />
           )}
           <ServiceWorkerRegistration />
-        </ToastProvider>
+          </ToastProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

@@ -1,0 +1,15 @@
+{
+  "nav.home": "Home",
+  "nav.pricing": "Pricing",
+  "nav.academy": "Academy",
+  "nav.blog": "Blog",
+  "nav.recipes": "Recipes",
+  "nav.coaching": "Coaching",
+  "nav.techRoadmap": "Tech Roadmap",
+  "nav.login": "Log in",
+  "nav.signup": "Sign up",
+  "language.toggle.aria": "Change language",
+  "language.toggle.current": "Current language: {locale}",
+  "language.en": "English",
+  "language.es": "Spanish"
+}

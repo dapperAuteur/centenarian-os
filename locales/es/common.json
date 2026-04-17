@@ -1,0 +1,15 @@
+{
+  "nav.home": "Inicio",
+  "nav.pricing": "Precios",
+  "nav.academy": "Academia",
+  "nav.blog": "Blog",
+  "nav.recipes": "Recetas",
+  "nav.coaching": "Entrenamiento",
+  "nav.techRoadmap": "Hoja de ruta técnica",
+  "nav.login": "Iniciar sesión",
+  "nav.signup": "Registrarse",
+  "language.toggle.aria": "Cambiar idioma",
+  "language.toggle.current": "Idioma actual: {locale}",
+  "language.en": "Inglés",
+  "language.es": "Español"
+}

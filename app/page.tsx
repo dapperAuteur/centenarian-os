@@ -6,14 +6,20 @@ import { useState } from 'react';
 import SiteFooter from '@/components/ui/SiteFooter';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { MODULES } from '@/lib/features/modules';
+import { useTranslations, useLocale } from '@/lib/i18n/client';
+import LanguageToggle from '@/components/i18n/LanguageToggle';
+import { DEFAULT_LOCALE } from '@/lib/i18n/config';
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, loading: authLoading } = useAuth();
   const isLoggedIn = !authLoading && !!user;
 
+  const t = useTranslations('home');
+  const locale = useLocale() ?? DEFAULT_LOCALE;
+
   const dashboardHref = '/dashboard';
-  const primaryLabel = isLoggedIn ? 'Go to Dashboard' : 'Get Started';
+  const primaryLabel = isLoggedIn ? t('hero.cta.primary.loggedIn') : t('hero.cta.primary');
   const primaryHref = isLoggedIn ? dashboardHref : '/pricing';
 
   return (
@@ -70,6 +76,7 @@ export default function LandingPage() {
               >
                 {primaryLabel}
               </Link>
+              <LanguageToggle currentLocale={locale} />
             </div>
 
             {/* Mobile Menu Button */}
@@ -171,7 +178,7 @@ export default function LandingPage() {
             Turn <span className="text-transparent bg-clip-text bg-linear-to-r from-fuchsia-600 to-sky-600">Multi-Decade Goals</span> Into Daily Action
           </h1>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 px-2">
-            The personal operating system for executing audacious, long-term goals through data-driven daily habits. Plan, fuel, track, and iterate—all in one place.
+            {t('hero.subtitle')}
           </p>
 
           {/* Buttons - Stack on mobile, wrap on tablet+ */}
@@ -180,20 +187,20 @@ export default function LandingPage() {
               href={primaryHref}
               className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors font-semibold text-base sm:text-lg flex items-center justify-center"
             >
-              {isLoggedIn ? 'Go to Dashboard' : 'Start Your Journey'}
+              {primaryLabel}
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
             <Link
               href="/demo"
               className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-white border-2 border-fuchsia-300 text-fuchsia-700 rounded-lg hover:bg-fuchsia-50 transition-colors font-semibold text-base sm:text-lg text-center"
             >
-              Try the Demo
+              {t('hero.cta.demo')}
             </Link>
             <Link
               href="/tech-roadmap"
               className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:border-gray-400 transition-colors font-semibold text-base sm:text-lg text-center"
             >
-              View Tech Roadmap
+              {t('hero.cta.roadmap')}
             </Link>
           </div>
         </div>
