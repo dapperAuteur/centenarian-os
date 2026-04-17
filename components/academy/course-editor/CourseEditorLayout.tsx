@@ -9,7 +9,7 @@ import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Link from 'next/link';
 import {
   ChevronLeft, Loader2, Save, Globe, EyeOff, GitBranch,
-  ClipboardList,
+  ClipboardList, Users,
 } from 'lucide-react';
 
 import CourseInfoTab from './CourseInfoTab';
@@ -142,6 +142,12 @@ export default function CourseEditorLayout({ courseId }: Props) {
         <div className="flex flex-wrap items-center gap-2">
           {saving && <Loader2 className="w-4 h-4 animate-spin text-gray-500" />}
           {feedback && <p className="text-sm text-green-400">{feedback}</p>}
+          <Link
+            href={`/dashboard/teaching/courses/${courseId}/cohort`}
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-gray-800 text-gray-300 rounded-xl text-sm hover:bg-gray-700 transition min-h-11"
+          >
+            <Users className="w-3.5 h-3.5" aria-hidden="true" /> Cohort
+          </Link>
           <Link
             href={`/dashboard/teaching/courses/${courseId}/assignments`}
             className="flex items-center gap-1.5 px-3 py-2.5 bg-gray-800 text-gray-300 rounded-xl text-sm hover:bg-gray-700 transition min-h-11"

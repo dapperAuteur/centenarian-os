@@ -1585,3 +1585,92 @@ Budget ~1 day for remediation after the baseline scan, same day as the install.
 | 38 classroom/family plan | blocked on demand |
 | BVC Episodes 2–7 / Season 2+3 | content exists; phased load |
 | Starter tier | shipped, 90-day monitoring |
+
+---
+
+## 30. Plan 36 shipped — teacher cohort heatmap — `feat/teacher-cohort-heatmap`
+
+Students × lessons grid on the teacher course page so an instructor can see where a cohort is stuck at a glance. Ships per plan 36 §2 (scope) + §3 (data shape) + §5 (UI component) + §6 (mount point).
+
+### 30.1 — Files added
+
+- [`app/api/academy/courses/[id]/cohort/route.ts`](../../app/api/academy/courses/%5Bid%5D/cohort/route.ts) — GET aggregate endpoint. Teacher-ownership or admin-bypass gated. Returns `{ course, students[], lessons[], progress[], summary }`:
+  - `students`: enrollment rows joined to profiles, preserving enrolled-at order.
+  - `lessons`: the course's lessons sorted by `order`.
+  - `progress`: **full grid emission** (student × lesson rows, with synthetic `not_started` cells for missing progress rows). Keeps the client render simple — no missing-cell handling. ≤ 200 students × 20 lessons = 4,000 rows, cheap.
+  - `summary`: `enrolled_count`, `active_count`, `avg_completion_pct`, `median_time_to_complete_days` (among students who finished every lesson), `most_stuck_lesson_id` (fewest completions, ties broken by earliest order).
+  - Single round-trip per entity (enrollments / lessons / progress / profiles), all in parallel via `Promise.all`.
+- [`components/academy/teacher/CohortHeatmap.tsx`](../../components/academy/teacher/CohortHeatmap.tsx) — presentational. Sticky-left student-name column, scrolling lesson columns on mobile. Cell states: gray (not started) / amber (in progress) / green (completed), with a quiz-score overlay on quiz cells. `role="grid"` on the table, `role="gridcell"` + `aria-label` on each cell so screen readers announce "{student}: {lesson} — {state}". The most-stuck lesson's column header gets a subtle red tint. Uses a `useMemo`-cached lookup map for O(1) cell access during render.
+- [`app/dashboard/teaching/courses/[id]/cohort/page.tsx`](../../app/dashboard/teaching/courses/%5Bid%5D/cohort/page.tsx) — client page. Fetches the endpoint, renders loader / error / empty-state / heatmap. Summary-stat cards above the grid. "Export CSV" button: builds a local CSV of rows = students, columns = lessons, cells = `'' | 'in_progress' | 'completed' | 'completed (78%)'` (for quizzes). Filename: `{course-slug}-cohort-{date}.csv`.
+
+### 30.2 — Files modified
+
+- [`components/academy/course-editor/CourseEditorLayout.tsx`](../../components/academy/course-editor/CourseEditorLayout.tsx) — action bar gains a "Cohort" link (Users icon) before Assignments + Preview. One line of nav, zero interference with existing tab state.
+
+### 30.3 — Behavior
+
+- Teacher visits `/dashboard/teaching/courses/{id}` → clicks "Cohort" in the header action bar.
+- Cohort page loads → fetches `/api/academy/courses/{id}/cohort` → renders summary cards + heatmap + legend.
+- Rows = enrolled students (cancelled enrollments are 50% opacity, labeled "cancelled").
+- Columns = lessons in order. Lesson with the fewest completions gets a red-tinted header.
+- Each cell: green if that student completed that lesson (with checkmark icon), amber if started (clock icon), gray if not started (circle icon). Quiz cells show the numeric score instead of an icon.
+- Hover any cell → tooltip with student name, lesson title, state, completion date (for completed) or score (for quizzes).
+- Click "Export CSV" → downloads the full grid for offline analysis (Excel / Sheets).
+
+### 30.4 — Empty states + edge cases
+
+- No students yet: heatmap hides; summary cards + an "Award" empty-state replace the grid with copy nudging the teacher to wait for enrollments.
+- No lessons yet: course has no structure to rank students against; we still render the students column, and `most_stuck_lesson_id` is null.
+- A student with a re-enrollment (`attempt_number > 1`): row shows "attempt 2" in a small subtitle.
+- Quiz cells: if the student has a `quiz_score`, we render that number instead of the state icon — teachers see completion AND performance at a glance.
+
+### 30.5 — Performance
+
+- Single course load. Endpoint does 4 queries in parallel (enrollments, lessons, lesson_progress, profiles). No N+1.
+- Client render: `useMemo`-cached lookup map built once from the flat progress array. O(students × lessons) render without re-mapping every cell.
+- Scale ceiling: plan 36 noted "cap initial query at 200 students." BVC is nowhere near that; defer pagination until it matters.
+
+### 30.6 — Out of scope (future)
+
+Per plan 36 §2:
+
+- Per-question quiz analytics (which questions most missed). Separate plan.
+- Engagement predictions / ML. Premature.
+- Email-student-nudge-on-stuck. Separate plan; needs opt-in design.
+- Attempt-history view (see student's earlier attempts). Currently collapses to latest.
+
+### 30.7 — Merge order
+
+1. Branch is off main. No plan dependencies.
+2. No migrations, no env vars, no API dependencies.
+3. Merge `feat/teacher-cohort-heatmap`.
+
+### 30.8 — Verification
+
+1. As teacher with a course that has ≥ 1 enrolled student → visit `/dashboard/teaching/courses/{id}/cohort` (or click "Cohort" from the course editor header).
+2. Summary stats render (enrolled count, avg completion, median time, most-stuck lesson).
+3. Heatmap shows one row per student, one column per lesson.
+4. Hover a cell → tooltip with full student-lesson-state description.
+5. Click "Export CSV" → downloads `{course-slug}-cohort-{date}.csv`; opens in Sheets with one row per student + one column per lesson.
+6. Empty-state: create a new course with no enrollments → visit cohort page → Award icon + "No enrolled students yet" copy.
+7. As non-owner (different teacher) → visit the same URL → 403.
+8. Mobile viewport → student-name column stays pinned, lesson columns scroll horizontally.
+
+### 30.9 — Remaining backlog
+
+| Plan | Status |
+|---|---|
+| 33 BVC Episode 1 Coffee | content loaded; owner to import + record audio |
+| 25 iOS validation pass | open — needs device |
+| 26 full | cancelled |
+| 30 Stripe fee calculator | shipped |
+| 31 i18n EN+ES + SEO | phased |
+| 32 admin email verification | shipped |
+| 34 Magic-link auth migration | backlog stub |
+| 35 completion certificates | server-side + verify page shipped; UI integrations under owner review |
+| **36 teacher analytics heatmap** | **shipped this branch** |
+| 37 a11y axe-core CI (Phase A) | shipped, baseline mode |
+| 37 Phase B | follow-up |
+| 38 classroom/family plan | blocked on demand |
+| BVC Episodes 2–7 / Season 2+3 | content exists; phased load |
+| Starter tier | shipped, 90-day monitoring |
