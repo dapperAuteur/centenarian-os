@@ -7,7 +7,9 @@
     "prebuild": "node scripts/generate-content-manifest.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:a11y": "playwright test --config=playwright.a11y.config.ts",
+    "test:a11y:baseline": "SKIP_ENFORCEMENT=1 playwright test --config=playwright.a11y.config.ts"
   },
   "dependencies": {
     "@ericblade/quagga2": "^1.8.4",
@@ -62,7 +64,9 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.0",
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.48.0",
     "@tailwindcss/postcss": "^4.1.14",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^20",

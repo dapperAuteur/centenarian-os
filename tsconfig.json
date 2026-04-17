@@ -38,6 +38,8 @@
     "node_modules",
     ".next",
     "supabase",
-    "docs"
+    "docs",
+    "tests",
+    "playwright.a11y.config.ts"
   ]
 }

@@ -1488,3 +1488,100 @@ Owner-requested quick win from earlier session ("add a live fee calculator to th
 | 38 classroom/family plan | blocked on demand |
 | BVC Episodes 2–7 / Season 2+3 | content exists; phased load |
 | Starter tier | shipped, 90-day monitoring |
+
+---
+
+## 29. Plan 37 Phase A shipped — a11y axe-core CI — `feat/a11y-axe-core-ci`
+
+Ships the scaffolding for the accessibility smoke suite described in plan 37: 10 public routes, axe-core rules for WCAG 2.1 A + AA, GitHub Actions on every PR + push to main. **Baseline mode** (non-blocking) at launch so the owner can run the initial scan and triage violations without PRs failing in the interim. Flip to enforcing mode once critical/serious count is zero on main.
+
+### 29.1 — Files added
+
+- [`tests/a11y/routes.spec.ts`](../../tests/a11y/routes.spec.ts) — Playwright spec. 10 tests, one per route: `/`, `/pricing`, `/signup`, `/login`, `/academy`, `/recipes`, `/blog`, `/coaching`, `/features`, `/tech-roadmap`. Each loads the route with `waitUntil: 'networkidle'`, runs `AxeBuilder({ page }).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa']).analyze()`, and asserts zero critical + zero serious violations unless `SKIP_ENFORCEMENT=1` is set (baseline mode). Every violation logs the `id`, `help`, `helpUrl`, and first 3 selectors for quick triage.
+- [`playwright.a11y.config.ts`](../../playwright.a11y.config.ts) — scoped Playwright config. Chromium desktop only, 60s timeout, `retain-on-failure` traces + screenshots, HTML report at `playwright-report/a11y/`. Excluded from main tsconfig because `@playwright/test` isn't installed yet.
+- [`.github/workflows/a11y.yml`](../../.github/workflows/a11y.yml) — GitHub Actions. Runs on every PR to main, every push to main, and on-demand via `workflow_dispatch` with an `enforce` input. Installs deps via `npm ci`, installs Chromium with `--with-deps`, runs `npm run build` + `npm run start`, waits on `http://localhost:3000` via `wait-on`, then runs the suite. Uploads the HTML report as an artifact (7-day retention). **Currently marked `continue-on-error: true`** — does not block PRs yet. Flip to `false` after the baseline scan is clean on main.
+- [`tests/a11y/README.md`](../../tests/a11y/README.md) — local-run instructions, scope documentation, how to add routes, how to graduate from baseline to enforcing.
+
+### 29.2 — Files modified
+
+- [`package.json`](../../package.json):
+  - New devDeps: `@axe-core/playwright` (`^4.10.0`), `@playwright/test` (`^1.48.0`).
+  - New scripts:
+    - `test:a11y` — enforcing run.
+    - `test:a11y:baseline` — logs violations without failing, for the first-run triage.
+- [`tsconfig.json`](../../tsconfig.json) — added `tests` and `playwright.a11y.config.ts` to `exclude` so the main tsc run doesn't require `@playwright/test` to resolve. Test suite has its own toolchain (Playwright's own tsc-equivalent + Node runtime); no shared inclusion needed.
+
+### 29.3 — Behavior
+
+**Before install:**
+- `npx tsc --noEmit --skipLibCheck` passes as before — tests/ and the playwright config are excluded.
+- `npm run test:a11y` errors "missing module @playwright/test" until `npm install` runs. Expected.
+
+**After first install (owner runs from home):**
+- Owner runs `npx playwright install --with-deps chromium` one-time.
+- `npm run dev` (terminal 1) + `npm run test:a11y:baseline` (terminal 2) produces the first violation list. Console output groups by route with impact + rule id + selector + help URL.
+- Owner triages: every critical + serious item gets a branch + fix. Each fix lands via the normal branch-per-change flow (STYLE_GUIDE §1), and the report gets a new section per STYLE_GUIDE §5a.
+
+**Once critical + serious count is zero on main:**
+- Flip the `continue-on-error: true` line in `.github/workflows/a11y.yml` to `false` (or delete the line). PRs now block on a11y regressions.
+- Triage moderate + minor violations at a slower cadence.
+
+### 29.4 — What's NOT covered (Phase B)
+
+Per plan 37:
+- Authenticated surfaces (`/dashboard`, `/dashboard/teaching/*`, lesson pages). Need a scripted-login Playwright fixture.
+- Mobile viewport matrix (iPhone SE, iPad).
+- Interactive states: modal open, dropdown expanded, dark-mode toggle on, reduced-motion.
+- Keyboard-only navigation recording.
+- Lighthouse / PWA / perf scoring.
+- Storybook component-level a11y.
+
+All of those are worth building in a follow-up when the Phase A baseline is stable.
+
+### 29.5 — Merge order
+
+1. Branch is off `main` post-Stripe-fee-calculator merge. No plan dependencies.
+2. Merge `feat/a11y-axe-core-ci` to `main`.
+3. CI workflow runs on the merge commit in baseline mode — produces the first violation report as an artifact.
+4. Owner downloads the artifact, triages, and opens remediation branches.
+
+### 29.6 — Verification (once install runs)
+
+1. `npm install` — verifies deps resolve.
+2. `npx playwright install --with-deps chromium` — verifies browser binary installs.
+3. `npm run dev` — server up.
+4. `npm run test:a11y:baseline` — suite runs, lists violations per route, does not fail.
+5. `npm run test:a11y` — suite runs, fails with specific violation messages if any critical/serious.
+6. Deliberate regression (e.g., add `<button aria-label="">` without a label) → enforcing run fails with a specific rule id pointing at the selector.
+7. GitHub Actions run: PR opens → `Accessibility` workflow runs → artifact uploaded.
+
+### 29.7 — Expected baseline violations
+
+Predicted hot spots (spot-check intuition, not a real scan):
+
+- Teacher editor is the most-touched UI with the most recent contrast sweeps — likely some residual dark-on-dark placeholders.
+- PSV video player has color-only state indicators.
+- Radio groups in quiz UI may be missing `<fieldset>`/`<legend>`.
+- Pricing page's Starter card uses sky-300 on white — check contrast ratio.
+- Landing page's colored section headers may need darker variants.
+
+Budget ~1 day for remediation after the baseline scan, same day as the install.
+
+### 29.8 — Remaining backlog (after §29)
+
+| Plan | Status |
+|---|---|
+| 33 BVC Episode 1 Coffee | content loaded; owner to import + record audio |
+| 25 iOS validation pass | open — needs device |
+| 26 full | cancelled |
+| 30 Stripe fee calculator | shipped |
+| 31 i18n EN+ES + SEO | phased |
+| 32 admin email verification | shipped |
+| 34 Magic-link auth migration | backlog stub |
+| 35 completion certificates | backlog, 2–3 days |
+| 36 teacher analytics heatmap | backlog, 1–2 days |
+| **37 a11y axe-core CI (Phase A)** | **shipped this branch, baseline mode** |
+| 37 Phase B (auth routes, mobile, interactive states) | follow-up |
+| 38 classroom/family plan | blocked on demand |
+| BVC Episodes 2–7 / Season 2+3 | content exists; phased load |
+| Starter tier | shipped, 90-day monitoring |
