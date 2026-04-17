@@ -1,5 +1,8 @@
 'use client';
 
+import { useState } from 'react';
+import StripeFeeBreakdown from '@/components/ui/StripeFeeBreakdown';
+
 interface Course {
   id: string;
   title: string;
@@ -26,6 +29,13 @@ interface TabProps {
 }
 
 export default function PricingAccessTab({ course, saveCourseField }: TabProps) {
+  // Local state drives the live fee breakdown as the user types.
+  // Save still happens on blur via the existing saveCourseField path;
+  // this state is preview-only and re-syncs to the server value on mount.
+  const [priceDraft, setPriceDraft] = useState<string>(String(course.price ?? 0));
+  const draftAmount = Number.parseFloat(priceDraft);
+  const cycle: 'one_time' | 'monthly' = course.price_type === 'subscription' ? 'monthly' : 'one_time';
+
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -43,13 +53,18 @@ export default function PricingAccessTab({ course, saveCourseField }: TabProps) 
         </div>
         {course.price_type !== 'free' && (
           <div>
-            <label className="block text-sm text-gray-200 mb-1.5">Price ($)</label>
+            <label className="block text-sm text-gray-200 mb-1.5" htmlFor="course-price-input">Price ($)</label>
             <input
+              id="course-price-input"
               type="number"
-              defaultValue={course.price}
+              step="0.01"
+              min="0"
+              value={priceDraft}
+              onChange={(e) => setPriceDraft(e.target.value)}
               onBlur={(e) => saveCourseField({ price: Number(e.target.value) })}
               className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
             />
+            <StripeFeeBreakdown amount={draftAmount} cycle={cycle} theme="dark" />
           </div>
         )}
       </div>
