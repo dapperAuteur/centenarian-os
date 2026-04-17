@@ -186,3 +186,9 @@ plans/
 
 .claude
 
+# Playwright output — per-run artifacts. CI already uploads the HTML
+# report as a 7-day GitHub Actions artifact; local runs regenerate
+# every time. Shouldn't land in git.
+playwright-report/
+test-results/
+
