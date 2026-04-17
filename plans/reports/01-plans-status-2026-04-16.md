@@ -1414,3 +1414,77 @@ No workflow changes needed. Revisit if multiple teachers need to co-author simul
 | BVC Episodes 2–7 Season 1 | content exists; load after Episode 1 validates |
 | BVC Season 2 + 3 | content exists; load after Season 1 ships |
 | Starter tier | shipped, 90-day monitoring |
+
+---
+
+## 28. Plan 30 shipped — Stripe fee calculator — `feat/stripe-fee-calculator`
+
+Owner-requested quick win from earlier session ("add a live fee calculator to the course form everywhere a user sets the price of a product"). Plan 30 scoped it to a pure-component breakdown wired first into the teacher course-editor. Shipped as designed.
+
+### 28.1 — Files added
+
+- [`components/ui/StripeFeeBreakdown.tsx`](../../components/ui/StripeFeeBreakdown.tsx) — pure functional component. Props: `{ amount, cycle?, theme?, compact? }`. Returns `null` for zero/non-positive/non-numeric amounts so the host UI stays clean pre-input. Renders:
+  - `Customer pays: $X.XX[/cycle]`
+  - `Stripe fee (2.9% + $0.30): −$X.XX`
+  - `You receive: $X.XX[/cycle]`
+  - Loss banner with AlertTriangle when fee exceeds price (e.g., a $0.30 listing → $-0.01 net).
+  - `aria-live="polite"` on the container so screen readers announce recalculations. Labeled as a description list (`<dl>`/`<dt>`/`<dd>`).
+  - `theme` prop (`'light' | 'dark'`) adapts colors for the teacher editor's dark theme vs. light-theme surfaces elsewhere.
+  - `cycle` prop suffixes `/month` or `/year` on subscription courses so teachers see fee compounds per billing cycle.
+
+### 28.2 — Files modified
+
+- [`components/academy/course-editor/PricingAccessTab.tsx`](../../components/academy/course-editor/PricingAccessTab.tsx):
+  - Added local `priceDraft` state (as string) so the breakdown updates live as the teacher types — the existing `onBlur → saveCourseField({ price: Number })` save path is unchanged.
+  - Price input switched from uncontrolled (`defaultValue`) to controlled (`value` + `onChange`) for live preview. Save semantics identical.
+  - `step="0.01"` + `min="0"` on the input for cent-level precision and no-negative.
+  - `htmlFor`/`id` pair added so the label properly associates with the input (accessibility).
+  - `<StripeFeeBreakdown amount={draftAmount} cycle={cycle} theme="dark" />` renders directly below the price input when `price_type !== 'free'`. `cycle` derived from `course.price_type`: `'subscription'` → `'monthly'`, `'one_time'` → `'one_time'`.
+
+### 28.3 — Behavior
+
+- Teacher opens course editor → Pricing & Access tab → selects One-time price type → types `19.99` → sees "Customer pays $19.99 · Stripe fee −$0.88 · You receive $19.11" instantly.
+- Switches to Subscription type → the same $19.99 shows "/month" suffixes; the Stripe fee applies every billing cycle (teacher sees the recurring math on-screen).
+- Types `0.30` (edge case) → breakdown turns red with "Fee exceeds price — you'd lose money on each sale." The save still happens on blur because this is a soft warning, not a hard gate.
+- Clears the field or types `0` → breakdown disappears entirely (returns null).
+
+### 28.4 — Out of scope (per plan 30)
+
+- Non-US card rates (3.9% + $0.30 international) — documented as "floor" not "actual."
+- Stripe Connect platform fee (teacher payouts already factor a 15% platform cut elsewhere). A future `TeacherPayoutBreakdown` component could compose this one plus the platform fee.
+- Invoice line-item pricing — future integration point when that surface ships.
+- Annual-cycle lifetime projections — deliberately skipped to keep the component single-purpose.
+
+### 28.5 — Merge order
+
+1. Branch is off `main` post-BVC merges. No dependencies.
+2. No migrations, no env vars, no API changes.
+3. Merge `feat/stripe-fee-calculator` to `main`.
+
+### 28.6 — Verification
+
+1. `/dashboard/teaching/[username]/courses/[id]` → Pricing & Access tab.
+2. Set price type to One-time, type `19.99` → breakdown shows $19.99 / −$0.88 / $19.11.
+3. Switch to Subscription → breakdown shows `/month` on customer + receive lines.
+4. Type `0.30` → red loss warning appears, AlertTriangle rendered.
+5. Clear the field → breakdown hides.
+6. Switch price type to Free → input + breakdown both hide.
+7. VoiceOver pass: announces "Stripe fee breakdown: Customer pays nineteen dollars ninety-nine cents…" on change.
+
+### 28.7 — Remaining backlog (unchanged except 30 → shipped)
+
+| Plan | Status |
+|---|---|
+| **33 BVC Episode 1 Coffee** | content loaded (§26); owner to import + record audio |
+| 25 iOS validation pass | open — needs device |
+| 26 full | cancelled |
+| **30 Stripe fee calculator** | **shipped (this branch)** |
+| 31 i18n EN+ES + SEO | phased |
+| 32 admin email verification | shipped |
+| 34 Magic-link auth migration | backlog stub |
+| 35 completion certificates | backlog, 2–3 days |
+| 36 teacher analytics heatmap | backlog, 1–2 days |
+| 37 a11y axe-core CI | backlog, 2–3 days |
+| 38 classroom/family plan | blocked on demand |
+| BVC Episodes 2–7 / Season 2+3 | content exists; phased load |
+| Starter tier | shipped, 90-day monitoring |
