@@ -60,6 +60,18 @@ export async function GET() {
 
   const completedSet = new Set((progress ?? []).map((p) => p.lesson_id));
 
+  // 3b. Certificate tokens for completed courses — lets my-courses
+  //     show the "View certificate" badge without a per-row fetch.
+  const { data: completions } = await db
+    .from('course_completions')
+    .select('course_id, verification_token')
+    .eq('user_id', user.id)
+    .in('course_id', courseIds);
+  const certByCourse: Record<string, string> = {};
+  for (const c of completions ?? []) {
+    certByCourse[c.course_id] = c.verification_token;
+  }
+
   // 4. Build per-course totals
   const totalByCourse: Record<string, number> = {};
   const completedByLesson: Record<string, Set<string>> = {};
@@ -129,6 +141,7 @@ export async function GET() {
       progress_pct: total > 0 ? Math.round((completed / total) * 100) : 0,
       new_lesson_count: newByCourse[e.course_id] ?? 0,
       updated_lesson_count: updatedByCourse[e.course_id] ?? 0,
+      certificate_token: certByCourse[e.course_id] ?? null,
     };
   });
 

@@ -99,6 +99,7 @@ export default function LessonPlayerPage() {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [completed, setCompleted] = useState(false);
+  const [courseCompletion, setCourseCompletion] = useState<{ token: string; isNew: boolean } | null>(null);
   const [crossroads, setCrossroads] = useState<CrossroadsOption[] | null>(null);
   const [navigationMode, setNavigationMode] = useState<'linear' | 'cyoa'>('linear');
   const [adjacentLessons, setAdjacentLessons] = useState<{ prev: string | null; next: string | null }>({ prev: null, next: null });
@@ -271,6 +272,22 @@ export default function LessonPlayerPage() {
         setCrossroads(null);
       }
     }
+
+    // Check whether this was the last lesson in the course. The endpoint
+    // is idempotent — if the course isn't done yet, returns
+    // { completed: false }; if already issued, returns the existing token.
+    // Fire-and-forget so it doesn't block the lesson-complete UX.
+    fetch(`/api/academy/courses/${courseId}/complete`, { method: 'POST' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.completed && data.token) {
+          setCourseCompletion({ token: data.token, isNew: !data.completionAlreadyExisted });
+        }
+      })
+      .catch(() => {
+        // Silent — the user's lesson completion already saved; cert
+        // can be retrieved from /academy/my-courses later if needed.
+      });
   }
 
   if (loading) {
@@ -549,6 +566,28 @@ export default function LessonPlayerPage() {
             <div className="flex items-center gap-2 text-green-400 font-semibold mb-6">
               <CheckCircle className="w-5 h-5" /> Lesson complete!
             </div>
+
+            {/* Course-completion certificate callout — only appears when
+                this was the last lesson. Uses isNew to distinguish a
+                fresh completion from a revisit. */}
+            {courseCompletion && (
+              <div className="mb-6 bg-linear-to-br from-fuchsia-900/40 to-sky-900/40 border border-fuchsia-700/50 rounded-xl p-5">
+                <p className="text-xs uppercase tracking-widest text-fuchsia-300 font-semibold mb-1">
+                  {courseCompletion.isNew ? 'Course complete — certificate earned 🎓' : 'Course certificate'}
+                </p>
+                <p className="text-sm text-gray-200 mb-3">
+                  {courseCompletion.isNew
+                    ? 'You finished every lesson. Your certificate is ready.'
+                    : "You've already earned your certificate for this course."}
+                </p>
+                <Link
+                  href={`/academy/verify/${courseCompletion.token}`}
+                  className="min-h-11 inline-flex items-center gap-1.5 px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-sm font-semibold rounded-lg transition"
+                >
+                  View certificate →
+                </Link>
+              </div>
+            )}
 
             {/* CYOA Crossroads */}
             {navigationMode === 'cyoa' && crossroads !== null && (
