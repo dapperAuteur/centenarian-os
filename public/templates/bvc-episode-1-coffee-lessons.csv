@@ -1,0 +1,513 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+Season 1 — Coffee,1,1,Welcome — The Morning Ritual,text,120,true,,"# Welcome — The Morning Ritual
+
+*Better Vice Club Episode 1 · Approximate listening time: 2 minutes*
+
+Good morning. This is Anthony McDonald, and welcome to **Better Vice Club**.
+
+Right now, someone somewhere is grinding coffee beans — as they have for centuries. The cup you'll make today connects you to **25 million farming families** across **70 countries**, a **$245 billion global industry** (International Coffee Organization, 2023), revolutions that toppled governments, and storytelling traditions older than the written word.
+
+Over the next ~35 minutes (if you take the full episode) we'll follow coffee from the volcanic slopes where it grows to the economics of your local café, from the political revolutions it sparked to the stories hiding in every cup.
+
+## What this course covers
+
+- **Geography** — Where coffee grows, why, and what climate change means for your cup
+- **Social Studies** — Coffeehouses, colonialism, and the ongoing work toward labor justice
+- **Economics** — Who gets paid, how money flows through the coffee supply chain
+- **English Language Arts** — Coffee in literature, language, advertising, and narrative
+
+All four subject lenses align to Indiana Academic Standards and Common Core for grades 9–12. If you're a podcast listener, just enjoy — each segment is a self-contained story.
+
+## How to use this course
+
+- **Linear path:** go Lesson 1 → 2 → 3 → … in order. ~60–90 minutes total depending on depth.
+- **Choose your own order (CYOA):** take Economics first, or Geography, or whatever grabs you. The lessons are designed to work standalone.
+- **Teacher?** The Teacher Resources download on this lesson contains classroom activities, rubrics, knowledge-check answer keys, and IAS alignment notes.
+
+## A note on the audio
+
+This is a podcast-first course. Audio for each lesson drops according to the recording schedule. While audio is in production, every lesson has the full data sheet available as reading material, and the interactive maps/documents work independently. When audio publishes, it slots in alongside the text without disrupting your progress.
+
+---
+
+Grab your favorite mug, settle in, and let's discover why your morning ritual is one of the most extraordinary classrooms on Earth.
+
+*Sources: International Coffee Organization (2023); Specialty Coffee Association (2024).*",markdown,,,,"[{""id"":""teacher-resources"",""title"":""BVC Coffee — Teacher Resources (PDF)"",""description"":""Full teacher guide: IAS + Common Core alignment, 4 classroom activities with handouts, project rubrics, knowledge-check answer key, differentiation strategies, bibliography."",""url"":""REPLACE_WITH_CLOUDINARY_URL_AFTER_UPLOADING_teacher-resources.pdf"",""source_url"":null},{""id"":""womens-petition-1674"",""title"":""The Women's Petition Against Coffee (1674)"",""description"":""Satirical London broadside. Useful for ELA rhetorical analysis and Social Studies as primary-source evidence of coffeehouse cultural impact."",""url"":""https://www.bl.uk/collection-items/the-womens-petition-against-coffee"",""source_url"":""British Library Digital Collections""},{""id"":""mens-answer-1674"",""title"":""The Men's Answer to the Women's Petition (1674)"",""description"":""Counter-broadside. Pairs with the Women's Petition for rhetorical-rebuttal analysis."",""url"":""https://www.bl.uk/collection-items/the-mens-answer-to-the-womens-petition-against-coffee"",""source_url"":""British Library Digital Collections""},{""id"":""royal-proclamation-1675"",""title"":""Royal Proclamation for the Suppression of Coffee Houses (1675)"",""description"":""Charles II's 11-day coffeehouse ban. Useful for Social Studies discussion of state power vs. public sphere."",""url"":""https://www.bl.uk/collection-items/royal-proclamation-for-the-suppression-of-coffee-houses"",""source_url"":""British Library Digital Collections""},{""id"":""colonial-plantation-records"",""title"":""Colonial Coffee Plantation Records (18th c.)"",""description"":""Primary-source business documents from Caribbean/Brazilian coffee plantations. Use for critical reading of economic rhetoric and dehumanizing labor language."",""url"":""https://www.loc.gov/collections/?q=colonial+coffee+plantation+records"",""source_url"":""Library of Congress Digital Collections""},{""id"":""bunn-2015"",""title"":""Bunn et al. (2015) — climate change profile of global coffee production (PLOS ONE)"",""description"":""The peer-reviewed paper behind the '50% of coffee land unsuitable by 2050' projection. Open-access."",""url"":""https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0140660"",""source_url"":""PLOS ONE open access""}]",,
+Season 1 — Coffee,1,2,Geography — Where Coffee Grows,text,480,true,,"# Geography — Where Coffee Grows
+
+*Better Vice Club Episode 1 · Segment 1 · Approximate listening time: 8 minutes*
+
+Coffee is one of the most geographically precise crops on Earth. The map on this page is your primary tool — zoom, pan, click any marker.
+
+## The Coffee Belt
+
+Coffee grows in a band around the equator stretching from **25°N to 30°S** — the ""Coffee Belt."" 81 countries across three continents produce coffee commercially (ICO, 2024).
+
+**Regional distribution (2024):**
+
+- South America: 41%
+- Southeast Asia: 27%
+- Africa: 17%
+- Central America: 10%
+- Other: 5%
+
+## What coffee needs to grow
+
+**Arabica** (70% of global production) — the species most people drink:
+
+- Temperature: 15–24°C (60–70°F) · damage above 30°C, death below 0°C
+- Annual rainfall: 1,500–2,000mm (60–80 in)
+- Elevation: 800–2,000m (2,600–6,500 ft)
+- Soil pH: 5.5–6.5 (slightly acidic)
+- Sunshine: ~1,800 hrs/year optimal
+- Dry period: 2–3 months for fruit ripening
+
+**Robusta** (30% of global production):
+
+- Temperature: 22–30°C (72–86°F)
+- Rainfall: 2,000–3,000mm (80–120 in)
+- Elevation: 200–800m (650–2,600 ft)
+- More heat- and disease-tolerant than Arabica
+
+*Sources: Davis et al. (2012); ICO (2024).*
+
+## Top 10 producing countries
+
+| Rank | Country | Tonnes (annual) | % Global | Primary type |
+|---|---|---|---|---|
+| 1 | Brazil | 2.6–3.8 M | 38.0% | Arabica + Robusta |
+| 2 | Vietnam | 1.5–1.96 M | 17.7% | Robusta |
+| 3 | Colombia | 760 K | 7–8% | 100% Arabica |
+| 4 | Indonesia | 668 K | 6.8% | Robusta + Arabica |
+| 5 | Ethiopia | 421 K | 4.2% | Arabica (origin) |
+| 6 | Honduras | 475 K | 4.5% | Arabica |
+| 7 | Peru | 346 K | 3.3% | Arabica (organic) |
+| 8 | India | 234–312 K | 3.0% | Arabica + Robusta |
+| 9 | Uganda | 209 K | 2.1% | 80% Robusta |
+| 10 | Mexico | ~240 K | 2.4% | Arabica |
+
+*Source: ICO (2024).*
+
+## Why geography matters: each country's story
+
+**Brazil** — coffee grows across a 600–1,300m plateau with distinct wet and dry seasons. Only major producer growing both Arabica and Robusta commercially.
+
+**Vietnam** — Central Highlands at 500–800m with volcanic basalt soils. Went from near-zero coffee production in the 1970s to the world's largest Robusta producer — one of the most dramatic agricultural transformations in history.
+
+**Colombia** — three Andean mountain ranges, 1,200–2,000m, cloud cover, volcanic soil, **two rainy seasons per year**. Produces some of the world's most complex flavors (Federación Nacional de Cafeteros, 2023).
+
+**Ethiopia** — the birthplace. Coffee still grows wild in highland forests at 1,500–2,200m. The only place coffee evolved naturally; its genetic diversity is irreplaceable for climate adaptation breeding (Davis et al., 2012).
+
+**Indonesia** — volcanic island geography creates dramatically different flavor profiles from island to island — same species, radically different results.
+
+## Climate change is rewriting this map
+
+By **2050**, up to **50% of current coffee-growing land** will become unsuitable due to rising temperatures (Bunn et al., 2015). Recent signals:
+
+- Brazil 2024: severe droughts + frosts → **70% price spike** in one year (Rabobank, 2024)
+- Colombia 2023–2024: 13 months continuous excessive rain
+- Ethiopia: 5-year ongoing drought
+
+Adaptation strategies already in play — higher-elevation planting, shade systems, drought-resistant cultivars — are mostly driven by farmers, not policy.
+
+## Key vocabulary
+
+- **Coffee Belt** — equatorial commercial-coffee zone (25°N to 30°S)
+- **Microclimate** — local climate differing from surroundings
+- **Volcanic soil** — mineral-rich soil from volcanic activity
+- **Terroir** — how geography, climate, and soil express themselves in flavor
+- **Agroforestry** — growing coffee under shade tree canopy
+
+---
+
+*Explore the map above to see the Coffee Belt boundaries, top producer countries shaded by volume, and the three largest historical trade routes.*",markdown,,,"{""center"":[5,30],""zoom"":2,""markers"":[{""id"":""brazil"",""lat"":-15.77,""lng"":-47.92,""title"":""Brazil (#1)"",""description"":""2.6–3.8M tonnes annually · 38% global · Arabica + Robusta · 600–1,300m plateau"",""color"":""#b91c1c""},{""id"":""vietnam"",""lat"":14.06,""lng"":108.28,""title"":""Vietnam (#2)"",""description"":""1.5–1.96M tonnes · 17.7% global · Robusta · Central Highlands 500–800m volcanic basalt"",""color"":""#b91c1c""},{""id"":""colombia"",""lat"":4.57,""lng"":-74.3,""title"":""Colombia (#3)"",""description"":""760K tonnes · 7–8% global · 100% Arabica · Andean slopes 1,200–2,000m · 2 rainy seasons"",""color"":""#dc2626""},{""id"":""indonesia"",""lat"":-0.79,""lng"":113.92,""title"":""Indonesia (#4)"",""description"":""668K tonnes · 6.8% global · Robusta + Arabica · volcanic island geography"",""color"":""#dc2626""},{""id"":""ethiopia"",""lat"":9.15,""lng"":40.49,""title"":""Ethiopia (#5) — the birthplace"",""description"":""421K tonnes · 4.2% global · Arabica · coffee evolved naturally here; irreplaceable wild genetic diversity"",""color"":""#ea580c""},{""id"":""honduras"",""lat"":15.2,""lng"":-86.24,""title"":""Honduras (#6)"",""description"":""475K tonnes · 4.5% global · Arabica"",""color"":""#ea580c""},{""id"":""peru"",""lat"":-9.19,""lng"":-75.02,""title"":""Peru (#7)"",""description"":""346K tonnes · 3.3% global · Arabica (organic-focused)"",""color"":""#ea580c""},{""id"":""india"",""lat"":20.59,""lng"":78.96,""title"":""India (#8)"",""description"":""234–312K tonnes · 3% global · Arabica + Robusta"",""color"":""#f97316""},{""id"":""uganda"",""lat"":1.37,""lng"":32.29,""title"":""Uganda (#9)"",""description"":""209K tonnes · 2.1% global · 80% Robusta"",""color"":""#f97316""},{""id"":""mexico"",""lat"":23.63,""lng"":-102.55,""title"":""Mexico (#10)"",""description"":""~240K tonnes · 2.4% global · Arabica"",""color"":""#f97316""},{""id"":""yemen"",""lat"":15.55,""lng"":48.52,""title"":""Yemen — Al-Mukha (historical)"",""description"":""Original trade port (1450s Sufi use); gave the world the word 'mocha'"",""color"":""#a16207""},{""id"":""istanbul"",""lat"":41.01,""lng"":28.98,""title"":""Constantinople / Istanbul (historical)"",""description"":""First coffeehouses 1550s — 'schools of the wise'"",""color"":""#a16207""},{""id"":""london"",""lat"":51.51,""lng"":-0.13,""title"":""London (historical)"",""description"":""First coffeehouse 1652 · Charles II's 11-day ban 1675 · Lloyd's + Jonathan's born here"",""color"":""#a16207""}],""lines"":[{""id"":""yemen-ottoman"",""coords"":[[15.55,48.52],[41.01,28.98]],""title"":""Yemen → Ottoman trade route (15th–16th c.)"",""description"":""Al-Mukha port to Constantinople — coffee's first major trade expansion"",""color"":""#7c2d12""},{""id"":""ottoman-europe"",""coords"":[[41.01,28.98],[45.46,9.19],[51.51,-0.13]],""title"":""Ottoman → Europe (17th c.)"",""description"":""Constantinople → Venice → London — coffee reaches Europe via Mediterranean commerce"",""color"":""#7c2d12""},{""id"":""colonial-atlantic"",""coords"":[[9.15,40.49],[15.55,48.52],[18.97,-72.29],[-15.77,-47.92]],""title"":""Colonial Atlantic route (17th–19th c.)"",""description"":""Ethiopia → Yemen → Saint-Domingue (Haiti) → Brazil — the plantation expansion fueled by enslaved labor"",""color"":""#881337""}],""polygons"":[{""id"":""coffee-belt-north"",""coords"":[[25,-180],[25,180],[0,180],[0,-180]],""title"":""Coffee Belt (northern half)"",""description"":""Between 25°N and the equator — commercial coffee zone"",""color"":""#16a34a"",""fillColor"":""#16a34a""},{""id"":""coffee-belt-south"",""coords"":[[0,-180],[0,180],[-30,180],[-30,-180]],""title"":""Coffee Belt (southern half)"",""description"":""Between equator and 30°S — commercial coffee zone"",""color"":""#16a34a"",""fillColor"":""#16a34a""}]}",,,
+Season 1 — Coffee,1,3,Social Studies — The Coffeehouse Revolution,text,480,false,,"# Social Studies — The Coffeehouse Revolution
+
+*Better Vice Club Episode 1 · Segment 2 · Approximate listening time: 8 minutes*
+
+Coffee didn't just change what people drank. It changed **how people thought, who they talked to, and eventually who governed them**.
+
+## Timeline
+
+| Date | Event | Significance |
+|---|---|---|
+| Pre-15th C | Oromo people consume coffee in Ethiopia | Earliest documented use |
+| ~1450s | Sufi monks use coffee in Yemen | Spread through Islamic world |
+| 1550s | First coffeehouses in Constantinople | First cross-class public social spaces |
+| 1652 | First London coffeehouse opens | ""Penny Universities"" begin |
+| 1674 | *Women's Petition Against Coffee* published | Early political broadside |
+| 1675 | Charles II attempts coffeehouse ban | Reversed in 11 days by public outcry |
+| 1680s | Lloyd's Coffee House opens | Origin of Lloyd's of London insurance |
+| 1696 | Dutch establish coffee in Java | Colonial plantation system begins |
+| 1720s | French plantations in Caribbean | Enslaved labor coffee production |
+| 1773 | Boston Tea Party | Coffee becomes patriotic American drink |
+| 1888 | Brazil abolishes slavery | End of enslaved labor in world's largest producer |
+| 1962 | International Coffee Agreement | First global commodity regulation attempt |
+| 1988 | First Fair Trade coffee label | Max Havelaar Foundation, Netherlands |
+| 2003 | Direct trade model emerges | Specialty roasters bypass commodity markets |
+
+*Sources: Pendergrast (2010); Topik & Clarence-Smith (2003); Hattox (1985).*
+
+## The coffeehouse as public sphere
+
+**Ottoman Empire (1550s–1700s):** Coffeehouses were called ""schools of the wise"" in a 1587 Ottoman document. Cross-class social mixing was unprecedented — before coffeehouses, merchants socialized with merchants, scholars with scholars. Multiple sultans tried bans; all reversed.
+
+**England (1650s–1700s):** For one penny — the price of a cup — anyone could enter, sit, and join the debate. They were called **""Penny Universities""** because the education was cheaper than any formal school (Cowan, 2005).
+
+London's coffeehouses were so politically potent that King Charles II tried to ban them in 1675, calling them places where ""false, malicious, and scandalous reports are devised and spread abroad to the defamation of His Majesty's government"" (Royal Proclamation, 1675). The ban lasted **eleven days** before public outcry forced reversal.
+
+**Financial institutions born in coffeehouses:**
+
+- **Lloyd's of London** → Edward Lloyd's coffeehouse (1680s), where ship captains and merchants shared risk information
+- **London Stock Exchange** → Jonathan's Coffee House
+- The word **""tips""** may derive from coffeehouse jars labeled ""To Insure Prompt Service"" (Pendergrast, 2010)
+
+**Colonial America:** The Green Dragon Tavern and coffeehouse was a Sons of Liberty meeting place. Coffee became the patriotic alternative to British tea after 1773.
+
+## The dual inheritance
+
+Hold two truths simultaneously:
+
+The same coffeehouses that advanced democratic ideals in Europe were fueled by a commodity produced through colonial exploitation.
+
+- **Dutch** forced cultivation in Java (1696–1870s): the *Cultuurstelsel* system required farmers to dedicate land to export crops
+- **French** Caribbean plantations (Haiti/Saint-Domingue): enslaved African labor
+- **Brazil's** coffee boom was built on enslaved labor until abolition in 1888 (Topik & Clarence-Smith, 2003)
+
+This isn't about guilt. It's about seeing how global systems actually work.
+
+## Modern labor reality
+
+- ILO estimates **1.5 million children** work in coffee production globally (ILO, 2021)
+- Fair trade certifications, direct trade relationships, and worker cooperatives represent ongoing efforts to address the labor injustices that have been part of coffee's story for centuries
+
+## Primary sources to examine
+
+See the documents panel on this lesson for:
+
+1. **Royal Proclamation for the Suppression of Coffee Houses (1675)** — Charles II's ban
+2. **The Women's Petition Against Coffee (1674)** — satirical broadside
+3. **The Men's Answer to the Women's Petition Against Coffee (1674)** — counter-broadside
+
+Full text via the British Library Digital Collections.
+
+## Key vocabulary
+
+- **Public sphere** — spaces where citizens debate outside government control
+- **Colonial extraction** — economic system where colonies provide raw materials for imperial profit
+- **Forced cultivation** — government-mandated crop production by colonial subjects
+- **Fair trade** — certification system ensuring minimum prices and labor standards
+- **Direct trade** — buyer-seller relationships that bypass commodity markets
+
+---
+
+Every cup carries this dual inheritance — democratic aspiration and colonial exploitation, intellectual revolution and labor injustice. The choices we make as consumers are part of a conversation that's been happening for five hundred years.",markdown,,,,,,
+Season 1 — Coffee,1,4,Economics — Follow the Money,text,480,false,,"# Economics — Follow the Money
+
+*Better Vice Club Episode 1 · Segment 3 · Approximate listening time: 8 minutes*
+
+Coffee is the world's **second most traded agricultural commodity**. The global market was valued at **$245–269 billion in 2024**, with specialty coffee alone at **$101.6 billion** (SCA, 2024). Over **25 million farming families** produce coffee — roughly 100 million people dependent on this single crop.
+
+## The market at a glance (2024)
+
+- Total global market: **$245–269 B**
+- Specialty coffee: **$101.6 B**
+- Growth rate: 4.5–5.3% CAGR (2025–2030)
+- Annual volume: 10.5–11.1 million tonnes green coffee
+
+**Regional market share:**
+
+- Europe: 34–36%
+- North America: 28%
+- Asia-Pacific: 25% (fastest growing, 6.2% CAGR)
+- Other: 11%
+
+*Sources: SCA (2024); ICO (2024).*
+
+## Price volatility
+
+Coffee is traded on the commodity C-Market. Historical swings:
+
+- Average (2014–2024): **$1.42/lb**
+- Low: $0.87/lb (2019)
+- Recent high: **$3.20+/lb** (Nov 2024) — 27-year high, driven mostly by Brazil drought + frost (Rabobank, 2024)
+- 2024 cumulative increase: **70% price surge**
+
+**Volatility drivers:** Weather 60–70%, speculation 15–20%, currency 10–15%.
+
+## The supply chain — who gets paid
+
+> **[ILLUSTRATIVE — composite supply chain based on real industry data from ICO, Fair Trade USA, and SCA.]**
+
+**Commodity system — $4.00 retail bag:**
+
+| Stage | Price/lb | % of retail | Value added |
+|---|---|---|---|
+| Farm gate | $1.20 | 30% | Growing, harvesting, wet processing |
+| Export | $1.45 | 6% | Quality grading, logistics |
+| Import | $2.10 | 16% | Customs, warehousing, distribution |
+| Roaster | $3.50 | 35% | Roasting, blending, packaging |
+| Retail | $4.00 | 13% | Shelf space, marketing, sales |
+
+**Specialty direct trade — $12.00 retail bag:**
+
+| Stage | Price/lb | % of retail | Value added |
+|---|---|---|---|
+| Farm gate | $3.50–6.00 | 30–50% | Quality cultivation, relationships |
+| Roaster | $8.50 | 20–40% | Small-batch, expertise |
+| Retail | $12.00 | 10–30% | Market access, experience |
+
+*Sources: Fair Trade USA (2023); ICO (2024); SCA (2024).*
+
+Translation: in the commodity system, the farmer — the person doing the hardest, most climate-exposed, most skill-dependent work — captures roughly **30% of the retail price**. In direct trade, that jumps to **30–50%**, often at higher per-pound prices.
+
+## Five economic concepts coffee teaches
+
+| Concept | Definition | Coffee example |
+|---|---|---|
+| **Price elasticity** | How demand changes with price | Coffee demand is inelastic — 70% price increase, minimal consumption drop |
+| **Value-added processing** | Transforming raw material to increase worth | Green beans → roasted → brewed |
+| **Local multiplier effect** | Money recirculated locally | Local cafés recirculate **~68%** of revenue locally vs. **43%** for chains (AMIBA, 2023) |
+| **Market segmentation** | Dividing market into distinct groups | Commodity (75%) vs. specialty (25%) |
+| **Supply chain** | Network from production to consumption | Farm → export → import → roast → retail → cup |
+
+## Fair Trade vs. Conventional vs. Direct Trade
+
+| Factor | Conventional | Fair Trade | Direct Trade |
+|---|---|---|---|
+| Farm price/lb | $1.20 | $1.60 min + $0.20 premium | $3.50–6.00 |
+| Price floor | None | Yes ($1.60) | Negotiated |
+| Certification cost | None | $2,000–4,000/yr | None |
+| Relationship length | Transaction | Annual | Multi-year |
+| Quality requirement | Commodity grade | Minimum standard | High (80+ cup score) |
+
+*Sources: Fair Trade USA (2023); SCA (2024).*
+
+## What this means for your daily cup
+
+When you buy coffee, you're not just buying caffeine. You're making a choice about **which economic system your money flows through**: commodity markets that prize volume, fair trade that guarantees floors, direct trade that compensates for quality. None of these are perfect. All are ongoing experiments in how to distribute value along a supply chain that includes farmers, roasters, baristas, and you.
+
+---
+
+*Next up: the stories those farmers and baristas carry.*",markdown,,,,,,
+Season 1 — Coffee,1,5,ELA — Stories in Every Cup,text,480,false,,"# English Language Arts — Stories in Every Cup
+
+*Better Vice Club Episode 1 · Segment 4 · Approximate listening time: 8 minutes*
+
+Every word we use for coffee came from somewhere. Every cup is wrapped in stories. This segment treats language, literature, and media literacy as tools for reading the world through your morning ritual.
+
+## The word ""coffee"" traced through four languages
+
+| English | Origin language | Original word | Pronunciation | Route |
+|---|---|---|---|---|
+| Coffee | Arabic → Turkish → Italian → English | qahwa → kahve → caffè | KAH-wah → KAH-veh → kah-FEH | Arabic originally meant ""wine"" |
+| Buna | Amharic (Ethiopian) | buna | BOO-nah | Coffee AND the ceremony |
+| Café | French (from Italian) | caffè | kah-FAY | Both drink and place |
+| Espresso | Italian | esprimere | ess-PRESS-oh | ""To press out"" |
+| Barista | Italian | barista | bah-REE-stah | ""Bartender"" |
+| Mocha | Arabic (place name) | Al-Mukha | al-MUK-hah | Yemeni port city |
+
+*Source: Weinberg & Bealer (2001).*
+
+**What the trail reveals:** trade routes shaped vocabulary. Ethiopian origin → Yemeni trade port → Ottoman Empire → Mediterranean commerce → European colonialism → global English. Each linguistic transformation marks a cultural and economic exchange.
+
+## The Ethiopian Coffee Ceremony as three-act narrative
+
+The Ethiopian **Buna** ceremony follows a three-round structure that mirrors classical storytelling:
+
+1. **Abol** (first round) — strongest brew. Initial encounter, intensity. *Rising action.*
+2. **Tona** (second round) — medium strength. Deepening relationship, familiarity. *Development.*
+3. **Baraka** (third round) — lightest brew. Blessing, departure, peace. *Resolution.*
+
+The ceremony **is** a narrative form. Each round tells a different part of the story of the gathering (Pankhurst, 1997).
+
+## Primary sources for analysis
+
+See the documents panel for full-text versions of:
+
+1. **The Women's Petition Against Coffee (1674)** — satirical broadside. Demonstrates: persuasive rhetoric, gendered argument, satirical voice, audience awareness.
+2. **The Men's Answer to the Women's Petition (1674)** — counter-broadside. Demonstrates: rebuttal technique, humor as rhetorical tool, defense of public spaces.
+3. **Balzac, ""The Pleasures and Pains of Coffee"" (1830)** — personal essay on extreme coffee consumption. Demonstrates: first-person narrative, obsessive voice, creative-process documentation.
+4. **Colonial coffee plantation records (18th c.)** — primary source business documents. Demonstrate: economic rhetoric, dehumanizing language in labor records.
+
+Archive access: British Library Digital Collections, Library of Congress.
+
+## Coffee in literature
+
+- **Isak Dinesen, *Out of Africa* (1937)** — coffee farming in Kenya as lens for colonial power dynamics and landscape writing
+- **Anthony Trollope, *The Warden* (1855)** — London coffeehouse scenes as social commentary settings
+- **Eduardo Galeano, *Open Veins of Latin America* (1971)** — coffee colonialism as economic analysis via literary nonfiction
+
+## Media literacy — reading coffee ads
+
+When analyzing a coffee advertisement, examine:
+
+1. **Who is shown?** Demographics, lifestyle, economic class.
+2. **Who is absent?** Workers, farmers, shift workers, elderly, disabled.
+3. **What story is being told?** Leisure vs. labor. Luxury vs. necessity.
+4. **What techniques are used?** Emotional appeal, lifestyle association, aspiration.
+5. **What's the gap between ad narrative and consumption data?**
+
+Reality check: the highest coffee consumers are adults working **40+ hours/week** (SCA, 2024). Most ads show leisure — sunlit cafés, unhurried moments. The gap between what's sold and who buys reveals how texts are shaped by purpose and audience.
+
+## Interview ethics (for student projects)
+
+If you interview people about their coffee culture:
+
+1. **Informed consent** — explain project and recording use upfront
+2. **Right to review** — offer interviewees the chance to see how their words are used
+3. **Respectful representation** — you're a guest in someone's story
+4. **Cultural sensitivity** — coffee rituals carry deep personal and cultural meaning; approach with curiosity, not judgment
+5. **Attribution** — credit sources by name (with permission) or respectful description
+
+---
+
+Stories are how we process the world. Your morning coffee carries stories — yours, your community's, and ones from five centuries of encounter, commerce, and translation. Next time you sit down with a cup, notice which story you're telling.",markdown,,,,,,
+Season 1 — Coffee,1,6,Closing — Your Morning Altar,text,180,false,,"# Closing — Your Morning Altar
+
+*Better Vice Club Episode 1 · Approximate listening time: 3 minutes*
+
+We've covered a lot of ground — from Ethiopia's highland forests to London's coffeehouses, from commodity trading floors to the stories hiding in your neighborhood café.
+
+Here's what I want to leave you with.
+
+## Tomorrow morning
+
+Before you take that first sip, take **ten seconds**. Think about:
+
+- **Geography** — the elevation, the rainfall, the volcanic soil that made this possible
+- **Social history** — the revolutions, the labor, the ongoing work toward justice
+- **Economics** — where your money went, who benefits, what your purchase supports
+- **Stories** — yours, your community's, the ones still waiting to be told
+
+## The morning altar practice
+
+I call this building a **morning altar** — not a religious thing, but a practice of intentional awareness. Your coffee isn't just caffeine. It's a daily connection to the planet, to history, to economic systems, and to the power of storytelling.
+
+Most days the altar is quick — a single thought, a moment of gratitude, a question. Some days it's deeper. The point isn't ritualism; it's refusing to let your most-repeated daily action be invisible.
+
+## What's next in Better Vice Club
+
+**Episode 2: Tea.** We'll explore how the same plant — *Camellia sinensis* — creates completely different geographic, political, economic, and literary worlds depending on where it grows and who prepares it.
+
+## A quick reflection
+
+Before you move on, jot down or think through:
+
+- Which of the four subject lenses (Geography, Social Studies, Economics, ELA) surprised you most?
+- What's one thing you'll notice differently tomorrow morning because of this episode?
+- Who in your life would enjoy hearing about something from this course?
+
+---
+
+May your mornings be mindful, may your choices be intentional, and may every sip remind you how deeply connected we all are.
+
+— Anthony McDonald",markdown,,,,,,
+Season 1 — Coffee,1,7,Knowledge Check — Coffee,quiz,600,false,,"# Knowledge Check — Coffee
+
+*Better Vice Club Episode 1 · 8 multiple-choice questions · ~10 minutes*
+
+This knowledge check covers all four subject lenses from Episode 1. You can retake it as many times as you want — the goal is understanding, not gatekeeping.
+
+Questions are drawn from the master doc's Part 4 knowledge checks; the essay-style questions (coffee etymology trail, Ethiopian ceremony as narrative) appear instead in the Project assignment (Lesson 8) where they get the long-form treatment they deserve.
+
+**Passing score:** 6 of 8 (75%).
+**Attempts allowed:** unlimited.
+
+Each question shows an explanation + citation after you answer. Use those to dig deeper, not just to check the answer.",markdown,,,,,,"{""passingScore"":75,""attemptsAllowed"":0,""questions"":[{""id"":""q1"",""questionText"":""What are the latitude boundaries of the Coffee Belt?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q1a"",""text"":""15°N to 15°S""},{""id"":""q1b"",""text"":""25°N to 30°S""},{""id"":""q1c"",""text"":""40°N to 40°S""},{""id"":""q1d"",""text"":""The tropics only (23.5°N to 23.5°S)""}],""correctOptionId"":""q1b"",""explanation"":""The Coffee Belt spans 25°N to 30°S latitude — 55 degrees total — covering 81 producing countries across three continents."",""citation"":""International Coffee Organization (2024)""},{""id"":""q2"",""questionText"":""Why is Ethiopia's wild coffee forest genetically important?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q2a"",""text"":""It produces the highest yields globally""},{""id"":""q2b"",""text"":""It is the only place coffee evolved naturally; its diversity is needed for climate-resilient breeding""},{""id"":""q2c"",""text"":""It is the only region that grows Robusta""},{""id"":""q2d"",""text"":""It is the oldest UNESCO agricultural heritage site""}],""correctOptionId"":""q2b"",""explanation"":""Ethiopia is the only place where coffee evolved naturally. Its wild highland forests (1,500–2,200m) contain irreplaceable genetic diversity needed for breeding varieties resilient to rising temperatures."",""citation"":""Davis et al. (2012)""},{""id"":""q3"",""questionText"":""Which three geographic factors most directly explain why Colombia produces 100% Arabica coffee?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q3a"",""text"":""Coastal lowlands, tropical heat, and equatorial rain""},{""id"":""q3b"",""text"":""Andean slopes (1,200–2,000m), volcanic soil, and two rainy seasons per year""},{""id"":""q3c"",""text"":""Desert microclimates, drip irrigation, and government subsidies""},{""id"":""q3d"",""text"":""River valleys, monsoon rains, and terraced farming""}],""correctOptionId"":""q3b"",""explanation"":""Colombia's Arabica-only profile comes from three Andean mountain ranges at 1,200–2,000m with cloud cover, volcanic soil, and two rainy seasons — conditions that favor Arabica's narrow climate requirements."",""citation"":""Federación Nacional de Cafeteros (2023)""},{""id"":""q4"",""questionText"":""Why did King Charles II try to ban coffeehouses in 1675, and what happened?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q4a"",""text"":""He wanted to promote tea imports; the ban held until his death""},{""id"":""q4b"",""text"":""He called them places spreading 'false, malicious, and scandalous reports' against his government; the ban was reversed in 11 days after public outcry""},{""id"":""q4c"",""text"":""Medical authorities blamed coffee for plague outbreaks; the ban lasted a year""},{""id"":""q4d"",""text"":""They were exempt from taxation; he imposed new duties that functioned as a ban""}],""correctOptionId"":""q4b"",""explanation"":""Coffeehouses had become centers of political debate and organizing. The ban lasted only 11 days — an early demonstration of the coffeehouse's power as civic infrastructure."",""citation"":""Royal Proclamation (1675); Cowan (2005)""},{""id"":""q5"",""questionText"":""What does it mean to say coffee's history requires 'holding two truths simultaneously'?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q5a"",""text"":""That Arabica and Robusta are both valuable despite their differences""},{""id"":""q5b"",""text"":""That coffeehouses advanced democratic ideals in Europe while the coffee served was produced through colonial exploitation and enslaved labor""},{""id"":""q5c"",""text"":""That commodity and specialty markets both have a place""},{""id"":""q5d"",""text"":""That caffeine has both positive and negative health effects""}],""correctOptionId"":""q5b"",""explanation"":""Coffeehouses in Europe advanced democratic ideals and intellectual freedom, while plantations in the Caribbean, Central America, and Brazil relied on enslaved labor. Seeing both is the starting point for seeing how global systems actually work."",""citation"":""Topik & Clarence-Smith (2003); Pendergrast (2010)""},{""id"":""q6"",""questionText"":""What does coffee's 'inelastic demand' tell us about consumer behavior?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q6a"",""text"":""Demand drops sharply with any price increase""},{""id"":""q6b"",""text"":""Demand changes barely with price — consumers treat coffee as a necessity and cut other spending first""},{""id"":""q6c"",""text"":""Demand is only affected by advertising, not price""},{""id"":""q6d"",""text"":""Demand is purely seasonal""}],""correctOptionId"":""q6b"",""explanation"":""When prices spiked 70% in 2024, consumption barely dropped. That's the textbook signature of inelastic demand — consumers treat coffee as essential and sacrifice other purchases to keep buying it."",""citation"":""Rabobank (2024); SCA (2024)""},{""id"":""q7"",""questionText"":""How does the 'local multiplier effect' compare local cafés vs. national chains?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q7a"",""text"":""Local cafés recirculate ~68% of revenue locally; chains recirculate ~43%""},{""id"":""q7b"",""text"":""Local cafés recirculate ~25% locally; chains recirculate ~75%""},{""id"":""q7c"",""text"":""Both recirculate equally — location doesn't matter""},{""id"":""q7d"",""text"":""The multiplier effect only applies to manufacturing, not coffee""}],""correctOptionId"":""q7a"",""explanation"":""Locally owned businesses recirculate roughly 68% of revenue in the local economy vs. 43% for chains. The rest leaves through corporate HQ, national suppliers, and shareholders."",""citation"":""AMIBA (2023)""},{""id"":""q8"",""questionText"":""In a typical commodity-coffee supply chain, what percentage of the retail price does the farmer receive at the farm gate?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q8a"",""text"":""About 10%""},{""id"":""q8b"",""text"":""About 30%""},{""id"":""q8c"",""text"":""About 50%""},{""id"":""q8d"",""text"":""About 70%""}],""correctOptionId"":""q8b"",""explanation"":""In the commodity system, the farmer captures roughly 30% of the retail price (~$1.20 on a $4.00 bag). In direct trade, farmer capture rises to 30–50%, often at higher per-pound prices."",""citation"":""ICO (2024); Fair Trade USA (2023); SCA (2024)""}]}"
+Season 1 — Coffee,1,8,Project — Trace Your Favorite Coffee,text,300,false,,"# Project — Trace Your Favorite Coffee
+
+*Better Vice Club Episode 1 · Out-of-class project · 2–3 weeks · Pick ONE option*
+
+This project replaces a traditional essay. Pick the option that fits your interests and available time. Each option takes 2–3 weeks of focused work and is graded against a published rubric (see Teacher Resources on Lesson 1 for full rubrics).
+
+**Deliverables submit through the assignment system on this lesson.**
+
+---
+
+## Option A — My Morning Economics Portfolio *(Economics focus)*
+
+Build a multimedia portfolio analyzing the economics of your daily morning routine using coffee as the model.
+
+**Requirements:**
+
+1. Map the supply chain of 3 items from your morning routine (at least one non-coffee item for comparison)
+2. Calculate the economic footprint of your morning choices for one month (receipts, photos, estimates — real numbers)
+3. Compare costs/impacts of different choices: local vs. chain, premium vs. commodity, home-brew vs. café
+4. Design your ideal morning routine based on your economic values and budget — justify with evidence from your data
+
+**Deliverables:** Supply-chain maps (visual — can be hand-drawn, Figma, whatever), cost-benefit analysis spreadsheet, 5-minute presentation recording, 500-word reflection.
+
+**Assessment weighting:** Economic analysis 40% · Research quality 30% · Critical thinking 20% · Presentation 10%.
+
+---
+
+## Option B — Coffee Belt Climate Report *(Geography focus)*
+
+Research and present a climate-vulnerability assessment for one coffee-producing country. Pick any country from the Top 10 in Lesson 2, or go deeper on a smaller producer.
+
+**Requirements:**
+
+1. Document current climate conditions in coffee-growing regions of your chosen country (temperature, rainfall, elevation)
+2. Research projected climate changes by 2050 using **at least 3 peer-reviewed sources**
+3. Identify adaptation strategies already being implemented there (by farmers, co-ops, or government)
+4. Assess the likelihood of continued coffee viability in that country. Defend your assessment.
+
+**Deliverables:** Written report 1,000–1,500 words, with maps, data tables, and APA bibliography.
+
+**Assessment weighting:** Data accuracy 35% · Source quality 25% · Analysis depth 25% · Presentation 15%.
+
+---
+
+## Option C — Community Coffee Stories *(ELA focus)*
+
+Document coffee culture in your community through interviews and observation. Follow the **Interview Ethics Guide** in Lesson 5 carefully.
+
+**Requirements:**
+
+1. Conduct 2–3 interviews with people about their coffee rituals (informed consent, right to review)
+2. Write an observation piece based on 30 minutes spent in a local café or coffee-related space — descriptive, not evaluative
+3. Analyze one coffee advertisement using the **Media Literacy framework** from Lesson 5 (who's shown, who's absent, what story, what techniques, what gap)
+4. Write a reflective essay connecting your findings to themes from the podcast episode
+
+**Deliverables:** Interview transcripts with consent documentation, observation narrative 500 words, ad analysis 300 words, reflective essay 500 words.
+
+**Assessment weighting:** Interview quality 30% · Writing craft 30% · Analysis 25% · Ethics/process 15%.
+
+---
+
+## Option D — Coffeehouse to Congress *(Social Studies focus)*
+
+Research the role of public gathering spaces in democratic movements, using coffee's history as your starting point.
+
+**Requirements:**
+
+1. Document at least **3 historical examples** of coffeehouses/cafés influencing political change (can include examples beyond what Lesson 3 covered — find your own)
+2. Identify a modern equivalent (community space, online forum, neighborhood meeting, group chat, etc.) and compare its democratic function
+3. Analyze at least **2 primary sources** from different centuries
+4. Argue whether modern public spaces serve the same democratic function as historical coffeehouses. Include a **counterargument section** addressing the strongest objection to your thesis.
+
+**Deliverables:** Research paper 1,200–1,500 words, primary source citations, APA bibliography, counterargument section.
+
+**Assessment weighting:** Historical evidence 35% · Primary source analysis 25% · Argument quality 25% · Writing 15%.
+
+---
+
+## Two essay-style questions for your project reflection
+
+Regardless of which option you pick, address these two questions somewhere in your reflection:
+
+- **Q:** Trace the word ""coffee"" through at least four languages and explain what the trail reveals.
+- **Q:** How does the Ethiopian coffee ceremony mirror three-act narrative structure?
+
+(The master doc's knowledge check has short answers to both, but the goal here is *your* reflection, not recall.)
+
+---
+
+## How to submit
+
+1. Click ""Submit assignment"" on this lesson
+2. Upload your deliverables (multiple files allowed)
+3. Write a short note: which option you picked, and one sentence on what surprised you
+
+Rubrics are in the Teacher Resources document on Lesson 1. Grading turnaround: 7–10 days.",markdown,,,,,,

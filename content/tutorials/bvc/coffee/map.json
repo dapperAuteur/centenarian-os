@@ -1,0 +1,28 @@
+{
+  "center": [5, 30],
+  "zoom": 2,
+  "markers": [
+    {"id": "brazil", "lat": -15.77, "lng": -47.92, "title": "Brazil (#1)", "description": "2.6–3.8M tonnes annually · 38% global · Arabica + Robusta · 600–1,300m plateau", "color": "#b91c1c"},
+    {"id": "vietnam", "lat": 14.06, "lng": 108.28, "title": "Vietnam (#2)", "description": "1.5–1.96M tonnes · 17.7% global · Robusta · Central Highlands 500–800m volcanic basalt", "color": "#b91c1c"},
+    {"id": "colombia", "lat": 4.57, "lng": -74.30, "title": "Colombia (#3)", "description": "760K tonnes · 7–8% global · 100% Arabica · Andean slopes 1,200–2,000m · 2 rainy seasons", "color": "#dc2626"},
+    {"id": "indonesia", "lat": -0.79, "lng": 113.92, "title": "Indonesia (#4)", "description": "668K tonnes · 6.8% global · Robusta + Arabica · volcanic island geography", "color": "#dc2626"},
+    {"id": "ethiopia", "lat": 9.15, "lng": 40.49, "title": "Ethiopia (#5) — the birthplace", "description": "421K tonnes · 4.2% global · Arabica · coffee evolved naturally here; irreplaceable wild genetic diversity", "color": "#ea580c"},
+    {"id": "honduras", "lat": 15.20, "lng": -86.24, "title": "Honduras (#6)", "description": "475K tonnes · 4.5% global · Arabica", "color": "#ea580c"},
+    {"id": "peru", "lat": -9.19, "lng": -75.02, "title": "Peru (#7)", "description": "346K tonnes · 3.3% global · Arabica (organic-focused)", "color": "#ea580c"},
+    {"id": "india", "lat": 20.59, "lng": 78.96, "title": "India (#8)", "description": "234–312K tonnes · 3% global · Arabica + Robusta", "color": "#f97316"},
+    {"id": "uganda", "lat": 1.37, "lng": 32.29, "title": "Uganda (#9)", "description": "209K tonnes · 2.1% global · 80% Robusta", "color": "#f97316"},
+    {"id": "mexico", "lat": 23.63, "lng": -102.55, "title": "Mexico (#10)", "description": "~240K tonnes · 2.4% global · Arabica", "color": "#f97316"},
+    {"id": "yemen", "lat": 15.55, "lng": 48.52, "title": "Yemen — Al-Mukha (historical)", "description": "Original trade port (1450s Sufi use); gave the world the word 'mocha'", "color": "#a16207"},
+    {"id": "istanbul", "lat": 41.01, "lng": 28.98, "title": "Constantinople / Istanbul (historical)", "description": "First coffeehouses 1550s — 'schools of the wise'", "color": "#a16207"},
+    {"id": "london", "lat": 51.51, "lng": -0.13, "title": "London (historical)", "description": "First coffeehouse 1652 · Charles II's 11-day ban 1675 · Lloyd's + Jonathan's born here", "color": "#a16207"}
+  ],
+  "lines": [
+    {"id": "yemen-ottoman", "coords": [[15.55, 48.52], [41.01, 28.98]], "title": "Yemen → Ottoman trade route (15th–16th c.)", "description": "Al-Mukha port to Constantinople — coffee's first major trade expansion", "color": "#7c2d12"},
+    {"id": "ottoman-europe", "coords": [[41.01, 28.98], [45.46, 9.19], [51.51, -0.13]], "title": "Ottoman → Europe (17th c.)", "description": "Constantinople → Venice → London — coffee reaches Europe via Mediterranean commerce", "color": "#7c2d12"},
+    {"id": "colonial-atlantic", "coords": [[9.15, 40.49], [15.55, 48.52], [18.97, -72.29], [-15.77, -47.92]], "title": "Colonial Atlantic route (17th–19th c.)", "description": "Ethiopia → Yemen → Saint-Domingue (Haiti) → Brazil — the plantation expansion fueled by enslaved labor", "color": "#881337"}
+  ],
+  "polygons": [
+    {"id": "coffee-belt-north", "coords": [[25, -180], [25, 180], [0, 180], [0, -180]], "title": "Coffee Belt (northern half)", "description": "Between 25°N and the equator — commercial coffee zone", "color": "#16a34a", "fillColor": "#16a34a"},
+    {"id": "coffee-belt-south", "coords": [[0, -180], [0, 180], [-30, 180], [-30, -180]], "title": "Coffee Belt (southern half)", "description": "Between equator and 30°S — commercial coffee zone", "color": "#16a34a", "fillColor": "#16a34a"}
+  ]
+}

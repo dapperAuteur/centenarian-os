@@ -1261,3 +1261,156 @@ Owner-signed direction 2026-04-16 after reviewing `plans/ecosystem/`. Full detai
 ### 25.5 — Next action for the human
 
 Owner confirms the §4 lesson arc in [plan 33](../33-bvc-episode-1-coffee.md) (or revises), sets course pricing, starts drafting Lesson 1 content. Claude's role during plan 33 is primarily editorial assistance + Academy CSV-import wiring, not new code.
+
+---
+
+## 26. BVC Episode 1: Coffee — content load — `feat/bvc-coffee-content-load`
+
+Strategic pivot from "add more Academy infrastructure" to "ship actual Academy content" per the ecosystem direction. Master doc at [plans/BVC/BVC_Episode_1_Coffee_MASTER.md](../BVC/BVC_Episode_1_Coffee_MASTER.md) converted to Academy-ready assets. **Audio recording deferred** — all lessons ship as text + data + maps first, upgrade to audio lesson type when MP3s drop.
+
+### 26.1 — Decisions confirmed this branch
+
+From owner review of `plans/BVC/`:
+
+1. **Arc matches master doc**, not the chronological version I first drafted. Episode 1 has a subject-lens structure across all 7 Season 1 episodes: Cold Open → Geography → Social Studies → Economics → ELA → Closing → Quiz → Project.
+2. **Audience: podcast listeners ages 25–45 primary; grades 9–12 IAS-aligned educational target secondary.** Marketing copy and Welcome lesson lead with adult podcast framing.
+3. **Teacher resources:** attached as downloadable document on Lesson 1 (via `lessons.documents` JSONB) — not a separate role-gated module (that primitive doesn't exist yet; not built here).
+4. **Duplicate file deleted:** `plans/BVC/BVC_Episode_1_Coffee_MASTER (1).md` removed (byte-identical to the canonical file).
+5. **Season 2 + 3 content exists at `plans/BVC/BVC Season 2 and 3/`** — 7 more episodes (Beer, Wine, Whiskey, Rum, Tequila/Mezcal, Sake, Synthesis) + Season 3 forbidden-leaf plan (Tobacco, Cannabis, Opium, Coca, Psychedelics, Khat, Synthesis). Same 4-subject-lens structure. Out of scope for this branch — ship Episode 1 first, validate against real students, then scale.
+
+### 26.2 — Files added
+
+**Source-of-truth content (force-added under `content/`):**
+- [`content/tutorials/bvc/coffee/01-welcome.md`](../../content/tutorials/bvc/coffee/01-welcome.md) through `08-project.md` — 8 student-facing lesson markdowns.
+- [`content/tutorials/bvc/coffee/map.json`](../../content/tutorials/bvc/coffee/map.json) — Lesson 2 Geography `map_content`: 13 markers (top 10 producers + 3 historical trade ports), 3 trade-route polylines (Yemen→Ottoman, Ottoman→Europe, Colonial Atlantic), 2 Coffee Belt polygons (north + south halves).
+- [`content/tutorials/bvc/coffee/quiz.json`](../../content/tutorials/bvc/coffee/quiz.json) — Lesson 7 `quiz_content`: 8 multiple-choice questions with explanations + APA citations, 75% passing score, unlimited attempts.
+- [`content/tutorials/bvc/coffee/documents.json`](../../content/tutorials/bvc/coffee/documents.json) — Lesson 1 `documents` array: teacher resources (PDF placeholder) + 5 primary-source URLs with archive attribution.
+- [`content/tutorials/bvc/coffee/teacher-resources.md`](../../content/tutorials/bvc/coffee/teacher-resources.md) — full teacher guide (IAS + Common Core alignment, 4 classroom activities, project rubrics, knowledge-check answers, differentiation, bibliography). Owner uploads this as PDF to Cloudinary and pastes the URL into `documents.json`.
+- [`content/tutorials/bvc/coffee/glossary.csv`](../../content/tutorials/bvc/coffee/glossary.csv) — 21 glossary terms drawn from the master doc's Pronunciation Quick Reference + Geography/Social Studies/Economics/ELA vocabulary.
+
+**Import-ready CSVs (tracked under `public/templates/`):**
+- [`public/templates/bvc-episode-1-coffee-lessons.csv`](../../public/templates/bvc-episode-1-coffee-lessons.csv) — 8 lessons ready for owner import via `/dashboard/teaching/[username]/courses/[id]/import`. JSON cells (map_content, documents, quiz_content) minified and CSV-escaped; round-trip tested.
+- [`public/templates/bvc-season-1-recording-schedule.csv`](../../public/templates/bvc-season-1-recording-schedule.csv) — 42 tasks across 7 episode goals in a single roadmap (`BVC Season 1 Recording`). Per-episode cadence: prep → record day 1 → record day 2 → edit → QA → publish. 2 weeks per episode, April 20 → August 14, 2026.
+
+**Tooling:**
+- [`scripts/generate-bvc-coffee-csv.mjs`](../../scripts/generate-bvc-coffee-csv.mjs) — regenerates the lessons CSV from the source markdown + JSON whenever content changes. Pattern for Episodes 2–7 when their time comes.
+
+**Plan:**
+- [`plans/33-bvc-episode-1-coffee.md`](../33-bvc-episode-1-coffee.md) — revised (content production pipeline, arc matching master doc, audio upgrade path, success criteria).
+
+### 26.3 — Owner import steps
+
+After merging this branch:
+
+1. `/dashboard/teaching/[username]/courses/new` — create course:
+   - Title: *Better Vice Club: Coffee*
+   - Category: *Better Vice Club*
+   - Navigation: `cyoa`
+   - Price: decide (suggested $19.99 one-time or bundled in paid tier)
+   - Cover image: origin-region or extraction photo (not a stock mug shot)
+2. Import lessons: course editor → Import → upload `public/templates/bvc-episode-1-coffee-lessons.csv`, mode `create`.
+3. Upload teacher-resources.md as a PDF (or markdown) to Cloudinary folder `academy/bvc/coffee/` and replace `REPLACE_WITH_CLOUDINARY_URL_AFTER_UPLOADING_teacher-resources.pdf` in the Lesson 1 documents array.
+4. Import glossary via `/dashboard/teaching/[username]/courses/[id]/glossary` → upload `content/tutorials/bvc/coffee/glossary.csv`.
+5. Publish: toggle `is_published = true`.
+6. Import recording schedule: `/dashboard/data/import/planner` → upload `public/templates/bvc-season-1-recording-schedule.csv`.
+
+### 26.4 — Audio upgrade path
+
+When each segment's MP3 is recorded (per the schedule):
+
+1. Upload MP3 to Cloudinary `academy/bvc/coffee/`.
+2. Edit the lesson via the course editor:
+   - Change `lesson_type` from `text` → `audio`.
+   - Paste the Cloudinary secure URL into `content_url`.
+   - Paste chapter markers (CUT-1A, CUT-1B, etc. with timestamps from the recording).
+   - Paste synced transcript into `transcript_content`.
+   - `text_content` (the data sheet) remains intact as reading material alongside the audio.
+
+No code changes, no redeploy. The lesson page renders audio player + transcript + chapters + data sheet automatically based on `lesson_type`.
+
+### 26.5 — Merge order
+
+1. Owner reviews the lesson content, especially Lesson 2 Geography's map markers (lat/lon accuracy) and Lesson 7 quiz questions.
+2. Merge `feat/bvc-coffee-content-load` to main.
+3. Owner runs the import steps in §25.3.
+4. Audio recording proceeds on the schedule in the second CSV.
+
+### 26.6 — Remaining backlog
+
+| Plan | Status |
+|---|---|
+| **33 BVC Episode 1 Coffee** | **content loaded this branch; awaiting owner import + audio recording** |
+| 25 iOS validation pass | open — needs device |
+| 26 full | cancelled (per direction doc, belongs to Wanderlearn) |
+| 30 Stripe fee calculator | ready — ~1–2 hrs |
+| 31 i18n EN+ES + SEO | phased |
+| 32 admin email verification | shipped |
+| 34 Magic-link auth migration | backlog stub |
+| BVC Episodes 2–7 Season 1 | content exists at `plans/BVC/`, load after Episode 1 validates |
+| BVC Season 2 (Episodes 8–14) — alcohol | content exists at `plans/BVC/BVC Season 2 and 3/`, load after Season 1 ships |
+| BVC Season 3 (Episodes 15–21) — forbidden leaf | content exists, plan at `plans/BVC/BVC Season 2 and 3/BVC_Season_3_The_Forbidden_Leaf_MASTER_PLAN.md`, load after Season 2 ships |
+| Starter tier | shipped, 90-day monitoring |
+
+---
+
+## 27. BVC launch polish + post-launch backlog — `feat/bvc-polish-and-post-launch-plans`
+
+Closes the "final 10%" minor-gap list from [`ecosystem/centenarianos-direction.md §3.2`](../ecosystem/centenarianos-direction.md). One code change that was blocking Episode 1's marketing polish; four plan stubs for items that don't need to ship before launch but are the obvious next moves after Episode 1 validates.
+
+### 27.1 — Code changes
+
+- **[`components/academy/course-editor/CourseInfoTab.tsx`](../../components/academy/course-editor/CourseInfoTab.tsx) — `CATEGORY_OPTIONS`:** added `Better Vice Club` as the first option in the course-category datalist. Teachers creating BVC courses now get it as an autocomplete suggestion rather than having to type it freeform (risking typo drift across Episodes 1–7).
+
+That's the only code change. Every other gap item is either backlog-plan material (§27.2) or already enforced in plan 33 (§27.3).
+
+### 27.2 — Post-launch plan stubs added
+
+Each is a backlog-ready design doc with scope, data model, files to add/modify, verification checklist, and risks. No code yet — open the branch when the plan reaches the top of the queue.
+
+- [`plans/35-academy-completion-certificates.md`](../35-academy-completion-certificates.md) — `course_completions` table, HTML→PDF via Puppeteer or `@react-pdf/renderer`, Cloudinary storage, public verification URL, email delivery via existing Resend integration. Estimate 2–3 days.
+- [`plans/36-academy-teacher-analytics.md`](../36-academy-teacher-analytics.md) — cohort heatmap (students × lessons) on the teacher course-detail page. Single aggregate endpoint + one grid component + CSV export. Estimate 1–2 days. Build when ≥5 real students per course.
+- [`plans/37-a11y-axe-core-ci.md`](../37-a11y-axe-core-ci.md) — `@axe-core/playwright` smoke tests on top-10 routes, GitHub Actions on every PR against main. Phased: baseline scan → fix critical/serious → enable enforcement. Estimate 2–3 days. Ship before scaling BVC to schools that require WCAG AA.
+- [`plans/38-classroom-family-plan.md`](../38-classroom-family-plan.md) — `family_plans` + `family_plan_members` tables, multi-seat Stripe tier, invitation flow, "covered by" billing messaging. **Explicitly blocked on demand validation** — don't build until at least one real teacher asks for bulk-enrollment. BVC Episode 1 tests the assumption that per-student enrollment is adequate.
+
+### 27.3 — Content-production rules (already in place, not re-shipping)
+
+Items from the gap list that are already enforced by the existing plan 33 §3 "Content rules (non-negotiable, per ecosystem doc)":
+
+- **APA citations with working URLs** — plan 33 §3 rule 2. Enforced editorially.
+- **Indigenous knowledge treated as valid and rigorous** — plan 33 §3 rule 4. Enforced editorially.
+- **No-fabrication rule** — plan 33 §3 rule 1 (no Rosa, Mrs. Chen, Uncle Keoni, Elena, Dr. Martinez). Enforced editorially.
+- **Peer-reviewed sources for scientific claims** — plan 33 §3 rule 3.
+- **No sensationalism** — plan 33 §3 rule 5.
+
+These are editorial gates, not code. Enforcement happens during content review before publish.
+
+### 27.4 — Episode authoring workflow
+
+Per the direction doc: **adequate for Episode 1**. Single-owner authoring via the course editor + bulk CSV import as the escape hatch. Plan 33's [CSV template](../../public/templates/bvc-episode-1-coffee-lessons.csv) + [generator script](../../scripts/generate-bvc-coffee-csv.mjs) make Episodes 2–7 a template exercise rather than from-scratch work.
+
+No workflow changes needed. Revisit if multiple teachers need to co-author simultaneously.
+
+### 27.5 — Merge order
+
+1. This branch stacks on `feat/bvc-coffee-content-load` (§26). Merge 26 first, then 27.
+2. Single tiny code change — safe to merge. Plan stubs are docs only.
+3. No migrations, no new env vars.
+
+### 27.6 — Remaining backlog (after §26 + §27 land)
+
+| Plan | Status |
+|---|---|
+| **33 BVC Episode 1 Coffee** | content loaded (§26); owner to import + record audio per schedule |
+| 25 iOS validation pass | open — needs device |
+| 26 full | cancelled (belongs to Wanderlearn) |
+| 30 Stripe fee calculator | ready — ~1–2 hrs |
+| 31 i18n EN+ES + SEO | phased |
+| 32 admin email verification | shipped |
+| 34 Magic-link auth migration | backlog stub |
+| **35 completion certificates** | **new** — backlog, 2–3 days |
+| **36 teacher analytics heatmap** | **new** — backlog, 1–2 days, build at ≥5 students/course |
+| **37 a11y axe-core CI** | **new** — backlog, 2–3 days, ship before school-scale |
+| **38 classroom/family plan** | **new** — blocked on teacher demand signal |
+| BVC Episodes 2–7 Season 1 | content exists; load after Episode 1 validates |
+| BVC Season 2 + 3 | content exists; load after Season 1 ships |
+| Starter tier | shipped, 90-day monitoring |

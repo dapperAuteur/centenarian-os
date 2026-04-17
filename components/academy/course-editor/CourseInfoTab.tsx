@@ -29,6 +29,7 @@ interface TabProps {
 }
 
 const CATEGORY_OPTIONS = [
+  'Better Vice Club',
   'Health & Wellness', 'Finance & Money', 'Longevity', 'Fitness', 'Nutrition',
   'Mental Health', 'Career', 'Technology', 'Travel', 'Cooking',
   'Platform Guide', 'Other',
