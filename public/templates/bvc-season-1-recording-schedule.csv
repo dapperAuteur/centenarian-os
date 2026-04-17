@@ -1,0 +1,43 @@
+roadmap_title,roadmap_start_date,roadmap_end_date,roadmap_description,goal_title,goal_category,goal_target_year,goal_description,milestone_title,milestone_target_date,milestone_description,date,time,activity,description,tag,priority,estimated_cost
+BVC Season 1 Recording,2026-04-20,2026-08-14,"7-episode podcast + Academy course publishing schedule. Each episode = 6 segments recorded + edited + published. ~2 weeks per episode with buffer. Adjust dates freely; structure preserves episode order.",Episode 1 — Coffee,CAREER,2026,"Record and publish BVC Episode 1: Coffee. Master script at plans/BVC/BVC_Episode_1_Coffee_MASTER.md.",Record all 6 segments,2026-04-21,"Cold Open + 4 subject segments + Closing. Script in master doc Part 2.",2026-04-20,09:00,"BVC E1 Coffee — prep: review master script + set up recording space","Read Part 2 of master doc; test mic; queue sound cues (coffee grinding, water, ambient morning)",bvc,3,0
+,,,,,,,,,,,2026-04-21,09:00,"BVC E1 Coffee — record Cold Open + Geography + Social Studies","3 segments, ~19 min total recorded. Use CUT-1A/1B/1C markers.",bvc,3,0
+,,,,,,,,,,,2026-04-22,09:00,"BVC E1 Coffee — record Economics + ELA + Closing","3 segments, ~19 min total recorded. Use CUT-1D/1E/1F markers.",bvc,3,0
+,,,,,,,,,,,2026-04-23,14:00,"BVC E1 Coffee — edit all segments + transitions","Apply sound cues, chapter markers, transitions. Export MP3s @ 320kbps.",bvc,3,0
+,,,,Episode 1 — Coffee,,,,Upload audio + publish Academy lesson upgrade,2026-04-25,"Upload MP3s to Cloudinary academy/bvc/coffee/; edit lessons 1-6 to lesson_type=audio + content_url + chapters + transcript.",2026-04-24,10:00,"BVC E1 Coffee — QA + final edits","Listen end-to-end; fix any pronunciation/mix issues. Generate transcripts via Whisper.",bvc,3,0
+,,,,,,,,,,,2026-04-25,14:00,"BVC E1 Coffee — upload + publish","Upload to Cloudinary; update Academy lessons via course editor; flip course is_published = true.",bvc,3,0
+,,,,Episode 2 — Tea,CAREER,2026,"Record and publish BVC Episode 2: Tea. Master script at plans/BVC/BVC_Episode_2_Tea_MASTER.md.",Record all 6 segments,2026-05-05,"Cold Open + 4 subject segments + Closing.",2026-05-04,09:00,"BVC E2 Tea — prep: review master script","Read Part 2 of master doc; review pronunciation list (Camellia sinensis, puer, etc.).",bvc,3,0
+,,,,,,,,,,,2026-05-05,09:00,"BVC E2 Tea — record Cold Open + Geography + Social Studies","3 segments, ~19 min.",bvc,3,0
+,,,,,,,,,,,2026-05-06,09:00,"BVC E2 Tea — record Economics + ELA + Closing","3 segments, ~19 min.",bvc,3,0
+,,,,,,,,,,,2026-05-07,14:00,"BVC E2 Tea — edit all segments","Apply sound cues, chapter markers, export MP3s.",bvc,3,0
+,,,,Episode 2 — Tea,,,,Upload audio + publish Academy lesson upgrade,2026-05-09,"Upload MP3s + Academy audio upgrade.",2026-05-08,10:00,"BVC E2 Tea — QA + transcripts",,bvc,3,0
+,,,,,,,,,,,2026-05-09,14:00,"BVC E2 Tea — upload + publish",,bvc,3,0
+,,,,Episode 3 — Chocolate,CAREER,2026,"Record and publish BVC Episode 3: Chocolate. Master script at plans/BVC/BVC_Episode_3_Chocolate_MASTER.md.",Record all 6 segments,2026-05-19,"Cold Open + 4 subject segments + Closing.",2026-05-18,09:00,"BVC E3 Chocolate — prep","Review master script.",bvc,3,0
+,,,,,,,,,,,2026-05-19,09:00,"BVC E3 Chocolate — record first half","Cold Open + Geography + Social Studies.",bvc,3,0
+,,,,,,,,,,,2026-05-20,09:00,"BVC E3 Chocolate — record second half","Economics + ELA + Closing.",bvc,3,0
+,,,,,,,,,,,2026-05-21,14:00,"BVC E3 Chocolate — edit",,bvc,3,0
+,,,,Episode 3 — Chocolate,,,,Upload audio + publish Academy lesson upgrade,2026-05-23,"Upload MP3s + Academy audio upgrade.",2026-05-22,10:00,"BVC E3 Chocolate — QA + transcripts",,bvc,3,0
+,,,,,,,,,,,2026-05-23,14:00,"BVC E3 Chocolate — upload + publish",,bvc,3,0
+,,,,Episode 4 — Sugar,CAREER,2026,"Record and publish BVC Episode 4: Sugar. Master script at plans/BVC/BVC_Episode_4_Sugar_MASTER.md.",Record all 6 segments,2026-06-02,"Cold Open + 4 subject segments + Closing.",2026-06-01,09:00,"BVC E4 Sugar — prep","Review master script.",bvc,3,0
+,,,,,,,,,,,2026-06-02,09:00,"BVC E4 Sugar — record first half",,bvc,3,0
+,,,,,,,,,,,2026-06-03,09:00,"BVC E4 Sugar — record second half",,bvc,3,0
+,,,,,,,,,,,2026-06-04,14:00,"BVC E4 Sugar — edit",,bvc,3,0
+,,,,Episode 4 — Sugar,,,,Upload audio + publish Academy lesson upgrade,2026-06-06,"Upload MP3s + Academy audio upgrade.",2026-06-05,10:00,"BVC E4 Sugar — QA + transcripts",,bvc,3,0
+,,,,,,,,,,,2026-06-06,14:00,"BVC E4 Sugar — upload + publish",,bvc,3,0
+,,,,Episode 5 — Forest Wisdom (Guayusa + Kola Nut),CAREER,2026,"Record and publish BVC Episode 5: Forest Wisdom. Master script at plans/BVC/BVC_Episode_5_ForestWisdom_MASTER.md. Combines Guayusa + Kola Nut.",Record all 6 segments,2026-06-16,"Cold Open + 4 subject segments + Closing.",2026-06-15,09:00,"BVC E5 Forest Wisdom — prep","Review master script.",bvc,3,0
+,,,,,,,,,,,2026-06-16,09:00,"BVC E5 Forest Wisdom — record first half",,bvc,3,0
+,,,,,,,,,,,2026-06-17,09:00,"BVC E5 Forest Wisdom — record second half",,bvc,3,0
+,,,,,,,,,,,2026-06-18,14:00,"BVC E5 Forest Wisdom — edit",,bvc,3,0
+,,,,Episode 5 — Forest Wisdom (Guayusa + Kola Nut),,,,Upload audio + publish Academy lesson upgrade,2026-06-20,"Upload MP3s + Academy audio upgrade.",2026-06-19,10:00,"BVC E5 Forest Wisdom — QA + transcripts",,bvc,3,0
+,,,,,,,,,,,2026-06-20,14:00,"BVC E5 Forest Wisdom — upload + publish",,bvc,3,0
+,,,,Episode 6 — Kava,CAREER,2026,"Record and publish BVC Episode 6: Kava. Master script at plans/BVC/BVC_Episode_6_Kava_MASTER.md.",Record all 6 segments,2026-06-30,"Cold Open + 4 subject segments + Closing.",2026-06-29,09:00,"BVC E6 Kava — prep","Review master script.",bvc,3,0
+,,,,,,,,,,,2026-06-30,09:00,"BVC E6 Kava — record first half",,bvc,3,0
+,,,,,,,,,,,2026-07-01,09:00,"BVC E6 Kava — record second half",,bvc,3,0
+,,,,,,,,,,,2026-07-02,14:00,"BVC E6 Kava — edit",,bvc,3,0
+,,,,Episode 6 — Kava,,,,Upload audio + publish Academy lesson upgrade,2026-07-04,"Upload MP3s + Academy audio upgrade.",2026-07-03,10:00,"BVC E6 Kava — QA + transcripts",,bvc,3,0
+,,,,,,,,,,,2026-07-04,14:00,"BVC E6 Kava — upload + publish",,bvc,3,0
+,,,,Episode 7 — Season 1 Synthesis,CAREER,2026,"Record and publish BVC Season 1 Synthesis. Master script at plans/BVC/BVC_Episode_7_Synthesis_MASTER.md. Ties 6 episodes together.",Record all 6 segments,2026-07-14,"Cold Open + 4 subject segments + Closing.",2026-07-13,09:00,"BVC E7 Synthesis — prep","Review all 6 prior episodes' themes.",bvc,3,0
+,,,,,,,,,,,2026-07-14,09:00,"BVC E7 Synthesis — record first half",,bvc,3,0
+,,,,,,,,,,,2026-07-15,09:00,"BVC E7 Synthesis — record second half",,bvc,3,0
+,,,,,,,,,,,2026-07-16,14:00,"BVC E7 Synthesis — edit",,bvc,3,0
+,,,,Episode 7 — Season 1 Synthesis,,,,Upload audio + publish Academy lesson upgrade,2026-07-18,"Upload MP3s + publish — Season 1 complete.",2026-07-17,10:00,"BVC E7 Synthesis — QA + transcripts",,bvc,3,0
+,,,,,,,,,,,2026-07-18,14:00,"BVC E7 Synthesis — upload + publish — SEASON 1 COMPLETE","All 7 episodes published. Celebrate. Start drafting Season 2 import when metrics + feedback come in.",bvc,3,0

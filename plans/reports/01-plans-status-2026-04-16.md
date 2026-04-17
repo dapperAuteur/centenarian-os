@@ -1215,3 +1215,92 @@ Screenshot at [plans/bugs/Bugs-checkmarks-Screenshot 2026-04-16 at 18.02.41.png]
 Tech roadmap was also listed as broken but uses lucide's `CheckCircle2` component throughout — renders correctly with no fix needed. If the owner sees something different on `/tech-roadmap`, include a URL/screenshot and we'll reopen.
 
 Bug closed.
+
+---
+
+## 25. BVC Episode 1: Coffee — content load — `feat/bvc-coffee-content-load`
+
+Strategic pivot from "add more Academy infrastructure" to "ship actual Academy content" per the ecosystem direction. Master doc at [plans/BVC/BVC_Episode_1_Coffee_MASTER.md](../BVC/BVC_Episode_1_Coffee_MASTER.md) converted to Academy-ready assets. **Audio recording deferred** — all lessons ship as text + data + maps first, upgrade to audio lesson type when MP3s drop.
+
+### 25.1 — Decisions confirmed this branch
+
+From owner review of `plans/BVC/`:
+
+1. **Arc matches master doc**, not the chronological version I first drafted. Episode 1 has a subject-lens structure across all 7 Season 1 episodes: Cold Open → Geography → Social Studies → Economics → ELA → Closing → Quiz → Project.
+2. **Audience: podcast listeners ages 25–45 primary; grades 9–12 IAS-aligned educational target secondary.** Marketing copy and Welcome lesson lead with adult podcast framing.
+3. **Teacher resources:** attached as downloadable document on Lesson 1 (via `lessons.documents` JSONB) — not a separate role-gated module (that primitive doesn't exist yet; not built here).
+4. **Duplicate file deleted:** `plans/BVC/BVC_Episode_1_Coffee_MASTER (1).md` removed (byte-identical to the canonical file).
+5. **Season 2 + 3 content exists at `plans/BVC/BVC Season 2 and 3/`** — 7 more episodes (Beer, Wine, Whiskey, Rum, Tequila/Mezcal, Sake, Synthesis) + Season 3 forbidden-leaf plan (Tobacco, Cannabis, Opium, Coca, Psychedelics, Khat, Synthesis). Same 4-subject-lens structure. Out of scope for this branch — ship Episode 1 first, validate against real students, then scale.
+
+### 25.2 — Files added
+
+**Source-of-truth content (force-added under `content/`):**
+- [`content/tutorials/bvc/coffee/01-welcome.md`](../../content/tutorials/bvc/coffee/01-welcome.md) through `08-project.md` — 8 student-facing lesson markdowns.
+- [`content/tutorials/bvc/coffee/map.json`](../../content/tutorials/bvc/coffee/map.json) — Lesson 2 Geography `map_content`: 13 markers (top 10 producers + 3 historical trade ports), 3 trade-route polylines (Yemen→Ottoman, Ottoman→Europe, Colonial Atlantic), 2 Coffee Belt polygons (north + south halves).
+- [`content/tutorials/bvc/coffee/quiz.json`](../../content/tutorials/bvc/coffee/quiz.json) — Lesson 7 `quiz_content`: 8 multiple-choice questions with explanations + APA citations, 75% passing score, unlimited attempts.
+- [`content/tutorials/bvc/coffee/documents.json`](../../content/tutorials/bvc/coffee/documents.json) — Lesson 1 `documents` array: teacher resources (PDF placeholder) + 5 primary-source URLs with archive attribution.
+- [`content/tutorials/bvc/coffee/teacher-resources.md`](../../content/tutorials/bvc/coffee/teacher-resources.md) — full teacher guide (IAS + Common Core alignment, 4 classroom activities, project rubrics, knowledge-check answers, differentiation, bibliography). Owner uploads this as PDF to Cloudinary and pastes the URL into `documents.json`.
+- [`content/tutorials/bvc/coffee/glossary.csv`](../../content/tutorials/bvc/coffee/glossary.csv) — 21 glossary terms drawn from the master doc's Pronunciation Quick Reference + Geography/Social Studies/Economics/ELA vocabulary.
+
+**Import-ready CSVs (tracked under `public/templates/`):**
+- [`public/templates/bvc-episode-1-coffee-lessons.csv`](../../public/templates/bvc-episode-1-coffee-lessons.csv) — 8 lessons ready for owner import via `/dashboard/teaching/[username]/courses/[id]/import`. JSON cells (map_content, documents, quiz_content) minified and CSV-escaped; round-trip tested.
+- [`public/templates/bvc-season-1-recording-schedule.csv`](../../public/templates/bvc-season-1-recording-schedule.csv) — 42 tasks across 7 episode goals in a single roadmap (`BVC Season 1 Recording`). Per-episode cadence: prep → record day 1 → record day 2 → edit → QA → publish. 2 weeks per episode, April 20 → August 14, 2026.
+
+**Tooling:**
+- [`scripts/generate-bvc-coffee-csv.mjs`](../../scripts/generate-bvc-coffee-csv.mjs) — regenerates the lessons CSV from the source markdown + JSON whenever content changes. Pattern for Episodes 2–7 when their time comes.
+
+**Plan:**
+- [`plans/33-bvc-episode-1-coffee.md`](../33-bvc-episode-1-coffee.md) — revised (content production pipeline, arc matching master doc, audio upgrade path, success criteria).
+
+### 25.3 — Owner import steps
+
+After merging this branch:
+
+1. `/dashboard/teaching/[username]/courses/new` — create course:
+   - Title: *Better Vice Club: Coffee*
+   - Category: *Better Vice Club*
+   - Navigation: `cyoa`
+   - Price: decide (suggested $19.99 one-time or bundled in paid tier)
+   - Cover image: origin-region or extraction photo (not a stock mug shot)
+2. Import lessons: course editor → Import → upload `public/templates/bvc-episode-1-coffee-lessons.csv`, mode `create`.
+3. Upload teacher-resources.md as a PDF (or markdown) to Cloudinary folder `academy/bvc/coffee/` and replace `REPLACE_WITH_CLOUDINARY_URL_AFTER_UPLOADING_teacher-resources.pdf` in the Lesson 1 documents array.
+4. Import glossary via `/dashboard/teaching/[username]/courses/[id]/glossary` → upload `content/tutorials/bvc/coffee/glossary.csv`.
+5. Publish: toggle `is_published = true`.
+6. Import recording schedule: `/dashboard/data/import/planner` → upload `public/templates/bvc-season-1-recording-schedule.csv`.
+
+### 25.4 — Audio upgrade path
+
+When each segment's MP3 is recorded (per the schedule):
+
+1. Upload MP3 to Cloudinary `academy/bvc/coffee/`.
+2. Edit the lesson via the course editor:
+   - Change `lesson_type` from `text` → `audio`.
+   - Paste the Cloudinary secure URL into `content_url`.
+   - Paste chapter markers (CUT-1A, CUT-1B, etc. with timestamps from the recording).
+   - Paste synced transcript into `transcript_content`.
+   - `text_content` (the data sheet) remains intact as reading material alongside the audio.
+
+No code changes, no redeploy. The lesson page renders audio player + transcript + chapters + data sheet automatically based on `lesson_type`.
+
+### 25.5 — Merge order
+
+1. Owner reviews the lesson content, especially Lesson 2 Geography's map markers (lat/lon accuracy) and Lesson 7 quiz questions.
+2. Merge `feat/bvc-coffee-content-load` to main.
+3. Owner runs the import steps in §25.3.
+4. Audio recording proceeds on the schedule in the second CSV.
+
+### 25.6 — Remaining backlog
+
+| Plan | Status |
+|---|---|
+| **33 BVC Episode 1 Coffee** | **content loaded this branch; awaiting owner import + audio recording** |
+| 25 iOS validation pass | open — needs device |
+| 26 full | cancelled (per direction doc, belongs to Wanderlearn) |
+| 30 Stripe fee calculator | ready — ~1–2 hrs |
+| 31 i18n EN+ES + SEO | phased |
+| 32 admin email verification | shipped |
+| 34 Magic-link auth migration | backlog stub |
+| BVC Episodes 2–7 Season 1 | content exists at `plans/BVC/`, load after Episode 1 validates |
+| BVC Season 2 (Episodes 8–14) — alcohol | content exists at `plans/BVC/BVC Season 2 and 3/`, load after Season 1 ships |
+| BVC Season 3 (Episodes 15–21) — forbidden leaf | content exists, plan at `plans/BVC/BVC Season 2 and 3/BVC_Season_3_The_Forbidden_Leaf_MASTER_PLAN.md`, load after Season 2 ships |
+| Starter tier | shipped, 90-day monitoring |

@@ -1,0 +1,118 @@
+{
+  "passingScore": 75,
+  "attemptsAllowed": 0,
+  "questions": [
+    {
+      "id": "q1",
+      "questionText": "What are the latitude boundaries of the Coffee Belt?",
+      "questionType": "multiple_choice",
+      "options": [
+        {"id": "q1a", "text": "15°N to 15°S"},
+        {"id": "q1b", "text": "25°N to 30°S"},
+        {"id": "q1c", "text": "40°N to 40°S"},
+        {"id": "q1d", "text": "The tropics only (23.5°N to 23.5°S)"}
+      ],
+      "correctOptionId": "q1b",
+      "explanation": "The Coffee Belt spans 25°N to 30°S latitude — 55 degrees total — covering 81 producing countries across three continents.",
+      "citation": "International Coffee Organization (2024)"
+    },
+    {
+      "id": "q2",
+      "questionText": "Why is Ethiopia's wild coffee forest genetically important?",
+      "questionType": "multiple_choice",
+      "options": [
+        {"id": "q2a", "text": "It produces the highest yields globally"},
+        {"id": "q2b", "text": "It is the only place coffee evolved naturally; its diversity is needed for climate-resilient breeding"},
+        {"id": "q2c", "text": "It is the only region that grows Robusta"},
+        {"id": "q2d", "text": "It is the oldest UNESCO agricultural heritage site"}
+      ],
+      "correctOptionId": "q2b",
+      "explanation": "Ethiopia is the only place where coffee evolved naturally. Its wild highland forests (1,500–2,200m) contain irreplaceable genetic diversity needed for breeding varieties resilient to rising temperatures.",
+      "citation": "Davis et al. (2012)"
+    },
+    {
+      "id": "q3",
+      "questionText": "Which three geographic factors most directly explain why Colombia produces 100% Arabica coffee?",
+      "questionType": "multiple_choice",
+      "options": [
+        {"id": "q3a", "text": "Coastal lowlands, tropical heat, and equatorial rain"},
+        {"id": "q3b", "text": "Andean slopes (1,200–2,000m), volcanic soil, and two rainy seasons per year"},
+        {"id": "q3c", "text": "Desert microclimates, drip irrigation, and government subsidies"},
+        {"id": "q3d", "text": "River valleys, monsoon rains, and terraced farming"}
+      ],
+      "correctOptionId": "q3b",
+      "explanation": "Colombia's Arabica-only profile comes from three Andean mountain ranges at 1,200–2,000m with cloud cover, volcanic soil, and two rainy seasons — conditions that favor Arabica's narrow climate requirements.",
+      "citation": "Federación Nacional de Cafeteros (2023)"
+    },
+    {
+      "id": "q4",
+      "questionText": "Why did King Charles II try to ban coffeehouses in 1675, and what happened?",
+      "questionType": "multiple_choice",
+      "options": [
+        {"id": "q4a", "text": "He wanted to promote tea imports; the ban held until his death"},
+        {"id": "q4b", "text": "He called them places spreading 'false, malicious, and scandalous reports' against his government; the ban was reversed in 11 days after public outcry"},
+        {"id": "q4c", "text": "Medical authorities blamed coffee for plague outbreaks; the ban lasted a year"},
+        {"id": "q4d", "text": "They were exempt from taxation; he imposed new duties that functioned as a ban"}
+      ],
+      "correctOptionId": "q4b",
+      "explanation": "Coffeehouses had become centers of political debate and organizing. The ban lasted only 11 days — an early demonstration of the coffeehouse's power as civic infrastructure.",
+      "citation": "Royal Proclamation (1675); Cowan (2005)"
+    },
+    {
+      "id": "q5",
+      "questionText": "What does it mean to say coffee's history requires 'holding two truths simultaneously'?",
+      "questionType": "multiple_choice",
+      "options": [
+        {"id": "q5a", "text": "That Arabica and Robusta are both valuable despite their differences"},
+        {"id": "q5b", "text": "That coffeehouses advanced democratic ideals in Europe while the coffee served was produced through colonial exploitation and enslaved labor"},
+        {"id": "q5c", "text": "That commodity and specialty markets both have a place"},
+        {"id": "q5d", "text": "That caffeine has both positive and negative health effects"}
+      ],
+      "correctOptionId": "q5b",
+      "explanation": "Coffeehouses in Europe advanced democratic ideals and intellectual freedom, while plantations in the Caribbean, Central America, and Brazil relied on enslaved labor. Seeing both is the starting point for seeing how global systems actually work.",
+      "citation": "Topik & Clarence-Smith (2003); Pendergrast (2010)"
+    },
+    {
+      "id": "q6",
+      "questionText": "What does coffee's 'inelastic demand' tell us about consumer behavior?",
+      "questionType": "multiple_choice",
+      "options": [
+        {"id": "q6a", "text": "Demand drops sharply with any price increase"},
+        {"id": "q6b", "text": "Demand changes barely with price — consumers treat coffee as a necessity and cut other spending first"},
+        {"id": "q6c", "text": "Demand is only affected by advertising, not price"},
+        {"id": "q6d", "text": "Demand is purely seasonal"}
+      ],
+      "correctOptionId": "q6b",
+      "explanation": "When prices spiked 70% in 2024, consumption barely dropped. That's the textbook signature of inelastic demand — consumers treat coffee as essential and sacrifice other purchases to keep buying it.",
+      "citation": "Rabobank (2024); SCA (2024)"
+    },
+    {
+      "id": "q7",
+      "questionText": "How does the 'local multiplier effect' compare local cafés vs. national chains?",
+      "questionType": "multiple_choice",
+      "options": [
+        {"id": "q7a", "text": "Local cafés recirculate ~68% of revenue locally; chains recirculate ~43%"},
+        {"id": "q7b", "text": "Local cafés recirculate ~25% locally; chains recirculate ~75%"},
+        {"id": "q7c", "text": "Both recirculate equally — location doesn't matter"},
+        {"id": "q7d", "text": "The multiplier effect only applies to manufacturing, not coffee"}
+      ],
+      "correctOptionId": "q7a",
+      "explanation": "Locally owned businesses recirculate roughly 68% of revenue in the local economy vs. 43% for chains. The rest leaves through corporate HQ, national suppliers, and shareholders.",
+      "citation": "AMIBA (2023)"
+    },
+    {
+      "id": "q8",
+      "questionText": "In a typical commodity-coffee supply chain, what percentage of the retail price does the farmer receive at the farm gate?",
+      "questionType": "multiple_choice",
+      "options": [
+        {"id": "q8a", "text": "About 10%"},
+        {"id": "q8b", "text": "About 30%"},
+        {"id": "q8c", "text": "About 50%"},
+        {"id": "q8d", "text": "About 70%"}
+      ],
+      "correctOptionId": "q8b",
+      "explanation": "In the commodity system, the farmer captures roughly 30% of the retail price (~$1.20 on a $4.00 bag). In direct trade, farmer capture rises to 30–50%, often at higher per-pound prices.",
+      "citation": "ICO (2024); Fair Trade USA (2023); SCA (2024)"
+    }
+  ]
+}
