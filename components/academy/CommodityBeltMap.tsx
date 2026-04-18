@@ -613,17 +613,22 @@ const CommodityBeltMap: FC = () => {
       // antimeridian instead of wrapping the parallel. Sampling every
       // 2° of longitude forces each segment to be a short great-circle
       // hop that closely approximates the parallel.
+      //
+      // Winding: top edge west→east, bottom edge east→west. In D3's
+      // spherical polygon logic this keeps the band itself as the
+      // interior (otherwise D3 fills the complement — every region
+      // except the band).
       const STEP = 2;
       const ring: Array<[number, number]> = [];
       for (let lon = -179.9; lon < 179.9; lon += STEP) {
-        ring.push([lon, belt.latMin]);
-      }
-      ring.push([179.9, belt.latMin]);
-      for (let lon = 179.9; lon > -179.9; lon -= STEP) {
         ring.push([lon, belt.latMax]);
       }
-      ring.push([-179.9, belt.latMax]);
+      ring.push([179.9, belt.latMax]);
+      for (let lon = 179.9; lon > -179.9; lon -= STEP) {
+        ring.push([lon, belt.latMin]);
+      }
       ring.push([-179.9, belt.latMin]);
+      ring.push([-179.9, belt.latMax]);
 
       const bandFeature: GeoJSON.Feature = {
         type: "Feature",
