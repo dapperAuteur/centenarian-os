@@ -864,6 +864,11 @@ const CommodityBeltMap: FC = () => {
       <OverlapLegend />
 
       {/* Map */}
+      {/* `isolation: isolate` creates a new stacking context so the belt
+          paths' `mix-blend-mode: multiply` composites against this
+          container's light background instead of whatever (possibly dark)
+          ancestor page background sits behind it. Without isolation the
+          bands invert to near-black on dark pages. */}
       <div
         style={{
           width: "100%",
@@ -871,6 +876,7 @@ const CommodityBeltMap: FC = () => {
           overflow: "hidden",
           border: "0.5px solid #e5e7eb",
           background: "#f0f4f8",
+          isolation: "isolate",
         }}
       >
         {error ? (
