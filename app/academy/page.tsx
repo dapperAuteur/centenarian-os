@@ -145,7 +145,7 @@ export default function AcademyPage() {
                 New to Better Vice Club?
               </p>
               <p className="text-sm sm:text-base text-gray-100">
-                See all 21 episodes plotted by geographic origin — coffee, cannabis, kava, and more.
+                Explore episode origins and growing belt maps — coffee, cannabis, kava, and more.
               </p>
             </div>
           </div>
