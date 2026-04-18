@@ -185,8 +185,9 @@ export const BELTS: Belt[] = [
 
 /**
  * Builds a GeoJSON rectangle from [lonMin, latMin, lonMax, latMax] bounds.
- * Winding SW→SE→NE→NW matches D3's expectation for small spherical
- * polygons — interior = the rectangle, not its complement.
+ * Winding NW→NE→SE→SW matches the Mode A band winding — interior is
+ * the rectangle itself. The mirror winding (SW→SE→NE→NW) makes D3 fill
+ * everything except the rectangle, which is not what we want.
  */
 function makePoly(
   lonMin: number,
@@ -200,11 +201,11 @@ function makePoly(
     geometry: {
       type: "Polygon",
       coordinates: [[
-        [lonMin, latMin],
-        [lonMax, latMin],
-        [lonMax, latMax],
         [lonMin, latMax],
+        [lonMax, latMax],
+        [lonMax, latMin],
         [lonMin, latMin],
+        [lonMin, latMax],
       ]],
     },
   };
@@ -393,16 +394,16 @@ function BeltToggleButton({
         display: "flex",
         alignItems: "center",
         gap: "6px",
-        padding: "4px 10px",
+        padding: "6px 12px",
         borderRadius: "5px",
         border: active
           ? `1.5px solid ${belt.color}`
           : "1px solid #d1d5db",
         background: active ? `${belt.color}20` : "transparent",
         cursor: "pointer",
-        fontSize: "11px",
+        fontSize: "13px",
         fontWeight: active ? 500 : 400,
-        color: active ? "#1f2937" : "#9ca3af",
+        color: active ? "#1f2937" : "#6b7280",
         transition: "all 0.15s",
         whiteSpace: "nowrap",
       }}
@@ -435,7 +436,7 @@ function OverlapLegend() {
     >
       <div
         style={{
-          fontSize: "11px",
+          fontSize: "13px",
           fontWeight: 500,
           color: "#374151",
           marginBottom: "8px",
@@ -463,7 +464,7 @@ function OverlapLegend() {
                 marginBottom: "4px",
               }}
             />
-            <div style={{ fontSize: "10px", color: "#6b7280" }}>
+            <div style={{ fontSize: "12px", color: "#374151" }}>
               {s.label}
             </div>
           </div>
@@ -484,10 +485,10 @@ function OverlapLegend() {
               marginBottom: "4px",
             }}
           />
-          <div style={{ fontSize: "10px", color: "#6b7280" }}>5+ belts</div>
+          <div style={{ fontSize: "12px", color: "#374151" }}>5+ belts</div>
         </div>
       </div>
-      <div style={{ fontSize: "10px", color: "#9ca3af", lineHeight: 1.5 }}>
+      <div style={{ fontSize: "12px", color: "#6b7280", lineHeight: 1.5 }}>
         Belt colors mix like paint — yellow + blue = green, red + blue = purple,
         all primary colors together = near black. Darker regions have more
         overlapping growing belts. Click any region to see which belts are
@@ -568,7 +569,7 @@ function BeltInfoPanel({
         <div style={{ flex: 1 }}>
           <div
             style={{
-              fontSize: "11px",
+              fontSize: "12px",
               fontWeight: 500,
               color: "#6b7280",
               marginBottom: "2px",
@@ -599,12 +600,12 @@ function BeltInfoPanel({
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "4px",
-                    padding: "2px 8px",
+                    padding: "3px 10px",
                     borderRadius: "4px",
                     border: `1px solid ${b.color}`,
                     background: `${b.color}18`,
-                    fontSize: "11px",
-                    color: "#374151",
+                    fontSize: "12px",
+                    color: "#1f2937",
                   }}
                 >
                   <span
@@ -837,7 +838,7 @@ const CommodityBeltMap: FC = () => {
           .append("text")
           .attr("x", labelCoords[0] + 6)
           .attr("y", labelCoords[1] - 2)
-          .attr("font-size", "7px")
+          .attr("font-size", "10px")
           .attr("fill", "#94a3b8")
           .attr("font-family", "system-ui, sans-serif")
           .text(`${Math.abs(lat)}°${lat >= 0 ? "N" : "S"}`);
@@ -851,7 +852,7 @@ const CommodityBeltMap: FC = () => {
         .append("text")
         .attr("x", eqCoords[0] + 6)
         .attr("y", eqCoords[1] - 2)
-        .attr("font-size", "7px")
+        .attr("font-size", "10px")
         .attr("fill", "#64748b")
         .attr("font-family", "system-ui, sans-serif")
         .attr("font-weight", "500")
@@ -881,9 +882,6 @@ const CommodityBeltMap: FC = () => {
       style={{
         width: "100%",
         fontFamily: "var(--font-sans, system-ui, sans-serif)",
-        background: "white",
-        padding: "12px",
-        borderRadius: "10px",
       }}
     >
       {/* View mode toggle */}
@@ -896,7 +894,7 @@ const CommodityBeltMap: FC = () => {
         }}
       >
         <span
-          style={{ fontSize: "11px", color: "#6b7280", fontWeight: 500 }}
+          style={{ fontSize: "13px", color: "#374151", fontWeight: 500 }}
         >
           View:
         </span>
@@ -911,14 +909,14 @@ const CommodityBeltMap: FC = () => {
               key={mode}
               onClick={() => setViewMode(mode)}
               style={{
-                padding: "4px 12px",
+                padding: "6px 14px",
                 borderRadius: "5px",
                 border: isActive
                   ? "1.5px solid #374151"
                   : "1px solid #d1d5db",
                 background: isActive ? "#374151" : "transparent",
-                color: isActive ? "#fff" : "#6b7280",
-                fontSize: "12px",
+                color: isActive ? "#fff" : "#374151",
+                fontSize: "13px",
                 fontWeight: isActive ? 500 : 400,
                 cursor: "pointer",
               }}
@@ -963,7 +961,7 @@ const CommodityBeltMap: FC = () => {
           style={{
             background: "none",
             border: "none",
-            fontSize: "12px",
+            fontSize: "13px",
             color: "#2563eb",
             cursor: "pointer",
             padding: 0,
@@ -977,7 +975,7 @@ const CommodityBeltMap: FC = () => {
           style={{
             background: "none",
             border: "none",
-            fontSize: "12px",
+            fontSize: "13px",
             color: "#6b7280",
             cursor: "pointer",
             padding: 0,
@@ -989,10 +987,10 @@ const CommodityBeltMap: FC = () => {
         <span
           style={{
             marginLeft: "auto",
-            fontSize: "11px",
-            color: active.size > 0 ? "#374151" : "#d1d5db",
+            fontSize: "13px",
+            color: active.size > 0 ? "#374151" : "#9ca3af",
             background: active.size > 0 ? "#f3f4f6" : "transparent",
-            padding: "2px 8px",
+            padding: "3px 10px",
             borderRadius: "10px",
             fontWeight: 500,
           }}
@@ -1074,15 +1072,15 @@ const CommodityBeltMap: FC = () => {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "5px",
-                fontSize: "11px",
-                color: "#6b7280",
+                gap: "6px",
+                fontSize: "13px",
+                color: "#374151",
               }}
             >
               <span
                 style={{
-                  width: "10px",
-                  height: "10px",
+                  width: "12px",
+                  height: "12px",
                   borderRadius: "2px",
                   background: b.color,
                   flexShrink: 0,
@@ -1090,7 +1088,7 @@ const CommodityBeltMap: FC = () => {
               />
               {b.name}
               <span style={{ color: "#d1d5db" }}>·</span>
-              <span style={{ fontSize: "10px", color: "#9ca3af" }}>
+              <span style={{ fontSize: "12px", color: "#6b7280" }}>
                 {b.latMin < 0 ? `${Math.abs(b.latMin)}°S` : `${b.latMin}°N`}
                 {" – "}
                 {b.latMax < 0 ? `${Math.abs(b.latMax)}°S` : `${b.latMax}°N`}
@@ -1104,8 +1102,8 @@ const CommodityBeltMap: FC = () => {
       <div
         style={{
           marginTop: "10px",
-          fontSize: "10px",
-          color: "#d1d5db",
+          fontSize: "11px",
+          color: "#9ca3af",
           textAlign: "right",
         }}
       >

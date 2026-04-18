@@ -64,13 +64,24 @@ const MapTabs: FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>("origins");
 
   return (
-    <div style={{ width: "100%", fontFamily: "var(--font-sans, system-ui, sans-serif)" }}>
+    // White wrapper so the tab labels read on the academy's dark
+    // (bg-gray-950) page background. The inner map components have
+    // their own white containers for multiply blend isolation.
+    <div
+      style={{
+        width: "100%",
+        fontFamily: "var(--font-sans, system-ui, sans-serif)",
+        background: "white",
+        borderRadius: "10px",
+        padding: "12px",
+      }}
+    >
       {/* Tab bar */}
       <div
         style={{
           display: "flex",
           gap: "0",
-          marginBottom: "24px",
+          marginBottom: "16px",
           borderBottom: "1px solid #e5e7eb",
         }}
       >
