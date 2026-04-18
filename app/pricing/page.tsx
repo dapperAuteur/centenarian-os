@@ -16,7 +16,9 @@ import PageViewTracker from '@/components/ui/PageViewTracker';
 import Modal from '@/components/ui/Modal';
 import StarterModulePicker, { type BillingCadence, type PickerMode } from '@/components/pricing/StarterModulePicker';
 import type { ModuleSlug } from '@/lib/access/starter-modules';
-import { useTranslations } from '@/lib/i18n/client';
+import { useTranslations, useLocale } from '@/lib/i18n/client';
+import LanguageToggle from '@/components/i18n/LanguageToggle';
+import { DEFAULT_LOCALE } from '@/lib/i18n/config';
 
 function FromSignupBanner() {
   const searchParams = useSearchParams();
@@ -56,6 +58,7 @@ export default function PricingPage() {
   const { user } = useAuth();
   const { status: subStatus, selectedModules: currentModules, refresh: refreshSubscription } = useSubscription();
   const t = useTranslations('pricing');
+  const locale = useLocale() ?? DEFAULT_LOCALE;
   const [loadingPlan, setLoadingPlan] = useState<'monthly' | 'lifetime' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
@@ -218,6 +221,7 @@ export default function PricingPage() {
                 </Link>
               </>
             )}
+            <LanguageToggle currentLocale={locale} />
           </div>
         </nav>
       </header>

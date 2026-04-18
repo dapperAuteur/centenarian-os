@@ -16,8 +16,12 @@ import { useState, useEffect } from 'react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import DesktopNav from '@/components/nav/DesktopNav';
 import MobileBottomBar from '@/components/nav/MobileBottomBar';
+import LanguageToggle from '@/components/i18n/LanguageToggle';
+import { useLocale } from '@/lib/i18n/client';
+import { DEFAULT_LOCALE } from '@/lib/i18n/config';
 
 function PublicHeader() {
+  const locale = useLocale() ?? DEFAULT_LOCALE;
   return (
     <nav className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -82,6 +86,7 @@ function PublicHeader() {
             <Zap className="w-4 h-4" />
             Get Started
           </Link>
+          <LanguageToggle currentLocale={locale} />
         </div>
       </div>
     </nav>
