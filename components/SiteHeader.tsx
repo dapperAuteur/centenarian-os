@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { useSubscription } from '@/lib/hooks/useSubscription';
 import { useUnreadCount } from '@/lib/hooks/useUnreadCount';
 import { createClient } from '@/lib/supabase/client';
-import { GraduationCap, Radio, LogIn, BookOpen, ChefHat, Zap, Dumbbell, Activity } from 'lucide-react';
+import { GraduationCap, Radio, LogIn, BookOpen, ChefHat, Zap, Dumbbell, Activity, Globe } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import DesktopNav from '@/components/nav/DesktopNav';
@@ -35,6 +35,13 @@ function PublicHeader() {
           >
             <GraduationCap className="w-4 h-4" />
             Academy
+          </Link>
+          <Link
+            href="/academy/explore"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition"
+          >
+            <Globe className="w-4 h-4" />
+            Explore
           </Link>
           <Link
             href="/blog"

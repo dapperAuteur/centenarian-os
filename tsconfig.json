@@ -40,6 +40,7 @@
     "supabase",
     "docs",
     "tests",
+    "plans",
     "playwright.a11y.config.ts"
   ]
 }
