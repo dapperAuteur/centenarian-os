@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Search, BookOpen, Play, Lock, Layers } from 'lucide-react';
+import { Search, BookOpen, Play, Lock, Layers, Globe, ArrowRight } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Course {
@@ -130,6 +130,30 @@ export default function AcademyPage() {
             {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </div>
+
+        {/* BVC commodity map callout — links to /academy/explore.
+            Placed between filters and course grid so browsing users see
+            it before scrolling into the list. */}
+        <Link
+          href="/academy/explore"
+          className="mb-8 sm:mb-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 sm:p-5 bg-linear-to-r from-amber-900/30 via-blue-900/20 to-red-900/30 border border-amber-800/40 rounded-2xl hover:border-amber-700/70 transition group"
+        >
+          <div className="flex items-start sm:items-center gap-3">
+            <Globe className="w-6 h-6 text-amber-400 shrink-0 mt-0.5 sm:mt-0" aria-hidden="true" />
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-amber-400 mb-0.5">
+                New to Better Vice Club?
+              </p>
+              <p className="text-sm sm:text-base text-gray-100">
+                See all 21 episodes plotted by geographic origin — coffee, cannabis, kava, and more.
+              </p>
+            </div>
+          </div>
+          <span className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-300 group-hover:text-amber-200 transition shrink-0">
+            Open the map
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" aria-hidden="true" />
+          </span>
+        </Link>
 
         {loading ? (
           <div className="flex justify-center py-20">
