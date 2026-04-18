@@ -201,26 +201,28 @@ interface CountryFeature {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function hexToRgb(hex: string) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return { r, g, b };
-}
-
-/** Approximate subtractive (multiply) blend of N colors */
+/**
+ * Approximates the visual result of stacking belt bands with
+ * `mix-blend-mode: multiply` at 0.45 opacity each, so the legend
+ * swatches match what actually appears on the map (not pure multiply,
+ * which would go black at 3+ overlaps).
+ */
 function multiplyBlend(colors: string[]): string {
   if (colors.length === 0) return "#ffffff";
-  const rgbs = colors.map(hexToRgb);
-  const blended = rgbs.reduce(
-    (acc, c) => ({
-      r: Math.round((acc.r * c.r) / 255),
-      g: Math.round((acc.g * c.g) / 255),
-      b: Math.round((acc.b * c.b) / 255),
-    }),
-    { r: 255, g: 255, b: 255 }
-  );
-  return `rgb(${blended.r},${blended.g},${blended.b})`;
+
+  const BELT_OPACITY = 0.45;
+  let r = 255, g = 255, b = 255;
+
+  colors.forEach((hex) => {
+    const cr = parseInt(hex.slice(1, 3), 16);
+    const cg = parseInt(hex.slice(3, 5), 16);
+    const cb = parseInt(hex.slice(5, 7), 16);
+    r = Math.round(r * (1 - BELT_OPACITY + BELT_OPACITY * cr / 255));
+    g = Math.round(g * (1 - BELT_OPACITY + BELT_OPACITY * cg / 255));
+    b = Math.round(b * (1 - BELT_OPACITY + BELT_OPACITY * cb / 255));
+  });
+
+  return `rgb(${r},${g},${b})`;
 }
 
 /** Sample overlap legend — 1, 2, 3, 4 belts */
@@ -302,9 +304,9 @@ function OverlapLegend() {
     <div
       style={{
         padding: "12px 14px",
-        border: "0.5px solid #e5e7eb",
+        border: "1px solid #e5e7eb",
         borderRadius: "8px",
-        background: "#f9fafb",
+        background: "white",
         marginBottom: "10px",
       }}
     >
@@ -557,12 +559,13 @@ const CommodityBeltMap: FC = () => {
 
     const pathGen = d3.geoPath(proj);
 
-    // White ocean (required for multiply blend mode to work correctly)
+    // Pure-white ocean — multiply blend leaves belt colors unchanged
+    // over white, so bands appear at full saturation.
     svg
       .append("path")
       .datum({ type: "Sphere" } as d3.GeoPermissibleObjects)
       .attr("d", pathGen)
-      .attr("fill", "#f0f4f8");
+      .attr("fill", "#ffffff");
 
     // Graticule
     svg
@@ -597,7 +600,7 @@ const CommodityBeltMap: FC = () => {
       .data((countries as d3.ExtendedFeatureCollection).features)
       .join("path")
       .attr("d", pathGen)
-      .attr("fill", "#dde3ea")
+      .attr("fill", "#e8ecf0")
       .attr("stroke", "#fff")
       .attr("stroke-width", 0.4);
 
@@ -732,6 +735,9 @@ const CommodityBeltMap: FC = () => {
       style={{
         width: "100%",
         fontFamily: "var(--font-sans, system-ui, sans-serif)",
+        background: "white",
+        padding: "12px",
+        borderRadius: "10px",
       }}
     >
       {/* View mode toggle */}
@@ -874,18 +880,18 @@ const CommodityBeltMap: FC = () => {
       <OverlapLegend />
 
       {/* Map */}
-      {/* `isolation: isolate` creates a new stacking context so the belt
-          paths' `mix-blend-mode: multiply` composites against this
-          container's light background instead of whatever (possibly dark)
-          ancestor page background sits behind it. Without isolation the
-          bands invert to near-black on dark pages. */}
+      {/* `isolation: isolate` + pure white background creates a new
+          stacking context so the belt paths' `mix-blend-mode: multiply`
+          composites against white (color × white = color) instead of
+          reaching through to the dark academy page background (which
+          would multiply every channel down toward black). */}
       <div
         style={{
           width: "100%",
           borderRadius: "10px",
           overflow: "hidden",
           border: "0.5px solid #e5e7eb",
-          background: "#f0f4f8",
+          background: "white",
           isolation: "isolate",
         }}
       >
