@@ -43,8 +43,8 @@ export default function CommodityMapPage() {
         <h1
           style={{
             fontSize: "28px",
-            fontWeight: 500,
-            color: "#111827",
+            fontWeight: 600,
+            color: "#f3f4f6",
             margin: "0 0 8px",
             lineHeight: 1.2,
           }}
@@ -54,7 +54,7 @@ export default function CommodityMapPage() {
         <p
           style={{
             fontSize: "15px",
-            color: "#6b7280",
+            color: "#d1d5db",
             lineHeight: 1.6,
             maxWidth: "600px",
             margin: 0,

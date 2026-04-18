@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Link from 'next/link';
-import { BookOpen, Users, DollarSign, Plus, ArrowRight, CreditCard, Layers } from 'lucide-react';
+import { BookOpen, Users, DollarSign, Plus, ArrowRight, CreditCard, Layers, Globe } from 'lucide-react';
 
 interface Course {
   id: string;
@@ -123,6 +123,13 @@ export default function TeachingDashboard() {
           className="flex items-center gap-2 px-4 py-2 bg-gray-900 border border-gray-800 hover:border-fuchsia-700 text-gray-300 hover:text-fuchsia-300 rounded-xl text-sm font-medium transition"
         >
           Live Sessions
+        </Link>
+        <Link
+          href="/academy/explore"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-900 border border-gray-800 hover:border-fuchsia-700 text-gray-300 hover:text-fuchsia-300 rounded-xl text-sm font-medium transition"
+        >
+          <Globe className="w-4 h-4" />
+          BVC Episode Map
         </Link>
       </div>
 
