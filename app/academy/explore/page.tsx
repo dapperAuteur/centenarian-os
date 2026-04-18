@@ -3,32 +3,8 @@
 // Works with the App Router (Next.js 13+).
 
 import type { Metadata } from "next";
-import dynamic from "next/dynamic";
-
-// CommodityMap uses D3 and browser APIs — import it dynamically
-// so it only runs on the client. This prevents SSR errors.
-const CommodityMap = dynamic(
-  () => import("@/components/academy/CommodityMap"),
-  {
-    ssr: false,
-    loading: () => (
-      <div
-        style={{
-          height: "460px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#9ca3af",
-          fontSize: "14px",
-          border: "0.5px solid #e5e7eb",
-          borderRadius: "10px",
-        }}
-      >
-        Loading map data...
-      </div>
-    ),
-  }
-);
+import Link from "next/link";
+import CommodityMap from "@/components/academy/CommodityMapClient";
 
 export const metadata: Metadata = {
   title: "Explore All Episodes | Better Vice Club",
@@ -102,7 +78,7 @@ export default function CommodityMapPage() {
           marginTop: "40px",
         }}
       >
-        <a
+        <Link
           href="/academy"
           style={{
             display: "block",
@@ -140,13 +116,13 @@ export default function CommodityMapPage() {
             Each episode has subject-specific teacher packets for Geography,
             Social Studies, Economics, and ELA.
           </div>
-        </a>
+        </Link>
 
         {/* TODO: once the BVC Season 1 course is imported into the Academy
             (plan 33 is content-loaded but not yet published as a course),
             update this href to the actual course detail route, e.g.
             /academy/{courseId}. For now both CTAs land on the catalog. */}
-        <a
+        <Link
           href="/academy"
           style={{
             display: "block",
@@ -183,7 +159,7 @@ export default function CommodityMapPage() {
             Coffee, Tea, Chocolate, Sugar, Guayusa, Kola Nut, and Kava.
             Seven episodes. All four subjects. Free to start.
           </div>
-        </a>
+        </Link>
       </div>
     </main>
   );

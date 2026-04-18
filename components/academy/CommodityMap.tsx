@@ -1,9 +1,3 @@
-// @ts-nocheck — REMOVE THIS LINE AFTER `npm install` RUNS LOCALLY.
-// The real @types/d3 and @types/topojson-client declarations are far
-// richer than the minimal shim in types/d3-topojson-shim.d.ts. Until
-// those packages are installed from the registry (blocked by school
-// network in dev; runs fine on Vercel / at home), we skip typecheck
-// on this file. Runtime is unaffected.
 "use client";
 
 /**
