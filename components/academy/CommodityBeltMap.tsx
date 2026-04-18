@@ -617,19 +617,22 @@ const CommodityBeltMap: FC = () => {
       // 2° of longitude forces each segment to be a short great-circle
       // hop that closely approximates the parallel.
       //
-      // Winding matches the original 4-corner polygon (SW→SE→NE→NW)
-      // so D3 treats the band itself as the interior.
+      // Winding: top edge west→east at latMax, bottom edge east→west
+      // at latMin. This is the orientation D3's spherical polygon
+      // logic treats as "the band is the interior" for a densified
+      // ring that wraps the full parallel; the mirror winding fills
+      // the band's complement instead.
       const STEP = 2;
       const ring: Array<[number, number]> = [];
       for (let lon = -179.9; lon < 179.9; lon += STEP) {
-        ring.push([lon, belt.latMin]);
-      }
-      ring.push([179.9, belt.latMin]);
-      for (let lon = 179.9; lon > -179.9; lon -= STEP) {
         ring.push([lon, belt.latMax]);
       }
-      ring.push([-179.9, belt.latMax]);
+      ring.push([179.9, belt.latMax]);
+      for (let lon = 179.9; lon > -179.9; lon -= STEP) {
+        ring.push([lon, belt.latMin]);
+      }
       ring.push([-179.9, belt.latMin]);
+      ring.push([-179.9, belt.latMax]);
 
       const bandFeature: GeoJSON.Feature = {
         type: "Feature",
