@@ -27,42 +27,66 @@ export default function CommodityMapPage() {
       }}
     >
       {/* Header */}
-      <div style={{ marginBottom: "28px" }}>
+      <div style={{ marginBottom: "32px" }}>
         <p
           style={{
-            fontSize: "11px",
-            fontWeight: 500,
-            letterSpacing: "0.1em",
+            fontSize: "12px",
+            fontWeight: 600,
+            letterSpacing: "0.12em",
             textTransform: "uppercase",
             color: "#BA7517",
-            marginBottom: "8px",
+            marginBottom: "12px",
           }}
         >
-          Better Vice Club &nbsp;·&nbsp; Learn.WitUS
+          Better Vice Club &nbsp;·&nbsp; A Learn.WitUS Curriculum &amp; Podcast
         </p>
         <h1
           style={{
-            fontSize: "28px",
-            fontWeight: 600,
+            fontSize: "clamp(36px, 5vw, 52px)",
+            fontWeight: 700,
             color: "#f3f4f6",
-            margin: "0 0 8px",
-            lineHeight: 1.2,
+            margin: "0 0 14px",
+            lineHeight: 1.1,
+            letterSpacing: "-0.01em",
           }}
         >
           Every commodity. Every episode.
         </h1>
         <p
           style={{
+            fontSize: "17px",
+            color: "#e5e7eb",
+            lineHeight: 1.6,
+            maxWidth: "640px",
+            margin: "0 0 14px",
+          }}
+        >
+          <strong style={{ color: "#f9fafb", fontWeight: 600 }}>
+            A 21-episode podcast curriculum
+          </strong>{" "}
+          that teaches geography, history, economics, and ELA through the
+          world&apos;s most culturally loaded substances — coffee, chocolate,
+          whiskey, tobacco, kava, khat, and more.
+        </p>
+        <p
+          style={{
             fontSize: "15px",
             color: "#d1d5db",
             lineHeight: 1.6,
-            maxWidth: "600px",
+            maxWidth: "640px",
             margin: 0,
           }}
         >
-          21 episodes across 3 seasons, plotted by geographic origin. Each
-          pin is a substance — and a story about geography, history,
-          economics, and culture that starts where it grows.
+          The maps below plot every episode two ways:{" "}
+          <strong style={{ color: "#f3f4f6", fontWeight: 600 }}>
+            Episode Origins
+          </strong>{" "}
+          pins each commodity where its story starts, and{" "}
+          <strong style={{ color: "#f3f4f6", fontWeight: 600 }}>
+            Growing Belts
+          </strong>{" "}
+          shows the latitude bands and production regions where each one
+          actually grows. Click any pin or region to open its episode.
         </p>
       </div>
 
