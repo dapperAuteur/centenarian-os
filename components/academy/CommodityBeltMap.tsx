@@ -607,21 +607,28 @@ const CommodityBeltMap: FC = () => {
     const activeBelts = BELTS.filter((b) => active.has(b.id));
 
     activeBelts.forEach((belt) => {
+      // Densify each parallel edge. D3 interpolates polygon edges as
+      // great circles along the shortest path — with only 4 corners,
+      // the east-west edges collapse to a ~0.2° sliver across the
+      // antimeridian instead of wrapping the parallel. Sampling every
+      // 2° of longitude forces each segment to be a short great-circle
+      // hop that closely approximates the parallel.
+      const STEP = 2;
+      const ring: Array<[number, number]> = [];
+      for (let lon = -179.9; lon < 179.9; lon += STEP) {
+        ring.push([lon, belt.latMin]);
+      }
+      ring.push([179.9, belt.latMin]);
+      for (let lon = 179.9; lon > -179.9; lon -= STEP) {
+        ring.push([lon, belt.latMax]);
+      }
+      ring.push([-179.9, belt.latMax]);
+      ring.push([-179.9, belt.latMin]);
+
       const bandFeature: GeoJSON.Feature = {
         type: "Feature",
         properties: {},
-        geometry: {
-          type: "Polygon",
-          coordinates: [
-            [
-              [-179.9, belt.latMin],
-              [179.9, belt.latMin],
-              [179.9, belt.latMax],
-              [-179.9, belt.latMax],
-              [-179.9, belt.latMin],
-            ],
-          ],
-        },
+        geometry: { type: "Polygon", coordinates: [ring] },
       };
 
       beltGroup
