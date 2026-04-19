@@ -253,7 +253,10 @@ const PRODUCTION_COUNTRIES: Record<string, number[]> = {
  */
 const PRODUCTION_REGIONS: Record<string, GeoJSON.Feature[]> = {
   peyote: [
-    makePoly(-105, 22, -95, 32),   // Chihuahuan Desert — Texas / northern Mexico
+    // Chihuahuan Desert extent only — approx -107°W to -100°W, 22°N to 33°N.
+    // The wider bbox the upstream doc suggested (east to -95°) extended
+    // into the Gulf of Mexico, which is obviously wrong for a desert plant.
+    makePoly(-107, 22, -100, 33),
   ],
 };
 
