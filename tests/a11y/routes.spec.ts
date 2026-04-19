@@ -1,14 +1,14 @@
 // tests/a11y/routes.spec.ts
-// Axe-core smoke suite — loads the top 10 public routes, runs axe,
-// asserts no critical/serious violations.
+// Axe-core smoke suite — loads the public routes, runs axe, asserts no
+// critical/serious violations. Moderate/minor violations are logged
+// with counts but not enforced (yet).
 //
-// Phase A (plan 37): baseline-only enforcement. Set env
-// SKIP_ENFORCEMENT=1 to list violations without failing the run
-// (useful for the initial scan before remediation). CI uses
-// enforcement by default once the baseline is clean.
+// SKIP_ENFORCEMENT=1 lists violations without failing — used for the
+// initial baseline scan. CI enforces by default.
 //
-// Covers only PUBLIC routes. Authenticated surfaces (dashboard,
-// teacher editor) come in Phase B — needs a scripted-login fixture.
+// Runs once per Playwright project (see playwright.a11y.config.ts) —
+// Phase B adds a mobile-Chrome project alongside the desktop one so
+// the same routes are scanned at a 390×844 viewport too.
 
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
@@ -19,6 +19,7 @@ const ROUTES: Array<{ path: string; label: string }> = [
   { path: '/signup', label: 'signup' },
   { path: '/login', label: 'login' },
   { path: '/academy', label: 'academy-catalog' },
+  { path: '/academy/explore', label: 'academy-explore-map' },
   { path: '/recipes', label: 'recipes-hub' },
   { path: '/blog', label: 'blog-index' },
   { path: '/coaching', label: 'coaching' },
@@ -40,11 +41,13 @@ for (const route of ROUTES) {
 
     const critical = results.violations.filter((v) => v.impact === 'critical');
     const serious = results.violations.filter((v) => v.impact === 'serious');
+    const moderate = results.violations.filter((v) => v.impact === 'moderate');
+    const minor = results.violations.filter((v) => v.impact === 'minor');
 
     // Always log so devs see violations even when we don't enforce.
     if (results.violations.length > 0) {
       console.log(
-        `\n[a11y] ${route.path} — ${critical.length} critical, ${serious.length} serious, ${results.violations.length} total:`,
+        `\n[a11y] ${route.path} — ${critical.length} critical, ${serious.length} serious, ${moderate.length} moderate, ${minor.length} minor:`,
       );
       for (const v of results.violations) {
         console.log(`  [${v.impact}] ${v.id}: ${v.help}`);

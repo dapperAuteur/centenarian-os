@@ -29,6 +29,10 @@ jobs:
       NEXT_PUBLIC_SUPABASE_ANON_KEY: stub-anon-key
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      # Phase B — authenticated a11y suite. Skipped when unset.
+      # Add these as repo secrets to enable the authenticated spec in CI.
+      A11Y_TEST_EMAIL: ${{ secrets.A11Y_TEST_EMAIL }}
+      A11Y_TEST_PASSWORD: ${{ secrets.A11Y_TEST_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
