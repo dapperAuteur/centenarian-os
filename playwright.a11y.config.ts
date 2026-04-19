@@ -29,5 +29,12 @@ export default defineConfig({
       name: 'chromium-desktop',
       use: { ...devices['Desktop Chrome'] },
     },
+    // Phase B — mobile run of the same public routes. Catches the kind
+    // of touch-target + stacked-layout issues that only surface at
+    // phone width (`CLAUDE.md` mandates 44×44 touch targets site-wide).
+    {
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 7'] },
+    },
   ],
 });

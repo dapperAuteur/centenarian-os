@@ -1,6 +1,6 @@
 # Accessibility smoke suite
 
-Axe-core on the top 10 public routes. Plan 37.
+Axe-core on the public routes. Plans 37 (Phase A) + 37B (Phase B).
 
 ## Run locally
 
@@ -20,26 +20,38 @@ HTML report: `playwright-report/a11y/index.html`.
 
 ## What's scanned
 
-Ten public routes (see [`routes.spec.ts`](routes.spec.ts)):
+Eleven public routes (see [`routes.spec.ts`](routes.spec.ts)):
 
 - `/` landing
 - `/pricing`
 - `/signup`
 - `/login`
 - `/academy` — course catalog
+- `/academy/explore` — BVC commodity map
 - `/recipes` — public recipes hub
 - `/blog`
 - `/coaching`
 - `/features`
 - `/tech-roadmap`
 
+Each route runs twice — once on desktop Chrome (1280×720) and once on mobile Chrome (Pixel 7 viewport, 393×852). Mobile coverage catches touch-target and stacked-layout violations that only surface below the `sm:` breakpoint.
+
 Rules: WCAG 2.1 Level A + AA. Best-practice rules will be added later once the Level-A/AA baseline is clean.
 
-## What's NOT scanned (yet)
+## Authenticated routes (Phase B)
 
-Authenticated surfaces (dashboard, teacher editor, lesson pages). Adding them needs a scripted-login fixture — **Phase B** per plan 37.
+[`authenticated.spec.ts`](authenticated.spec.ts) scans eight logged-in surfaces: dashboard home, planner, finance, teacher dashboard, teacher course list, my-courses, messages, and life categories. **Skipped by default** — set `A11Y_TEST_EMAIL` and `A11Y_TEST_PASSWORD` env vars to enable.
 
-Mobile viewport, reduced-motion, high-contrast, keyboard-only navigation — all future work.
+Create a dedicated test user in Supabase with:
+- Verified email address
+- Active paid/lifetime subscription
+- Teacher role
+
+In CI, add `A11Y_TEST_EMAIL` + `A11Y_TEST_PASSWORD` as GitHub repository secrets and reference them from `.github/workflows/a11y.yml`. Without the secrets the authenticated spec is skipped and the job stays green — no CI regression from merging this scaffolding.
+
+## Still not scanned
+
+Reduced-motion, high-contrast, keyboard-only navigation, screen-reader live-region content.
 
 ## First-run baseline
 
