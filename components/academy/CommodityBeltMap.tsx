@@ -212,96 +212,46 @@ function makePoly(
 }
 
 /**
- * Per-commodity production region bounding boxes, grouped by belt id.
- * These are rough rectangular approximations of actual growing areas —
- * accurate enough to see, for example, that coffee in Indonesia
- * overlaps with cacao production.
+ * Per-commodity producing countries, keyed by belt id, as ISO 3166-1
+ * numeric codes. Drawn in Mode B by filtering the world-atlas country
+ * features — gives real country shapes instead of rectangles so the
+ * oceans stay white and borders read correctly.
+ *
+ * Peyote is intentionally absent: its range is sub-national (the
+ * Chihuahuan Desert, not "all of Mexico + USA"), so it falls through
+ * to the PRODUCTION_REGIONS bounding-box override below.
+ */
+const PRODUCTION_COUNTRIES: Record<string, number[]> = {
+  coffee: [76, 170, 231, 704, 360, 320, 340, 484, 800, 404],
+  //       BR, CO,  ET,  VN,  ID,  GT,  HN,  MX,  UG,  KE
+  cacao: [384, 288, 566, 360, 218, 76, 120],
+  //       CI,  GH,  NG,  ID,  EC, BR, CM
+  tea: [156, 356, 144, 404, 792, 104, 268, 392],
+  //     CN,  IN,  LK,  KE,  TR,  MM,  GE,  JP
+  sugar: [76, 356, 156, 36, 192, 32, 710, 764, 360],
+  //      BR, IN,  CN,  AU, CU,  AR, ZA,  TH,  ID
+  guayusa: [218, 604, 170],
+  //        EC,  PE,  CO
+  kola: [566, 288, 384, 694, 430, 120, 768, 204],
+  //      NG,  GH,  CI,  SL,  LR,  CM,  TG,  BJ
+  tobacco: [840, 156, 76, 356, 716, 454, 792, 100, 32],
+  //        US,  CN, BR, IN,  ZW,  MW,  TR,  BG,  AR
+  cannabis: [4, 504, 484, 170, 840, 710, 422, 388],
+  //         AF, MA, MX,  CO,  US,  ZA,  LB,  JM
+  coca: [170, 604, 68],
+  //     CO,  PE,  BO
+  khat: [231, 887, 404, 706, 262],
+  //     ET,  YE,  KE,  SO,  DJ
+  poppy: [4, 104, 484, 356, 792, 762],
+  //      AF, MM,  MX,  IN,  TR,  TJ
+};
+
+/**
+ * Fallback bounding-box regions for commodities whose production is
+ * sub-national (peyote's Chihuahuan Desert range). Used when a belt
+ * id is NOT present in PRODUCTION_COUNTRIES.
  */
 const PRODUCTION_REGIONS: Record<string, GeoJSON.Feature[]> = {
-  coffee: [
-    makePoly(-75, -35, -35,  5),   // Brazil — Minas Gerais, São Paulo, Paraná
-    makePoly(-82,  -5, -65, 15),   // Colombia — Andes highlands
-    makePoly( 33,   3,  48, 15),   // Ethiopia — Sidamo, Yirgacheffe, Harrar
-    makePoly(100,   8, 120, 25),   // Vietnam — Central Highlands
-    makePoly( 95,  -8, 141,  8),   // Indonesia — Sumatra, Java, Sulawesi
-    makePoly(-95,  12, -82, 20),   // Guatemala, Honduras, Mexico highlands
-    makePoly( 29,  -7,  42,  7),   // Uganda, Kenya — eastern Africa
-  ],
-  cacao: [
-    makePoly( -9,   3,  -2, 11),   // Côte d'Ivoire
-    makePoly( -4,   4,   2, 12),   // Ghana
-    makePoly(  5,   3,  15, 12),   // Nigeria, Cameroon
-    makePoly( 95, -10, 141,  5),   // Indonesia
-    makePoly(-82,  -5, -73,  3),   // Ecuador
-    makePoly(-75, -20, -35,  5),   // Brazil — Bahia, Pará
-  ],
-  tea: [
-    makePoly(106,  20, 125, 35),   // China — Yunnan, Fujian, Zhejiang
-    makePoly( 72,   8,  96, 28),   // India — Assam, Darjeeling, Nilgiris
-    makePoly( 79,   6,  82, 10),   // Sri Lanka
-    makePoly( 33,  -5,  42,  5),   // Kenya — Rift Valley
-    makePoly( 98,   6, 106, 20),   // Myanmar, Thailand highlands
-    makePoly( 35,  35,  53, 43),   // Georgia, Turkey, Azerbaijan (Black Sea)
-  ],
-  sugar: [
-    makePoly(-75, -35, -35,  5),   // Brazil — São Paulo, Minas Gerais
-    makePoly( 72,  18,  96, 28),   // India — Uttar Pradesh, Maharashtra
-    makePoly(100,  12, 125, 25),   // China — Guangxi, Yunnan
-    makePoly(143, -25, 155, -15),  // Australia — Queensland
-    makePoly(-85,  15, -65, 25),   // Caribbean — Cuba, Dominican Republic
-    makePoly(-65, -30, -55, -18),  // Argentina — Tucumán
-    makePoly( 30, -32,  35, -22),  // South Africa — KwaZulu-Natal
-    makePoly(100,  -8, 118,  8),   // Thailand, Indonesia
-  ],
-  guayusa: [
-    makePoly(-80,  -5, -73,  2),   // Ecuador — Amazon basin
-    makePoly(-78,  -8, -68,  2),   // Peru — upper Amazon tributaries
-    makePoly(-76,  -5, -68,  4),   // Colombia — Amazon headwaters
-  ],
-  kola: [
-    makePoly(-15,   3,   5, 10),   // Sierra Leone, Liberia, Côte d'Ivoire
-    makePoly( -5,   4,  10, 11),   // Ghana, Togo, Benin
-    makePoly(  3,   4,  15, 12),   // Nigeria (primary producer)
-    makePoly( 10,   3,  25, 10),   // Cameroon, Congo
-  ],
-  tobacco: [
-    makePoly(-85,  33, -75, 42),   // USA — Virginia, Kentucky, North Carolina
-    makePoly(103,  18, 125, 30),   // China — Yunnan, Guizhou, Henan
-    makePoly(-55, -30, -35, -10),  // Brazil — Rio Grande do Sul, Santa Catarina
-    makePoly( 72,  14,  82, 24),   // India — Andhra Pradesh, Gujarat
-    makePoly( 29, -20,  36, -10),  // Malawi, Zimbabwe, Zambia
-    makePoly(-79,  -5, -73,  1),   // Ecuador
-    makePoly( 18,  41,  29, 47),   // Bulgaria, Romania (Balkans)
-  ],
-  cannabis: [
-    makePoly(  60,  28,   75, 42), // Afghanistan
-    makePoly(  92,  20,  102, 28), // Myanmar — Golden Triangle
-    makePoly(  95,  18,  103, 25), // Thailand northern highlands
-    makePoly(-115,  30, -105, 42), // Mexico — Sinaloa, Durango
-    makePoly(-125,  32, -113, 42), // USA — California, Pacific Northwest
-    makePoly(  -5,  30,    4, 36), // Morocco — Rif Mountains
-    makePoly( -80,   4,  -72, 12), // Colombia
-    makePoly(  19, -30,   32, -20),// South Africa — Lesotho, Eastern Cape
-  ],
-  coca: [
-    makePoly(-78,  -5, -68,  8),   // Colombia — Putumayo, Nariño
-    makePoly(-80, -18, -68, -2),   // Peru — VRAEM, Huallaga Valley
-    makePoly(-70, -22, -60, -10),  // Bolivia — Chapare, Yungas
-  ],
-  khat: [
-    makePoly( 38,   6,  46, 15),   // Ethiopia — Harar, Oromia highlands
-    makePoly( 34,  -2,  42,  5),   // Kenya — Meru County, Nyambene Hills
-    makePoly( 43,  12,  50, 18),   // Yemen — highland terraces
-    makePoly( 40,  10,  50, 15),   // Djibouti, Somaliland corridor
-  ],
-  poppy: [
-    makePoly(  60,  28,   75, 38), // Afghanistan — Helmand, Kandahar
-    makePoly(  92,  20,  102, 28), // Myanmar — Shan State
-    makePoly(-115,  28, -105, 38), // Mexico — Sinaloa, Guerrero
-    makePoly(  44,  34,   56, 40), // Iran
-    makePoly(  65,  36,   75, 43), // Tajikistan, Kyrgyzstan
-    makePoly(  75,  28,   88, 36), // Pakistan, northern India
-  ],
   peyote: [
     makePoly(-105, 22, -95, 32),   // Chihuahuan Desert — Texas / northern Mexico
   ],
@@ -733,11 +683,35 @@ const CommodityBeltMap: FC = () => {
 
     const activeBelts = BELTS.filter((b) => active.has(b.id));
 
+    // Cache the country feature list so Mode B can filter by ISO ids.
+    const countryFeatures = (countries as d3.ExtendedFeatureCollection)
+      .features as Array<{ id?: string | number }>;
+
     activeBelts.forEach((belt) => {
       if (viewMode === "regions") {
-        // MODE B — per-commodity production region bounding boxes.
-        // Each box is small enough that D3's spherical polygon interior
-        // math resolves correctly without densification.
+        // MODE B — per-commodity production regions.
+        // Prefer real country shapes from the world-atlas topojson; fall
+        // back to bounding-box polygons for commodities whose production
+        // is sub-national (peyote).
+        const countryIds = PRODUCTION_COUNTRIES[belt.id];
+        if (countryIds && countryIds.length > 0) {
+          const matches = countryFeatures.filter(
+            (f) => f.id != null && countryIds.includes(Number(f.id))
+          );
+          matches.forEach((region) => {
+            beltGroup
+              .append("path")
+              .datum(region as d3.GeoPermissibleObjects)
+              .attr("d", pathGen)
+              .attr("fill", belt.color)
+              .attr("opacity", 0.45)
+              .style("mix-blend-mode", "multiply")
+              .style("cursor", "pointer");
+          });
+          return;
+        }
+
+        // Sub-national fallback (peyote)
         const regions = PRODUCTION_REGIONS[belt.id];
         if (!regions || regions.length === 0) return;
         regions.forEach((region) => {
