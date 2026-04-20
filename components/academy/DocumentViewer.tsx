@@ -4,7 +4,7 @@
 // Gallery of primary source documents (PDFs, images, inline text) with "View Original" links.
 // Supports inline_content for documents that don't require external URLs (e.g. transcripts).
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FileText, ExternalLink, ChevronLeft, ChevronRight, X, AlertTriangle } from 'lucide-react';
 
 export interface DocumentItem {
@@ -21,6 +21,61 @@ interface DocumentViewerProps {
   documents: DocumentItem[];
 }
 
+/**
+ * Iframe with load-failure fallback. Browsers don't fire `onerror` on
+ * 404 navigations inside an iframe, so we treat "didn't fire onload
+ * within N seconds" as a likely embed failure and surface a friendly
+ * panel with an "open in new tab" escape. The user still gets the
+ * iframe if it eventually loads — state only flips on timeout, not on
+ * successful load.
+ */
+function IframeWithFallback({ src, title }: { src: string; title: string }) {
+  const [failed, setFailed] = useState(false);
+  const loadedRef = useRef(false);
+
+  useEffect(() => {
+    loadedRef.current = false;
+    setFailed(false);
+    const timer = setTimeout(() => {
+      if (!loadedRef.current) setFailed(true);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [src]);
+
+  if (failed) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 text-center h-full min-h-[50vh] px-6">
+        <AlertTriangle className="w-10 h-10 text-amber-500/70" aria-hidden="true" />
+        <p className="text-sm text-gray-300 max-w-md">
+          This document didn&apos;t load inside the viewer. The link may be
+          broken, or the source site may not allow embedding.
+        </p>
+        <a
+          href={src}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 transition min-h-11"
+        >
+          <ExternalLink className="w-4 h-4" aria-hidden="true" /> Open in a new tab
+        </a>
+        <p className="text-xs text-gray-500 max-w-md">
+          If the link 404s in the new tab too, tell your teacher — the
+          document needs to be re-uploaded.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <iframe
+      src={src}
+      onLoad={() => { loadedRef.current = true; }}
+      className="w-full h-full min-h-[60vh] bg-white rounded-lg"
+      title={title}
+    />
+  );
+}
+
 function isPdf(url: string): boolean {
   return url.toLowerCase().endsWith('.pdf') || url.includes('/pdf');
 }
@@ -30,10 +85,16 @@ function isImage(url: string): boolean {
 }
 
 function hasValidUrl(url: string | undefined | null): boolean {
-  if (!url || url.trim() === '' || url === '#') return false;
+  if (!url || url === '#') return false;
+  const trimmed = url.trim();
+  if (trimmed === '' || trimmed.startsWith('#')) return false;
+  // Require an absolute http/https URL. Anything else — bare filenames,
+  // "REPLACE_WITH_…" placeholders, paths starting with "/", mailto:, etc. —
+  // is treated as missing so the viewer shows its "not available" fallback
+  // instead of loading a broken iframe that 404s silently.
   try {
-    new URL(url, 'https://placeholder.com');
-    return !url.startsWith('#');
+    const u = new URL(trimmed);
+    return u.protocol === 'http:' || u.protocol === 'https:';
   } catch {
     return false;
   }
@@ -132,24 +193,37 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
           <div className="flex-1 overflow-auto p-4">
             {selected.inline_content ? (
               /* Inline text content — rendered directly, works offline */
-              <div className="max-w-3xl mx-auto bg-gray-900 border border-gray-800 rounded-xl p-6 sm:p-8">
-                <div className="prose prose-invert prose-sm max-w-none whitespace-pre-wrap text-gray-200 leading-relaxed">
+              <article className="max-w-2xl mx-auto bg-gray-900 border border-gray-800 rounded-xl px-6 py-8 sm:px-10 sm:py-12">
+                <h2 className="text-lg sm:text-xl font-semibold text-white mb-4">
+                  {selected.title}
+                </h2>
+                {selected.description && (
+                  <p className="text-sm text-gray-400 mb-6">{selected.description}</p>
+                )}
+                <div
+                  className="
+                    text-gray-200 whitespace-pre-wrap
+                    text-[15px] sm:text-base
+                    leading-7 sm:leading-8
+                    font-normal tracking-[0.005em]
+                    [&>p]:mb-4
+                  "
+                >
                   {selected.inline_content}
                 </div>
-              </div>
+              </article>
             ) : !hasValidUrl(selected.url) ? (
               /* No valid URL and no inline content */
-              <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-500">
-                <AlertTriangle className="w-8 h-8 text-amber-500/60" aria-hidden="true" />
-                <p className="text-sm">This document is not available yet.</p>
-                <p className="text-xs text-gray-600">The content URL has not been set up.</p>
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-6">
+                <AlertTriangle className="w-10 h-10 text-amber-500/70" aria-hidden="true" />
+                <p className="text-sm text-gray-300 max-w-md">This document hasn&apos;t been uploaded yet.</p>
+                <p className="text-xs text-gray-500 max-w-md">
+                  The teacher has listed it as a resource but the file URL is
+                  missing. Let them know so they can finish the upload.
+                </p>
               </div>
             ) : isPdf(selected.url) ? (
-              <iframe
-                src={selected.url}
-                className="w-full h-full min-h-[60vh] bg-white rounded-lg"
-                title={selected.title}
-              />
+              <IframeWithFallback src={selected.url} title={selected.title} />
             ) : isImage(selected.url) ? (
               <div className="flex items-center justify-center h-full">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -160,12 +234,8 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
                 />
               </div>
             ) : (
-              /* Unknown file type — try iframe, show helpful message if it fails */
-              <iframe
-                src={selected.url}
-                className="w-full h-full min-h-[60vh] bg-white rounded-lg"
-                title={selected.title}
-              />
+              /* Unknown file type — try iframe, fall back if load fails */
+              <IframeWithFallback src={selected.url} title={selected.title} />
             )}
           </div>
         </div>
