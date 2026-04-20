@@ -111,6 +111,33 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   const allowed = ['title', 'lesson_type', 'content_url', 'text_content', 'content_format', 'duration_seconds', 'order', 'is_free_preview', 'module_id', 'quiz_content', 'audio_chapters', 'transcript_content', 'map_content', 'documents', 'podcast_links', 'video_360_autoplay', 'video_360_poster_url'];
   const updates = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
 
+  // Reject any document entry whose url isn't an absolute http(s) URL.
+  // Previous CSV imports wrote local paths like "/docs/bvc/…" that 404
+  // at the iframe viewer; guarding here prevents the same bad data from
+  // being saved through the teacher editor going forward.
+  if (Array.isArray(updates.documents)) {
+    const bad = (updates.documents as Array<{ url?: unknown; title?: unknown }>)
+      .map((d, i) => ({ i, url: typeof d?.url === 'string' ? d.url : '', title: typeof d?.title === 'string' ? d.title : '' }))
+      .filter(({ url }) => {
+        if (!url) return false;
+        try {
+          const u = new URL(url);
+          return u.protocol !== 'http:' && u.protocol !== 'https:';
+        } catch {
+          return true;
+        }
+      });
+    if (bad.length > 0) {
+      return NextResponse.json(
+        {
+          error: 'Document URLs must be absolute http(s) links — e.g. https://res.cloudinary.com/… Use the upload widget to replace any local paths.',
+          invalid: bad,
+        },
+        { status: 400 },
+      );
+    }
+  }
+
   const { data, error } = await db
     .from('lessons')
     .update({ ...updates, updated_at: new Date().toISOString() })
