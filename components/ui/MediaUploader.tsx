@@ -6,7 +6,7 @@
 // The upload preset must be set to "Unsigned" in the Cloudinary dashboard.
 
 import { useRef, useState } from 'react';
-import { Paperclip, X, Loader2, Image as ImageIcon, Film } from 'lucide-react';
+import { Paperclip, X, Loader2, Image as ImageIcon, Film, FileText } from 'lucide-react';
 
 interface Props {
   onUpload: (url: string) => void;
@@ -48,8 +48,18 @@ export default function MediaUploader({
       form.append('file', file);
       form.append('upload_preset', uploadPreset);
 
+      // PDFs and generic non-media files go through /raw/upload. If we
+      // used /auto/upload Cloudinary classifies PDFs as `resource_type:
+      // image`, which means public delivery requires the account-level
+      // "Allow delivery of PDF and ZIP files" setting — disabled by
+      // default, so POSTs succeed but student GETs return 401/404.
+      // `raw` resources skip that restriction and serve reliably.
+      const isPdf = file.type === 'application/pdf'
+        || file.name.toLowerCase().endsWith('.pdf');
+      const endpoint = isPdf ? 'raw/upload' : 'auto/upload';
+
       const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
+        `https://api.cloudinary.com/v1_1/${cloudName}/${endpoint}`,
         { method: 'POST', body: form }
       );
       if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
@@ -65,6 +75,7 @@ export default function MediaUploader({
   }
 
   const isVideo = currentUrl ? /\.(mp4|webm|mov|avi)/.test(currentUrl) || currentUrl.includes('/video/') : false;
+  const isPdfPreview = currentUrl ? /\.pdf(\?|$)/i.test(currentUrl) : false;
 
   const btnBase = dark
     ? 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-700 text-gray-300 hover:bg-gray-600 transition disabled:opacity-50'
@@ -77,6 +88,24 @@ export default function MediaUploader({
         <div className="relative inline-block">
           {isVideo ? (
             <video src={currentUrl} className="max-h-32 rounded-lg border border-gray-200" controls />
+          ) : isPdfPreview ? (
+            // PDFs can't render in <img>. Show a compact filename pill
+            // plus an open-in-new-tab link so the teacher can verify the
+            // upload worked without waiting for the DocumentViewer path.
+            <a
+              href={currentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border ${
+                dark
+                  ? 'bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700'
+                  : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+              } transition text-sm max-w-xs`}
+              title="Open uploaded PDF in a new tab"
+            >
+              <FileText className="w-4 h-4 shrink-0" aria-hidden="true" />
+              <span className="truncate">{currentUrl.split('/').pop()}</span>
+            </a>
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={currentUrl} alt="attachment" className="max-h-32 rounded-lg border border-gray-200 object-cover" />
