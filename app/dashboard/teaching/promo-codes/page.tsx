@@ -34,10 +34,38 @@ export default function PromoCodesPage() {
       .catch(() => setLoading(false));
   }, []);
 
+  // Pre-fill the datetime-local `min` attr with "now + 5 min" so the
+  // picker rejects past times, and pad the server submission by the
+  // same buffer in case the user picks exactly "now" and it takes a
+  // moment to reach Stripe (Stripe rejects timestamps ≤ its wall
+  // clock with a cryptic `redeem_by` error).
+  function nowPlusBuffer(bufferMinutes = 5) {
+    const d = new Date(Date.now() + bufferMinutes * 60_000);
+    // datetime-local wants YYYY-MM-DDTHH:mm in local tz
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
     setError('');
+
+    // Client-side guard — stop obviously-past dates before they cost a
+    // Stripe round-trip. Allow a small grace window because the
+    // datetime-local input is minute-resolution.
+    if (form.expires_at) {
+      const expiresMs = new Date(form.expires_at).getTime();
+      if (!Number.isFinite(expiresMs)) {
+        setError('Expiration date is invalid.');
+        return;
+      }
+      if (expiresMs <= Date.now() + 60_000) {
+        setError('Expiration date must be at least a minute in the future. Pick a later time.');
+        return;
+      }
+    }
+
+    setSaving(true);
     const res = await offlineFetch('/api/teacher/promo-codes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -93,53 +121,66 @@ export default function PromoCodesPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-gray-300 mb-1">Code *</label>
+              <label htmlFor="promo-code" className="block text-xs text-gray-300 mb-1">Code *</label>
               <input
+                id="promo-code"
                 required
                 value={form.code}
                 onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
                 placeholder="SUMMER20"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm font-mono tracking-wide focus:outline-none focus:border-fuchsia-500"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm font-mono tracking-wide placeholder:text-gray-500 focus:outline-none focus:border-fuchsia-500"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-300 mb-1">Discount % *</label>
+              <label htmlFor="promo-discount" className="block text-xs text-gray-300 mb-1">Discount % *</label>
               <input
+                id="promo-discount"
                 required
                 type="number"
                 min={1}
                 max={100}
                 value={form.discount_percent}
                 onChange={(e) => setForm({ ...form, discount_percent: Number(e.target.value) })}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-fuchsia-500"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-fuchsia-500"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-gray-300 mb-1">Max Uses (leave blank for unlimited)</label>
+              <label htmlFor="promo-max-uses" className="block text-xs text-gray-300 mb-1">Max Uses (leave blank for unlimited)</label>
               <input
+                id="promo-max-uses"
                 type="number"
                 min={1}
                 value={form.max_uses}
                 onChange={(e) => setForm({ ...form, max_uses: e.target.value })}
                 placeholder="Unlimited"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-fuchsia-500"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-fuchsia-500"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-300 mb-1">Expires At (optional)</label>
+              <label htmlFor="promo-expires" className="block text-xs text-gray-300 mb-1">Expires At (optional)</label>
               <input
+                id="promo-expires"
                 type="datetime-local"
                 value={form.expires_at}
+                min={nowPlusBuffer(5)}
                 onChange={(e) => setForm({ ...form, expires_at: e.target.value })}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-fuchsia-500"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm [color-scheme:dark] focus:outline-none focus:border-fuchsia-500"
               />
+              <p className="text-[11px] text-gray-400 mt-1">Your local time. Leave blank for no expiration.</p>
             </div>
           </div>
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && (
+            <p
+              role="alert"
+              className="rounded-lg border border-red-900/50 bg-red-950/40 text-red-300 text-sm px-3 py-2"
+            >
+              {error}
+            </p>
+          )}
 
           <div className="flex gap-3 pt-2">
             <button
