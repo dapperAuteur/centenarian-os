@@ -142,6 +142,17 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
   const [editingDocs, setEditingDocs] = useState<DocDraft[]>([]);
   const [savingDocs, setSavingDocs] = useState(false);
 
+  // Inline map editing — mirrors the doc-editing pattern. Lets teachers
+  // add/edit an Interactive Map on already-saved lessons; the original
+  // map UI only existed inside the Add-New-Lesson form.
+  const [editingMapLessonId, setEditingMapLessonId] = useState<string | null>(null);
+  const [editingMapCenter, setEditingMapCenter] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
+  const [editingMapZoom, setEditingMapZoom] = useState<number>(3);
+  const [editingMapMarkers, setEditingMapMarkers] = useState<Array<{ id: string; lat: number; lng: number; title: string; description: string; color: string }>>([]);
+  const [editingMapLines, setEditingMapLines] = useState<Array<{ id: string; coords: [number, number][]; title: string; color: string; description: string }>>([]);
+  const [editingMapPolygons, setEditingMapPolygons] = useState<Array<{ id: string; coords: [number, number][]; title: string; color: string; fillColor: string; description: string }>>([]);
+  const [savingMap, setSavingMap] = useState(false);
+
   const modules = [...course.course_modules].sort((a, b) => a.order - b.order);
 
   // ── Handlers ──────────────────────────────────────────────────────────
@@ -431,6 +442,104 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
     setSavingDocs(false);
   }
 
+  // Inline map editing
+  async function startEditingMap(lessonId: string) {
+    if (editingMapLessonId === lessonId) { setEditingMapLessonId(null); return; }
+    try {
+      const r = await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}`);
+      const data = await r.json();
+      const mc = data.map_content as {
+        center?: [number, number];
+        zoom?: number;
+        markers?: Array<{ id?: string; lat: number; lng: number; title: string; description?: string; color?: string }>;
+        lines?: Array<{ id?: string; coords: [number, number][]; title: string; color?: string; description?: string }>;
+        polygons?: Array<{ id?: string; coords: [number, number][]; title: string; color?: string; fillColor?: string; description?: string }>;
+      } | null;
+      setEditingMapCenter({ lat: mc?.center?.[0] ?? 0, lng: mc?.center?.[1] ?? 0 });
+      setEditingMapZoom(mc?.zoom ?? 3);
+      setEditingMapMarkers(
+        (mc?.markers ?? []).map((m) => ({
+          id: m.id || crypto.randomUUID(),
+          lat: m.lat, lng: m.lng, title: m.title, description: m.description ?? '', color: m.color ?? '',
+        })),
+      );
+      setEditingMapLines(
+        (mc?.lines ?? []).map((l) => ({
+          id: l.id || crypto.randomUUID(),
+          coords: l.coords, title: l.title, color: l.color ?? '', description: l.description ?? '',
+        })),
+      );
+      setEditingMapPolygons(
+        (mc?.polygons ?? []).map((p) => ({
+          id: p.id || crypto.randomUUID(),
+          coords: p.coords, title: p.title, color: p.color ?? '', fillColor: p.fillColor ?? '', description: p.description ?? '',
+        })),
+      );
+      setEditingMapLessonId(lessonId);
+    } catch { /* ignore */ }
+  }
+
+  async function saveEditingMap() {
+    if (!editingMapLessonId) return;
+    setSavingMap(true);
+    try {
+      const hasData = editingMapMarkers.length > 0 || editingMapLines.length > 0 || editingMapPolygons.length > 0;
+      const payload: { map_content: unknown } = {
+        map_content: hasData
+          ? {
+              center: [editingMapCenter.lat, editingMapCenter.lng] as [number, number],
+              zoom: editingMapZoom,
+              ...(editingMapMarkers.length > 0 ? { markers: editingMapMarkers } : {}),
+              ...(editingMapLines.length > 0 ? { lines: editingMapLines } : {}),
+              ...(editingMapPolygons.length > 0 ? { polygons: editingMapPolygons } : {}),
+            }
+          : null,
+      };
+      await offlineFetch(`/api/academy/courses/${courseId}/lessons/${editingMapLessonId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      });
+      setEditingMapLessonId(null);
+      setEditingMapMarkers([]); setEditingMapLines([]); setEditingMapPolygons([]);
+      setFeedback('Map saved'); setTimeout(() => setFeedback(''), 2000);
+    } catch { /* ignore */ }
+    setSavingMap(false);
+  }
+
+  // Mirrors the add-new-lesson CSV handlers above. Signatures match
+  // DataImporter's `onImport: (rows: Record<string, string>[]) => void`
+  // — we can't use a typed `new Map<>()` here because `Map` is the
+  // lucide-react icon import, not the JS built-in.
+  function handleEditingMarkerImport(rows: Record<string, string>[]) {
+    setEditingMapMarkers(rows.map((r) => ({
+      id: crypto.randomUUID(),
+      lat: parseFloat(r.lat) || 0, lng: parseFloat(r.lng) || 0,
+      title: r.title ?? '', description: r.description ?? '', color: r.color ?? '',
+    })));
+    if (rows.length > 0 && editingMapCenter.lat === 0 && editingMapCenter.lng === 0) {
+      setEditingMapCenter({ lat: parseFloat(rows[0].lat) || 0, lng: parseFloat(rows[0].lng) || 0 });
+    }
+  }
+
+  function handleEditingLineImport(rows: Record<string, string>[]) {
+    const grouped: Record<string, { coords: [number, number][]; title: string; color: string; description: string }> = {};
+    for (const r of rows) {
+      const lid = r.line_id || 'default';
+      if (!grouped[lid]) grouped[lid] = { coords: [], title: r.title ?? '', color: r.color ?? '', description: r.description ?? '' };
+      grouped[lid].coords.push([parseFloat(r.lat) || 0, parseFloat(r.lng) || 0]);
+    }
+    setEditingMapLines(Object.entries(grouped).map(([, v]) => ({ id: crypto.randomUUID(), ...v })));
+  }
+
+  function handleEditingPolygonImport(rows: Record<string, string>[]) {
+    const grouped: Record<string, { coords: [number, number][]; title: string; color: string; fillColor: string; description: string }> = {};
+    for (const r of rows) {
+      const pid = r.polygon_id || 'default';
+      if (!grouped[pid]) grouped[pid] = { coords: [], title: r.title ?? '', color: r.color ?? '', fillColor: r.fill_color ?? '', description: r.description ?? '' };
+      grouped[pid].coords.push([parseFloat(r.lat) || 0, parseFloat(r.lng) || 0]);
+    }
+    setEditingMapPolygons(Object.entries(grouped).map(([, v]) => ({ id: crypto.randomUUID(), ...v })));
+  }
+
   // ── Render ────────────────────────────────────────────────────────────
 
   return (
@@ -558,6 +667,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                 {lessons.map((lesson) => {
                   const Icon = LESSON_TYPE_ICON[lesson.lesson_type] ?? Play;
                   const isEditingDocs = editingDocsLessonId === lesson.id;
+                  const isEditingMap = editingMapLessonId === lesson.id;
                   const isEditingLesson = expandedLessonId === lesson.id;
                   return (
                     <div key={lesson.id} className="border-t border-gray-800">
@@ -579,6 +689,12 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                           aria-label="Edit attached documents"
                           title="Attach or edit documents">
                           <Paperclip className="w-3.5 h-3.5" />
+                        </button>
+                        <button type="button" onClick={() => startEditingMap(lesson.id)}
+                          className={`p-2 transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center ${isEditingMap ? 'text-fuchsia-400' : 'text-gray-400 hover:text-fuchsia-400'}`}
+                          aria-label="Edit interactive map"
+                          title="Add or edit the interactive map (markers, trade routes, regions)">
+                          <Map className="w-3.5 h-3.5" />
                         </button>
                         <button type="button" onClick={() => deleteLesson(lesson.id)}
                           className="p-2 text-gray-400 hover:text-red-400 transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
@@ -813,6 +929,65 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                               {savingDocs ? 'Saving…' : 'Save Documents'}
                             </button>
                             <button type="button" onClick={() => setEditingDocsLessonId(null)}
+                              className="px-4 py-2 bg-gray-800 text-gray-400 rounded-lg text-xs hover:bg-gray-700 transition min-h-11">
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {isEditingMap && (
+                        <div className="dark-input px-4 pb-4 space-y-3 bg-gray-800/20 border-t border-gray-800">
+                          <p className="text-xs text-gray-400 pt-3">
+                            Set the map center + zoom, then import markers, lines, or polygons from CSV. Leave everything empty and save to remove the map.
+                          </p>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <label className="block text-xs text-gray-400 mb-1">Center Lat</label>
+                              <input type="number" step="any" value={editingMapCenter.lat}
+                                onChange={(e) => setEditingMapCenter((c) => ({ ...c, lat: parseFloat(e.target.value) || 0 }))}
+                                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500" />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-400 mb-1">Center Lng</label>
+                              <input type="number" step="any" value={editingMapCenter.lng}
+                                onChange={(e) => setEditingMapCenter((c) => ({ ...c, lng: parseFloat(e.target.value) || 0 }))}
+                                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500" />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-400 mb-1">Zoom (1-18)</label>
+                              <input type="number" min={1} max={18} value={editingMapZoom}
+                                onChange={(e) => setEditingMapZoom(Number(e.target.value) || 3)}
+                                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500" />
+                            </div>
+                          </div>
+                          <DataImporter label="Markers" columns={[
+                            { key: 'lat', label: 'Lat', required: true }, { key: 'lng', label: 'Lng', required: true },
+                            { key: 'title', label: 'Title', required: true }, { key: 'description', label: 'Description' }, { key: 'color', label: 'Color' },
+                          ]} onImport={handleEditingMarkerImport} templateCsvUrl="/templates/map-markers.csv" />
+                          <DataImporter label="Lines (trade routes, paths)" columns={[
+                            { key: 'line_id', label: 'Line ID', required: true }, { key: 'lat', label: 'Lat', required: true },
+                            { key: 'lng', label: 'Lng', required: true }, { key: 'title', label: 'Title' }, { key: 'color', label: 'Color' }, { key: 'description', label: 'Description' },
+                          ]} onImport={handleEditingLineImport} templateCsvUrl="/templates/map-lines.csv" />
+                          <DataImporter label="Polygons (regions, territories)" columns={[
+                            { key: 'polygon_id', label: 'Polygon ID', required: true }, { key: 'lat', label: 'Lat', required: true },
+                            { key: 'lng', label: 'Lng', required: true }, { key: 'title', label: 'Title' }, { key: 'color', label: 'Color' },
+                            { key: 'fill_color', label: 'Fill Color' }, { key: 'description', label: 'Description' },
+                          ]} onImport={handleEditingPolygonImport} templateCsvUrl="/templates/map-polygons.csv" />
+                          {(editingMapMarkers.length > 0 || editingMapLines.length > 0 || editingMapPolygons.length > 0) && (
+                            <div className="flex items-center gap-3 pt-1">
+                              <p className="text-xs text-green-400">
+                                {editingMapMarkers.length} markers, {editingMapLines.length} lines, {editingMapPolygons.length} polygons loaded
+                              </p>
+                              <button type="button" onClick={() => { setEditingMapMarkers([]); setEditingMapLines([]); setEditingMapPolygons([]); }}
+                                className="text-xs text-red-400 hover:text-red-300 transition">Clear all</button>
+                            </div>
+                          )}
+                          <div className="flex gap-2">
+                            <button type="button" onClick={saveEditingMap} disabled={savingMap}
+                              className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-xs font-semibold hover:bg-fuchsia-700 transition disabled:opacity-50 min-h-11">
+                              {savingMap ? 'Saving…' : 'Save Map'}
+                            </button>
+                            <button type="button" onClick={() => setEditingMapLessonId(null)}
                               className="px-4 py-2 bg-gray-800 text-gray-400 rounded-lg text-xs hover:bg-gray-700 transition min-h-11">
                               Cancel
                             </button>
