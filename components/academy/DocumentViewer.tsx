@@ -29,7 +29,14 @@ interface DocumentViewerProps {
  * iframe if it eventually loads — state only flips on timeout, not on
  * successful load.
  */
-function IframeWithFallback({ src, title }: { src: string; title: string }) {
+function IframeWithFallback({ src, fallbackHref, title }: {
+  src: string;
+  /** URL used for the "open in new tab" escape when the iframe fails.
+   *  Defaults to `src`; pass the raw upstream URL when src is a proxy
+   *  route so users get a direct link to the original asset. */
+  fallbackHref?: string;
+  title: string;
+}) {
   const [failed, setFailed] = useState(false);
   const loadedRef = useRef(false);
 
@@ -51,7 +58,7 @@ function IframeWithFallback({ src, title }: { src: string; title: string }) {
           broken, or the source site may not allow embedding.
         </p>
         <a
-          href={src}
+          href={fallbackHref ?? src}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 transition min-h-11"
@@ -97,6 +104,27 @@ function hasValidUrl(url: string | undefined | null): boolean {
     return u.protocol === 'http:' || u.protocol === 'https:';
   } catch {
     return false;
+  }
+}
+
+/**
+ * URL to drop into the iframe src. Cloudinary-hosted assets go through
+ * a same-origin proxy route (/api/academy/document-proxy) that fetches
+ * upstream and re-serves with `Content-Disposition: inline` — without
+ * it Cloudinary's default attachment disposition makes iframes fail
+ * silently (blank / "404" panel) even when the PDF itself is fine and
+ * opens correctly in a new tab. Non-Cloudinary sources (British Library,
+ * PLOS, etc.) pass through unchanged; they already serve inline.
+ */
+function embedUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    const isCloudinary = u.hostname === 'res.cloudinary.com'
+      || u.hostname.endsWith('.cloudinary.com');
+    if (!isCloudinary) return url;
+    return `/api/academy/document-proxy?url=${encodeURIComponent(url)}`;
+  } catch {
+    return url;
   }
 }
 
@@ -223,7 +251,11 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
                 </p>
               </div>
             ) : isPdf(selected.url) ? (
-              <IframeWithFallback src={selected.url} title={selected.title} />
+              <IframeWithFallback
+                src={embedUrl(selected.url)}
+                fallbackHref={selected.url}
+                title={selected.title}
+              />
             ) : isImage(selected.url) ? (
               <div className="flex items-center justify-center h-full">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -235,7 +267,11 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
               </div>
             ) : (
               /* Unknown file type — try iframe, fall back if load fails */
-              <IframeWithFallback src={selected.url} title={selected.title} />
+              <IframeWithFallback
+                src={embedUrl(selected.url)}
+                fallbackHref={selected.url}
+                title={selected.title}
+              />
             )}
           </div>
         </div>
