@@ -9,7 +9,7 @@ import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Link from 'next/link';
 import {
   ChevronLeft, Loader2, Save, Globe, EyeOff, GitBranch,
-  ClipboardList, Users,
+  ClipboardList, Users, Eye,
 } from 'lucide-react';
 
 import CourseInfoTab from './CourseInfoTab';
@@ -154,12 +154,21 @@ export default function CourseEditorLayout({ courseId }: Props) {
           >
             <ClipboardList className="w-3.5 h-3.5" /> Assignments
           </Link>
+          {/* Primary call-to-action: open the public course page in a new
+              tab so the teacher sees exactly what a not-yet-enrolled
+              student sees — paywall teaser, free-preview badges, locked
+              lessons included. The API already bypasses is_published for
+              the course owner, so this works on drafts too. Option-2
+              "shareable external preview link" is a separate plan item. */}
           <Link
             href={`/academy/${courseId}`}
             target="_blank"
-            className="flex items-center gap-1.5 px-3 py-2.5 bg-gray-800 text-gray-300 rounded-xl text-sm hover:bg-gray-700 transition min-h-11"
+            rel="noopener noreferrer"
+            title="Opens the public course page in a new tab — shows exactly what a student sees"
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-fuchsia-600 text-white rounded-xl text-sm font-medium hover:bg-fuchsia-700 transition min-h-11"
           >
-            Preview
+            <Eye className="w-3.5 h-3.5" aria-hidden="true" />
+            Preview as student
           </Link>
         </div>
       </div>

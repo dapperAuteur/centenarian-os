@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Link from 'next/link';
-import { BookOpen, Plus, Pencil, Eye, EyeOff, Trash2, Loader2 } from 'lucide-react';
+import { BookOpen, Plus, Pencil, Eye, EyeOff, Trash2, Loader2, ExternalLink } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface Course {
@@ -133,6 +133,16 @@ export default function TeachingCoursesPage() {
                 >
                   {course.is_published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                 </button>
+                <Link
+                  href={`/academy/${course.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Preview as student — opens in a new tab"
+                  aria-label="Preview course as a student"
+                  className="w-11 h-11 flex items-center justify-center rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white transition"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </Link>
                 <Link
                   href={`/dashboard/teaching/courses/${course.id}`}
                   className="w-11 h-11 flex items-center justify-center rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white transition"
