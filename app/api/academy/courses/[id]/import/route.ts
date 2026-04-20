@@ -141,9 +141,39 @@ export async function POST(request: NextRequest, { params }: Params) {
     const audioChapters = tryParseJson(row.audio_chapters);
     const transcriptContent = tryParseJson(row.transcript_content);
     const mapContent = tryParseJson(row.map_content);
-    const documents = tryParseJson(row.documents);
+    const rawDocuments = tryParseJson(row.documents);
     const podcastLinks = tryParseJson(row.podcast_links);
     const quizContent = tryParseJson(row.quiz_content);
+
+    // Reject document entries whose url isn't an absolute http(s) URL.
+    // Previous Coffee import saved local paths like "/docs/bvc/…" that
+    // 404 at the viewer because they're not served by the Next app.
+    // Import fails fast so the teacher can fix the CSV instead of
+    // discovering broken docs on the student side later.
+    let documents: unknown = rawDocuments;
+    if (Array.isArray(rawDocuments)) {
+      const invalid: Array<{ index: number; url: string; title: string }> = [];
+      for (let di = 0; di < rawDocuments.length; di++) {
+        const d = rawDocuments[di] as { url?: unknown; title?: unknown };
+        const url = typeof d?.url === 'string' ? d.url : '';
+        const title = typeof d?.title === 'string' ? d.title : '';
+        if (!url) continue;
+        try {
+          const u = new URL(url);
+          if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+            invalid.push({ index: di, url, title });
+          }
+        } catch {
+          invalid.push({ index: di, url, title });
+        }
+      }
+      if (invalid.length > 0) {
+        stats.errors.push(
+          `Row ${i + 1} "${title}": ${invalid.length} document URL${invalid.length === 1 ? '' : 's'} not absolute http(s) — skipped documents entirely. First bad: "${invalid[0].url}". Upload to Cloudinary and re-run with the returned https:// URLs.`,
+        );
+        documents = null;
+      }
+    }
 
     const lessonData: Record<string, unknown> = {
       course_id: courseId,
