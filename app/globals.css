@@ -365,3 +365,54 @@ select[class*="bg-neutral-900"] option {
   background-color: #1f2937; /* gray-800 */
   color: #e5e7eb;            /* gray-200 */
 }
+
+/* Same treatment for text inputs + textareas that live on a dark
+ * background. Without this, the default rule at the top of this
+ * section forces every input to `color: #111827` (gray-900), which
+ * on bg-gray-800 / bg-gray-900 forms (promo codes, course editor
+ * tabs, anywhere a teacher types) renders typed values as dark-on-
+ * dark and the field looks empty. Matching the tailwind bg-class
+ * patterns keeps the light-mode default in place where it belongs.
+ *
+ * Covers `text-white` markup too: the color here wins only if the
+ * component doesn't set its own text color. Wrappers that already
+ * declare text-white continue to render white. */
+input[class*="bg-gray-800"]:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+input[class*="bg-gray-900"]:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+input[class*="bg-slate-800"]:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+input[class*="bg-slate-900"]:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+input[class*="bg-zinc-800"]:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+input[class*="bg-zinc-900"]:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+input[class*="bg-neutral-800"]:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+input[class*="bg-neutral-900"]:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+textarea[class*="bg-gray-800"],
+textarea[class*="bg-gray-900"],
+textarea[class*="bg-slate-800"],
+textarea[class*="bg-slate-900"],
+textarea[class*="bg-zinc-800"],
+textarea[class*="bg-zinc-900"],
+textarea[class*="bg-neutral-800"],
+textarea[class*="bg-neutral-900"] {
+  color: #f3f4f6;     /* gray-100 — readable on gray-800/900 */
+  color-scheme: dark; /* native date/time pickers + scrollbars */
+}
+
+input[class*="bg-gray-800"]::placeholder,
+input[class*="bg-gray-900"]::placeholder,
+input[class*="bg-slate-800"]::placeholder,
+input[class*="bg-slate-900"]::placeholder,
+input[class*="bg-zinc-800"]::placeholder,
+input[class*="bg-zinc-900"]::placeholder,
+input[class*="bg-neutral-800"]::placeholder,
+input[class*="bg-neutral-900"]::placeholder,
+textarea[class*="bg-gray-800"]::placeholder,
+textarea[class*="bg-gray-900"]::placeholder,
+textarea[class*="bg-slate-800"]::placeholder,
+textarea[class*="bg-slate-900"]::placeholder,
+textarea[class*="bg-zinc-800"]::placeholder,
+textarea[class*="bg-zinc-900"]::placeholder,
+textarea[class*="bg-neutral-800"]::placeholder,
+textarea[class*="bg-neutral-900"]::placeholder {
+  color: #9ca3af; /* gray-400 — readable but clearly secondary */
+  opacity: 1;
+}
