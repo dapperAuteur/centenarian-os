@@ -128,7 +128,13 @@ export default function MapViewer({ mapContent }: MapViewerProps) {
   }, [mapContent]);
 
   return (
-    <div className="mb-6">
+    // `isolation: isolate` wraps Leaflet's internal z-index stack
+    // (panes at z-400, controls at z-1000) in its own compositing
+    // context so the map can't float over other page chrome — the
+    // DocumentViewer modal (z-60) would otherwise render *behind*
+    // Leaflet's controls and the student sees map tiles covering
+    // the PDF they opened.
+    <div className="mb-6 isolate">
       <div
         ref={mapRef}
         className="w-full aspect-video rounded-xl sm:rounded-2xl overflow-hidden border border-gray-800"
