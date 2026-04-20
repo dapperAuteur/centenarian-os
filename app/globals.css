@@ -416,3 +416,46 @@ textarea[class*="bg-neutral-900"]::placeholder {
   color: #9ca3af; /* gray-400 — readable but clearly secondary */
   opacity: 1;
 }
+
+/* Catch the remaining case: an input or textarea with NO bg class of
+ * its own (or bg-transparent), sitting inside a dark layout
+ * (bg-gray-950 / bg-black / bg-slate-950 etc.). Without this rule the
+ * default "force dark text" reset at the top of this section made
+ * typed values near-invisible on every dashboard that uses the dark
+ * shell (academy, teaching, admin). Matching any dark-bg ancestor
+ * class catches inputs in learning-paths, the teacher message
+ * composer, admin search boxes, and anywhere else that leaned on the
+ * old light-mode default.
+ *
+ * The :not() chain excludes inputs/textareas that explicitly opt in
+ * to a light background (bg-white, bg-gray-50/100/200, bg-neutral-*,
+ * bg-slate-50/100, etc.). Those keep the global dark-text default so
+ * nothing regresses in light-mode cards that happen to live inside a
+ * dark shell (e.g., a white invoice modal over a dark page). */
+[class*="bg-gray-950"] input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-slate-50"]):not([class*="bg-slate-100"]),
+[class*="bg-gray-950"] textarea:not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-slate-50"]):not([class*="bg-slate-100"]),
+[class*="bg-black"] input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-slate-50"]):not([class*="bg-slate-100"]),
+[class*="bg-black"] textarea:not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-slate-50"]):not([class*="bg-slate-100"]),
+[class*="bg-slate-950"] input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-slate-50"]):not([class*="bg-slate-100"]),
+[class*="bg-slate-950"] textarea:not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-slate-50"]):not([class*="bg-slate-100"]),
+[class*="bg-neutral-950"] input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-slate-50"]):not([class*="bg-slate-100"]),
+[class*="bg-neutral-950"] textarea:not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-slate-50"]):not([class*="bg-slate-100"]),
+[class*="bg-zinc-950"] input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-slate-50"]):not([class*="bg-slate-100"]),
+[class*="bg-zinc-950"] textarea:not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-slate-50"]):not([class*="bg-slate-100"]) {
+  color: #f3f4f6;
+  color-scheme: dark;
+}
+
+[class*="bg-gray-950"] input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"])::placeholder,
+[class*="bg-gray-950"] textarea:not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"])::placeholder,
+[class*="bg-black"] input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"])::placeholder,
+[class*="bg-black"] textarea:not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"])::placeholder,
+[class*="bg-slate-950"] input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"])::placeholder,
+[class*="bg-slate-950"] textarea:not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"])::placeholder,
+[class*="bg-neutral-950"] input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"])::placeholder,
+[class*="bg-neutral-950"] textarea:not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"])::placeholder,
+[class*="bg-zinc-950"] input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"])::placeholder,
+[class*="bg-zinc-950"] textarea:not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-gray-100"]):not([class*="bg-gray-200"])::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
