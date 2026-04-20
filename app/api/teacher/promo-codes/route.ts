@@ -60,6 +60,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'discount_percent must be 1–100' }, { status: 400 });
   }
 
+  // Parse + guard the expiration date before we hit Stripe. The input
+  // arrives as a local-time ISO-ish string (e.g. "2026-04-19T10:30")
+  // from a <input type="datetime-local">. Stripe wants seconds since
+  // epoch and will reject any timestamp that isn't strictly in the
+  // future at the moment the request lands.
+  let redeemBy: number | undefined;
+  if (expires_at) {
+    const ms = new Date(expires_at).getTime();
+    if (!Number.isFinite(ms)) {
+      return NextResponse.json({ error: 'Expiration date is invalid.' }, { status: 400 });
+    }
+    if (ms <= Date.now() + 60_000) {
+      return NextResponse.json(
+        { error: 'Expiration date must be at least a minute in the future. Pick a later time.' },
+        { status: 400 },
+      );
+    }
+    redeemBy = Math.floor(ms / 1000);
+  }
+
   // Create Stripe coupon
   const couponParams: Record<string, unknown> = {
     percent_off: discount_percent,
@@ -68,15 +88,20 @@ export async function POST(request: NextRequest) {
     id: `TEACHER_${user.id.slice(0, 8)}_${code.trim().toUpperCase()}`,
   };
   if (max_uses) couponParams.max_redemptions = max_uses;
-  if (expires_at) couponParams.redeem_by = Math.floor(new Date(expires_at).getTime() / 1000);
+  if (redeemBy !== undefined) couponParams.redeem_by = redeemBy;
 
   let stripeCouponId: string;
   try {
     const coupon = await stripe.coupons.create(couponParams);
     stripeCouponId = coupon.id;
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Stripe error';
-    return NextResponse.json({ error: msg }, { status: 502 });
+    const rawMsg = err instanceof Error ? err.message : 'Stripe error';
+    // Translate the known-cryptic `redeem_by` error into user-readable
+    // English. The raw string is useful for logs but awful for UI.
+    const friendly = /redeem_by.*in the past/i.test(rawMsg)
+      ? 'Expiration date must be in the future. Pick a later time.'
+      : rawMsg;
+    return NextResponse.json({ error: friendly }, { status: 502 });
   }
 
   const db = getDb();
