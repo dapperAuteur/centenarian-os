@@ -1,0 +1,37 @@
+line_id,lat,lng,title,color,description
+coffee-origin,7.3,36.5,"LAYER 1 — Historical Trade: Origin (Ethiopia → Yemen)",#8B4513,Kaffa highlands in Ethiopia where coffee evolved naturally in forest understory. Layer 1 (historical trade) = brown.
+coffee-origin,12.0,39.0,"LAYER 1 — Historical Trade: Origin (Ethiopia → Yemen)",#8B4513,Ethiopian highlands en route to the Red Sea coast.
+coffee-origin,12.8,43.4,"LAYER 1 — Historical Trade: Origin (Ethiopia → Yemen)",#8B4513,Bab-el-Mandeb — the Red Sea strait coffee crossed to reach Arabia.
+coffee-origin,13.32,43.25,"LAYER 1 — Historical Trade: Origin (Ethiopia → Yemen)",#8B4513,Mocha (Al-Mukha) Yemen — Sufi monks used coffee for night prayer by the 15th century.
+coffee-ottoman-spread,13.32,43.25,"LAYER 1 — Historical Trade: Ottoman Spread (Yemen → Vienna)",#8B4513,Mocha — entry into the Ottoman trade network.
+coffee-ottoman-spread,21.42,39.83,"LAYER 1 — Historical Trade: Ottoman Spread (Yemen → Vienna)",#8B4513,Mecca — early ban on coffee lifted as trade value became clear.
+coffee-ottoman-spread,30.05,31.23,"LAYER 1 — Historical Trade: Ottoman Spread (Yemen → Vienna)",#8B4513,Cairo — major Ottoman coffee trading hub.
+coffee-ottoman-spread,33.51,36.29,"LAYER 1 — Historical Trade: Ottoman Spread (Yemen → Vienna)",#8B4513,Damascus — Silk Road junction.
+coffee-ottoman-spread,41.01,28.98,"LAYER 1 — Historical Trade: Ottoman Spread (Yemen → Vienna)",#8B4513,Constantinople (Istanbul) — first coffeehouses opened 1550s as 'schools of the wise'.
+coffee-ottoman-spread,48.21,16.37,"LAYER 1 — Historical Trade: Ottoman Spread (Yemen → Vienna)",#8B4513,Vienna — Ottoman coffee reached Europe after the 1683 siege.
+coffee-european-coffeehouses,41.01,28.98,"LAYER 1 — Historical Trade: European Coffeehouses",#8B4513,Istanbul — the coffeehouse model spreads west.
+coffee-european-coffeehouses,45.44,12.33,"LAYER 1 — Historical Trade: European Coffeehouses",#8B4513,Venice — Europe's first commercial coffee imports (early 1600s).
+coffee-european-coffeehouses,48.86,2.35,"LAYER 1 — Historical Trade: European Coffeehouses",#8B4513,Paris — Café Procope (1686) becomes a center of Enlightenment debate.
+coffee-european-coffeehouses,52.37,4.90,"LAYER 1 — Historical Trade: European Coffeehouses",#8B4513,Amsterdam — Dutch East India Company coffee re-exports.
+coffee-european-coffeehouses,51.51,-0.13,"LAYER 1 — Historical Trade: European Coffeehouses",#8B4513,London — 'Penny Universities' and the birth of Lloyd's insurance + the Stock Exchange.
+coffee-dutch-colonial,13.32,43.25,"LAYER 1 — Historical Trade: Dutch Colonial Transplant (to Java)",#8B4513,Mocha — Dutch ships smuggle coffee seedlings out of Yemen around 1616.
+coffee-dutch-colonial,-34.36,18.47,"LAYER 1 — Historical Trade: Dutch Colonial Transplant (to Java)",#8B4513,Cape of Good Hope — maritime route around Africa.
+coffee-dutch-colonial,-6.20,106.85,"LAYER 1 — Historical Trade: Dutch Colonial Transplant (to Java)",#8B4513,Batavia (Jakarta) Java — Dutch force cultivation; the Cultuurstelsel system uses coerced labor.
+coffee-dutch-colonial,52.37,4.90,"LAYER 1 — Historical Trade: Dutch Colonial Transplant (to Java)",#8B4513,Amsterdam — coffee returns as a Dutch monopoly commodity.
+coffee-french-colonial,48.86,2.35,"LAYER 1 — Historical Trade: French Colonial to Brazil",#8B4513,Paris — King Louis XIV's 1714 gift seedling becomes the ancestor of New World coffee.
+coffee-french-colonial,14.64,-61.02,"LAYER 1 — Historical Trade: French Colonial to Brazil",#8B4513,Martinique — Gabriel de Clieu plants the seedling in 1720 using enslaved labor.
+coffee-french-colonial,18.54,-72.34,"LAYER 1 — Historical Trade: French Colonial to Brazil",#8B4513,Saint-Domingue (Haiti) — by 1788 produces half the world's coffee on enslaved labor.
+coffee-french-colonial,-22.91,-43.17,"LAYER 1 — Historical Trade: French Colonial to Brazil",#8B4513,Rio de Janeiro — coffee enters Brazil in 1727 via Pará.
+coffee-french-colonial,-23.97,-46.32,"LAYER 1 — Historical Trade: French Colonial to Brazil",#8B4513,Santos — São Paulo coffee boom makes Brazil the world's largest producer by the 1830s (on enslaved labor until abolition in 1888).
+coffee-word-diffusion,9.03,38.75,"LAYER 2 — Language Diffusion: the word 'coffee' traces its trade route",#7B1FA2,"Ethiopia — 'buna' (Oromo/Amharic). Layer 2 (language) = purple. Each linguistic transformation marks a cultural and economic exchange."
+coffee-word-diffusion,15.0,45.0,"LAYER 2 — Language Diffusion: the word 'coffee' traces its trade route",#7B1FA2,Yemen — 'qahwa' (Arabic). Originally meant 'wine'; repurposed for this new stimulating drink.
+coffee-word-diffusion,39.0,35.0,"LAYER 2 — Language Diffusion: the word 'coffee' traces its trade route",#7B1FA2,"Turkey — 'kahve' (Turkish). Ottoman adaptation, spread via imperial trade."
+coffee-word-diffusion,43.0,12.5,"LAYER 2 — Language Diffusion: the word 'coffee' traces its trade route",#7B1FA2,Italy — 'caffè' (Italian). Venetian merchants Italianize the Ottoman word.
+coffee-word-diffusion,46.2,2.2,"LAYER 2 — Language Diffusion: the word 'coffee' traces its trade route",#7B1FA2,France — 'café' (French). Later adopted by Spanish and Portuguese.
+coffee-word-diffusion,54.0,-2.0,"LAYER 2 — Language Diffusion: the word 'coffee' traces its trade route",#7B1FA2,England — 'coffee' (English). The anglicized spelling enters the global trade lexicon.
+coffee-modern-supply,-23.97,-46.32,"LAYER 3 — Modern Supply Chain (today)",#6B7280,"Santos Brazil — 38% of global production ships from here. Layer 3 (modern) = gray."
+coffee-modern-supply,10.82,106.63,"LAYER 3 — Modern Supply Chain (today)",#6B7280,Ho Chi Minh City Vietnam — Central Highlands Robusta is 17.7% of global supply.
+coffee-modern-supply,9.03,38.75,"LAYER 3 — Modern Supply Chain (today)",#6B7280,Addis Ababa Ethiopia — specialty Arabica origin market.
+coffee-modern-supply,3.89,-77.03,"LAYER 3 — Modern Supply Chain (today)",#6B7280,Buenaventura Colombia — 100% Arabica port of departure.
+coffee-modern-supply,51.92,4.48,"LAYER 3 — Modern Supply Chain (today)",#6B7280,Rotterdam — Europe's largest coffee import terminal.
+coffee-modern-supply,40.71,-74.00,"LAYER 3 — Modern Supply Chain (today)",#6B7280,New York — ICE Futures US sets the global Arabica price via the C-market.
