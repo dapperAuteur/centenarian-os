@@ -598,13 +598,31 @@ function BeltInfoPanel({
 // Main component
 // ---------------------------------------------------------------------------
 
-const CommodityBeltMap: FC = () => {
+export interface CommodityBeltMapProps {
+  /**
+   * When set, the belt map only shows commodities whose BELTS entry
+   * has a matching `season`. Toggle buttons for other seasons'
+   * commodities are hidden. Leave undefined to show all 12 belts.
+   */
+  seasonFilter?: 1 | 2 | 3;
+}
+
+const CommodityBeltMap: FC<CommodityBeltMapProps> = ({ seasonFilter }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [topoData, setTopoData] = useState<Topology | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [active, setActive] = useState<Set<string>>(
-    new Set(["coffee", "cacao", "tea"])
-  );
+
+  // When a season is locked, the pool of belts collapses to just that
+  // season's commodities. Default "active" set = first three belts in
+  // that pool so the map isn't empty on initial render.
+  const visibleBelts = seasonFilter
+    ? BELTS.filter((b) => b.season === seasonFilter)
+    : BELTS;
+  const defaultActiveIds = seasonFilter
+    ? visibleBelts.slice(0, 3).map((b) => b.id)
+    : ["coffee", "cacao", "tea"];
+
+  const [active, setActive] = useState<Set<string>>(new Set(defaultActiveIds));
   const [viewMode, setViewMode] = useState<ViewMode>("bands");
   const [clickLat, setClickLat] = useState<number | null>(null);
 
@@ -684,7 +702,7 @@ const CommodityBeltMap: FC = () => {
     // Belt bands — multiply blend mode group
     const beltGroup = svg.append("g").attr("class", "belt-group");
 
-    const activeBelts = BELTS.filter((b) => active.has(b.id));
+    const activeBelts = visibleBelts.filter((b) => active.has(b.id));
 
     // Cache the country feature list so Mode B can filter by ISO ids.
     const countryFeatures = (countries as d3.ExtendedFeatureCollection)
@@ -848,11 +866,11 @@ const CommodityBeltMap: FC = () => {
 
   const clearAll = useCallback(() => setActive(new Set()), []);
   const showAll = useCallback(
-    () => setActive(new Set(BELTS.map((b) => b.id))),
+    () => setActive(new Set(visibleBelts.map((b) => b.id))),
     []
   );
 
-  const activeBeltsList = BELTS.filter((b) => active.has(b.id));
+  const activeBeltsList = visibleBelts.filter((b) => active.has(b.id));
 
   return (
     <div
@@ -914,7 +932,7 @@ const CommodityBeltMap: FC = () => {
           alignItems: "center",
         }}
       >
-        {BELTS.map((belt) => (
+        {visibleBelts.map((belt) => (
           <BeltToggleButton
             key={belt.id}
             belt={belt}
@@ -972,7 +990,7 @@ const CommodityBeltMap: FC = () => {
             fontWeight: 500,
           }}
         >
-          {active.size} of {BELTS.length} active
+          {active.size} of {visibleBelts.length} active
         </span>
       </div>
 

@@ -27,6 +27,7 @@ import type { GlossaryTerm } from '@/components/academy/GlossaryTermRow';
 import { extractYouTubeId } from '@/lib/video/getEmbedUrl';
 
 const MapViewer = dynamic(() => import('@/components/academy/MapViewer'), { ssr: false });
+const MapTabs = dynamic(() => import('@/components/academy/MapTabs'), { ssr: false });
 const Lesson360VideoPlayer = dynamic(() => import('@/components/academy/Lesson360VideoPlayer'), { ssr: false });
 const Lesson360PhotoPlayer = dynamic(() => import('@/components/academy/Lesson360PhotoPlayer'), { ssr: false });
 const SaveOfflineButton = dynamic(() => import('@/components/academy/SaveOfflineButton'), { ssr: false });
@@ -102,6 +103,7 @@ export default function LessonPlayerPage() {
   const [courseCompletion, setCourseCompletion] = useState<{ token: string; isNew: boolean } | null>(null);
   const [crossroads, setCrossroads] = useState<CrossroadsOption[] | null>(null);
   const [navigationMode, setNavigationMode] = useState<'linear' | 'cyoa'>('linear');
+  const [courseBvcSeason, setCourseBvcSeason] = useState<1 | 2 | 3 | null>(null);
   const [adjacentLessons, setAdjacentLessons] = useState<{ prev: string | null; next: string | null }>({ prev: null, next: null });
   const [lessonAssignments, setLessonAssignments] = useState<{ id: string; title: string; due_date: string | null }[]>([]);
   const [currentUser, setCurrentUser] = useState<{ userId: string | null; isTeacher: boolean }>({ userId: null, isTeacher: false });
@@ -178,6 +180,11 @@ export default function LessonPlayerPage() {
       }
       setLesson(lessonData);
       setNavigationMode(courseData.navigation_mode ?? 'linear');
+      setCourseBvcSeason(
+        courseData.bvc_season === 1 || courseData.bvc_season === 2 || courseData.bvc_season === 3
+          ? courseData.bvc_season
+          : null,
+      );
 
       // Compute prev/next from flat lesson list
       const allLessons = (courseData.course_modules ?? [])
@@ -476,6 +483,28 @@ export default function LessonPlayerPage() {
 
         {lesson.map_content && (
           <MapViewer mapContent={lesson.map_content} />
+        )}
+
+        {/* BVC course — embed the full /academy/explore map filtered to
+            this course's season. Lets students explore every commodity
+            for this season (pin origins + growing belts) without
+            leaving the lesson. Season lock means a Season 1 course
+            doesn't show Season 2/3 spoilers. */}
+        {courseBvcSeason !== null && (
+          <section className="mb-6">
+            <div className="rounded-2xl border border-gray-800 bg-white p-4 sm:p-6">
+              <div className="mb-3">
+                <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-amber-600" aria-hidden="true" />
+                  Explore this season&apos;s world map
+                </h3>
+                <p className="text-xs text-gray-600 mt-1">
+                  Switch between <strong>Episode Origins</strong> (where each commodity comes from) and <strong>Growing Belts</strong> (where each commodity can actually grow). Click any pin, region, or belt for details.
+                </p>
+              </div>
+              <MapTabs seasonFilter={courseBvcSeason} />
+            </div>
+          </section>
         )}
 
         {(() => {
