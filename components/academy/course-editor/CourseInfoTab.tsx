@@ -17,6 +17,7 @@ interface Course {
   visibility: 'public' | 'members' | 'scheduled';
   published_at: string | null;
   trial_period_days: number;
+  bvc_season: 1 | 2 | 3 | null;
   course_modules: Array<{ id: string; title: string; order: number; lessons: Array<{ id: string; title: string; lesson_type: string; content_url: string | null; text_content: string | null; duration_seconds: number | null; order: number; is_free_preview: boolean; module_id: string | null }> }>;
 }
 
@@ -74,6 +75,29 @@ export default function CourseInfoTab({ course, saveCourseField }: TabProps) {
         <datalist id="category-options">
           {CATEGORY_OPTIONS.map((c) => <option key={c} value={c} />)}
         </datalist>
+      </div>
+      <div>
+        <label className="block text-sm text-gray-200 mb-1.5" htmlFor="course-bvc-season">
+          BVC Season <span className="text-gray-400 font-normal">(optional)</span>
+        </label>
+        <select
+          id="course-bvc-season"
+          value={course.bvc_season ?? ''}
+          onChange={(e) => {
+            const v = e.target.value;
+            const parsed = v === '' ? null : (Number(v) as 1 | 2 | 3);
+            saveCourseField({ bvc_season: parsed });
+          }}
+          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
+        >
+          <option value="">Not a BVC course</option>
+          <option value="1">Season 1 — Daily Rituals</option>
+          <option value="2">Season 2 — The Oldest Toast</option>
+          <option value="3">Season 3 — The Forbidden Leaf</option>
+        </select>
+        <p className="text-xs text-gray-400 mt-1.5">
+          Better Vice Club season. When set, every lesson in this course shows an embedded world map filtered to this season&apos;s commodities only. Leave unset for non-BVC courses.
+        </p>
       </div>
     </div>
   );

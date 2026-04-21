@@ -53,6 +53,7 @@ interface Course {
   visibility: 'public' | 'members' | 'scheduled';
   published_at: string | null;
   trial_period_days: number;
+  bvc_season: 1 | 2 | 3 | null;
   course_modules: Module[];
 }
 

@@ -211,9 +211,19 @@ const SEASON_FILTERS: { value: FilterState; label: string; color: string }[] =
 const WORLD_ATLAS_URL =
   "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
-const CommodityMap: FC = () => {
+export interface CommodityMapProps {
+  /**
+   * When set, locks the map to that BVC season — initial filter
+   * becomes the season, "All seasons" option is hidden, and other-
+   * season buttons are hidden. Leave undefined for the full
+   * /academy/explore experience.
+   */
+  seasonFilter?: 1 | 2 | 3;
+}
+
+const CommodityMap: FC<CommodityMapProps> = ({ seasonFilter }) => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [filter, setFilter] = useState<FilterState>("all");
+  const [filter, setFilter] = useState<FilterState>(seasonFilter ?? "all");
   const [panel, setPanel] = useState<PanelState | null>(null);
   const [topoData, setTopoData] = useState<Topology | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -357,25 +367,27 @@ const CommodityMap: FC = () => {
 
   return (
     <div style={{ width: "100%", fontFamily: "var(--font-sans, system-ui, sans-serif)" }}>
-      {/* Filter row */}
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "8px",
-          marginBottom: "10px",
-        }}
-      >
-        {SEASON_FILTERS.map((f) => (
-          <SeasonButton
-            key={String(f.value)}
-            label={f.label}
-            color={f.color}
-            active={filter === f.value}
-            onClick={() => handleFilter(f.value)}
-          />
-        ))}
-      </div>
+      {/* Filter row — hidden when the map is season-locked. */}
+      {!seasonFilter && (
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "8px",
+            marginBottom: "10px",
+          }}
+        >
+          {SEASON_FILTERS.map((f) => (
+            <SeasonButton
+              key={String(f.value)}
+              label={f.label}
+              color={f.color}
+              active={filter === f.value}
+              onClick={() => handleFilter(f.value)}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Hint */}
       <p

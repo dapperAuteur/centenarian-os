@@ -78,17 +78,28 @@ export default function MapViewer({ mapContent }: MapViewerProps) {
       maxZoom: 19,
     }).addTo(map);
 
-    // Add markers
+    // Add markers. Tooltip shows the title on hover so students
+    // immediately know the marker is interactive; popup (click) shows
+    // the full description.
     if (mapContent.markers) {
       for (const m of mapContent.markers) {
-        const marker = L.marker([m.lat, m.lng], { icon: createMarkerIcon(m.color) }).addTo(map);
+        const marker = L.marker([m.lat, m.lng], {
+          icon: createMarkerIcon(m.color),
+          keyboard: true,
+          title: m.title, // native browser tooltip fallback
+        }).addTo(map);
+        if (m.title) {
+          marker.bindTooltip(m.title, { direction: 'top', offset: L.point(0, -36), opacity: 0.92 });
+        }
         if (m.title || m.description) {
           marker.bindPopup(`<strong>${m.title}</strong>${m.description ? `<br/><span style="font-size:12px;color:#666">${m.description}</span>` : ''}`);
         }
       }
     }
 
-    // Add lines (trade routes)
+    // Add lines (trade routes). Dashed already, plus hover tooltip +
+    // cursor-pointer affordance. Thicker on hover so the hit area is
+    // forgiving and the click cue is obvious.
     if (mapContent.lines) {
       for (const line of mapContent.lines) {
         const polyline = L.polyline(line.coords, {
@@ -96,14 +107,23 @@ export default function MapViewer({ mapContent }: MapViewerProps) {
           weight: 3,
           opacity: 0.8,
           dashArray: '8 4',
+          interactive: true,
         }).addTo(map);
+        const el = polyline.getElement() as SVGPathElement | null;
+        if (el) el.style.cursor = 'pointer';
+        if (line.title) {
+          polyline.bindTooltip(line.title, { sticky: true, opacity: 0.92 });
+        }
+        polyline.on('mouseover', () => polyline.setStyle({ weight: 5, opacity: 1 }));
+        polyline.on('mouseout', () => polyline.setStyle({ weight: 3, opacity: 0.8 }));
         if (line.title || line.description) {
           polyline.bindPopup(`<strong>${line.title}</strong>${line.description ? `<br/><span style="font-size:12px;color:#666">${line.description}</span>` : ''}`);
         }
       }
     }
 
-    // Add polygons (regions)
+    // Add polygons (regions). Hover tooltip + slight fill-opacity
+    // boost on hover so students see the region responds to their mouse.
     if (mapContent.polygons) {
       for (const poly of mapContent.polygons) {
         const polygon = L.polygon(poly.coords, {
@@ -111,7 +131,15 @@ export default function MapViewer({ mapContent }: MapViewerProps) {
           fillColor: poly.fillColor || poly.color || '#34d39933',
           fillOpacity: 0.3,
           weight: 2,
+          interactive: true,
         }).addTo(map);
+        const el = polygon.getElement() as SVGPathElement | null;
+        if (el) el.style.cursor = 'pointer';
+        if (poly.title) {
+          polygon.bindTooltip(poly.title, { sticky: true, opacity: 0.92 });
+        }
+        polygon.on('mouseover', () => polygon.setStyle({ fillOpacity: 0.5, weight: 3 }));
+        polygon.on('mouseout', () => polygon.setStyle({ fillOpacity: 0.3, weight: 2 }));
         if (poly.title || poly.description) {
           polygon.bindPopup(`<strong>${poly.title}</strong>${poly.description ? `<br/><span style="font-size:12px;color:#666">${poly.description}</span>` : ''}`);
         }
@@ -135,6 +163,13 @@ export default function MapViewer({ mapContent }: MapViewerProps) {
     // Leaflet's controls and the student sees map tiles covering
     // the PDF they opened.
     <div className="mb-6 isolate">
+      {/* Discoverability hint above the map so students know the
+          markers/lines/regions are clickable. Leaflet's only built-in
+          affordance is cursor:pointer, which isn't enough signal. */}
+      <p className="text-xs text-gray-400 mb-2 flex items-center gap-1.5">
+        <span aria-hidden="true">💡</span>
+        <span>Hover any marker, line, or region to see its label — click to open full details. Drag to pan · scroll to zoom.</span>
+      </p>
       <div
         ref={mapRef}
         className="w-full aspect-video rounded-xl sm:rounded-2xl overflow-hidden border border-gray-800"

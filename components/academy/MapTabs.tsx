@@ -26,6 +26,17 @@ const CommodityBeltMap = dynamic(
   { ssr: false, loading: () => <MapLoader /> }
 );
 
+export interface MapTabsProps {
+  /**
+   * When set (1, 2, or 3), both maps render ONLY that season's
+   * commodities and the season filter UI is hidden. Used on BVC
+   * course lesson pages so a Season 1 course shows only Season 1
+   * episodes on its embedded map. Leave undefined for the public
+   * /academy/explore page where all 21 episodes are visible.
+   */
+  seasonFilter?: 1 | 2 | 3;
+}
+
 function MapLoader() {
   return (
     <div
@@ -60,7 +71,7 @@ const TABS: Array<{ id: TabId; label: string; sublabel: string }> = [
   },
 ];
 
-const MapTabs: FC = () => {
+const MapTabs: FC<MapTabsProps> = ({ seasonFilter }) => {
   const [activeTab, setActiveTab] = useState<TabId>("origins");
 
   return (
@@ -132,10 +143,10 @@ const MapTabs: FC = () => {
       {/* Map panels — both mounted, only one visible */}
       {/* Keeping both mounted avoids re-fetching topology on tab switch */}
       <div style={{ display: activeTab === "origins" ? "block" : "none" }}>
-        <CommodityMap />
+        <CommodityMap seasonFilter={seasonFilter} />
       </div>
       <div style={{ display: activeTab === "belts" ? "block" : "none" }}>
-        <CommodityBeltMap />
+        <CommodityBeltMap seasonFilter={seasonFilter} />
       </div>
     </div>
   );
