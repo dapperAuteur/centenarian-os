@@ -234,6 +234,13 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
       setShowMapSection(false); setLessonDocuments([]); setPodcastLinks([]);
       setAddingLesson(null);
       onCourseUpdated();
+    } else {
+      // Surface the server's error instead of silently failing — the
+      // PATCH/POST paths validate document URLs, lesson type, etc.,
+      // and the teacher needs to see why a save didn't go through.
+      const data = await r.json().catch(() => ({}));
+      setFeedback(data.error || `Save failed (${r.status})`);
+      setTimeout(() => setFeedback(''), 5000);
     }
   }
 
@@ -433,12 +440,20 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
     setSavingDocs(true);
     try {
       const payload = editingDocs.filter((d) => d.title.trim() || d.url.trim());
-      await offlineFetch(`/api/academy/courses/${courseId}/lessons/${editingDocsLessonId}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ documents: payload }),
-      });
+      const res = await offlineFetch(
+        `/api/academy/courses/${courseId}/lessons/${editingDocsLessonId}`,
+        { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ documents: payload }) },
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Save failed (${res.status})`);
+      }
       setEditingDocsLessonId(null); setEditingDocs([]);
       setFeedback('Documents saved'); setTimeout(() => setFeedback(''), 2000);
-    } catch { /* ignore */ }
+    } catch (e) {
+      setFeedback(e instanceof Error ? e.message : 'Save failed');
+      setTimeout(() => setFeedback(''), 5000);
+    }
     setSavingDocs(false);
   }
 
@@ -495,13 +510,21 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
             }
           : null,
       };
-      await offlineFetch(`/api/academy/courses/${courseId}/lessons/${editingMapLessonId}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
-      });
+      const res = await offlineFetch(
+        `/api/academy/courses/${courseId}/lessons/${editingMapLessonId}`,
+        { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) },
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Save failed (${res.status})`);
+      }
       setEditingMapLessonId(null);
       setEditingMapMarkers([]); setEditingMapLines([]); setEditingMapPolygons([]);
       setFeedback('Map saved'); setTimeout(() => setFeedback(''), 2000);
-    } catch { /* ignore */ }
+    } catch (e) {
+      setFeedback(e instanceof Error ? e.message : 'Save failed');
+      setTimeout(() => setFeedback(''), 5000);
+    }
     setSavingMap(false);
   }
 
