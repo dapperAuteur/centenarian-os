@@ -45,14 +45,20 @@ export async function GET(request: NextRequest) {
 
   let upstream: Response;
   try {
-    // Cache upstream at the edge for a minute — students hitting the
-    // same doc repeatedly don't each trigger a Cloudinary fetch.
-    upstream = await fetch(target.toString(), {
-      next: { revalidate: 60 },
-    });
+    // Don't let Next's Data Cache store transient Cloudinary 404s.
+    // Propagation delay after a fresh teacher upload can briefly
+    // return 404; if that 404 gets cached for 60 s every student
+    // sees it until the TTL expires. `cache: 'no-store'` hits
+    // Cloudinary fresh on every call. Scaling is still covered by
+    // Vercel's edge CDN via the response Cache-Control header below
+    // — which we only set on 200 responses.
+    upstream = await fetch(target.toString(), { cache: 'no-store' });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'upstream fetch failed';
-    return NextResponse.json({ error: msg }, { status: 502 });
+    return NextResponse.json(
+      { error: msg },
+      { status: 502, headers: { 'Cache-Control': 'no-store' } },
+    );
   }
 
   if (!upstream.ok) {
@@ -64,7 +70,12 @@ export async function GET(request: NextRequest) {
           ? 'The Cloudinary asset is private or PDF delivery is disabled. Re-upload through the teacher editor (PDFs now route to /raw/upload) or enable "Allow delivery of PDF and ZIP files" in the Cloudinary account settings.'
           : undefined,
       },
-      { status: upstream.status },
+      {
+        status: upstream.status,
+        // Never cache errors — a transient 404 during propagation
+        // should not poison the CDN for subsequent students.
+        headers: { 'Cache-Control': 'no-store' },
+      },
     );
   }
 
