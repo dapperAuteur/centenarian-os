@@ -6,6 +6,20 @@ A comprehensive personal operating system for executing multi-decade, multi-disc
 
 CentenarianOS connects long-term ambitions to daily execution through an integrated platform covering planning, nutrition, fitness, focus, finances, travel, and learning — all offline-first, privacy-focused, and tied together by cross-module analytics.
 
+Operated by B4C LLC / AwesomeWebStore.com. Built by [Brand Anthony McDonald](https://brandanthonymcdonald.com).
+
+## Branding Hierarchy
+
+```
+B4C LLC / AwesomeWebStore.com  ← legal entity
+└── WitUS.online               ← parent brand (philosophy + product directory)
+    ├── CentenarianOS.com      ← this repo — multi-decade personal OS
+    │   └── Academy (LMS)      ← module inside CentenarianOS, hosts BVC curriculum
+    └── Work.WitUS.Online      ← separate app, contractor operations
+```
+
+The Academy is a module of CentenarianOS — not a separate product. There is no standalone "Learn.WitUS" app. Sister repos in the ecosystem: [WitUS.online](https://witus.online) (brand umbrella) and Work.WitUS (contractor operations). See [`plans/ecosystem/README.md`](./plans/ecosystem/README.md) for the full platform map.
+
 ## Architecture
 
 **Modular Monolith** built with:
@@ -211,7 +225,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for development workflow and coding sta
 
 ## License
 
-MIT License — see [LICENSE](./LICENSE)
+Proprietary B4C LLC / AwesomeWebStore.com
 
 ## Acknowledgments
 
