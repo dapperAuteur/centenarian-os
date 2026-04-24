@@ -2042,3 +2042,56 @@ Middleware now runs on every HTML URL. Added work: one regex match (~microsecond
 | 38 classroom/family plan | blocked on demand |
 | BVC Episodes 2–7 / Season 2+3 | content exists; phased load |
 | Starter tier | shipped, 90-day monitoring |
+
+## 35. Teller encryption key rotated — `chore/rotate-teller-encryption-key`
+
+Rotated `TELLER_ENCRYPTION_KEY` (AES-256-GCM key that encrypts Teller bank access tokens stored in `teller_enrollments.access_token`). Re-encrypted 6 live enrollment rows from the old key to a new one via a one-shot dry-run-by-default script, then swapped the Vercel env var and disposed of the transitional `NEW_TELLER_ENCRYPTION_KEY`. Zero user impact — banks stay connected.
+
+### 35.1 — Why
+
+- Scheduled rotation hygiene on the symmetric key protecting stored bank access tokens.
+- The encryption key decrypts every row in `teller_enrollments`, so swapping it blindly would have bricked all 6 connected bank accounts on next sync. Needed an in-place re-encryption migration with both keys briefly coexisting.
+
+### 35.2 — Files added + deleted in this branch
+
+- `scripts/rotate-teller-encryption-key.ts` — one-shot migration. Created in commit `357523d`, deleted in the cleanup commit on this same branch after a clean apply.
+  - Loaded `TELLER_ENCRYPTION_KEY` (old) + `NEW_TELLER_ENCRYPTION_KEY` (new), asserted both were 64-char hex and non-identical.
+  - Iterated every `teller_enrollments` row via service role client.
+  - Per row: decrypted `access_token` with old key, re-encrypted with new key, updated.
+  - Safe to re-run: rows already decrypting with the new key are detected and skipped (partial-run recovery).
+  - Exited non-zero on any row failure so scripting can react.
+- Deleted after successful apply — one-shots are dead surface area once spent, and the old key it referenced is no longer the canonical key.
+
+### 35.3 — Process executed
+
+1. Generated new key via `openssl rand -hex 32`, stored as `NEW_TELLER_ENCRYPTION_KEY` in env (Vercel + `.env.local`).
+2. Dry run: `npx ts-node --transpile-only scripts/rotate-teller-encryption-key.ts` → 6/6 decrypted cleanly, 0 failed.
+3. Apply: same command with `--apply` → 6/6 re-encrypted, 0 failed.
+4. Swapped `TELLER_ENCRYPTION_KEY` in Vercel (production + preview + development) to the new value.
+5. Removed `NEW_TELLER_ENCRYPTION_KEY` from all Vercel envs + `.env.local`.
+6. Smoke test: logged into CentOS, triggered Teller sync for one enrollment — transactions returned, no decrypt errors.
+
+### 35.4 — Incident during execution
+
+During step 2, Supabase service role calls failed with `Legacy API keys are disabled` — keys had been disabled ~24h prior as part of an independent Supabase new-API-keys migration. Re-enabled legacy keys in the Supabase dashboard just long enough to run the rotation script, then disabled again after step 6 verified.
+
+This surfaced that the broader Supabase migration has cross-cutting dependencies (shared DB with Work.WitUS/contractor-os) worth planning carefully rather than executing ad-hoc. Captured as plan 39 (`plans/39-supabase-key-migration.md`, gitignored) with a 4-key provisioning user task at `plans/user-tasks/01-create-supabase-secret-keys.md`.
+
+### 35.5 — Verification
+
+1. `SELECT COUNT(*) FROM public.teller_enrollments` → 6 rows (unchanged).
+2. Script summary: `re-encrypted: 6, already new: 0, failed: 0`.
+3. Post-swap, `/api/teller/sync` for one enrollment → 200 with transactions (end-to-end decrypt with new key).
+4. No `NEW_TELLER_ENCRYPTION_KEY` in `vercel env ls` for any environment.
+
+### 35.6 — Merge order
+
+- Standalone branch. No dependencies on other in-flight work. Merges directly to `main`.
+
+### 35.7 — Remaining backlog
+
+| Plan | Status |
+|---|---|
+| 39 Supabase legacy → new API keys migration | scoped, not started. Blocked on user-task 01 (create 4 named secret keys). Phases 2–5 span ~3 days total clock time. |
+| Broken `supabase/functions/auto-delete-archived/index.ts` (both repos) | identified during plan 39 audit; `Deno.env.get(process.env.X)` pattern never worked. Deferred to plan 39 Phase 4 cleanup. Not fixed here. |
+| Stray `.env copy.local` at CentOS repo root | noted during plan 39 audit; scheduled for plan 39 Phase 5 cleanup. |
