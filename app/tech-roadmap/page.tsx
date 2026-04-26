@@ -5,9 +5,9 @@ import SiteFooter from '@/components/ui/SiteFooter';
 
 export const metadata: Metadata = {
   title: 'Product Roadmap',
-  description: 'See what we\'ve built, what we\'re building, and what\'s planned for CentenarianOS — a multi-decade personal operating system.',
+  description: 'See what we\'ve built, what we\'re building, and what\'s planned for CentenarianOS, a multi-decade personal operating system.',
   openGraph: {
-    title: 'Product Roadmap — CentenarianOS',
+    title: 'Product Roadmap · CentenarianOS',
     description: 'See what we\'ve built, what we\'re building, and what\'s planned for CentenarianOS.',
   },
 };

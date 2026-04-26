@@ -5,9 +5,9 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Try the Demo',
-  description: 'Explore CentenarianOS with a full-featured demo account. No signup required — see the planner, finance tracker, travel module, and more.',
+  description: 'Explore CentenarianOS with a full-featured demo account. No signup required. See the planner, finance tracker, travel module, and more.',
   openGraph: {
-    title: 'Try the Demo — CentenarianOS',
+    title: 'Try the Demo · CentenarianOS',
     description: 'Explore CentenarianOS with a full-featured demo account. No signup required.',
   },
 };

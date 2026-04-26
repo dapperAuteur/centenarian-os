@@ -2119,3 +2119,57 @@ WHERE id = '<course-id>';
 | Fix A — publish BVC + audit other courses' visibility | data change, owner-driven; SQL provided in §35.6 |
 | Em dash refactor across user-facing copy | approved, 4 branches planned (metadata, marketing pages, app UI, locales). Not started. Owner already started in `app/error.tsx` per local working tree. |
 | Plan 39 — Supabase keys | Phase 1 (4 secret keys) complete per user; Phase 2 begins after 24–48h bake (target ≥ 2026-04-26). |
+
+## 36. Em dash refactor — branch 1: metadata exports — `refactor/copy-em-dash-metadata`
+
+> Note: claims section 36; if the queued Teller-rotation branch (also at 36) merges first, this renumbers to 37 at PR time.
+
+First branch of the em-dash cleanup approved earlier. Targets only Next.js `metadata` exports (page titles, descriptions, OG, Twitter cards) — the SEO-critical surface. JSX body text and code comments are deferred to later branches.
+
+### 36.1 — Replacement strategy
+
+- **Title separators** like `'X — CentenarianOS'` → `'X · CentenarianOS'` (middle dot, already used in [`app/academy/explore/page.tsx`](../../app/academy/explore/page.tsx) and [`app/academy/verify/[token]/page.tsx`](../../app/academy/verify/[token]/page.tsx) — consistency).
+- **Descriptions** introducing a list with em dash → colon (`templates — hotel, gym, AM` → `templates: hotel, gym, AM`).
+- **Descriptions** joining clauses → period + capitalize (`required — see` → `required. See`).
+- **Descriptions** with parenthetical aside → comma (`CentenarianOS — a multi-decade OS` → `CentenarianOS, a multi-decade OS`).
+- **Exercise template literals** with em dash before predicate → drop em dash, restructure (`${name} — targets X` → `${name} targets X`).
+
+Per-instance judgment, not mechanical — each replacement reads naturally in context.
+
+### 36.2 — Files modified (18)
+
+- [`app/layout.tsx`](../../app/layout.tsx) — global title template separator.
+- Layouts: [`coaching`](../../app/coaching/layout.tsx), [`demo`](../../app/demo/layout.tsx), [`live`](../../app/live/layout.tsx), [`pricing`](../../app/pricing/layout.tsx), [`recipes`](../../app/recipes/layout.tsx), [`academy/teachers/[username]`](../../app/academy/teachers/[username]/layout.tsx).
+- Pages: [`certificates/[achievementId]`](../../app/certificates/[achievementId]/page.tsx), [`contribute`](../../app/contribute/page.tsx), [`exercises`](../../app/exercises/page.tsx), [`exercises/[id]`](../../app/exercises/[id]/page.tsx), [`features`](../../app/features/page.tsx), [`features/[slug]`](../../app/features/[slug]/page.tsx), [`profiles/[username]`](../../app/profiles/[username]/page.tsx), [`tech-roadmap`](../../app/tech-roadmap/page.tsx), [`workouts`](../../app/workouts/page.tsx).
+- Page-with-generateMetadata: [`academy/offline`](../../app/academy/offline/page.tsx), [`academy/verify/[token]`](../../app/academy/verify/[token]/page.tsx).
+
+22 individual em-dash replacements across these 18 files. No code logic touched — strings only.
+
+### 36.3 — What this does NOT touch
+
+- **Code comments** (`// X — Y`) — out of scope for any em-dash branch.
+- **JSX body text** (page content rendered in `<p>`, `<li>`, etc.) — branch 2 (marketing pages) and branch 3 (app UI).
+- **Page-body data arrays** like the PHASES list in [`tech-roadmap/page.tsx`](../../app/tech-roadmap/page.tsx) (~80 em dashes in roadmap bullet text) — branch 2.
+- **Locale `.json` dictionaries** — branch 4.
+- **Server-rendered markdown** (tutorial scripts, blog posts) — branch 4 or post-launch.
+
+### 36.4 — Verification
+
+1. Typecheck: `npx tsc --noEmit` — clean.
+2. Visual: open any page (e.g. `/pricing`, `/exercises`, `/coaching`) and check the browser tab title shows `Page · CentenarianOS` instead of `Page — CentenarianOS`.
+3. View-source on a public page — confirm `<title>`, `<meta name="description">`, `<meta property="og:*">` reflect the new copy.
+4. SEO regression: titles and descriptions are different strings — Google may briefly re-crawl. Acceptable cost for the cleanup.
+
+### 36.5 — Merge order
+
+- Standalone branch off main. No dependencies. Merges directly to `main`.
+- Recommend bake 24h before starting branch 2 so any title/OG regressions surface in real traffic.
+
+### 36.6 — Remaining backlog
+
+| Item | Status |
+|---|---|
+| Em dash branch 2 — marketing/legal page bodies | not started. Targets `app/safety/page.tsx`, `app/privacy/page.tsx`, `app/terms/page.tsx`, `app/tech-roadmap/page.tsx` PHASES array, `app/features/page.tsx` JSX, `app/workouts/page.tsx` JSX, `app/exercises/page.tsx` JSX. |
+| Em dash branch 3 — authenticated app UI | not started. Bulk of work — `app/dashboard/**`, `components/**`, error/validation strings. |
+| Em dash branch 4 — locale dictionaries | not started. `locales/en/*.json`, `locales/es/*.json` (Spanish may need native review for replacements). |
+| Plan 39 — Supabase keys | Phase 1 done; Phase 2 unblocked ≥ 2026-04-26. |

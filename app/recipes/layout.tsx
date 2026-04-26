@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   title: 'Recipes',
   description: 'Discover and share healthy longevity recipes. Browse community-created meals, import recipes from any URL, and track nutrition.',
   openGraph: {
-    title: 'Recipes — CentenarianOS',
+    title: 'Recipes · CentenarianOS',
     description: 'Discover and share healthy longevity recipes. Browse community-created meals, import recipes from any URL, and track nutrition.',
     images: [{ url: `${SITE_URL}/api/og/default`, width: 1200, height: 630 }],
   },

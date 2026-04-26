@@ -10,7 +10,7 @@ import { ArrowLeft } from 'lucide-react';
 import OfflineStorageManager from '@/components/academy/offline/OfflineStorageManager';
 
 export const metadata: Metadata = {
-  title: 'Offline storage — Centenarian Academy',
+  title: 'Offline storage · Centenarian Academy',
   description: 'Manage the lessons you&rsquo;ve saved to watch without an internet connection.',
 };
 

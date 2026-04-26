@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: 'CentenarianOS',
-    template: '%s — CentenarianOS',
+    template: '%s · CentenarianOS',
   },
   description: 'Multi-decade personal operating system for executing audacious goals through data-driven daily habits',
   openGraph: {
