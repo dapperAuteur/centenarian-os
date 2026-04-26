@@ -36,7 +36,7 @@ export default function RootError({ error, reset }: ErrorProps) {
         <h1 className="text-2xl font-bold text-gray-900">Something went wrong</h1>
         <p className="mt-3 text-gray-600 text-sm">
           We hit an unexpected error while loading this page. The team has been notified.
-          Try the page again or head home — most routes still work.
+          Try the page again or head home. Most routes still work.
         </p>
         {error.digest && (
           <p className="mt-4 text-xs text-gray-400 font-mono">
