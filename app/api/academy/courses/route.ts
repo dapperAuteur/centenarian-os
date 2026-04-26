@@ -37,13 +37,23 @@ export async function GET(request: NextRequest) {
   const db = getDb();
   let query = db
     .from('courses')
-    .select('id, title, description, cover_image_url, category, tags, price, price_type, is_published, navigation_mode, like_count, created_at, teacher_id, profiles(username, display_name, avatar_url)')
+    .select('id, title, description, cover_image_url, category, tags, price, price_type, is_published, visibility, published_at, navigation_mode, like_count, created_at, teacher_id, profiles(username, display_name, avatar_url)')
     .order(col, { ascending, nullsFirst: false });
 
   if (mine && user) {
     query = query.eq('teacher_id', user.id);
   } else {
     query = query.eq('is_published', true);
+    // Visibility (migration 040): public = anyone; members = authenticated only;
+    // scheduled = public after published_at. Service role bypasses RLS, so
+    // these checks must live in the API.
+    const now = new Date().toISOString();
+    const scheduledClause = `and(visibility.eq.scheduled,published_at.lte.${now})`;
+    if (user) {
+      query = query.or(`visibility.eq.public,visibility.eq.members,${scheduledClause}`);
+    } else {
+      query = query.or(`visibility.eq.public,${scheduledClause}`);
+    }
     if (category) query = query.eq('category', category);
     if (q) query = query.ilike('title', `%${q}%`);
   }

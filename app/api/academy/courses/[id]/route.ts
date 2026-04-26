@@ -28,7 +28,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .from('courses')
     .select(`
       id, title, description, cover_image_url, category, tags,
-      price, price_type, is_published, navigation_mode, like_count,
+      price, price_type, is_published, visibility, published_at, navigation_mode, like_count,
       avg_rating, review_count, trial_period_days, is_sequential, short_link_url,
       override_questions, allow_cross_course_cyoa, bvc_season,
       created_at, teacher_id,
@@ -42,9 +42,26 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   if (error || !course) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  // Block unpublished courses from non-owners
-  if (!course.is_published && user?.id !== course.teacher_id && user?.email !== process.env.ADMIN_EMAIL) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  // Owners + admin always see the course (drafts, members-only, scheduled).
+  // Everyone else must clear both is_published and visibility (migration 040).
+  const isOwner = !!user && user.id === course.teacher_id;
+  const isAdmin = !!user && user.email === process.env.ADMIN_EMAIL;
+  if (!isOwner && !isAdmin) {
+    if (!course.is_published) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+    const visibility = course.visibility ?? 'public';
+    const scheduledLive =
+      visibility === 'scheduled'
+      && !!course.published_at
+      && new Date(course.published_at) <= new Date();
+    const isVisible =
+      visibility === 'public'
+      || (visibility === 'members' && !!user)
+      || scheduledLive;
+    if (!isVisible) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
   }
 
   // Determine enrollment status, liked, and saved

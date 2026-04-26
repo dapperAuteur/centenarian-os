@@ -2042,3 +2042,80 @@ Middleware now runs on every HTML URL. Added work: one regex match (~microsecond
 | 38 classroom/family plan | blocked on demand |
 | BVC Episodes 2–7 / Season 2+3 | content exists; phased load |
 | Starter tier | shipped, 90-day monitoring |
+
+## 35. Academy course visibility wired into the API — `fix/academy-visibility-filter`
+
+> Note: numbering claims may collide with the Teller-rotation branch (also queued at section 35 on its own branch). Whichever merges second renumbers to 36.
+
+Migration 040 added a `visibility` column to `courses` with values `public` / `members` / `scheduled` and matching RLS policies. The catalog and detail API routes never read it — both used the service role client (which bypasses RLS) and gated only on `is_published`. Result: a course flagged `members` was leaking into the public catalog and was readable by unauthenticated users at the detail URL.
+
+### 35.1 — Why now
+
+User reported "academy classes aren't public" while looking at the BVC course not appearing for unauth visitors. Investigation surfaced the inverse problem too — visibility was never enforced, so members-only courses were over-exposed. Both directions are fixed in this branch.
+
+### 35.2 — Files modified
+
+- [`app/api/academy/courses/route.ts`](../../app/api/academy/courses/route.ts) (catalog GET):
+  - SELECT now includes `visibility, published_at`.
+  - Added visibility filter via `.or()` after the existing `is_published = true` check. Unauthenticated requests see only `public` + currently-live `scheduled`. Authenticated requests additionally see `members`.
+  - `mine=true` (teacher viewing own courses) still bypasses both checks — owners see drafts.
+- [`app/api/academy/courses/[id]/route.ts`](../../app/api/academy/courses/[id]/route.ts) (detail GET):
+  - SELECT now includes `visibility, published_at`.
+  - Refactored gating: owners + admin always pass; everyone else must clear `is_published` AND visibility (`public`, or `members` with auth, or `scheduled` past `published_at`).
+  - Same 404 response for any block — no information disclosure about whether a hidden course exists.
+
+### 35.3 — Behavior matrix after the fix
+
+| Course state                             | Unauth catalog | Auth catalog | Unauth detail | Auth detail | Owner / admin detail |
+|------------------------------------------|----------------|--------------|---------------|-------------|----------------------|
+| `is_published=false`                     | hidden         | hidden       | 404           | 404         | shown                |
+| `is_published=true, visibility=public`   | shown          | shown        | shown         | shown       | shown                |
+| `is_published=true, visibility=members`  | hidden         | shown        | 404           | shown       | shown                |
+| `is_published=true, visibility=scheduled, published_at > NOW` | hidden | hidden | 404 | 404 | shown |
+| `is_published=true, visibility=scheduled, published_at ≤ NOW` | shown  | shown  | shown | shown | shown |
+
+### 35.4 — What this does NOT change
+
+- The `is_published` PATCH gates (paid course needs Stripe Connect onboarded, etc.) are untouched.
+- The teacher dashboard publish toggle UX is untouched — same flow, just now `visibility` actually matters when set.
+- RLS policies from migration 040 are untouched; they're now redundant for these two routes (since the API enforces directly) but still useful belt-and-suspenders if anything else queries `courses` without service role.
+- No new column, no migration. Pure code fix.
+
+### 35.5 — Verification (manual, post-merge)
+
+1. As an unauth visitor, hit `/academy` — only `public` + currently-live `scheduled` published courses should appear. Members-only ones gone.
+2. Try a known members-only course detail URL while unauth — 404. Log in as a member — same URL renders.
+3. As the course's teacher (logged in), hit `/dashboard/teaching/courses` — drafts still show; same teacher viewing `/academy/<draft-id>` directly still gets the page.
+4. Future: a `scheduled` course with `published_at` 1 hour in the future should 404; flip the timestamp to now and it appears.
+
+### 35.6 — Followup needed (Fix A)
+
+Code is fixed; data still needs reconciliation. Owner to run in Supabase SQL editor:
+
+```sql
+SELECT id, title, teacher_id, is_published, visibility, published_at, price_type
+FROM public.courses
+ORDER BY created_at DESC;
+```
+
+Then for each course that should be publicly listed (e.g. BVC Season 1):
+
+```sql
+UPDATE public.courses
+SET is_published = true,
+    visibility = 'public',
+    published_at = COALESCE(published_at, NOW())
+WHERE id = '<course-id>';
+```
+
+### 35.7 — Merge order
+
+- Standalone branch off main. No dependencies. Merges directly to `main`.
+
+### 35.8 — Remaining backlog
+
+| Item | Status |
+|---|---|
+| Fix A — publish BVC + audit other courses' visibility | data change, owner-driven; SQL provided in §35.6 |
+| Em dash refactor across user-facing copy | approved, 4 branches planned (metadata, marketing pages, app UI, locales). Not started. Owner already started in `app/error.tsx` per local working tree. |
+| Plan 39 — Supabase keys | Phase 1 (4 secret keys) complete per user; Phase 2 begins after 24–48h bake (target ≥ 2026-04-26). |
