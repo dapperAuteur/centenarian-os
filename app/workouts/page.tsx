@@ -131,7 +131,7 @@ export default async function WorkoutsPage({
         <header className="mt-6 mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Workout Library</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Browse workout templates — hotel workouts, gym sessions, AM priming, PM recovery,
+            Browse workout templates: hotel workouts, gym sessions, AM priming, PM recovery,
             and more. Free, no account needed.
           </p>
         </header>
@@ -269,7 +269,7 @@ export default async function WorkoutsPage({
             Follow the Nomad Longevity OS program
           </h2>
           <p className="text-sm text-gray-400 mb-4">
-            Structured AM priming, PM recovery, hotel &amp; gym workouts — designed for
+            Structured AM priming, PM recovery, hotel &amp; gym workouts, designed for
             long-term health.
           </p>
           <Link
