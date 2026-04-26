@@ -6,7 +6,7 @@ import SiteFooter from '@/components/ui/SiteFooter';
 
 export const metadata: Metadata = {
   title: 'Contribute',
-  description: 'Help build CentenarianOS — contribute code, improve documentation, report bugs, or suggest features. All skill levels welcome.',
+  description: 'Help build CentenarianOS. Contribute code, improve documentation, report bugs, or suggest features. All skill levels welcome.',
   openGraph: {
     title: 'Contribute to CentenarianOS',
     description: 'Help build the personal operating system for executing multi-decade goals. All skill levels welcome.',

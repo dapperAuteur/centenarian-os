@@ -9,7 +9,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_APP_URL
 
 export const metadata: Metadata = {
   title: 'Pricing',
-  description: 'Simple, transparent pricing. Monthly or lifetime access to your personal operating system — all modules included.',
+  description: 'Simple, transparent pricing. Monthly or lifetime access to your personal operating system. All modules included.',
   openGraph: {
     title: 'CentenarianOS Pricing',
     description: 'Monthly or lifetime access. All modules included.',

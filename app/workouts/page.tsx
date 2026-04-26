@@ -16,11 +16,11 @@ const SITE_URL = process.env.NEXT_PUBLIC_APP_URL
 export const metadata: Metadata = {
   title: 'Workout Library',
   description:
-    'Browse free workout templates — hotel workouts, gym sessions, AM priming, PM recovery, and more. No account needed.',
+    'Browse free workout templates: hotel workouts, gym sessions, AM priming, PM recovery, and more. No account needed.',
   openGraph: {
-    title: 'Workout Library — CentenarianOS',
+    title: 'Workout Library · CentenarianOS',
     description:
-      'Browse free workout templates — hotel workouts, gym sessions, AM priming, PM recovery, and more.',
+      'Browse free workout templates: hotel workouts, gym sessions, AM priming, PM recovery, and more.',
     url: `${SITE_URL}/workouts`,
     images: [{ url: `${SITE_URL}/og-default.png`, width: 1200, height: 630, alt: 'CentenarianOS Workout Library' }],
     type: 'website',
@@ -28,9 +28,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Workout Library — CentenarianOS',
+    title: 'Workout Library · CentenarianOS',
     description:
-      'Browse free workout templates — hotel workouts, gym sessions, AM priming, PM recovery, and more.',
+      'Browse free workout templates: hotel workouts, gym sessions, AM priming, PM recovery, and more.',
     images: [`${SITE_URL}/og-default.png`],
   },
   alternates: { canonical: `${SITE_URL}/workouts` },

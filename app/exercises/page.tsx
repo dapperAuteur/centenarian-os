@@ -14,9 +14,9 @@ const SITE_URL = process.env.NEXT_PUBLIC_APP_URL
 export const metadata: Metadata = {
   title: 'Exercise Library',
   description:
-    'Browse free exercises with step-by-step instructions, muscle diagrams, and video guides — no account required.',
+    'Browse free exercises with step-by-step instructions, muscle diagrams, and video guides. No account required.',
   openGraph: {
-    title: 'Exercise Library — CentenarianOS',
+    title: 'Exercise Library · CentenarianOS',
     description:
       'Browse free exercises with step-by-step instructions, muscle diagrams, and video guides.',
     url: `${SITE_URL}/exercises`,
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Exercise Library — CentenarianOS',
+    title: 'Exercise Library · CentenarianOS',
     description: 'Browse free exercises with step-by-step instructions, muscle diagrams, and video guides.',
     images: [`${SITE_URL}/og-default.png`],
   },

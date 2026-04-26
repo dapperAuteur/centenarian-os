@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: 'Live Sessions',
   description: 'Join live sessions, workshops, and events on CentenarianOS. Learn from teachers and connect with the community in real time.',
   openGraph: {
-    title: 'Live Sessions — CentenarianOS',
+    title: 'Live Sessions · CentenarianOS',
     description: 'Join live sessions, workshops, and events. Learn from teachers and connect with the community.',
   },
 };

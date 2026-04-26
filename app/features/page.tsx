@@ -10,7 +10,7 @@ import PageViewTracker from '@/components/ui/PageViewTracker';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Features — CentenarianOS',
+  title: 'Features · CentenarianOS',
   description: 'Explore every module in CentenarianOS: planning, nutrition, finance, health metrics, workouts, travel, and more.',
 };
 

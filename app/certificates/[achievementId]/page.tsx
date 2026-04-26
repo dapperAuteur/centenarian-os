@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
   return {
     title: 'Certificate of Completion',
-    description: `${title} — verified certificate on CentenarianOS.`,
+    description: `${title}. Verified certificate on CentenarianOS.`,
     openGraph: {
       title,
       description: `Verified certificate of completion on CentenarianOS.`,

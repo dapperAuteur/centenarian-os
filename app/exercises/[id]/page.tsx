@@ -98,14 +98,14 @@ export async function generateMetadata({
   const ogImage = ex.media_url || `${SITE_URL}/og-default.png`;
   const muscles = ex.primary_muscles?.join(', ') ?? '';
   const description = muscles
-    ? `${ex.name} — targets ${muscles}. Step-by-step instructions and muscle diagram.`
-    : `${ex.name} — exercise guide with step-by-step instructions and muscle diagram.`;
+    ? `${ex.name} targets ${muscles}. Step-by-step instructions and muscle diagram.`
+    : `${ex.name}: exercise guide with step-by-step instructions and muscle diagram.`;
 
   return {
     title: ex.name,
     description,
     openGraph: {
-      title: `${ex.name} — CentenarianOS Exercise Library`,
+      title: `${ex.name} · CentenarianOS Exercise Library`,
       description,
       images: [{ url: ogImage, width: 1200, height: 630, alt: ex.name }],
       url: `${SITE_URL}/exercises/${id}`,
@@ -114,7 +114,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${ex.name} — CentenarianOS`,
+      title: `${ex.name} · CentenarianOS`,
       description,
       images: [ogImage],
     },

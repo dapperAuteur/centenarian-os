@@ -26,10 +26,10 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
   if (!profile) return { title: 'Instructor' };
   const name = profile.display_name || profile.username;
   return {
-    title: `${name} — Instructor`,
+    title: `${name} · Instructor`,
     description: profile.bio || `Learn from ${name} on CentenarianOS Academy.`,
     openGraph: {
-      title: `${name} — CentenarianOS Instructor`,
+      title: `${name} · CentenarianOS Instructor`,
       description: profile.bio || `Learn from ${name} on CentenarianOS Academy.`,
       images: [`${SITE_URL}/api/og/profile/${username}`],
       url: `${SITE_URL}/academy/teachers/${username}`,
@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${name} — CentenarianOS Instructor`,
+      title: `${name} · CentenarianOS Instructor`,
       images: [`${SITE_URL}/api/og/profile/${username}`],
     },
     alternates: { canonical: `${SITE_URL}/academy/teachers/${username}` },

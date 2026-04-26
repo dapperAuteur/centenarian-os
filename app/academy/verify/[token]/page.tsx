@@ -67,9 +67,9 @@ async function loadCompletion(token: string): Promise<CompletionRecord | null> {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { token } = await params;
   const cert = await loadCompletion(token);
-  if (!cert) return { title: 'Certificate not found — CentenarianOS' };
+  if (!cert) return { title: 'Certificate not found · CentenarianOS' };
   return {
-    title: `${cert.studentName} — ${cert.courseTitle} · Certificate`,
+    title: `${cert.studentName} · ${cert.courseTitle} · Certificate`,
     description: `Certificate of completion for ${cert.courseTitle}, earned by ${cert.studentName}.`,
     openGraph: {
       title: `${cert.studentName} earned a certificate`,

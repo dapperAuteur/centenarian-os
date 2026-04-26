@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     title: mod.name,
     description: mod.description,
     openGraph: {
-      title: `${mod.name} — CentenarianOS`,
+      title: `${mod.name} · CentenarianOS`,
       description: mod.description,
       images: [{ url: `${SITE_URL}/og-default.png`, width: 1200, height: 630 }],
       url: `${SITE_URL}/features/${slug}`,
