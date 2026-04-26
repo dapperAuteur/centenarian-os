@@ -65,7 +65,7 @@ export default function CommodityMapPage() {
             A 21-episode podcast curriculum
           </strong>{" "}
           that teaches geography, history, economics, and ELA through the
-          world&apos;s most culturally loaded substances — coffee, chocolate,
+          world&apos;s most culturally loaded substances: coffee, chocolate,
           whiskey, tobacco, kava, khat, and more.
         </p>
         <p
