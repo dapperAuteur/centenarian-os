@@ -627,6 +627,9 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                 Replace All
               </button>
             </div>
+            {bulkImportMode === 'upsert' && (
+              <p className="text-xs text-gray-400">In Create + Update mode, only the columns present in your CSV are written. Existing values for columns you omit are left alone — so a CSV with just <code className="text-fuchsia-400">podcast_links</code> won&apos;t wipe <code className="text-fuchsia-400">content_url</code>.</p>
+            )}
             {bulkImportMode === 'replace' && (
               <p className="text-xs text-amber-400">This will delete all existing modules and lessons before importing. Student progress will be reset.</p>
             )}
