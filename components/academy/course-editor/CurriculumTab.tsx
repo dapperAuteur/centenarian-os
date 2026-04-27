@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import {
   Plus, Loader2, Trash2, Upload, Download, Play, FileText, Volume2,
-  Presentation, GripVertical, HelpCircle, X, Map, ChevronDown, Paperclip,
+  Presentation, HelpCircle, X, Map, ChevronDown, ChevronUp, Paperclip,
   Compass, Image as ImageIcon, Pencil,
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -315,6 +315,58 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
 
   async function deleteLesson(lessonId: string) {
     await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}`, { method: 'DELETE' });
+    onCourseUpdated();
+  }
+
+  // Swap two records' `order` values via two parallel PATCHes. Both the
+  // module and lesson PATCH routes already accept `order`. There is no
+  // UNIQUE(course_id, order) constraint, so the brief window where both
+  // rows share an order value is harmless.
+  async function moveModule(moduleId: string, direction: 'up' | 'down') {
+    const sorted = [...modules].sort((a, b) => a.order - b.order);
+    const idx = sorted.findIndex((m) => m.id === moduleId);
+    if (idx < 0) return;
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= sorted.length) return;
+    const a = sorted[idx];
+    const b = sorted[targetIdx];
+    await Promise.all([
+      offlineFetch(`/api/academy/courses/${courseId}/modules/${a.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: b.order }),
+      }),
+      offlineFetch(`/api/academy/courses/${courseId}/modules/${b.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: a.order }),
+      }),
+    ]);
+    onCourseUpdated();
+  }
+
+  async function moveLesson(moduleId: string, lessonId: string, direction: 'up' | 'down') {
+    const mod = course.course_modules.find((m) => m.id === moduleId);
+    if (!mod) return;
+    const sorted = [...mod.lessons].sort((a, b) => a.order - b.order);
+    const idx = sorted.findIndex((l) => l.id === lessonId);
+    if (idx < 0) return;
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= sorted.length) return;
+    const a = sorted[idx];
+    const b = sorted[targetIdx];
+    await Promise.all([
+      offlineFetch(`/api/academy/courses/${courseId}/lessons/${a.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: b.order }),
+      }),
+      offlineFetch(`/api/academy/courses/${courseId}/lessons/${b.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: a.order }),
+      }),
+    ]);
     onCourseUpdated();
   }
 
@@ -680,25 +732,71 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
         </div>
       ) : (
         <div className="space-y-4">
-          {modules.map((mod) => {
+          {modules.map((mod, modIdx) => {
             const lessons = [...mod.lessons].sort((a, b) => a.order - b.order);
+            const isFirstModule = modIdx === 0;
+            const isLastModule = modIdx === modules.length - 1;
             return (
               <div key={mod.id} className="border border-gray-800 rounded-xl overflow-hidden">
-                <div className="flex items-center gap-3 px-4 py-3 bg-gray-800/50">
-                  <GripVertical className="w-4 h-4 text-gray-400 shrink-0" />
+                <div className="flex items-center gap-2 px-4 py-3 bg-gray-800/50">
+                  <div className="flex flex-col -my-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => moveModule(mod.id, 'up')}
+                      disabled={isFirstModule}
+                      aria-label={`Move module "${mod.title}" up`}
+                      title="Move module up"
+                      className="p-0.5 text-gray-400 hover:text-white transition disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveModule(mod.id, 'down')}
+                      disabled={isLastModule}
+                      aria-label={`Move module "${mod.title}" down`}
+                      title="Move module down"
+                      className="p-0.5 text-gray-400 hover:text-white transition disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+                    </button>
+                  </div>
                   <p className="flex-1 font-medium text-white text-sm">{mod.title}</p>
                   <span className="text-gray-400 text-xs">{lessons.length} lesson{lessons.length !== 1 ? 's' : ''}</span>
                 </div>
 
-                {lessons.map((lesson) => {
+                {lessons.map((lesson, lessonIdx) => {
                   const Icon = LESSON_TYPE_ICON[lesson.lesson_type] ?? Play;
                   const isEditingDocs = editingDocsLessonId === lesson.id;
                   const isEditingMap = editingMapLessonId === lesson.id;
                   const isEditingLesson = expandedLessonId === lesson.id;
+                  const isFirstLesson = lessonIdx === 0;
+                  const isLastLesson = lessonIdx === lessons.length - 1;
                   return (
                     <div key={lesson.id} className="border-t border-gray-800">
-                      <div className="flex items-center gap-3 px-4 py-3">
-                        <GripVertical className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                      <div className="flex items-center gap-2 px-4 py-3">
+                        <div className="flex flex-col -my-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => moveLesson(mod.id, lesson.id, 'up')}
+                            disabled={isFirstLesson}
+                            aria-label={`Move lesson "${lesson.title}" up`}
+                            title="Move lesson up"
+                            className="p-0.5 text-gray-500 hover:text-white transition disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <ChevronUp className="w-3 h-3" aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveLesson(mod.id, lesson.id, 'down')}
+                            disabled={isLastLesson}
+                            aria-label={`Move lesson "${lesson.title}" down`}
+                            title="Move lesson down"
+                            className="p-0.5 text-gray-500 hover:text-white transition disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <ChevronDown className="w-3 h-3" aria-hidden="true" />
+                          </button>
+                        </div>
                         <Icon className="w-3.5 h-3.5 text-gray-500 shrink-0" />
                         <span className="flex-1 text-sm text-gray-300 min-w-0 truncate">{lesson.title}</span>
                         {lesson.is_free_preview && (
