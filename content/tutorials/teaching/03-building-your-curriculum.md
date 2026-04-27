@@ -94,17 +94,47 @@ Inside any module, click **Add Lesson**. A mini-form appears with three fields:
 
 **Lesson Title** (text input) — name of the lesson.
 
-**Lesson Type** — dropdown with four options:
-- **Video** — embed a video URL (YouTube, Vimeo, or any embeddable player)
-- **Text** — markdown content written directly in the editor
-- **Audio** — embed an audio URL
-- **Slides** — embed a slides URL (Google Slides, Loom, etc.)
+**Lesson Type** — dropdown:
+- **Video** — flat 2D video (YouTube, Vimeo, Cloudinary MP4, or any embeddable player)
+- **Audio** — audio-only lesson (podcast episode, narration, music)
+- **Text** — markdown or rich-text content written directly in the editor
+- **Slides** — embedded slide deck (Google Slides, Loom, etc.)
+- **Quiz** — multiple-choice / true-false questions
+- **360 Video** — equirectangular VR video, viewed in a pannable sphere
+- **360 Photo** — equirectangular still image, viewed in a pannable sphere
+- **Virtual Tour** — multi-stop 360 tour with hotspots
+- **Map** — interactive map with markers, lines, and polygons
 
 **Free Preview** — checkbox. Check this to make the lesson accessible to non-enrolled visitors. At least one free preview lesson per course is strongly recommended so prospective students can sample the content.
 
-**Content URL** (for Video, Audio, Slides) — paste the embed or direct URL.
+**Content URL** (for Video, Audio, Slides, 360 Video, 360 Photo) — paste the embed or direct URL. See the next section for where to get this URL depending on lesson type.
 
 Click **Add Lesson**. The lesson appears under the module.
+
+---
+
+### Where the audio or video file comes from
+
+The Content URL field accepts a public URL to your media file. How you get that URL depends on the lesson type:
+
+**For Video lessons:**
+- **YouTube (recommended)** — upload to your YouTube channel as Unlisted, restrict embeds to your domain, and paste the YouTube watch URL. The lesson page renders a fully branded player (no YouTube UI). Free hosting, automatic captions, adaptive streaming. See [Lesson 10](./10-adding-audio-chapters.md) for the full YouTube setup.
+- **Cloudinary or other CDN** — paste the direct `https://res.cloudinary.com/.../upload/...mp4` URL of an uploaded MP4. Use this when you want the file fully self-hosted (no third-party branding, offline-save support).
+
+**For Audio lessons:**
+- **Cloudinary (current workflow)** — upload your `.mp3`, `.m4a`, or `.wav` to your Cloudinary account through Cloudinary's web dashboard, copy the secure URL (it ends in the file extension), and paste it into the Content URL field. Save the lesson — verify it plays before adding chapters.
+- **External hosting** — any public URL ending in a supported audio extension works. The browser handles playback natively.
+- **In-editor upload (planned)** — a built-in Cloudinary upload button on audio lessons is on the roadmap so you won't need to leave the editor. Until that ships, paste the Cloudinary URL by hand.
+
+**For 360 Video and 360 Photo lessons:**
+- The lesson editor includes a built-in **Cloudinary upload widget** when you select 360 Video or 360 Photo as the lesson type. Click **Upload 360° video** (or photo), pick the equirectangular file, and the URL is filled in for you automatically. A poster thumbnail is generated and saved alongside.
+- Cloudinary free tier caps signed uploads at **100 MB**. For larger 360 videos, host externally (e.g., S3 or a self-hosted CDN) and paste the URL into the Content URL field above the uploader.
+- A **Pick from library** button lets you re-use any previously uploaded 360 asset (visible at `/dashboard/teaching/media`).
+
+**For Slides lessons:**
+- Paste the public embed URL from Google Slides, Loom, Canva, or similar. The lesson renders the URL inside a 16:9 iframe.
+
+> **The Media Library** at `/dashboard/teaching/media` is a read-only catalog of every file you've uploaded through the lesson editor. It does not currently have its own upload button — uploads happen from inside the lesson edit form on 360 lessons. For audio and regular video, host the file externally (typically Cloudinary) and paste the URL.
 
 ---
 
@@ -112,9 +142,13 @@ Click **Add Lesson**. The lesson appears under the module.
 
 Click the **pencil icon** on any lesson to expand the edit form. All the same fields from the add form are available, plus:
 
-**Text content** (for Text-type lessons) — a textarea where you write the lesson's markdown content. This is the lesson body students will read.
+**Text content** (for Text-type lessons) — a textarea where you write the lesson's markdown content. This is the lesson body students will read. A toggle switches between Markdown and Rich Text (Tiptap) modes.
 
 **Duration (seconds)** — optional. Enter the approximate duration so students know what to expect. Displayed as a time estimate on lesson cards.
+
+**Audio Chapters / Transcript Content** — JSON arrays for chapter markers and synced transcripts on audio and video lessons. See [Lesson 10](./10-adding-audio-chapters.md) for the full format.
+
+**Podcast Links** — JSON array of external podcast platform links (Spotify, Apple, YouTube, Amazon). These render as colored buttons at the top of the lesson and are independent of the Content URL — they do not replace the in-app audio player. See [Lesson 13](./13-podcast-links-and-data-import.md).
 
 Click **Save** when done, or **Cancel** to discard changes.
 
@@ -182,7 +216,14 @@ Hover over a lesson row — a trash icon appears on the right. Click it to delet
 
 - Course editor settings panel saves on blur (no manual save button) — title, description, pricing, visibility, navigation mode all editable here
 - Curriculum structure: Course → Modules → Lessons
-- Four lesson types: Video (URL), Text (markdown content), Audio (URL), Slides (URL)
+- Lesson types include Video, Audio, Text, Slides, Quiz, 360 Video, 360 Photo, Virtual Tour, and Map
+- Where the file comes from depends on lesson type:
+  - **Video** — paste a YouTube URL (recommended) or a Cloudinary MP4 URL
+  - **Audio** — upload to Cloudinary externally and paste the secure URL into the Content URL field (in-editor upload is on the roadmap)
+  - **360 Video / 360 Photo** — use the built-in upload widget right in the lesson editor (100 MB free-tier cap)
+  - **Slides** — paste the public embed URL
+- The teaching Media Library (`/dashboard/teaching/media`) is a read-only catalog of files uploaded through the editor — not an upload page
+- Podcast Links are independent of the audio Content URL — they render as platform buttons and do not replace the in-app player
 - Free preview checkbox makes individual lessons visible to non-enrolled visitors — mark at least one per course
 - Reorder modules and lessons with up/down arrows or the drag handle
 - Deleting a module deletes all lessons inside it — no undo
