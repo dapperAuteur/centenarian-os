@@ -29,12 +29,17 @@ export async function GET(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Teacher not found' }, { status: 404 });
   }
 
-  // Get all published courses by this teacher
+  // Get all published courses by this teacher.
+  // Sort featured first (by teacher_featured_order asc) then everything by
+  // newest. Featured rows come back at the top of the array; the page can
+  // split them into a separate strip without re-sorting.
   const { data: courses } = await db
     .from('courses')
-    .select('id, title, description, cover_image_url, category, tags, price, price_type, navigation_mode, like_count, created_at')
+    .select('id, title, description, cover_image_url, category, tags, price, price_type, navigation_mode, like_count, created_at, teacher_is_featured, teacher_featured_order')
     .eq('teacher_id', profile.id)
     .eq('is_published', true)
+    .order('teacher_is_featured', { ascending: false })
+    .order('teacher_featured_order', { ascending: true })
     .order('created_at', { ascending: false });
 
   // If the caller is logged in, also return their liked/saved state for each course

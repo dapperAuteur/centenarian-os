@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Star, Sparkles, BookOpenCheck } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
 
 interface Course {
@@ -18,6 +19,11 @@ interface Course {
   published_at: string | null;
   trial_period_days: number;
   bvc_season: 1 | 2 | 3 | null;
+  is_featured: boolean;
+  is_app_tutorial: boolean;
+  featured_order: number;
+  teacher_is_featured: boolean;
+  teacher_featured_order: number;
   course_modules: Array<{ id: string; title: string; order: number; lessons: Array<{ id: string; title: string; lesson_type: string; content_url: string | null; text_content: string | null; duration_seconds: number | null; order: number; is_free_preview: boolean; module_id: string | null }> }>;
 }
 
@@ -27,6 +33,8 @@ interface TabProps {
   saveCourseField: (updates: Partial<Course>) => Promise<void>;
   saving: boolean;
   feedback: string;
+  isAdmin?: boolean;
+  isOwner?: boolean;
 }
 
 const CATEGORY_OPTIONS = [
@@ -36,7 +44,7 @@ const CATEGORY_OPTIONS = [
   'Platform Guide', 'Other',
 ];
 
-export default function CourseInfoTab({ course, saveCourseField }: TabProps) {
+export default function CourseInfoTab({ course, saveCourseField, isAdmin, isOwner }: TabProps) {
   const [categoryInput, setCategoryInput] = useState(course.category ?? '');
 
   return (
@@ -99,6 +107,113 @@ export default function CourseInfoTab({ course, saveCourseField }: TabProps) {
           Better Vice Club season. When set, every lesson in this course shows an embedded world map filtered to this season&apos;s commodities only. Leave unset for non-BVC courses.
         </p>
       </div>
+
+      {/* Teacher-controlled: feature this course on the teacher's own profile page. */}
+      {(isOwner || isAdmin) && (
+        <div className="border border-gray-700 rounded-xl p-4 bg-gray-800/30 space-y-3">
+          <div className="flex items-start gap-2">
+            <Star className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-100">Featured on your teacher profile</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Pin this course to the top of your <code className="text-fuchsia-400">/academy/teachers/&hellip;</code> profile page. Only affects your own profile, not the main academy catalog.
+              </p>
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-gray-200 cursor-pointer min-h-11">
+            <input
+              type="checkbox"
+              checked={course.teacher_is_featured}
+              onChange={(e) => saveCourseField({ teacher_is_featured: e.target.checked })}
+              className="accent-fuchsia-500 w-4 h-4"
+            />
+            Feature on my profile
+          </label>
+          {course.teacher_is_featured && (
+            <div>
+              <label className="block text-xs text-gray-400 mb-1" htmlFor="teacher-featured-order">
+                Position (lower numbers appear first)
+              </label>
+              <input
+                id="teacher-featured-order"
+                type="number"
+                min={0}
+                defaultValue={course.teacher_featured_order ?? 0}
+                onBlur={(e) => {
+                  const n = Number(e.target.value);
+                  const next = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+                  if (next !== course.teacher_featured_order) saveCourseField({ teacher_featured_order: next });
+                }}
+                className="w-24 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Admin-only: site-wide visibility flags for the /academy catalog. */}
+      {isAdmin && (
+        <div className="border border-amber-800/40 rounded-xl p-4 bg-amber-900/10 space-y-4">
+          <div className="flex items-start gap-2">
+            <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-200">Admin: site-wide catalog placement</p>
+              <p className="text-xs text-amber-100/70 mt-0.5">
+                Controls how this course is grouped on <code className="text-fuchsia-400">/academy</code>. Visible to admins only.
+              </p>
+            </div>
+          </div>
+
+          <label className="flex items-start gap-2 text-sm text-gray-100 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={course.is_featured}
+              onChange={(e) => saveCourseField({ is_featured: e.target.checked })}
+              className="accent-fuchsia-500 w-4 h-4 mt-0.5 shrink-0"
+            />
+            <span className="flex-1">
+              <span className="block">Featured on the academy catalog</span>
+              <span className="block text-xs text-gray-400 mt-0.5">Pins this course to the Featured strip at the top of /academy.</span>
+            </span>
+          </label>
+
+          {course.is_featured && (
+            <div className="pl-6">
+              <label className="block text-xs text-gray-400 mb-1" htmlFor="featured-order">
+                Featured position (lower numbers appear first)
+              </label>
+              <input
+                id="featured-order"
+                type="number"
+                min={0}
+                defaultValue={course.featured_order ?? 0}
+                onBlur={(e) => {
+                  const n = Number(e.target.value);
+                  const next = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+                  if (next !== course.featured_order) saveCourseField({ featured_order: next });
+                }}
+                className="w-24 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-fuchsia-500"
+              />
+            </div>
+          )}
+
+          <label className="flex items-start gap-2 text-sm text-gray-100 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={course.is_app_tutorial}
+              onChange={(e) => saveCourseField({ is_app_tutorial: e.target.checked })}
+              className="accent-fuchsia-500 w-4 h-4 mt-0.5 shrink-0"
+            />
+            <span className="flex-1">
+              <span className="flex items-center gap-1.5">
+                <BookOpenCheck className="w-3.5 h-3.5 text-amber-300" aria-hidden="true" />
+                About the app
+              </span>
+              <span className="block text-xs text-gray-400 mt-0.5">Groups this course into the collapsible &ldquo;Learn the App&rdquo; section so it doesn&apos;t crowd the main subject-matter grid. Can be combined with Featured.</span>
+            </span>
+          </label>
+        </div>
+      )}
     </div>
   );
 }

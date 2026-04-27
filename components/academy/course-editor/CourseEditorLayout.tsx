@@ -54,6 +54,12 @@ interface Course {
   published_at: string | null;
   trial_period_days: number;
   bvc_season: 1 | 2 | 3 | null;
+  teacher_id: string;
+  is_featured: boolean;
+  is_app_tutorial: boolean;
+  featured_order: number;
+  teacher_is_featured: boolean;
+  teacher_featured_order: number;
   course_modules: Module[];
 }
 
@@ -77,6 +83,7 @@ export default function CourseEditorLayout({ courseId }: Props) {
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [activeTab, setActiveTab] = useState(0);
+  const [me, setMe] = useState<{ userId: string | null; isAdmin: boolean }>({ userId: null, isAdmin: false });
 
   const fetchCourse = useCallback(() => {
     offlineFetch(`/api/academy/courses/${courseId}`)
@@ -86,6 +93,13 @@ export default function CourseEditorLayout({ courseId }: Props) {
   }, [courseId]);
 
   useEffect(() => { fetchCourse(); }, [fetchCourse]);
+
+  useEffect(() => {
+    offlineFetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => setMe({ userId: d.userId ?? null, isAdmin: !!d.isAdmin }))
+      .catch(() => {});
+  }, []);
 
   const saveCourseField = useCallback(async (updates: Partial<Course>) => {
     if (!course) return;
@@ -115,7 +129,8 @@ export default function CourseEditorLayout({ courseId }: Props) {
     return <div className="text-center py-20 text-gray-500">Course not found.</div>;
   }
 
-  const tabProps = { course, courseId, saveCourseField, saving, feedback };
+  const isOwner = !!me.userId && me.userId === course.teacher_id;
+  const tabProps = { course, courseId, saveCourseField, saving, feedback, isAdmin: me.isAdmin, isOwner };
 
   return (
     <div className="p-4 sm:p-8 max-w-3xl">

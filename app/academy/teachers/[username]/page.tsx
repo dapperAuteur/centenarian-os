@@ -9,7 +9,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   BookOpen, Heart, Bookmark, Loader2, ChevronLeft,
-  GitBranch, Star,
+  GitBranch, Star, Sparkles,
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
@@ -33,6 +33,8 @@ interface Course {
   like_count: number;
   liked: boolean;
   saved: boolean;
+  teacher_is_featured: boolean;
+  teacher_featured_order: number;
 }
 
 const PRICE_LABEL: Record<string, string> = {
@@ -142,99 +144,128 @@ export default function TeacherCoursesPage() {
           </div>
         </div>
 
-        {/* Courses grid */}
+        {/* Courses grid — featured-first then everything else */}
         {courses.length === 0 ? (
           <div className="text-center py-20 text-gray-600">
             <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-30" />
             <p>No courses published yet.</p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course) => (
-              <div
-                key={course.id}
-                className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden flex flex-col hover:border-gray-700 transition"
-              >
-                {/* Cover image */}
-                <Link href={`/academy/${course.id}`} className="block aspect-video bg-gray-800 shrink-0 overflow-hidden">
-                  {course.cover_image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={course.cover_image_url}
-                      alt={course.title}
-                      className="w-full h-full object-cover hover:scale-105 transition duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <BookOpen className="w-10 h-10 text-gray-700" />
-                    </div>
-                  )}
-                </Link>
+        ) : (() => {
+          const featured = courses.filter((c) => c.teacher_is_featured);
+          const rest = courses.filter((c) => !c.teacher_is_featured);
 
-                {/* Content */}
-                <div className="p-5 flex flex-col flex-1">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <Link href={`/academy/${course.id}`} className="font-semibold text-white hover:text-fuchsia-300 transition leading-snug line-clamp-2">
-                      {course.title}
-                    </Link>
-                    {course.navigation_mode === 'cyoa' && (
-                      <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-fuchsia-900/40 text-fuchsia-400 text-xs rounded shrink-0">
-                        <GitBranch className="w-2.5 h-2.5" /> CYOA
-                      </span>
-                    )}
+          const renderCard = (course: Course, showFeaturedBadge: boolean) => (
+            <div
+              key={course.id}
+              className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden flex flex-col hover:border-gray-700 transition"
+            >
+              <Link href={`/academy/${course.id}`} className="block aspect-video bg-gray-800 shrink-0 overflow-hidden relative">
+                {course.cover_image_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={course.cover_image_url}
+                    alt={course.title}
+                    className="w-full h-full object-cover hover:scale-105 transition duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <BookOpen className="w-10 h-10 text-gray-700" />
                   </div>
+                )}
+                {showFeaturedBadge && (
+                  <span className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 bg-amber-500/90 text-amber-950 text-xs font-bold rounded-full">
+                    <Sparkles className="w-3 h-3" aria-hidden="true" /> Featured
+                  </span>
+                )}
+              </Link>
 
-                  {course.description && (
-                    <p className="text-gray-400 text-sm line-clamp-2 leading-relaxed mb-3">
-                      {course.description}
-                    </p>
-                  )}
-
-                  <div className="mt-auto flex items-center justify-between pt-3 border-t border-gray-800">
-                    <span className="text-sm font-medium text-fuchsia-400">
-                      {course.price_type === 'free' ? 'Free' : `$${course.price} · ${PRICE_LABEL[course.price_type]}`}
+              <div className="p-5 flex flex-col flex-1">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <Link href={`/academy/${course.id}`} className="font-semibold text-white hover:text-fuchsia-300 transition leading-snug line-clamp-2">
+                    {course.title}
+                  </Link>
+                  {course.navigation_mode === 'cyoa' && (
+                    <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-fuchsia-900/40 text-fuchsia-400 text-xs rounded shrink-0">
+                      <GitBranch className="w-2.5 h-2.5" /> CYOA
                     </span>
-
-                    {/* Like + Save */}
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => toggleLike(course.id)}
-                        disabled={togglingLike === course.id}
-                        title={course.liked ? 'Unlike' : 'Like'}
-                        className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
-                      >
-                        <Heart
-                          className={`w-4 h-4 transition ${course.liked ? 'fill-red-500 text-red-500' : 'text-gray-500'}`}
-                        />
-                        <span className="text-xs text-gray-500">{course.like_count}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => toggleSave(course.id)}
-                        disabled={togglingSave === course.id}
-                        title={course.saved ? 'Remove from saved' : 'Save course'}
-                        className="p-1.5 rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
-                      >
-                        <Bookmark
-                          className={`w-4 h-4 transition ${course.saved ? 'fill-fuchsia-500 text-fuchsia-500' : 'text-gray-500'}`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-
-                  {course.category && (
-                    <div className="mt-2">
-                      <span className="text-xs text-gray-600 bg-gray-800 px-2 py-0.5 rounded-full">
-                        {course.category}
-                      </span>
-                    </div>
                   )}
                 </div>
+
+                {course.description && (
+                  <p className="text-gray-400 text-sm line-clamp-2 leading-relaxed mb-3">
+                    {course.description}
+                  </p>
+                )}
+
+                <div className="mt-auto flex items-center justify-between pt-3 border-t border-gray-800">
+                  <span className="text-sm font-medium text-fuchsia-400">
+                    {course.price_type === 'free' ? 'Free' : `$${course.price} · ${PRICE_LABEL[course.price_type]}`}
+                  </span>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => toggleLike(course.id)}
+                      disabled={togglingLike === course.id}
+                      title={course.liked ? 'Unlike' : 'Like'}
+                      className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
+                    >
+                      <Heart
+                        className={`w-4 h-4 transition ${course.liked ? 'fill-red-500 text-red-500' : 'text-gray-500'}`}
+                      />
+                      <span className="text-xs text-gray-500">{course.like_count}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleSave(course.id)}
+                      disabled={togglingSave === course.id}
+                      title={course.saved ? 'Remove from saved' : 'Save course'}
+                      className="p-1.5 rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
+                    >
+                      <Bookmark
+                        className={`w-4 h-4 transition ${course.saved ? 'fill-fuchsia-500 text-fuchsia-500' : 'text-gray-500'}`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {course.category && (
+                  <div className="mt-2">
+                    <span className="text-xs text-gray-600 bg-gray-800 px-2 py-0.5 rounded-full">
+                      {course.category}
+                    </span>
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          );
+
+          return (
+            <div className="space-y-10">
+              {featured.length > 0 && (
+                <section aria-labelledby="teacher-featured-heading">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Sparkles className="w-5 h-5 text-amber-400" aria-hidden="true" />
+                    <h2 id="teacher-featured-heading" className="text-lg sm:text-xl font-bold text-white">Featured</h2>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {featured.map((c) => renderCard(c, true))}
+                  </div>
+                </section>
+              )}
+              {rest.length > 0 && (
+                <section aria-labelledby="teacher-all-heading">
+                  {featured.length > 0 && (
+                    <h2 id="teacher-all-heading" className="text-lg sm:text-xl font-bold text-white mb-4">All Courses</h2>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {rest.map((c) => renderCard(c, false))}
+                  </div>
+                </section>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Total likes for social proof */}
         {courses.length > 0 && (

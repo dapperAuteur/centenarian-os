@@ -202,8 +202,27 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   const body = await request.json();
-  const allowed = ['title', 'description', 'cover_image_url', 'category', 'tags', 'price', 'price_type', 'is_published', 'navigation_mode', 'visibility', 'published_at', 'trial_period_days', 'is_sequential', 'override_questions', 'allow_cross_course_cyoa', 'bvc_season'];
-  const updates = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
+  const isOwner = course.teacher_id === user.id;
+  const isAdmin = !!user.email && user.email === process.env.ADMIN_EMAIL;
+
+  // Field whitelist split by who is allowed to write each.
+  // - allowedAny: editable by both the course's teacher and the platform admin
+  // - allowedAdmin: site-wide visibility flags only the platform admin can flip
+  // - allowedTeacher: per-course teacher-profile flags only the owning teacher
+  //   (or admin) can flip — kept separate so admin-only requests can't be
+  //   tricked into setting them on someone else's course.
+  const allowedAny = ['title', 'description', 'cover_image_url', 'category', 'tags', 'price', 'price_type', 'is_published', 'navigation_mode', 'visibility', 'published_at', 'trial_period_days', 'is_sequential', 'override_questions', 'allow_cross_course_cyoa', 'bvc_season'];
+  const allowedAdmin = ['is_featured', 'featured_order', 'is_app_tutorial'];
+  const allowedTeacher = ['teacher_is_featured', 'teacher_featured_order'];
+
+  const updates: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(body)) {
+    if (allowedAny.includes(k)) updates[k] = v;
+    else if (allowedAdmin.includes(k) && isAdmin) updates[k] = v;
+    else if (allowedTeacher.includes(k) && (isOwner || isAdmin)) updates[k] = v;
+    // silently drop fields the requester isn't allowed to set — same posture
+    // as the existing whitelist
+  }
 
   if ('price_type' in updates && updates.price_type === 'free') updates.price = 0;
   if ('trial_period_days' in updates) {

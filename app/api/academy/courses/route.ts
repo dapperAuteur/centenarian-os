@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
   const db = getDb();
   let query = db
     .from('courses')
-    .select('id, title, description, cover_image_url, category, tags, price, price_type, is_published, visibility, published_at, navigation_mode, like_count, created_at, teacher_id, profiles(username, display_name, avatar_url)')
+    .select('id, title, description, cover_image_url, category, tags, price, price_type, is_published, visibility, published_at, navigation_mode, like_count, created_at, teacher_id, is_featured, is_app_tutorial, featured_order, profiles(username, display_name, avatar_url)')
     .order(col, { ascending, nullsFirst: false });
 
   if (mine && user) {

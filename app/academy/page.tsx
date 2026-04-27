@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Search, BookOpen, Play, Lock, Layers, Globe, ArrowRight } from 'lucide-react';
+import { Search, BookOpen, Play, Lock, Layers, Globe, ArrowRight, Sparkles, BookOpenCheck, ChevronDown } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
 interface Course {
@@ -17,6 +17,9 @@ interface Course {
   price: number;
   price_type: 'free' | 'one_time' | 'subscription';
   navigation_mode: 'linear' | 'cyoa';
+  is_featured: boolean;
+  is_app_tutorial: boolean;
+  featured_order: number;
   profiles: { username: string; display_name: string | null } | null;
 }
 
@@ -46,6 +49,7 @@ export default function AcademyPage() {
   const [q, setQ] = useState('');
   const [category, setCategory] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('created-desc');
+  const [appOpen, setAppOpen] = useState(false);
 
   useEffect(() => {
     const [sort, dir] = sortKey.split('-') as [string, string];
@@ -72,7 +76,20 @@ export default function AcademyPage() {
       })
     : courses;
 
+  // Group: Featured strip at the top, main grid in the middle (subject-
+  // matter courses), and the collapsible "Learn the App" section at the
+  // bottom. A featured course that's also is_app_tutorial appears in BOTH
+  // the Featured strip and the Learn the App section per spec.
+  const featuredCourses = sortedCourses
+    .filter((c) => c.is_featured)
+    .slice()
+    .sort((a, b) => (a.featured_order ?? 0) - (b.featured_order ?? 0));
+  const appCourses = sortedCourses.filter((c) => c.is_app_tutorial);
+  const mainCourses = sortedCourses.filter((c) => !c.is_app_tutorial && !c.is_featured);
+
   const categories = Array.from(new Set(courses.map((c) => c.category).filter(Boolean))) as string[];
+
+  const isFiltering = !!(q || category);
 
   return (
     <div className="text-white">
@@ -164,68 +181,136 @@ export default function AcademyPage() {
             <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-40" />
             <p>No courses found.</p>
           </div>
-        ) : (
+        ) : isFiltering ? (
+          // When the user is actively searching or filtering by category we
+          // suspend the section grouping and show a single flat grid — the
+          // featured / app split would otherwise hide matches inside the
+          // collapsed section.
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" role="list" aria-label="Courses">
-            {sortedCourses.map((course) => (
-              <Link
-                key={course.id}
-                href={`/academy/${course.id}`}
-                className="group bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-fuchsia-700/50 transition"
-              >
-                {/* Cover image */}
-                <div className="aspect-video bg-gray-800 relative overflow-hidden">
-                  {course.cover_image_url ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={course.cover_image_url}
-                      alt={course.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <BookOpen className="w-10 h-10 text-gray-700" />
-                    </div>
-                  )}
-                  {course.navigation_mode === 'cyoa' && (
-                    <span className="absolute top-2 right-2 px-2 py-1 bg-fuchsia-600/90 text-white text-xs font-bold rounded-full">
-                      CYOA
-                    </span>
-                  )}
+            {sortedCourses.map((course) => <CourseCard key={course.id} course={course} />)}
+          </div>
+        ) : (
+          <div className="space-y-12">
+            {featuredCourses.length > 0 && (
+              <section aria-labelledby="academy-featured-heading">
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="w-5 h-5 text-amber-400" aria-hidden="true" />
+                  <h2 id="academy-featured-heading" className="text-lg sm:text-xl font-bold text-white">Featured</h2>
                 </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" role="list" aria-label="Featured courses">
+                  {featuredCourses.map((course) => <CourseCard key={course.id} course={course} />)}
+                </div>
+              </section>
+            )}
 
-                <div className="p-5">
-                  {course.category && (
-                    <p className="text-fuchsia-400 text-xs font-semibold uppercase tracking-wide mb-2">{course.category}</p>
-                  )}
-                  <h2 className="font-bold text-white mb-1 line-clamp-2">{course.title}</h2>
-                  {course.description && (
-                    <p className="text-gray-500 text-sm line-clamp-2 mb-3">{course.description}</p>
-                  )}
-                  <p className="text-xs text-gray-500 mb-3">
-                    by {course.profiles?.display_name ?? course.profiles?.username ?? 'Instructor'}
-                  </p>
+            {mainCourses.length > 0 && (
+              <section aria-labelledby="academy-main-heading">
+                {featuredCourses.length > 0 && (
+                  <h2 id="academy-main-heading" className="text-lg sm:text-xl font-bold text-white mb-4">All Courses</h2>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" role="list" aria-label="All courses">
+                  {mainCourses.map((course) => <CourseCard key={course.id} course={course} />)}
+                </div>
+              </section>
+            )}
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      {course.price_type === 'free' ? (
-                        <span className="flex items-center gap-1 text-green-400 font-semibold text-sm">
-                          <Play className="w-3 h-3" /> Free
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-white font-semibold text-sm">
-                          <Lock className="w-3 h-3 text-gray-400" />
-                          ${course.price}
-                          <span className="text-gray-500 font-normal">· {PRICE_LABEL[course.price_type]}</span>
-                        </span>
-                      )}
-                    </div>
+            {appCourses.length > 0 && (
+              <section aria-labelledby="academy-app-heading" className="border-t border-gray-800 pt-8">
+                <button
+                  type="button"
+                  onClick={() => setAppOpen((v) => !v)}
+                  aria-expanded={appOpen}
+                  aria-controls="academy-app-grid"
+                  className="w-full flex items-center justify-between gap-3 text-left group min-h-11"
+                >
+                  <span className="flex items-center gap-2">
+                    <BookOpenCheck className="w-5 h-5 text-amber-300" aria-hidden="true" />
+                    <h2 id="academy-app-heading" className="text-lg sm:text-xl font-bold text-white">
+                      Learn the App
+                    </h2>
+                    <span className="text-xs text-gray-500">({appCourses.length})</span>
+                  </span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-400 transition-transform group-hover:text-white ${appOpen ? 'rotate-180' : ''}`}
+                    aria-hidden="true"
+                  />
+                </button>
+                <p className="text-sm text-gray-400 mt-1 mb-4">
+                  Guides for getting the most out of CentenarianOS itself. Hidden by default so the catalog stays focused on subject-matter courses.
+                </p>
+                {appOpen && (
+                  <div id="academy-app-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" role="list" aria-label="App tutorial courses">
+                    {appCourses.map((course) => <CourseCard key={course.id} course={course} />)}
                   </div>
-                </div>
-              </Link>
-            ))}
+                )}
+              </section>
+            )}
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+function CourseCard({ course }: { course: Course }) {
+  return (
+    <Link
+      href={`/academy/${course.id}`}
+      className="group bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-fuchsia-700/50 transition"
+    >
+      <div className="aspect-video bg-gray-800 relative overflow-hidden">
+        {course.cover_image_url ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={course.cover_image_url}
+            alt={course.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <BookOpen className="w-10 h-10 text-gray-700" />
+          </div>
+        )}
+        {course.navigation_mode === 'cyoa' && (
+          <span className="absolute top-2 right-2 px-2 py-1 bg-fuchsia-600/90 text-white text-xs font-bold rounded-full">
+            CYOA
+          </span>
+        )}
+        {course.is_featured && (
+          <span className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 bg-amber-500/90 text-amber-950 text-xs font-bold rounded-full">
+            <Sparkles className="w-3 h-3" aria-hidden="true" /> Featured
+          </span>
+        )}
+      </div>
+
+      <div className="p-5">
+        {course.category && (
+          <p className="text-fuchsia-400 text-xs font-semibold uppercase tracking-wide mb-2">{course.category}</p>
+        )}
+        <h2 className="font-bold text-white mb-1 line-clamp-2">{course.title}</h2>
+        {course.description && (
+          <p className="text-gray-500 text-sm line-clamp-2 mb-3">{course.description}</p>
+        )}
+        <p className="text-xs text-gray-500 mb-3">
+          by {course.profiles?.display_name ?? course.profiles?.username ?? 'Instructor'}
+        </p>
+
+        <div className="flex items-center justify-between">
+          <div>
+            {course.price_type === 'free' ? (
+              <span className="flex items-center gap-1 text-green-400 font-semibold text-sm">
+                <Play className="w-3 h-3" /> Free
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-white font-semibold text-sm">
+                <Lock className="w-3 h-3 text-gray-400" />
+                ${course.price}
+                <span className="text-gray-500 font-normal">· {PRICE_LABEL[course.price_type]}</span>
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </Link>
   );
 }
