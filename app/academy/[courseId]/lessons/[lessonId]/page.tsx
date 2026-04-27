@@ -429,12 +429,13 @@ export default function LessonPlayerPage() {
           </>
         )}
 
-        {lesson.lesson_type === 'audio' && lesson.content_url && (
+        {lesson.lesson_type === 'audio' && (
           <AudioPlayer
-            src={lesson.content_url}
+            src={lesson.content_url ?? ''}
             chapters={lesson.audio_chapters}
             transcript={lesson.transcript_content}
             onEnded={markComplete}
+            isTeacher={currentUser.isTeacher}
           />
         )}
 

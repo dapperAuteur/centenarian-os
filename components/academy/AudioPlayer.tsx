@@ -8,7 +8,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import {
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX,
-  ListMusic, FileText, ChevronDown, ChevronUp,
+  ListMusic, FileText, ChevronDown, ChevronUp, AlertCircle, RotateCw,
 } from 'lucide-react';
 import TranscriptPanel, { type TranscriptSegment } from './TranscriptPanel';
 
@@ -24,6 +24,7 @@ interface AudioPlayerProps {
   chapters?: AudioChapter[] | null;
   transcript?: TranscriptSegment[] | null;
   onEnded?: () => void;
+  isTeacher?: boolean;
 }
 
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2];
@@ -36,7 +37,28 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-export default function AudioPlayer({ src, chapters, transcript, onEnded }: AudioPlayerProps) {
+// Reject sources that can't possibly resolve to a media file. A relative
+// fragment (e.g. just a UUID) would otherwise be resolved against the
+// current page URL, triggering a noisy round-trip back to the lesson route.
+function isValidAudioSrc(src: string | null | undefined): boolean {
+  if (!src || typeof src !== 'string') return false;
+  const trimmed = src.trim();
+  if (!trimmed) return false;
+  return /^(https?:\/\/|\/|blob:|data:)/i.test(trimmed);
+}
+
+function audioErrorMessage(code: number | undefined): string {
+  if (typeof MediaError === 'undefined') return 'Audio could not be loaded.';
+  switch (code) {
+    case MediaError.MEDIA_ERR_ABORTED: return 'Playback was interrupted. Try again.';
+    case MediaError.MEDIA_ERR_NETWORK: return 'Network error while loading audio. Check your connection and retry.';
+    case MediaError.MEDIA_ERR_DECODE: return 'This audio file appears to be corrupted.';
+    case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED: return 'This audio source is not available or not supported by your browser.';
+    default: return 'Audio could not be loaded.';
+  }
+}
+
+export default function AudioPlayer({ src, chapters, transcript, onEnded, isTeacher }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
 
@@ -47,6 +69,10 @@ export default function AudioPlayer({ src, chapters, transcript, onEnded }: Audi
   const [muted, setMuted] = useState(false);
   const [showChapters, setShowChapters] = useState(true);
   const [showTranscript, setShowTranscript] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
+
+  const srcValid = isValidAudioSrc(src);
 
   const sortedChapters = chapters?.slice().sort((a, b) => a.startTime - b.startTime) ?? [];
   const hasChapters = sortedChapters.length > 0;
@@ -57,24 +83,32 @@ export default function AudioPlayer({ src, chapters, transcript, onEnded }: Audi
     (ch) => currentTime >= ch.startTime && currentTime < ch.endTime,
   );
 
-  // Time update listener
+  // Time update + error listeners. Re-runs on retry so a remounted
+  // <audio> element gets fresh handlers.
   useEffect(() => {
+    if (!srcValid) return;
     const audio = audioRef.current;
     if (!audio) return;
 
     const onTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const onLoaded = () => setDuration(audio.duration);
+    const onLoaded = () => { setDuration(audio.duration); setLoadError(null); };
     const onEnd = () => { setPlaying(false); onEnded?.(); };
+    const onError = () => {
+      setPlaying(false);
+      setLoadError(audioErrorMessage(audio.error?.code));
+    };
 
     audio.addEventListener('timeupdate', onTimeUpdate);
     audio.addEventListener('loadedmetadata', onLoaded);
     audio.addEventListener('ended', onEnd);
+    audio.addEventListener('error', onError);
     return () => {
       audio.removeEventListener('timeupdate', onTimeUpdate);
       audio.removeEventListener('loadedmetadata', onLoaded);
       audio.removeEventListener('ended', onEnd);
+      audio.removeEventListener('error', onError);
     };
-  }, [onEnded]);
+  }, [onEnded, srcValid, retryKey]);
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
@@ -121,9 +155,44 @@ export default function AudioPlayer({ src, chapters, transcript, onEnded }: Audi
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  if (!srcValid || loadError) {
+    const message = !srcValid
+      ? "This lesson's audio link is missing or invalid."
+      : loadError!;
+    const teacherHint = !srcValid
+      ? 'Open the teacher dashboard for this lesson and re-upload the audio (or paste a Cloudinary URL ending in .mp3 / .m4a / .wav).'
+      : 'Re-upload the audio file from the teacher dashboard, then ask the learner to refresh.';
+    const learnerHint = 'If this keeps happening after a refresh, let your instructor know.';
+    return (
+      <div
+        role="alert"
+        className="bg-gray-900 border border-gray-800 rounded-xl sm:rounded-2xl overflow-hidden mb-6 p-6"
+      >
+        {srcValid && <audio ref={audioRef} key={retryKey} src={src} preload="metadata" />}
+        <div className="flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-white">{message}</p>
+            <p className="text-xs text-gray-400 mt-1">{isTeacher ? teacherHint : learnerHint}</p>
+            {srcValid && (
+              <button
+                type="button"
+                onClick={() => { setLoadError(null); setRetryKey((k) => k + 1); }}
+                className="mt-3 inline-flex items-center gap-2 min-h-11 px-4 bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-sm font-medium rounded-lg transition"
+              >
+                <RotateCw className="w-4 h-4" aria-hidden="true" />
+                Retry
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-xl sm:rounded-2xl overflow-hidden mb-6">
-      <audio ref={audioRef} src={src} preload="metadata" />
+      <audio ref={audioRef} key={retryKey} src={src} preload="metadata" />
 
       {/* Player controls */}
       <div className="p-4 sm:p-6">

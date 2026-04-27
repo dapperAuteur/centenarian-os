@@ -19,10 +19,36 @@ export async function GET(req: NextRequest, { params }: Params) {
   const { id: courseId } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const db = getDb();
   const lessonId = req.nextUrl.searchParams.get('lesson_id');
+
+  // Mirror the lesson-detail route's free-preview / free-course access
+  // model so this side-fetch doesn't 401 on the same surface the lesson
+  // page already permits unauthenticated viewers to see.
+  if (!user) {
+    const { data: course } = await db
+      .from('courses')
+      .select('price_type, price')
+      .eq('id', courseId)
+      .maybeSingle();
+    const isFreeCourse = course?.price_type === 'free' || Number(course?.price) === 0;
+
+    let lessonIsFreePreview = false;
+    if (lessonId) {
+      const { data: lesson } = await db
+        .from('lessons')
+        .select('is_free_preview')
+        .eq('id', lessonId)
+        .eq('course_id', courseId)
+        .maybeSingle();
+      lessonIsFreePreview = !!lesson?.is_free_preview;
+    }
+
+    if (!isFreeCourse && !lessonIsFreePreview) {
+      return NextResponse.json([]);
+    }
+  }
 
   let query = db
     .from('course_glossary_terms')

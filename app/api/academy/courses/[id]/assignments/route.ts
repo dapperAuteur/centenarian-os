@@ -19,28 +19,53 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const { id: courseId } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const db = getDb();
-  const { data: course } = await db.from('courses').select('teacher_id').eq('id', courseId).single();
-  const isOwner = user.id === course?.teacher_id || user.email === process.env.ADMIN_EMAIL;
-
-  if (!isOwner) {
-    const { data: enrollment } = await db
-      .from('enrollments')
-      .select('status')
-      .eq('user_id', user.id)
-      .eq('course_id', courseId)
-      .maybeSingle();
-    if (enrollment?.status !== 'active') {
-      return NextResponse.json({ error: 'Not enrolled' }, { status: 403 });
-    }
-  }
-
   const url = new URL(_req.url);
   const scopeFilter = url.searchParams.get('scope');
   const moduleIdFilter = url.searchParams.get('module_id');
   const lessonIdFilter = url.searchParams.get('lesson_id');
+
+  const { data: course } = await db
+    .from('courses')
+    .select('teacher_id, price_type, price')
+    .eq('id', courseId)
+    .maybeSingle();
+
+  // Match the lesson-detail route's free-preview / free-course access
+  // model. Unauth viewers on a free-preview lesson or free course get an
+  // empty list (200) rather than a noisy 401 in the lesson side panel.
+  if (!user) {
+    const isFreeCourse = course?.price_type === 'free' || Number(course?.price) === 0;
+
+    let lessonIsFreePreview = false;
+    if (lessonIdFilter) {
+      const { data: lesson } = await db
+        .from('lessons')
+        .select('is_free_preview')
+        .eq('id', lessonIdFilter)
+        .eq('course_id', courseId)
+        .maybeSingle();
+      lessonIsFreePreview = !!lesson?.is_free_preview;
+    }
+
+    if (!isFreeCourse && !lessonIsFreePreview) {
+      return NextResponse.json([]);
+    }
+  } else {
+    const isOwner = user.id === course?.teacher_id || user.email === process.env.ADMIN_EMAIL;
+    if (!isOwner) {
+      const { data: enrollment } = await db
+        .from('enrollments')
+        .select('status')
+        .eq('user_id', user.id)
+        .eq('course_id', courseId)
+        .maybeSingle();
+      if (enrollment?.status !== 'active') {
+        return NextResponse.json({ error: 'Not enrolled' }, { status: 403 });
+      }
+    }
+  }
 
   let query = db
     .from('assignments')
