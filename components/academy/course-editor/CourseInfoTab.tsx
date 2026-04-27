@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Star, Sparkles, BookOpenCheck } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
 
@@ -43,9 +43,19 @@ const CATEGORY_OPTIONS = [
   'Mental Health', 'Career', 'Technology', 'Travel', 'Cooking',
   'Platform Guide', 'Other',
 ];
+const CATEGORY_PRESET_SET = new Set(CATEGORY_OPTIONS);
 
 export default function CourseInfoTab({ course, saveCourseField, isAdmin, isOwner }: TabProps) {
-  const [categoryInput, setCategoryInput] = useState(course.category ?? '');
+  // Two-way control for the category field. The native <input list> +
+  // <datalist> pattern this tab used to use silently filters the dropdown
+  // to options that start with the current value, so once a category like
+  // "Other" was saved, the suggestion list collapsed to just that one
+  // option and teachers couldn't pick anything else without first
+  // clearing the field. We render an explicit <select> for the curated
+  // list AND a free-text input below it, kept in sync via state.
+  const [customCategoryInput, setCustomCategoryInput] = useState(course.category ?? '');
+  useEffect(() => { setCustomCategoryInput(course.category ?? ''); }, [course.category]);
+  const isPresetCategory = !!course.category && CATEGORY_PRESET_SET.has(course.category);
 
   return (
     <div className="space-y-5">
@@ -71,18 +81,37 @@ export default function CourseInfoTab({ course, saveCourseField, isAdmin, isOwne
       </div>
       <div>
         <label className="block text-sm text-gray-200 mb-1.5" htmlFor="course-category">Category</label>
-        <input
+        <select
           id="course-category"
-          list="category-options"
-          value={categoryInput}
-          onChange={(e) => setCategoryInput(e.target.value)}
-          onBlur={(e) => { if (e.target.value !== (course.category ?? '')) saveCourseField({ category: e.target.value || null }); }}
-          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11"
-          placeholder="Select or type a category…"
+          value={isPresetCategory ? course.category! : ''}
+          onChange={(e) => {
+            const v = e.target.value;
+            saveCourseField({ category: v || null });
+            setCustomCategoryInput(v);
+          }}
+          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
+        >
+          <option value="" className="bg-gray-800 text-white">— Pick a preset category —</option>
+          {CATEGORY_OPTIONS.map((c) => (
+            <option key={c} value={c} className="bg-gray-800 text-white">{c}</option>
+          ))}
+        </select>
+        <input
+          type="text"
+          value={customCategoryInput}
+          onChange={(e) => setCustomCategoryInput(e.target.value)}
+          onBlur={() => {
+            const trimmed = customCategoryInput.trim();
+            if (trimmed !== (course.category ?? '')) {
+              saveCourseField({ category: trimmed || null });
+            }
+          }}
+          className="mt-2 w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11"
+          placeholder="…or type a custom category"
         />
-        <datalist id="category-options">
-          {CATEGORY_OPTIONS.map((c) => <option key={c} value={c} />)}
-        </datalist>
+        <p className="text-xs text-gray-400 mt-1.5">
+          Pick from the preset list above, or type your own below. Either action saves on change.
+        </p>
       </div>
       <div>
         <label className="block text-sm text-gray-200 mb-1.5" htmlFor="course-bvc-season">
@@ -98,10 +127,10 @@ export default function CourseInfoTab({ course, saveCourseField, isAdmin, isOwne
           }}
           className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
         >
-          <option value="">Not a BVC course</option>
-          <option value="1">Season 1 — Daily Rituals</option>
-          <option value="2">Season 2 — The Oldest Toast</option>
-          <option value="3">Season 3 — The Forbidden Leaf</option>
+          <option value="" className="bg-gray-800 text-white">Not a BVC course</option>
+          <option value="1" className="bg-gray-800 text-white">Season 1 — Daily Rituals</option>
+          <option value="2" className="bg-gray-800 text-white">Season 2 — The Oldest Toast</option>
+          <option value="3" className="bg-gray-800 text-white">Season 3 — The Forbidden Leaf</option>
         </select>
         <p className="text-xs text-gray-400 mt-1.5">
           Better Vice Club season. When set, every lesson in this course shows an embedded world map filtered to this season&apos;s commodities only. Leave unset for non-BVC courses.
