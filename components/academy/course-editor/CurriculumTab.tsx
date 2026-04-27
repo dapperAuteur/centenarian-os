@@ -336,6 +336,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
       is_free_preview: lesson.is_free_preview,
       video_360_autoplay: lesson.video_360_autoplay ?? false,
       video_360_poster_url: lesson.video_360_poster_url ?? null,
+      module_id: lesson.module_id,
     });
     // Fetch the full lesson to populate chapters + transcript, which
     // aren't present on the lightweight course tree payload.
@@ -389,6 +390,18 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
         content_url: editingLesson.content_url ?? null,
         is_free_preview: editingLesson.is_free_preview ?? false,
       };
+      // If the teacher reassigned the lesson to a different module, send
+      // the new module_id and append at the end of that module so the
+      // lesson doesn't end up at a colliding order with an existing one.
+      // The lesson PATCH route already accepts both fields.
+      const originalLesson = course.course_modules
+        .flatMap((m) => m.lessons.map((l) => ({ ...l, module_id: m.id })))
+        .find((l) => l.id === expandedLessonId);
+      if (editingLesson.module_id && editingLesson.module_id !== originalLesson?.module_id) {
+        payload.module_id = editingLesson.module_id;
+        const targetModule = course.course_modules.find((m) => m.id === editingLesson.module_id);
+        payload.order = targetModule?.lessons.length ?? 0;
+      }
       if (editingLesson.lesson_type === '360video') {
         payload.video_360_autoplay = editingLesson.video_360_autoplay ?? false;
       }
@@ -742,18 +755,35 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                             <select
                               value={editingLesson.lesson_type ?? 'video'}
                               onChange={(e) => setEditingLesson((l) => ({ ...l, lesson_type: e.target.value }))}
+                              style={{ colorScheme: 'dark' }}
                               className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
                               aria-label="Lesson type"
                             >
-                              <option value="video">Video</option>
-                              <option value="text">Text</option>
-                              <option value="audio">Audio</option>
-                              <option value="slides">Slides</option>
-                              <option value="quiz">Quiz</option>
-                              <option value="360video">360° Video</option>
-                              <option value="photo_360">360° Photo</option>
-                              <option value="virtual_tour">Virtual Tour (multi-scene)</option>
+                              <option value="video" className="bg-gray-800 text-white">Video</option>
+                              <option value="text" className="bg-gray-800 text-white">Text</option>
+                              <option value="audio" className="bg-gray-800 text-white">Audio</option>
+                              <option value="slides" className="bg-gray-800 text-white">Slides</option>
+                              <option value="quiz" className="bg-gray-800 text-white">Quiz</option>
+                              <option value="360video" className="bg-gray-800 text-white">360° Video</option>
+                              <option value="photo_360" className="bg-gray-800 text-white">360° Photo</option>
+                              <option value="virtual_tour" className="bg-gray-800 text-white">Virtual Tour (multi-scene)</option>
                             </select>
+                            {modules.length > 1 && (
+                              <select
+                                value={editingLesson.module_id ?? mod.id}
+                                onChange={(e) => setEditingLesson((l) => ({ ...l, module_id: e.target.value }))}
+                                style={{ colorScheme: 'dark' }}
+                                className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
+                                aria-label="Module — change to move this lesson to a different module"
+                                title="Module — change to move this lesson to a different module"
+                              >
+                                {modules.map((m) => (
+                                  <option key={m.id} value={m.id} className="bg-gray-800 text-white">
+                                    {m.id === mod.id ? `${m.title} (current)` : m.title}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
                             <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer min-h-11">
                               <input
                                 type="checkbox"
