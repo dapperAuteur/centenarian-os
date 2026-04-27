@@ -203,19 +203,8 @@ export default function AcademyPage() {
               </section>
             )}
 
-            {mainCourses.length > 0 && (
-              <section aria-labelledby="academy-main-heading">
-                {featuredCourses.length > 0 && (
-                  <h2 id="academy-main-heading" className="text-lg sm:text-xl font-bold text-white mb-4">All Courses</h2>
-                )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" role="list" aria-label="All courses">
-                  {mainCourses.map((course) => <CourseCard key={course.id} course={course} />)}
-                </div>
-              </section>
-            )}
-
             {appCourses.length > 0 && (
-              <section aria-labelledby="academy-app-heading" className="border-t border-gray-800 pt-8">
+              <section aria-labelledby="academy-app-heading">
                 <button
                   type="button"
                   onClick={() => setAppOpen((v) => !v)}
@@ -243,6 +232,17 @@ export default function AcademyPage() {
                     {appCourses.map((course) => <CourseCard key={course.id} course={course} />)}
                   </div>
                 )}
+              </section>
+            )}
+
+            {mainCourses.length > 0 && (
+              <section aria-labelledby="academy-main-heading">
+                {(featuredCourses.length > 0 || appCourses.length > 0) && (
+                  <h2 id="academy-main-heading" className="text-lg sm:text-xl font-bold text-white mb-4">All Courses</h2>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" role="list" aria-label="All courses">
+                  {mainCourses.map((course) => <CourseCard key={course.id} course={course} />)}
+                </div>
               </section>
             )}
           </div>
