@@ -1,9 +1,15 @@
 // app/api/academy/courses/[id]/import/route.ts
 // POST: Bulk import modules + lessons from parsed CSV data.
-// Accepts { rows: Record<string, string>[], mode: 'create' | 'upsert' }
+// Accepts { rows: Record<string, string>[], mode: 'create' | 'upsert' | 'replace' }
 // - Creates modules from unique module_title values (or reuses existing)
 // - Creates or updates lessons within those modules
-// - mode 'create' = skip existing lessons by order; 'upsert' = overwrite
+// - mode 'create' = skip existing lessons by order;
+//   mode 'upsert' = update existing rows, but ONLY for fields whose CSV
+//     column is present (non-empty) in the row — missing columns leave the
+//     existing DB value alone. This prevents partial-column imports (e.g.
+//     a CSV that adds podcast_links to existing audio lessons) from
+//     wiping content_url, text_content, etc.;
+//   mode 'replace' = wipe the course's modules + lessons first, then insert.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
@@ -200,18 +206,45 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     if (existingLessonId) {
       if (mode === 'upsert') {
-        // Update existing lesson
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { course_id, ...updateData } = lessonData;
-        const { error: updateErr } = await db
-          .from('lessons')
-          .update(updateData)
-          .eq('id', existingLessonId);
+        // Build the update payload from the columns actually present in
+        // this row. Columns that are missing or empty in the CSV are
+        // omitted from the update so they leave the existing DB value
+        // alone. Reusing the full lessonData object would write nulls /
+        // defaults for every absent column and silently wipe data — for
+        // example, a CSV that only adds podcast_links to an existing
+        // audio lesson would otherwise reset content_url to null and
+        // break playback.
+        const updateData: Record<string, unknown> = {};
+        if (row.title?.trim()) updateData.title = title;
+        if (row.lesson_type?.trim()) updateData.lesson_type = lessonType;
+        if (row.content_url?.trim()) updateData.content_url = contentUrl;
+        if (row.text_content?.trim()) updateData.text_content = textContent;
+        if (row.content_format?.trim()) updateData.content_format = contentFormat;
+        if (row.duration_seconds?.trim()) updateData.duration_seconds = durationSeconds;
+        if (row.is_free_preview?.trim()) updateData.is_free_preview = isFreePreview;
+        if ((row.lesson_order?.trim() || row.order?.trim())) updateData.order = lessonOrder;
+        if (row.module_title?.trim() && moduleId) updateData.module_id = moduleId;
+        if (audioChapters) updateData.audio_chapters = audioChapters;
+        if (transcriptContent) updateData.transcript_content = transcriptContent;
+        if (mapContent) updateData.map_content = mapContent;
+        if (documents) updateData.documents = documents;
+        if (podcastLinks) updateData.podcast_links = podcastLinks;
+        if (quizContent) updateData.quiz_content = quizContent;
 
-        if (updateErr) {
-          stats.errors.push(`Row ${i + 1} "${title}": ${updateErr.message}`);
+        if (Object.keys(updateData).length === 0) {
+          stats.errors.push(`Row ${i + 1} "${title}": no recognized columns with values; nothing to update.`);
+          stats.lessons_skipped++;
         } else {
-          stats.lessons_updated++;
+          const { error: updateErr } = await db
+            .from('lessons')
+            .update(updateData)
+            .eq('id', existingLessonId);
+
+          if (updateErr) {
+            stats.errors.push(`Row ${i + 1} "${title}": ${updateErr.message}`);
+          } else {
+            stats.lessons_updated++;
+          }
         }
       } else {
         stats.lessons_skipped++;
