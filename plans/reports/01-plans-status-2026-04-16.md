@@ -2173,3 +2173,61 @@ Per-instance judgment, not mechanical — each replacement reads naturally in co
 | Em dash branch 3 — authenticated app UI | not started. Bulk of work — `app/dashboard/**`, `components/**`, error/validation strings. |
 | Em dash branch 4 — locale dictionaries | not started. `locales/en/*.json`, `locales/es/*.json` (Spanish may need native review for replacements). |
 | Plan 39 — Supabase keys | Phase 1 done; Phase 2 unblocked ≥ 2026-04-26. |
+
+## 37. Em dash refactor — branch 2: marketing/legal page bodies — `refactor/copy-em-dash-page-bodies`
+
+Second branch of the em-dash cleanup. Targets the public marketing/legal page bodies — JSX text and the tech-roadmap PHASES data array. Largest single em-dash branch by volume because of the PHASES list.
+
+### 37.1 — Scope
+
+Touched 7 files. Two distinct workstreams in this branch:
+
+1. **Mechanical bulk replacement** in [`app/tech-roadmap/page.tsx`](../../app/tech-roadmap/page.tsx) — 105 em dashes inside the PHASES array, all matching `'Feature — description'`. Single `sed -i '' 's/ — /: /g'` swap because every instance follows the same label-then-description pattern that converts cleanly to a colon. Verified no body-render JSX em dashes outside PHASES before running sed.
+2. **Per-instance judgment** for the legal/safety/marketing pages where em dashes serve different rhetorical roles.
+
+### 37.2 — Files modified
+
+- [`app/tech-roadmap/page.tsx`](../../app/tech-roadmap/page.tsx) — 105 PHASES bullets and phase descriptions: em dash → colon (mechanical sed).
+- [`app/safety/page.tsx`](../../app/safety/page.tsx) — 8 em dashes in medical disclaimer + crisis lifeline + Rise Wellness sections; mix of comma-asides, periods, and colons; one quote-attribution em dash dropped (visual styling preserves attribution).
+- [`app/privacy/page.tsx`](../../app/privacy/page.tsx) — 5 em dashes: parenthetical inside a list became semicolon (`Stripe — we do not store` → `Stripe; we do not store`); section heading + footer use colon and middle dot respectively.
+- [`app/terms/page.tsx`](../../app/terms/page.tsx) — 5 em dashes: section headings became colons (`Health Data — Your Responsibility` → `Health Data: Your Responsibility`); parenthetical asides became commas; one mid-sentence aside in §5 medical disclaimer became commas.
+- [`app/features/page.tsx`](../../app/features/page.tsx) — 1 JSX line (clause join → period).
+- [`app/workouts/page.tsx`](../../app/workouts/page.tsx) — 2 JSX lines (one list-intro → colon, one aside → comma).
+- [`app/exercises/page.tsx`](../../app/exercises/page.tsx) — 2 JSX lines (both clause joins → period + recapitalize).
+
+Total: ~128 em-dash replacements across 7 files, no logic touched.
+
+### 37.3 — Replacement decisions worth noting
+
+- **Quote attribution at [`app/safety/page.tsx:192`](../../app/safety/page.tsx) (`— Rise Wellness of Indiana`)**: dropped the leading em dash entirely. The blockquote's left border + smaller text styling already signals attribution, so the em dash was visual noise. Future-readers may prefer to add `by ` prefix; left as bare attribution for now.
+- **Section heading separators** in privacy/terms (`Health Data — Your Responsibility` → `Health Data: Your Responsibility`): colon, not middle dot, because these are heading-with-clarification phrases, not equal-weight labels.
+- **Compliance-prose parenthetical asides** in safety/terms (e.g. `Any decisions — including changes to diet, exercise, … — that you make`): commas, not periods. Keeping the sentence intact preserves the legal phrasing's "any decisions [scope] you make" structure where breaking it into two sentences would shift emphasis.
+- **Crisis Lifeline + Emergency labels** in safety (`988 Suicide & Crisis Lifeline — Call or text`): colon. Reads as a label-then-instruction in a high-urgency context where colon is more direct than dash.
+- **Tech-roadmap PHASES array**: colon across the board because every entry is `feature: description`. No exceptions found.
+
+### 37.4 — Verification
+
+1. Typecheck: `npx tsc --noEmit` — clean.
+2. Visual sweep: open `/safety`, `/privacy`, `/terms`, `/tech-roadmap`, `/features`, `/workouts`, `/exercises` and skim. No remaining ` — ` in any rendered text on these pages (code comments excluded by scope).
+3. Section-heading regression: each `<Section title="N. X — Y">` became `<Section title="N. X: Y">` — confirm anchor links / table-of-contents (none currently used) still work.
+
+### 37.5 — What this does NOT touch
+
+- Code comments (`// X — Y`) — out of scope for any em-dash branch.
+- Authenticated app UI (`app/dashboard/**`, `components/**`) — branch 3.
+- Locale dictionaries (`locales/en/*.json`, `locales/es/*.json`) — branch 4.
+- Server-rendered markdown content (tutorial scripts under `content/`, blog posts) — out of scope; deferred or content-team owned.
+
+### 37.6 — Merge order
+
+- Standalone branch off main. No dependencies on other in-flight work. Merges directly to `main`.
+- Branch 1 (`refactor/copy-em-dash-metadata`) is already merged to main, so no stacking concern.
+
+### 37.7 — Remaining backlog
+
+| Item | Status |
+|---|---|
+| Em dash branch 3 — authenticated app UI (dashboard, components) | not started. Largest scope (~250 instances across `app/dashboard/**` + `components/**`). |
+| Em dash branch 4 — locale dictionaries | not started. Spanish copy may need native review. |
+| Plan 39 — Supabase keys | Phase 1 done; Phase 2 unblocked ≥ 2026-04-26. |
+| Teller branch (`chore/rotate-teller-encryption-key`) pushed to origin earlier this session, awaiting user merge. |

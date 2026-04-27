@@ -56,7 +56,7 @@ export default function FeaturesIndexPage() {
         </h1>
         <p className="text-gray-600 text-base sm:text-lg max-w-2xl mx-auto">
           {MODULES.length} integrated modules for planning, health, finance, fitness, learning, and more.
-          Every feature works together — no data silos.
+          Every feature works together. No data silos.
         </p>
       </section>
 

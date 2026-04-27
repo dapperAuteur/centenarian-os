@@ -33,7 +33,7 @@ export default function PrivacyPage() {
             <li>Email address</li>
             <li>Display name and username</li>
             <li>Profile photo (optional)</li>
-            <li>Billing information (processed by Stripe — we do not store card numbers)</li>
+            <li>Billing information (processed by Stripe; we do not store card numbers)</li>
           </ul>
 
           <h3 className="font-medium text-gray-100 mt-4 mb-1">Health &amp; Metrics Data</h3>
@@ -115,15 +115,15 @@ export default function PrivacyPage() {
           </p>
         </Section>
 
-        <Section title="6. Health Data — Special Protections">
+        <Section title="6. Health Data: Special Protections">
           <p>
             Health and biometric data you enter is stored in your private account only. It is:
           </p>
           <ul className="list-disc pl-5 mt-2 space-y-1">
-            <li>Protected by row-level security — only you and server-side processes can read it</li>
+            <li>Protected by row-level security: only you and server-side processes can read it</li>
             <li>Never shared with other users, teachers, or third parties without your consent</li>
             <li>Not used for advertising or profiling</li>
-            <li>Accessible to you in full — you can export or delete it at any time</li>
+            <li>Accessible to you in full. You can export or delete it at any time</li>
           </ul>
           <p className="mt-3">
             We are not a HIPAA-covered entity. Health data you enter is consumer self-tracking data,
@@ -188,7 +188,7 @@ export default function PrivacyPage() {
               hello@centenarianos.com
             </a>
             <br />
-            B4C LLC / AwesomeWebStore.com — Indianapolis, Indiana, USA
+            B4C LLC / AwesomeWebStore.com · Indianapolis, Indiana, USA
           </p>
         </Section>
 

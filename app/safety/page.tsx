@@ -31,8 +31,8 @@ export default function SafetyPage() {
               <p className="text-yellow-100/80 text-sm leading-relaxed">
                 CentenarianOS is a <strong>self-tracking and education platform</strong>. It is{' '}
                 <strong>NOT a medical service, clinic, or healthcare provider</strong>. All content on
-                this platform — including course lessons, AI-generated health insights, blog posts,
-                recipes, and metric summaries — is for <strong>informational and educational
+                this platform, including course lessons, AI-generated health insights, blog posts,
+                recipes, and metric summaries, is for <strong>informational and educational
                 purposes only</strong> and does not constitute medical advice, diagnosis, or treatment.
               </p>
             </div>
@@ -47,8 +47,8 @@ export default function SafetyPage() {
               <strong className="text-white">
                 Always consult a qualified, licensed healthcare provider before making any changes to
                 your health regimen
-              </strong>{' '}
-              — including changes to exercise, nutrition, supplements, or medications.
+              </strong>
+              , including changes to exercise, nutrition, supplements, or medications.
             </p>
             <p>
               Do not disregard or delay professional medical advice based on anything you read, learn,
@@ -60,7 +60,7 @@ export default function SafetyPage() {
               Wearable device data (from Apple Watch, Fitbit, Garmin, Oura Ring, or similar devices)
               is consumer-grade data. It provides estimates, not clinical measurements.{' '}
               <strong className="text-white">
-                Precision is not accuracy — use device data as a personal baseline, not a diagnostic
+                Precision is not accuracy. Use device data as a personal baseline, not a diagnostic
                 tool.
               </strong>
             </p>
@@ -84,11 +84,11 @@ export default function SafetyPage() {
           </p>
           <ul className="mt-2 space-y-1 text-sm text-red-100/80">
             <li>
-              <strong className="text-white">988 Suicide &amp; Crisis Lifeline</strong> — Call or text{' '}
+              <strong className="text-white">988 Suicide &amp; Crisis Lifeline</strong>: Call or text{' '}
               <a href="tel:988" className="text-red-300 font-bold hover:underline">988</a> (US)
             </li>
             <li>
-              <strong className="text-white">Emergency</strong> — Call{' '}
+              <strong className="text-white">Emergency</strong>: Call{' '}
               <a href="tel:911" className="text-red-300 font-bold hover:underline">911</a> or go to
               your nearest emergency room
             </li>
@@ -105,13 +105,13 @@ export default function SafetyPage() {
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
             <h3 className="text-lg font-bold text-white mb-1">Rise Wellness of Indiana</h3>
             <p className="text-fuchsia-300 text-xs font-medium mb-4 uppercase tracking-wide">
-              Independent Mental Health Provider — Not affiliated with CentenarianOS
+              Independent Mental Health Provider · Not affiliated with CentenarianOS
             </p>
 
             <p className="text-gray-300 text-sm leading-relaxed mb-4">
               Rise Wellness of Indiana provides compassionate, personalized, holistic mental health
               care. Their mission is to support your mental and physical well-being through
-              evidence-based medicine, trauma-informed care, and a whole-person approach — helping
+              evidence-based medicine, trauma-informed care, and a whole-person approach, helping
               you heal, grow, and thrive in mind, body, and spirit.
             </p>
 
@@ -189,7 +189,7 @@ export default function SafetyPage() {
             and live a fulfilling, healthy life. Our care is guided by the belief that healing is
             personal, holistic, and rooted in compassion.&rdquo;
             <br />
-            <span className="not-italic text-gray-500 text-xs mt-1 block">— Rise Wellness of Indiana</span>
+            <span className="not-italic text-gray-500 text-xs mt-1 block">Rise Wellness of Indiana</span>
           </blockquote>
         </section>
 

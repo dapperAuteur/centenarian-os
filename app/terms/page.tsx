@@ -54,7 +54,7 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section title="4. Health Data — Your Responsibility">
+        <Section title="4. Health Data: Your Responsibility">
           <p className="font-semibold text-yellow-400">
             IMPORTANT: CentenarianOS is a self-tracking and education platform. It is NOT a medical
             service, clinic, or healthcare provider.
@@ -66,7 +66,7 @@ export default function TermsPage() {
           <ul className="list-disc pl-5 mt-2 space-y-1">
             <li>The accuracy of the data you enter</li>
             <li>How you interpret, share, or act on that data</li>
-            <li>Any decisions — including changes to diet, exercise, medication, or lifestyle — that
+            <li>Any decisions, including changes to diet, exercise, medication, or lifestyle, that
                 you make based on information from the Platform</li>
           </ul>
           <p className="mt-3">
@@ -76,11 +76,11 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section title="5. Medical Disclaimer — Consult Your Doctor">
+        <Section title="5. Medical Disclaimer: Consult Your Doctor">
           <p>
-            Nothing on this Platform constitutes medical advice, diagnosis, or treatment. All content —
+            Nothing on this Platform constitutes medical advice, diagnosis, or treatment. All content,
             including course lessons, AI-generated insights, blog posts, recipes, and health metric
-            summaries — is for <strong>informational and educational purposes only</strong>.
+            summaries, is for <strong>informational and educational purposes only</strong>.
           </p>
           <p className="mt-3">
             <strong>
@@ -127,7 +127,7 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section title="8. Centenarian Academy — Courses and Enrollments">
+        <Section title="8. Centenarian Academy: Courses and Enrollments">
           <p>
             Centenarian Academy is a marketplace where independent teachers offer courses. CentenarianOS
             is the platform operator, not the employer or agent of any teacher. Course content reflects
