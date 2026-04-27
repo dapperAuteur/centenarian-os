@@ -46,16 +46,17 @@ const CATEGORY_OPTIONS = [
 const CATEGORY_PRESET_SET = new Set(CATEGORY_OPTIONS);
 
 export default function CourseInfoTab({ course, saveCourseField, isAdmin, isOwner }: TabProps) {
-  // Two-way control for the category field. The native <input list> +
-  // <datalist> pattern this tab used to use silently filters the dropdown
-  // to options that start with the current value, so once a category like
-  // "Other" was saved, the suggestion list collapsed to just that one
-  // option and teachers couldn't pick anything else without first
-  // clearing the field. We render an explicit <select> for the curated
-  // list AND a free-text input below it, kept in sync via state.
-  const [customCategoryInput, setCustomCategoryInput] = useState(course.category ?? '');
-  useEffect(() => { setCustomCategoryInput(course.category ?? ''); }, [course.category]);
-  const isPresetCategory = !!course.category && CATEGORY_PRESET_SET.has(course.category);
+  // Single-control category picker. The original <input list> + <datalist>
+  // had a UX trap (filters suggestions to options starting with the current
+  // value); the previous fix introduced a select + text-input pair which
+  // teachers found cluttered. This version shows ONE control at a time:
+  // either the preset <select> or a free-text input, with a small toggle
+  // to switch modes. A "Custom (type your own)..." sentinel option in
+  // the select also flips into custom mode so users can discover it
+  // without the toggle.
+  const isCategoryCustom = !!course.category && !CATEGORY_PRESET_SET.has(course.category);
+  const [customMode, setCustomMode] = useState(isCategoryCustom);
+  useEffect(() => { setCustomMode(isCategoryCustom); }, [isCategoryCustom]);
 
   return (
     <div className="space-y-5">
@@ -80,37 +81,62 @@ export default function CourseInfoTab({ course, saveCourseField, isAdmin, isOwne
         />
       </div>
       <div>
-        <label className="block text-sm text-gray-200 mb-1.5" htmlFor="course-category">Category</label>
-        <select
-          id="course-category"
-          value={isPresetCategory ? course.category! : ''}
-          onChange={(e) => {
-            const v = e.target.value;
-            saveCourseField({ category: v || null });
-            setCustomCategoryInput(v);
-          }}
-          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
-        >
-          <option value="" className="bg-gray-800 text-white">— Pick a preset category —</option>
-          {CATEGORY_OPTIONS.map((c) => (
-            <option key={c} value={c} className="bg-gray-800 text-white">{c}</option>
-          ))}
-        </select>
-        <input
-          type="text"
-          value={customCategoryInput}
-          onChange={(e) => setCustomCategoryInput(e.target.value)}
-          onBlur={() => {
-            const trimmed = customCategoryInput.trim();
-            if (trimmed !== (course.category ?? '')) {
-              saveCourseField({ category: trimmed || null });
-            }
-          }}
-          className="mt-2 w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11"
-          placeholder="…or type a custom category"
-        />
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="block text-sm text-gray-200" htmlFor="course-category">Category</label>
+          <button
+            type="button"
+            onClick={() => setCustomMode((m) => !m)}
+            className="text-xs text-fuchsia-400 hover:text-fuchsia-300 transition"
+          >
+            {customMode ? 'Pick from preset list' : 'Type a custom category'}
+          </button>
+        </div>
+        {!customMode ? (
+          // colorScheme: 'dark' tells the browser to render native form
+          // primitives (including the <option> dropdown popup) using its
+          // dark-mode palette, so options aren't dark-on-dark on macOS /
+          // Linux dark themes. Combined with explicit per-option classes
+          // as a belt-and-suspenders fallback for older browsers.
+          <select
+            id="course-category"
+            value={course.category && CATEGORY_PRESET_SET.has(course.category) ? course.category : ''}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === '__custom__') {
+                setCustomMode(true);
+                return;
+              }
+              saveCourseField({ category: v || null });
+            }}
+            style={{ colorScheme: 'dark' }}
+            className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
+          >
+            <option value="" className="bg-gray-800 text-white">— Pick a preset category —</option>
+            {CATEGORY_OPTIONS.map((c) => (
+              <option key={c} value={c} className="bg-gray-800 text-white">{c}</option>
+            ))}
+            <option value="__custom__" className="bg-gray-800 text-white">Custom (type your own)…</option>
+          </select>
+        ) : (
+          <input
+            id="course-category"
+            type="text"
+            defaultValue={course.category ?? ''}
+            onBlur={(e) => {
+              const trimmed = e.target.value.trim();
+              if (trimmed !== (course.category ?? '')) {
+                saveCourseField({ category: trimmed || null });
+              }
+            }}
+            placeholder="Type a custom category…"
+            autoFocus
+            className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11"
+          />
+        )}
         <p className="text-xs text-gray-400 mt-1.5">
-          Pick from the preset list above, or type your own below. Either action saves on change.
+          {customMode
+            ? 'Saves on blur. Use the toggle above to return to the preset list.'
+            : 'Pick a preset, or use the toggle above to type your own category.'}
         </p>
       </div>
       <div>
@@ -125,6 +151,7 @@ export default function CourseInfoTab({ course, saveCourseField, isAdmin, isOwne
             const parsed = v === '' ? null : (Number(v) as 1 | 2 | 3);
             saveCourseField({ bvc_season: parsed });
           }}
+          style={{ colorScheme: 'dark' }}
           className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
         >
           <option value="" className="bg-gray-800 text-white">Not a BVC course</option>
