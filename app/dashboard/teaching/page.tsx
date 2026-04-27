@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Link from 'next/link';
-import { BookOpen, Users, DollarSign, Plus, ArrowRight, CreditCard, Layers, Globe } from 'lucide-react';
+import { BookOpen, Users, DollarSign, Plus, ArrowRight, CreditCard, Layers, Globe, Share2, Copy, Check, ExternalLink } from 'lucide-react';
 
 interface Course {
   id: string;
@@ -26,20 +26,54 @@ export default function TeachingDashboard() {
   const [stats, setStats] = useState<TeacherStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [connectStatus, setConnectStatus] = useState<{ connected: boolean; onboarded: boolean } | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
+  const [siteOrigin, setSiteOrigin] = useState('');
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     Promise.all([
       offlineFetch('/api/academy/courses?mine=true').then((r) => r.json()),
       offlineFetch('/api/teacher/connect').then((r) => r.json()),
-    ]).then(([coursesData, connectData]) => {
+      offlineFetch('/api/auth/me').then((r) => r.json()),
+    ]).then(([coursesData, connectData, meData]) => {
       setStats({
         courses: Array.isArray(coursesData) ? coursesData : [],
         total_enrollments: 0,
       });
       setConnectStatus(connectData);
+      setUsername(meData?.username ?? null);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
+
+  // Prefer the env-configured production URL for sharing (so links work even
+  // when viewed on a preview deployment); fall back to the current origin
+  // for local dev where the env var may be unset.
+  useEffect(() => {
+    const envUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    if (envUrl) {
+      setSiteOrigin(envUrl.replace(/\/$/, ''));
+    } else if (typeof window !== 'undefined') {
+      setSiteOrigin(window.location.origin);
+    }
+  }, []);
+
+  const publicProfileUrl = username && siteOrigin ? `${siteOrigin}/academy/teachers/${username}` : null;
+
+  async function copyProfileUrl() {
+    if (!publicProfileUrl) return;
+    try {
+      await navigator.clipboard.writeText(publicProfileUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API can reject in insecure contexts or when the user
+      // denies permission. Fall back to selecting the input so the user
+      // can copy manually.
+      const input = document.getElementById('teacher-profile-url') as HTMLInputElement | null;
+      input?.select();
+    }
+  }
 
   if (loading) {
     return (
@@ -67,6 +101,63 @@ export default function TeachingDashboard() {
           New Course
         </Link>
       </div>
+
+      {/* Public profile share card — shown when the teacher has a username
+          set. Surfacing this here saves them from typing the URL by hand
+          when promoting their courses on social media or in DMs. */}
+      {publicProfileUrl ? (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 sm:p-5 mb-6">
+          <div className="flex items-start gap-3 mb-3">
+            <Share2 className="w-4 h-4 text-fuchsia-400 shrink-0 mt-0.5" aria-hidden="true" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-white">Your public teacher profile</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Share this link to send people directly to your courses. Featured courses show up first.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <label htmlFor="teacher-profile-url" className="sr-only">Public profile URL</label>
+            <input
+              id="teacher-profile-url"
+              type="text"
+              readOnly
+              value={publicProfileUrl}
+              onFocus={(e) => e.target.select()}
+              className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white font-mono focus:outline-none focus:border-fuchsia-500 min-h-11 min-w-0"
+            />
+            <button
+              type="button"
+              onClick={copyProfileUrl}
+              className="flex items-center justify-center gap-1.5 px-4 min-h-11 bg-fuchsia-600 text-white rounded-xl text-sm font-semibold hover:bg-fuchsia-700 transition shrink-0"
+              aria-label={copied ? 'Link copied to clipboard' : 'Copy profile link to clipboard'}
+            >
+              {copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+            <a
+              href={publicProfileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1.5 px-4 min-h-11 bg-gray-800 border border-gray-700 text-gray-200 rounded-xl text-sm font-semibold hover:bg-gray-700 transition shrink-0"
+              aria-label="Open public profile in a new tab"
+            >
+              <ExternalLink className="w-4 h-4" aria-hidden="true" />
+              Open
+            </a>
+          </div>
+        </div>
+      ) : !loading && !username ? (
+        <div className="bg-gray-900 border border-gray-800 border-dashed rounded-xl p-4 sm:p-5 mb-6 flex items-start gap-3">
+          <Share2 className="w-4 h-4 text-gray-500 shrink-0 mt-0.5" aria-hidden="true" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-gray-300">Set a username to get a shareable profile link</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Without a username, your courses can&apos;t live at <code className="text-gray-400">/academy/teachers/&hellip;</code>. Set one in your <Link href="/settings" className="text-fuchsia-400 hover:text-fuchsia-300 underline">profile settings</Link>.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {/* Stripe Connect banner if not onboarded */}
       {connectStatus && !connectStatus.onboarded && (
