@@ -246,8 +246,8 @@ export default function PrerequisitesTab({ course, courseId, saveCourseField, se
         <div className="flex flex-wrap gap-2 items-center">
           <select value={prereqAddType} onChange={(e) => setPrereqAddType(e.target.value as 'prerequisite' | 'recommendation')}
             className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white">
-            <option value="prerequisite">Add Prerequisite</option>
-            <option value="recommendation">Add Recommendation</option>
+            <option value="prerequisite" className="bg-gray-800 text-white">Add Prerequisite</option>
+            <option value="recommendation" className="bg-gray-800 text-white">Add Recommendation</option>
           </select>
           <div className="flex-1 flex gap-1 min-w-48">
             <input type="text" value={prereqSearch} onChange={(e) => setPrereqSearch(e.target.value)}
@@ -357,9 +357,9 @@ export default function PrerequisitesTab({ course, courseId, saveCourseField, se
                       className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500" />
                     <select value={q.type} onChange={(e) => { updateOverrideQuestion(q.id, 'type', e.target.value); setTimeout(saveOverrideQuestions, 50); }}
                       className="bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-xs text-white">
-                      <option value="text">Text</option>
-                      <option value="rating">Rating (1-5)</option>
-                      <option value="select">Select</option>
+                      <option value="text" className="bg-gray-800 text-white">Text</option>
+                      <option value="rating" className="bg-gray-800 text-white">Rating (1-5)</option>
+                      <option value="select" className="bg-gray-800 text-white">Select</option>
                     </select>
                     <button type="button" onClick={() => removeOverrideQuestion(q.id)}
                       className="text-gray-400 hover:text-red-400 transition mt-0.5">

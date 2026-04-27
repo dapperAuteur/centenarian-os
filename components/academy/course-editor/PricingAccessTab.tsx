@@ -46,9 +46,9 @@ export default function PricingAccessTab({ course, saveCourseField }: TabProps) 
             onChange={(e) => saveCourseField({ price_type: e.target.value })}
             className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
           >
-            <option value="free">Free</option>
-            <option value="one_time">One-time</option>
-            <option value="subscription">Subscription (monthly)</option>
+            <option value="free" className="bg-gray-800 text-white">Free</option>
+            <option value="one_time" className="bg-gray-800 text-white">One-time</option>
+            <option value="subscription" className="bg-gray-800 text-white">Subscription (monthly)</option>
           </select>
         </div>
         {course.price_type !== 'free' && (
