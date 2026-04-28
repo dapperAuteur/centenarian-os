@@ -1162,16 +1162,17 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                     <div className="flex flex-wrap gap-3 items-center">
                       <select value={newLesson.lesson_type}
                         onChange={(e) => setNewLesson((l) => ({ ...l, lesson_type: e.target.value }))}
+                        style={{ colorScheme: 'dark' }}
                         className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
                         aria-label="Lesson type">
-                        <option value="video">Video</option>
-                        <option value="text">Text</option>
-                        <option value="audio">Audio</option>
-                        <option value="slides">Slides</option>
-                        <option value="quiz">Quiz</option>
-                        <option value="360video">360° Video</option>
-                        <option value="photo_360">360° Photo</option>
-                        <option value="virtual_tour">Virtual Tour (multi-scene)</option>
+                        <option value="video" className="bg-gray-800 text-white">Video</option>
+                        <option value="text" className="bg-gray-800 text-white">Text</option>
+                        <option value="audio" className="bg-gray-800 text-white">Audio</option>
+                        <option value="slides" className="bg-gray-800 text-white">Slides</option>
+                        <option value="quiz" className="bg-gray-800 text-white">Quiz</option>
+                        <option value="360video" className="bg-gray-800 text-white">360° Video</option>
+                        <option value="photo_360" className="bg-gray-800 text-white">360° Photo</option>
+                        <option value="virtual_tour" className="bg-gray-800 text-white">Virtual Tour (multi-scene)</option>
                       </select>
                       <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer min-h-11">
                         <input type="checkbox" checked={newLesson.is_free_preview}
