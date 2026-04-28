@@ -349,6 +349,12 @@ select[class*="bg-zinc-800"],
 select[class*="bg-zinc-900"],
 select[class*="bg-neutral-800"],
 select[class*="bg-neutral-900"] {
+  color: #f3f4f6;     /* gray-100 — overrides the global "force dark text"
+                         reset above so the closed select doesn't render
+                         dark-on-dark. Mirrors the input/textarea rule
+                         further down. The Tailwind text-white class can
+                         still win when present (same specificity, later
+                         in the cascade). */
   color-scheme: dark;
 }
 
