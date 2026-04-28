@@ -1,3 +1,11 @@
+## ⚠️ Ecosystem repo identity (don't confuse these)
+
+The site **brandanthonymcdonald.com** (BAM's personal portfolio) lives in `/Users/bam/Code_NOiCloud/ai-builds/claude/bam-landing-page/` — **NOT** `bam-portfolio`. A stray directory at `/Users/bam/Code_NOiCloud/projects/bam-portfolio/` exists from a prior misplaced `Write` call (parent dirs auto-created); it is not a real repo. When asked to work on the brandanthonymcdonald.com codebase, target `bam-landing-page`.
+
+This mistake has been made more than once. If you're about to write a file under `projects/bam-portfolio/` or refer to it as the BAM portfolio repo, stop and re-read this note.
+
+---
+
 # CentenarianOS — Code Style & Quality Guidelines
 
 > **After reading this file, read [STYLE_GUIDE.md](STYLE_GUIDE.md) before making any changes.** It covers git workflow, branch naming, Conventional Commits, and PR rules that apply to every task. CLAUDE.md is the code-style doc; STYLE_GUIDE.md is the collaboration doc. Both are required reading.
