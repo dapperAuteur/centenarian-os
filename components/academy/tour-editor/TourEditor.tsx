@@ -556,7 +556,7 @@ export default function TourEditor({ courseId, lessonId }: TourEditorProps) {
                     value={selectedScene.caption ?? ''}
                     onChange={(e) => updateScene(selectedScene.slug, { caption: e.target.value || null })}
                     placeholder="Shown in the top-left of the player"
-                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 min-h-11"
                   />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

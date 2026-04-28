@@ -76,7 +76,7 @@ export default function CourseInfoTab({ course, saveCourseField, isAdmin, isOwne
           defaultValue={course.description ?? ''}
           onBlur={(e) => { if (e.target.value !== course.description) saveCourseField({ description: e.target.value }); }}
           rows={3}
-          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 resize-none"
+          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 resize-none"
           placeholder="What will students learn in this course?"
         />
       </div>
@@ -130,7 +130,7 @@ export default function CourseInfoTab({ course, saveCourseField, isAdmin, isOwne
             }}
             placeholder="Type a custom category…"
             autoFocus
-            className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11"
+            className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 min-h-11"
           />
         )}
         <p className="text-xs text-gray-400 mt-1.5">

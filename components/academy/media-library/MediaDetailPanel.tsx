@@ -122,7 +122,7 @@ export default function MediaDetailPanel({
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11"
+          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 min-h-11"
         />
       </div>
 
@@ -134,7 +134,7 @@ export default function MediaDetailPanel({
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
           placeholder="Notes about this asset for your own reference"
-          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 resize-none"
+          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 resize-none"
         />
       </div>
 
@@ -146,7 +146,7 @@ export default function MediaDetailPanel({
           value={tagsInput}
           onChange={(e) => setTagsInput(e.target.value)}
           placeholder="museum, chocolate, main-hall"
-          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11"
+          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 min-h-11"
         />
       </div>
 

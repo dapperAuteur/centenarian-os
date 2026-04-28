@@ -148,7 +148,7 @@ export default function HotspotFormModal({ initial, initialPosition, allScenes, 
               value={state.title}
               onChange={(e) => update('title', e.target.value)}
               placeholder="Shown as the hotspot tooltip + panel heading"
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11"
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 min-h-11"
               required
             />
           </div>
@@ -161,7 +161,7 @@ export default function HotspotFormModal({ initial, initialPosition, allScenes, 
               onChange={(e) => update('body', e.target.value)}
               placeholder="Longer description shown inside the panel"
               rows={4}
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 resize-none"
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 resize-none"
             />
           </div>
 
@@ -174,7 +174,7 @@ export default function HotspotFormModal({ initial, initialPosition, allScenes, 
                 value={state.audio_url ?? ''}
                 onChange={(e) => update('audio_url', e.target.value || null)}
                 placeholder="https://…/clip.mp3"
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11"
+                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 min-h-11"
               />
             </div>
           )}
@@ -188,7 +188,7 @@ export default function HotspotFormModal({ initial, initialPosition, allScenes, 
                 value={state.external_url ?? ''}
                 onChange={(e) => update('external_url', e.target.value || null)}
                 placeholder="https://…"
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11"
+                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 min-h-11"
               />
             </div>
           )}

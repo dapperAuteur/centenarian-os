@@ -177,7 +177,7 @@ export default function HelpDrawer({ isOpen, onClose, userRole }: Props) {
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) sendMessage(input); }}
               placeholder="Ask anything about CentenarianOS…"
               disabled={loading}
-              className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 disabled:opacity-50"
+              className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 disabled:opacity-50"
             />
             <button
               type="button"

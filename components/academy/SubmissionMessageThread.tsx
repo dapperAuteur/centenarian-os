@@ -150,7 +150,7 @@ export default function SubmissionMessageThread({
             if (e.key === 'Enter' && !e.shiftKey) handleSend();
           }}
           placeholder={isTeacher ? 'Send feedback...' : 'Message your teacher...'}
-          className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11"
+          className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 min-h-11"
         />
         <button
           type="button"

@@ -172,7 +172,7 @@ export default function DataImporter({ columns, onImport, templateCsvUrl, label 
             value={sheetsUrl}
             onChange={(e) => setSheetsUrl(e.target.value)}
             placeholder="https://docs.google.com/spreadsheets/d/..."
-            className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+            className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500"
           />
           <button
             type="button"
