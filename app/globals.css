@@ -465,3 +465,51 @@ textarea[class*="bg-neutral-900"]::placeholder {
   color: #9ca3af;
   opacity: 1;
 }
+
+/* ─── Light-bg container override ────────────────────────────────────────── */
+/* Re-assert dark text on inputs/textareas/selects sitting INSIDE a light-bg
+ * ancestor (a white modal panel, a light card, a settings tile). The
+ * dark-shell catch-all above matches by ancestor (e.g. inputs anywhere
+ * inside a bg-gray-950 dashboard or bg-black modal backdrop) and forces
+ * `color: #f3f4f6` so typed values are legible on dark surfaces. The
+ * common modal pattern in components/ui/Modal.tsx wraps a `bg-white`
+ * panel inside a `bg-black/50` backdrop — without this override, every
+ * input in every modal renders light-text-on-white-panel and looks empty.
+ *
+ * The :not() chain leaves inputs that explicitly opt INTO a dark
+ * background (bg-gray-800/900, bg-slate-800/900, etc.) alone — those
+ * already carry their own light-text Tailwind classes that should win.
+ *
+ * Placed after the dark-shell catch-all so equal-specificity rules tie-
+ * break in this rule's favor via cascade order. Won't override an input
+ * that has its own explicit dark bg class, because the :not() chain
+ * excludes those entirely. */
+[class*="bg-white"] input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([class*="bg-gray-800"]):not([class*="bg-gray-900"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]):not([class*="bg-zinc-800"]):not([class*="bg-zinc-900"]):not([class*="bg-neutral-800"]):not([class*="bg-neutral-900"]):not([class*="bg-black"]),
+[class*="bg-white"] textarea:not([class*="bg-gray-800"]):not([class*="bg-gray-900"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]):not([class*="bg-zinc-800"]):not([class*="bg-zinc-900"]):not([class*="bg-neutral-800"]):not([class*="bg-neutral-900"]):not([class*="bg-black"]),
+[class*="bg-white"] select:not([class*="bg-gray-800"]):not([class*="bg-gray-900"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]):not([class*="bg-zinc-800"]):not([class*="bg-zinc-900"]):not([class*="bg-neutral-800"]):not([class*="bg-neutral-900"]):not([class*="bg-black"]),
+[class*="bg-gray-50"] input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([class*="bg-gray-800"]):not([class*="bg-gray-900"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]):not([class*="bg-zinc-800"]):not([class*="bg-zinc-900"]):not([class*="bg-neutral-800"]):not([class*="bg-neutral-900"]):not([class*="bg-black"]),
+[class*="bg-gray-50"] textarea:not([class*="bg-gray-800"]):not([class*="bg-gray-900"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]):not([class*="bg-zinc-800"]):not([class*="bg-zinc-900"]):not([class*="bg-neutral-800"]):not([class*="bg-neutral-900"]):not([class*="bg-black"]),
+[class*="bg-gray-50"] select:not([class*="bg-gray-800"]):not([class*="bg-gray-900"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]):not([class*="bg-zinc-800"]):not([class*="bg-zinc-900"]):not([class*="bg-neutral-800"]):not([class*="bg-neutral-900"]):not([class*="bg-black"]),
+[class*="bg-gray-100"] input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([class*="bg-gray-800"]):not([class*="bg-gray-900"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]):not([class*="bg-zinc-800"]):not([class*="bg-zinc-900"]):not([class*="bg-neutral-800"]):not([class*="bg-neutral-900"]):not([class*="bg-black"]),
+[class*="bg-gray-100"] textarea:not([class*="bg-gray-800"]):not([class*="bg-gray-900"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]):not([class*="bg-zinc-800"]):not([class*="bg-zinc-900"]):not([class*="bg-neutral-800"]):not([class*="bg-neutral-900"]):not([class*="bg-black"]),
+[class*="bg-gray-100"] select:not([class*="bg-gray-800"]):not([class*="bg-gray-900"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]):not([class*="bg-zinc-800"]):not([class*="bg-zinc-900"]):not([class*="bg-neutral-800"]):not([class*="bg-neutral-900"]):not([class*="bg-black"]),
+[class*="bg-gray-200"] input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([class*="bg-gray-800"]):not([class*="bg-gray-900"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]):not([class*="bg-zinc-800"]):not([class*="bg-zinc-900"]):not([class*="bg-neutral-800"]):not([class*="bg-neutral-900"]):not([class*="bg-black"]),
+[class*="bg-gray-200"] textarea:not([class*="bg-gray-800"]):not([class*="bg-gray-900"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]):not([class*="bg-zinc-800"]):not([class*="bg-zinc-900"]):not([class*="bg-neutral-800"]):not([class*="bg-neutral-900"]):not([class*="bg-black"]),
+[class*="bg-gray-200"] select:not([class*="bg-gray-800"]):not([class*="bg-gray-900"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]):not([class*="bg-zinc-800"]):not([class*="bg-zinc-900"]):not([class*="bg-neutral-800"]):not([class*="bg-neutral-900"]):not([class*="bg-black"]) {
+  color: #111827;        /* gray-900 — readable on white / gray-50/100/200 */
+  color-scheme: light;
+}
+
+/* Matching placeholder rule for the same light-bg containers. */
+[class*="bg-white"] input::placeholder,
+[class*="bg-white"] textarea::placeholder,
+[class*="bg-gray-50"] input::placeholder,
+[class*="bg-gray-50"] textarea::placeholder,
+[class*="bg-gray-100"] input::placeholder,
+[class*="bg-gray-100"] textarea::placeholder,
+[class*="bg-gray-200"] input::placeholder,
+[class*="bg-gray-200"] textarea::placeholder {
+  color: #9ca3af;        /* gray-400 — same value the dark variant uses */
+  opacity: 1;
+}
+/* ─── End light-bg container override ────────────────────────────────────── */
