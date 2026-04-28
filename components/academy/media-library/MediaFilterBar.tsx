@@ -38,7 +38,7 @@ export default function MediaFilterBar({
           onChange={(e) => onQueryChange(e.target.value)}
           placeholder="Search by name, description, or tag…"
           aria-label="Search media library"
-          className="w-full bg-gray-800 border border-gray-700 rounded-xl pl-9 pr-9 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11"
+          className="w-full bg-gray-800 border border-gray-700 rounded-xl pl-9 pr-9 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 min-h-11"
         />
         {query && (
           <button

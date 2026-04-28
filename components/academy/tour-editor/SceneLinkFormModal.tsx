@@ -126,7 +126,7 @@ export default function SceneLinkFormModal({
               value={state.label ?? ''}
               onChange={(e) => setState((prev) => ({ ...prev, label: e.target.value || null }))}
               placeholder="Shown as a tooltip over the link arrow"
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11"
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 min-h-11"
             />
           </div>
 

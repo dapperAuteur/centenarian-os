@@ -196,7 +196,7 @@ export default function GlossaryEditor({ courseId, lessons }: Props) {
                 value={draft.term}
                 onChange={(e) => setDraft((d) => ({ ...d, term: e.target.value }))}
                 placeholder="e.g. Synapse"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500"
               />
             </div>
             <div>
@@ -211,7 +211,7 @@ export default function GlossaryEditor({ courseId, lessons }: Props) {
                 value={draft.phonetic}
                 onChange={(e) => setDraft((d) => ({ ...d, phonetic: e.target.value }))}
                 placeholder="e.g. SY-naps"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500"
               />
             </div>
           </div>
@@ -272,7 +272,7 @@ export default function GlossaryEditor({ courseId, lessons }: Props) {
                 onChange={(e) => setDraft((d) => ({ ...d, definition: e.target.value }))}
                 placeholder="Definition (markdown supported)…"
                 rows={3}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-fuchsia-500"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500"
               />
             )}
           </div>

@@ -652,7 +652,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
             onChange={(e) => setNewModuleTitle(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') addModule(); if (e.key === 'Escape') setAddingModule(false); }}
             placeholder="Module title…"
-            className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11"
+            className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 min-h-11"
           />
           <button onClick={addModule} className="px-4 py-2.5 bg-fuchsia-600 text-white rounded-xl text-sm font-semibold hover:bg-fuchsia-700 transition min-h-11">Add</button>
           <button onClick={() => setAddingModule(false)} className="px-3 py-2.5 bg-gray-800 text-gray-400 rounded-xl text-sm hover:bg-gray-700 transition min-h-11">Cancel</button>
@@ -847,7 +847,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                             value={editingLesson.title ?? ''}
                             onChange={(e) => setEditingLesson((l) => ({ ...l, title: e.target.value }))}
                             placeholder="Lesson title…"
-                            className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 min-h-11"
                           />
                           <div className="flex flex-wrap gap-3 items-center">
                             <select
@@ -923,7 +923,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                                     ? 'Equirectangular JPG/PNG URL (Cloudinary or external)…'
                                     : 'Content URL (YouTube, Cloudinary, or external)…'
                                 }
-                                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11"
+                                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 min-h-11"
                               />
                               {editingLesson.lesson_type === '360video' && (
                                 <>
@@ -1007,7 +1007,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                                             onChange={(e) => updateEditingChapter(ch.id, { title: e.target.value })}
                                             placeholder="e.g. Introduction"
                                             aria-label={`Chapter ${ci + 1} title`}
-                                            className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500"
+                                            className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500"
                                           />
                                           <input
                                             type="number"
@@ -1050,7 +1050,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                                   onChange={(e) => setEditingTranscriptText(e.target.value)}
                                   rows={6}
                                   placeholder={'00:00 Introduction\n00:45 Today\'s topic\n03:20 First segment…'}
-                                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 resize-none font-mono"
+                                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 resize-none font-mono"
                                 />
                               </div>
                             </div>
@@ -1158,7 +1158,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                     <input autoFocus type="text" value={newLesson.title}
                       onChange={(e) => setNewLesson((l) => ({ ...l, title: e.target.value }))}
                       placeholder="Lesson title…"
-                      className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11" />
+                      className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 min-h-11" />
                     <div className="flex flex-wrap gap-3 items-center">
                       <select value={newLesson.lesson_type}
                         onChange={(e) => setNewLesson((l) => ({ ...l, lesson_type: e.target.value }))}
@@ -1201,7 +1201,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                               ? 'Equirectangular JPG/PNG URL (Cloudinary or external)…'
                               : 'Content URL (YouTube, Cloudinary, or external)…'
                           }
-                          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 min-h-11"
+                          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 min-h-11"
                         />
                         {newLesson.lesson_type === '360video' && (
                           <>
@@ -1282,7 +1282,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                                     <input type="text" value={ch.title} onChange={(e) => updateAudioChapter(ch.id, { title: e.target.value })}
                                       placeholder="e.g. Introduction"
                                       aria-label={`Chapter ${ci + 1} title`}
-                                      className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500" />
+                                      className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500" />
                                     <input type="number" min={0} step={1} value={ch.startTime} onChange={(e) => updateAudioChapter(ch.id, { startTime: Number(e.target.value) })}
                                       className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500"
                                       title={`Chapter ${ci + 1} start time (seconds)`}
@@ -1307,7 +1307,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                           <p className="text-xs text-gray-500 mb-2">Paste timestamped transcript. Format: <code className="text-gray-400">MM:SS text</code> (one per line). For YouTube videos, use the &quot;Pull Captions&quot; button after saving.</p>
                           <textarea value={transcriptText} onChange={(e) => setTranscriptText(e.target.value)} rows={6}
                             placeholder={"00:00 Introduction\n00:45 Today's topic\n03:20 First segment…"}
-                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 resize-none font-mono" />
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 resize-none font-mono" />
                         </div>
                       </div>
                     )}
@@ -1328,14 +1328,14 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                               <span className="text-xs text-gray-500 mt-3 shrink-0">Q{qi + 1}</span>
                               <div className="flex-1 space-y-2">
                                 <input type="text" value={q.questionText} onChange={(e) => updateQuizQuestion(q.id, { questionText: e.target.value })}
-                                  placeholder="Question text…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500" />
+                                  placeholder="Question text…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500" />
                                 <div className="space-y-1.5">
                                   {q.options.map((opt) => (
                                     <div key={opt.id} className="flex items-center gap-2">
                                       <input type="radio" name={`correct-${q.id}`} checked={q.correctOptionId === opt.id}
                                         onChange={() => updateQuizQuestion(q.id, { correctOptionId: opt.id })} className="accent-green-500 shrink-0" title="Mark as correct answer" />
                                       <input type="text" value={opt.text} onChange={(e) => updateQuizOption(q.id, opt.id, e.target.value)}
-                                        placeholder="Option text…" className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500" />
+                                        placeholder="Option text…" className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500" />
                                       {q.options.length > 2 && (
                                         <button type="button" onClick={() => removeQuizOption(q.id, opt.id)} className="text-gray-400 hover:text-red-400 transition p-1">
                                           <X className="w-3 h-3" />
@@ -1348,9 +1348,9 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                                   )}
                                 </div>
                                 <input type="text" value={q.explanation} onChange={(e) => updateQuizQuestion(q.id, { explanation: e.target.value })}
-                                  placeholder="Explanation (shown after answering)…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500" />
+                                  placeholder="Explanation (shown after answering)…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500" />
                                 <input type="text" value={q.citation} onChange={(e) => updateQuizQuestion(q.id, { citation: e.target.value })}
-                                  placeholder="Citation (optional, APA format)…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-400 placeholder-gray-500 focus:outline-none focus:border-fuchsia-500" />
+                                  placeholder="Citation (optional, APA format)…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-400 placeholder-gray-400 focus:outline-none focus:border-fuchsia-500" />
                               </div>
                               <button type="button" onClick={() => removeQuizQuestion(q.id)} className="text-gray-400 hover:text-red-400 transition p-1 mt-2 shrink-0">
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -1388,9 +1388,9 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                             <div key={link.id} className="flex items-center gap-2">
                               <span className="text-xs text-gray-500 shrink-0 w-5">{li + 1}</span>
                               <input type="url" value={link.url} onChange={(e) => updatePodcastLink(link.id, { url: e.target.value })}
-                                placeholder="https://open.spotify.com/episode/..." className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500" />
+                                placeholder="https://open.spotify.com/episode/..." className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500" />
                               <input type="text" value={link.label} onChange={(e) => updatePodcastLink(link.id, { label: e.target.value })}
-                                placeholder="Label (auto-detected)" className="w-36 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500" />
+                                placeholder="Label (auto-detected)" className="w-36 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500" />
                               <button type="button" onClick={() => removePodcastLink(link.id)} className="text-gray-400 hover:text-red-400 transition p-1 shrink-0">
                                 <X className="w-3.5 h-3.5" />
                               </button>
