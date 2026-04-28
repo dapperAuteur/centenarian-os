@@ -6,6 +6,20 @@ This mistake has been made more than once. If you're about to write a file under
 
 ---
 
+## Operator-task rule — capture user actions in `./plans/user-tasks/`
+
+When Claude proposes work that needs BAM to do something outside the editor (account signup, API key, DNS change, vendor dashboard, env-var rotation, secret generation, PR review/merge, etc.), Claude MUST create a `./plans/user-tasks/NN-slug.md` file in this repo. **No exceptions for "small" steps.**
+
+Required sections per task file: **Scope tag** · **What + why** (with explicit *what this blocks* detail and any hard deadline) · **Steps** · **What Claude will use** · **How to mark done** · **Related**.
+
+Update `./plans/user-tasks/00-descriptions.md` index with columns `# | Title | Scope | Blocks | Status`. The `Blocks` column is non-negotiable — that's the column BAM scans to triage the queue.
+
+Full rule with rationale and reference task: `/Users/bam/Code_NOiCloud/ai-builds/gemini/witus/CLAUDE.md` §"Operator-task rule".
+
+**Ecosystem-wide tasks** (Keap, IRL events, weekly retros, consultant reconciliation, cross-product decisions, shared-DB migrations) live in the canonical witus queue at `gemini/witus/plans/user-tasks/`. **Repo-local tasks** (CentOS deploy, env vars, Stripe / Supabase / Gemini vendor work) live in this repo's own `./plans/user-tasks/`. Read the witus queue at session start before starting dependent work.
+
+---
+
 # CentenarianOS — Code Style & Quality Guidelines
 
 > **After reading this file, read [STYLE_GUIDE.md](STYLE_GUIDE.md) before making any changes.** It covers git workflow, branch naming, Conventional Commits, and PR rules that apply to every task. CLAUDE.md is the code-style doc; STYLE_GUIDE.md is the collaboration doc. Both are required reading.
