@@ -44,6 +44,7 @@ export default function PricingAccessTab({ course, saveCourseField }: TabProps) 
           <select
             value={course.price_type}
             onChange={(e) => saveCourseField({ price_type: e.target.value })}
+            style={{ colorScheme: 'dark' }}
             className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
           >
             <option value="free" className="bg-gray-800 text-white">Free</option>

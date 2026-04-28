@@ -245,6 +245,7 @@ export default function PrerequisitesTab({ course, courseId, saveCourseField, se
       <div className="border border-gray-700 rounded-xl p-3 space-y-2 bg-gray-800/30">
         <div className="flex flex-wrap gap-2 items-center">
           <select value={prereqAddType} onChange={(e) => setPrereqAddType(e.target.value as 'prerequisite' | 'recommendation')}
+            style={{ colorScheme: 'dark' }}
             className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white">
             <option value="prerequisite" className="bg-gray-800 text-white">Add Prerequisite</option>
             <option value="recommendation" className="bg-gray-800 text-white">Add Recommendation</option>
@@ -356,6 +357,7 @@ export default function PrerequisitesTab({ course, courseId, saveCourseField, se
                       onBlur={saveOverrideQuestions} placeholder="Question text..."
                       className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500" />
                     <select value={q.type} onChange={(e) => { updateOverrideQuestion(q.id, 'type', e.target.value); setTimeout(saveOverrideQuestions, 50); }}
+                      style={{ colorScheme: 'dark' }}
                       className="bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-xs text-white">
                       <option value="text" className="bg-gray-800 text-white">Text</option>
                       <option value="rating" className="bg-gray-800 text-white">Rating (1-5)</option>
