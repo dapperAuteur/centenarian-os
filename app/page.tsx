@@ -171,6 +171,33 @@ export default function LandingPage() {
         </nav>
       </header>
 
+      {/* Built-in-public strip — pre-launch teaser pointing at the
+          architecture deep-dive on GitHub. Plan 40 (Track E launch prep,
+          target 2026-07-06) will swap the link to the Show HN URL after
+          posting so the teaser becomes social proof. Until then, the
+          GitHub link is the dev-audience proof point and the architecture
+          + migrations docs do the heavy lifting. */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+        <a
+          href="https://github.com/dapperAuteur/centenarian-os/blob/main/ARCHITECTURE.md"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block bg-gray-900 text-white rounded-2xl px-5 py-3 sm:px-6 sm:py-4 hover:bg-gray-800 transition group"
+          aria-label="Read the architecture deep-dive on GitHub"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+            <p className="text-sm sm:text-base text-center sm:text-left">
+              <span className="font-semibold">Built in public.</span>
+              <span className="text-gray-300"> 7 months · 14 modules · 187 migrations · 1 founder · Postgres shared with a sibling app.</span>
+            </p>
+            <span className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-fuchsia-300 group-hover:text-fuchsia-200 transition shrink-0">
+              See how it&apos;s built
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" aria-hidden="true" />
+            </span>
+          </div>
+        </a>
+      </section>
+
       {/* Hero Section - Mobile First */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 md:pt-20 pb-8 sm:pb-12 md:pb-16">
         <div className="text-center max-w-3xl mx-auto">
