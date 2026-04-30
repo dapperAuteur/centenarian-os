@@ -15,6 +15,7 @@ import DataImporter from '@/components/academy/DataImporter';
 import LessonDocumentEditor from '@/components/academy/LessonDocumentEditor';
 import type { DocDraft } from '@/components/academy/LessonDocumentEditor';
 import Cloudinary360Uploader from '@/components/academy/Cloudinary360Uploader';
+import CloudinaryAudioUploader from '@/components/academy/CloudinaryAudioUploader';
 import MediaPickerModal from '@/components/academy/media-library/MediaPickerModal';
 import type { MediaAsset } from '@/lib/academy/media-types';
 import { derivePosterUrl } from '@/lib/cloudinary/poster';
@@ -969,6 +970,13 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                                   </button>
                                 </>
                               )}
+                              {editingLesson.lesson_type === 'audio' && (
+                                <CloudinaryAudioUploader
+                                  currentUrl={editingLesson.content_url}
+                                  onUploadSuccess={(url) => setEditingLesson((l) => ({ ...l, content_url: url }))}
+                                  onTitleSuggestion={(suggested) => setEditingLesson((l) => (l.title?.trim() ? l : { ...l, title: suggested }))}
+                                />
+                              )}
                             </>
                           )}
                           {/* Chapter + transcript editor — audio & video only */}
@@ -1246,6 +1254,13 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                               Pick from library
                             </button>
                           </>
+                        )}
+                        {newLesson.lesson_type === 'audio' && (
+                          <CloudinaryAudioUploader
+                            currentUrl={newLesson.content_url}
+                            onUploadSuccess={(url) => setNewLesson((l) => ({ ...l, content_url: url }))}
+                            onTitleSuggestion={(suggested) => setNewLesson((l) => (l.title?.trim() ? l : { ...l, title: suggested }))}
+                          />
                         )}
                       </>
                     )}
