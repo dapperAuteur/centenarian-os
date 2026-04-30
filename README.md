@@ -1,35 +1,67 @@
 # CentenarianOS
 
-A comprehensive personal operating system for executing multi-decade, multi-disciplinary goals through data-driven daily action.
+> **Solo-built personal OS.** 14 modules in one Next.js 14 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online)), offline-first via service-worker + IndexedDB queue, **187 migrations** to date.
 
-## Vision
+```mermaid
+flowchart LR
+  classDef shared fill:#1e1e2e,stroke:#fab387,color:#fab387,stroke-width:3px
+  classDef external fill:#11111b,stroke:#a6adc8,color:#a6adc8
 
-CentenarianOS connects long-term ambitions to daily execution through an integrated platform covering planning, nutrition, fitness, focus, finances, travel, and learning — all offline-first, privacy-focused, and tied together by cross-module analytics.
+  CentOS[centenarian-os<br/>Next.js 14 · Vercel<br/>14 modules]
+  Contractor[contractor-os<br/>Work.WitUS]
+  DB[(Supabase Postgres<br/>187 migrations)]:::shared
 
-Operated by B4C LLC / AwesomeWebStore.com. Built by [Brand Anthony McDonald](https://brandanthonymcdonald.com).
+  CentOS -->|service-role + publishable| DB
+  Contractor -->|service-role + publishable| DB
+```
 
-## Branding Hierarchy
+For dev-audience readers:
+
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** — full module map, Mermaid diagrams of the shared-DB boundary, cross-app traffic via the `unified-schedule` edge function, offline-sync layer, repo layout, and stack table.
+- **[MIGRATIONS.md](./MIGRATIONS.md)** — 187 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
+- **[CLAUDE.md](./CLAUDE.md)** — AI-collaborator instructions doubling as the project conventions doc (style, a11y, the Shared Database rule, branch workflow).
+- **[STYLE_GUIDE.md](./STYLE_GUIDE.md)** — git workflow, branch naming, Conventional Commits, PR rules. Every change starts on a new branch off `main`; `main` is never pushed to directly.
+
+What makes the architecture interesting (and the marketing pitch hard):
+
+1. **Shared database, two apps.** Both this repo and contractor-os hit the same Supabase project. Migrations are additive-only across the boundary; some columns + triggers exist purely so one app can react to writes from the other (e.g., `trg_invoice_due_to_task` materializes a planner row from a contractor invoice).
+2. **14 product modules.** Planner · Finance · Focus · Health Metrics · Wearables · Workouts · Exercises · Equipment · Travel · Fuel · Recipes · Blog · Academy/LMS · AI Coach. Plus auxiliary cross-cutting systems (Data Hub, Life Categories, Activity Links, Media Library, Smart Scan).
+3. **Offline-first with a real sync queue.** [`lib/offline/sync-manager.ts`](./lib/offline/sync-manager.ts) wraps `fetch()` with a URL-keyed IndexedDB cache for GETs and a queued mutation log for POST/PATCH/DELETE that replays on reconnect. 5-state UI indicator. Service worker stale-while-revalidate.
+4. **Multi-decade horizon.** The schema breadth is justified by the use case: a personal OS that wants to be useful for 50+ years has to model planning, money, body, learning, attention, and everything that links them, rather than picking one vertical.
+
+## Operating context
+
+Operated by B4C LLC / AwesomeWebStore.com. Built solo by [Brand Anthony McDonald](https://brandanthonymcdonald.com).
 
 ```
 B4C LLC / AwesomeWebStore.com  ← legal entity
 └── WitUS.online               ← parent brand (philosophy + product directory)
     ├── CentenarianOS.com      ← this repo — multi-decade personal OS
     │   └── Academy (LMS)      ← module inside CentenarianOS, hosts BVC curriculum
-    └── Work.WitUS.Online      ← separate app, contractor operations
+    └── Work.WitUS.Online      ← separate app, contractor operations (shares DB)
 ```
 
-The Academy is a module of CentenarianOS — not a separate product. There is no standalone "Learn.WitUS" app. Sister repos in the ecosystem: [WitUS.online](https://witus.online) (brand umbrella) and Work.WitUS (contractor operations). See [`plans/ecosystem/README.md`](./plans/ecosystem/README.md) for the full platform map.
+The Academy is a module of CentenarianOS — not a separate product. There is no standalone "Learn.WitUS" app.
 
-## Architecture
+## Stack
 
-**Modular Monolith** built with:
-- **Frontend**: Next.js 14+ (App Router), TypeScript, Tailwind CSS v4
-- **Backend**: Supabase (PostgreSQL + Real-time subscriptions + RLS)
-- **Offline**: IndexedDB with background sync queue
-- **Auth**: Supabase Auth (email/password + Cloudflare Turnstile bot prevention)
-- **Payments**: Stripe (monthly subscription, lifetime access, teacher payouts via Stripe Connect) + CashApp (lifetime only)
-- **AI**: Google Gemini (recipe ideas, weekly review summaries, CYOA embeddings, OCR, pay stub scanning)
-- **State**: React hooks + Supabase real-time
+| Layer | Choice | Notes |
+|---|---|---|
+| Framework | Next.js 14 App Router | Server Components by default, route handlers for the API surface (200+ endpoints). |
+| Hosting | Vercel | Fluid Compute for Node.js routes. |
+| Database | Supabase Postgres | RLS as the security model. **Shared with contractor-os.** |
+| Auth | `@supabase/ssr` | Cookie-based; browser + SSR via the same client. New publishable + secret key system. |
+| Styling | Tailwind v4 | WCAG 2.1 AA contrast enforced via global CSS overrides ([`app/globals.css`](./app/globals.css)). |
+| Type system | TypeScript strict | No `any` escape hatches in app code. |
+| Charts | Recharts | Admin dashboards + correlations module. |
+| Media | Cloudinary | Audio / video / image / 360° via signed uploads. |
+| Payments | Stripe Connect Express | Teacher payouts (LMS) + platform subscriptions. Webhook-driven sync. + CashApp (lifetime only). |
+| AI | Google Gemini | Coach (`gemini-2.5-flash`), embeddings (`text-embedding-004` for CYOA navigation), Vision (universal OCR). |
+| Email | Resend (via Supabase native integration) | Transactional auth + admin notifications. |
+| Bank linking | Teller | mTLS-authenticated personal-banking API. |
+| Bot prevention | Cloudflare Turnstile | Signup gate. |
+| Maps | Leaflet + OSRM | Academy lessons + travel route planning. |
+| 360° / VR | Photo Sphere Viewer | Lessons + virtual tours with hotspots. |
 
 ## Pricing
 
@@ -131,7 +163,7 @@ supabase db push
 # Run migrations in order from supabase/migrations/
 ```
 
-There are 173+ migrations. Run them in numeric order. The database is shared with the ContractorOS (Work.WitUS) app.
+There are 187 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the ContractorOS (Work.WitUS) app — read [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" before adding any.
 
 ### Run Development Server
 
@@ -181,8 +213,10 @@ centenarian-os/
 ├── content/tutorials/         # 15+ tutorial course scripts
 ├── public/templates/          # CSV import templates (10+ modules)
 └── supabase/
-    └── migrations/            # 173+ database migrations
+    └── migrations/            # 187 database migrations — see MIGRATIONS.md
 ```
+
+For the full module map and the cross-app shared-DB story, see **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
 
 ## Security
 
