@@ -103,6 +103,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
   const [savingLesson, setSavingLesson] = useState(false);
   const [editingAudioChapters, setEditingAudioChapters] = useState<Array<{ id: string; title: string; startTime: number; endTime: number }>>([]);
   const [editingTranscriptText, setEditingTranscriptText] = useState('');
+  const [editingPodcastLinks, setEditingPodcastLinks] = useState<Array<{ id: string; url: string; label: string }>>([]);
 
   // Media library picker — shared for both add-form and inline-edit-form
   // 360° flows. The target tells us which setter to call on pick.
@@ -298,6 +299,15 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
   }
   function removePodcastLink(linkId: string) { setPodcastLinks((prev) => prev.filter((l) => l.id !== linkId)); }
 
+  // Edit-mode podcast helpers — mirror the add-mode ones but mutate
+  // editingPodcastLinks so the inline editor and the new-lesson form
+  // don't trample each other's drafts.
+  function addEditingPodcastLink() { setEditingPodcastLinks((prev) => [...prev, { id: crypto.randomUUID(), url: '', label: '' }]); }
+  function updateEditingPodcastLink(linkId: string, updates: Partial<{ url: string; label: string }>) {
+    setEditingPodcastLinks((prev) => prev.map((l) => l.id === linkId ? { ...l, ...updates } : l));
+  }
+  function removeEditingPodcastLink(linkId: string) { setEditingPodcastLinks((prev) => prev.filter((l) => l.id !== linkId)); }
+
   // Bulk import
   async function handleBulkImport(rows: Record<string, string>[]) {
     setBulkImporting(true); setBulkImportResult(null);
@@ -371,13 +381,14 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
     onCourseUpdated();
   }
 
-  // Inline lesson editing — edit existing lesson title/type/URL/autoplay/free-preview/chapters/transcript
+  // Inline lesson editing — edit existing lesson title/type/URL/autoplay/free-preview/chapters/transcript/podcast-links
   async function startEditingLesson(lesson: Lesson) {
     if (expandedLessonId === lesson.id) {
       setExpandedLessonId(null);
       setEditingLesson({});
       setEditingAudioChapters([]);
       setEditingTranscriptText('');
+      setEditingPodcastLinks([]);
       return;
     }
     setExpandedLessonId(lesson.id);
@@ -391,8 +402,8 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
       video_360_poster_url: lesson.video_360_poster_url ?? null,
       module_id: lesson.module_id,
     });
-    // Fetch the full lesson to populate chapters + transcript, which
-    // aren't present on the lightweight course tree payload.
+    // Fetch the full lesson to populate chapters + transcript + podcast
+    // links, which aren't present on the lightweight course tree payload.
     try {
       const r = await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lesson.id}`);
       if (r.ok) {
@@ -416,9 +427,17 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
           })
           .join('\n');
         setEditingTranscriptText(formatted);
+        const links = Array.isArray(data.podcast_links)
+          ? data.podcast_links.map((l: { url?: string; label?: string }) => ({
+              id: crypto.randomUUID(),
+              url: l.url ?? '',
+              label: l.label ?? '',
+            }))
+          : [];
+        setEditingPodcastLinks(links);
       }
     } catch {
-      /* user can still edit the surface-level fields without chapter/transcript prefill */
+      /* user can still edit the surface-level fields without chapter/transcript/podcast prefill */
     }
   }
 
@@ -467,6 +486,15 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
           ? parseTranscriptText(editingTranscriptText)
           : null;
       }
+      // Podcast links — audio lessons only. Always send, even when empty,
+      // so the teacher can clear the list by removing all entries. Strip
+      // the React-only `id` field; the DB stores just url + label.
+      if (editingLesson.lesson_type === 'audio') {
+        const valid = editingPodcastLinks.filter((l) => l.url.trim());
+        payload.podcast_links = valid.length > 0
+          ? valid.map(({ url, label }) => ({ url: url.trim(), label: label.trim() }))
+          : null;
+      }
       const r = await offlineFetch(`/api/academy/courses/${courseId}/lessons/${expandedLessonId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -477,6 +505,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
         setEditingLesson({});
         setEditingAudioChapters([]);
         setEditingTranscriptText('');
+        setEditingPodcastLinks([]);
         setFeedback('Lesson saved');
         setTimeout(() => setFeedback(''), 2000);
         onCourseUpdated();
@@ -1063,6 +1092,59 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                               </div>
                             </div>
                           )}
+                          {/* Podcast links — audio only. Mirrors the new-lesson form
+                              block but bound to editingPodcastLinks state so existing
+                              audio lessons can have their podcast platform list
+                              edited without re-creating the whole lesson. */}
+                          {editingLesson.lesson_type === 'audio' && (
+                            <div className="space-y-2 border border-gray-700 rounded-xl p-3 bg-gray-800/30">
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-sm font-semibold text-gray-200">Podcast Links</h4>
+                                <button type="button" onClick={addEditingPodcastLink} className="flex items-center gap-1 text-xs text-fuchsia-400 hover:text-fuchsia-300 transition min-h-11">
+                                  <Plus className="w-3 h-3" aria-hidden="true" /> Add Platform
+                                </button>
+                              </div>
+                              {editingPodcastLinks.length === 0 && (
+                                <p className="text-xs text-gray-400 text-center py-2">
+                                  No podcast links. Add Spotify, Apple Podcasts, YouTube, Amazon Music, or any episode URL.
+                                </p>
+                              )}
+                              <div className="space-y-2">
+                                {editingPodcastLinks.map((link, li) => (
+                                  <div key={link.id} className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500 shrink-0 w-5">{li + 1}</span>
+                                    <input
+                                      type="url"
+                                      value={link.url}
+                                      onChange={(e) => updateEditingPodcastLink(link.id, { url: e.target.value })}
+                                      placeholder="https://open.spotify.com/episode/..."
+                                      aria-label={`Podcast link ${li + 1} URL`}
+                                      className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={link.label}
+                                      onChange={(e) => updateEditingPodcastLink(link.id, { label: e.target.value })}
+                                      placeholder="Label (auto-detected)"
+                                      aria-label={`Podcast link ${li + 1} label`}
+                                      className="w-36 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => removeEditingPodcastLink(link.id)}
+                                      aria-label={`Remove podcast link ${li + 1}`}
+                                      className="text-gray-400 hover:text-red-400 transition p-1 shrink-0 min-h-11 min-w-11 flex items-center justify-center"
+                                    >
+                                      <X className="w-3.5 h-3.5" aria-hidden="true" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                              <p className="text-xs text-gray-400">
+                                Leave label blank to auto-detect platform from URL. These render as colored buttons on the lesson page and are independent of the in-app audio player above.
+                              </p>
+                            </div>
+                          )}
                           <div className="flex flex-col sm:flex-row gap-2">
                             <button
                               type="button"
@@ -1074,7 +1156,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                             </button>
                             <button
                               type="button"
-                              onClick={() => { setExpandedLessonId(null); setEditingLesson({}); setEditingAudioChapters([]); setEditingTranscriptText(''); }}
+                              onClick={() => { setExpandedLessonId(null); setEditingLesson({}); setEditingAudioChapters([]); setEditingTranscriptText(''); setEditingPodcastLinks([]); }}
                               className="px-4 py-2 bg-gray-800 text-gray-400 rounded-lg text-sm hover:bg-gray-700 transition min-h-11"
                             >
                               Cancel
