@@ -25,7 +25,7 @@ export async function PATCH(
   const body = await request.json();
 
   // Update template fields
-  const allowed = ['name', 'description', 'category', 'estimated_duration_min', 'purpose', 'visibility'];
+  const allowed = ['name', 'description', 'category', 'category_id', 'estimated_duration_min', 'purpose', 'visibility'];
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in body) updates[key] = body[key];

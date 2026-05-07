@@ -25,20 +25,22 @@ export interface PublicWorkoutTemplate {
   name: string;
   description: string | null;
   category: string | null;
+  category_id: string | null;
   estimated_duration_min: number | null;
   done_count: number;
   like_count: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  workout_categories?: any;
   workout_template_exercises: PublicExercise[];
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  AM: 'AM Priming',
-  PM: 'PM Recovery',
-  WORKOUT_HOTEL: 'Hotel Workout',
-  WORKOUT_GYM: 'Full Gym',
-  friction: 'Friction Protocol',
-  general: 'General',
-};
+// Supabase FK join may return object or array depending on context
+function categoryName(wt: PublicWorkoutTemplate): string | null {
+  const wc = wt.workout_categories;
+  if (!wc) return null;
+  if (Array.isArray(wc)) return wc[0]?.name ?? null;
+  return wc.name ?? null;
+}
 
 export default function PublicWorkoutCard({ wt }: { wt: PublicWorkoutTemplate }) {
   const [expanded, setExpanded] = useState(false);
@@ -54,9 +56,9 @@ export default function PublicWorkoutCard({ wt }: { wt: PublicWorkoutTemplate })
           <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">{wt.description}</p>
         )}
         <div className="flex flex-wrap gap-1.5 mt-auto">
-          {wt.category && (
+          {(categoryName(wt) || wt.category) && (
             <span className="text-[11px] font-medium bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full">
-              {CATEGORY_LABELS[wt.category] ?? wt.category}
+              {categoryName(wt) ?? wt.category}
             </span>
           )}
           {wt.estimated_duration_min && (
