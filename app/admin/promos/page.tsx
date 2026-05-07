@@ -26,7 +26,6 @@ interface Campaign {
 }
 
 
-
 export default function AdminPromosPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
