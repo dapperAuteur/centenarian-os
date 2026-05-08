@@ -29,6 +29,16 @@ export async function POST(request: Request) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
+    // Surface the real Supabase failure in server logs so we can tell
+    // "user not found" / "wrong password" / "email not confirmed" apart.
+    // Never include this detail in the response — the client only needs a generic message.
+    console.error('[demo-login] supabase signInWithPassword failed', {
+      email,
+      status: error.status,
+      code: error.code,
+      name: error.name,
+      message: error.message,
+    });
     return NextResponse.json({ error: 'Demo login failed' }, { status: 500 });
   }
 
