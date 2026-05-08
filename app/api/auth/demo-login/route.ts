@@ -7,7 +7,10 @@ import { createClient } from '@/lib/supabase/server';
 import { trackUsage } from '@/lib/trackUsage';
 
 export async function POST(request: Request) {
-  const email = 'demo@centenarianos.com';
+  // /api/auth/me identifies demo users by DEMO_VISITOR_USER_EMAIL, so this route
+  // must authenticate against the same address. Fall back to the original literal
+  // for environments that haven't set the env var yet.
+  const email = process.env.DEMO_VISITOR_USER_EMAIL || 'demo@centenarianos.com';
   const password = process.env.DEMO_VISITOR_PASSWORD;
 
   if (!password) {
