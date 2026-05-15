@@ -122,6 +122,14 @@ export default function AudioPlayer({ src, chapters, transcript, onEnded, isTeac
     if (!audio) return;
     audio.currentTime = time;
     setCurrentTime(time);
+    // Start playback on seek so transcript/chapter clicks behave like
+    // YouTube/Otter — "play from here" rather than "scrub to here". Without
+    // this, clicking while paused silently moves the playhead with no audio.
+    const playPromise = audio.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(() => { /* autoplay policy or other transient; user can press play */ });
+    }
+    setPlaying(true);
   }
 
   function handleProgressClick(e: React.MouseEvent<HTMLDivElement>) {

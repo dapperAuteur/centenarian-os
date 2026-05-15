@@ -45,7 +45,7 @@ function Lesson360VideoPlayerInner({
   onEnded,
 }: Lesson360VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const videoPluginRef = useRef<{ setTime: (t: number) => void } | null>(null);
+  const videoPluginRef = useRef<{ setTime: (t: number) => void; play: () => void } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
@@ -194,7 +194,14 @@ function Lesson360VideoPlayerInner({
         <TranscriptPanel
           transcript={transcript!}
           currentTime={currentTime}
-          onSeek={(s) => videoPluginRef.current?.setTime(s)}
+          onSeek={(s) => {
+            // Seek + play — clicking a transcript line should jump and resume
+            // playback, matching the audio/video/YouTube transcript behavior.
+            const plugin = videoPluginRef.current;
+            if (!plugin) return;
+            plugin.setTime(s);
+            try { plugin.play(); } catch { /* plugin may not be ready */ }
+          }}
           onCollapse={() => setShowTranscript(false)}
         />
       )}

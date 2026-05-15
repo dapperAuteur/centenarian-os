@@ -99,6 +99,13 @@ export default function VideoPlayer({ src, chapters, transcript, onEnded }: Vide
     if (!video) return;
     video.currentTime = time;
     setCurrentTime(time);
+    // Start playback on seek so transcript/chapter clicks behave like
+    // YouTube/Otter — "play from here" rather than "scrub to here". The
+    // onPlay listener will sync React state.
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(() => { /* autoplay policy or other transient; user can press play */ });
+    }
   }
 
   function handleProgressClick(e: React.MouseEvent<HTMLDivElement>) {
