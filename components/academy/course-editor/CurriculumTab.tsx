@@ -169,7 +169,51 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
     if (r.ok) { setNewModuleTitle(''); setAddingModule(false); onCourseUpdated(); }
   }
 
-  function parseTranscriptText(raw: string): Array<{ startTime: number; endTime: number; text: string }> {
+  function parseTranscriptText(rawInput: string): Array<{ startTime: number; endTime: number; text: string }> {
+    // Normalize CRLF → LF up front so SRT exports from Windows/Mac don't
+    // leave stray \r chars inside text segments or break block splitting.
+    const raw = rawInput.replace(/\r\n?/g, '\n');
+
+    // "00:01:23,456" / "00:01:23.456" / "01:23,456" / "01:23.456" → seconds
+    function parseTimecode(tc: string): number {
+      const m = tc.match(/^(?:(\d{1,2}):)?(\d{1,2}):(\d{2})[,.](\d{1,3})$/);
+      if (!m) return NaN;
+      const [, h, mm, ss, ms] = m;
+      return Number(h ?? 0) * 3600 + Number(mm) * 60 + Number(ss) + Number(ms) / 1000;
+    }
+
+    const cueRangeRe = /^(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})/;
+
+    // SRT/VTT detection: any line is a cue timecode range.
+    const isCueFormat = raw.split('\n').some((l) => cueRangeRe.test(l.trim()));
+
+    if (isCueFormat) {
+      const segments: Array<{ startTime: number; endTime: number; text: string }> = [];
+      // Strip WebVTT header + NOTE/STYLE blocks, then walk cue blocks
+      // separated by blank lines. Each block is: [optional id line] /
+      // timecode-range line / one or more text lines.
+      const stripped = raw.replace(/^﻿?WEBVTT[^\n]*\n/, '');
+      const blocks = stripped.split(/\n\s*\n/);
+      for (const block of blocks) {
+        const trimmed = block.trim();
+        if (!trimmed) continue;
+        if (/^(NOTE|STYLE|REGION)\b/i.test(trimmed)) continue;
+        const lines = trimmed.split('\n');
+        const rangeIdx = lines.findIndex((l) => cueRangeRe.test(l.trim()));
+        if (rangeIdx === -1) continue;
+        const rangeMatch = lines[rangeIdx].trim().match(cueRangeRe);
+        if (!rangeMatch) continue;
+        const startTime = parseTimecode(rangeMatch[1]);
+        const endTime = parseTimecode(rangeMatch[2]);
+        if (!Number.isFinite(startTime) || !Number.isFinite(endTime)) continue;
+        const text = lines.slice(rangeIdx + 1).join(' ').trim();
+        if (!text) continue;
+        segments.push({ startTime, endTime, text });
+      }
+      return segments;
+    }
+
+    // Simple "MM:SS text" / "HH:MM:SS text" per-line fallback (legacy format).
     const lines = raw.split('\n').filter((l) => l.trim());
     const segments: Array<{ startTime: number; endTime: number; text: string }> = [];
     for (const line of lines) {
@@ -204,7 +248,15 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
     }
     if (newLesson.lesson_type === 'audio' || newLesson.lesson_type === 'video' || newLesson.lesson_type === '360video') {
       if (audioChapters.length > 0) payload.audio_chapters = audioChapters;
-      if (transcriptText.trim()) payload.transcript_content = parseTranscriptText(transcriptText);
+      if (transcriptText.trim()) {
+        const parsed = parseTranscriptText(transcriptText);
+        if (parsed.length === 0) {
+          setFeedback("Couldn't parse any timestamped lines from the transcript. Use SRT, WebVTT, or 'MM:SS text' per line.");
+          setTimeout(() => setFeedback(''), 6000);
+          return;
+        }
+        payload.transcript_content = parsed;
+      }
     }
     if (newLesson.lesson_type === 'audio') {
       const validLinks = podcastLinks.filter((l) => l.url.trim());
@@ -482,9 +534,18 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
       }
       if (editingLesson.lesson_type === 'audio' || editingLesson.lesson_type === 'video' || editingLesson.lesson_type === '360video') {
         payload.audio_chapters = editingAudioChapters.length > 0 ? editingAudioChapters : null;
-        payload.transcript_content = editingTranscriptText.trim()
-          ? parseTranscriptText(editingTranscriptText)
-          : null;
+        if (editingTranscriptText.trim()) {
+          const parsed = parseTranscriptText(editingTranscriptText);
+          if (parsed.length === 0) {
+            setSavingLesson(false);
+            setFeedback("Couldn't parse any timestamped lines from the transcript. Use SRT, WebVTT, or 'MM:SS text' per line.");
+            setTimeout(() => setFeedback(''), 6000);
+            return;
+          }
+          payload.transcript_content = parsed;
+        } else {
+          payload.transcript_content = null;
+        }
       }
       // Podcast links — audio lessons only. Always send, even when empty,
       // so the teacher can clear the list by removing all entries. Strip
@@ -1080,7 +1141,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                               <div>
                                 <label className="block text-sm font-semibold text-gray-200 mb-1.5">Transcript</label>
                                 <p className="text-xs text-gray-500 mb-2">
-                                  Paste timestamped transcript. Format: <code className="text-gray-400">MM:SS text</code> (one per line).
+                                  Paste an SRT export, a WebVTT file, or use <code className="text-gray-400">MM:SS text</code> (one per line). Most video tools (DaVinci Resolve, Premiere, CapCut) export SRT directly.
                                 </p>
                                 <textarea
                                   value={editingTranscriptText}
@@ -1401,7 +1462,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                         </div>
                         <div>
                           <label className="block text-sm font-semibold text-gray-200 mb-1.5">Transcript</label>
-                          <p className="text-xs text-gray-500 mb-2">Paste timestamped transcript. Format: <code className="text-gray-400">MM:SS text</code> (one per line). For YouTube videos, use the &quot;Pull Captions&quot; button after saving.</p>
+                          <p className="text-xs text-gray-500 mb-2">Paste an SRT export, a WebVTT file, or use <code className="text-gray-400">MM:SS text</code> (one per line). Most video tools (DaVinci Resolve, Premiere, CapCut) export SRT directly. For YouTube videos, use the &quot;Pull Captions&quot; button after saving.</p>
                           <textarea value={transcriptText} onChange={(e) => setTranscriptText(e.target.value)} rows={6}
                             placeholder={"00:00 Introduction\n00:45 Today's topic\n03:20 First segment…"}
                             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 resize-none font-mono" />
