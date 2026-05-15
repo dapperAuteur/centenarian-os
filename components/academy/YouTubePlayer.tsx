@@ -244,6 +244,9 @@ export default function YouTubePlayer({
     if (!player) return;
     player.seekTo(time, true);
     setCurrentTime(time);
+    // Start playback on seek so transcript/chapter clicks behave like
+    // YouTube's own transcript UI — "play from here," not "scrub to here."
+    try { player.playVideo(); } catch { /* iframe API may not be ready yet */ }
   }
 
   function handleProgressClick(e: React.MouseEvent<HTMLDivElement>) {
