@@ -273,7 +273,10 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
       };
     }
     if (lessonDocuments.length > 0) {
-      payload.documents = lessonDocuments.filter((d) => d.url.trim());
+      // Mirror the edit-path filter (title OR url) so a teacher who saved
+      // a title-only stub on create doesn't have it silently dropped here
+      // while the same shape survives a subsequent PATCH.
+      payload.documents = lessonDocuments.filter((d) => d.title.trim() || d.url.trim());
     }
     const r = await offlineFetch(`/api/academy/courses/${courseId}/lessons`, {
       method: 'POST',
