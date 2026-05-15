@@ -33,8 +33,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
       override_questions, allow_cross_course_cyoa, bvc_season,
       created_at, teacher_id,
       profiles(username, display_name, avatar_url),
-      course_modules(id, title, order,
-        lessons(id, title, lesson_type, duration_seconds, order, is_free_preview, content_url, text_content, video_360_autoplay, video_360_poster_url, created_at, updated_at)
+      course_modules(id, title, order, is_published,
+        lessons(id, title, lesson_type, duration_seconds, order, is_free_preview, is_published, content_url, text_content, video_360_autoplay, video_360_poster_url, created_at, updated_at)
       )
     `)
     .eq('id', id)
@@ -62,6 +62,22 @@ export async function GET(_req: NextRequest, { params }: Params) {
     if (!isVisible) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
+
+    // Module + lesson level draft filtering (migration 187). Owners + admins
+    // see drafts so they can author; students see only published modules and
+    // published lessons within those modules. An unpublished module hides
+    // all its lessons, even ones individually marked published — the module
+    // is the outer gate.
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    if (Array.isArray((course as any).course_modules)) {
+      (course as any).course_modules = ((course as any).course_modules as any[])
+        .filter((m: any) => m.is_published !== false)
+        .map((m: any) => ({
+          ...m,
+          lessons: (m.lessons ?? []).filter((l: any) => l.is_published !== false),
+        }));
+    }
+    /* eslint-enable @typescript-eslint/no-explicit-any */
   }
 
   // Determine enrollment status, liked, and saved

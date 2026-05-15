@@ -31,7 +31,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   if (!ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const body = await request.json();
-  const allowed = ['title', 'order'];
+  const allowed = ['title', 'order', 'is_published'];
   const updates = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
 
   const db = getDb();
