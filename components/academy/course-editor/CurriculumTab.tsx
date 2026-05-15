@@ -8,7 +8,7 @@ import { useState } from 'react';
 import {
   Plus, Loader2, Trash2, Upload, Download, Play, FileText, Volume2,
   Presentation, HelpCircle, X, Map, ChevronDown, ChevronUp, Paperclip,
-  Compass, Image as ImageIcon, Pencil,
+  Compass, Image as ImageIcon, Pencil, Eye, EyeOff,
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import DataImporter from '@/components/academy/DataImporter';
@@ -30,6 +30,7 @@ interface Lesson {
   duration_seconds: number | null;
   order: number;
   is_free_preview: boolean;
+  is_published?: boolean;
   module_id: string | null;
   video_360_autoplay?: boolean | null;
   video_360_poster_url?: string | null;
@@ -39,6 +40,7 @@ interface Module {
   id: string;
   title: string;
   order: number;
+  is_published?: boolean;
   lessons: Lesson[];
 }
 
@@ -379,6 +381,40 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
   async function deleteLesson(lessonId: string) {
     await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}`, { method: 'DELETE' });
     onCourseUpdated();
+  }
+
+  // Draft toggle — flip is_published on a module or lesson. Default for
+  // existing rows is true (migration 187), so the first click on a module/
+  // lesson that hasn't been touched goes from true to false (hides it from
+  // students). Owners + admins keep seeing drafts so authoring continues.
+  async function toggleModulePublished(moduleId: string, current: boolean | undefined) {
+    const next = current === false ? true : false;
+    const r = await offlineFetch(`/api/academy/courses/${courseId}/modules/${moduleId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_published: next }),
+    });
+    if (r.ok) onCourseUpdated();
+    else {
+      const data = await r.json().catch(() => ({}));
+      setFeedback(data.error || `Could not change module status (${r.status})`);
+      setTimeout(() => setFeedback(''), 5000);
+    }
+  }
+
+  async function toggleLessonPublished(lessonId: string, current: boolean | undefined) {
+    const next = current === false ? true : false;
+    const r = await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_published: next }),
+    });
+    if (r.ok) onCourseUpdated();
+    else {
+      const data = await r.json().catch(() => ({}));
+      setFeedback(data.error || `Could not change lesson status (${r.status})`);
+      setTimeout(() => setFeedback(''), 5000);
+    }
   }
 
   // Swap two records' `order` values via two parallel PATCHes. Both the
@@ -866,6 +902,23 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                     </button>
                   </div>
                   <p className="flex-1 font-medium text-white text-sm">{mod.title}</p>
+                  {mod.is_published === false && (
+                    <span
+                      className="text-[10px] uppercase tracking-wide font-semibold text-amber-300 px-1.5 py-0.5 bg-amber-900/30 border border-amber-800/50 rounded shrink-0"
+                      title="This module is a draft. Students don't see it; only you and admins do."
+                    >
+                      Draft
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => toggleModulePublished(mod.id, mod.is_published)}
+                    className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center text-gray-400 hover:text-fuchsia-400 transition shrink-0"
+                    aria-label={mod.is_published === false ? `Publish module "${mod.title}"` : `Move module "${mod.title}" to draft`}
+                    title={mod.is_published === false ? 'Click to publish (show to students)' : 'Click to move to draft (hide from students)'}
+                  >
+                    {mod.is_published === false ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
                   <span className="text-gray-400 text-xs">{lessons.length} lesson{lessons.length !== 1 ? 's' : ''}</span>
                 </div>
 
@@ -903,9 +956,26 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                         </div>
                         <Icon className="w-3.5 h-3.5 text-gray-500 shrink-0" />
                         <span className="flex-1 text-sm text-gray-300 min-w-0 truncate">{lesson.title}</span>
+                        {lesson.is_published === false && (
+                          <span
+                            className="text-[10px] uppercase tracking-wide font-semibold text-amber-300 px-1.5 py-0.5 bg-amber-900/30 border border-amber-800/50 rounded shrink-0"
+                            title="This lesson is a draft. Students don't see it; only you and admins do."
+                          >
+                            Draft
+                          </span>
+                        )}
                         {lesson.is_free_preview && (
                           <span className="text-xs text-fuchsia-400 px-1.5 py-0.5 bg-fuchsia-900/30 rounded shrink-0">Preview</span>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => toggleLessonPublished(lesson.id, lesson.is_published)}
+                          className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center text-gray-400 hover:text-fuchsia-400 transition shrink-0"
+                          aria-label={lesson.is_published === false ? `Publish lesson "${lesson.title}"` : `Move lesson "${lesson.title}" to draft`}
+                          title={lesson.is_published === false ? 'Click to publish (show to students)' : 'Click to move to draft (hide from students)'}
+                        >
+                          {lesson.is_published === false ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
                         <button type="button" onClick={() => startEditingLesson(lesson)}
                           className={`p-2 transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center ${isEditingLesson ? 'text-fuchsia-400' : 'text-gray-400 hover:text-fuchsia-400'}`}
                           aria-label="Edit lesson details, content, chapters, and transcript"
