@@ -1,0 +1,23 @@
+#!/bin/sh
+# WitUS branch-hygiene guard: never commit directly on main/master.
+# Claude branches -> commits -> pushes; BAM merges. See CLAUDE.md
+# §"Branch hygiene".
+#
+# Activate once per clone (not automatic on checkout):
+#   git config core.hooksPath .githooks
+#
+# Genuine one-off override: git commit --no-verify
+
+branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then
+  echo "" >&2
+  echo "  Refusing to commit directly on '$branch'." >&2
+  echo "  Branch first:  git checkout -b feat/... (or fix/ chore/ docs/)" >&2
+  echo "  BAM merges to $branch; Claude never commits on it directly." >&2
+  echo "  Override for a real one-off:  git commit --no-verify" >&2
+  echo "" >&2
+  exit 1
+fi
+
+exit 0
