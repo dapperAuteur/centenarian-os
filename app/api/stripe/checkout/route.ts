@@ -1,15 +1,16 @@
 // app/api/stripe/checkout/route.ts
-// Creates a Stripe Checkout session for monthly, lifetime, teacher, or
+// Creates a Stripe Checkout session for monthly, annual, lifetime, teacher, or
 // Starter plans. Starter plans carry a `selected_modules` payload (the
 // 3 module slugs the user picked) through to the webhook via metadata.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { stripe } from '@/lib/stripe';
 import { isValidStarterSelection } from '@/lib/access/starter-modules';
 
 const VALID_PLANS = [
-  'monthly', 'lifetime', 'teacher', 'teacher-annual',
+  'monthly', 'annual', 'lifetime', 'teacher', 'teacher-annual',
   'starter-monthly', 'starter-annual',
 ];
 
@@ -148,8 +149,33 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+  } else if (plan === 'annual') {
+    const annualPriceId = process.env.STRIPE_ANNUAL_PRICE_ID;
+    if (!annualPriceId) {
+      return NextResponse.json({ error: 'Annual plan not configured' }, { status: 503 });
+    }
+    session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      mode: 'subscription',
+      line_items: [{ price: annualPriceId, quantity: 1 }],
+      success_url: `${baseUrl}/dashboard/billing?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/pricing`,
+      metadata: { supabase_user_id: user.id, plan: 'annual' },
+    });
   } else {
-    // lifetime
+    // lifetime — check if founders slots are still available
+    const svc = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    const [limitRes, paidRes, cashappRes] = await Promise.all([
+      svc.from('platform_settings').select('value').eq('key', 'lifetime_founders_limit').maybeSingle(),
+      svc.from('profiles').select('id', { count: 'exact', head: true }).eq('subscription_status', 'lifetime').not('stripe_customer_id', 'is', null),
+      svc.from('cashapp_payments').select('id', { count: 'exact', head: true }).eq('status', 'verified'),
+    ]);
+    const limit = Number(limitRes.data?.value ?? '100');
+    const paidCount = (paidRes.count ?? 0) + (cashappRes.count ?? 0);
+    if (paidCount >= limit) {
+      return NextResponse.json({ error: 'Lifetime founder slots sold out. Choose the Annual plan instead.' }, { status: 410 });
+    }
+
     session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'payment',

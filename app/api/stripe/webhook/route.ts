@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
         if (error) {
           logError({ source: 'webhook', module: 'stripe', message: 'Failed to update starter status', metadata: { error: error.message }, userId });
         }
-      } else if (session.mode === 'subscription' && plan === 'monthly') {
+      } else if (session.mode === 'subscription' && (plan === 'monthly' || plan === 'annual')) {
         // Expand subscription to get current_period_end for renewal date.
         // In Stripe API 2024-09-30+ (acacia/clover), this field moved to SubscriptionItem.
         let subscriptionExpiresAt: string | null = null;
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
         const { error } = await supabase
           .from('profiles')
           .update({
-            subscription_status: 'monthly',
+            subscription_status: plan === 'annual' ? 'annual' : 'monthly',
             stripe_subscription_id: session.subscription as string,
             subscription_expires_at: subscriptionExpiresAt,
             cancel_at_period_end: false,
