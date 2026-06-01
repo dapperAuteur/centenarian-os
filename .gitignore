@@ -192,3 +192,6 @@ plans/
 playwright-report/
 test-results/
 
+
+# .env.example must be tracked (ecosystem rule)
+!.env.example
