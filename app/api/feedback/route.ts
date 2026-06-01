@@ -2,10 +2,11 @@
 // Accepts user feedback submissions and stores them in user_feedback table.
 // Notifies admin via email when feedback is submitted.
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { getResend } from '@/lib/email/resend';
+import { mirrorFeedbackToInbox } from '@/lib/feedback/inbox-mirror';
 
 function getServiceClient() {
   return createServiceClient(
@@ -99,6 +100,18 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     console.error('[feedback] Admin email failed:', e);
   }
+
+  // Non-blocking mirror to the WitUS Inbox (→ Triage). user_feedback stays the
+  // system of record; this just gets the submission into BAM's one triage view.
+  after(() =>
+    mirrorFeedbackToInbox({
+      category: category as string,
+      message: message.trim(),
+      feedbackId: data.id,
+      kind: 'new',
+      submitterEmail: user.email,
+    })
+  );
 
   return NextResponse.json({ id: data.id }, { status: 201 });
 }

@@ -2,10 +2,11 @@
 // GET: user views replies to their feedback
 // POST: user adds a reply to their own feedback thread
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { getResend } from '@/lib/email/resend';
+import { mirrorFeedbackToInbox } from '@/lib/feedback/inbox-mirror';
 
 function getDb() {
   return createServiceClient(
@@ -88,6 +89,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
   } catch (e) {
     console.error('[feedback-reply] Email failed:', e);
+  }
+
+  // Mirror user (not admin) replies to the WitUS Inbox, non-blocking, so the
+  // follow-up reaches BAM's triage view. Admin replies are BAM's own.
+  if (!isAdmin) {
+    after(() =>
+      mirrorFeedbackToInbox({
+        category: feedback.category,
+        message: body.trim(),
+        feedbackId: id,
+        kind: 'reply',
+        submitterEmail: user.email,
+      })
+    );
   }
 
   return NextResponse.json({ id: reply.id }, { status: 201 });
