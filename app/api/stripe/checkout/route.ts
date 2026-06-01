@@ -23,10 +23,17 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { plan, selected_modules } = body as { plan?: string; selected_modules?: unknown };
+  const { plan, selected_modules, stripeCouponId } = body as {
+    plan?: string;
+    selected_modules?: unknown;
+    stripeCouponId?: string;
+  };
   if (!plan || !VALID_PLANS.includes(plan)) {
     return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
   }
+
+  // Set when an active lifetime promo unlocks a post-sellout lifetime purchase.
+  let promoCampaignId: string | null = null;
 
   const isStarterPlan = plan === 'starter-monthly' || plan === 'starter-annual';
   if (isStarterPlan) {
@@ -172,18 +179,54 @@ export async function POST(request: NextRequest) {
     ]);
     const limit = Number(limitRes.data?.value ?? '100');
     const paidCount = (paidRes.count ?? 0) + (cashappRes.count ?? 0);
+
+    // After founders sell out, lifetime is closed UNLESS an active admin
+    // promo (app='centenarian') re-opens it. A valid promo's coupon bypasses
+    // the gate; we stamp the campaign id so redemption increments its uses.
     if (paidCount >= limit) {
-      return NextResponse.json({ error: 'Lifetime founder slots sold out. Choose the Annual plan instead.' }, { status: 410 });
+      let matchedCampaignId: string | null = null;
+      if (stripeCouponId) {
+        const now = new Date().toISOString();
+        const { data: campaign } = await svc
+          .from('admin_promo_campaigns')
+          .select('id, is_active, plan_types, app, start_date, end_date, max_uses, current_uses')
+          .eq('stripe_coupon_id', stripeCouponId)
+          .eq('app', 'centenarian')
+          .eq('is_active', true)
+          .lte('start_date', now)
+          .or(`end_date.is.null,end_date.gte.${now}`)
+          .maybeSingle();
+        if (campaign) {
+          const planTypes = Array.isArray(campaign.plan_types) ? campaign.plan_types : [];
+          const allowsLifetime = planTypes.includes('lifetime');
+          const withinCap = campaign.max_uses === null || (campaign.current_uses ?? 0) < campaign.max_uses;
+          if (allowsLifetime && withinCap) matchedCampaignId = campaign.id;
+        }
+      }
+      if (!matchedCampaignId) {
+        return NextResponse.json({ error: 'Lifetime founder slots sold out. Choose the Annual plan instead.' }, { status: 410 });
+      }
+      promoCampaignId = matchedCampaignId;
     }
 
-    session = await stripe.checkout.sessions.create({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lifetimeParams: Record<string, any> = {
       customer: customerId,
       mode: 'payment',
       line_items: [{ price: process.env.STRIPE_LIFETIME_PRICE_ID!, quantity: 1 }],
       success_url: `${baseUrl}/dashboard/billing?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/pricing`,
-      metadata: { supabase_user_id: user.id, plan: 'lifetime' },
-    });
+      metadata: {
+        supabase_user_id: user.id,
+        plan: 'lifetime',
+        ...(promoCampaignId ? { promo_campaign_id: promoCampaignId } : {}),
+      },
+    };
+    // Auto-apply the promo coupon (the lifetime base price never changes).
+    if (stripeCouponId && promoCampaignId) {
+      lifetimeParams.discounts = [{ coupon: stripeCouponId }];
+    }
+    session = await stripe.checkout.sessions.create(lifetimeParams);
   }
 
   return NextResponse.json({ url: session.url });

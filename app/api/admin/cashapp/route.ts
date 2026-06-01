@@ -9,6 +9,7 @@ import { cookies } from 'next/headers';
 import { createShopifyPromoCode } from '@/lib/shopify/createPromoCode';
 import { getResend } from '@/lib/email/resend';
 import { logInfo, logError } from '@/lib/logging';
+import { incrementCampaignUses } from '@/lib/promo/active-lifetime-promo';
 
 function getServiceClient() {
   return createClient(
@@ -86,7 +87,7 @@ export async function PATCH(request: NextRequest) {
   // Fetch the payment
   const { data: payment } = await db
     .from('cashapp_payments')
-    .select('id, user_id, status')
+    .select('id, user_id, status, promo_campaign_id')
     .eq('id', id)
     .maybeSingle();
 
@@ -135,6 +136,16 @@ export async function PATCH(request: NextRequest) {
     }
 
     logInfo({ source: 'admin', module: 'cashapp', message: 'CashApp payment verified — lifetime activated', metadata: { paymentId: id }, userId: payment.user_id });
+
+    // If this CashApp payment redeemed an admin promo, increment its use count
+    // (auto-deactivates the campaign when the quantity cap is reached).
+    if (payment.promo_campaign_id) {
+      try {
+        await incrementCampaignUses(db, payment.promo_campaign_id);
+      } catch (err) {
+        logError({ source: 'admin', module: 'cashapp', message: 'Failed to increment promo campaign uses', metadata: { error: err instanceof Error ? err.message : String(err), promoCampaignId: payment.promo_campaign_id }, userId: payment.user_id });
+      }
+    }
 
     // Send confirmation email to user
     const { data: userAuth } = await db.auth.admin.getUserById(payment.user_id);
