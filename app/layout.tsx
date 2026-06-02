@@ -8,6 +8,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 import SocialReferralTracker from '@/components/SocialReferralTracker';
+import MarketingBanner from '@/components/marketing/MarketingBanner';
 import { ToastProvider } from '@/components/ui/ToastProvider';
 import { organizationSchema, softwareApplicationSchema } from '@/lib/seo/json-ld';
 import { getLocale, getDictionary } from '@/lib/i18n/server';
@@ -100,6 +101,7 @@ export default async function RootLayout({
       <body className={inter.className}>
         <LocaleProvider value={bundle}>
           <ToastProvider>
+            <MarketingBanner />
             {children}
           <SocialReferralTracker />
           <Analytics />

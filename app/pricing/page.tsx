@@ -54,6 +54,30 @@ function SwapActionTrigger({ onSwap }: { onSwap: () => void }) {
 
 const POLICIES = 'No Refunds. Cancel Anytime. Monthly fees are not transferable to lifetime membership.';
 
+// Lifetime list price. NEVER changes — admin promos discount it via a Stripe
+// coupon applied at checkout; this constant is the strike-through base.
+const LIFETIME_PRICE = 103.29;
+
+interface ActiveLifetimePromo {
+  id: string;
+  name: string;
+  discount_type: string;
+  discount_value: number;
+  stripe_coupon_id: string | null;
+  promo_code: string | null;
+  end_date: string | null;
+  max_uses: number | null;
+  current_uses: number;
+  remaining_uses: number | null;
+}
+
+function applyDiscount(price: number, promo: ActiveLifetimePromo | null): number {
+  if (!promo) return price;
+  if (promo.discount_type === 'percentage') return Math.round(price * (1 - promo.discount_value / 100) * 100) / 100;
+  if (promo.discount_type === 'fixed') return Math.max(0, Math.round((price - promo.discount_value) * 100) / 100);
+  return price;
+}
+
 export default function PricingPage() {
   const { user } = useAuth();
   const { status: subStatus, selectedModules: currentModules, refresh: refreshSubscription } = useSubscription();
@@ -65,6 +89,8 @@ export default function PricingPage() {
   const [pendingPlan, setPendingPlan] = useState<'monthly' | 'annual' | 'lifetime' | null>(null);
   const [foundersRemaining, setFoundersRemaining] = useState<number | null>(null);
   const [annualAvailable, setAnnualAvailable] = useState(false);
+  const [activeLifetimePromo, setActiveLifetimePromo] = useState<ActiveLifetimePromo | null>(null);
+  const [showLifetime, setShowLifetime] = useState(true);
   const [showCashApp, setShowCashApp] = useState(false);
   const [cashAppName, setCashAppName] = useState('');
   const [cashAppSubmitting, setCashAppSubmitting] = useState(false);
@@ -79,18 +105,36 @@ export default function PricingPage() {
   useEffect(() => {
     fetch('/api/pricing/founders')
       .then((r) => r.json())
-      .then((d) => { if (d.active) setFoundersRemaining(d.remaining); setAnnualAvailable(d.annualAvailable ?? false); })
+      .then((d) => {
+        if (d.active) setFoundersRemaining(d.remaining);
+        setAnnualAvailable(d.annualAvailable ?? false);
+        // show_lifetime: founders active OR an admin lifetime promo is running.
+        setShowLifetime(d.show_lifetime ?? d.active ?? true);
+        setActiveLifetimePromo(d.active_lifetime_promo ?? null);
+      })
       .catch(() => {});
   }, []);
+
+  // The discounted lifetime price (promo never changes the $103.29 base in
+  // Stripe — this is display only; Stripe applies the coupon at checkout).
+  const discountedLifetime = applyDiscount(LIFETIME_PRICE, activeLifetimePromo);
+  const hasLifetimeDiscount = activeLifetimePromo !== null && discountedLifetime < LIFETIME_PRICE;
 
   async function handleCheckout(plan: 'monthly' | 'annual' | 'lifetime') {
     setLoadingPlan(plan);
     setError(null);
     try {
+      // For a lifetime purchase during an active admin promo, pass the promo's
+      // Stripe coupon so checkout auto-applies the discount AND bypasses the
+      // founders sold-out gate (the route re-validates the campaign server-side).
+      const checkoutBody: { plan: string; stripeCouponId?: string } = { plan };
+      if (plan === 'lifetime' && activeLifetimePromo?.stripe_coupon_id) {
+        checkoutBody.stripeCouponId = activeLifetimePromo.stripe_coupon_id;
+      }
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify(checkoutBody),
       });
 
       if (res.status === 401) {
@@ -374,111 +418,145 @@ export default function PricingPage() {
             </button>
           </div>
 
-          {/* Lifetime / Annual Plan — swaps when founders slots sell out */}
-          <div className="bg-linear-to-b from-gray-900 to-gray-800 rounded-2xl border-2 border-gray-700 p-8 flex flex-col text-white relative">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span className="bg-lime-500 text-gray-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
-                Best Value
-              </span>
-            </div>
+          {/* Lifetime — shown while founders slots remain OR an admin promo re-opens it */}
+          {showLifetime && (
+            <div className="bg-linear-to-b from-gray-900 to-gray-800 rounded-2xl border-2 border-gray-700 p-8 flex flex-col text-white relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="bg-lime-500 text-gray-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+                  {hasLifetimeDiscount ? 'Promo' : 'Best Value'}
+                </span>
+              </div>
 
-            {annualAvailable ? (
-              <>
-                {/* Annual plan — shown after lifetime founders slots sell out */}
-                <div className="mb-6">
-                  <h2 className="text-xl font-bold mb-1">Annual</h2>
-                  <p className="text-gray-400 text-sm">Full access, billed yearly</p>
-                  <div className="mt-4">
-                    <span className="text-4xl font-extrabold">$103.29</span>
-                    <span className="text-gray-400 text-sm ml-1">/year</span>
-                  </div>
-                  <p className="text-xs text-lime-400 mt-2">
-                    Save vs. monthly ($127.20/yr)
-                  </p>
-                </div>
-                <ul className="space-y-3 mb-8 flex-1">
-                  {[
-                    'Everything in Monthly',
-                    'Save $23.91/year vs monthly',
-                    'Annual commitment, cancel anytime',
-                  ].map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
-                      <Check className="w-4 h-4 text-lime-400 mt-0.5 shrink-0" aria-hidden="true" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  onClick={() => handleCheckout('annual')}
-                  disabled={loadingPlan !== null}
-                  className="w-full px-4 py-3 bg-lime-500 text-gray-900 rounded-lg hover:bg-lime-400 transition-colors font-bold text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {loadingPlan === 'annual' ? (
-                    <span className="animate-spin inline-block w-4 h-4 border-2 border-gray-900 border-t-transparent rounded-full" />
+              <div className="mb-6">
+                <h2 className="text-xl font-bold mb-1">Lifetime</h2>
+                <p className="text-gray-400 text-sm">Pay once, own it forever</p>
+                <div className="mt-4">
+                  {hasLifetimeDiscount ? (
+                    <>
+                      <span className="text-2xl text-gray-500 line-through">${LIFETIME_PRICE.toFixed(2)}</span>
+                      <span className="text-4xl font-extrabold text-lime-400 ml-2">${discountedLifetime.toFixed(2)}</span>
+                      <span className="text-gray-400 text-sm ml-1">one-time</span>
+                    </>
                   ) : (
-                    <Zap className="w-4 h-4" />
+                    <>
+                      <span className="text-4xl font-extrabold">${LIFETIME_PRICE.toFixed(2)}</span>
+                      <span className="text-gray-400 text-sm ml-1">one-time</span>
+                    </>
                   )}
-                  {loadingPlan === 'annual' ? 'Redirecting...' : 'Start Annual'}
-                </button>
-              </>
-            ) : (
-              <>
-                {/* Lifetime founders plan — shown while slots remain */}
-                <div className="mb-6">
-                  <h2 className="text-xl font-bold mb-1">Lifetime</h2>
-                  <p className="text-gray-400 text-sm">Pay once, own it forever</p>
-                  <div className="mt-4">
-                    <span className="text-4xl font-extrabold">$103.29</span>
-                    <span className="text-gray-400 text-sm ml-1">one-time</span>
-                  </div>
-                  {foundersRemaining !== null && (
-                    <div className="mt-3">
-                      <p className="text-xs font-semibold text-lime-400 uppercase tracking-wider mb-1.5">
-                        Founder&apos;s Price — {foundersRemaining} of 100 remaining
-                      </p>
-                      <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-lime-400 rounded-full transition-all duration-500"
-                          style={{ width: `${Math.max(2, ((100 - foundersRemaining) / 100) * 100)}%` }}
-                        />
-                      </div>
+                </div>
+                {foundersRemaining !== null && (
+                  <div className="mt-3">
+                    <p className="text-xs font-semibold text-lime-400 uppercase tracking-wider mb-1.5">
+                      Founder&apos;s Price — {foundersRemaining} of 100 remaining
+                    </p>
+                    <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-lime-400 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.max(2, ((100 - foundersRemaining) / 100) * 100)}%` }}
+                      />
                     </div>
-                  )}
-                </div>
-                <ul className="space-y-3 mb-8 flex-1">
-                  {[
-                    'Everything in Monthly',
-                    'No recurring fees ever',
-                  ].map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
-                      <Check className="w-4 h-4 text-lime-400 mt-0.5 shrink-0" aria-hidden="true" />
-                      {f}
-                    </li>
-                  ))}
-                  <li className="flex items-start gap-2 text-sm text-lime-300 font-semibold">
-                    <Shirt className="w-4 h-4 text-lime-400 mt-0.5 shrink-0" aria-hidden="true" />
-                    Free CentenarianOS shirt from AwesomeWebStore.com
+                  </div>
+                )}
+                {/* Promo counter — shown when an admin reactivation promo (with a cap) is running */}
+                {activeLifetimePromo && activeLifetimePromo.max_uses !== null && activeLifetimePromo.remaining_uses !== null && (
+                  <div className="mt-3">
+                    <p className="text-xs font-semibold text-lime-400 uppercase tracking-wider mb-1.5">
+                      {activeLifetimePromo.name} — {activeLifetimePromo.remaining_uses} of {activeLifetimePromo.max_uses} left
+                      {activeLifetimePromo.end_date && ` · ends ${new Date(activeLifetimePromo.end_date).toLocaleDateString()}`}
+                    </p>
+                    <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-lime-400 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.round((activeLifetimePromo.current_uses / Math.max(activeLifetimePromo.max_uses, 1)) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+                {activeLifetimePromo?.promo_code && (
+                  <p className="text-xs text-lime-300 mt-2">
+                    Code <span className="font-mono bg-gray-700 px-1.5 py-0.5 rounded">{activeLifetimePromo.promo_code}</span> applied at checkout
+                  </p>
+                )}
+              </div>
+              <ul className="space-y-3 mb-8 flex-1">
+                {[
+                  'Everything in Monthly',
+                  'No recurring fees ever',
+                ].map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
+                    <Check className="w-4 h-4 text-lime-400 mt-0.5 shrink-0" aria-hidden="true" />
+                    {f}
                   </li>
-                </ul>
-                <button
-                  onClick={() => handleCheckout('lifetime')}
-                  disabled={loadingPlan !== null}
-                  className="w-full px-4 py-3 bg-lime-500 text-gray-900 rounded-lg hover:bg-lime-400 transition-colors font-bold text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {loadingPlan === 'lifetime' ? (
-                    <span className="animate-spin inline-block w-4 h-4 border-2 border-gray-900 border-t-transparent rounded-full" />
-                  ) : (
-                    <Shirt className="w-4 h-4" />
-                  )}
-                  {loadingPlan === 'lifetime' ? 'Redirecting...' : 'Get Lifetime Access'}
-                </button>
-              </>
-            )}
-          </div>
+                ))}
+                <li className="flex items-start gap-2 text-sm text-lime-300 font-semibold">
+                  <Shirt className="w-4 h-4 text-lime-400 mt-0.5 shrink-0" aria-hidden="true" />
+                  Free CentenarianOS shirt from AwesomeWebStore.com
+                </li>
+              </ul>
+              <button
+                onClick={() => handleCheckout('lifetime')}
+                disabled={loadingPlan !== null}
+                className="w-full px-4 py-3 bg-lime-500 text-gray-900 rounded-lg hover:bg-lime-400 transition-colors font-bold text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loadingPlan === 'lifetime' ? (
+                  <span className="animate-spin inline-block w-4 h-4 border-2 border-gray-900 border-t-transparent rounded-full" />
+                ) : (
+                  <Shirt className="w-4 h-4" />
+                )}
+                {loadingPlan === 'lifetime' ? 'Redirecting...' : 'Get Lifetime Access'}
+              </button>
+            </div>
+          )}
+
+          {/* Annual — shown after lifetime founders slots sell out */}
+          {annualAvailable && (
+            <div className="bg-linear-to-b from-gray-900 to-gray-800 rounded-2xl border-2 border-gray-700 p-8 flex flex-col text-white relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="bg-lime-500 text-gray-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+                  Best Value
+                </span>
+              </div>
+              <div className="mb-6">
+                <h2 className="text-xl font-bold mb-1">Annual</h2>
+                <p className="text-gray-400 text-sm">Full access, billed yearly</p>
+                <div className="mt-4">
+                  <span className="text-4xl font-extrabold">$103.29</span>
+                  <span className="text-gray-400 text-sm ml-1">/year</span>
+                </div>
+                <p className="text-xs text-lime-400 mt-2">
+                  Save vs. monthly ($127.20/yr)
+                </p>
+              </div>
+              <ul className="space-y-3 mb-8 flex-1">
+                {[
+                  'Everything in Monthly',
+                  'Save $23.91/year vs monthly',
+                  'Annual commitment, cancel anytime',
+                ].map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
+                    <Check className="w-4 h-4 text-lime-400 mt-0.5 shrink-0" aria-hidden="true" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => handleCheckout('annual')}
+                disabled={loadingPlan !== null}
+                className="w-full px-4 py-3 bg-lime-500 text-gray-900 rounded-lg hover:bg-lime-400 transition-colors font-bold text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loadingPlan === 'annual' ? (
+                  <span className="animate-spin inline-block w-4 h-4 border-2 border-gray-900 border-t-transparent rounded-full" />
+                ) : (
+                  <Zap className="w-4 h-4" />
+                )}
+                {loadingPlan === 'annual' ? 'Redirecting...' : 'Start Annual'}
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* CashApp Option — only while Lifetime is available (founders slots remain) */}
-        {!annualAvailable && (
+        {/* CashApp Option — only while Lifetime is available (founders slots remain or an admin promo re-opened it) */}
+        {showLifetime && (
         <div className="mt-12 max-w-3xl mx-auto">
           <button
             onClick={() => setShowCashApp(!showCashApp)}

@@ -42,6 +42,7 @@ export async function GET(_request: NextRequest) {
   const { data, error } = await db
     .from('admin_promo_campaigns')
     .select('*')
+    .eq('app', 'centenarian')
     .order('created_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -61,7 +62,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'name, discount_type, and discount_value are required' }, { status: 400 });
   }
 
-  // Create Stripe coupon
+  const code = promo_code?.trim().toUpperCase() || null;
+
+  // Create a Stripe coupon for monetary discounts, then (if the admin supplied
+  // a code) a Stripe promotion code wrapping it so customers can type it at
+  // checkout. The lifetime base price never changes — the discount lives on
+  // the coupon. free_months carries no Stripe coupon (handled at checkout).
   let stripeCouponId: string | null = null;
   try {
     if (discount_type === 'percentage') {
@@ -80,22 +86,25 @@ export async function POST(request: NextRequest) {
       });
       stripeCouponId = coupon.id;
     }
-    // free_months doesn't need a Stripe coupon — handled at checkout level
+    if (stripeCouponId && code) {
+      await stripe.promotionCodes.create({ promotion: { type: 'coupon', coupon: stripeCouponId }, code });
+    }
   } catch {
-    // Stripe coupon creation failed — proceed without it
+    // Stripe coupon/promotion-code creation failed — proceed without it.
   }
 
   const db = getServiceClient();
   const { data, error } = await db
     .from('admin_promo_campaigns')
     .insert({
+      app: 'centenarian',
       name,
       description: description || null,
       discount_type,
       discount_value: Number(discount_value),
       stripe_coupon_id: stripeCouponId,
       plan_types: plan_types || ['lifetime'],
-      promo_code: promo_code?.trim().toUpperCase() || null,
+      promo_code: code,
       start_date: start_date || new Date().toISOString(),
       end_date: end_date || null,
       max_uses: max_uses || null,
@@ -113,7 +122,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { id, is_active, end_date } = await request.json();
+  const { id, is_active, end_date, max_uses } = await request.json();
   if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
 
   const db = getServiceClient();
@@ -121,14 +130,39 @@ export async function PATCH(request: NextRequest) {
   const updates: Record<string, any> = { updated_at: new Date().toISOString() };
   if (is_active !== undefined) updates.is_active = is_active;
   if (end_date !== undefined) updates.end_date = end_date;
+  if (max_uses !== undefined) updates.max_uses = max_uses;
 
   const { data, error } = await db
     .from('admin_promo_campaigns')
     .update(updates)
     .eq('id', id)
+    .eq('app', 'centenarian')
     .select()
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);
+}
+
+// Soft-delete (deactivate) a campaign. Scoped to app='centenarian' so a CentOS
+// admin can never deactivate a contractor campaign in the shared table.
+export async function DELETE(request: NextRequest) {
+  const admin = await getAdminUser();
+  if (!admin || admin.email !== process.env.ADMIN_EMAIL) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get('id');
+  if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
+
+  const db = getServiceClient();
+  const { error } = await db
+    .from('admin_promo_campaigns')
+    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('app', 'centenarian');
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
 }

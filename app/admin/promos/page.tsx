@@ -41,6 +41,8 @@ export default function AdminPromosPage() {
   const [formCode, setFormCode] = useState('');
   const [formEndDate, setFormEndDate] = useState('');
   const [formMaxUses, setFormMaxUses] = useState('');
+  const [formBanner, setFormBanner] = useState(true);
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     offlineFetch('/api/admin/promos')
@@ -51,28 +53,45 @@ export default function AdminPromosPage() {
 
   async function handleCreate() {
     if (!formName || !formValue) return;
+    // The reactivate-lifetime path (campaign + banner) requires a natural close.
+    if (formBanner && !formEndDate && !formMaxUses) {
+      setFormError('To publish a banner, set an End Date or Max Uses so the promo has a natural close.');
+      return;
+    }
     setCreating(true);
+    setFormError(null);
     try {
-      const res = await offlineFetch('/api/admin/promos', {
+      const payload = {
+        name: formName,
+        description: formDesc || null,
+        discount_type: formType,
+        discount_value: Number(formValue),
+        promo_code: formCode || null,
+        end_date: formEndDate || null,
+        max_uses: formMaxUses ? Number(formMaxUses) : null,
+      };
+      // When a banner is requested, the reactivate-lifetime endpoint creates the
+      // campaign AND a site-wide marketing banner in one call. Otherwise just the
+      // campaign.
+      const endpoint = formBanner ? '/api/admin/promos/reactivate-lifetime' : '/api/admin/promos';
+      const res = await offlineFetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formName,
-          description: formDesc || null,
-          discount_type: formType,
-          discount_value: Number(formValue),
-          promo_code: formCode || null,
-          end_date: formEndDate || null,
-          max_uses: formMaxUses ? Number(formMaxUses) : null,
-        }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
-        const campaign = await res.json();
+        const data = await res.json();
+        const campaign = formBanner ? data.campaign : data;
         setCampaigns((prev) => [campaign, ...prev]);
         setShowCreate(false);
-        setFormName(''); setFormDesc(''); setFormType('percentage'); setFormValue(''); setFormCode(''); setFormEndDate(''); setFormMaxUses('');
+        setFormName(''); setFormDesc(''); setFormType('percentage'); setFormValue(''); setFormCode(''); setFormEndDate(''); setFormMaxUses(''); setFormBanner(true);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setFormError(err.error ?? 'Failed to create campaign');
       }
-    } catch { /* ignore */ }
+    } catch {
+      setFormError('Network error — please try again.');
+    }
     setCreating(false);
   }
 
@@ -191,6 +210,22 @@ export default function AdminPromosPage() {
               <input id="promo-max" type="number" min="1" value={formMaxUses} onChange={(e) => setFormMaxUses(e.target.value)} placeholder="50" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-fuchsia-500" />
             </div>
           </div>
+          <label htmlFor="promo-banner" className="flex items-start gap-3 cursor-pointer bg-gray-800/60 border border-gray-700 rounded-lg px-4 py-3">
+            <input
+              id="promo-banner"
+              type="checkbox"
+              checked={formBanner}
+              onChange={(e) => setFormBanner(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-fuchsia-600"
+            />
+            <span className="text-sm text-gray-300">
+              Publish a site-wide announcement banner while this promo runs
+              <span className="block text-xs text-gray-500 mt-0.5">Shows on every page for free &amp; monthly users, linking to /pricing. Requires an End Date or Max Uses.</span>
+            </span>
+          </label>
+          {formError && (
+            <p role="alert" className="text-sm text-red-400">{formError}</p>
+          )}
           <button
             onClick={handleCreate}
             disabled={creating || !formName || !formValue}

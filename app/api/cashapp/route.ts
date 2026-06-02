@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { getActiveLifetimePromo } from '@/lib/promo/active-lifetime-promo';
 
 function getDb() {
   return createServiceClient(
@@ -62,6 +63,10 @@ export async function POST(request: NextRequest) {
 
   const { cashapp_name, screenshot_url } = await request.json();
 
+  // If an admin lifetime promo is running, tag this submission to it so the
+  // pending payment reserves a promo slot and verification increments uses.
+  const activePromo = await getActiveLifetimePromo(db);
+
   const { data: payment, error } = await db
     .from('cashapp_payments')
     .insert({
@@ -69,6 +74,7 @@ export async function POST(request: NextRequest) {
       amount: 100.00,
       cashapp_name: cashapp_name?.trim() || null,
       screenshot_url: screenshot_url?.trim() || null,
+      promo_campaign_id: activePromo?.id ?? null,
     })
     .select('id, status, created_at')
     .single();

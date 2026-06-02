@@ -17,7 +17,8 @@ export async function GET() {
 
   const { data } = await db
     .from('admin_promo_campaigns')
-    .select('id, name, description, discount_type, discount_value, promo_code, end_date, max_uses, current_uses, plan_types')
+    .select('id, name, description, discount_type, discount_value, stripe_coupon_id, promo_code, end_date, max_uses, current_uses, plan_types')
+    .eq('app', 'centenarian')
     .eq('is_active', true)
     .lte('start_date', now)
     .or(`end_date.is.null,end_date.gte.${now}`)

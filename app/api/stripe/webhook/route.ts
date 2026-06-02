@@ -8,6 +8,7 @@ import Stripe from 'stripe';
 import { createShopifyPromoCode } from '@/lib/shopify/createPromoCode';
 import { logInfo, logError } from '@/lib/logging';
 import { isValidStarterSelection } from '@/lib/access/starter-modules';
+import { incrementCampaignUses } from '@/lib/promo/active-lifetime-promo';
 
 function parseSelectedModules(csv: string | undefined | null): string[] | null {
   if (!csv) return null;
@@ -157,6 +158,17 @@ export async function POST(request: NextRequest) {
           .eq('id', userId);
         if (error) {
           logError({ source: 'webhook', module: 'stripe', message: 'Failed to update lifetime status', metadata: { error: error.message }, userId });
+        }
+
+        // If this lifetime purchase redeemed an admin promo campaign, increment
+        // its use count (auto-deactivates when the quantity cap is hit).
+        const promoCampaignId = session.metadata?.promo_campaign_id;
+        if (promoCampaignId) {
+          try {
+            await incrementCampaignUses(supabase, promoCampaignId);
+          } catch (err) {
+            logError({ source: 'webhook', module: 'stripe', message: 'Failed to increment promo campaign uses', metadata: { error: err instanceof Error ? err.message : String(err), promoCampaignId }, userId });
+          }
         }
       }
       break;
