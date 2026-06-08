@@ -127,16 +127,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // ── Dynamic: published academy courses ───────────────────────────────────
   const { data: courses } = await db
     .from('courses')
-    .select('id, updated_at')
+    .select('id, slug, updated_at, profiles:teacher_id(username)')
     .eq('status', 'published')
     .limit(2000);
 
-  const courseRoutes: MetadataRoute.Sitemap = (courses ?? []).map((c) => ({
-    url: `${SITE_URL}/academy/${c.id}`,
-    lastModified: c.updated_at ?? now,
-    changeFrequency: 'weekly' as const,
-    priority: 0.7 as number,
-  }));
+  const courseRoutes: MetadataRoute.Sitemap = (courses ?? []).map((c) => {
+    const username = (c as { profiles?: { username?: string | null } | null }).profiles?.username;
+    const slug = (c as { slug?: string | null }).slug;
+    const path = username && slug ? `/academy/${username}/${slug}` : `/academy/${c.id}`;
+    return {
+      url: `${SITE_URL}${path}`,
+      lastModified: c.updated_at ?? now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.7 as number,
+    };
+  });
 
   // ── Dynamic: active institutions ─────────────────────────────────────────
   const { data: institutions } = await db

@@ -1,11 +1,13 @@
 'use client';
 
-// app/academy/[courseId]/lessons/[lessonId]/page.tsx
+// components/academy/LessonPlayerView.tsx
 // Lesson player: renders video, text, audio, or slides content.
 // Tracks progress and shows CYOA Crossroads or linear nav on completion.
+// Rendered by both the pretty route (/academy/{teacher}/{course-slug}/lesson/{lesson-slug})
+// and the legacy UUID route; receives the resolved courseId + lessonId as props.
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ChevronLeft, ChevronRight, GitBranch, CheckCircle, Loader2,
@@ -33,6 +35,7 @@ const Lesson360PhotoPlayer = dynamic(() => import('@/components/academy/Lesson36
 const SaveOfflineButton = dynamic(() => import('@/components/academy/SaveOfflineButton'), { ssr: false });
 const VirtualTourPlayer = dynamic(() => import('@/components/academy/VirtualTourPlayer'), { ssr: false });
 import { renderTextContent } from '@/lib/academy/renderTextContent';
+import { courseHref, lessonHref as buildLessonHref } from '@/lib/academy/slug';
 
 interface Lesson {
   id: string;
@@ -93,8 +96,7 @@ const LESSON_TYPE_ICON: Record<string, React.ElementType> = {
   virtual_tour: MapIcon,
 };
 
-export default function LessonPlayerPage() {
-  const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>();
+export default function LessonPlayerView({ courseId, lessonId }: { courseId: string; lessonId: string }) {
   const router = useRouter();
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -104,7 +106,12 @@ export default function LessonPlayerPage() {
   const [crossroads, setCrossroads] = useState<CrossroadsOption[] | null>(null);
   const [navigationMode, setNavigationMode] = useState<'linear' | 'cyoa'>('linear');
   const [courseBvcSeason, setCourseBvcSeason] = useState<1 | 2 | 3 | null>(null);
-  const [adjacentLessons, setAdjacentLessons] = useState<{ prev: string | null; next: string | null }>({ prev: null, next: null });
+  type AdjacentLesson = { id: string; slug: string | null } | null;
+  const [adjacentLessons, setAdjacentLessons] = useState<{ prev: AdjacentLesson; next: AdjacentLesson }>({ prev: null, next: null });
+  // Pretty-URL context resolved from the course payload, used to build canonical
+  // course/lesson hrefs. Falls back to the legacy UUID route until known.
+  const [courseSlugCtx, setCourseSlugCtx] = useState<{ teacherUsername: string | null; courseSlug: string | null }>({ teacherUsername: null, courseSlug: null });
+  const courseLink = courseHref({ id: courseId, slug: courseSlugCtx.courseSlug, teacherUsername: courseSlugCtx.teacherUsername });
   const [lessonAssignments, setLessonAssignments] = useState<{ id: string; title: string; due_date: string | null }[]>([]);
   const [currentUser, setCurrentUser] = useState<{ userId: string | null; isTeacher: boolean }>({ userId: null, isTeacher: false });
   const [lessonGlossary, setLessonGlossary] = useState<GlossaryTerm[]>([]);
@@ -180,6 +187,10 @@ export default function LessonPlayerPage() {
       }
       setLesson(lessonData);
       setNavigationMode(courseData.navigation_mode ?? 'linear');
+      setCourseSlugCtx({
+        teacherUsername: courseData.profiles?.username ?? null,
+        courseSlug: courseData.slug ?? null,
+      });
       setCourseBvcSeason(
         courseData.bvc_season === 1 || courseData.bvc_season === 2 || courseData.bvc_season === 3
           ? courseData.bvc_season
@@ -188,13 +199,15 @@ export default function LessonPlayerPage() {
 
       // Compute prev/next from flat lesson list
       const allLessons = (courseData.course_modules ?? [])
-        .flatMap((m: { lessons: { id: string; order: number }[] }) => m.lessons)
+        .flatMap((m: { lessons: { id: string; slug?: string | null; order: number }[] }) => m.lessons)
         .sort((a: { order: number }, b: { order: number }) => a.order - b.order);
 
       const idx = allLessons.findIndex((l: { id: string }) => l.id === lessonId);
+      const toAdjacent = (l: { id: string; slug?: string | null } | undefined): AdjacentLesson =>
+        l ? { id: l.id, slug: l.slug ?? null } : null;
       setAdjacentLessons({
-        prev: idx > 0 ? allLessons[idx - 1].id : null,
-        next: idx < allLessons.length - 1 ? allLessons[idx + 1].id : null,
+        prev: idx > 0 ? toAdjacent(allLessons[idx - 1]) : null,
+        next: idx < allLessons.length - 1 ? toAdjacent(allLessons[idx + 1]) : null,
       });
 
       setLoading(false);
@@ -315,7 +328,7 @@ export default function LessonPlayerPage() {
     <div className="text-white">
       {/* Top nav */}
       <div className="border-b border-gray-800 px-3 sm:px-6 py-3 flex items-center gap-3">
-        <Link href={`/academy/${courseId}`} className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition shrink-0">
+        <Link href={courseLink} className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition shrink-0">
           <ChevronLeft className="w-4 h-4" /> <span className="hidden sm:inline">Back to course</span><span className="sm:hidden">Back</span>
         </Link>
         <span className="text-gray-700 hidden sm:inline">|</span>
@@ -653,7 +666,7 @@ export default function LessonPlayerPage() {
                     );
                   })}
                   <Link
-                    href={`/academy/${courseId}`}
+                    href={courseLink}
                     className="p-4 rounded-xl border border-gray-800 bg-gray-900 hover:bg-gray-800 transition text-left min-h-18 flex flex-col justify-center"
                   >
                     <p className="text-xs font-semibold uppercase tracking-wide mb-1 opacity-60">Course Map</p>
@@ -668,7 +681,7 @@ export default function LessonPlayerPage() {
               <div className="flex flex-wrap items-center gap-3">
                 {adjacentLessons.prev && (
                   <Link
-                    href={`/academy/${courseId}/lessons/${adjacentLessons.prev}`}
+                    href={buildLessonHref({ courseId, courseSlug: courseSlugCtx.courseSlug, teacherUsername: courseSlugCtx.teacherUsername, lessonId: adjacentLessons.prev.id, lessonSlug: adjacentLessons.prev.slug })}
                     className="flex items-center gap-2 px-4 py-3 bg-gray-800 text-gray-300 rounded-xl text-sm hover:bg-gray-700 transition min-h-11"
                   >
                     <ChevronLeft className="w-4 h-4" /> Previous
@@ -676,14 +689,14 @@ export default function LessonPlayerPage() {
                 )}
                 {adjacentLessons.next ? (
                   <Link
-                    href={`/academy/${courseId}/lessons/${adjacentLessons.next}`}
+                    href={buildLessonHref({ courseId, courseSlug: courseSlugCtx.courseSlug, teacherUsername: courseSlugCtx.teacherUsername, lessonId: adjacentLessons.next.id, lessonSlug: adjacentLessons.next.slug })}
                     className="flex items-center gap-2 px-5 py-3 bg-fuchsia-600 text-white rounded-xl font-semibold hover:bg-fuchsia-700 transition min-h-11"
                   >
                     Next Lesson <ChevronRight className="w-4 h-4" />
                   </Link>
                 ) : (
                   <Link
-                    href={`/academy/${courseId}`}
+                    href={courseLink}
                     className="flex items-center gap-2 px-5 py-3 bg-green-700 text-white rounded-xl font-semibold hover:bg-green-800 transition min-h-11"
                   >
                     <CheckCircle className="w-4 h-4" /> Course Complete!

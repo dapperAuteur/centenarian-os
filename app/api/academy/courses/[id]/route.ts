@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { createShortLink, updateShortLink, toSwitchySlug } from '@/lib/switchy';
+import { generateCourseSlug, isValidCourseSlug } from '@/lib/academy/slug';
+import { uniqueCourseSlug } from '@/lib/academy/slug-server';
 
 function getDb() {
   return createServiceClient(
@@ -27,14 +29,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const { data: course, error } = await db
     .from('courses')
     .select(`
-      id, title, description, cover_image_url, category, tags,
+      id, title, slug, description, cover_image_url, category, tags,
       price, price_type, is_published, visibility, published_at, navigation_mode, like_count,
       avg_rating, review_count, trial_period_days, is_sequential, short_link_url,
       override_questions, allow_cross_course_cyoa, bvc_season,
       created_at, teacher_id,
       profiles(username, display_name, avatar_url),
       course_modules(id, title, order, is_published,
-        lessons(id, title, lesson_type, duration_seconds, order, is_free_preview, is_published, content_url, text_content, video_360_autoplay, video_360_poster_url, created_at, updated_at)
+        lessons(id, title, slug, lesson_type, duration_seconds, order, is_free_preview, is_published, content_url, text_content, video_360_autoplay, video_360_poster_url, created_at, updated_at)
       )
     `)
     .eq('id', id)
@@ -210,7 +212,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const db = getDb();
-  const { data: course } = await db.from('courses').select('teacher_id, is_published, title, short_link_id, description, cover_image_url').eq('id', id).single();
+  const { data: course } = await db.from('courses').select('teacher_id, is_published, title, slug, short_link_id, description, cover_image_url').eq('id', id).single();
   if (!course) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   if (course.teacher_id !== user.id && user.email !== process.env.ADMIN_EMAIL) {
@@ -238,6 +240,27 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     else if (allowedTeacher.includes(k) && (isOwner || isAdmin)) updates[k] = v;
     // silently drop fields the requester isn't allowed to set — same posture
     // as the existing whitelist
+  }
+
+  // Slug: validate format + reserved words, then ensure uniqueness within the
+  // teacher's courses. A blank/invalid slug regenerates from the (new or current)
+  // title so a course is never left without a usable URL.
+  if ('slug' in body) {
+    const raw = typeof body.slug === 'string' ? body.slug.trim().toLowerCase() : '';
+    const base = raw && isValidCourseSlug(raw)
+      ? raw
+      : generateCourseSlug(String(updates.title ?? course.title ?? ''));
+    if (base !== course.slug) {
+      updates.slug = await uniqueCourseSlug(db, course.teacher_id, base, id);
+    }
+  } else if (!course.slug) {
+    // Backfill on any edit if the course somehow has no slug yet.
+    updates.slug = await uniqueCourseSlug(
+      db,
+      course.teacher_id,
+      generateCourseSlug(String(updates.title ?? course.title ?? '')),
+      id,
+    );
   }
 
   if ('price_type' in updates && updates.price_type === 'free') updates.price = 0;
@@ -291,8 +314,13 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   if (data && isNowPublishing && !course.short_link_id) {
     const rawUrl = process.env.NEXT_PUBLIC_APP_URL || '';
     const siteUrl = rawUrl ? `https://${rawUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}` : '';
+    // Prefer the human-readable course URL for the short link; fall back to the
+    // UUID route (which 308-redirects to the pretty URL anyway).
+    const { data: teacher } = await db.from('profiles').select('username').eq('id', course.teacher_id).maybeSingle();
+    const slug = (data as { slug?: string }).slug || course.slug;
+    const coursePath = teacher?.username && slug ? `/academy/${teacher.username}/${slug}` : `/academy/${id}`;
     createShortLink({
-      url: `${siteUrl}/academy/${id}`,
+      url: `${siteUrl}${coursePath}`,
       slug: toSwitchySlug('c', data.title || course.title),
       title: data.title || course.title,
       description: data.description || course.description || undefined,

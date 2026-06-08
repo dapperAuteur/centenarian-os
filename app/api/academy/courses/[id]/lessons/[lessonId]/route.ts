@@ -6,6 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { generateLessonSlug, isValidLessonSlug } from '@/lib/academy/slug';
+import { uniqueLessonSlug } from '@/lib/academy/slug-server';
 
 function getDb() {
   return createServiceClient(
@@ -134,6 +136,34 @@ export async function PATCH(request: NextRequest, { params }: Params) {
           invalid: bad,
         },
         { status: 400 },
+      );
+    }
+  }
+
+  // Slug: accept an explicit slug (validated + uniquified within the course), or
+  // backfill from the title if this lesson has none yet. A title change alone
+  // does NOT rewrite an existing slug, so shared lesson links stay stable.
+  if ('slug' in body || updates.title) {
+    const { data: current } = await db
+      .from('lessons')
+      .select('slug, title')
+      .eq('id', lessonId)
+      .eq('course_id', courseId)
+      .maybeSingle();
+    if ('slug' in body) {
+      const raw = typeof body.slug === 'string' ? body.slug.trim().toLowerCase() : '';
+      const base = raw && isValidLessonSlug(raw)
+        ? raw
+        : generateLessonSlug(String(updates.title ?? current?.title ?? ''));
+      if (base !== current?.slug) {
+        updates.slug = await uniqueLessonSlug(db, courseId, base, lessonId);
+      }
+    } else if (!current?.slug) {
+      updates.slug = await uniqueLessonSlug(
+        db,
+        courseId,
+        generateLessonSlug(String(updates.title ?? current?.title ?? '')),
+        lessonId,
       );
     }
   }
