@@ -1,10 +1,12 @@
 'use client';
 
-// app/academy/[courseId]/page.tsx
+// components/academy/CourseDetailView.tsx
 // Course detail: overview, module/lesson list, enrollment CTA, reviews, DM teacher.
+// Rendered by both the pretty route (/academy/{teacher}/{course-slug}) and the
+// legacy UUID route; receives the resolved courseId as a prop.
 
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import {
@@ -13,6 +15,7 @@ import {
   BookMarked, ChevronDown, Search,
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import { lessonHref as buildLessonHref } from '@/lib/academy/slug';
 import PageViewTracker from '@/components/ui/PageViewTracker';
 import GlossaryTermRow from '@/components/academy/GlossaryTermRow';
 import CourseShareBar from '@/components/academy/CourseShareBar';
@@ -25,6 +28,7 @@ import SaveCourseOfflineButton, {
 interface Lesson {
   id: string;
   title: string;
+  slug?: string | null;
   lesson_type: string;
   duration_seconds: number | null;
   order: number;
@@ -74,6 +78,7 @@ interface RecommendedCourse {
 interface Course {
   id: string;
   title: string;
+  slug?: string | null;
   description: string | null;
   cover_image_url: string | null;
   category: string | null;
@@ -136,8 +141,7 @@ function StarRating({ rating, interactive, onRate }: { rating: number; interacti
   );
 }
 
-function CourseDetailContent() {
-  const { courseId } = useParams<{ courseId: string }>();
+function CourseDetailContent({ courseId }: { courseId: string }) {
   const searchParams = useSearchParams();
   const justEnrolled = searchParams.get('enrolled') === 'true';
 
@@ -526,7 +530,10 @@ function CourseDetailContent() {
                     {modLessons.map((lesson) => {
                       const isFree = course.price_type === 'free' || Number(course.price) === 0;
                       const canAccess = (course.enrolled || lesson.is_free_preview || isFree) && !lesson.locked;
-                      const lessonHref = `/academy/${courseId}/lessons/${lesson.id}`;
+                      const lessonHref = buildLessonHref({
+                        courseId, courseSlug: course.slug, teacherUsername: course.profiles?.username,
+                        lessonId: lesson.id, lessonSlug: lesson.slug,
+                      });
                       return (
                         <div key={lesson.id} className="flex items-center gap-3 px-4 sm:px-5 py-3">
                           {canAccess
@@ -865,10 +872,18 @@ function CourseDetailContent() {
 
                   const isFree = course.price_type === 'free' || Number(course.price) === 0;
 
+                  const firstLesson = allLessons[0];
+                  const firstLessonHref = firstLesson
+                    ? buildLessonHref({
+                        courseId, courseSlug: course.slug, teacherUsername: course.profiles?.username,
+                        lessonId: firstLesson.id, lessonSlug: firstLesson.slug,
+                      })
+                    : `/academy/${courseId}`;
+
                   if (course.enrolled) {
                     return (
                       <Link
-                        href={`/academy/${courseId}/lessons/${allLessons[0]?.id ?? ''}`}
+                        href={firstLessonHref}
                         className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-fuchsia-600 text-white rounded-xl font-semibold hover:bg-fuchsia-700 transition min-h-11"
                       >
                         <Play className="w-4 h-4" /> Continue Learning
@@ -880,7 +895,7 @@ function CourseDetailContent() {
                   if (isFree && allLessons.length > 0) {
                     return (
                       <Link
-                        href={`/academy/${courseId}/lessons/${allLessons[0].id}`}
+                        href={firstLessonHref}
                         className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-fuchsia-600 text-white rounded-xl font-semibold hover:bg-fuchsia-700 transition min-h-11"
                       >
                         <Play className="w-4 h-4" /> Start Learning
@@ -1028,10 +1043,10 @@ function CourseDetailContent() {
   );
 }
 
-export default function CourseDetailPage() {
+export default function CourseDetailView({ courseId }: { courseId: string }) {
   return (
     <Suspense fallback={<div className="flex justify-center py-20"><div className="animate-spin h-8 w-8 border-4 border-fuchsia-500 border-t-transparent rounded-full" /></div>}>
-      <CourseDetailContent />
+      <CourseDetailContent courseId={courseId} />
     </Suspense>
   );
 }

@@ -1,7 +1,8 @@
 'use client';
 
-// app/academy/[courseId]/assignments/[id]/page.tsx
+// app/academy/[username]/assignments/[id]/page.tsx
 // Student: view assignment, save draft, submit work, see grade/feedback, message thread.
+// Legacy route: the first segment ([username]) is the course UUID here.
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -31,7 +32,7 @@ interface Submission {
 }
 
 export default function AssignmentPage() {
-  const { courseId, id: assignmentId } = useParams<{ courseId: string; id: string }>();
+  const { username: courseId, id: assignmentId } = useParams<{ username: string; id: string }>();
 
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [submission, setSubmission] = useState<Submission | null>(null);

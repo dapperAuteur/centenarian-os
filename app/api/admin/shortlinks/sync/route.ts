@@ -110,13 +110,17 @@ export async function POST(request: NextRequest) {
   if (type === 'all' || type === 'course') {
     const { data: courses } = await db
       .from('courses')
-      .select('id, title, description, cover_image_url')
+      .select('id, title, slug, description, cover_image_url, profiles:teacher_id(username)')
       .eq('is_published', true)
       .is('short_link_id', null);
 
     for (const course of courses || []) {
+      const teacherUsername = (course as { profiles?: { username?: string | null } | null }).profiles?.username;
+      const coursePath = teacherUsername && course.slug
+        ? `/academy/${teacherUsername}/${course.slug}`
+        : `/academy/${course.id}`;
       const link = await createShortLink({
-        url: `${siteUrl}/academy/${course.id}`,
+        url: `${siteUrl}${coursePath}`,
         slug: toSwitchySlug('c', course.title),
         title: course.title,
         description: course.description || undefined,

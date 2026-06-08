@@ -5,6 +5,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { generateLessonSlug } from '@/lib/academy/slug';
+import { uniqueLessonSlug } from '@/lib/academy/slug-server';
 
 function getDb() {
   return createServiceClient(
@@ -133,12 +135,14 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   if (!title?.trim()) return NextResponse.json({ error: 'Title is required' }, { status: 400 });
 
+  const slug = await uniqueLessonSlug(db, courseId, generateLessonSlug(title));
   const { data, error } = await db
     .from('lessons')
     .insert({
       course_id: courseId,
       module_id: module_id ?? null,
       title: title.trim(),
+      slug,
       lesson_type,
       content_url: content_url ?? null,
       text_content: text_content ?? null,

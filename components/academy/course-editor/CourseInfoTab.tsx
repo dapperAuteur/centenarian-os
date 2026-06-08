@@ -7,6 +7,7 @@ import MediaUploader from '@/components/ui/MediaUploader';
 interface Course {
   id: string;
   title: string;
+  slug?: string | null;
   description: string | null;
   cover_image_url: string | null;
   category: string | null;
@@ -79,6 +80,26 @@ export default function CourseInfoTab({ course, saveCourseField, isAdmin, isOwne
           className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 resize-none"
           placeholder="What will students learn in this course?"
         />
+      </div>
+      <div>
+        <label className="block text-sm text-gray-200 mb-1.5" htmlFor="course-slug">URL slug</label>
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm text-gray-500 shrink-0">/academy/&lt;you&gt;/</span>
+          <input
+            id="course-slug"
+            type="text"
+            defaultValue={course.slug ?? ''}
+            onBlur={(e) => {
+              const v = e.target.value.trim().toLowerCase();
+              if (v !== (course.slug ?? '')) saveCourseField({ slug: v });
+            }}
+            placeholder="better-vice-club"
+            className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 min-h-11"
+          />
+        </div>
+        <p className="text-xs text-gray-400 mt-1.5">
+          The human-readable part of this course&apos;s web address. Lowercase letters, numbers, and hyphens only. Leave blank to auto-generate from the title. Changing it will break old links to this course.
+        </p>
       </div>
       <div>
         <div className="flex items-center justify-between mb-1.5">
