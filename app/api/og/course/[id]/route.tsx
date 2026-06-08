@@ -22,7 +22,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
 
   const { data: course } = await db
     .from('courses')
-    .select('title, description, category, avg_rating, review_count, teacher_id')
+    .select('title, description, category, avg_rating, review_count, teacher_id, cover_image_url')
     .eq('id', id)
     .maybeSingle();
 
@@ -47,6 +47,112 @@ export async function GET(_request: NextRequest, { params }: Params) {
   const category = course?.category ?? null;
   const rating = course?.avg_rating ? Number(course.avg_rating).toFixed(1) : null;
   const reviewCount = course?.review_count ?? 0;
+  const coverUrl = course?.cover_image_url || null;
+
+  // When the course has an uploaded cover image, render it full-bleed with a
+  // dark scrim and the title/teacher overlaid. Falls back to the branded card below.
+  if (coverUrl) {
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            width: 1200,
+            height: 630,
+            display: 'flex',
+            position: 'relative',
+            fontFamily: 'sans-serif',
+            background: '#030712',
+          }}
+        >
+          {/* Cover image */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={coverUrl}
+            alt=""
+            width={1200}
+            height={630}
+            style={{ position: 'absolute', top: 0, left: 0, width: 1200, height: 630, objectFit: 'cover' }}
+          />
+
+          {/* Bottom scrim for legibility */}
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 380,
+              background: 'linear-gradient(to top, rgba(3,7,18,0.96) 0%, rgba(3,7,18,0.75) 45%, rgba(3,7,18,0) 100%)',
+            }}
+          />
+
+          {/* Accent bar */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 6,
+              background: 'linear-gradient(90deg, #d946ef 0%, #0ea5e9 100%)',
+            }}
+          />
+
+          {/* Text overlay */}
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '0 80px 56px',
+            }}
+          >
+            {category && (
+              <div style={{ display: 'flex', marginBottom: 16 }}>
+                <span
+                  style={{
+                    background: 'rgba(217, 70, 239, 0.25)',
+                    color: '#f0abfc',
+                    padding: '6px 16px',
+                    borderRadius: 999,
+                    fontSize: 16,
+                    fontWeight: 600,
+                  }}
+                >
+                  {category}
+                </span>
+              </div>
+            )}
+            <h1
+              style={{
+                fontSize: 56,
+                fontWeight: 800,
+                color: '#ffffff',
+                lineHeight: 1.12,
+                margin: '0 0 16px',
+                textShadow: '0 2px 16px rgba(0,0,0,0.6)',
+              }}
+            >
+              {displayTitle}
+            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+              <span style={{ color: '#e5e7eb', fontSize: 22, fontWeight: 600 }}>by {teacherName}</span>
+              {rating && reviewCount > 0 && (
+                <span style={{ color: '#fbbf24', fontSize: 22 }}>
+                  {'★'} {rating} ({reviewCount} review{reviewCount !== 1 ? 's' : ''})
+                </span>
+              )}
+              <span style={{ color: '#9ca3af', fontSize: 18, marginLeft: 'auto' }}>CentenarianOS Academy</span>
+            </div>
+          </div>
+        </div>
+      ),
+      { width: 1200, height: 630 },
+    );
+  }
 
   return new ImageResponse(
     (

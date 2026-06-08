@@ -516,7 +516,7 @@ export default function LessonPlayerPage() {
             docs.push({
               id: '__transcript',
               url: '#',
-              title: 'Lesson Transcript',
+              title: lesson.title ? `${lesson.title} — Transcript` : 'Lesson Transcript',
               description: `${lesson.transcript_content.length} segments`,
               inline_content: lesson.transcript_content.map((seg) => `[${fmt(seg.startTime)}] ${seg.text}`).join('\n'),
             });
