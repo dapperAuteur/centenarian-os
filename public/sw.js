@@ -1,7 +1,7 @@
 // File: public/sw.js
-// Service Worker — stale-while-revalidate for API, cache-first for pages, offline fallback
+// Service Worker — network-first for API, cache-first for static, offline fallback
 
-const CACHE_VERSION = 'centos-v5';
+const CACHE_VERSION = 'centos-v6';
 const STATIC_URLS = [
   '/offline.html',
 ];
@@ -34,30 +34,31 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET and cross-origin requests
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
 
-  // API routes: stale-while-revalidate
-  // Return cached response immediately if available, update cache in background
+  // API routes: network-first.
+  // Always hit the network when online so freshly-saved content (e.g. an
+  // imported quiz, edited lesson) shows immediately. Fall back to the cached
+  // copy only when the network fails (offline). The previous
+  // stale-while-revalidate strategy returned a pre-mutation cached response
+  // first, so edits made via POST/PATCH (which bypass the SW) appeared to "not
+  // save" until a later refresh repopulated the cache.
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
-      caches.match(request).then((cached) => {
-        const networkFetch = fetch(request)
-          .then((response) => {
-            if (response.ok) {
-              const clone = response.clone();
-              caches.open(CACHE_VERSION).then((cache) => cache.put(request, clone));
-            }
-            return response;
-          })
-          .catch(() => {
-            // Network failed — cached version is all we have
-            return cached || new Response('{"error":"Offline"}', {
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_VERSION).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() =>
+          caches.match(request).then((cached) =>
+            cached || new Response('{"error":"Offline"}', {
               status: 503,
               headers: { 'Content-Type': 'application/json' },
-            });
-          });
-
-        // Return cache immediately if available, otherwise wait for network
-        return cached || networkFetch;
-      })
+            })
+          )
+        )
     );
     return;
   }
