@@ -54,6 +54,9 @@ interface Course {
   published_at: string | null;
   trial_period_days: number;
   bvc_season: 1 | 2 | 3 | null;
+  series_slug: string | null;
+  series_title: string | null;
+  season_number: number | null;
   teacher_id: string;
   is_featured: boolean;
   is_app_tutorial: boolean;

@@ -20,6 +20,9 @@ interface Course {
   published_at: string | null;
   trial_period_days: number;
   bvc_season: 1 | 2 | 3 | null;
+  series_slug: string | null;
+  series_title: string | null;
+  season_number: number | null;
   is_featured: boolean;
   is_app_tutorial: boolean;
   featured_order: number;
@@ -160,6 +163,55 @@ export default function CourseInfoTab({ course, saveCourseField, isAdmin, isOwne
             : 'Pick a preset, or use the toggle above to type your own category.'}
         </p>
       </div>
+      {/* Generic series + season grouping — works for ANY multi-season course
+          (Speedway, etc.). One course row per season; courses sharing a series
+          name group together and get a season switcher. Separate from BVC Season
+          below, which only controls the commodity-map embed. */}
+      <div className="border border-gray-700 rounded-xl p-3 bg-gray-800/30 space-y-3">
+        <p className="text-sm font-semibold text-gray-200">Series &amp; Season <span className="text-gray-400 font-normal">(optional)</span></p>
+        <p className="text-xs text-gray-400 -mt-1">
+          For a multi-season course (e.g. a docuseries), give every season the same <strong className="text-gray-300">series name</strong> and a different <strong className="text-gray-300">season number</strong>. Seasons then group together in the catalog and show a season switcher. Leave blank for a standalone course.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1">
+            <label className="block text-xs text-gray-400 mb-1" htmlFor="course-series-title">Series name</label>
+            <input
+              id="course-series-title"
+              type="text"
+              defaultValue={course.series_title ?? ''}
+              onBlur={(e) => {
+                const title = e.target.value.trim();
+                // Derive a stable grouping key from the series name so seasons
+                // sharing a name line up even if capitalization/spacing differ.
+                const series_slug = title
+                  ? title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+                  : null;
+                if (title === (course.series_title ?? '')) return;
+                saveCourseField({ series_title: title || null, series_slug });
+              }}
+              placeholder="e.g. Speedway: The Greatest Spectacle in Learning"
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 min-h-11"
+            />
+          </div>
+          <div className="sm:w-28">
+            <label className="block text-xs text-gray-400 mb-1" htmlFor="course-season-number">Season #</label>
+            <input
+              id="course-season-number"
+              type="number"
+              min={1}
+              defaultValue={course.season_number ?? ''}
+              onBlur={(e) => {
+                const v = e.target.value.trim();
+                const season_number = v === '' ? null : Math.max(1, Math.floor(Number(v)) || 1);
+                if ((season_number ?? null) === (course.season_number ?? null)) return;
+                saveCourseField({ season_number });
+              }}
+              placeholder="1"
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500 min-h-11"
+            />
+          </div>
+        </div>
+      </div>
       <div>
         <label className="block text-sm text-gray-200 mb-1.5" htmlFor="course-bvc-season">
           BVC Season <span className="text-gray-400 font-normal">(optional)</span>
@@ -181,7 +233,7 @@ export default function CourseInfoTab({ course, saveCourseField, isAdmin, isOwne
           <option value="3" className="bg-gray-800 text-white">Season 3 — The Forbidden Leaf</option>
         </select>
         <p className="text-xs text-gray-400 mt-1.5">
-          Better Vice Club season. When set, every lesson in this course shows an embedded world map filtered to this season&apos;s commodities only. Leave unset for non-BVC courses.
+          Better Vice Club only. When set, every lesson shows an embedded world map filtered to this season&apos;s commodities. This is separate from the generic Series &amp; Season grouping above — for non-BVC multi-season courses, use that instead and leave this unset.
         </p>
       </div>
 
