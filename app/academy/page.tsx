@@ -20,6 +20,9 @@ interface Course {
   is_featured: boolean;
   is_app_tutorial: boolean;
   featured_order: number;
+  series_slug: string | null;
+  series_title: string | null;
+  season_number: number | null;
   profiles: { username: string; display_name: string | null } | null;
 }
 
@@ -28,6 +31,41 @@ const PRICE_LABEL: Record<string, string> = {
   one_time: 'One-time',
   subscription: 'Subscription',
 };
+
+interface SeriesGroup {
+  kind: 'series';
+  series_slug: string;
+  series_title: string;
+  seasons: Course[];
+}
+
+// Group a flat course list into series (2+ courses sharing series_slug) +
+// standalone courses, preserving first-appearance order. Within a series,
+// seasons are sorted by season_number.
+function groupBySeries(courses: Course[]): Array<Course | SeriesGroup> {
+  const seriesIndex = new Map<string, number>();
+  const out: Array<Course | SeriesGroup> = [];
+  for (const c of courses) {
+    if (c.series_slug) {
+      const existing = seriesIndex.get(c.series_slug);
+      if (existing === undefined) {
+        seriesIndex.set(c.series_slug, out.length);
+        out.push({ kind: 'series', series_slug: c.series_slug, series_title: c.series_title ?? c.title, seasons: [c] });
+      } else {
+        (out[existing] as SeriesGroup).seasons.push(c);
+      }
+    } else {
+      out.push(c);
+    }
+  }
+  // Collapse single-season "series" back to a plain card, and sort seasons.
+  return out.map((item) => {
+    if (!('kind' in item)) return item;
+    if (item.seasons.length < 2) return item.seasons[0];
+    item.seasons.sort((a, b) => (a.season_number ?? 0) - (b.season_number ?? 0));
+    return item;
+  });
+}
 
 type SortKey = 'created-desc' | 'created-asc' | 'name-asc' | 'name-desc' | 'category-asc' | 'category-desc' | 'teacher-asc' | 'price-asc' | 'price-desc';
 
@@ -86,6 +124,12 @@ export default function AcademyPage() {
     .sort((a, b) => (a.featured_order ?? 0) - (b.featured_order ?? 0));
   const appCourses = sortedCourses.filter((c) => c.is_app_tutorial);
   const mainCourses = sortedCourses.filter((c) => !c.is_app_tutorial && !c.is_featured);
+
+  // Collapse courses that share a series_slug into one SeriesCard so a
+  // multi-season course (e.g. Speedway S1/S2/S3) shows as a single entry with
+  // a season switcher instead of N near-identical cards. A series of one is
+  // just rendered as a normal card. Order is preserved by first appearance.
+  const groupedMain = groupBySeries(mainCourses);
 
   const categories = Array.from(new Set(courses.map((c) => c.category).filter(Boolean))) as string[];
 
@@ -241,7 +285,11 @@ export default function AcademyPage() {
                   <h2 id="academy-main-heading" className="text-lg sm:text-xl font-bold text-white mb-4">All Courses</h2>
                 )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" role="list" aria-label="All courses">
-                  {mainCourses.map((course) => <CourseCard key={course.id} course={course} />)}
+                  {groupedMain.map((item) =>
+                    'kind' in item
+                      ? <SeriesCard key={`series-${item.series_slug}`} group={item} />
+                      : <CourseCard key={item.id} course={item} />,
+                  )}
                 </div>
               </section>
             )}
@@ -312,5 +360,62 @@ function CourseCard({ course }: { course: Course }) {
         </div>
       </div>
     </Link>
+  );
+}
+
+// A multi-season series rendered as one card: cover from the first season,
+// the series title, and a row of season chips that each link to that season's
+// course. The card itself opens Season 1 (the first chip).
+function SeriesCard({ group }: { group: SeriesGroup }) {
+  const first = group.seasons[0];
+  return (
+    <div
+      className="group bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-fuchsia-700/50 transition flex flex-col"
+      role="listitem"
+    >
+      <Link href={`/academy/${first.id}`} className="block">
+        <div className="aspect-video bg-gray-800 relative overflow-hidden">
+          {first.cover_image_url ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={first.cover_image_url}
+              alt={group.series_title}
+              className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <BookOpen className="w-10 h-10 text-gray-700" />
+            </div>
+          )}
+          <span className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 bg-fuchsia-600/90 text-white text-xs font-bold rounded-full">
+            <Layers className="w-3 h-3" aria-hidden="true" /> {group.seasons.length} seasons
+          </span>
+        </div>
+      </Link>
+
+      <div className="p-5 flex flex-col flex-1">
+        {first.category && (
+          <p className="text-fuchsia-400 text-xs font-semibold uppercase tracking-wide mb-2">{first.category}</p>
+        )}
+        <Link href={`/academy/${first.id}`}>
+          <h2 className="font-bold text-white mb-1 line-clamp-2 hover:text-fuchsia-300 transition">{group.series_title}</h2>
+        </Link>
+        <p className="text-xs text-gray-500 mb-3">
+          by {first.profiles?.display_name ?? first.profiles?.username ?? 'Instructor'}
+        </p>
+        <div className="mt-auto flex flex-wrap gap-1.5" aria-label="Seasons">
+          {group.seasons.map((s) => (
+            <Link
+              key={s.id}
+              href={`/academy/${s.id}`}
+              className="px-2.5 py-1.5 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg text-xs font-medium hover:border-fuchsia-600 hover:text-white transition min-h-11 sm:min-h-0 flex items-center"
+              title={s.title}
+            >
+              Season {s.season_number ?? '?'}
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

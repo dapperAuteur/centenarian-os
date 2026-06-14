@@ -33,6 +33,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       price, price_type, is_published, visibility, published_at, navigation_mode, like_count,
       avg_rating, review_count, trial_period_days, is_sequential, short_link_url,
       override_questions, allow_cross_course_cyoa, bvc_season,
+      series_slug, series_title, season_number,
       created_at, teacher_id,
       profiles(username, display_name, avatar_url),
       course_modules(id, title, order, is_published,
@@ -229,7 +230,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   // - allowedTeacher: per-course teacher-profile flags only the owning teacher
   //   (or admin) can flip — kept separate so admin-only requests can't be
   //   tricked into setting them on someone else's course.
-  const allowedAny = ['title', 'description', 'cover_image_url', 'category', 'tags', 'price', 'price_type', 'is_published', 'navigation_mode', 'visibility', 'published_at', 'trial_period_days', 'is_sequential', 'override_questions', 'allow_cross_course_cyoa', 'bvc_season'];
+  const allowedAny = ['title', 'description', 'cover_image_url', 'category', 'tags', 'price', 'price_type', 'is_published', 'navigation_mode', 'visibility', 'published_at', 'trial_period_days', 'is_sequential', 'override_questions', 'allow_cross_course_cyoa', 'bvc_season', 'series_slug', 'series_title', 'season_number'];
   const allowedAdmin = ['is_featured', 'featured_order', 'is_app_tutorial'];
   const allowedTeacher = ['teacher_is_featured', 'teacher_featured_order'];
 
