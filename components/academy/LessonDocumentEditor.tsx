@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { Plus, X, Paperclip, ChevronDown } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
+import DataImporter from '@/components/academy/DataImporter';
 
 export interface DocDraft {
   id: string;
@@ -37,6 +38,21 @@ export default function LessonDocumentEditor({ documents, onChange, defaultOpen 
     onChange(documents.filter((d) => d.id !== docId));
   }
 
+  // CSV → documents. Columns: title, url, description, source_url. Appended to
+  // the existing list (upload the file itself, or paste a hosted URL per row).
+  function importRows(rows: Record<string, string>[]) {
+    const drafts: DocDraft[] = rows
+      .map((r) => ({
+        id: crypto.randomUUID(),
+        title: (r.title ?? '').trim(),
+        url: (r.url ?? '').trim(),
+        description: (r.description ?? '').trim(),
+        source_url: (r.source_url ?? '').trim(),
+      }))
+      .filter((d) => d.title || d.url);
+    onChange([...documents, ...drafts]);
+  }
+
   return (
     <div className="border border-gray-700 rounded-xl overflow-hidden">
       <button
@@ -59,6 +75,17 @@ export default function LessonDocumentEditor({ documents, onChange, defaultOpen 
               <Plus className="w-3 h-3" /> Add Document
             </button>
           </div>
+          <DataImporter
+            label="Import documents from CSV"
+            columns={[
+              { key: 'title', label: 'Title', required: true },
+              { key: 'url', label: 'URL' },
+              { key: 'description', label: 'Description' },
+              { key: 'source_url', label: 'Source URL' },
+            ]}
+            onImport={importRows}
+            templateCsvUrl="/templates/lesson-documents-import-template.csv"
+          />
           {documents.length === 0 && (
             <p className="text-xs text-gray-600 text-center py-2">No documents. Click &quot;Add Document&quot; to attach PDFs or images.</p>
           )}

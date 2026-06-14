@@ -69,7 +69,12 @@ interface QuizQuestionDraft {
   correctOptionId: string;
   explanation: string;
   citation: string;
+  subjectTag: string;
 }
+
+type QuizSetter = React.Dispatch<React.SetStateAction<QuizQuestionDraft[]>>;
+type ChapterSetter = React.Dispatch<React.SetStateAction<Array<{ id: string; title: string; startTime: number; endTime: number }>>>;
+type PodcastSetter = React.Dispatch<React.SetStateAction<Array<{ id: string; url: string; label: string }>>>;
 
 const LESSON_TYPE_ICON: Record<string, React.ElementType> = {
   video: Play, text: FileText, audio: Volume2, slides: Presentation, quiz: HelpCircle,
@@ -106,6 +111,12 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
   const [editingAudioChapters, setEditingAudioChapters] = useState<Array<{ id: string; title: string; startTime: number; endTime: number }>>([]);
   const [editingTranscriptText, setEditingTranscriptText] = useState('');
   const [editingPodcastLinks, setEditingPodcastLinks] = useState<Array<{ id: string; url: string; label: string }>>([]);
+  // Edit-mode quiz state — mirrors the add-form quiz state so an existing
+  // quiz lesson's questions can be viewed + re-edited (the add form resets
+  // its own quizQuestions after each save, so this is the only path back in).
+  const [editingQuizQuestions, setEditingQuizQuestions] = useState<QuizQuestionDraft[]>([]);
+  const [editingQuizPassingScore, setEditingQuizPassingScore] = useState(80);
+  const [editingQuizAttemptsAllowed, setEditingQuizAttemptsAllowed] = useState(-1);
 
   // Media library picker — shared for both add-form and inline-edit-form
   // 360° flows. The target tells us which setter to call on pick.
@@ -303,26 +314,87 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
     }
   }
 
-  // Quiz helpers
-  function addQuizQuestion() {
-    setQuizQuestions((prev) => [...prev, {
+  // Quiz helpers — generic over a question setter so the add form and the
+  // inline editor share one implementation instead of duplicating it.
+  function blankQuizQuestion(): QuizQuestionDraft {
+    return {
       id: crypto.randomUUID(), questionText: '', questionType: 'multiple_choice',
       options: [{ id: crypto.randomUUID(), text: '' }, { id: crypto.randomUUID(), text: '' }],
-      correctOptionId: '', explanation: '', citation: '',
-    }]);
+      correctOptionId: '', explanation: '', citation: '', subjectTag: '',
+    };
   }
-  function updateQuizQuestion(qId: string, updates: Partial<QuizQuestionDraft>) {
-    setQuizQuestions((prev) => prev.map((q) => q.id === qId ? { ...q, ...updates } : q));
+  function addQuizQuestion(set: QuizSetter) { set((prev) => [...prev, blankQuizQuestion()]); }
+  function updateQuizQuestion(set: QuizSetter, qId: string, updates: Partial<QuizQuestionDraft>) {
+    set((prev) => prev.map((q) => q.id === qId ? { ...q, ...updates } : q));
   }
-  function removeQuizQuestion(qId: string) { setQuizQuestions((prev) => prev.filter((q) => q.id !== qId)); }
-  function addQuizOption(qId: string) {
-    setQuizQuestions((prev) => prev.map((q) => q.id !== qId ? q : { ...q, options: [...q.options, { id: crypto.randomUUID(), text: '' }] }));
+  function removeQuizQuestion(set: QuizSetter, qId: string) { set((prev) => prev.filter((q) => q.id !== qId)); }
+  function addQuizOption(set: QuizSetter, qId: string) {
+    set((prev) => prev.map((q) => q.id !== qId ? q : { ...q, options: [...q.options, { id: crypto.randomUUID(), text: '' }] }));
   }
-  function updateQuizOption(qId: string, optId: string, text: string) {
-    setQuizQuestions((prev) => prev.map((q) => q.id !== qId ? q : { ...q, options: q.options.map((o) => o.id === optId ? { ...o, text } : o) }));
+  function updateQuizOption(set: QuizSetter, qId: string, optId: string, text: string) {
+    set((prev) => prev.map((q) => q.id !== qId ? q : { ...q, options: q.options.map((o) => o.id === optId ? { ...o, text } : o) }));
   }
-  function removeQuizOption(qId: string, optId: string) {
-    setQuizQuestions((prev) => prev.map((q) => q.id !== qId ? q : { ...q, options: q.options.filter((o) => o.id !== optId), correctOptionId: q.correctOptionId === optId ? '' : q.correctOptionId }));
+  function removeQuizOption(set: QuizSetter, qId: string, optId: string) {
+    set((prev) => prev.map((q) => q.id !== qId ? q : { ...q, options: q.options.filter((o) => o.id !== optId), correctOptionId: q.correctOptionId === optId ? '' : q.correctOptionId }));
+  }
+  // CSV → quiz questions. Columns: question, option_a..option_d, correct_letter,
+  // explanation, subject_tag. DataImporter lowercases + snake_cases headers, so
+  // the Speedway export format (question_number is ignored) maps straight in.
+  function quizRowsToDrafts(rows: Record<string, string>[]): QuizQuestionDraft[] {
+    const letterIndex: Record<string, number> = { a: 0, b: 1, c: 2, d: 3 };
+    return rows
+      .map((r) => {
+        const options = [r.option_a, r.option_b, r.option_c, r.option_d]
+          .map((t) => (t ?? '').trim())
+          .filter(Boolean)
+          .map((text) => ({ id: crypto.randomUUID(), text }));
+        const idx = letterIndex[(r.correct_letter ?? '').trim().toLowerCase()] ?? -1;
+        const correctOptionId = idx >= 0 && options[idx] ? options[idx].id : '';
+        // Guarantee at least two option rows so the editor renders cleanly.
+        while (options.length < 2) options.push({ id: crypto.randomUUID(), text: '' });
+        return {
+          id: crypto.randomUUID(),
+          questionText: (r.question ?? '').trim(),
+          questionType: 'multiple_choice' as const,
+          options,
+          correctOptionId,
+          explanation: (r.explanation ?? '').trim(),
+          citation: '',
+          subjectTag: (r.subject_tag ?? '').trim(),
+        };
+      })
+      .filter((q) => q.questionText);
+  }
+  function importQuizRows(set: QuizSetter, rows: Record<string, string>[]) {
+    set((prev) => [...prev, ...quizRowsToDrafts(rows)]);
+  }
+
+  // Accept either raw seconds ("75") or MM:SS / HH:MM:SS ("1:15") for chapter
+  // times, matching how the transcript parser is forgiving about formats.
+  function parseTimeToSeconds(v: string | undefined): number {
+    const s = (v ?? '').trim();
+    if (!s) return 0;
+    if (s.includes(':')) return s.split(':').reduce((acc, p) => acc * 60 + (Number(p) || 0), 0);
+    return Number(s) || 0;
+  }
+  // CSV → audio/video chapters. Columns: title, start, end (seconds or MM:SS).
+  function importChapterRows(set: ChapterSetter, rows: Record<string, string>[]) {
+    const drafts = rows
+      .map((r) => ({
+        id: crypto.randomUUID(),
+        title: (r.title ?? '').trim(),
+        startTime: parseTimeToSeconds(r.start ?? r.start_time),
+        endTime: parseTimeToSeconds(r.end ?? r.end_time),
+      }))
+      .filter((c) => c.title || c.startTime || c.endTime);
+    set((prev) => [...prev, ...drafts]);
+  }
+  // CSV → podcast links. Columns: url, label.
+  function importPodcastRows(set: PodcastSetter, rows: Record<string, string>[]) {
+    const drafts = rows
+      .map((r) => ({ id: crypto.randomUUID(), url: (r.url ?? '').trim(), label: (r.label ?? '').trim() }))
+      .filter((l) => l.url);
+    set((prev) => [...prev, ...drafts]);
   }
 
   // Chapter helpers
@@ -480,6 +552,9 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
       setEditingAudioChapters([]);
       setEditingTranscriptText('');
       setEditingPodcastLinks([]);
+      setEditingQuizQuestions([]);
+      setEditingQuizPassingScore(80);
+      setEditingQuizAttemptsAllowed(-1);
       return;
     }
     setExpandedLessonId(lesson.id);
@@ -526,9 +601,38 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
             }))
           : [];
         setEditingPodcastLinks(links);
+        // Quiz content — the per-lesson GET returns the full row (select '*'),
+        // so quiz_content is available here even though the course tree
+        // payload omits it. Without this load an existing quiz looked empty
+        // when reopened, which read as "the quiz didn't save".
+        const qc = data.quiz_content as {
+          questions?: Array<{
+            id?: string; questionText?: string; questionType?: string;
+            options?: Array<{ id?: string; text?: string }>;
+            correctOptionId?: string; explanation?: string; citation?: string; subjectTag?: string;
+          }>;
+          passingScore?: number; attemptsAllowed?: number;
+        } | null;
+        const questions: QuizQuestionDraft[] = Array.isArray(qc?.questions)
+          ? qc!.questions.map((q) => ({
+              id: q.id || crypto.randomUUID(),
+              questionText: q.questionText ?? '',
+              questionType: q.questionType === 'true_false' ? 'true_false' : 'multiple_choice',
+              options: Array.isArray(q.options) && q.options.length > 0
+                ? q.options.map((o) => ({ id: o.id || crypto.randomUUID(), text: o.text ?? '' }))
+                : [{ id: crypto.randomUUID(), text: '' }, { id: crypto.randomUUID(), text: '' }],
+              correctOptionId: q.correctOptionId ?? '',
+              explanation: q.explanation ?? '',
+              citation: q.citation ?? '',
+              subjectTag: q.subjectTag ?? '',
+            }))
+          : [];
+        setEditingQuizQuestions(questions);
+        setEditingQuizPassingScore(typeof qc?.passingScore === 'number' ? qc.passingScore : 80);
+        setEditingQuizAttemptsAllowed(typeof qc?.attemptsAllowed === 'number' ? qc.attemptsAllowed : -1);
       }
     } catch {
-      /* user can still edit the surface-level fields without chapter/transcript/podcast prefill */
+      /* user can still edit the surface-level fields without chapter/transcript/podcast/quiz prefill */
     }
   }
 
@@ -595,6 +699,13 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
           ? valid.map(({ url, label }) => ({ url: url.trim(), label: label.trim() }))
           : null;
       }
+      // Quiz content — persist the edited questions so reopening shows them.
+      // Always send (even empty) so a teacher can clear a quiz.
+      if (editingLesson.lesson_type === 'quiz') {
+        payload.quiz_content = editingQuizQuestions.length > 0
+          ? { questions: editingQuizQuestions, passingScore: editingQuizPassingScore, attemptsAllowed: editingQuizAttemptsAllowed }
+          : null;
+      }
       const r = await offlineFetch(`/api/academy/courses/${courseId}/lessons/${expandedLessonId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -606,6 +717,9 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
         setEditingAudioChapters([]);
         setEditingTranscriptText('');
         setEditingPodcastLinks([]);
+        setEditingQuizQuestions([]);
+        setEditingQuizPassingScore(80);
+        setEditingQuizAttemptsAllowed(-1);
         setFeedback('Lesson saved');
         setTimeout(() => setFeedback(''), 2000);
         onCourseUpdated();
@@ -756,6 +870,95 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
       grouped[pid].coords.push([parseFloat(r.lat) || 0, parseFloat(r.lng) || 0]);
     }
     setEditingMapPolygons(Object.entries(grouped).map(([, v]) => ({ id: crypto.randomUUID(), ...v })));
+  }
+
+  // Shared quiz editor — rendered in both the add-new-lesson form and the
+  // inline edit form. Takes the question list + its setter and the passing
+  // score / attempts state so both call sites render identical UI and share
+  // the same handlers + CSV importer.
+  function renderQuizEditor(
+    questions: QuizQuestionDraft[],
+    set: QuizSetter,
+    passingScore: number,
+    setPassingScore: (n: number) => void,
+    attemptsAllowed: number,
+    setAttemptsAllowed: (n: number) => void,
+  ) {
+    return (
+      <div className="space-y-3 border border-gray-700 rounded-xl p-3 bg-gray-800/30">
+        <div className="flex items-center justify-between">
+          <h4 className="text-sm font-semibold text-gray-200">Quiz Questions</h4>
+          <button type="button" onClick={() => addQuizQuestion(set)} className="flex items-center gap-1 text-xs text-fuchsia-400 hover:text-fuchsia-300 transition min-h-11">
+            <Plus className="w-3 h-3" aria-hidden="true" /> Add Question
+          </button>
+        </div>
+        <DataImporter
+          label="Import questions from CSV"
+          columns={[
+            { key: 'question', label: 'Question', required: true },
+            { key: 'option_a', label: 'Option A' }, { key: 'option_b', label: 'Option B' },
+            { key: 'option_c', label: 'Option C' }, { key: 'option_d', label: 'Option D' },
+            { key: 'correct_letter', label: 'Correct (A-D)' },
+            { key: 'explanation', label: 'Explanation' }, { key: 'subject_tag', label: 'Subject Tag' },
+          ]}
+          onImport={(rows) => importQuizRows(set, rows)}
+          templateCsvUrl="/templates/quiz-import-template.csv"
+        />
+        {questions.length === 0 && <p className="text-xs text-gray-400 text-center py-3">No questions yet. Add one above or import from CSV.</p>}
+        {questions.map((q, qi) => (
+          <div key={q.id} className="border border-gray-700 rounded-lg p-3 space-y-2">
+            <div className="flex items-start gap-2">
+              <span className="text-xs text-gray-500 mt-3 shrink-0">Q{qi + 1}</span>
+              <div className="flex-1 space-y-2">
+                <input type="text" value={q.questionText} onChange={(e) => updateQuizQuestion(set, q.id, { questionText: e.target.value })}
+                  placeholder="Question text…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500" />
+                <div className="space-y-1.5">
+                  {q.options.map((opt) => (
+                    <div key={opt.id} className="flex items-center gap-2">
+                      <input type="radio" name={`correct-${q.id}`} checked={q.correctOptionId === opt.id}
+                        onChange={() => updateQuizQuestion(set, q.id, { correctOptionId: opt.id })} className="accent-green-500 shrink-0" title="Mark as correct answer" />
+                      <input type="text" value={opt.text} onChange={(e) => updateQuizOption(set, q.id, opt.id, e.target.value)}
+                        placeholder="Option text…" className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500" />
+                      {q.options.length > 2 && (
+                        <button type="button" onClick={() => removeQuizOption(set, q.id, opt.id)} className="text-gray-400 hover:text-red-400 transition p-1" aria-label="Remove option">
+                          <X className="w-3 h-3" aria-hidden="true" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {q.options.length < 6 && (
+                    <button type="button" onClick={() => addQuizOption(set, q.id)} className="text-xs text-gray-500 hover:text-fuchsia-400 transition ml-6">+ Add option</button>
+                  )}
+                </div>
+                <input type="text" value={q.explanation} onChange={(e) => updateQuizQuestion(set, q.id, { explanation: e.target.value })}
+                  placeholder="Explanation (shown after answering)…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500" />
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input type="text" value={q.citation} onChange={(e) => updateQuizQuestion(set, q.id, { citation: e.target.value })}
+                    placeholder="Citation (optional, APA format)…" className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-400 placeholder-gray-400 focus:outline-none focus:border-fuchsia-500" />
+                  <input type="text" value={q.subjectTag} onChange={(e) => updateQuizQuestion(set, q.id, { subjectTag: e.target.value })}
+                    placeholder="Subject tag (e.g. U.S. History)…" className="flex-1 sm:max-w-[45%] bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-400 placeholder-gray-400 focus:outline-none focus:border-fuchsia-500" />
+                </div>
+              </div>
+              <button type="button" onClick={() => removeQuizQuestion(set, q.id)} className="text-gray-400 hover:text-red-400 transition p-1 mt-2 shrink-0" aria-label={`Remove question ${qi + 1}`}>
+                <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+        ))}
+        <div className="flex flex-wrap gap-3 pt-1">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Passing Score (%)</label>
+            <input type="number" min={0} max={100} value={passingScore} onChange={(e) => setPassingScore(Number(e.target.value))}
+              className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Attempts (-1 = unlimited)</label>
+            <input type="number" min={-1} value={attemptsAllowed} onChange={(e) => setAttemptsAllowed(Number(e.target.value))}
+              className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500" />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // ── Render ────────────────────────────────────────────────────────────
@@ -1155,6 +1358,9 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                                 <p className="text-xs text-gray-500 mb-3">
                                   Break the lesson into sections learners can jump to from the player. Each chapter has a title and a start/end time in <strong className="text-gray-300">seconds from the beginning of the video</strong>. Example: a chapter from <code className="text-gray-400">0</code> to <code className="text-gray-400">45</code> covers the first 45 seconds; the next might start at <code className="text-gray-400">45</code> and end at <code className="text-gray-400">180</code> (3 minutes in). Chapters don&apos;t need to cover the full video — gaps are fine.
                                 </p>
+                                <DataImporter label="Import chapters from CSV" columns={[
+                                  { key: 'title', label: 'Title', required: true }, { key: 'start', label: 'Start (sec or MM:SS)' }, { key: 'end', label: 'End (sec or MM:SS)' },
+                                ]} onImport={(rows) => importChapterRows(setEditingAudioChapters, rows)} templateCsvUrl="/templates/audio-chapters-import-template.csv" />
                                 {editingAudioChapters.length === 0 && (
                                   <p className="text-xs text-gray-500 text-center py-2 border border-dashed border-gray-700 rounded-lg">No chapters yet. Click &ldquo;Add Chapter&rdquo; to add one. Learners can still watch the lesson without chapters.</p>
                                 )}
@@ -1238,6 +1444,9 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                                   <Plus className="w-3 h-3" aria-hidden="true" /> Add Platform
                                 </button>
                               </div>
+                              <DataImporter label="Import links from CSV" columns={[
+                                { key: 'url', label: 'URL', required: true }, { key: 'label', label: 'Label' },
+                              ]} onImport={(rows) => importPodcastRows(setEditingPodcastLinks, rows)} templateCsvUrl="/templates/podcast-links-import-template.csv" />
                               {editingPodcastLinks.length === 0 && (
                                 <p className="text-xs text-gray-400 text-center py-2">
                                   No podcast links. Add Spotify, Apple Podcasts, YouTube, Amazon Music, or any episode URL.
@@ -1279,6 +1488,13 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                               </p>
                             </div>
                           )}
+                          {/* Quiz editor — shared with the add-new-lesson form. This is the
+                              path back into a saved quiz lesson's questions. */}
+                          {editingLesson.lesson_type === 'quiz' && renderQuizEditor(
+                            editingQuizQuestions, setEditingQuizQuestions,
+                            editingQuizPassingScore, setEditingQuizPassingScore,
+                            editingQuizAttemptsAllowed, setEditingQuizAttemptsAllowed,
+                          )}
                           <div className="flex flex-col sm:flex-row gap-2">
                             <button
                               type="button"
@@ -1290,7 +1506,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                             </button>
                             <button
                               type="button"
-                              onClick={() => { setExpandedLessonId(null); setEditingLesson({}); setEditingAudioChapters([]); setEditingTranscriptText(''); setEditingPodcastLinks([]); }}
+                              onClick={() => { setExpandedLessonId(null); setEditingLesson({}); setEditingAudioChapters([]); setEditingTranscriptText(''); setEditingPodcastLinks([]); setEditingQuizQuestions([]); setEditingQuizPassingScore(80); setEditingQuizAttemptsAllowed(-1); }}
                               className="px-4 py-2 bg-gray-800 text-gray-400 rounded-lg text-sm hover:bg-gray-700 transition min-h-11"
                             >
                               Cancel
@@ -1494,6 +1710,9 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                           <p className="text-xs text-gray-500 mb-3">
                             Break the lesson into sections learners can jump to from the player. Each chapter has a title and a start/end time in <strong className="text-gray-300">seconds from the beginning of the video</strong>. Example: a chapter from <code className="text-gray-400">0</code> to <code className="text-gray-400">45</code> covers the first 45 seconds; the next might start at <code className="text-gray-400">45</code> and end at <code className="text-gray-400">180</code> (3 minutes in). Chapters don&apos;t need to cover the full video — gaps are fine.
                           </p>
+                          <DataImporter label="Import chapters from CSV" columns={[
+                            { key: 'title', label: 'Title', required: true }, { key: 'start', label: 'Start (sec or MM:SS)' }, { key: 'end', label: 'End (sec or MM:SS)' },
+                          ]} onImport={(rows) => importChapterRows(setAudioChapters, rows)} templateCsvUrl="/templates/audio-chapters-import-template.csv" />
                           {audioChapters.length === 0 && (
                             <p className="text-xs text-gray-500 text-center py-2 border border-dashed border-gray-700 rounded-lg">No chapters yet. Click &ldquo;Add Chapter&rdquo; to add one. Learners can still watch the lesson without chapters.</p>
                           )}
@@ -1543,65 +1762,11 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                       </div>
                     )}
 
-                    {/* Quiz editor */}
-                    {newLesson.lesson_type === 'quiz' && (
-                      <div className="space-y-3 border border-gray-700 rounded-xl p-3 bg-gray-800/30">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-semibold text-gray-200">Quiz Questions</h4>
-                          <button type="button" onClick={addQuizQuestion} className="flex items-center gap-1 text-xs text-fuchsia-400 hover:text-fuchsia-300 transition">
-                            <Plus className="w-3 h-3" /> Add Question
-                          </button>
-                        </div>
-                        {quizQuestions.length === 0 && <p className="text-xs text-gray-400 text-center py-3">No questions yet. Add your first question above.</p>}
-                        {quizQuestions.map((q, qi) => (
-                          <div key={q.id} className="border border-gray-700 rounded-lg p-3 space-y-2">
-                            <div className="flex items-start gap-2">
-                              <span className="text-xs text-gray-500 mt-3 shrink-0">Q{qi + 1}</span>
-                              <div className="flex-1 space-y-2">
-                                <input type="text" value={q.questionText} onChange={(e) => updateQuizQuestion(q.id, { questionText: e.target.value })}
-                                  placeholder="Question text…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500" />
-                                <div className="space-y-1.5">
-                                  {q.options.map((opt) => (
-                                    <div key={opt.id} className="flex items-center gap-2">
-                                      <input type="radio" name={`correct-${q.id}`} checked={q.correctOptionId === opt.id}
-                                        onChange={() => updateQuizQuestion(q.id, { correctOptionId: opt.id })} className="accent-green-500 shrink-0" title="Mark as correct answer" />
-                                      <input type="text" value={opt.text} onChange={(e) => updateQuizOption(q.id, opt.id, e.target.value)}
-                                        placeholder="Option text…" className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500" />
-                                      {q.options.length > 2 && (
-                                        <button type="button" onClick={() => removeQuizOption(q.id, opt.id)} className="text-gray-400 hover:text-red-400 transition p-1">
-                                          <X className="w-3 h-3" />
-                                        </button>
-                                      )}
-                                    </div>
-                                  ))}
-                                  {q.options.length < 6 && (
-                                    <button type="button" onClick={() => addQuizOption(q.id)} className="text-xs text-gray-500 hover:text-fuchsia-400 transition ml-6">+ Add option</button>
-                                  )}
-                                </div>
-                                <input type="text" value={q.explanation} onChange={(e) => updateQuizQuestion(q.id, { explanation: e.target.value })}
-                                  placeholder="Explanation (shown after answering)…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-fuchsia-500" />
-                                <input type="text" value={q.citation} onChange={(e) => updateQuizQuestion(q.id, { citation: e.target.value })}
-                                  placeholder="Citation (optional, APA format)…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-400 placeholder-gray-400 focus:outline-none focus:border-fuchsia-500" />
-                              </div>
-                              <button type="button" onClick={() => removeQuizQuestion(q.id)} className="text-gray-400 hover:text-red-400 transition p-1 mt-2 shrink-0">
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                        <div className="flex flex-wrap gap-3 pt-1">
-                          <div>
-                            <label className="block text-xs text-gray-500 mb-1">Passing Score (%)</label>
-                            <input type="number" min={0} max={100} value={quizPassingScore} onChange={(e) => setQuizPassingScore(Number(e.target.value))}
-                              className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500" />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-gray-500 mb-1">Attempts (-1 = unlimited)</label>
-                            <input type="number" min={-1} value={quizAttemptsAllowed} onChange={(e) => setQuizAttemptsAllowed(Number(e.target.value))}
-                              className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-fuchsia-500" />
-                          </div>
-                        </div>
-                      </div>
+                    {/* Quiz editor — shared with the inline edit form */}
+                    {newLesson.lesson_type === 'quiz' && renderQuizEditor(
+                      quizQuestions, setQuizQuestions,
+                      quizPassingScore, setQuizPassingScore,
+                      quizAttemptsAllowed, setQuizAttemptsAllowed,
                     )}
 
                     {/* Podcast links — audio only */}
@@ -1613,6 +1778,9 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                             <Plus className="w-3 h-3" /> Add Platform
                           </button>
                         </div>
+                        <DataImporter label="Import links from CSV" columns={[
+                          { key: 'url', label: 'URL', required: true }, { key: 'label', label: 'Label' },
+                        ]} onImport={(rows) => importPodcastRows(setPodcastLinks, rows)} templateCsvUrl="/templates/podcast-links-import-template.csv" />
                         {podcastLinks.length === 0 && <p className="text-xs text-gray-400 text-center py-2">No podcast links. Add links to Spotify, Apple Podcasts, YouTube, etc.</p>}
                         <div className="space-y-2">
                           {podcastLinks.map((link, li) => (

@@ -87,6 +87,9 @@ interface Course {
   navigation_mode: 'linear' | 'cyoa';
   is_sequential: boolean;
   short_link_url: string | null;
+  series_slug?: string | null;
+  series_title?: string | null;
+  season_number?: number | null;
   enrolled: boolean;
   teacher_id: string;
   avg_rating: number;
@@ -172,6 +175,9 @@ function CourseDetailContent({ courseId }: { courseId: string }) {
   // Glossary state
   const [glossaryTerms, setGlossaryTerms] = useState<GlossaryTerm[]>([]);
   const [showGlossary, setShowGlossary] = useState(false);
+
+  // Sibling seasons in the same series (powers the season switcher).
+  const [seriesSeasons, setSeriesSeasons] = useState<Array<{ id: string; title: string; season_number: number | null }>>([]);
   const [glossarySearch, setGlossarySearch] = useState('');
 
   useEffect(() => {
@@ -228,6 +234,17 @@ function CourseDetailContent({ courseId }: { courseId: string }) {
       offlineFetch(`/api/academy/courses/${courseId}/dismiss-updates`, { method: 'POST' }).catch(() => {});
     }
   }, [hasUpdates, updatesDismissed, courseId]);
+
+  // Load sibling seasons when this course is part of a series, so the season
+  // switcher can offer the other seasons.
+  const seriesSlug = course?.series_slug ?? null;
+  useEffect(() => {
+    if (!seriesSlug) { setSeriesSeasons([]); return; }
+    offlineFetch(`/api/academy/series?slug=${encodeURIComponent(seriesSlug)}`)
+      .then((r) => r.json())
+      .then((d) => setSeriesSeasons(Array.isArray(d) ? d : []))
+      .catch(() => setSeriesSeasons([]));
+  }, [seriesSlug]);
 
   // Detect user's existing review
   useEffect(() => {
@@ -397,6 +414,43 @@ function CourseDetailContent({ courseId }: { courseId: string }) {
               <p className="text-fuchsia-400 text-xs font-semibold uppercase tracking-wide mb-3">{course.category}</p>
             )}
             <h1 className="text-2xl sm:text-3xl font-bold mb-4">{course.title}</h1>
+
+            {/* Season switcher — only when this course belongs to a multi-season
+                series. Links to the sibling seasons; the current one is marked. */}
+            {course.series_slug && seriesSeasons.length > 1 && (
+              <div className="mb-6">
+                {course.series_title && (
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                    <GitBranch className="w-3.5 h-3.5 text-fuchsia-400" aria-hidden="true" />
+                    {course.series_title}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-2" aria-label="Seasons in this series">
+                  {seriesSeasons.map((s) => {
+                    const isCurrent = s.id === course.id;
+                    return isCurrent ? (
+                      <span
+                        key={s.id}
+                        aria-current="true"
+                        className="px-3 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-semibold min-h-11 flex items-center"
+                        title={s.title}
+                      >
+                        Season {s.season_number ?? '?'}
+                      </span>
+                    ) : (
+                      <Link
+                        key={s.id}
+                        href={`/academy/${s.id}`}
+                        className="px-3 py-2 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg text-sm font-medium hover:border-fuchsia-600 hover:text-white transition min-h-11 flex items-center"
+                        title={s.title}
+                      >
+                        Season {s.season_number ?? '?'}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {course.description && (
               <p className="text-gray-300 mb-6 leading-relaxed">{course.description}</p>
