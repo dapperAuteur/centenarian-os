@@ -10,6 +10,12 @@ This mistake has been made more than once. If you're about to write a file under
 
 ---
 
+## Docs-sync rule — update docs after app changes
+
+When a change adds, alters, or removes an app feature, update the affected docs **in the same branch as the change** — docs are part of the change, not a follow-up. That means: the relevant user-facing guides in `docs/CentenarianAcademy/` (AdminGuide, TeacherGuide, StudentGuide, RecipesGuide, etc.), `README.md`, the in-app help/tutorial content for that area, and any process docs the change affects (e.g. `CourseAuthoringGuide.md` / `CourseProductionPlaybook.md` when course-building changes). Reflect a new feature **everywhere it belongs**, not just one place. State what docs you updated in the handoff/PR. If a doc update is genuinely out of scope for the branch, file it under `./plans/` so it is not lost.
+
+---
+
 ## Operator-task rule — capture user actions in `./plans/user-tasks/`
 
 When Claude proposes work that needs BAM to do something outside the editor (account signup, API key, DNS change, vendor dashboard, env-var rotation, secret generation, PR review/merge, etc.), Claude MUST create a `./plans/user-tasks/NN-slug.md` file in this repo. **No exceptions for "small" steps.**
