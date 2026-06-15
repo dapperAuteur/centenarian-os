@@ -70,6 +70,7 @@ interface QuizQuestionDraft {
   explanation: string;
   citation: string;
   subjectTag: string;
+  imageUrl: string;
 }
 
 type QuizSetter = React.Dispatch<React.SetStateAction<QuizQuestionDraft[]>>;
@@ -320,7 +321,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
     return {
       id: crypto.randomUUID(), questionText: '', questionType: 'multiple_choice',
       options: [{ id: crypto.randomUUID(), text: '' }, { id: crypto.randomUUID(), text: '' }],
-      correctOptionId: '', explanation: '', citation: '', subjectTag: '',
+      correctOptionId: '', explanation: '', citation: '', subjectTag: '', imageUrl: '',
     };
   }
   function addQuizQuestion(set: QuizSetter) { set((prev) => [...prev, blankQuizQuestion()]); }
@@ -338,8 +339,9 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
     set((prev) => prev.map((q) => q.id !== qId ? q : { ...q, options: q.options.filter((o) => o.id !== optId), correctOptionId: q.correctOptionId === optId ? '' : q.correctOptionId }));
   }
   // CSV → quiz questions. Columns: question, option_a..option_d, correct_letter,
-  // explanation, subject_tag. DataImporter lowercases + snake_cases headers, so
-  // the Speedway export format (question_number is ignored) maps straight in.
+  // explanation, subject_tag, image_url. DataImporter lowercases + snake_cases
+  // headers, so the Speedway export format (question_number is ignored) maps
+  // straight in. image_url is optional (e.g. a Cloudinary-hosted FAA chart).
   function quizRowsToDrafts(rows: Record<string, string>[]): QuizQuestionDraft[] {
     const letterIndex: Record<string, number> = { a: 0, b: 1, c: 2, d: 3 };
     return rows
@@ -359,8 +361,9 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
           options,
           correctOptionId,
           explanation: (r.explanation ?? '').trim(),
-          citation: '',
+          citation: (r.citation ?? '').trim(),
           subjectTag: (r.subject_tag ?? '').trim(),
+          imageUrl: (r.image_url ?? '').trim(),
         };
       })
       .filter((q) => q.questionText);
@@ -609,7 +612,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
           questions?: Array<{
             id?: string; questionText?: string; questionType?: string;
             options?: Array<{ id?: string; text?: string }>;
-            correctOptionId?: string; explanation?: string; citation?: string; subjectTag?: string;
+            correctOptionId?: string; explanation?: string; citation?: string; subjectTag?: string; imageUrl?: string;
           }>;
           passingScore?: number; attemptsAllowed?: number;
         } | null;
@@ -625,6 +628,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
               explanation: q.explanation ?? '',
               citation: q.citation ?? '',
               subjectTag: q.subjectTag ?? '',
+              imageUrl: q.imageUrl ?? '',
             }))
           : [];
         setEditingQuizQuestions(questions);
@@ -938,6 +942,11 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                   <input type="text" value={q.subjectTag} onChange={(e) => updateQuizQuestion(set, q.id, { subjectTag: e.target.value })}
                     placeholder="Subject tag (e.g. U.S. History)…" className="flex-1 sm:max-w-[45%] bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-400 placeholder-gray-400 focus:outline-none focus:border-fuchsia-500" />
                 </div>
+                <input type="text" value={q.imageUrl} onChange={(e) => updateQuizQuestion(set, q.id, { imageUrl: e.target.value })}
+                  placeholder="Image URL (optional, e.g. a Cloudinary-hosted figure)…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-400 placeholder-gray-400 focus:outline-none focus:border-fuchsia-500" />
+                {q.imageUrl && (
+                  <img src={q.imageUrl} alt="Question figure preview" className="max-h-32 rounded-lg border border-gray-700 bg-white" />
+                )}
               </div>
               <button type="button" onClick={() => removeQuizQuestion(set, q.id)} className="text-gray-400 hover:text-red-400 transition p-1 mt-2 shrink-0" aria-label={`Remove question ${qi + 1}`}>
                 <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />

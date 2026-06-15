@@ -59,6 +59,7 @@ interface Lesson {
       correctOptionId: string;
       explanation: string;
       citation?: string;
+      imageUrl?: string;
     }>;
     passingScore: number;
     attemptsAllowed: number;
