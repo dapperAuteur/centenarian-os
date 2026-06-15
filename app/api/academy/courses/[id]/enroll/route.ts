@@ -5,7 +5,9 @@
 //     - Platform teachers (PLATFORM_TEACHER_EMAILS): payment goes directly to platform account, no Connect fees.
 //     - Third-party teachers: application_fee + transfer_data via Stripe Connect.
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
+import { notifyLead } from '@/lib/lead/notify';
+import { LEAD_SESSION_COOKIE } from '@/lib/lead/session';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe';
@@ -207,6 +209,20 @@ export async function POST(request: NextRequest, { params }: Params) {
       status: 'active',
       attempt_number: attemptNumber,
       metric_slots: metricSlots,
+    });
+
+    // Lead funnel (non-blocking): link this user's anonymous lead session and notify the
+    // WitUS Inbox. Never affects the enrollment result.
+    const leadSession = request.cookies.get(LEAD_SESSION_COOKIE)?.value ?? null;
+    after(async () => {
+      try {
+        if (leadSession) {
+          await db.from('profiles').update({ lead_session_id: leadSession }).eq('id', user.id).is('lead_session_id', null);
+        }
+      } catch { /* column may not exist until migration 192 is applied; best-effort */ }
+      await notifyLead('cent-enrollment', {
+        course_id: courseId, course_title: course.title ?? null, session_id: leadSession, price_type: 'free',
+      });
     });
 
     return NextResponse.json({ enrolled: true });
