@@ -535,7 +535,7 @@ export default function LessonPlayerView({ courseId, lessonId }: { courseId: str
               inline_content: lesson.transcript_content.map((seg) => `[${fmt(seg.startTime)}] ${seg.text}`).join('\n'),
             });
           }
-          return docs.length > 0 ? <DocumentViewer documents={docs} /> : null;
+          return docs.length > 0 ? <DocumentViewer documents={docs} courseId={courseId} /> : null;
         })()}
 
         {/* Lesson glossary terms */}
