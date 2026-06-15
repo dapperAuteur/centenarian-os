@@ -6,6 +6,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { FileText, ExternalLink, ChevronLeft, ChevronRight, X, AlertTriangle } from 'lucide-react';
+import OptionalEmailCapture from '@/components/academy/OptionalEmailCapture';
+import { ensureLeadSession } from '@/lib/lead/session';
 
 export interface DocumentItem {
   id: string;
@@ -19,6 +21,8 @@ export interface DocumentItem {
 
 interface DocumentViewerProps {
   documents: DocumentItem[];
+  /** When set, document opens are tracked as lead-funnel downloads for this course. */
+  courseId?: string | null;
 }
 
 /**
@@ -128,8 +132,25 @@ function embedUrl(url: string): string {
   }
 }
 
-export default function DocumentViewer({ documents }: DocumentViewerProps) {
+export default function DocumentViewer({ documents, courseId }: DocumentViewerProps) {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [leadDoc, setLeadDoc] = useState<{ title: string } | null>(null);
+
+  // Open a document and record it as a lead-funnel download (best-effort, never blocks).
+  function openDoc(idx: number) {
+    setSelectedIdx(idx);
+    const doc = documents[idx];
+    if (!doc) return;
+    setLeadDoc({ title: doc.title });
+    try {
+      ensureLeadSession();
+      fetch('/api/academy/track/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ document_key: doc.id, document_title: doc.title, course_id: courseId ?? null }),
+      }).catch(() => { /* tracking is best-effort */ });
+    } catch { /* tracking is best-effort */ }
+  }
 
   if (documents.length === 0) return null;
 
@@ -147,7 +168,7 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
           <button
             key={doc.id}
             type="button"
-            onClick={() => setSelectedIdx(idx)}
+            onClick={() => openDoc(idx)}
             className="flex items-start gap-3 p-3 bg-gray-900 border border-gray-800 rounded-xl hover:border-fuchsia-700/50 transition text-left group"
           >
             <FileText className="w-5 h-5 text-gray-400 group-hover:text-fuchsia-400 transition shrink-0 mt-0.5" aria-hidden="true" />
@@ -160,6 +181,9 @@ export default function DocumentViewer({ documents }: DocumentViewerProps) {
           </button>
         ))}
       </div>
+
+      {/* Optional, no-pressure email capture once a resource has been opened */}
+      {leadDoc && <OptionalEmailCapture courseId={courseId} sourceDocument={leadDoc.title} />}
 
       {/* Document viewer modal/overlay */}
       {selected && selectedIdx !== null && (
