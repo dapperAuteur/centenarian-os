@@ -21,6 +21,7 @@ interface QuizQuestion {
   correctOptionId: string;
   explanation: string;
   citation?: string;
+  imageUrl?: string; // optional figure (e.g. a Cloudinary-hosted FAA chart) shown above the question
 }
 
 interface QuizContent {
@@ -143,6 +144,13 @@ export default function QuizPlayer({ quizContent, courseId, lessonId, onComplete
               Back to Results
             </button>
           </div>
+          {q.imageUrl && (
+            <img
+              src={q.imageUrl}
+              alt="Reference figure for this question"
+              className="w-full max-h-80 object-contain rounded-xl border border-gray-700 bg-white mb-4"
+            />
+          )}
           <p className="text-white font-semibold mb-4">{q.questionText}</p>
           <div className="space-y-2 mb-4">
             {q.options.map((opt) => {
@@ -249,6 +257,15 @@ export default function QuizPlayer({ quizContent, courseId, lessonId, onComplete
           />
         </div>
       </div>
+
+      {/* Optional reference figure (e.g. an FAA chart) */}
+      {currentQuestion.imageUrl && (
+        <img
+          src={currentQuestion.imageUrl}
+          alt="Reference figure for this question"
+          className="w-full max-h-80 object-contain rounded-xl border border-gray-700 bg-white mb-4"
+        />
+      )}
 
       {/* Question text */}
       <p className="text-white font-semibold text-base sm:text-lg mb-5">{currentQuestion.questionText}</p>
