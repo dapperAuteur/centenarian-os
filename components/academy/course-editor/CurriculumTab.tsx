@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import DataImporter from '@/components/academy/DataImporter';
+import LessonBodyEditor from '@/components/academy/LessonBodyEditor';
 import LessonDocumentEditor from '@/components/academy/LessonDocumentEditor';
 import type { DocDraft } from '@/components/academy/LessonDocumentEditor';
 import Cloudinary360Uploader from '@/components/academy/Cloudinary360Uploader';
@@ -27,6 +28,7 @@ interface Lesson {
   lesson_type: string;
   content_url: string | null;
   text_content: string | null;
+  content_format?: string | null;
   duration_seconds: number | null;
   order: number;
   is_free_preview: boolean;
@@ -100,10 +102,12 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
     title: string;
     lesson_type: string;
     content_url: string;
+    text_content: string;
+    content_format: 'markdown' | 'tiptap';
     is_free_preview: boolean;
     video_360_autoplay: boolean;
     video_360_poster_url: string | null;
-  }>({ title: '', lesson_type: 'video', content_url: '', is_free_preview: false, video_360_autoplay: false, video_360_poster_url: null });
+  }>({ title: '', lesson_type: 'video', content_url: '', text_content: '', content_format: 'markdown', is_free_preview: false, video_360_autoplay: false, video_360_poster_url: null });
 
   // Inline lesson edit state
   const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
@@ -257,6 +261,12 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
     if (newLesson.lesson_type !== '360video' && newLesson.lesson_type !== 'photo_360') {
       delete payload.video_360_poster_url;
     }
+    // text_content/content_format only belong to text lessons — the spread
+    // above always carries them, so strip them for every other type.
+    if (newLesson.lesson_type !== 'text') {
+      delete payload.text_content;
+      delete payload.content_format;
+    }
     if (newLesson.lesson_type === 'quiz' && quizQuestions.length > 0) {
       payload.quiz_content = { questions: quizQuestions, passingScore: quizPassingScore, attemptsAllowed: quizAttemptsAllowed };
     }
@@ -298,7 +308,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
       body: JSON.stringify(payload),
     });
     if (r.ok) {
-      setNewLesson({ title: '', lesson_type: 'video', content_url: '', is_free_preview: false, video_360_autoplay: false, video_360_poster_url: null });
+      setNewLesson({ title: '', lesson_type: 'video', content_url: '', text_content: '', content_format: 'markdown', is_free_preview: false, video_360_autoplay: false, video_360_poster_url: null });
       setQuizQuestions([]); setQuizPassingScore(80); setQuizAttemptsAllowed(-1);
       setAudioChapters([]); setTranscriptText('');
       setMapCenter({ lat: 0, lng: 0 }); setMapZoom(3); setMapMarkers([]); setMapLines([]); setMapPolygons([]);
@@ -566,6 +576,8 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
       title: lesson.title,
       lesson_type: lesson.lesson_type,
       content_url: lesson.content_url,
+      text_content: lesson.text_content ?? '',
+      content_format: lesson.content_format ?? 'markdown',
       is_free_preview: lesson.is_free_preview,
       video_360_autoplay: lesson.video_360_autoplay ?? false,
       video_360_poster_url: lesson.video_360_poster_url ?? null,
@@ -634,6 +646,13 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
         setEditingQuizQuestions(questions);
         setEditingQuizPassingScore(typeof qc?.passingScore === 'number' ? qc.passingScore : 80);
         setEditingQuizAttemptsAllowed(typeof qc?.attemptsAllowed === 'number' ? qc.attemptsAllowed : -1);
+        // text_content/content_format — the per-lesson GET (select '*') is the
+        // authoritative source; the course-tree payload may omit content_format.
+        setEditingLesson((l) => ({
+          ...l,
+          text_content: typeof data.text_content === 'string' ? data.text_content : l.text_content ?? '',
+          content_format: data.content_format === 'tiptap' ? 'tiptap' : 'markdown',
+        }));
       }
     } catch {
       /* user can still edit the surface-level fields without chapter/transcript/podcast/quiz prefill */
@@ -672,6 +691,10 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
         payload.module_id = editingLesson.module_id;
         const targetModule = course.course_modules.find((m) => m.id === editingLesson.module_id);
         payload.order = targetModule?.lessons.length ?? 0;
+      }
+      if (editingLesson.lesson_type === 'text') {
+        payload.text_content = editingLesson.text_content ?? '';
+        payload.content_format = editingLesson.content_format ?? 'markdown';
       }
       if (editingLesson.lesson_type === '360video') {
         payload.video_360_autoplay = editingLesson.video_360_autoplay ?? false;
@@ -1354,6 +1377,18 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                               )}
                             </>
                           )}
+                          {editingLesson.lesson_type === 'text' && (
+                            <div className="space-y-2">
+                              <label className="block text-sm font-medium text-gray-300">Lesson text</label>
+                              <LessonBodyEditor
+                                textContent={editingLesson.text_content ?? ''}
+                                contentFormat={editingLesson.content_format}
+                                onChange={({ text_content, content_format }) =>
+                                  setEditingLesson((l) => ({ ...l, text_content, content_format }))
+                                }
+                              />
+                            </div>
+                          )}
                           {/* Chapter + transcript editor — audio & video only */}
                           {(editingLesson.lesson_type === 'audio' || editingLesson.lesson_type === 'video' || editingLesson.lesson_type === '360video') && (
                             <div className="space-y-4 border border-gray-700 rounded-xl p-3 bg-gray-800/30">
@@ -1706,6 +1741,18 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
                       </>
                     )}
 
+                    {newLesson.lesson_type === 'text' && (
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-300">Lesson text</label>
+                        <LessonBodyEditor
+                          textContent={newLesson.text_content}
+                          contentFormat={newLesson.content_format}
+                          onChange={({ text_content, content_format }) =>
+                            setNewLesson((l) => ({ ...l, text_content, content_format }))
+                          }
+                        />
+                      </div>
+                    )}
                     {/* Chapter/transcript editor — audio & video */}
                     {(newLesson.lesson_type === 'audio' || newLesson.lesson_type === 'video' || newLesson.lesson_type === '360video') && (
                       <div className="space-y-4 border border-gray-700 rounded-xl p-3 bg-gray-800/30">
