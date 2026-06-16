@@ -20,6 +20,14 @@ and structure standard. This playbook is the process; the guide is the craft.
   generation step; fix any hit before saving.
 - **Accuracy is checked, not assumed.** Every quiz answer is independently verified
   against the source material and the domain rules before it ships.
+- **Sources are verified, not trusted.** Every citation is resolved against Crossref or
+  PubMed before it ships. AI-drafted source material routinely contains fabricated studies,
+  mis-attributed authors, and inflated statistics. If a claim has no verifiable source, state
+  it generally with no citation, or cut it. Never attach a real citation to a claim it does
+  not support, and never invent one. Full method and the artifacts to produce (master usage
+  map, teacher evidence ledger, sources-still-needed, fake-claims audit) are in
+  `CitationIntegrityGuide.md`. A teacher can also verify and add sources in-app from the
+  course editor's Sources tab.
 
 ## 2. The pipeline that produced the course
 
