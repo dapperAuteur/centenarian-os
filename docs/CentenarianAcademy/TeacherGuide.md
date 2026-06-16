@@ -74,7 +74,7 @@ Under each module, click **Add Lesson**:
 | Title | Lesson name shown in the curriculum |
 | Lesson Type | video, text, audio, or slides |
 | Content | Upload file (Cloudinary) or paste embed URL |
-| Text Content | Rich text (for text-type lessons) |
+| Lesson text | For text-type lessons — write in **Markdown** or **Rich text** (see below) |
 | Duration | Approximate minutes (optional, shown to students) |
 | Free Preview | Toggle on to let non-enrolled visitors view this lesson |
 | Order | Drag to reorder within the module |
@@ -83,7 +83,27 @@ Under each module, click **Add Lesson**:
 
 - **Video/Audio** — drag or click to upload; Cloudinary transcodes automatically
 - **Slides** — paste an embed code (Google Slides, Canva, etc.)
-- **Text** — type directly in the rich text editor
+- **Text** — write the lesson body in the text editor (see below)
+
+### Editing a text lesson's body
+
+Text lessons have a body editor with a **Markdown / Rich text** toggle at the top:
+
+- **Markdown** (default) — a plain text box that accepts Markdown (`## Heading`,
+  `**bold**`, `- list`, `[link](url)`). A **live preview** beside it shows exactly how
+  students will see it; use **Hide preview** to type full-width. Markdown is the recommended
+  format — it is the cleanest to paste into, diff, and re-import.
+- **Rich text** — a what-you-see-is-what-you-get editor (bold, italic, headings, lists,
+  links, images, code). Use this if you prefer formatting buttons over Markdown syntax.
+
+Switching **Markdown → Rich text** converts your content automatically. Switching back
+**Rich text → Markdown** restores your last Markdown version and drops edits made in rich
+mode, so pick one format per lesson and stick with it.
+
+**To edit an existing lesson:** open the course, go to the **Curriculum** tab, click the
+**pencil** on the lesson to expand it, edit the body, and click **Save**. Use blank lines
+between paragraphs and `##` headings to keep long lessons readable — the student player adds
+generous spacing around paragraphs, headings, and lists automatically.
 
 ---
 

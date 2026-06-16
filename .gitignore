@@ -196,3 +196,7 @@ test-results/
 
 # .env.example must be tracked (ecosystem rule)
 !.env.example
+
+# Lesson reformatter working artifacts (per-lesson dumps + original backups)
+scripts/_lesson-work/
+scripts/_lesson-backups/

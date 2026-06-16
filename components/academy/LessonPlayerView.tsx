@@ -478,7 +478,7 @@ export default function LessonPlayerView({ courseId, lessonId }: { courseId: str
         )}
 
         {lesson.text_content && (
-          <div className="prose prose-invert prose-sm max-w-none mb-6 bg-gray-900 border border-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-8">
+          <div className="prose prose-invert prose-base max-w-none mb-6 bg-gray-900 border border-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-8 prose-headings:text-white prose-headings:font-semibold prose-h2:mt-8 prose-h2:mb-3 prose-p:leading-relaxed prose-li:my-1">
             <div dangerouslySetInnerHTML={{ __html: renderTextContent(lesson.text_content, lesson.content_format) }} />
           </div>
         )}

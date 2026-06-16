@@ -119,6 +119,18 @@ Every content lesson follows this order. The bracket notes like `[Sound: ...]`,
 `[tone]`, and `[Beat]` are directions for whoever records the audio. They can stay
 in the written show notes as light stage directions.
 
+> **Publishing the reading version.** Students read text lessons; they do not see the
+> bracketed audio cues. `scripts/reformat-lesson-text.mjs` converts a course's bracketed
+> scripts into clean, well-spaced Markdown: it strips every stage cue (`[Sound: ...]`,
+> `[Beat]`, `[tone]`) and turns each beat (`[RECALL]`, `[HOOK]`, `[TEACH]`, `[PICTURE]`,
+> `[ON THE TEST]`, `[CHECK]`) into a short `##` heading that *describes that section's
+> content*. The body transform changes no words, so in-text citations are preserved exactly
+> (a guardrail aborts any lesson whose citations would change). Run
+> `node --env-file=.env.local scripts/reformat-lesson-text.mjs prep <courseId>`, generate the
+> per-section headings, then `... apply <courseId> --apply`. The original bracketed script is
+> backed up first so you can still record audio from it. Teachers can also edit any lesson's
+> text directly in the **Curriculum** tab (Markdown or Rich text) — see the Teacher Guide.
+
 ```
 # Lesson N: Plain Title
 

@@ -126,7 +126,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   const body = await request.json();
   const isFreeByDefault = body.is_free_preview ?? (course.price_type === 'free');
   const {
-    title, lesson_type = 'video', content_url, text_content,
+    title, lesson_type = 'video', content_url, text_content, content_format,
     duration_seconds, order = 0, module_id, quiz_content,
     audio_chapters, transcript_content, map_content, documents, podcast_links,
     video_360_autoplay, video_360_poster_url,
@@ -146,6 +146,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       lesson_type,
       content_url: content_url ?? null,
       text_content: text_content ?? null,
+      ...(content_format ? { content_format } : {}),
       duration_seconds: duration_seconds ?? null,
       order,
       is_free_preview,
