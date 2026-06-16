@@ -9,7 +9,7 @@ import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Link from 'next/link';
 import {
   ChevronLeft, Loader2, Save, Globe, EyeOff, GitBranch,
-  ClipboardList, Users, Eye,
+  ClipboardList, Users, Eye, BookCheck,
 } from 'lucide-react';
 
 import CourseInfoTab from './CourseInfoTab';
@@ -172,6 +172,12 @@ export default function CourseEditorLayout({ courseId }: Props) {
             className="flex items-center gap-1.5 px-3 py-2.5 bg-gray-800 text-gray-300 rounded-xl text-sm hover:bg-gray-700 transition min-h-11"
           >
             <ClipboardList className="w-3.5 h-3.5" /> Assignments
+          </Link>
+          <Link
+            href={`/dashboard/teaching/courses/${courseId}/claims`}
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-gray-800 text-gray-300 rounded-xl text-sm hover:bg-gray-700 transition min-h-11"
+          >
+            <BookCheck className="w-3.5 h-3.5" aria-hidden="true" /> Sources
           </Link>
           {/* Primary call-to-action: open the public course page in a new
               tab so the teacher sees exactly what a not-yet-enrolled
