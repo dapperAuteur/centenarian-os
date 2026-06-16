@@ -6,20 +6,16 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/ui/SiteFooter';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL
-  ? `https://${process.env.NEXT_PUBLIC_APP_URL.replace(/^https?:\/\//, '')}`
-  : 'https://centenarianos.com';
-
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'Recipes',
   description: 'Discover and share healthy longevity recipes. Browse community-created meals, import recipes from any URL, and track nutrition.',
-  openGraph: {
-    title: 'Recipes · CentenarianOS',
-    description: 'Discover and share healthy longevity recipes. Browse community-created meals, import recipes from any URL, and track nutrition.',
-    images: [{ url: `${SITE_URL}/api/og/default`, width: 1200, height: 630 }],
-  },
-};
+  path: '/recipes',
+  eyebrow: 'CentenarianOS',
+  ogTitle: 'Longevity Recipes',
+  ogSubtitle: 'Community-created healthy meals you can browse, import, and track.',
+});
 
 export default function RecipesLayout({ children }: { children: React.ReactNode }) {
   return (

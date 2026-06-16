@@ -8,11 +8,16 @@ import SiteFooter from '@/components/ui/SiteFooter';
 import DemoLoginButton from '@/components/ui/DemoLoginButton';
 import PageViewTracker from '@/components/ui/PageViewTracker';
 import type { Metadata } from 'next';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
-export const metadata: Metadata = {
-  title: 'Features · CentenarianOS',
+export const metadata: Metadata = buildPageMetadata({
+  title: 'Features',
   description: 'Explore every module in CentenarianOS: planning, nutrition, finance, health metrics, workouts, travel, and more.',
-};
+  path: '/features',
+  eyebrow: 'CentenarianOS',
+  ogTitle: 'Every module in CentenarianOS',
+  ogSubtitle: 'Planning, nutrition, finance, health metrics, workouts, travel, and more.',
+});
 
 export default function FeaturesIndexPage() {
   return (

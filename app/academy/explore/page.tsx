@@ -5,17 +5,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import CommodityMap from "@/components/academy/CommodityMapClient";
+import { buildPageMetadata } from "@/lib/seo/page-metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Explore All Episodes | Better Vice Club",
   description:
     "21 global commodities. 3 seasons. Geography, Social Studies, Economics, and ELA through coffee, chocolate, whiskey, khat, and more.",
-  openGraph: {
-    title: "BVC Commodity Map | Learn.WitUS",
-    description:
-      "Explore all 21 Better Vice Club episodes on an interactive world map.",
-  },
-};
+  path: "/academy/explore",
+  eyebrow: "Better Vice Club Curriculum",
+  ogTitle: "The Better Vice Club Commodity Map",
+  ogSubtitle: "21 global commodities across 3 seasons on an interactive world map.",
+});
 
 export default function CommodityMapPage() {
   return (
