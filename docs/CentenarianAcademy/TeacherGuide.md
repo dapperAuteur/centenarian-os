@@ -135,6 +135,26 @@ After grading, use the **Feedback Thread** section (visible from the student's a
 
 ---
 
+## Sources and Claims (Verify Your Science)
+
+If your course makes factual or health claims, back each one with a real, verified source.
+Open the **Sources** tab from the course editor.
+
+- **List a claim** that needs a source (the claim as written, and where it appears).
+- **Add a source**: paste a DOI or a link. The citation fills in automatically (resolved
+  against Crossref), with the APA reference and an open-access PDF link when one exists.
+- **Confirm** the claim to add the source to the course's verified library, or **drop** the
+  claim if no source holds up. A progress badge shows how many claims are sourced.
+
+Why this matters: AI-drafted material often contains fabricated studies, mis-attributed
+authors, and inflated statistics. Verifying sources is what lets a course say "every claim
+is backed by research you can check." If you are vetting a course before agreeing to teach
+it, the **Teacher Evidence Ledger** (in the course's `teacher/` materials) lists every cited
+claim, the source's abstract, and the exact lesson it appears in. Full standard:
+`CitationIntegrityGuide.md`.
+
+---
+
 ## Promo Codes
 
 **Path:** `/dashboard/teaching/promo-codes`

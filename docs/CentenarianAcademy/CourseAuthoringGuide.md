@@ -11,6 +11,11 @@ The rules here come from a short shelf of books on how people learn and how to
 write plainly. The point is not the theory. The point is a checklist you can
 follow that produces courses people finish and pass.
 
+For sources and citations, follow `CitationIntegrityGuide.md`: verify every citation
+against Crossref or PubMed, never invent or mis-attribute a study, and ship the source
+artifacts (master usage map, teacher evidence ledger). To build a course with an AI
+assistant, hand it `CourseCreationWithAI.md`.
+
 ---
 
 ## 0. Write like a person, not like a machine
