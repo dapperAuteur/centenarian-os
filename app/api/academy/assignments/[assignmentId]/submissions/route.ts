@@ -36,7 +36,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   let query = db
     .from('assignment_submissions')
-    .select('id, student_id, content, media_urls, submitted_at, status, grade, teacher_feedback, profiles(username, display_name)')
+    .select('id, student_id, content, media_urls, submitted_at, status, grade, teacher_feedback, metric_snapshot, profiles(username, display_name)')
     .eq('assignment_id', assignmentId);
 
   if (!isTeacher) {
@@ -61,6 +61,43 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
   }
 
+  // If this assignment asks for health metrics, capture a snapshot of the student's
+  // own logged metrics at submit time, server-side, so the teacher sees the data as it
+  // was even if the student keeps logging. Never blocks the submission if it fails.
+  let metricSnapshot: Record<string, unknown> | null = null;
+  try {
+    const { data: assignment } = await db
+      .from('assignments')
+      .select('requires_metrics')
+      .eq('id', assignmentId)
+      .maybeSingle();
+    const req = assignment?.requires_metrics as { metrics?: string[]; days?: number } | null;
+    if (req && Array.isArray(req.metrics) && req.metrics.length > 0) {
+      const days = [7, 30, 90].includes(Number(req.days)) ? Number(req.days) : 7;
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+      const sinceStr = since.toISOString().split('T')[0];
+      const cols = req.metrics.filter((c) => /^[a-z_]+$/.test(c));
+      if (cols.length > 0) {
+        const { data: rows } = await db
+          .from('user_health_metrics')
+          .select(cols.join(', ') + ', logged_date')
+          .eq('user_id', user.id)
+          .eq('source', 'manual')
+          .gte('logged_date', sinceStr);
+        const list = (rows ?? []) as unknown as Record<string, number | null>[];
+        const averages: Record<string, number | null> = {};
+        for (const c of cols) {
+          const vals = list.map((r) => r[c]).filter((v): v is number => typeof v === 'number');
+          averages[c] = vals.length ? Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10 : null;
+        }
+        metricSnapshot = { days, log_count: list.length, averages, captured_at: new Date().toISOString() };
+      }
+    }
+  } catch {
+    metricSnapshot = null;
+  }
+
   const { data, error } = await db
     .from('assignment_submissions')
     .upsert({
@@ -70,6 +107,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       media_urls: media_urls ?? [],
       status,
       submitted_at: status === 'submitted' ? new Date().toISOString() : null,
+      ...(metricSnapshot ? { metric_snapshot: metricSnapshot } : {}),
     }, { onConflict: 'assignment_id,student_id' })
     .select()
     .single();

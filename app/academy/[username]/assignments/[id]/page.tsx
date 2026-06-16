@@ -19,7 +19,21 @@ interface Assignment {
   title: string;
   description: string | null;
   due_date: string | null;
+  requires_metrics: { metrics: string[]; days: number } | null;
 }
+
+interface MetricsSummary {
+  days: number;
+  log_count: number;
+  averages: Record<string, number | null>;
+}
+
+const METRIC_LABELS: Record<string, string> = {
+  resting_hr: 'Resting heart rate', steps: 'Daily steps', sleep_hours: 'Sleep (hours)',
+  activity_min: 'Activity minutes', sleep_score: 'Sleep score', hrv_ms: 'HRV (ms)',
+  spo2_pct: 'Blood oxygen', active_calories: 'Active calories', stress_score: 'Stress score',
+  recovery_score: 'Recovery score', weight_lbs: 'Weight (lbs)',
+};
 
 interface Submission {
   id: string;
@@ -47,6 +61,9 @@ export default function AssignmentPage() {
   // Metric slot picker state
   const [metricSlots, setMetricSlots] = useState(1);
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
+
+  // Metric auto-prefill (when the assignment declares requires_metrics)
+  const [metricsSummary, setMetricsSummary] = useState<MetricsSummary | null>(null);
 
   const CORE_METRICS = [
     { key: 'resting_hr', label: 'Resting HR' },
@@ -95,6 +112,18 @@ export default function AssignmentPage() {
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [courseId, assignmentId]);
+
+  // When the assignment asks for health metrics, load this student's own summary
+  // for the requested period so they can see and report their real numbers.
+  useEffect(() => {
+    const req = assignment?.requires_metrics;
+    if (!req || !Array.isArray(req.metrics) || req.metrics.length === 0) return;
+    const days = [7, 30, 90].includes(Number(req.days)) ? Number(req.days) : 7;
+    offlineFetch(`/api/health-metrics/summary?days=${days}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d && d.averages) setMetricsSummary(d); })
+      .catch(() => {});
+  }, [assignment]);
 
   async function handleSave(status: 'draft' | 'submitted') {
     setSaving(true);
@@ -170,6 +199,49 @@ export default function AssignmentPage() {
         {assignment.description && (
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-8 text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
             {assignment.description}
+          </div>
+        )}
+
+        {/* Metric auto-prefill: the student's own logged numbers for this assignment */}
+        {assignment.requires_metrics && Array.isArray(assignment.requires_metrics.metrics) && (
+          <div className="bg-sky-950/30 border border-sky-800/50 rounded-xl p-4 sm:p-5 mb-6">
+            <h2 className="font-semibold text-white mb-1 flex items-center gap-2 text-sm">
+              <Activity className="w-4 h-4 text-sky-400" />
+              Your numbers for this assignment
+              <span className="text-gray-500 font-normal">(last {assignment.requires_metrics.days} days)</span>
+            </h2>
+            <p className="text-gray-400 text-xs mb-3">
+              Pulled from the metrics you log in{' '}
+              <Link href="/dashboard/metrics" className="text-sky-400 hover:underline">My Metrics</Link>.
+              These get saved with your submission, so log a few days first for an accurate picture.
+            </p>
+            {metricsSummary ? (
+              metricsSummary.log_count > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {assignment.requires_metrics.metrics.map((key) => (
+                    <div key={key} className="bg-gray-900/60 rounded-lg p-3">
+                      <p className="text-gray-400 text-xs mb-1">{METRIC_LABELS[key] ?? key}</p>
+                      <p className="text-white text-lg font-semibold">
+                        {metricsSummary.averages[key] ?? '—'}
+                        <span className="text-gray-500 text-xs font-normal"> avg</span>
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-amber-400 text-sm">
+                  No metrics logged yet for this period.{' '}
+                  <Link href="/dashboard/metrics" className="underline">Log today&apos;s numbers</Link> to begin.
+                </p>
+              )
+            ) : (
+              <p className="text-gray-500 text-sm flex items-center gap-2">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading your metrics…
+              </p>
+            )}
+            {metricsSummary && (
+              <p className="text-gray-600 text-xs mt-2">Based on {metricsSummary.log_count} logged day{metricsSummary.log_count === 1 ? '' : 's'}.</p>
+            )}
           </div>
         )}
 

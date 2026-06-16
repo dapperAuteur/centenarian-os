@@ -69,7 +69,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   let query = db
     .from('assignments')
-    .select('id, title, description, due_date, lesson_id, module_id, scope, created_at')
+    .select('id, title, description, due_date, lesson_id, module_id, scope, requires_metrics, created_at')
     .eq('course_id', courseId)
     .order('created_at', { ascending: true });
 
@@ -95,10 +95,19 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { title, description, due_date, lesson_id, module_id, scope = 'course' } = await request.json();
+  const { title, description, due_date, lesson_id, module_id, scope = 'course', requires_metrics } = await request.json();
   if (!title?.trim()) return NextResponse.json({ error: 'Title required' }, { status: 400 });
   if (!['course', 'module', 'lesson'].includes(scope)) {
     return NextResponse.json({ error: 'Invalid scope' }, { status: 400 });
+  }
+
+  // Optional metric-prefill config. Shape: { metrics: string[], days: number }.
+  let requiresMetrics: { metrics: string[]; days: number } | null = null;
+  if (requires_metrics != null) {
+    const m = requires_metrics as { metrics?: unknown; days?: unknown };
+    const metrics = Array.isArray(m.metrics) ? m.metrics.filter((x): x is string => typeof x === 'string') : [];
+    const days = [7, 30, 90].includes(Number(m.days)) ? Number(m.days) : 7;
+    if (metrics.length > 0) requiresMetrics = { metrics, days };
   }
 
   if (scope === 'module') {
@@ -123,6 +132,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       scope,
       module_id: scope === 'module' ? module_id : null,
       lesson_id: scope === 'lesson' ? lesson_id : null,
+      requires_metrics: requiresMetrics,
     })
     .select()
     .single();
