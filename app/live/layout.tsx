@@ -3,15 +3,16 @@
 
 import type { Metadata } from 'next';
 import SiteHeader from '@/components/SiteHeader';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'Live Sessions',
   description: 'Join live sessions, workshops, and events on CentenarianOS. Learn from teachers and connect with the community in real time.',
-  openGraph: {
-    title: 'Live Sessions · CentenarianOS',
-    description: 'Join live sessions, workshops, and events. Learn from teachers and connect with the community.',
-  },
-};
+  path: '/live',
+  eyebrow: 'CentenarianOS',
+  ogTitle: 'Live Sessions · CentenarianOS',
+  ogSubtitle: 'Workshops and events. Learn from teachers and connect with the community.',
+});
 
 export default function LiveLayout({ children }: { children: React.ReactNode }) {
   return (

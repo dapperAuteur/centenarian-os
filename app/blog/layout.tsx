@@ -5,28 +5,16 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import SiteHeader from '@/components/SiteHeader';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL
-  ? `https://${process.env.NEXT_PUBLIC_APP_URL.replace(/^https?:\/\//, '')}`
-  : 'https://centenarianos.com';
-
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'Blog',
   description: 'Member posts on longevity, health, finance, travel, and personal development from the CentenarianOS community.',
-  openGraph: {
-    title: 'CentenarianOS Blog',
-    description: 'Member posts on longevity, health, finance, and personal development.',
-    images: [{ url: `${SITE_URL}/og-default.png`, width: 1200, height: 630 }],
-    url: `${SITE_URL}/blog`,
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'CentenarianOS Blog',
-    images: [`${SITE_URL}/og-default.png`],
-  },
-  alternates: { canonical: `${SITE_URL}/blog` },
-};
+  path: '/blog',
+  eyebrow: 'CentenarianOS Blog',
+  ogTitle: 'CentenarianOS Blog',
+  ogSubtitle: 'Member posts on longevity, health, finance, and personal development.',
+});
 
 import SiteFooter from '@/components/ui/SiteFooter';
 
