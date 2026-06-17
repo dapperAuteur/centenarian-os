@@ -14,7 +14,7 @@ const folderIdx = args.indexOf('--folder');
 const SUBFOLDER = folderIdx >= 0 ? args[folderIdx + 1] : 'ces';
 const outIdx = args.indexOf('--out');
 const MANIFEST = outIdx >= 0 ? args[outIdx + 1] : 'docs/ces-curriculum/academy-import/resources/pdf/_uploads.json';
-const inputs = args.filter((a, i) => !a.startsWith('--') && i !== folderIdx + 1 && i !== outIdx + 1);
+const inputs = args.filter((a, i) => !a.startsWith('--') && !(folderIdx >= 0 && i === folderIdx + 1) && !(outIdx >= 0 && i === outIdx + 1));
 
 const cloud = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 const preset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
