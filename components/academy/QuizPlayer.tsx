@@ -4,9 +4,19 @@
 // Interactive quiz component: one question at a time, immediate feedback,
 // score summary, retry support. Used within the lesson player for quiz-type lessons.
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, RotateCcw, ChevronRight, Award, BookOpen } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+
+// Fisher-Yates shuffle, returns a new array (does not mutate input).
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 interface QuizOption {
   id: string;
@@ -25,9 +35,11 @@ interface QuizQuestion {
 }
 
 interface QuizContent {
-  questions: QuizQuestion[];
+  questions: QuizQuestion[]; // the full question pool
   passingScore: number;
   attemptsAllowed: number; // -1 = unlimited
+  questionsPerAttempt?: number; // if set and < pool size, draw this many at random each attempt
+  shuffleOptions?: boolean; // shuffle the answer-option order within each question
 }
 
 interface QuizExplanation {
@@ -45,7 +57,51 @@ interface QuizPlayerProps {
 }
 
 export default function QuizPlayer({ quizContent, courseId, lessonId, onComplete }: QuizPlayerProps) {
-  const { questions, passingScore, attemptsAllowed } = quizContent;
+  const { passingScore, attemptsAllowed } = quizContent;
+
+  // Per-question history for spaced recall: stats[questionId] = { seen, wrong }.
+  // Loaded from the student's saved progress, updated after each attempt.
+  const [quizStats, setQuizStats] = useState<Record<string, { seen: number; wrong: number }> | null>(null);
+
+  // Spaced-recall weight: unseen questions are favored so every item gets shown,
+  // and questions the student misses more often are weighted higher so they come
+  // back around sooner.
+  function weightFor(q: QuizQuestion, stats: Record<string, { seen: number; wrong: number }> | null): number {
+    const s = stats?.[q.id];
+    if (!s || s.seen === 0) return 3;
+    return 1 + 3 * (s.wrong / s.seen);
+  }
+
+  // Rotating question library: draw a fresh subset each attempt so the quiz is
+  // not identical every time. Selection is weighted toward missed/unseen items
+  // (spaced recall). If questionsPerAttempt is unset or >= the pool size, all
+  // questions are used. When shuffleOptions is true, option order is randomized.
+  // Scoring is by question id (see the progress route), so any subset scores.
+  function buildAttempt(stats: Record<string, { seen: number; wrong: number }> | null): QuizQuestion[] {
+    const pool = quizContent.questions;
+    const n = quizContent.questionsPerAttempt && quizContent.questionsPerAttempt > 0
+      ? Math.min(quizContent.questionsPerAttempt, pool.length)
+      : pool.length;
+    // Weighted sampling without replacement.
+    const remaining = [...pool];
+    const picked: QuizQuestion[] = [];
+    while (picked.length < n && remaining.length > 0) {
+      const weights = remaining.map((q) => weightFor(q, stats));
+      const total = weights.reduce((a, b) => a + b, 0);
+      let r = Math.random() * total;
+      let idx = 0;
+      for (; idx < remaining.length - 1; idx++) {
+        r -= weights[idx];
+        if (r <= 0) break;
+      }
+      picked.push(remaining.splice(idx, 1)[0]);
+    }
+    return quizContent.shuffleOptions
+      ? picked.map((q) => ({ ...q, options: shuffle(q.options) }))
+      : picked;
+  }
+
+  const [questions, setQuestions] = useState<QuizQuestion[]>(() => buildAttempt(null));
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
@@ -62,6 +118,31 @@ export default function QuizPlayer({ quizContent, courseId, lessonId, onComplete
   } | null>(null);
   const [reviewMode, setReviewMode] = useState(false);
   const [reviewIndex, setReviewIndex] = useState(0);
+
+  // Load this student's per-question history once, then rebuild the opening
+  // attempt to favor questions they have missed before (spaced recall). Only
+  // rebuilds if the quiz has not been started yet, so it never reshuffles a
+  // quiz in progress.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await offlineFetch(`/api/academy/courses/${courseId}/lessons/${lessonId}/progress`);
+        const data = await r.json();
+        if (cancelled || !data?.quiz_stats) return;
+        setQuizStats(data.quiz_stats);
+        setQuestions((prev) =>
+          answers.length === 0 && !answered && currentIndex === 0 && !result
+            ? buildAttempt(data.quiz_stats)
+            : prev,
+        );
+      } catch {
+        // No saved stats available; keep the uniform rotation.
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId, lessonId]);
 
   const currentQuestion = questions[currentIndex];
   const isLastQuestion = currentIndex === questions.length - 1;
@@ -104,6 +185,17 @@ export default function QuizPlayer({ quizContent, courseId, lessonId, onComplete
       const data = await r.json();
       if (!r.ok) throw new Error(data.error);
       setResult(data);
+      // Update local spaced-recall stats so the next attempt favors what was missed.
+      if (Array.isArray(data.explanations)) {
+        setQuizStats((prev) => {
+          const next: Record<string, { seen: number; wrong: number }> = { ...(prev ?? {}) };
+          for (const e of data.explanations as Array<{ questionId: string; correct: boolean }>) {
+            const s = next[e.questionId] ?? { seen: 0, wrong: 0 };
+            next[e.questionId] = { seen: s.seen + 1, wrong: s.wrong + (e.correct ? 0 : 1) };
+          }
+          return next;
+        });
+      }
       if (data.passed) onComplete();
     } catch {
       // Silently handle — user can retry
@@ -113,6 +205,7 @@ export default function QuizPlayer({ quizContent, courseId, lessonId, onComplete
   }
 
   function handleRetry() {
+    setQuestions(buildAttempt(quizStats)); // draw a fresh, spaced-recall-weighted rotation
     setCurrentIndex(0);
     setSelectedOptionId(null);
     setAnswered(false);
