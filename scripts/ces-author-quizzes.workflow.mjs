@@ -81,7 +81,7 @@ const V_SCHEMA = {
   required: ['questions'],
 };
 
-const STYLE = 'No em-dashes, no en-dashes (write "three to four"), and do not use utilize, facilitate, leverage, delve, robust, crucial, holistic, thus, regarding. Plain language.';
+const STYLE = 'No em-dashes, no en-dashes (write "three to four"), and do not use utilize, facilitate, leverage, delve, robust, crucial, holistic, thus, regarding. Plain language. Every question must be answerable from text alone: do NOT write a question that requires viewing a figure, chart, or image, and never reference or depend on a NASM image. If a concept is visual, describe it in words.';
 
 function authorPrompt(m) {
   const lessonGlob = `docs/ces-curriculum/academy-import/_lessons/m${pad(m.module)}-*.md`;

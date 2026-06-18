@@ -58,7 +58,9 @@ const questions = data.questions || [];
 const good = [], review = [];
 for (const q of questions) {
   const v = q.verdict || {};
-  const flagged = (v.agree === false && !v.isFigureDependent) || v._conflict || q._conflict || (v.confidence === 'low' && !v.isFigureDependent);
+  // Figure-dependent questions are NOT shipped: we use no proprietary (NASM) images, so a
+  // question that needs a figure goes to review (drop it or reword to be text-answerable).
+  const flagged = v.isFigureDependent || (v.agree === false) || v._conflict || q._conflict || (v.confidence === 'low');
   if (flagged) review.push(q); else good.push(q);
 }
 
