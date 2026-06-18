@@ -91,13 +91,19 @@ export async function POST(request: NextRequest, { params }: Params) {
       }
     }
 
-    // Score the quiz
+    // Score over the questions actually served this attempt (quiz_answers), not
+    // the full pool. Quizzes may draw a random subset from a larger pool
+    // (questionsPerAttempt), so the denominator is the number answered, and each
+    // answer's correctness is looked up in the pool by question id. When the
+    // whole pool is served, this is identical to the previous behavior.
+    const poolById = new Map(quizData.questions.map((q) => [q.id, q]));
     let correct = 0;
     const explanations: Array<{ questionId: string; correct: boolean; explanation: string; citation?: string }> = [];
 
-    for (const question of quizData.questions) {
-      const answer = quiz_answers.find((a: { questionId: string }) => a.questionId === question.id);
-      const isCorrect = answer?.selectedOptionId === question.correctOptionId;
+    for (const answer of quiz_answers as Array<{ questionId: string; selectedOptionId: string }>) {
+      const question = poolById.get(answer.questionId);
+      if (!question) continue; // ignore answers that don't match a pool question
+      const isCorrect = answer.selectedOptionId === question.correctOptionId;
       if (isCorrect) correct++;
       explanations.push({
         questionId: question.id,
@@ -107,8 +113,9 @@ export async function POST(request: NextRequest, { params }: Params) {
       });
     }
 
-    const score = quizData.questions.length > 0
-      ? Math.round((correct / quizData.questions.length) * 100 * 100) / 100
+    const answeredCount = explanations.length;
+    const score = answeredCount > 0
+      ? Math.round((correct / answeredCount) * 100 * 100) / 100
       : 0;
     const passed = score >= quizData.passingScore;
 
