@@ -61,6 +61,10 @@ Lesson types:
 - **Audio** — inline audio player
 - **Text** — scrollable article with rich formatting
 - **Slides** — embeddable slide deck
+- **Quiz** — a multiple-choice knowledge check (see "Quizzes & Flashcards" below)
+
+Many courses also include a **Key Terms** lesson in each module (the vocabulary for that
+chapter), with the full course glossary collected in the **Resources** module.
 
 Free preview lessons are marked with a **Preview** badge and are accessible without enrolling.
 
@@ -98,6 +102,21 @@ The **My Courses** page shows all of your enrollments:
 - A **Start / Continue / Review** button that takes you straight back to where you left off
 
 When a course reaches 100%, it is marked **Complete**.
+
+### Quizzes (spaced recall)
+Quiz lessons test what you've learned and are built to make the facts stick:
+- **Rotating questions.** Each attempt draws a fresh random subset from a larger pool, and the
+  answer options are shuffled, so you can't memorize positions. Retaking surfaces new questions.
+- **Unlimited attempts.** Retake as often as you like; the passing score is 80%.
+- **Learn from misses.** Every question shows why the right answer is right and why the others are
+  wrong. The player favors questions you've missed or not seen yet, so weak spots come back around.
+
+### Flashcards (FlashLearn)
+Many courses ship companion **flashcards** powered by FlashLearn AI for long-term spaced repetition:
+- One deck per module (key terms and quiz facts), in small sets so they're quick to run.
+- **Two study modes:** multiple-choice (pick the answer) and classic front/back recall.
+- Your results feed a spaced-repetition schedule, so cards you struggle with reappear sooner. You
+  don't need a separate account — your progress is tracked for you.
 
 ---
 
