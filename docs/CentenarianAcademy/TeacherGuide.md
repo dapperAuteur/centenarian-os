@@ -72,7 +72,7 @@ Under each module, click **Add Lesson**:
 | Field | Description |
 |---|---|
 | Title | Lesson name shown in the curriculum |
-| Lesson Type | video, text, audio, or slides |
+| Lesson Type | video, text, audio, slides, or quiz |
 | Content | Upload file (Cloudinary) or paste embed URL |
 | Lesson text | For text-type lessons — write in **Markdown** or **Rich text** (see below) |
 | Duration | Approximate minutes (optional, shown to students) |
@@ -104,6 +104,20 @@ mode, so pick one format per lesson and stick with it.
 **pencil** on the lesson to expand it, edit the body, and click **Save**. Use blank lines
 between paragraphs and `##` headings to keep long lessons readable — the student player adds
 generous spacing around paragraphs, headings, and lists automatically.
+
+### Quizzes, Key Terms, and Flashcards
+
+- **Quiz lessons** use a rotating, spaced-recall player. Author a **pool** of questions (more than
+  a student sees at once) in `quiz_content` and the player draws a random subset per attempt,
+  shuffles the options, and gives unlimited attempts at an 80% pass. Each question stores why every
+  option is right or wrong. Questions are scored by option id, so subsetting and shuffling are safe.
+- **Key Terms lessons** give each module its own vocabulary list (the chapter's terms), while the
+  full glossary lives in the course's **Resources** module. Students get a focused per-chapter
+  reference plus the complete glossary in one place.
+- **Flashcards** can be generated from a course's glossary and quiz questions and pushed to
+  **FlashLearn AI** for long-horizon spaced repetition, with both authored multiple-choice and
+  classic front/back study. Student results flow back for a progress view. See
+  `docs/CentenarianAcademy/FlashcardPushGuide.md` and `FlashcardMC-and-Media.md`.
 
 ---
 

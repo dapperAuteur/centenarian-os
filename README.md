@@ -91,7 +91,7 @@ No free plan. All users must subscribe to access paid modules.
 | **Data Hub** | CSV import/export for 12+ modules with Google Sheets templates | Paid |
 | **Life Categories** | Tag activities across all modules with custom life-area categories | Paid |
 | **Media Tracker** | Books, TV, movies, podcasts with notes and episode linking | Paid |
-| **Academy (LMS)** | Create/sell courses; CYOA navigation; quizzes, maps, docs, audio, video | Free |
+| **Academy (LMS)** | Create/sell courses; CYOA navigation; rotating spaced-recall quizzes; FlashLearn flashcards (multiple-choice + classic); per-module key terms; maps, docs, audio, video | Free |
 | **Blog** | Rich text publishing, likes/saves, public author profiles | Free |
 | **Recipes** | Recipe sharing, URL import, cook profiles, JSON-LD scraping | Free |
 | **Cross-Module Links** | Bidirectional activity links, saved contacts/locations across all modules | Paid |

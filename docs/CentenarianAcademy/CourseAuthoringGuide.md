@@ -282,6 +282,14 @@ point to the lesson that covers it.
 
 **Mix the order.** Within a quiz, do not block all of one sub-topic together.
 
+**Rotating pools (spaced recall).** The player can draw a random subset per attempt and shuffle
+options. Author a **pool** larger than what a student sees at once and add two optional fields to
+`quiz_content`: `questionsPerAttempt` (how many to serve, roughly half the pool) and
+`shuffleOptions: true`. Because scoring matches the option `id`, subsetting and shuffling are safe.
+With unlimited attempts, students see new questions on each retake, and the player resurfaces items
+they miss. Omit these fields to show the whole pool in order (unchanged behavior). Write **original**
+questions — never reproduce an exam provider's items verbatim.
+
 ---
 
 ## 9. Module scaffolding
@@ -301,6 +309,15 @@ Three lesson types repeat in every module:
 
 Each module adds glossary terms. Use the columns `term, phonetic, definition,
 lesson_title`. Write definitions at about a sixth-grade reading level.
+
+**Per-module Key Terms lessons.** Give each module a `"<Module>: Key Terms"` lesson listing that
+chapter's vocabulary (place it after the content lessons, before the review/quiz), and keep the full
+glossary in the course's **Resources** module. See `docs/CentenarianAcademy/PerModuleVocabGenerator.md`.
+
+**Flashcards.** A course's glossary terms and quiz questions can be turned into FlashLearn AI decks
+for long-horizon spaced repetition — authored multiple-choice (from the quiz `options` +
+`correctOptionId`) plus classic front/back, capped at 20 cards per deck. See
+`docs/CentenarianAcademy/FlashcardPushGuide.md` and `FlashcardMC-and-Media.md`.
 
 Each course ships a metadata block: title, subtitle, description, category,
 navigation mode, and price type. See the course metadata file that ships with the
