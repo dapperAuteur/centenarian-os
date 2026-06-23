@@ -29,6 +29,7 @@ const EPISODES = {
   coffee: { ep: 1, quizTitle: 'Knowledge Check: Coffee' },
   tea: { ep: 2, quizTitle: 'Knowledge Check: Tea' },
   chocolate: { ep: 3, quizTitle: 'Knowledge Check: Chocolate' },
+  sugar: { ep: 4, quizTitle: 'Knowledge Check: Sugar' },
 };
 
 const slug = process.argv[2];

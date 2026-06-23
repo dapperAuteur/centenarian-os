@@ -78,6 +78,27 @@ const EPISODES = {
       [17, '17-quiz.md', 'Knowledge Check: Chocolate', 'quiz', 720, 'false', null, []],
     ],
   },
+  sugar: {
+    ep: 4, moduleTitle: 'Episode 4: Sugar — The Sweet Revolution', moduleOrder: 4,
+    lessons: [
+      [2, '02-intro.md', 'Sugar, the Sweet Revolution', 'text', 180, 'true', null, ['teacher-resources']],
+      [3, '03-geo-two-plants.md', 'Two Plants, One Sweetness', 'text', 420, 'true', null, []],
+      [4, '04-geo-where-sugar-grows.md', 'Where Sugar Grows', 'text', 360, 'false', 'map-geography.json', []],
+      [5, '05-geo-sugar-islands.md', 'The Sugar Islands', 'text', 360, 'false', null, []],
+      [6, '06-social-new-world.md', 'From New Guinea to the New World', 'text', 360, 'false', null, []],
+      [7, '07-social-triangular-trade.md', 'The Triangular Trade and the Middle Passage', 'text', 480, 'false', 'map-trade.json', ['equiano']],
+      [8, '08-social-resistance.md', 'Resistance and Revolution', 'text', 420, 'false', null, ['mary-prince']],
+      [9, '09-econ-from-luxury-to-cheap.md', 'From Luxury to the Cheapest Calorie', 'text', 420, 'false', null, []],
+      [10, '10-econ-hidden-costs.md', 'The Hidden Costs of Cheap Sugar', 'text', 420, 'false', null, []],
+      [11, '11-ela-words-of-sugar.md', 'The Words of Sugar', 'text', 360, 'false', null, []],
+      [12, '12-ela-whose-voice.md', 'Whose Voice Tells the Story', 'text', 420, 'false', null, ['beckford-jamaica', 'equiano', 'mary-prince', 'austen-mansfield']],
+      [13, '13-ela-blood-sweetened.md', 'Blood-Sweetened Luxury', 'text', 360, 'false', null, ['clarkson-essay']],
+      [14, '14-key-terms.md', 'Key Terms: Sugar', 'text', 300, 'false', null, []],
+      [15, '15-review.md', 'Cumulative Review: Sugar', 'text', 360, 'false', null, []],
+      [16, '16-references.md', 'Sources and Further Reading: Sugar', 'text', 180, 'false', null, []],
+      [17, '17-quiz.md', 'Knowledge Check: Sugar', 'quiz', 720, 'false', null, []],
+    ],
+  },
 };
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: generate-bvc-episode-csv.mjs <episode-slug>`); process.exit(1); }

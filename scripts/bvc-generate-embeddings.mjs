@@ -15,6 +15,7 @@ const EPISODES = {
   coffee: 'Episode 1: Coffee — The Daily Global Connection',
   tea: 'Episode 2: Tea — The Way of Tea',
   chocolate: 'Episode 3: Chocolate — Food of the Gods',
+  sugar: 'Episode 4: Sugar — The Sweet Revolution',
 };
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: bvc-generate-embeddings.mjs <episode-slug>`); process.exit(1); }
