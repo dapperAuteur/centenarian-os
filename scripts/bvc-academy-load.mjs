@@ -42,7 +42,7 @@ const SRC = path.join(ROOT, 'plans/BVC/ver1', slug);
 
 // order, file, title, type, durationSec, free, mapFile, docIds
 const LESSONS = [
-  [2, '02-intro.md', 'Coffee, and Why a Cup Is a Classroom', 'text', 180, true, null, []],
+  [2, '02-intro.md', 'Coffee, and Why a Cup Is a Classroom', 'text', 180, true, null, ['teacher-resources']],
   [3, '03-geo-coffee-belt.md', 'The Coffee Belt: Where Coffee Grows and Why', 'text', 360, true, null, []],
   [4, '04-geo-producers.md', 'The Big Producers and Their Terroir', 'text', 420, false, 'map-geography.json', []],
   [5, '05-geo-climate.md', 'Climate Change Is Redrawing the Map', 'text', 360, false, null, ['bunn-2015']],
