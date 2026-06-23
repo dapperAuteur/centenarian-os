@@ -11,7 +11,10 @@
 import { createClient } from '@supabase/supabase-js';
 
 const COURSE_ID = 'ca047c66-f03c-4924-9ebe-16e6bf076a85';
-const EPISODES = { coffee: 'Episode 1: Coffee — The Daily Global Connection' };
+const EPISODES = {
+  coffee: 'Episode 1: Coffee — The Daily Global Connection',
+  tea: 'Episode 2: Tea — The Way of Tea',
+};
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: bvc-generate-embeddings.mjs <episode-slug>`); process.exit(1); }
 const MODULE_TITLE = EPISODES[slug];

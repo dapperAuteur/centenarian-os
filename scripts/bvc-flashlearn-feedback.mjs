@@ -25,7 +25,10 @@ import path from 'path';
 const ROOT = '/Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os';
 const BASE = 'https://flashlearnai.witus.online/api/v1';
 const COURSE_ID = 'ca047c66-f03c-4924-9ebe-16e6bf076a85';
-const EPISODES = { coffee: { ep: 1, quizTitle: 'Knowledge Check: Coffee' } };
+const EPISODES = {
+  coffee: { ep: 1, quizTitle: 'Knowledge Check: Coffee' },
+  tea: { ep: 2, quizTitle: 'Knowledge Check: Tea' },
+};
 
 const slug = process.argv[2];
 const APPLY = process.argv.includes('--apply');

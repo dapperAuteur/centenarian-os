@@ -3,20 +3,18 @@
 //
 // Service-role loader for the "Better Vice Club" Academy course. Mirrors the
 // insert logic of app/api/academy/courses/[id]/import/route.ts but runs headless,
-// SCOPED to a single episode module. It is non-destructive to the other episodes:
-// it only touches the target episode's module.
+// SCOPED to a single episode module. Non-destructive to the other episodes.
 //
 // For the target episode it:
 //   1. keeps the existing recorded "Episode N Audio" lesson (the full listen),
-//   2. deletes the old non-audio lessons in that module (old single text + quiz),
+//   2. deletes the old non-audio lessons in that module,
 //   3. inserts the new audio-first micro-lessons (with maps, primary-source docs),
 //   4. inserts the rotating quiz lesson,
 //   5. inserts the module-scoped Project assignment,
-//   6. loads the episode glossary into course_glossary_terms (season-wide list,
-//      each term linked to its lesson),
+//   6. loads the episode glossary into course_glossary_terms (season-wide list),
 //   7. reads everything back.
 //
-// Run: node --env-file=.env.local scripts/bvc-academy-load.mjs coffee [--dry]
+// Run: node --env-file=.env.local scripts/bvc-academy-load.mjs coffee|tea [--dry]
 
 import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
@@ -27,10 +25,53 @@ const COURSE_ID = 'ca047c66-f03c-4924-9ebe-16e6bf076a85'; // "Better Vice Club"
 const DRY = process.argv.includes('--dry');
 const slug = process.argv[2];
 
+// Each episode: the exact existing module title, the assignment title, and the
+// lesson spec: [order, file, title, type, durationSec, free, mapFile, docIds].
+// Audio lesson is preserved at order 1; new lessons start at order 2.
 const EPISODES = {
   coffee: {
     moduleTitle: 'Episode 1: Coffee — The Daily Global Connection',
     assignmentTitle: 'Trace Your Favorite Coffee',
+    lessons: [
+      [2, '02-intro.md', 'Coffee, and Why a Cup Is a Classroom', 'text', 180, true, null, ['teacher-resources']],
+      [3, '03-geo-coffee-belt.md', 'The Coffee Belt: Where Coffee Grows and Why', 'text', 360, true, null, []],
+      [4, '04-geo-producers.md', 'The Big Producers and Their Terroir', 'text', 420, false, 'map-geography.json', []],
+      [5, '05-geo-climate.md', 'Climate Change Is Redrawing the Map', 'text', 360, false, null, ['bunn-2015']],
+      [6, '06-social-coffeehouse.md', 'The Coffeehouse Revolution', 'text', 480, false, null, ['royal-proclamation-1675', 'womens-petition-1674', 'mens-answer-1674']],
+      [7, '07-social-two-truths.md', 'Two Truths: Democracy and Colonial Labor', 'text', 420, false, 'map-trade.json', ['colonial-plantation-records']],
+      [8, '08-econ-bean-to-cup.md', 'Follow the Money: Bean to Cup', 'text', 420, false, null, []],
+      [9, '09-econ-trade-models.md', 'Fair Trade, Direct Trade, and Commodity', 'text', 420, false, null, []],
+      [10, '10-econ-price-shocks.md', 'Price Shocks and Why You Keep Buying', 'text', 420, false, null, []],
+      [11, '11-ela-words.md', 'The Words Coffee Carries', 'text', 360, false, null, []],
+      [12, '12-ela-ceremony.md', 'The Ethiopian Ceremony as Story', 'text', 360, false, null, []],
+      [13, '13-ela-ads.md', 'Reading a Coffee Ad', 'text', 420, false, null, []],
+      [14, '14-key-terms.md', 'Key Terms: Coffee', 'text', 300, false, null, []],
+      [15, '15-review.md', 'Cumulative Review: Coffee', 'text', 360, false, null, []],
+      [16, '16-references.md', 'Sources and Further Reading: Coffee', 'text', 180, false, null, []],
+      [17, '17-quiz.md', 'Knowledge Check: Coffee', 'quiz', 720, false, null, []],
+    ],
+  },
+  tea: {
+    moduleTitle: 'Episode 2: Tea — The Way of Tea',
+    assignmentTitle: 'The Story in Your Cup of Tea',
+    lessons: [
+      [2, '02-intro.md', 'Tea, and the Plant Behind Every Cup', 'text', 180, true, null, []],
+      [3, '03-geo-climate-zones.md', 'The Tea Plant and Its Climate Zones', 'text', 420, true, null, []],
+      [4, '04-geo-producers.md', 'The Big Producers and the First Flush', 'text', 360, false, 'map-geography.json', []],
+      [5, '05-geo-trade-routes.md', 'The Roads Tea Traveled', 'text', 420, false, 'map-trade.json', []],
+      [6, '06-social-origins-ceremony.md', 'From Medicine to Ceremony', 'text', 480, false, null, []],
+      [7, '07-social-boston-tea-party.md', 'The Boston Tea Party', 'text', 420, false, null, ['boston-tea-party-loc']],
+      [8, '08-social-who-grows-tea.md', 'Who Grows the Tea', 'text', 360, false, null, []],
+      [9, '09-econ-one-leaf-many-teas.md', 'One Leaf, Many Teas', 'text', 420, false, null, []],
+      [10, '10-econ-who-gets-paid.md', 'Who Gets Paid, Tea and Coffee Compared', 'text', 420, false, null, []],
+      [11, '11-ela-cha-and-te.md', 'Cha and Te', 'text', 360, false, null, []],
+      [12, '12-ela-classic-and-way.md', 'The Classic of Tea and the Way of Tea', 'text', 360, false, null, ['okakura-book-of-tea', 'classic-of-tea']],
+      [13, '13-ela-tea-ad.md', 'Reading a Tea Ad', 'text', 420, false, null, ['orwell-nice-cup-of-tea']],
+      [14, '14-key-terms.md', 'Key Terms: Tea', 'text', 300, false, null, []],
+      [15, '15-review.md', 'Cumulative Review: Tea', 'text', 360, false, null, []],
+      [16, '16-references.md', 'Sources and Further Reading: Tea', 'text', 180, false, null, []],
+      [17, '17-quiz.md', 'Knowledge Check: Tea', 'quiz', 720, false, null, []],
+    ],
   },
 };
 if (!slug || !EPISODES[slug]) {
@@ -40,32 +81,11 @@ if (!slug || !EPISODES[slug]) {
 const EP = EPISODES[slug];
 const SRC = path.join(ROOT, 'plans/BVC/ver1', slug);
 
-// order, file, title, type, durationSec, free, mapFile, docIds
-const LESSONS = [
-  [2, '02-intro.md', 'Coffee, and Why a Cup Is a Classroom', 'text', 180, true, null, ['teacher-resources']],
-  [3, '03-geo-coffee-belt.md', 'The Coffee Belt: Where Coffee Grows and Why', 'text', 360, true, null, []],
-  [4, '04-geo-producers.md', 'The Big Producers and Their Terroir', 'text', 420, false, 'map-geography.json', []],
-  [5, '05-geo-climate.md', 'Climate Change Is Redrawing the Map', 'text', 360, false, null, ['bunn-2015']],
-  [6, '06-social-coffeehouse.md', 'The Coffeehouse Revolution', 'text', 480, false, null, ['royal-proclamation-1675', 'womens-petition-1674', 'mens-answer-1674']],
-  [7, '07-social-two-truths.md', 'Two Truths: Democracy and Colonial Labor', 'text', 420, false, 'map-trade.json', ['colonial-plantation-records']],
-  [8, '08-econ-bean-to-cup.md', 'Follow the Money: Bean to Cup', 'text', 420, false, null, []],
-  [9, '09-econ-trade-models.md', 'Fair Trade, Direct Trade, and Commodity', 'text', 420, false, null, []],
-  [10, '10-econ-price-shocks.md', 'Price Shocks and Why You Keep Buying', 'text', 420, false, null, []],
-  [11, '11-ela-words.md', 'The Words Coffee Carries', 'text', 360, false, null, []],
-  [12, '12-ela-ceremony.md', 'The Ethiopian Ceremony as Story', 'text', 360, false, null, []],
-  [13, '13-ela-ads.md', 'Reading a Coffee Ad', 'text', 420, false, null, []],
-  [14, '14-key-terms.md', 'Key Terms: Coffee', 'text', 300, false, null, []],
-  [15, '15-review.md', 'Cumulative Review: Coffee', 'text', 360, false, null, []],
-  [16, '16-references.md', 'Sources and Further Reading: Coffee', 'text', 180, false, null, []],
-  [17, '17-quiz.md', 'Knowledge Check: Coffee', 'quiz', 720, false, null, []],
-];
-
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!url || !key) { console.error('Missing Supabase env (NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)'); process.exit(1); }
+if (!url || !key) { console.error('Missing Supabase env'); process.exit(1); }
 const db = createClient(url, key, { auth: { persistSession: false } });
 
-// strip the leading "# H1" title line (the lesson title field shows it)
 function lessonBody(file) {
   const raw = fs.readFileSync(path.join(SRC, file), 'utf8');
   const lines = raw.split('\n');
@@ -90,40 +110,35 @@ async function main() {
   console.log('Course:', course.title, `(price_type=${course.price_type})`);
   const isFreeCourse = course.price_type === 'free';
 
-  // 1. find the episode module
   const { data: mods } = await db.from('course_modules').select('id, title, order').eq('course_id', COURSE_ID);
   const mod = (mods ?? []).find((m) => m.title.toLowerCase().trim() === EP.moduleTitle.toLowerCase().trim());
   if (!mod) { console.error('Module not found by title:', EP.moduleTitle, '\n  existing:', (mods ?? []).map((m) => m.title)); process.exit(1); }
   console.log('Module:', mod.title, mod.id);
 
-  // 2. existing lessons: keep audio, delete the rest
   const { data: existing } = await db.from('lessons').select('id, order, title, lesson_type').eq('course_id', COURSE_ID).eq('module_id', mod.id).order('order');
   const audio = (existing ?? []).filter((l) => l.lesson_type === 'audio');
   const toDelete = (existing ?? []).filter((l) => l.lesson_type !== 'audio');
-  console.log(`Existing: ${existing?.length ?? 0} lessons. Keep ${audio.length} audio. Delete ${toDelete.length} non-audio:`, toDelete.map((l) => `${l.order}:${l.title}`).join(' | ') || '(none)');
+  console.log(`Existing: ${existing?.length ?? 0} lessons. Keep ${audio.length} audio. Delete ${toDelete.length} non-audio:`, toDelete.map((l) => l.title).join(' | ') || '(none)');
 
-  // documents (filter to valid https)
   const docs = readJson('documents.json');
   const docById = new Map(docs.filter((d) => isHttps(d.url)).map((d) => [d.id, { title: d.title, description: d.description, url: d.url, source_url: d.source_url ?? null }]));
   const skippedDocs = docs.filter((d) => !isHttps(d.url)).map((d) => d.id);
-  if (skippedDocs.length) console.log('Docs skipped (non-https url, need Cloudinary upload):', skippedDocs.join(', '));
+  if (skippedDocs.length) console.log('Docs skipped (non-https url):', skippedDocs.join(', '));
 
   if (DRY) {
-    console.log('\n[DRY RUN] would insert', LESSONS.length, 'lessons:');
-    for (const [order, file, title, type, , free, mapFile, docIds] of LESSONS)
+    console.log('\n[DRY RUN] would insert', EP.lessons.length, 'lessons:');
+    for (const [order, , title, type, , free, mapFile, docIds] of EP.lessons)
       console.log(`  ${String(order).padStart(2)}. (${type}) ${title}${free ? ' [free]' : ''}${mapFile ? ' +map' : ''}${docIds.length ? ' +docs(' + docIds.length + ')' : ''}`);
     const gloss = fs.readFileSync(path.join(SRC, 'glossary.csv'), 'utf8').split(/\r?\n/).filter(Boolean).slice(1);
     console.log(`\n[DRY RUN] would load ${gloss.length} glossary terms and 1 assignment "${EP.assignmentTitle}". No DB writes.`);
     return;
   }
 
-  // 3. ensure audio is order 1 + free, then delete non-audio
   for (const a of audio) await db.from('lessons').update({ order: 1, is_free_preview: true }).eq('id', a.id);
   for (const l of toDelete) { const { error } = await db.from('lessons').delete().eq('id', l.id); if (error) console.error('  ! delete', l.title, error.message); }
 
-  // 4. insert new lessons
   const stats = { created: 0, errors: [] };
-  for (const [order, file, title, type, duration, free, mapFile, docIds] of LESSONS) {
+  for (const [order, file, title, type, duration, free, mapFile, docIds] of EP.lessons) {
     const row = {
       course_id: COURSE_ID, module_id: mod.id, title, lesson_type: type,
       text_content: lessonBody(file), content_format: 'markdown',
@@ -138,7 +153,6 @@ async function main() {
     else { stats.created++; console.log(`  + L${order} (${type}) ${title}${row.map_content ? ' +map' : ''}${row.documents ? ' +' + row.documents.length + 'docs' : ''}`); }
   }
 
-  // 5. project assignment (module-scoped, skip if same title exists)
   const { data: existingAssign } = await db.from('assignments').select('id').eq('course_id', COURSE_ID).eq('title', EP.assignmentTitle).maybeSingle();
   if (existingAssign) console.log('Assignment exists, skipping:', EP.assignmentTitle);
   else {
@@ -146,7 +160,6 @@ async function main() {
     if (error) stats.errors.push(`assignment: ${error.message}`); else console.log('  + Assignment:', EP.assignmentTitle);
   }
 
-  // 6. glossary -> course_glossary_terms (resolve lesson_title -> lesson_id)
   const { data: allLessons } = await db.from('lessons').select('id, title').eq('course_id', COURSE_ID);
   const lessonByTitle = new Map((allLessons ?? []).map((l) => [l.title.toLowerCase().trim(), l.id]));
   const glossLines = fs.readFileSync(path.join(SRC, 'glossary.csv'), 'utf8').split(/\r?\n/).filter(Boolean);
@@ -157,15 +170,13 @@ async function main() {
     const lessonId = lessonTitle ? lessonByTitle.get(lessonTitle.toLowerCase().trim()) ?? null : null;
     const { error } = await db.from('course_glossary_terms').upsert({
       course_id: COURSE_ID, term, phonetic: phonetic || null, definition: definition || null,
-      definition_format: 'markdown', lesson_id: lessonId, sort_order: i, updated_at: new Date().toISOString(),
+      definition_format: 'markdown', lesson_id: lessonId, sort_order: 1000 + i, updated_at: new Date().toISOString(),
     }, { onConflict: 'course_id,term' });
     if (error) stats.errors.push(`glossary ${term}: ${error.message}`); else gl++;
   }
   console.log(`  + ${gl} glossary terms`);
 
   console.log('\nStats:', JSON.stringify(stats));
-
-  // 7. readback
   const { data: check } = await db.from('lessons').select('order, title, lesson_type, is_free_preview, map_content, documents, quiz_content').eq('course_id', COURSE_ID).eq('module_id', mod.id).order('order');
   console.log(`\nModule now has ${check?.length ?? 0} lessons:`);
   for (const l of check ?? []) {
