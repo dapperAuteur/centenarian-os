@@ -73,6 +73,28 @@ const EPISODES = {
       [17, '17-quiz.md', 'Knowledge Check: Tea', 'quiz', 720, false, null, []],
     ],
   },
+  chocolate: {
+    moduleTitle: 'Episode 3: Chocolate — Food of the Gods',
+    assignmentTitle: 'The Real Cost of a Chocolate Bar',
+    lessons: [
+      [2, '02-intro.md', 'Chocolate, the Food of the Gods', 'text', 180, true, null, ['teacher-resources']],
+      [3, '03-geo-cacao-tree.md', 'The Cacao Tree and the Narrowest Belt', 'text', 420, true, null, []],
+      [4, '04-geo-producers.md', 'The Big Producers and the Cacao Varieties', 'text', 420, false, 'map-geography.json', []],
+      [5, '05-geo-climate.md', 'A Two-Degree Threat', 'text', 360, false, null, []],
+      [6, '06-social-food-of-gods.md', 'Food of the Gods', 'text', 480, false, 'map-trade.json', ['popol-vuh', 'florentine-codex']],
+      [7, '07-social-great-reversal.md', 'Conquest and the Great Reversal', 'text', 420, false, null, ['cortes-letters']],
+      [8, '08-social-children-in-cacao.md', 'The Children in the Cacao', 'text', 360, false, null, ['cocoa-barometer']],
+      [9, '09-econ-commodity-trap.md', 'The Commodity Trap', 'text', 420, false, null, []],
+      [10, '10-econ-50-cent-question.md', 'The Fifty-Cent Question', 'text', 420, false, null, []],
+      [11, '11-ela-cacao-cocoa-chocolate.md', 'Cacao, Cocoa, Chocolate', 'text', 360, false, null, []],
+      [12, '12-ela-two-ways-of-seeing.md', 'Two Ways of Seeing a Bean', 'text', 360, false, null, ['cortes-letters', 'popol-vuh', 'florentine-codex']],
+      [13, '13-ela-chocolate-ad.md', 'Reading a Chocolate Ad', 'text', 420, false, null, []],
+      [14, '14-key-terms.md', 'Key Terms: Chocolate', 'text', 300, false, null, []],
+      [15, '15-review.md', 'Cumulative Review: Chocolate', 'text', 360, false, null, []],
+      [16, '16-references.md', 'Sources and Further Reading: Chocolate', 'text', 180, false, null, []],
+      [17, '17-quiz.md', 'Knowledge Check: Chocolate', 'quiz', 720, false, null, []],
+    ],
+  },
 };
 if (!slug || !EPISODES[slug]) {
   console.error(`usage: bvc-academy-load.mjs <episode-slug> [--dry]  (known: ${Object.keys(EPISODES).join(', ')})`);

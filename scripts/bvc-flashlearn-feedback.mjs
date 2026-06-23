@@ -28,6 +28,7 @@ const COURSE_ID = 'ca047c66-f03c-4924-9ebe-16e6bf076a85';
 const EPISODES = {
   coffee: { ep: 1, quizTitle: 'Knowledge Check: Coffee' },
   tea: { ep: 2, quizTitle: 'Knowledge Check: Tea' },
+  chocolate: { ep: 3, quizTitle: 'Knowledge Check: Chocolate' },
 };
 
 const slug = process.argv[2];
