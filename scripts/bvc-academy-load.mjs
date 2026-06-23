@@ -55,7 +55,7 @@ const EPISODES = {
     moduleTitle: 'Episode 2: Tea — The Way of Tea',
     assignmentTitle: 'The Story in Your Cup of Tea',
     lessons: [
-      [2, '02-intro.md', 'Tea, and the Plant Behind Every Cup', 'text', 180, true, null, []],
+      [2, '02-intro.md', 'Tea, and the Plant Behind Every Cup', 'text', 180, true, null, ['teacher-resources']],
       [3, '03-geo-climate-zones.md', 'The Tea Plant and Its Climate Zones', 'text', 420, true, null, []],
       [4, '04-geo-producers.md', 'The Big Producers and the First Flush', 'text', 360, false, 'map-geography.json', []],
       [5, '05-geo-trade-routes.md', 'The Roads Tea Traveled', 'text', 420, false, 'map-trade.json', []],
