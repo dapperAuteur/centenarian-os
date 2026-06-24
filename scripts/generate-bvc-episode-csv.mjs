@@ -141,6 +141,26 @@ const EPISODES = {
       [17, '17-quiz.md', 'Knowledge Check: Kava', 'quiz', 720, 'false', null, []],
     ],
   },
+  synthesis: {
+    ep: 7, moduleTitle: 'Episode 7: My Daily Altar — Season Synthesis', moduleOrder: 7,
+    lessons: [
+      [2, '02-intro.md', 'My Daily Altar: Looking Back at the Season', 'text', 180, 'true', null, ['teacher-resources']],
+      [3, '03-geo-the-geography-pattern.md', 'The Geography Pattern', 'text', 420, 'true', 'map-geography.json', []],
+      [4, '04-geo-the-climate-pattern.md', 'The Climate Pattern', 'text', 360, 'false', null, []],
+      [5, '05-social-same-story-six-times.md', 'The Same Story, Six Times', 'text', 420, 'false', null, []],
+      [6, '06-social-people-behind-every-cup.md', 'The People Behind Every Cup', 'text', 420, 'false', null, []],
+      [7, '07-social-long-fight-for-justice.md', 'The Long Fight for Justice', 'text', 420, 'false', null, []],
+      [8, '08-econ-who-captures-the-value.md', 'Who Captures the Value', 'text', 420, 'false', null, ['mintz-sweetness']],
+      [9, '09-econ-two-ways-of-doing-economics.md', 'Two Ways of Doing Economics', 'text', 420, 'false', null, []],
+      [10, '10-ela-the-stories-we-tell.md', 'The Stories We Tell', 'text', 420, 'false', null, []],
+      [11, '11-ela-a-plants-eye-view.md', "A Plant's-Eye View", 'text', 360, 'false', null, ['pollan-botany']],
+      [12, '12-my-daily-altar.md', 'My Daily Altar', 'text', 360, 'false', null, ['kimmerer-sweetgrass']],
+      [13, '13-key-terms.md', 'Key Terms: Season Synthesis', 'text', 300, 'false', null, []],
+      [14, '14-review.md', 'Cumulative Review: The Whole Season', 'text', 360, 'false', null, []],
+      [15, '15-references.md', 'Sources and Further Reading: The Season', 'text', 180, 'false', null, []],
+      [16, '16-quiz.md', 'Knowledge Check: Season Synthesis', 'quiz', 720, 'false', null, []],
+    ],
+  },
 };
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: generate-bvc-episode-csv.mjs <episode-slug>`); process.exit(1); }
