@@ -161,6 +161,27 @@ const EPISODES = {
       [16, '16-quiz.md', 'Knowledge Check: Season Synthesis', 'quiz', 720, 'false', null, []],
     ],
   },
+  beer: {
+    ep: 8, moduleTitle: 'Episode 8: Beer — Liquid Bread', moduleOrder: 8,
+    lessons: [
+      [2, '02-intro.md', 'Liquid Bread: The Grain That Built Civilization', 'text', 180, 'true', null, ['teacher-resources', 'niaaa-alcohol']],
+      [3, '03-geo-grain-and-hop-belts.md', 'The Grain Belt and the Hop Belt', 'text', 360, 'true', null, []],
+      [4, '04-geo-how-geology-makes-beer.md', 'How Geology Makes the Beer', 'text', 420, 'false', 'map-geography.json', []],
+      [5, '05-geo-shifting-geography.md', 'Beer Geography Is Shifting', 'text', 300, 'false', null, []],
+      [6, '06-social-liquid-bread-first-cities.md', 'Liquid Bread and the First Cities', 'text', 420, 'false', 'map-trade.json', ['code-of-hammurabi']],
+      [7, '07-social-monks-who-kept-brewing.md', 'The Monks Who Kept Brewing', 'text', 420, 'false', null, []],
+      [8, '08-social-prohibition.md', 'Prohibition, the Experiment That Failed', 'text', 420, 'false', null, []],
+      [9, '09-econ-who-gets-paid-for-a-pint.md', 'Who Gets Paid for a Pint', 'text', 420, 'false', null, ['brewers-association']],
+      [10, '10-econ-macro-vs-craft.md', 'Macro Beer and Craft Beer', 'text', 420, 'false', null, []],
+      [11, '11-ela-hymn-to-ninkasi.md', 'The Hymn to Ninkasi', 'text', 360, 'false', null, ['hymn-to-ninkasi']],
+      [12, '12-ela-selling-prohibition.md', 'Selling Prohibition', 'text', 360, 'false', null, []],
+      [13, '13-ela-reading-a-beer-label.md', 'Reading a Craft Beer Label', 'text', 360, 'false', null, []],
+      [14, '14-key-terms.md', 'Key Terms: Beer', 'text', 300, 'false', null, []],
+      [15, '15-review.md', 'Cumulative Review: Beer', 'text', 360, 'false', null, []],
+      [16, '16-references.md', 'Sources and Further Reading: Beer', 'text', 180, 'false', null, []],
+      [17, '17-quiz.md', 'Knowledge Check: Beer', 'quiz', 720, 'false', null, []],
+    ],
+  },
 };
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: generate-bvc-episode-csv.mjs <episode-slug>`); process.exit(1); }
