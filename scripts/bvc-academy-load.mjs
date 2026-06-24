@@ -252,6 +252,29 @@ const EPISODES = {
       [17, '17-quiz.md', 'Knowledge Check: Whiskey', 'quiz', 720, false, null, []],
     ],
   },
+  rum: {
+    moduleTitle: 'Episode 11: Rum — Sweet Poison',
+    moduleOrder: 11,
+    assignmentTitle: 'Follow the Triangle',
+    lessons: [
+      [2, '02-intro.md', 'Sweet Poison: The Spirit of Sugar and the Slave Trade', 'text', 180, true, null, ['teacher-resources', 'niaaa-alcohol']],
+      [3, '03-geo-why-the-caribbean.md', 'Why the Caribbean', 'text', 360, true, null, []],
+      [4, '04-geo-different-islands-different-rums.md', 'Different Islands, Different Rums', 'text', 420, false, 'map-geography.json', []],
+      [5, '05-geo-triangular-trade.md', 'The Triangular Trade', 'text', 420, false, 'map-trade.json', ['slave-voyages', 'unesco-cape-coast']],
+      [6, '06-geo-caribbean-today.md', 'The Caribbean Today', 'text', 300, false, null, []],
+      [7, '07-social-haitian-revolution.md', 'The Haitian Revolution', 'text', 480, false, null, []],
+      [8, '08-social-debt-of-freedom.md', 'The Debt of Freedom', 'text', 480, false, null, []],
+      [9, '09-social-the-maroons.md', 'The Maroons', 'text', 480, false, null, []],
+      [10, '10-econ-waste-product-economics.md', 'Waste-Product Economics', 'text', 480, false, null, []],
+      [11, '11-econ-who-gets-paid-martinique.md', "Who Gets Paid, and Martinique's Answer", 'text', 480, false, null, ['martinique-aoc']],
+      [12, '12-ela-black-jacobins.md', 'The Black Jacobins', 'text', 420, false, null, []],
+      [13, '13-ela-tiki-tropical-paradise.md', 'Tiki and the Tropical Paradise', 'text', 420, false, null, []],
+      [14, '14-key-terms.md', 'Key Terms: Rum', 'text', 300, false, null, []],
+      [15, '15-review.md', 'Cumulative Review: Rum', 'text', 360, false, null, []],
+      [16, '16-references.md', 'Sources and Further Reading: Rum', 'text', 180, false, null, []],
+      [17, '17-quiz.md', 'Knowledge Check: Rum', 'quiz', 720, false, null, []],
+    ],
+  },
 };
 if (!slug || !EPISODES[slug]) {
   console.error(`usage: bvc-academy-load.mjs <episode-slug> [--dry]  (known: ${Object.keys(EPISODES).join(', ')})`);

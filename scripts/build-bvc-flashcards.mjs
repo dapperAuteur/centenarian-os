@@ -31,6 +31,7 @@ const EPISODES = {
   beer: { ep: 8, label: 'Beer' },
   wine: { ep: 9, label: 'Wine' },
   whiskey: { ep: 10, label: 'Whiskey' },
+  rum: { ep: 11, label: 'Rum' },
 };
 
 const slug = process.argv[2];
