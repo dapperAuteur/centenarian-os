@@ -20,6 +20,7 @@ const EPISODES = {
   kava: 'Episode 6: Kava — The Root of Peace',
   synthesis: 'Episode 7: My Daily Altar — Season Synthesis',
   beer: 'Episode 8: Beer — Liquid Bread',
+  wine: 'Episode 9: Wine — Blood of the Earth',
 };
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: bvc-generate-embeddings.mjs <episode-slug>`); process.exit(1); }

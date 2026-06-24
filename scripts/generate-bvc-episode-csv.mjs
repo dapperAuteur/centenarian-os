@@ -182,6 +182,28 @@ const EPISODES = {
       [17, '17-quiz.md', 'Knowledge Check: Beer', 'quiz', 720, 'false', null, []],
     ],
   },
+  wine: {
+    ep: 9, moduleTitle: 'Episode 9: Wine — Blood of the Earth', moduleOrder: 9,
+    lessons: [
+      [2, '02-intro.md', 'Blood of the Earth: A Drink That Tastes of Place', 'text', 180, 'true', null, ['teacher-resources', 'niaaa-alcohol']],
+      [3, '03-geo-the-wine-belt.md', 'The Wine Belt: Where Grapes Grow', 'text', 360, 'true', null, []],
+      [4, '04-geo-terroir.md', 'Terroir, the Taste of Place', 'text', 420, 'false', 'map-geography.json', []],
+      [5, '05-geo-phylloxera.md', 'The Phylloxera Crisis: An American Bug and an American Cure', 'text', 360, 'false', null, []],
+      [6, '06-social-wine-power-sacred.md', 'Wine, Power, and the Sacred', 'text', 420, 'false', null, ['pnas-georgia-wine']],
+      [7, '07-social-georgian-qvevri.md', 'The Georgian Qvevri', 'text', 420, 'false', 'map-trade.json', ['unesco-qvevri']],
+      [8, '08-social-judgment-of-paris.md', 'The Judgment of Paris', 'text', 420, 'false', null, ['judgment-of-paris']],
+      [9, '09-social-dop-system.md', 'The Dop System', 'text', 480, 'false', null, []],
+      [10, '10-econ-business-of-prestige.md', 'The Business of Prestige', 'text', 480, 'false', null, []],
+      [11, '11-econ-asset-and-boycott.md', 'Wine as an Asset, and the Boycott That Worked', 'text', 480, 'false', null, []],
+      [12, '12-ela-persian-poetry.md', 'Wine in Persian Poetry', 'text', 360, 'false', null, []],
+      [13, '13-ela-the-symposium.md', 'The Symposium', 'text', 360, 'false', null, []],
+      [14, '14-ela-language-of-wine.md', 'The Language of Wine', 'text', 360, 'false', null, []],
+      [15, '15-key-terms.md', 'Key Terms: Wine', 'text', 300, 'false', null, []],
+      [16, '16-review.md', 'Cumulative Review: Wine', 'text', 360, 'false', null, []],
+      [17, '17-references.md', 'Sources and Further Reading: Wine', 'text', 180, 'false', null, []],
+      [18, '18-quiz.md', 'Knowledge Check: Wine', 'quiz', 720, 'false', null, []],
+    ],
+  },
 };
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: generate-bvc-episode-csv.mjs <episode-slug>`); process.exit(1); }

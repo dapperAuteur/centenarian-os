@@ -29,6 +29,7 @@ const EPISODES = {
   kava: { ep: 6, label: 'Kava' },
   synthesis: { ep: 7, label: 'Season Synthesis' },
   beer: { ep: 8, label: 'Beer' },
+  wine: { ep: 9, label: 'Wine' },
 };
 
 const slug = process.argv[2];
