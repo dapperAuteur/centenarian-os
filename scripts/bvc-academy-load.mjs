@@ -117,6 +117,28 @@ const EPISODES = {
       [17, '17-quiz.md', 'Knowledge Check: Sugar', 'quiz', 720, false, null, []],
     ],
   },
+  'forest-wisdom': {
+    moduleTitle: 'Episode 5: Guayusa & Kola Nut — Forest Wisdom',
+    assignmentTitle: 'Whose Knowledge',
+    lessons: [
+      [2, '02-intro.md', 'Forest Wisdom: Guayusa and the Kola Nut', 'text', 180, true, null, ['teacher-resources']],
+      [3, '03-geo-two-plants.md', 'Two Plants of the Forest', 'text', 360, true, null, []],
+      [4, '04-geo-chemistry-is-relationship.md', 'Chemistry Is Relationship', 'text', 360, false, 'map-geography.json', []],
+      [5, '05-geo-forests-under-threat.md', 'Forests Under Threat', 'text', 360, false, null, []],
+      [6, '06-social-pre-dawn-and-kola-road.md', 'The Pre-Dawn Cup and the Kola Road', 'text', 420, false, 'map-trade.json', []],
+      [7, '07-social-coca-cola-and-biopiracy.md', 'How Coca-Cola Got Its Name', 'text', 420, false, null, ['pendergrast-coca-cola']],
+      [8, '08-social-whose-knowledge.md', 'Whose Knowledge Is It', 'text', 420, false, null, ['un-declaration', 'wipo-treaty']],
+      [9, '09-econ-reciprocity-economy.md', 'The Reciprocity Economy', 'text', 420, false, null, []],
+      [10, '10-econ-biopiracy-benefit-sharing.md', 'Biopiracy and Benefit-Sharing', 'text', 420, false, null, []],
+      [11, '11-ela-two-ways-of-knowing.md', 'Two Ways of Knowing', 'text', 360, false, null, ['lewis-2003']],
+      [12, '12-ela-wisdom-of-proverbs.md', 'The Wisdom of Proverbs', 'text', 360, false, null, []],
+      [13, '13-ela-water-pretending.md', 'Water Pretending to Be Wisdom', 'text', 360, false, null, ['aidoo']],
+      [14, '14-key-terms.md', 'Key Terms: Forest Wisdom', 'text', 300, false, null, []],
+      [15, '15-review.md', 'Cumulative Review: Forest Wisdom', 'text', 360, false, null, []],
+      [16, '16-references.md', 'Sources and Further Reading: Forest Wisdom', 'text', 180, false, null, []],
+      [17, '17-quiz.md', 'Knowledge Check: Forest Wisdom', 'quiz', 720, false, null, []],
+    ],
+  },
 };
 if (!slug || !EPISODES[slug]) {
   console.error(`usage: bvc-academy-load.mjs <episode-slug> [--dry]  (known: ${Object.keys(EPISODES).join(', ')})`);
