@@ -26,6 +26,7 @@ const EPISODES = {
   chocolate: { ep: 3, label: 'Chocolate' },
   sugar: { ep: 4, label: 'Sugar' },
   'forest-wisdom': { ep: 5, label: 'Forest Wisdom' },
+  kava: { ep: 6, label: 'Kava' },
 };
 
 const slug = process.argv[2];

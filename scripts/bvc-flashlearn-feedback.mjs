@@ -31,6 +31,7 @@ const EPISODES = {
   chocolate: { ep: 3, quizTitle: 'Knowledge Check: Chocolate' },
   sugar: { ep: 4, quizTitle: 'Knowledge Check: Sugar' },
   'forest-wisdom': { ep: 5, quizTitle: 'Knowledge Check: Forest Wisdom' },
+  kava: { ep: 6, quizTitle: 'Knowledge Check: Kava' },
 };
 
 const slug = process.argv[2];

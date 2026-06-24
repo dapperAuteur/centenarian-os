@@ -17,6 +17,7 @@ const EPISODES = {
   chocolate: 'Episode 3: Chocolate — Food of the Gods',
   sugar: 'Episode 4: Sugar — The Sweet Revolution',
   'forest-wisdom': 'Episode 5: Guayusa & Kola Nut — Forest Wisdom',
+  kava: 'Episode 6: Kava — The Root of Peace',
 };
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: bvc-generate-embeddings.mjs <episode-slug>`); process.exit(1); }

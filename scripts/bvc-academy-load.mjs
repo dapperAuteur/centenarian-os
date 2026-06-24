@@ -139,6 +139,28 @@ const EPISODES = {
       [17, '17-quiz.md', 'Knowledge Check: Forest Wisdom', 'quiz', 720, false, null, []],
     ],
   },
+  kava: {
+    moduleTitle: 'Episode 6: Kava — The Root of Peace',
+    assignmentTitle: 'The Root of Peace Project',
+    lessons: [
+      [2, '02-intro.md', 'Kava, the Root of Peace', 'text', 180, true, null, ['teacher-resources']],
+      [3, '03-geo-volcanic-islands.md', 'A Plant of Volcanic Islands', 'text', 360, true, null, []],
+      [4, '04-geo-why-volcanic-soil.md', 'Why Volcanic Soil Only', 'text', 360, false, 'map-geography.json', []],
+      [5, '05-geo-islands-under-pressure.md', 'Islands Under Pressure', 'text', 360, false, null, []],
+      [6, '06-social-root-of-peace.md', 'The Root of Peace', 'text', 480, false, 'map-trade.json', ['lebot-1992']],
+      [7, '07-social-kava-governs.md', 'Kava Governs', 'text', 420, false, null, []],
+      [8, '08-social-who-sits-at-the-bowl.md', 'Who Sits at the Bowl', 'text', 360, false, null, []],
+      [9, '09-econ-ceremony-meets-market.md', 'Ceremony Meets the Market', 'text', 420, false, null, ['singh-2002']],
+      [10, '10-econ-who-benefits.md', 'Who Benefits from the Boom', 'text', 420, false, null, []],
+      [11, '11-ela-root-that-heals.md', 'The Root That Heals', 'text', 360, false, null, ['lebot-1992']],
+      [12, '12-ela-roots-and-proverbs.md', 'Roots and Proverbs', 'text', 360, false, null, []],
+      [13, '13-ela-kava-compass.md', 'The Kava Compass', 'text', 360, false, null, []],
+      [14, '14-key-terms.md', 'Key Terms: Kava', 'text', 300, false, null, []],
+      [15, '15-review.md', 'Cumulative Review: Kava', 'text', 360, false, null, []],
+      [16, '16-references.md', 'Sources and Further Reading: Kava', 'text', 180, false, null, []],
+      [17, '17-quiz.md', 'Knowledge Check: Kava', 'quiz', 720, false, null, []],
+    ],
+  },
 };
 if (!slug || !EPISODES[slug]) {
   console.error(`usage: bvc-academy-load.mjs <episode-slug> [--dry]  (known: ${Object.keys(EPISODES).join(', ')})`);
