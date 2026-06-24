@@ -32,6 +32,7 @@ const EPISODES = {
   wine: { ep: 9, label: 'Wine' },
   whiskey: { ep: 10, label: 'Whiskey' },
   rum: { ep: 11, label: 'Rum' },
+  'tequila-mezcal': { ep: 12, label: 'Tequila and Mezcal' },
 };
 
 const slug = process.argv[2];

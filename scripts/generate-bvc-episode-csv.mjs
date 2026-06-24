@@ -246,6 +246,27 @@ const EPISODES = {
       [17, '17-quiz.md', 'Knowledge Check: Rum', 'quiz', 720, 'false', null, []],
     ],
   },
+  'tequila-mezcal': {
+    ep: 12, moduleTitle: 'Episode 12: Tequila & Mezcal — Heart of the Agave', moduleOrder: 12,
+    lessons: [
+      [2, '02-intro.md', 'Heart of the Agave: A Sacred Plant Made Spirit', 'text', 180, 'true', null, ['teacher-resources', 'niaaa-alcohol']],
+      [3, '03-geo-the-stress-specialist.md', 'The Stress Specialist', 'text', 360, 'true', null, []],
+      [4, '04-geo-highland-and-lowland.md', 'Highland and Lowland', 'text', 360, 'false', 'map-geography.json', []],
+      [5, '05-geo-agave-and-time.md', 'Agave and Time', 'text', 360, 'false', null, []],
+      [6, '06-social-the-sacred-plant.md', 'The Sacred Plant', 'text', 480, 'false', 'map-trade.json', []],
+      [7, '07-social-burning-the-books.md', 'Burning the Books', 'text', 420, 'false', null, ['codex-mendoza']],
+      [8, '08-social-sacred-to-commodity.md', 'From Sacred to Commodity', 'text', 480, 'false', null, []],
+      [9, '09-econ-geographic-protectionism.md', 'Geographic Protectionism', 'text', 480, 'false', null, ['crt-tequila']],
+      [10, '10-econ-the-jimadors-share.md', "The Jimador's Share", 'text', 480, 'false', null, []],
+      [11, '11-econ-single-village-mezcal.md', 'Single Village Mezcal', 'text', 420, 'false', null, []],
+      [12, '12-ela-reading-the-codex.md', 'Reading the Codex', 'text', 420, 'false', null, ['codex-mendoza']],
+      [13, '13-ela-selling-the-sacred.md', 'Selling the Sacred', 'text', 420, 'false', null, []],
+      [14, '14-key-terms.md', 'Key Terms: Tequila and Mezcal', 'text', 300, 'false', null, []],
+      [15, '15-review.md', 'Cumulative Review: Tequila and Mezcal', 'text', 360, 'false', null, []],
+      [16, '16-references.md', 'Sources and Further Reading: Tequila and Mezcal', 'text', 180, 'false', null, []],
+      [17, '17-quiz.md', 'Knowledge Check: Tequila and Mezcal', 'quiz', 720, 'false', null, []],
+    ],
+  },
 };
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: generate-bvc-episode-csv.mjs <episode-slug>`); process.exit(1); }

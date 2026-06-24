@@ -23,6 +23,7 @@ const EPISODES = {
   wine: 'Episode 9: Wine — Blood of the Earth',
   whiskey: 'Episode 10: Whiskey — Fire Water',
   rum: 'Episode 11: Rum — Sweet Poison',
+  'tequila-mezcal': 'Episode 12: Tequila & Mezcal — Heart of the Agave',
 };
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: bvc-generate-embeddings.mjs <episode-slug>`); process.exit(1); }
