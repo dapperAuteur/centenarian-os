@@ -229,6 +229,29 @@ const EPISODES = {
       [18, '18-quiz.md', 'Knowledge Check: Wine', 'quiz', 720, false, null, []],
     ],
   },
+  whiskey: {
+    moduleTitle: 'Episode 10: Whiskey — Fire Water',
+    moduleOrder: 10,
+    assignmentTitle: 'Follow the Knowledge',
+    lessons: [
+      [2, '02-intro.md', 'Fire Water: The Spirit That Traveled the World', 'text', 180, true, null, ['teacher-resources', 'niaaa-alcohol']],
+      [3, '03-geo-distillation-traveled.md', 'The Geography of Distillation', 'text', 360, true, 'map-trade.json', []],
+      [4, '04-geo-karst-limestone-bourbon.md', 'Karst Limestone and Bourbon', 'text', 420, false, 'map-geography.json', ['scotch-whisky-assoc']],
+      [5, '05-geo-geography-of-aging.md', 'The Geography of Aging', 'text', 360, false, null, []],
+      [6, '06-social-rebellion-to-republic.md', 'From Rebellion to Republic', 'text', 480, false, null, []],
+      [7, '07-social-man-who-taught-jack.md', 'The Man Who Taught Jack', 'text', 480, false, null, ['risen-nyt']],
+      [8, '08-social-whisky-crosses-ocean.md', 'Whisky Crosses the Ocean', 'text', 420, false, null, []],
+      [9, '09-econ-money-in-the-barrel.md', 'The Money in the Barrel', 'text', 480, false, null, []],
+      [10, '10-econ-economics-of-attribution.md', 'The Economics of Attribution', 'text', 480, false, null, ['uncle-nearest']],
+      [11, '11-science-what-proof-means.md', 'What Does Proof Mean?', 'text', 420, false, null, ['ttb-spirits']],
+      [12, '12-ela-water-of-life.md', 'The Water of Life', 'text', 360, false, null, []],
+      [13, '13-ela-oral-history-survived.md', 'The Oral History That Survived', 'text', 420, false, null, []],
+      [14, '14-key-terms.md', 'Key Terms: Whiskey', 'text', 300, false, null, []],
+      [15, '15-review.md', 'Cumulative Review: Whiskey', 'text', 360, false, null, []],
+      [16, '16-references.md', 'Sources and Further Reading: Whiskey', 'text', 180, false, null, []],
+      [17, '17-quiz.md', 'Knowledge Check: Whiskey', 'quiz', 720, false, null, []],
+    ],
+  },
 };
 if (!slug || !EPISODES[slug]) {
   console.error(`usage: bvc-academy-load.mjs <episode-slug> [--dry]  (known: ${Object.keys(EPISODES).join(', ')})`);

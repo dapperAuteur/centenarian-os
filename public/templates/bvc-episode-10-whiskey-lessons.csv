@@ -1,0 +1,496 @@
+module_title,module_order,lesson_order,title,lesson_type,duration_seconds,is_free_preview,content_url,text_content,content_format,audio_chapters,transcript_content,map_content,documents,podcast_links,quiz_content
+Episode 10: Whiskey — Fire Water,10,2,Fire Water: The Spirit That Traveled the World,text,180,true,,"Goal: After this lesson you can explain what makes whiskey different from beer and wine, and how this episode studies it.
+Subject: Episode introduction | Run time: about 3 minutes
+
+[WELCOME] Welcome back to Better Vice Club, Season 2, The Oldest Toast. This is Anthony McDonald. We have studied beer, the grain drink, and wine, the drink of place. Today we add fire. Whiskey is what happens when you take a beer-like grain brew and concentrate its spirit through distillation.
+
+[HOOK] The honest note first, as always. This is a history and economics class, not a tasting room, and we will be straight about alcohol's harms. Now the hook. Distillation is not farming, it is technology, and like all technology it traveled. The knowledge to make whiskey began with Arab scientists, passed through European monasteries, crossed to Ireland and Scotland, sailed to the American frontier, and was even carried back to Japan by one determined student. Whiskey is a story about how knowledge moves.
+
+[TEACH] We read whiskey through four lenses. Geography asks where the knowledge traveled, why limestone water makes Kentucky bourbon, and how climate ages a spirit. Social studies asks how a tax on whiskey nearly broke the young United States, and tells the true, long-buried story of Nathan Green, the enslaved man who taught Jack Daniel. Economics asks why aged whiskey costs what it does, and how a brand story can be worth more than the liquid. English language arts asks what the very word whiskey, water of life, reveals, and how a story suppressed for 130 years finally survived. We also pause for a science lesson on what proof actually means.
+
+[REMEMBER] Hold this. Beer is a recipe and wine is a place, but whiskey is a technology, a piece of knowledge that humans carried across 1,300 years and six continents. Its theme is the one we will keep returning to: excellence has no passport.
+
+[CHECK] Quick check. What single process turns a grain brew into whiskey, and what kind of human achievement is it? [Beat] Distillation, which is a technology, a piece of knowledge that can be learned and carried anywhere.
+
+## Key Takeaways
+- Whiskey is made by distilling a grain brew, concentrating its spirit, so it is a technology more than a crop.
+- The episode is educational and honest about alcohol's harms, not an endorsement of drinking.
+- Distillation knowledge traveled from Arab science through monasteries to Ireland, Scotland, America, and Japan.
+- Better Vice Club reads whiskey through geography, social studies, economics, and English language arts, with a bonus science lesson on proof.
+
+## Sources
+- Forbes, R. J. (1948). A short history of the art of distillation. Brill.",markdown,,,,"[{""title"":""BVC Whiskey, Teacher Resources (PDF)"",""description"":""Full teacher guide: a content note (educational, honest about harms and the Nathan Green history, not an endorsement), standards alignment, 4 classroom activities, project rubric, discussion answers, differentiation, and bibliography."",""url"":""https://res.cloudinary.com/devdash54321/raw/upload/v1782282586/centos-feedback/jzaxn5j04fqvxv89hzm6.pdf"",""source_url"":null},{""title"":""NIAAA, Understanding Alcohol Use and Its Harms"",""description"":""The U.S. National Institute on Alcohol Abuse and Alcoholism. This episode studies whiskey's geography, history, and economics, not its promotion; this gives the honest health picture."",""url"":""https://www.niaaa.nih.gov/alcohols-effects-health"",""source_url"":""National Institute on Alcohol Abuse and Alcoholism""}]",,
+Episode 10: Whiskey — Fire Water,10,3,The Geography of Distillation,text,360,true,,"Goal: After this lesson you can trace the route distillation knowledge traveled from Arab science to the wider world.
+Subject: Geography | Run time: about 6 minutes
+
+[RECALL] Last time we opened the whiskey episode. Two quick questions.
+One: what process turns a grain brew into whiskey? [Beat] Distillation.
+Two: what is whiskey, more than a crop? [Beat] A technology, a piece of knowledge that can be carried anywhere.
+
+[HOOK] Here is something you can see on a map: the route whiskey took to exist. Not the grain, the knowledge. The skill of distilling moved along the same trade routes that carried spices, books, and seeds, and it took more than a thousand years to reach your shelf.
+
+[TEACH] Start the journey in the Islamic Golden Age. Around the 8th century, the scientist Jabir ibn Hayyan perfected the alembic still, in Arabic the al-ambiq, as a tool of science and medicine (Forbes, 1948). Distillation was a serious technology long before it made a drink.
+From there the knowledge moved west. By the 12th and 13th centuries it had entered European monasteries, carried through Mediterranean trade, Moorish Spain, and the Latin translation movement (Forbes, 1948). Monks, who were the scholars of their day, studied and refined it.
+Next it crossed water. By around 1405 the Irish were recording whiskey production, and by 1494 a Scottish friar named John Cor left a record of distilling aqua vitae (MacLean, 2003). Then, in the late 1600s and 1700s, Scotch-Irish and German immigrants carried the skill across the Atlantic to the Appalachian frontier. And finally, in 1918, a Japanese student named Masataka Taketsuru sailed to Scotland to learn it on purpose, and carried it to Japan (Kawabata, 2017).
+So the geographic lesson is simple and large: technology follows trade routes. The same network that moved everything else moved the knowledge of fire and spirit across 1,300 years and six continents.
+
+[PICTURE] Look at the map on this lesson. Draw the line in your mind: Baghdad, then a monastery in the Alps, then Ireland and Scotland, then the Appalachian hills, then a snowy coast in northern Japan. One skill, hopping from hand to hand across the whole world.
+
+[REMEMBER] The fact to carry out: distillation began as Arab science in the 8th century, passed through European monasteries, reached Ireland and Scotland by the 1400s, crossed to America, and was carried to Japan by 1918 (Forbes, 1948; MacLean, 2003). Whiskey is proof that technology follows trade routes.
+
+[CHECK] Quick check. Where and roughly when did the science of distillation that led to whiskey begin? [Beat] In the Islamic Golden Age, around the 8th century, with Jabir ibn Hayyan and the alembic still (Forbes, 1948).
+
+## Key Takeaways
+- Distillation was perfected as Arab science around the 8th century, using the alembic (al-ambiq) still (Forbes, 1948).
+- It entered European monasteries by the 12th and 13th centuries through trade and scholarship.
+- Whiskey was recorded in Ireland by about 1405 and Scotland by 1494, then carried to America and later Japan.
+- Technology follows trade routes, so whiskey is really a story of knowledge traveling the world.
+
+## Sources
+- Forbes, R. J. (1948). A short history of the art of distillation. Brill.
+- MacLean, C. (2003). Scotch whisky: A liquid history. Cassell Illustrated.
+- Kawabata, Y. (2017). Whisky rising: The definitive guide to the finest whiskies and distillers of Japan. Cider Mill Press.",markdown,,,"{""center"":[45,30],""zoom"":2,""markers"":[{""id"":""baghdad"",""lat"":33.3,""lng"":44.4,""title"":""Baghdad (Jabir ibn Hayyan, 8th century)"",""description"":""Where Islamic Golden Age science perfected the alembic still, the root of distillation."",""color"":""#a16207""},{""id"":""monasteries"",""lat"":47,""lng"":8,""title"":""European monasteries (12th to 13th century)"",""description"":""Distillation knowledge entered Europe through trade and scholarly networks, kept alive by monks."",""color"":""#7c2d12""},{""id"":""ireland"",""lat"":53.3,""lng"":-8,""title"":""Ireland (uisce beatha, about 1405)"",""description"":""The first written record of whiskey, named uisce beatha, the water of life."",""color"":""#16a34a""},{""id"":""scotland"",""lat"":57,""lng"":-4,""title"":""Scotland (aqua vitae, about 1494)"",""description"":""Friar John Cor's record of distilling aqua vitae, the same water of life in Latin."",""color"":""#9a3412""},{""id"":""appalachia"",""lat"":40,""lng"":-79.5,""title"":""Appalachian frontier (Whiskey Rebellion, 1794)"",""description"":""Scotch-Irish and German settlers carried distilling to the American frontier, where whiskey became currency."",""color"":""#b45309""},{""id"":""lincoln-county"",""lat"":35.15,""lng"":-86.3,""title"":""Lincoln County, Tennessee (Nathan Green)"",""description"":""Where the enslaved distiller Nathan Green developed the Lincoln County Process and taught Jack Daniel."",""color"":""#7c2d12""},{""id"":""yoichi"",""lat"":43.2,""lng"":140.79,""title"":""Yoichi, Japan (Taketsuru, 1918 to 1934)"",""description"":""Masataka Taketsuru learned whisky in Scotland and built Japanese whisky here, proving excellence has no passport."",""color"":""#a16207""}],""lines"":[],""polygons"":[]}",,,
+Episode 10: Whiskey — Fire Water,10,4,Karst Limestone and Bourbon,text,420,false,,"Goal: After this lesson you can explain why a band of limestone decides where American bourbon is made.
+Subject: Geography | Run time: about 7 minutes
+
+[RECALL] Last time we traced distillation's route. Two quick questions.
+One: where did the science of distillation begin? [Beat] In the Islamic Golden Age, around the 8th century (Forbes, 1948).
+Two: by what date was whiskey recorded in Scotland? [Beat] 1494, by Friar John Cor (MacLean, 2003).
+
+[HOOK] Ask most people where bourbon comes from and they say Kentucky. True, but the deeper answer is underground. Bourbon is made where it is because of a specific kind of rock buried beneath the land, the same lesson we learned from beer and wine: the water makes the spirit.
+
+[TEACH] The rock is karst limestone (KARST). Over millions of years, slightly acidic rainwater dissolves the limestone, carving caves, sinkholes, and springs, and filtering the water as it goes (Veach, 2013). That filtering matters. Karst water comes out rich in calcium and magnesium, which feed the yeast and support a strong fermentation, and, just as important, it comes out with the iron filtered out. Iron would give whiskey a metallic taste and a dark, ugly color, so iron-free water is exactly what bourbon needs.
+This karst formation runs in a band from central Kentucky down through southern Indiana and into Tennessee (Veach, 2013). That is why bourbon clusters there, not only tradition, but geology. And here is the part most people miss: Indiana is a bourbon giant. The town of Lawrenceburg, Indiana sits right on the karst, and a distillery there has been making spirits since the 1840s. The famous name is Kentucky, but a lot of the actual production geography is Indiana.
+The same idea explains Scotland's whiskies. The same Scottish barley becomes a smoky, briny dram on the peaty island of Islay and a sweet, fruity one in the granite valley of Speyside (MacLean, 2003). Same grain, different ground, different spirit. Geography is in the bottle.
+
+[PICTURE] Look at the map on this lesson. Picture a hidden ribbon of limestone running from Kentucky through Indiana into Tennessee, full of caves and clean springs. The bourbon belt sits right on top of it. Then jump to Scotland, where one barley becomes many whiskies depending on the rock and the sea around each distillery.
+
+[REMEMBER] The fact to carry out: bourbon concentrates in Kentucky, Indiana, and Tennessee because of karst limestone, which gives calcium-rich, iron-free water perfect for whiskey, and the same grain makes different whisky in different Scottish regions (Veach, 2013; MacLean, 2003). The ground chooses the spirit.
+
+[CHECK] Quick check. Why is iron-free water from karst limestone important for bourbon? [Beat] Iron would give whiskey a metallic taste and dark discoloration, so the limestone filtering it out keeps the spirit clean (Veach, 2013).
+
+## Key Takeaways
+- Karst limestone is rock dissolved by rainwater into caves and springs that filter the water (Veach, 2013).
+- Karst water is rich in calcium and magnesium and free of iron, which is ideal for bourbon.
+- The karst band runs from Kentucky through southern Indiana into Tennessee, so bourbon clusters there for geological reasons.
+- The same Scottish barley becomes smoky Islay or sweet Speyside whisky depending on local geography (MacLean, 2003).
+
+## Sources
+- Veach, M. R. (2013). Kentucky bourbon whiskey: An American heritage. University Press of Kentucky.
+- MacLean, C. (2003). Scotch whisky: A liquid history. Cassell Illustrated.",markdown,,,"{""center"":[48,-20],""zoom"":2,""markers"":[{""id"":""speyside"",""lat"":57.5,""lng"":-3.2,""title"":""Speyside, Scotland"",""description"":""Sheltered river valley with soft, granite-filtered water. Sweet, fruity, floral whisky."",""color"":""#ca8a04""},{""id"":""islay"",""lat"":55.7,""lng"":-6.2,""title"":""Islay, Scotland"",""description"":""Maritime island with seaweed-rich peat bogs. Heavily smoked, briny whisky."",""color"":""#44403c""},{""id"":""highlands"",""lat"":57,""lng"":-4.5,""title"":""Highlands, Scotland"",""description"":""The largest, most varied region, from light coastal to bold inland styles."",""color"":""#9a3412""},{""id"":""lowlands"",""lat"":55.5,""lng"":-3.8,""title"":""Lowlands, Scotland"",""description"":""Flatter, warmer south with soft water. Light, grassy, gentle whisky."",""color"":""#16a34a""},{""id"":""kentucky"",""lat"":38,""lng"":-84.9,""title"":""Kentucky, USA"",""description"":""Bluegrass region on karst limestone, giving iron-free, calcium-rich water ideal for bourbon."",""color"":""#b45309""},{""id"":""lawrenceburg"",""lat"":39.09,""lng"":-84.85,""title"":""Lawrenceburg, Indiana, USA"",""description"":""On the same karst formation. MGP has distilled here since the 1840s, the hidden source of many bourbon brands."",""color"":""#7c2d12""},{""id"":""lynchburg"",""lat"":35.28,""lng"":-86.37,""title"":""Lynchburg, Tennessee, USA"",""description"":""Cave Spring Hollow limestone water and sugar-maple charcoal define Tennessee whiskey."",""color"":""#a16207""},{""id"":""yamazaki"",""lat"":34.9,""lng"":135.67,""title"":""Yamazaki, Japan"",""description"":""Japan's first malt distillery, founded 1923, now globally awarded."",""color"":""#9a3412""},{""id"":""midleton"",""lat"":51.9,""lng"":-8.17,""title"":""Midleton, Ireland"",""description"":""Heart of Irish whiskey, fast-growing after a long decline."",""color"":""#16a34a""}],""lines"":[],""polygons"":[]}","[{""title"":""Scotch Whisky Association, Industry Key Facts"",""description"":""Industry data on Scotch whisky production, regions, and exports. Useful for the geography and economics lessons."",""url"":""https://www.scotch-whisky.org.uk/"",""source_url"":""Scotch Whisky Association""}]",,
+Episode 10: Whiskey — Fire Water,10,5,The Geography of Aging,text,360,false,,"Goal: After this lesson you can explain how climate controls the speed and cost of aging whiskey.
+Subject: Geography | Run time: about 6 minutes
+
+[RECALL] Last time we learned why karst makes bourbon country. Two quick questions.
+One: what two helpful things does karst water give bourbon? [Beat] Calcium and magnesium for the yeast, and no iron (Veach, 2013).
+Two: which U.S. state is a hidden bourbon giant? [Beat] Indiana, especially Lawrenceburg (Veach, 2013).
+
+[HOOK] A whiskey can sit in a barrel for four years in Kentucky and come out tasting as developed as one that sat eight years in Scotland. Same kind of barrel, double the time. The difference is not the whiskey. It is the weather.
+
+[TEACH] Bourbon must age in new charred oak barrels, and the magic happens through temperature swings (Veach, 2013). In summer, heat makes the wood expand and pushes the whiskey deep into the charred oak, where it picks up vanilla, caramel, and color. In winter, cold contracts the wood and squeezes the whiskey back out, integrating those flavors. Every year of hot summers and cold winters is another full cycle of the whiskey breathing in and out of the wood.
+This is why climate is geography you can taste in time. Kentucky and Indiana have a continental climate with big swings, hot summers in the rickhouse can hit well over 100 degrees Fahrenheit, cold winters drop near freezing. Those high-amplitude swings drive fast, dramatic aging. Scotland's mild, steady maritime climate barely swings at all, so its whisky ages slowly and gently. That is the real reason a 4-year Kentucky bourbon can show as much barrel character as an 8-year Scotch.
+There is a cost to all this breathing. Every year, 2 to 4 percent of the whiskey simply evaporates out of the barrel and is lost to the air (Veach, 2013). Distillers call it the angel's share, and we will see in the economics lesson that those angels are expensive.
+
+[PICTURE] Picture a tall wooden rickhouse in July, the air shimmering, barrels ticking as the wood expands and pulls whiskey inside. Now picture January, the same barrels cold and quiet, pushing the whiskey back out. In Kentucky that cycle is loud and fast. In Scotland it is a slow, even breath.
+
+[REMEMBER] The fact to carry out: whiskey ages through seasonal temperature swings that move it in and out of the wood, so the big swings of Kentucky and Indiana age bourbon faster than Scotland's mild climate ages Scotch, while 2 to 4 percent evaporates each year as the angel's share (Veach, 2013). Climate sets the clock.
+
+[CHECK] Quick check. Why does Kentucky bourbon age faster than Scotch whisky in Scotland? [Beat] Kentucky's continental climate has big seasonal swings that drive the whiskey in and out of the wood faster, while Scotland's mild climate swings little (Veach, 2013).
+
+## Key Takeaways
+- Whiskey ages through seasonal temperature swings that push it into and out of charred oak (Veach, 2013).
+- Summer heat adds vanilla, caramel, and color; winter cold integrates the flavors.
+- Kentucky and Indiana's big continental swings age bourbon faster than Scotland's mild maritime climate ages Scotch.
+- About 2 to 4 percent of the whiskey evaporates each year, called the angel's share.
+
+## Sources
+- Veach, M. R. (2013). Kentucky bourbon whiskey: An American heritage. University Press of Kentucky.",markdown,,,,,,
+Episode 10: Whiskey — Fire Water,10,6,From Rebellion to Republic,text,480,false,,"Goal: After this lesson you can explain why a tax on whiskey nearly broke the young United States.
+Subject: Social Studies | Run time: about 7 minutes
+
+[RECALL] Last time we looked at the geography of aging. Two quick questions.
+One: why does Kentucky bourbon age faster than Scotch whisky in Scotland? [Beat] Kentucky's continental climate has big seasonal swings that drive the whiskey in and out of the wood faster, while Scotland's mild climate swings little (Veach, 2013).
+Two: what is the angel's share? [Beat] The 2 to 4 percent of the whiskey that evaporates out of the barrel each year as it ages (Veach, 2013).
+
+[HOOK] A few years after winning independence, the United States almost turned its army on its own farmers. The fight was not about a king or a flag. It was about a tax on whiskey. To understand why that nearly broke the new country, you have to see what whiskey meant to the people who made it.
+
+[TEACH] After the Revolution, the new federal government was buried in debt, owing about 54 million dollars at home and about 12 million dollars to foreign creditors (Hogeland, 2006). Alexander Hamilton, the Secretary of the Treasury, needed money, so in 1791 he put an excise tax on distilled spirits (Hogeland, 2006). On paper it looked fair, since everyone making whiskey paid the same rate. In practice it landed hardest on the people who could least afford it.
+Here is why. On the frontier of western Pennsylvania, Virginia, and Kentucky, whiskey was not a luxury. It was money (Hogeland, 2006). A farmer could not haul wagons of corn over the mountains to sell, but he could distill that corn into whiskey, and whiskey traveled, stored well, and traded like cash. So a tax on whiskey was a tax on the frontier's whole money system, and those farmers had no cash reserves to pay it with, because the whiskey was the cash. Large distillers back east in Philadelphia and New York made thousands of gallons and could absorb the tax as a small operating cost. A frontier farmer making 100 to 400 gallons could not. Same rate, very different weight.
+Anger built for three years, then broke open in 1794. About 7,000 armed rebels gathered in western Pennsylvania (Hogeland, 2006). Washington answered by assembling about 13,000 federal troops, the largest federal force since the Revolution, and he rode out with the army himself, the only sitting president to lead troops in the field (Hogeland, 2006). And then, almost an anticlimax, the rebellion collapsed without a major battle. Key leaders were arrested and later pardoned.
+The quiet ending hid a loud lesson. The Whiskey Rebellion set the precedent that the federal government could enforce its taxes with military force (Hogeland, 2006). Hamilton's view won the day: federal authority had to be real, or the republic would fall apart. Thomas Jefferson took the other side, calling the tax unjust, and when he was elected in 1800 he repealed it (Hogeland, 2006). The tax was gone, but the precedent stayed.
+
+[PICTURE] Picture a frontier farmer with no coins in his pocket but a barrel of whiskey he made from his own corn. That barrel is his money. Now picture a tax collector telling him to pay in cash he does not have. Then picture George Washington, the president himself, on horseback at the head of 13,000 soldiers, riding west toward 7,000 farmers who scatter before a shot is fired. The young country had just shown it would use force to collect a tax.
+
+[REMEMBER] The fact to carry out: in 1791 Hamilton taxed distilled spirits to pay off war debt, and the tax crushed frontier farmers because whiskey was their money, leading to the 1794 Whiskey Rebellion, which Washington put down with about 13,000 troops and which set the precedent that the federal government could enforce taxes by force (Hogeland, 2006). A tax on a drink tested whether the republic would hold.
+
+[CHECK] Quick check. Why did the whiskey tax fall hardest on frontier farmers? [Beat] Because whiskey was their currency and they had no cash to pay with, while large eastern distillers could absorb the tax as a small cost (Hogeland, 2006).
+
+## Key Takeaways
+- After the Revolution the federal government carried heavy debt, so in 1791 Hamilton taxed distilled spirits to raise revenue (Hogeland, 2006).
+- The tax hit frontier farmers hardest because whiskey was their currency and they had no cash substitute, while big eastern distillers absorbed the cost (Hogeland, 2006).
+- In 1794 about 7,000 rebels rose in western Pennsylvania; Washington raised about 13,000 troops and led them in the field, and the rebellion collapsed without a major battle (Hogeland, 2006).
+- The rebellion set the precedent that the federal government could enforce taxes with military force; Jefferson repealed the tax after his 1800 election (Hogeland, 2006).
+
+## Sources
+- Hogeland, W. (2006). The Whiskey Rebellion: George Washington, Alexander Hamilton, and the frontier rebels who challenged America's newfound sovereignty. Scribner.
+- Veach, M. R. (2013). Kentucky bourbon whiskey: An American heritage. University Press of Kentucky.",markdown,,,,,,
+Episode 10: Whiskey — Fire Water,10,7,The Man Who Taught Jack,text,480,false,,"Goal: After this lesson you can tell the documented story of Nathan Green and explain how his contribution was erased and then recovered.
+Subject: Social Studies | Run time: about 8 minutes
+
+[RECALL] Last time we looked at the Whiskey Rebellion. Two quick questions.
+One: why did the whiskey tax hit frontier farmers hardest? [Beat] Because whiskey was their currency and they had no cash to pay with, while large eastern distillers absorbed the cost (Hogeland, 2006).
+Two: what precedent did the Whiskey Rebellion set? [Beat] That the federal government could enforce its taxes with military force (Hogeland, 2006).
+
+[HOOK] One of the most famous names in American whiskey is Jack Daniel. For more than a century the story was simple: one man, one founder, one brand. But it left out the person who taught Jack to make whiskey, a man who was enslaved. His name was Nathan Green, and getting his story right means being careful about what we actually know.
+
+[TEACH] Nathan ""Nearest"" Green was an enslaved man in Lincoln County, which is now Moore County, Tennessee (Risen, 2016). He was the master distiller on Dan Call's property, where the young Jack Daniel learned distilling alongside him (Risen, 2016). The technique Green worked with became the legal signature of Tennessee whiskey: the Lincoln County Process, in which new whiskey is filtered through about 10 feet of sugar maple charcoal before it goes into the barrel (Risen, 2016). That charcoal filtering separates Tennessee whiskey from plain bourbon.
+Now the careful part, because responsible history names what the evidence confirms and what it only suggests. Here is what is documented. Green was enslaved on Dan Call's property, Jack Daniel learned distilling there, Green's family later worked at the distillery after emancipation, and Green's name appeared in no Jack Daniel's marketing before 2016 (Risen, 2016). Those facts are on the record.
+Here is what is historically probable but not fully documented. The oral history passed down by Green's descendants holds that he was the primary distiller and Jack Daniel's actual teacher (Weaver, 2019). Period accounts corroborate it, but oral history is a different kind of evidence than a signed document, and honest writing says so (Risen, 2016).
+So why did his name vanish for so long? Not through one villain, but through structure (Risen, 2016). Four forces stacked up. First, Jim Crow racial hierarchy made it socially impossible for a Black man to be named as the master or creator in a white-owned industry. Second, brands of that era were built around a single-founder hero, so ""Jack Daniel"" became the whole story. Third, the archives recorded enslaved people as property, almost never as knowledge holders. Fourth, for about 130 years, no one with a platform and access asked the question.
+That changed in 2016. The journalist Clay Risen published an investigation in The New York Times documenting Green's role, and that same year the distillery publicly acknowledged his contribution (Risen, 2016).
+
+[PICTURE] Picture a Tennessee farm in the 1850s. New whiskey drips slowly through a tall column of sugar maple charcoal, about 10 feet of it, with Nathan Green over it as the master and the young Jack Daniel at his side. Now picture the next 130 years of bottles and signs, all carrying one name and not the other. Then picture 2016, when a reporter's article and the distillery's own statement put Green's name back in the story.
+
+[REMEMBER] The fact to carry out: Nathan Green, an enslaved man in Lincoln County, Tennessee, worked the charcoal-filtering Lincoln County Process and taught Jack Daniel distilling, and although his name was absent from the brand for about 130 years, Clay Risen's 2016 New York Times investigation and the distillery's acknowledgment that year recovered it (Risen, 2016; Weaver, 2019). Responsible history names both what is proven and what is only probable.
+
+[CHECK] Quick check. What is the difference between a documented claim and a historically probable claim in Green's story? [Beat] Documented claims, like Green being enslaved on Call's property, rest on records; historically probable claims, like Green being the primary distiller and Jack's teacher, rest on oral history that corroborates but does not fully prove them (Risen, 2016; Weaver, 2019).
+
+## Key Takeaways
+- Nathan ""Nearest"" Green was an enslaved master distiller in Lincoln County (now Moore County), Tennessee, and Jack Daniel learned distilling there (Risen, 2016).
+- The Lincoln County Process filters new whiskey through about 10 feet of sugar maple charcoal and is the legal mark of Tennessee whiskey (Risen, 2016).
+- It is documented that Green was enslaved on Dan Call's property, that his family worked at the distillery after emancipation, and that his name was absent from marketing before 2016; the claim that he was the primary distiller and Jack's teacher is historically probable (Risen, 2016; Weaver, 2019).
+- His erasure came from Jim Crow hierarchy, single-founder branding, archives that recorded enslaved people as property, and 130 years of no one asking; Clay Risen's 2016 New York Times article and the distillery's acknowledgment that year recovered the story (Risen, 2016).
+
+## Sources
+- Risen, C. (2016, August 15). Jack Daniel's embraces a hidden ingredient: Help from a slave. The New York Times.
+- Weaver, F. (2019). Love & whiskey: The remarkable true story of Jack Daniel, his master distiller Nearest Green, and the improbable rise of Uncle Nearest. Post Hill Press.",markdown,,,,"[{""title"":""Jack Daniel's Embraces a Hidden Ingredient: Help From a Slave (Risen, 2016)"",""description"":""Clay Risen's New York Times investigation that documented Nathan Green's role in teaching Jack Daniel. Primary source for the social studies and ELA lessons."",""url"":""https://www.nytimes.com/2016/08/15/dining/jack-daniels-whiskey-nearest-green-slave.html"",""source_url"":""The New York Times""}]",,
+Episode 10: Whiskey — Fire Water,10,8,Whisky Crosses the Ocean,text,420,false,,"Goal: After this lesson you can explain how Masataka Taketsuru proved that great whisky did not require Scottish heritage.
+Subject: Social Studies | Run time: about 7 minutes
+
+[RECALL] Last time we told the story of Nathan Green. Two quick questions.
+One: what is the Lincoln County Process? [Beat] Filtering new whiskey through about 10 feet of sugar maple charcoal before barreling, the legal mark of Tennessee whiskey (Risen, 2016).
+Two: what is the difference between a documented claim and a historically probable one? [Beat] Documented claims rest on records; historically probable claims rest on oral history and period accounts that corroborate but do not fully prove them (Risen, 2016; Weaver, 2019).
+
+[HOOK] For a long time the world believed great whisky needed Scotland. Scottish water, Scottish weather, Scottish heritage, as if the magic could not leave the country. Then a young chemistry student from Japan decided to treat that belief as a problem to solve, not a wall to respect. His name was Masataka Taketsuru, and he proved that excellence has no passport.
+
+[TEACH] Masataka Taketsuru lived from 1894 to 1979 (Kawabata, 2017). He was a Japanese chemistry student, and in 1918 he sailed to Scotland to learn how Scotch whisky was really made (Kawabata, 2017). He did not just watch. He apprenticed at distilleries, he studied chemistry at the University of Glasgow, and in 1920 he married Rita Cowan, a Scottish-born woman, in a union that was socially controversial in both countries at the time (Kawabata, 2017).
+What he carried home mattered as much as what he learned. Taketsuru brought back complete technical notes on every part of Scotch production, and, deeper than any single recipe, he brought back an understanding that geographic conditions matter as much as technique (Kawabata, 2017). In other words, he grasped that the place was part of the process, and that the right place in Japan could approximate the right place in Scotland.
+That insight shaped one of his biggest decisions. When he chose where to make his own whisky, he picked Yoichi, on the northern coast of Hokkaido, on purpose (Kawabata, 2017). The cool maritime climate there mimicked Scotland's coastal conditions, the local water ran through volcanic geology, and the heavy snowfall created humidity that suited barrel aging. He did not choose Yoichi because it was convenient or because he inherited it. He chose it because it matched the geography he had studied. That is the whole point: he treated the assumption that you needed Scotland as a technical challenge, and he answered it.
+Here is why this matters for social studies. Taketsuru's journey shows that specialized craft knowledge can be deliberately learned and carried across cultural and geographic borders (Kawabata, 2017). Skill is not trapped inside one nation's heritage. And the proof came later, when Japanese whisky won international awards and was judged among the best in the world. That echoes the Judgment of Paris from the wine episode, where outsiders beat the establishment in a blind test and the old prestige hierarchy cracked.
+
+[PICTURE] Picture a young man boarding a ship in 1918, sailing from Japan to Scotland with an empty notebook. He fills it at distilleries and at Glasgow, marries a Scottish woman, and sails home with the notebook full. Then picture him standing on a cold, snowy coast in northern Hokkaido, looking out at gray water that could almost be Scotland, and deciding this is the spot. The geography traveled with him.
+
+[REMEMBER] The fact to carry out: Masataka Taketsuru (1894 to 1979) sailed to Scotland in 1918, apprenticed and studied at the University of Glasgow, married Rita Cowan in 1920, and brought home both technical notes and the understanding that geography matters as much as technique, choosing Yoichi on Hokkaido because its cool maritime climate mimicked Scotland, which proved that craft knowledge can be deliberately carried across cultures (Kawabata, 2017). Excellence has no passport.
+
+[CHECK] Quick check. Why did Taketsuru choose Yoichi for his distillery? [Beat] Because its cool maritime climate, water, and snowfall mimicked Scotland's coastal conditions, a deliberate geographic choice rather than convenience or inheritance (Kawabata, 2017).
+
+## Key Takeaways
+- Masataka Taketsuru (1894 to 1979) was a Japanese chemistry student who sailed to Scotland in 1918, apprenticed at distilleries, and studied at the University of Glasgow (Kawabata, 2017).
+- In 1920 he married Scottish-born Rita Cowan, a union that was controversial in both countries at the time (Kawabata, 2017).
+- He brought home technical notes and the understanding that geography matters as much as technique, and he chose Yoichi on Hokkaido because its cool maritime climate, water, and snowfall mimicked Scotland (Kawabata, 2017).
+- His story shows craft knowledge can be deliberately learned and carried across cultures; the later international success of Japanese whisky echoed the Judgment of Paris from the wine episode (Kawabata, 2017).
+
+## Sources
+- Kawabata, Y. (2017). Whisky rising: The definitive guide to the finest whiskies and distillers of Japan. Cider Mill Press.",markdown,,,,,,
+Episode 10: Whiskey — Fire Water,10,9,The Money in the Barrel,text,480,false,,"Goal: After this lesson you can explain why aged whiskey costs what it does, and how a brand story can outrun production cost.
+Subject: Economics | Run time: about 7 minutes
+
+[RECALL] Last time we crossed the ocean with whisky. Two quick questions.
+One: what did Masataru Taketsuru prove about geography and heritage? [Beat] That great whisky is not the birthright of one country; with the right climate and craft, Japan could make world-class whisky too (Kawabata, 2017).
+Two: where did he build his distillery, and why there? [Beat] In Yoichi, on the northern island of Hokkaido, because its cool, damp climate reminded him of Scotland (Kawabata, 2017).
+
+[HOOK] Here is a strange fact about whiskey. The moment a distillery makes it, the money disappears. The grain is bought, the labor is paid, the barrel is filled, and then nothing comes back for years. The whiskey just sits in the dark, getting more expensive every single day. Why would anyone run a business like that?
+
+[TEACH] Start with how big this business is. The global whisky market is worth about eighty-seven billion dollars a year across all categories (Scotch Whisky Association, 2024). Scotch exports run around six billion dollars a year, and American whiskey, the bourbons and ryes, run around four billion and growing fast (IWSR Drinks Market Analysis, 2024). That is a lot of money tied up in barrels.
+And tied up is the key phrase. Whiskey is what economists call illiquid, which is a small joke, because it is liquid you cannot spend. It is literally locked in barrels for years before anyone can sell it. So every extra year of aging piles on three costs. First, storage; the barrel takes up space in a warehouse that has to be paid for year after year. Second, evaporation; remember the angel's share, that two to four percent of the whiskey that vanishes into the air every year. The longer it sits, the more the angels drink. Third, the cost of money itself; the cash spent making that whiskey could have been earning a return somewhere else the whole time it waited.
+Stack those up and the arithmetic gets clear. A twelve-year bourbon costs roughly three times as much to produce as a four-year bourbon, before anyone prints a single label or tells a single story (IWSR Drinks Market Analysis, 2024). That is real cost. Older whiskey genuinely is more expensive to make.
+
+[PICTURE] But here is where it gets interesting, and you should picture this clearly. There is a big distillery in Lawrenceburg, Indiana that makes whiskey in bulk and sells it to dozens of different brands. The same liquid, from the same tanks, gets split up and bottled under many names. One brand puts it in a plain bottle and sells it as a house label for twenty to thirty dollars. Another brand takes the exact same whiskey, wraps it in a beautiful bottle, prints a story about a small batch and a family recipe, and sells it for sixty to one hundred dollars (IWSR Drinks Market Analysis, 2024). Same whiskey. Three times the price. The difference is not in the barrel. The difference is the story.
+
+[REMEMBER] The fact to carry out: aged whiskey costs more because aging adds real costs, storage, the angel's share, and money tied up over time, so a twelve-year bourbon costs about three times what a four-year does to make. But a brand narrative can stack a second premium on top, turning the same liquid into a sixty-dollar bottle instead of a thirty-dollar one (IWSR Drinks Market Analysis, 2024). Some of what you pay is the whiskey. Some of it is the story.
+
+This raises an honest question, and it is worth sitting with. The big distillery does not hide what it does; the information is public. The brands are building a story, not exactly lying. But the person paying eighty dollars believing it came from a tiny family distillery is working with only half the picture. Where does marketing end and misleading begin?
+
+[CHECK] Quick check. Why does a twelve-year bourbon cost more to produce than a four-year, even before any brand premium? [Beat] Because each extra year adds storage cost, loses two to four percent of the whiskey to the angel's share, and ties up money that could be earning a return elsewhere, so a twelve-year costs roughly three times as much to make (IWSR Drinks Market Analysis, 2024).
+
+## Key Takeaways
+- The global whisky market is worth about eighty-seven billion dollars a year, with Scotch exports around six billion and American whiskey around four billion and growing fast (Scotch Whisky Association, 2024; IWSR Drinks Market Analysis, 2024).
+- Whiskey is illiquid, locked in barrels for years, so aging adds storage cost, angel's-share loss, and the cost of money tied up.
+- A twelve-year bourbon costs roughly three times as much to produce as a four-year, before any brand premium (IWSR Drinks Market Analysis, 2024).
+- The same bulk whiskey can sell as a thirty-dollar house brand or a sixty- to one-hundred-dollar craft brand on the strength of a story, which raises the question of where marketing ends and misleading begins.
+
+## Sources
+- Scotch Whisky Association. (2024). Scotch whisky industry key facts 2024. SWA.
+- IWSR Drinks Market Analysis. (2024). Global spirits market report 2024. IWSR.",markdown,,,,,,
+Episode 10: Whiskey — Fire Water,10,10,The Economics of Attribution,text,480,false,,"Goal: After this lesson you can explain how Uncle Nearest built premium value on documented history instead of a constructed story.
+Subject: Economics | Run time: about 7 minutes
+
+[RECALL] Last time we followed the money in the barrel. Two quick questions.
+One: why does a twelve-year bourbon cost more to produce than a four-year? [Beat] Because each extra year adds storage cost, loses two to four percent to the angel's share, and ties up money over time, so it costs about three times as much to make (IWSR Drinks Market Analysis, 2024).
+Two: what does the bulk-whiskey case show about brand narrative? [Beat] That the same liquid can sell as a thirty-dollar house brand or a sixty-dollar craft brand on the strength of a story, so the price premium often comes from the narrative, not the whiskey.
+
+[HOOK] In the last lesson we saw brands invent stories to charge more. Now meet a brand that did the opposite. It charged a premium not by making up a heritage, but by recovering a true one that had been buried for a hundred years. And the market rewarded the true story at least as richly as the invented ones.
+
+[TEACH] The brand is Uncle Nearest Premium Whiskey. It was founded in 2017 by Fawn Weaver and named for Nathan Green, the enslaved man who taught Jack Daniel to make whiskey (Risen, 2016; Weaver, 2019). Here is the smart part of the economics. Building a distillery from scratch takes years and a fortune, because you have to wait for the whiskey to age before you can sell anything. Uncle Nearest skipped that wait at first by buying aged Tennessee whiskey from existing distilleries, getting a finished product to market fast with far less startup capital. Then, once the brand was earning, it opened its own distillery in 2020 to control its supply for the long run (Weaver, 2019).
+That move paid off in a big way. By 2022 the company had raised more than two hundred million dollars, it reached all fifty states, and it became the top-selling Black-owned spirits brand in the United States (Nielsen IQ, 2023). That is not a niche success. That is a major brand built in five years.
+
+[PICTURE] Now hold two brands side by side in your mind. The first is a typical craft brand. Its premium rests on a story it constructed, maybe selective, maybe partly fictional, a small-batch family tale stitched together to justify the price. The second is Uncle Nearest. Its premium rests on a documented historical record, recovered through real archival research, with a real person, Nathan Green, named on the label (Weaver, 2019). One story was invented to sell whiskey. The other was true and suppressed, then dug back up. And the surprising economic lesson is that the market paid a premium for the verifiable, recovered truth at least as high as it paid for the invented stories. The market was not just rewarding a story. It was rewarding an accurate one.
+
+[REMEMBER] The fact to carry out: Uncle Nearest, founded in 2017 by Fawn Weaver and named for Nathan Green, entered the market fast by buying aged whiskey, then built its own distillery in 2020, raised more than two hundred million dollars by 2022, reached all fifty states, and became the top-selling Black-owned spirits brand in the country, all on documented history rather than an invented one (Weaver, 2019; Nielsen IQ, 2023). Verifiable authenticity earned a premium too.
+
+There is one more piece that changes the whole model. A share of the proceeds goes to the Nearest Green Scholarship Fund, which directs money to Black higher education (Weaver, 2019). That makes the economics reparative, not just symbolic. The brand does not only tell the truth about who made the whiskey; it sends real money back toward the community of the man it was named for.
+
+[CHECK] Quick check. What is the key economic contrast between Uncle Nearest and a conventional craft heritage brand? [Beat] A typical craft brand builds its premium on a constructed, sometimes fictional story, while Uncle Nearest built its premium on a documented, recovered historical record, and the market rewarded that verifiable authenticity at least as much as the invented kind (Weaver, 2019).
+
+## Key Takeaways
+- Uncle Nearest Premium Whiskey was founded in 2017 by Fawn Weaver and named for Nathan Green (Risen, 2016; Weaver, 2019).
+- It entered the market fast by buying aged Tennessee whiskey, then opened its own distillery in 2020 for long-term supply (Weaver, 2019).
+- By 2022 it had raised more than two hundred million dollars, reached all fifty states, and became the top-selling Black-owned spirits brand in the United States (Nielsen IQ, 2023).
+- Its premium rests on documented, recovered history rather than a constructed story, and the Nearest Green Scholarship Fund directs proceeds to Black higher education, making the model reparative (Weaver, 2019).
+
+## Sources
+- Risen, C. (2016, August 15). Jack Daniel's embraces a hidden ingredient: Help from a slave. The New York Times.
+- Weaver, F. (2019). Love & whiskey. Post Hill Press.
+- Nielsen IQ. (2023). Top-selling Black-owned spirits brands 2022-2023. Nielsen IQ Beverage Alcohol Tracking.",markdown,,,,"[{""title"":""Nearest Green and Uncle Nearest Whiskey"",""description"":""Background on Nathan Green and the brand built to recover and credit his suppressed contribution. Useful for the economics of attribution."",""url"":""https://en.wikipedia.org/wiki/Nearest_Green"",""source_url"":""Reference summary with primary-source links""}]",,
+Episode 10: Whiskey — Fire Water,10,11,What Does Proof Mean?,text,420,false,,"Goal: After this lesson you can explain where the word proof came from, how alcohol is measured, and why proof affects taxes.
+Subject: Science and Policy | Run time: about 7 minutes
+
+[RECALL] Last time we looked at the economics of attribution. Two quick questions.
+One: what made Uncle Nearest's authenticity different from most craft brands? [Beat] It rests on a documented historical record, not a constructed story (Risen, 2016).
+Two: who is Uncle Nearest named for? [Beat] Nathan Green, the enslaved distiller who taught Jack Daniel (Risen, 2016).
+
+[HOOK] Pick up a bottle of whiskey and you will see two numbers that say the same thing: maybe 80 proof and 40 percent alcohol. Why two numbers? And why the strange word proof? The answer runs from gunpowder to chemistry to tax law.
+
+[TEACH] Start with the word. Proof comes from the Latin probare, to test or demonstrate (Pack, 1982). Centuries ago, British sailors had a rough field test. They mixed a spirit with gunpowder and tried to light it. If it burned steadily, the spirit was strong enough, it was proved. If it fizzled, it was watered down. The point where alcohol and gunpowder reliably ignite is about 57 percent alcohol by volume, and that threshold became the original definition of proof.
+Now the science behind the modern measure. Pure alcohol, ethanol, is lighter than water, so the more alcohol a spirit holds, the less dense it is (Boulton & Quain, 2001). A simple tool called a hydrometer uses that fact. It is a weighted float that sinks lower in lighter, higher-alcohol liquid and rides higher in denser, watery liquid, and its scale reads the alcohol straight off. One catch: warm liquid is less dense than cold, so every reading is corrected to a standard temperature.
+Here is where it gets human. There are three proof systems. The United States keeps it simple: proof equals the alcohol percentage times two, so 40 percent alcohol is 80 proof. That doubling was adopted in 1848 purely to make tax math easy (TTB, 2024). The older British Sikes system, set in 1816, multiplied by about 1.75 instead, so its 100 proof matched that 57 percent gunpowder threshold, and Britain dropped it for plain percentages in 1980. The rest of the world just uses the percentage.
+And proof decides taxes. The government taxes a proof gallon, meaning one gallon at 100 proof, which is 50 percent alcohol (TTB, 2024). So a barrel of stronger whiskey holds more proof gallons and owes more tax. That is why a distiller who adds water before bottling pays less tax on the very same spirit.
+
+[PICTURE] Picture a hydrometer bobbing in a tall glass cylinder of clear spirit, floating low because the liquid is light with alcohol. Then picture the bottle's label with its two numbers, 80 proof and 40 percent, one a tax convention, one the plain truth.
+
+[REMEMBER] The fact to carry out: in the United States, proof is simply the alcohol percentage doubled, a tax-math rule from 1848, while the older gunpowder threshold sat near 57 percent alcohol, and proof is measured by density with a hydrometer (TTB, 2024; Pack, 1982). Proof is part chemistry, part history, part tax law.
+
+[CHECK] Quick check. A United States bottle reads 100 proof. What is its alcohol by volume? [Beat] 50 percent, because United States proof is the alcohol percentage times two (TTB, 2024).
+
+## Key Takeaways
+- The word proof comes from a naval gunpowder test, where a spirit that burned was proved strong (Pack, 1982).
+- Alcohol is measured by density with a hydrometer, because ethanol is lighter than water (Boulton & Quain, 2001).
+- United States proof is the alcohol percentage times two, a tax-math convention from 1848; the old gunpowder threshold was about 57 percent (TTB, 2024).
+- Tax is charged per proof gallon, so higher-proof whiskey owes more tax, which is why distillers often add water before bottling.
+
+## Sources
+- Pack, A. J. (1982). Nelson's blood: The story of naval rum. Naval Institute Press.
+- Boulton, C., & Quain, D. (2001). Brewing yeast and fermentation. Blackwell Science.
+- Alcohol and Tobacco Tax and Trade Bureau. (2024). Distilled spirits taxes and proof. U.S. Department of the Treasury.",markdown,,,,"[{""title"":""U.S. TTB, Distilled Spirits and Proof"",""description"":""The Alcohol and Tobacco Tax and Trade Bureau, which sets U.S. proof labeling and excise rules. Useful for the proof lesson."",""url"":""https://www.ttb.gov/spirits"",""source_url"":""Alcohol and Tobacco Tax and Trade Bureau""}]",,
+Episode 10: Whiskey — Fire Water,10,12,The Water of Life,text,360,false,,"Goal: After this lesson you can analyze how whiskey's vocabulary preserves the history of distillation.
+Subject: English Language Arts | Run time: about 6 minutes
+
+[RECALL] Last time we looked at what proof means. Two quick questions.
+One: in the United States, what does proof equal in terms of alcohol percentage? [Beat] The alcohol percentage doubled, so 100 proof is 50 percent alcohol (TTB, 2024).
+Two: where did the word proof come from? [Beat] From the Latin probare, to test or demonstrate, tied to an old naval gunpowder test (Pack, 1982).
+
+[HOOK] Here is a strange idea: the words on a whiskey bottle are a kind of fossil. Each one carries a date and a place inside it. If you learn to read the words, you can trace the journey of distillation across the world without ever opening a history book. The vocabulary itself is the evidence.
+
+[TEACH] Start with how this works. Etymology is the study of where words come from. When a technology moves from one culture to another, the receiving culture often keeps the original word, slightly bent by a new tongue. So the language buried inside a word becomes a clue about who handed the knowledge along. Words are evidence the same way pottery shards are evidence, they survive, and they point back to their makers.
+
+Now follow the trail. Two of whiskey's most basic words are Arabic. Alcohol comes from al-kuhl, which meant ""the essence"" or a fine powder (Forbes, 1948). Alembic, the name of the classic still, comes from al-ambiq, the Arabic word for the distillation vessel itself (Forbes, 1948). These words are not decoration. They are a receipt. They show that the science of distilling was carried and refined during the Islamic Golden Age, and that when Europe received the technology, it received the Arabic names along with it (Forbes, 1948).
+
+Then the trail crosses into different ground. The word whiskey comes from the Irish Gaelic uisce beatha, which means ""water of life"" (MacLean, 2003). In Latin, the same drink was called aqua vitae, which also means ""water of life"" (MacLean, 2003). Notice that: two different languages, Gaelic and Latin, landed on the exact same phrase. That is not a coincidence. It tells you that when the knowledge reached Ireland, Scotland, and the Latin-speaking monasteries of Europe, people in each place reached for the same awe-struck name.
+
+So here is the analytical payoff. Line the words up and you get a record of which cultures carried the technology. Arabic gives you alcohol and alembic, the chemistry and the apparatus. Gaelic and Latin give you the ""water of life,"" the names of the finished spirit in the lands that adopted it. The vocabulary is layered like rock. Read the layers in order and you read the route the knowledge traveled.
+
+[PICTURE] Picture three name tags pinned to a single bottle. One reads al-ambiq, in Arabic, the still that did the work. One reads uisce beatha, in Gaelic. One reads aqua vitae, in Latin, both of the last two meaning ""water of life."" Three languages, one object, the whole journey stacked on a label you could hold in one hand.
+
+[REMEMBER] The fact to carry out: whiskey's words are historical evidence. Alcohol and alembic come from Arabic, al-kuhl and al-ambiq, marking the Islamic Golden Age's role in the science, and whiskey comes from the Gaelic uisce beatha while Latin says aqua vitae, both meaning ""water of life"" (Forbes, 1948; MacLean, 2003). The languages preserved in the words record which cultures carried the technology.
+
+[CHECK] Quick check. The words alcohol and alembic come from which language, and what does their presence tell you? [Beat] Arabic, from al-kuhl and al-ambiq, which tells you the science of distillation was carried and refined during the Islamic Golden Age (Forbes, 1948).
+
+## Key Takeaways
+- Etymology works as historical evidence, because a culture that receives a technology often keeps the original word.
+- Alcohol comes from the Arabic al-kuhl, ""the essence,"" and alembic from the Arabic al-ambiq, the still, marking the Islamic Golden Age's role (Forbes, 1948).
+- Whiskey comes from the Gaelic uisce beatha, and Latin says aqua vitae, both meaning ""water of life,"" the same phrase in two languages (MacLean, 2003).
+- The languages preserved in the words, Arabic, Gaelic, and Latin, are a record of which cultures carried distillation across the world.
+
+## Sources
+- Forbes, R. J. (1948). A short history of the art of distillation. Brill.
+- MacLean, C. (2003). Scotch whisky: A liquid history. Cassell Illustrated.",markdown,,,,,,
+Episode 10: Whiskey — Fire Water,10,13,The Oral History That Survived,text,420,false,,"Goal: After this lesson you can explain why oral history is a legitimate scholarly method and how it preserved Nathan Green's story.
+Subject: English Language Arts | Run time: about 7 minutes
+
+[RECALL] Last time we read whiskey's vocabulary as evidence. Two quick questions.
+One: what does uisce beatha mean? [Beat] ""Water of life,"" the Gaelic phrase that became the word whiskey (MacLean, 2003).
+Two: what do the Arabic roots of alcohol and alembic reveal? [Beat] That the science of distillation was carried and refined during the Islamic Golden Age, from al-kuhl and al-ambiq (Forbes, 1948).
+
+[HOOK] Here is a question that sounds simple and is not: if a thing was never written down, did it really happen? For most of history, powerful people wrote the records, and they often left certain people out on purpose. So if you only trust paper, you lose whole lives. There is a method built to recover them, and it is how the name Nathan Green survived for more than a century.
+
+[TEACH] The method is called oral history. It is the systematic collection, preservation, and interpretation of recorded interviews and personal narratives as historical evidence (Ritchie, 2014). The key word is systematic. This is not just swapping stories. It is a discipline with rules. The Oral History Association, founded in 1966, sets professional guidelines for how to collect, evaluate, and cite spoken testimony, and the method is peer-reviewed and used in scholarship right alongside written documents (Ritchie, 2014).
+
+Now, when does this method matter most? Exactly when the paper trail fails. Oral history carries the load when written records were never created, when they were destroyed, or when they systematically excluded certain people (Ritchie, 2014). Hold on to that last case. Under slavery, enslaved people were written into records as property, as items of value, not as knowledge holders or skilled experts. The documents that survive can name a person and still erase the truth of who that person was.
+
+That is exactly the gap around Nathan Green. The written records described him as an enslaved person, and later as a worker, but not as the master distiller who taught Jack Daniel his craft (Risen, 2016). The paper named him and hid him at the same time. So how did the real story survive? His descendants kept it. For 130 years they preserved his memory in family oral tradition, naming Nathan Green and naming Jack Daniel, passing the account down through the generations (Risen, 2016).
+
+Here is the part that shows the method working. When the journalist Clay Risen took up the story, he did not simply print the family's account. He treated it the way the discipline demands, as a lead to be tested. He cross-referenced the descendants' accounts against the available written records, and he found enough corroboration to publish responsibly (Risen, 2016). That is the key idea. The oral history did not replace the documents. It told the investigator where to look. The spoken record pointed at the page, and the page confirmed enough to stand.
+
+You have heard this shape before. Back in Season 1 we saw cultures that kept their most important knowledge alive by speaking it, not by writing it. Oral history is the scholarly tool for taking those traditions seriously, and for recovering the people the written archive tried to leave out.
+
+[PICTURE] Picture a family at a kitchen table, telling the same story for a hundred and thirty years, a name held in voices because it was crossed out on paper. Then picture a reporter laying that spoken account next to a stack of old records, checking it line by line, until the page finally admits what the family always knew.
+
+[REMEMBER] The fact to carry out: oral history is a peer-reviewed scholarly method, guided by the Oral History Association, founded in 1966, and it matters most when written records were never made, were destroyed, or excluded people on purpose, as enslaved people were recorded as property rather than as experts (Ritchie, 2014). It preserved Nathan Green's story through 130 years of family oral tradition, and when Clay Risen sought corroboration, the testimony told him where to look (Risen, 2016).
+
+[CHECK] Quick check. How did oral history work together with the written record in recovering Nathan Green's story? [Beat] It did not replace documentation; the family's 130-year account told Clay Risen where to look, and he found enough corroboration in the written records to publish responsibly (Risen, 2016).
+
+## Key Takeaways
+- Oral history is the systematic collection and critical evaluation of personal and community narratives as historical evidence, a peer-reviewed method with professional guidelines from the Oral History Association, founded in 1966 (Ritchie, 2014).
+- It matters most when written records were never created, were destroyed, or systematically excluded people, as enslaved people were recorded as property rather than as knowledge holders (Ritchie, 2014).
+- Nathan Green's descendants preserved his story in family oral tradition for 130 years, naming him and naming Jack Daniel (Risen, 2016).
+- Oral history did not replace documentation; it told the investigator where to look, and Clay Risen found enough corroboration to publish responsibly (Risen, 2016).
+
+## Sources
+- Ritchie, D. A. (2014). Doing oral history (3rd ed.). Oxford University Press.
+- Risen, C. (2016, August 15). Jack Daniel's embraces a hidden ingredient: Help from a slave. The New York Times.",markdown,,,,,,
+Episode 10: Whiskey — Fire Water,10,14,Key Terms: Whiskey,text,300,false,,"Goal: After this lesson you can define the core vocabulary from Episode 10 across all four lenses, plus the science of proof.
+Subject: Vocabulary | Run time: about 5 minutes
+
+Your word bank for the Whiskey episode. Read it quick, out loud if you can. The full glossary lives in the course Resources.
+
+## Geography
+
+**Distillation.** Concentrating alcohol by heating a brew and condensing the vapor, the technology behind whiskey (Forbes, 1948).
+
+**Alembic** (uh-LEM-bik). The still used to distill spirits, from the Arabic al-ambiq.
+
+**Karst limestone** (KARST). Rock dissolved by rainwater into caves and springs, giving calcium-rich, iron-free water ideal for bourbon (Veach, 2013).
+
+**Rickhouse** (RIK-hows). The warehouse where whiskey barrels age through seasonal temperature swings.
+
+**Angel's share.** The 2 to 4 percent of whiskey that evaporates from the barrel each year (Veach, 2013).
+
+## Social Studies
+
+**Whiskey Rebellion.** The 1794 frontier uprising against the federal whiskey tax, the first major test of federal authority (Hogeland, 2006).
+
+**Lincoln County Process.** Filtering new whiskey through about 10 feet of sugar maple charcoal, the legal mark of Tennessee whiskey (Risen, 2016).
+
+**Structural erasure.** The removal of someone's credit through systemic forces rather than a single act, as with Nathan Green (Risen, 2016).
+
+## Economics
+
+**Illiquid** (il-LIK-wid). Describes an asset that cannot be quickly sold, like whiskey locked in barrels for years.
+
+**Age premium.** The added cost of each extra year of aging, from storage, evaporation, and tied-up capital.
+
+**Sourced whiskey.** Bulk whiskey bought from a large producer like MGP and rebottled under another brand's story.
+
+**Attribution.** Crediting the person who originated a knowledge or technique, central to the Uncle Nearest model (Weaver, 2019).
+
+## Science of Proof
+
+**Proof.** A measure of alcohol strength; in the United States it is the alcohol percentage times two (TTB, 2024).
+
+**Proof gallon.** One gallon of spirit at 100 proof (50 percent alcohol), the unit used to tax distilled spirits.
+
+**Hydrometer** (hy-DROM-uh-ter). A weighted float that measures alcohol by how high it rides, since alcohol is less dense than water (Boulton & Quain, 2001).
+
+## English Language Arts
+
+**Uisce beatha** (ISH-keh BAH-ha). The Gaelic phrase, meaning water of life, that gave us the word whiskey (MacLean, 2003).
+
+**Etymology** (eh-tih-MOL-uh-jee). The study of word origins, used here as evidence of how distillation traveled (Forbes, 1948).
+
+**Oral history.** The systematic, critical collection of personal and community narratives as historical evidence (Ritchie, 2014).
+
+## Sources
+- Boulton, C., & Quain, D. (2001). Brewing yeast and fermentation. Blackwell Science.
+- Forbes, R. J. (1948). A short history of the art of distillation. Brill.
+- Hogeland, W. (2006). The Whiskey Rebellion. Scribner.
+- MacLean, C. (2003). Scotch whisky: A liquid history. Cassell Illustrated.
+- Risen, C. (2016, August 15). Jack Daniel's embraces a hidden ingredient: Help from a slave. The New York Times.
+- Ritchie, D. A. (2014). Doing oral history (3rd ed.). Oxford University Press.
+- Alcohol and Tobacco Tax and Trade Bureau. (2024). Distilled spirits taxes and proof. U.S. Department of the Treasury.
+- Veach, M. R. (2013). Kentucky bourbon whiskey: An American heritage. University Press of Kentucky.
+- Weaver, F. (2019). Love & whiskey. Post Hill Press.",markdown,,,,,,
+Episode 10: Whiskey — Fire Water,10,15,Cumulative Review: Whiskey,text,360,false,,"Goal: After this lesson you can recall the top facts from all four lenses, plus proof, and see how they connect.
+Subject: Review | Run time: about 6 minutes
+
+[RECALL] Let's pull the Whiskey episode together, one quick fact per lens, then the thread that ties them.
+
+[TEACH] Start with geography. Whiskey is a technology, and the knowledge of distilling traveled from 8th-century Arab science through European monasteries to Ireland, Scotland, America, and Japan (Forbes, 1948). Where it landed, the local ground shaped it: karst limestone gives Kentucky, Indiana, and Tennessee the iron-free water bourbon needs (Veach, 2013). And climate sets the clock, since Kentucky's big seasonal swings age bourbon faster than Scotland's mild weather, while 2 to 4 percent evaporates each year as the angel's share.
+
+Now social studies. A whiskey tax nearly broke the young republic in the Whiskey Rebellion of 1794, establishing that the federal government could enforce taxes by force (Hogeland, 2006). We told the documented story of Nathan Green, the enslaved master distiller who taught Jack Daniel and was erased for 130 years until a 2016 investigation (Risen, 2016). And Masataka Taketsuru carried Scotch knowledge to Japan, proving excellence has no passport (Kawabata, 2017).
+
+Then economics. Aged whiskey is illiquid, locked in barrels for years, so each year adds real cost, and a brand story can make the same MGP liquid sell for triple (Scotch Whisky Association, 2024). Uncle Nearest built a premium on a documented, recovered history instead of a constructed one, becoming the top-selling Black-owned spirits brand and funding scholarships (Weaver, 2019; Nielsen IQ, 2023).
+
+We also learned the science of proof: in the United States, proof is just the alcohol percentage doubled, a tax-math rule from 1848, and it is measured by density with a hydrometer (TTB, 2024).
+
+Last, language. Whiskey means water of life, from the Gaelic uisce beatha and the Latin aqua vitae, and its Arabic-rooted words like alcohol record who carried the technology (MacLean, 2003; Forbes, 1948). And oral history, a real scholarly method, kept Nathan Green's story alive in family memory for 130 years until records could confirm it (Ritchie, 2014).
+
+[REMEMBER] Here is the thread. Whiskey is knowledge that travels. Geography shows the route and the water, history shows the cost of that knowledge and the people erased from it, economics shows how a story sets a price, and language shows that excellence and credit belong to whoever truly earned them. Excellence has no passport.
+
+[CHECK] One last check before the quiz. What single idea ties the whiskey episode together? [Beat] Whiskey is a technology, a piece of knowledge that travels, so excellence has no passport, and the people who hold that knowledge deserve the credit (Kawabata, 2017; Risen, 2016).
+
+## Key Takeaways
+- Geography: distillation knowledge traveled the world, and local water and climate shape each whiskey (Forbes, 1948; Veach, 2013).
+- Social studies: the Whiskey Rebellion tested federal power, and Nathan Green's erased story shows whose knowledge gets credited (Hogeland, 2006; Risen, 2016).
+- Economics: aging ties up capital, and brand stories, true or constructed, set the price (Scotch Whisky Association, 2024; Weaver, 2019).
+- Language and science: whiskey means water of life, proof is doubled alcohol percentage, and oral history recovers suppressed truth (MacLean, 2003; TTB, 2024; Ritchie, 2014).
+
+## Sources
+- Forbes, R. J. (1948). A short history of the art of distillation. Brill.
+- Hogeland, W. (2006). The Whiskey Rebellion. Scribner.
+- Kawabata, Y. (2017). Whisky rising. Cider Mill Press.
+- MacLean, C. (2003). Scotch whisky: A liquid history. Cassell Illustrated.
+- Nielsen IQ. (2023). Top-selling Black-owned spirits brands 2022-2023. Nielsen IQ Beverage Alcohol Tracking.
+- Risen, C. (2016, August 15). Jack Daniel's embraces a hidden ingredient: Help from a slave. The New York Times.
+- Ritchie, D. A. (2014). Doing oral history (3rd ed.). Oxford University Press.
+- Scotch Whisky Association. (2024). Scotch whisky industry key facts 2024. SWA.
+- Alcohol and Tobacco Tax and Trade Bureau. (2024). Distilled spirits taxes and proof. U.S. Department of the Treasury.
+- Veach, M. R. (2013). Kentucky bourbon whiskey: An American heritage. University Press of Kentucky.
+- Weaver, F. (2019). Love & whiskey. Post Hill Press.",markdown,,,,,,
+Episode 10: Whiskey — Fire Water,10,16,Sources and Further Reading: Whiskey,text,180,false,,"Every claim in this episode is cited inline so you can check it yourself. Here is the full reference list in APA style. Use it to verify a fact, to dig deeper, or to start your own research for the project. The episode is educational and includes honest sources on alcohol's health harms.
+
+## References
+
+Boulton, C., & Quain, D. (2001). Brewing yeast and fermentation. Blackwell Science.
+
+Broom, D. (2014). The way of whisky: A journey around Japanese whisky. Mitchell Beazley.
+
+Brown-Forman. (2016). Jack Daniel's acknowledges Nearest Green's role in Tennessee whiskey history. Press release. Brown-Forman Corporation.
+
+Distilled Spirits Council of the United States. (2023). Craft distillery trends and statistics 2023. https://www.distilledspirits.org/
+
+Forbes, R. J. (1948). A short history of the art of distillation. Brill.
+
+Hogeland, W. (2006). The Whiskey Rebellion: George Washington, Alexander Hamilton, and the frontier rebels who challenged America's newfound sovereignty. Scribner.
+
+IWSR Drinks Market Analysis. (2024). Global spirits market report 2024. https://www.theiwsr.com/
+
+Kawabata, Y. (2017). Whisky rising: The definitive guide to the finest whiskies and distillers of Japan. Cider Mill Press.
+
+MacLean, C. (2003). Scotch whisky: A liquid history. Cassell Illustrated.
+
+Nielsen IQ. (2023). Top-selling Black-owned spirits brands 2022-2023. Nielsen IQ Beverage Alcohol Tracking.
+
+Pack, A. J. (1982). Nelson's blood: The story of naval rum. Naval Institute Press.
+
+Risen, C. (2014). American whiskey, bourbon & rye: A guide to the nation's favorite spirit. Sterling Epicure.
+
+Risen, C. (2016, August 15). Jack Daniel's embraces a hidden ingredient: Help from a slave. The New York Times. https://www.nytimes.com/2016/08/15/dining/jack-daniels-whiskey-nearest-green-slave.html
+
+Ritchie, D. A. (2014). Doing oral history (3rd ed.). Oxford University Press.
+
+Scotch Whisky Association. (2024). Scotch whisky industry key facts 2024. https://www.scotch-whisky.org.uk/
+
+Alcohol and Tobacco Tax and Trade Bureau. (2024). Distilled spirits taxes and proof. U.S. Department of the Treasury. https://www.ttb.gov/spirits
+
+Veach, M. R. (2013). Kentucky bourbon whiskey: An American heritage. University Press of Kentucky.
+
+Weaver, F. (2019). Love & whiskey: The remarkable true story of Jack Daniel, his master distiller Nearest Green, and the improbable rise of Uncle Nearest. Post Hill Press.
+
+World Health Organization. (2024). Global status report on alcohol and health. WHO Press. https://www.who.int/publications/i/item/9789240089396",markdown,,,,,,
+Episode 10: Whiskey — Fire Water,10,17,Knowledge Check: Whiskey,quiz,720,false,,"This check pulls from all four lenses in Episode 10, geography, social studies, economics, and language, plus the bonus science lesson on proof.
+
+Each time you take it, you get 10 questions drawn from a larger pool, and the answer choices are shuffled, so a retake is never the same test twice. You need 80 percent to pass, and you can retake it as many times as you like. The goal is understanding, not gatekeeping.
+
+After each question you see an explanation and a citation. Read them. The reasons a wrong answer is wrong are the best study material here.
+
+When you finish, take the Project assignment for this episode, where the bigger questions, how knowledge travels and who deserves credit for it, get the long-form treatment they deserve.",markdown,,,,,,"{""passingScore"":80,""attemptsAllowed"":-1,""questionsPerAttempt"":10,""shuffleOptions"":true,""questions"":[{""id"":""q1"",""questionText"":""What route did distillation knowledge travel before reaching whiskey?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q1a"",""text"":""From Arab science through European monasteries to Ireland, Scotland, America, and Japan""},{""id"":""q1b"",""text"":""It was invented in Kentucky""},{""id"":""q1c"",""text"":""It came from ancient Egypt only""},{""id"":""q1d"",""text"":""It has no history""}],""correctOptionId"":""q1a"",""explanation"":""Distillation was perfected as Arab science around the 8th century, passed through European monasteries, reached Ireland and Scotland by the 1400s, then America and Japan. Technology follows trade routes."",""citation"":""Lesson: The Geography of Distillation""},{""id"":""q2"",""questionText"":""Why is karst limestone water ideal for making bourbon?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q2a"",""text"":""It is rich in calcium and magnesium and free of iron""},{""id"":""q2b"",""text"":""It is full of iron""},{""id"":""q2c"",""text"":""It is salty""},{""id"":""q2d"",""text"":""It has no minerals at all""}],""correctOptionId"":""q2a"",""explanation"":""Karst water carries calcium and magnesium that feed the yeast, and the limestone filters out iron, which would otherwise give whiskey a metallic taste and dark color."",""citation"":""Lesson: Karst Limestone and Bourbon""},{""id"":""q3"",""questionText"":""Which U.S. state is a hidden giant of bourbon production?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q3a"",""text"":""Indiana, especially Lawrenceburg, which sits on the karst formation""},{""id"":""q3b"",""text"":""Florida""},{""id"":""q3c"",""text"":""Maine""},{""id"":""q3d"",""text"":""Arizona""}],""correctOptionId"":""q3a"",""explanation"":""Lawrenceburg, Indiana sits on the same karst limestone as Kentucky, and a distillery there has produced spirits since the 1840s, so much bourbon is actually made in Indiana."",""citation"":""Lesson: Karst Limestone and Bourbon""},{""id"":""q4"",""questionText"":""How does climate make Kentucky bourbon age faster than Scotch whisky?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q4a"",""text"":""Big seasonal temperature swings push whiskey in and out of the wood faster""},{""id"":""q4b"",""text"":""Kentucky barrels are bigger""},{""id"":""q4c"",""text"":""Scotland uses no barrels""},{""id"":""q4d"",""text"":""Bourbon is heated on a stove""}],""correctOptionId"":""q4a"",""explanation"":""Kentucky's continental climate swings from hot summers to cold winters, driving the whiskey into and out of the charred oak quickly, while Scotland's mild climate barely swings."",""citation"":""Lesson: The Geography of Aging""},{""id"":""q5"",""questionText"":""What is the angel's share?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q5a"",""text"":""The 2 to 4 percent of whiskey that evaporates from the barrel each year""},{""id"":""q5b"",""text"":""A tax on whiskey""},{""id"":""q5c"",""text"":""The best barrel in a batch""},{""id"":""q5d"",""text"":""A type of yeast""}],""correctOptionId"":""q5a"",""explanation"":""Each year about 2 to 4 percent of the whiskey simply evaporates from the barrel, a real and costly loss distillers call the angel's share."",""citation"":""Lesson: The Geography of Aging""},{""id"":""q6"",""questionText"":""Why did the same Scottish barley make smoky Islay whisky and sweet Speyside whisky?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q6a"",""text"":""Different local geography, like seaweed peat versus a granite valley, shapes the flavor""},{""id"":""q6b"",""text"":""They use different grains""},{""id"":""q6c"",""text"":""One is not really whisky""},{""id"":""q6d"",""text"":""The barley is dyed""}],""correctOptionId"":""q6a"",""explanation"":""Islay's seaweed-rich peat gives a smoky, briny dram, while Speyside's sheltered granite valley gives a sweet, fruity one, the same terroir idea from beer and wine."",""citation"":""Lesson: Karst Limestone and Bourbon""},{""id"":""q7"",""questionText"":""Why did Hamilton's 1791 whiskey tax fall hardest on frontier farmers?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q7a"",""text"":""Whiskey was their currency and they had no cash to pay with, while large eastern distillers absorbed the cost""},{""id"":""q7b"",""text"":""They drank more than easterners""},{""id"":""q7c"",""text"":""They lived closer to the capital""},{""id"":""q7d"",""text"":""They paid no other taxes""}],""correctOptionId"":""q7a"",""explanation"":""On the frontier whiskey served as money, so taxing it taxed their entire monetary system, while big eastern distillers could spread the cost over large production."",""citation"":""Lesson: From Rebellion to Republic""},{""id"":""q8"",""questionText"":""What precedent did the Whiskey Rebellion of 1794 establish?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q8a"",""text"":""That the federal government could enforce its taxes with military force""},{""id"":""q8b"",""text"":""That taxes are always illegal""},{""id"":""q8c"",""text"":""That states could ignore federal law""},{""id"":""q8d"",""text"":""That whiskey was banned""}],""correctOptionId"":""q8a"",""explanation"":""Washington led about 13,000 troops against the rebels, the only sitting president to lead troops in the field, setting the precedent that federal taxes could be enforced by force."",""citation"":""Lesson: From Rebellion to Republic""},{""id"":""q9"",""questionText"":""Who was Nathan Green?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q9a"",""text"":""An enslaved master distiller in Tennessee who taught Jack Daniel""},{""id"":""q9b"",""text"":""A French winemaker""},{""id"":""q9c"",""text"":""A Scottish friar""},{""id"":""q9d"",""text"":""A modern brand executive""}],""correctOptionId"":""q9a"",""explanation"":""Nathan 'Nearest' Green was an enslaved man in Lincoln County, Tennessee, the master distiller who taught Jack Daniel, a role left out of the brand's story until 2016."",""citation"":""Lesson: The Man Who Taught Jack""},{""id"":""q10"",""questionText"":""What is the Lincoln County Process?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q10a"",""text"":""Filtering new whiskey through about 10 feet of sugar maple charcoal, the legal mark of Tennessee whiskey""},{""id"":""q10b"",""text"":""A type of barrel""},{""id"":""q10c"",""text"":""A federal tax law""},{""id"":""q10d"",""text"":""A grape-growing method""}],""correctOptionId"":""q10a"",""explanation"":""The Lincoln County Process drips new whiskey through sugar maple charcoal before barreling, which legally distinguishes Tennessee whiskey from bourbon."",""citation"":""Lesson: The Man Who Taught Jack""},{""id"":""q11"",""questionText"":""Why did Nathan Green's contribution disappear from whiskey history for 130 years?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q11a"",""text"":""Structural forces: Jim Crow hierarchy, single-founder branding, archives that recorded enslaved people as property, and no one asking""},{""id"":""q11b"",""text"":""He asked to be left out""},{""id"":""q11c"",""text"":""He never existed""},{""id"":""q11d"",""text"":""A single law erased him""}],""correctOptionId"":""q11a"",""explanation"":""His erasure was structural, not one act: racial hierarchy, simplified single-founder marketing, archives that named enslaved people as property, and the absence of inquiry until 2016."",""citation"":""Lesson: The Man Who Taught Jack""},{""id"":""q12"",""questionText"":""What is the difference between documented and historically probable claims about Nathan Green?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q12a"",""text"":""Documented facts are confirmed by records; probable claims, like his exact teaching role, rest on corroborated oral history""},{""id"":""q12b"",""text"":""There is no difference""},{""id"":""q12c"",""text"":""Probable claims are always false""},{""id"":""q12d"",""text"":""Documented claims are guesses""}],""correctOptionId"":""q12a"",""explanation"":""Responsible history separates what records confirm (Green was enslaved there, his family later worked at the distillery) from what oral history makes probable (that he was the master teacher)."",""citation"":""Lesson: The Man Who Taught Jack""},{""id"":""q13"",""questionText"":""How did Masataka Taketsuru challenge the idea that great whisky needed Scottish heritage?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q13a"",""text"":""He deliberately learned Scotch production in Scotland and built award-winning whisky in Japan""},{""id"":""q13b"",""text"":""He banned Scotch in Japan""},{""id"":""q13c"",""text"":""He proved only Scotland could make whisky""},{""id"":""q13d"",""text"":""He never left Japan""}],""correctOptionId"":""q13a"",""explanation"":""Taketsuru studied in Scotland from 1918, then chose a Japanese site that mimicked Scottish climate, showing craft knowledge can be learned and carried anywhere. Excellence has no passport."",""citation"":""Lesson: Whisky Crosses the Ocean""},{""id"":""q14"",""questionText"":""Roughly how large is the global whisky market?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q14a"",""text"":""About 87 billion dollars a year across all categories""},{""id"":""q14b"",""text"":""About 1 million dollars""},{""id"":""q14c"",""text"":""There is no global market""},{""id"":""q14d"",""text"":""About 100 dollars""}],""correctOptionId"":""q14a"",""explanation"":""The global whisky market is about 87 billion dollars a year, with Scotch exports near 6 billion and American whiskey near 4 billion and growing fast."",""citation"":""Lesson: The Money in the Barrel""},{""id"":""q15"",""questionText"":""Why does a 12-year bourbon cost more to produce than a 4-year bourbon?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q15a"",""text"":""Extra years add storage cost, more angel's-share evaporation, and the capital cost of money tied up""},{""id"":""q15b"",""text"":""Older whiskey uses gold barrels""},{""id"":""q15c"",""text"":""It does not cost more""},{""id"":""q15d"",""text"":""The grain is more expensive""}],""correctOptionId"":""q15a"",""explanation"":""Each year locked in the barrel adds storage, more evaporation loss, and the opportunity cost of capital, so a 12-year bourbon costs about three times as much to produce before any brand premium."",""citation"":""Lesson: The Money in the Barrel""},{""id"":""q16"",""questionText"":""What does the MGP case in Lawrenceburg, Indiana reveal about whiskey branding?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q16a"",""text"":""The same bulk liquid can be rebottled as a pricier craft brand on the strength of a story""},{""id"":""q16b"",""text"":""Indiana makes no whiskey""},{""id"":""q16c"",""text"":""All brands distill their own whiskey""},{""id"":""q16d"",""text"":""Brand stories never affect price""}],""correctOptionId"":""q16a"",""explanation"":""MGP sells bulk whiskey to many brands, so a 20 to 30 dollar house liquid can become a 60 to 100 dollar craft brand, raising the line between marketing and misleading."",""citation"":""Lesson: The Money in the Barrel""},{""id"":""q17"",""questionText"":""What makes Uncle Nearest's premium pricing different from a typical craft brand?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q17a"",""text"":""It rests on a documented, recovered historical record rather than a constructed story""},{""id"":""q17b"",""text"":""It charges less than all other brands""},{""id"":""q17c"",""text"":""It hides who it is named for""},{""id"":""q17d"",""text"":""It uses no marketing""}],""correctOptionId"":""q17a"",""explanation"":""Most craft brands build a constructed heritage story, but Uncle Nearest's premium rests on verifiable history, showing the market rewards accurate authenticity."",""citation"":""Lesson: The Economics of Attribution""},{""id"":""q18"",""questionText"":""What did Uncle Nearest achieve as a business?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q18a"",""text"":""It raised more than 200 million dollars and became the top-selling Black-owned spirits brand in the U.S.""},{""id"":""q18b"",""text"":""It went out of business in a year""},{""id"":""q18c"",""text"":""It only sold in one town""},{""id"":""q18d"",""text"":""It made no money""}],""correctOptionId"":""q18a"",""explanation"":""Founded in 2017 by Fawn Weaver and named for Nathan Green, Uncle Nearest raised over 200 million dollars by 2022 and became the top-selling Black-owned spirits brand."",""citation"":""Lesson: The Economics of Attribution""},{""id"":""q19"",""questionText"":""How does the Nearest Green Scholarship Fund change the brand's economic model?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q19a"",""text"":""It directs proceeds to Black higher education, making the model reparative rather than just symbolic""},{""id"":""q19b"",""text"":""It raises prices for no reason""},{""id"":""q19c"",""text"":""It has no real effect""},{""id"":""q19d"",""text"":""It pays only executives""}],""correctOptionId"":""q19a"",""explanation"":""By committing proceeds to Black higher education, the scholarship fund makes the recovery of Green's story a structural economic act, not only an acknowledgment."",""citation"":""Lesson: The Economics of Attribution""},{""id"":""q20"",""questionText"":""In the United States, how is proof related to alcohol by volume?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q20a"",""text"":""Proof is the alcohol percentage times two, so 40 percent is 80 proof""},{""id"":""q20b"",""text"":""Proof equals the alcohol percentage exactly""},{""id"":""q20c"",""text"":""Proof is the alcohol percentage divided by two""},{""id"":""q20d"",""text"":""Proof has nothing to do with alcohol""}],""correctOptionId"":""q20a"",""explanation"":""United States proof is simply twice the alcohol percentage, a doubling adopted in 1848 to make excise tax math easy."",""citation"":""Lesson: What Does Proof Mean?""},{""id"":""q21"",""questionText"":""Where did the word proof come from?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q21a"",""text"":""A naval gunpowder test: if spirit mixed with gunpowder burned, it was proved strong""},{""id"":""q21b"",""text"":""A brand of whiskey""},{""id"":""q21c"",""text"":""A French wine law""},{""id"":""q21d"",""text"":""The name of a distiller""}],""correctOptionId"":""q21a"",""explanation"":""From the Latin probare, to test, sailors proved a spirit by mixing it with gunpowder and lighting it; the threshold where it reliably ignites is about 57 percent alcohol."",""citation"":""Lesson: What Does Proof Mean?""},{""id"":""q22"",""questionText"":""How does a hydrometer measure alcohol content?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q22a"",""text"":""It floats at different heights because alcohol is less dense than water""},{""id"":""q22b"",""text"":""It measures the color""},{""id"":""q22c"",""text"":""It tastes the spirit""},{""id"":""q22d"",""text"":""It weighs the bottle""}],""correctOptionId"":""q22a"",""explanation"":""Ethanol is lighter than water, so a weighted float sinks lower in higher-alcohol liquid; its scale reads the alcohol percentage, corrected for temperature."",""citation"":""Lesson: What Does Proof Mean?""},{""id"":""q23"",""questionText"":""Why does proof affect how much tax a barrel of whiskey owes?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q23a"",""text"":""Tax is charged per proof gallon, so higher-proof whiskey owes more, and adding water lowers the tax""},{""id"":""q23b"",""text"":""Proof has no effect on tax""},{""id"":""q23c"",""text"":""Lower proof always pays more""},{""id"":""q23d"",""text"":""Only color is taxed""}],""correctOptionId"":""q23a"",""explanation"":""A proof gallon is one gallon at 100 proof, so a stronger barrel holds more proof gallons and owes more tax, which is why distillers often add water before bottling."",""citation"":""Lesson: What Does Proof Mean?""},{""id"":""q24"",""questionText"":""What do the Arabic roots of 'alcohol' (al-kuhl) and 'alembic' (al-ambiq) reveal?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q24a"",""text"":""The Islamic Golden Age's central role in developing distillation""},{""id"":""q24b"",""text"":""That whiskey began in Ireland""},{""id"":""q24c"",""text"":""That the words are meaningless""},{""id"":""q24d"",""text"":""That distillation is modern""}],""correctOptionId"":""q24a"",""explanation"":""The Arabic origins of alcohol and alembic preserve, in language, the Islamic Golden Age's role in developing the science of distillation."",""citation"":""Lesson: The Water of Life""},{""id"":""q25"",""questionText"":""What does the word whiskey, from uisce beatha, literally mean?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q25a"",""text"":""Water of life, the same meaning as the Latin aqua vitae""},{""id"":""q25b"",""text"":""Fire and smoke""},{""id"":""q25c"",""text"":""Golden grain""},{""id"":""q25d"",""text"":""Strong drink""}],""correctOptionId"":""q25a"",""explanation"":""Whiskey comes from the Gaelic uisce beatha, water of life, the same phrase as the Latin aqua vitae, showing two cultures naming the spirit identically."",""citation"":""Lesson: The Water of Life""},{""id"":""q26"",""questionText"":""Why is etymology described as historical evidence in this episode?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q26a"",""text"":""The languages preserved in whiskey's words record which cultures carried the technology""},{""id"":""q26b"",""text"":""Words are chosen at random""},{""id"":""q26c"",""text"":""Etymology proves nothing""},{""id"":""q26d"",""text"":""Only English matters""}],""correctOptionId"":""q26a"",""explanation"":""Tracing words back to Arabic, Gaelic, and Latin maps the cultural journey of distillation, so the vocabulary itself is a kind of historical record."",""citation"":""Lesson: The Water of Life""},{""id"":""q27"",""questionText"":""Why is oral history considered a legitimate scholarly method?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q27a"",""text"":""It is a peer-reviewed method with professional guidelines, used to recover knowledge that written records excluded""},{""id"":""q27b"",""text"":""It is just gossip""},{""id"":""q27c"",""text"":""It replaces all written records""},{""id"":""q27d"",""text"":""It is never cited by scholars""}],""correctOptionId"":""q27a"",""explanation"":""Oral history is the systematic, critical collection of personal and community narratives, with guidelines from the Oral History Association (founded 1966), and is cited alongside written sources."",""citation"":""Lesson: The Oral History That Survived""},{""id"":""q28"",""questionText"":""How did oral history preserve Nathan Green's story?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q28a"",""text"":""His descendants kept his memory in family tradition for 130 years, which guided a journalist to corroborating records""},{""id"":""q28b"",""text"":""It was written in the company history""},{""id"":""q28c"",""text"":""It was never preserved""},{""id"":""q28d"",""text"":""A government archive saved it""}],""correctOptionId"":""q28a"",""explanation"":""Green's family kept his story alive for 130 years; when Clay Risen sought written corroboration he found enough to publish, so oral history told the investigator where to look."",""citation"":""Lesson: The Oral History That Survived""},{""id"":""q29"",""questionText"":""When is oral history especially important?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q29a"",""text"":""When written records were never created, were destroyed, or excluded certain people""},{""id"":""q29b"",""text"":""Only when written records are plentiful""},{""id"":""q29c"",""text"":""Never""},{""id"":""q29d"",""text"":""Only for famous people""}],""correctOptionId"":""q29a"",""explanation"":""Oral history matters most when written records were absent, destroyed, or systematically excluded people, as with enslaved workers recorded as property rather than knowledge holders."",""citation"":""Lesson: The Oral History That Survived""},{""id"":""q30"",""questionText"":""What is the running theme of the whiskey episode?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q30a"",""text"":""Excellence has no passport: knowledge and skill can travel and be learned anywhere""},{""id"":""q30b"",""text"":""Only Scotland makes good whisky""},{""id"":""q30c"",""text"":""Whiskey is a modern invention""},{""id"":""q30d"",""text"":""Geography does not matter""}],""correctOptionId"":""q30a"",""explanation"":""From Arab science to Japanese whisky to the recovery of Nathan Green's story, the episode shows that excellence and knowledge are not bound to one place or people."",""citation"":""Lesson: Fire Water (intro)""},{""id"":""q31"",""questionText"":""Why must bourbon age in new charred oak barrels?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q31a"",""text"":""The charred wood gives vanilla, caramel, and color as the whiskey moves in and out with the seasons""},{""id"":""q31b"",""text"":""To make it cheaper""},{""id"":""q31c"",""text"":""Because plastic is illegal""},{""id"":""q31d"",""text"":""It does not need barrels""}],""correctOptionId"":""q31a"",""explanation"":""Seasonal temperature swings drive the whiskey into the charred oak, where it extracts vanilla, caramel, tannins, and color, then back out to integrate them."",""citation"":""Lesson: The Geography of Aging""},{""id"":""q32"",""questionText"":""What kind of human achievement is distillation, according to the episode?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q32a"",""text"":""A technology, a piece of knowledge that can be learned and carried anywhere""},{""id"":""q32b"",""text"":""A natural plant""},{""id"":""q32c"",""text"":""A type of soil""},{""id"":""q32d"",""text"":""A weather pattern""}],""correctOptionId"":""q32a"",""explanation"":""Unlike beer's recipe or wine's place, whiskey rests on distillation, a technology that humans carried across 1,300 years and six continents."",""citation"":""Lesson: Fire Water (intro)""},{""id"":""q33"",""questionText"":""What did the 2016 New York Times investigation by Clay Risen accomplish?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q33a"",""text"":""It documented and publicized Nathan Green's role, prompting the distillery to acknowledge him""},{""id"":""q33b"",""text"":""It invented the Lincoln County Process""},{""id"":""q33c"",""text"":""It closed the distillery""},{""id"":""q33d"",""text"":""It had no effect""}],""correctOptionId"":""q33a"",""explanation"":""Risen's 2016 article brought Green's documented and corroborated story to a wide public, and the distillery publicly acknowledged his contribution that year."",""citation"":""Lesson: The Man Who Taught Jack""},{""id"":""q34"",""questionText"":""What does it mean that whiskey aging is illiquid?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q34a"",""text"":""The product is locked in barrels for years before it can be sold, tying up capital""},{""id"":""q34b"",""text"":""The whiskey is solid""},{""id"":""q34c"",""text"":""It cannot be poured""},{""id"":""q34d"",""text"":""It is sold instantly""}],""correctOptionId"":""q34a"",""explanation"":""Aged whiskey is literally and financially illiquid: it sits in barrels for years, so producers carry the cost of capital tied up the whole time."",""citation"":""Lesson: The Money in the Barrel""},{""id"":""q35"",""questionText"":""Which Scottish region is known for heavily smoked, briny whisky?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q35a"",""text"":""Islay, with its seaweed-rich peat bogs""},{""id"":""q35b"",""text"":""Speyside, in a sheltered valley""},{""id"":""q35c"",""text"":""The Lowlands""},{""id"":""q35d"",""text"":""Kentucky""}],""correctOptionId"":""q35a"",""explanation"":""Islay's maritime peat, full of seaweed, gives its whisky a heavily smoked, briny character impossible to make in inland Speyside."",""citation"":""Lesson: Karst Limestone and Bourbon""},{""id"":""q36"",""questionText"":""Why did Taketsuru choose Yoichi on Hokkaido for his distillery?"",""questionType"":""multiple_choice"",""options"":[{""id"":""q36a"",""text"":""Its cool maritime climate, water, and snowfall mimicked Scottish conditions""},{""id"":""q36b"",""text"":""It was the cheapest land""},{""id"":""q36c"",""text"":""It was near Tokyo""},{""id"":""q36d"",""text"":""He inherited it""}],""correctOptionId"":""q36a"",""explanation"":""Taketsuru deliberately chose Yoichi because its cool coastal climate and clean water approximated Scotland, showing geography matters as much as technique."",""citation"":""Lesson: Whisky Crosses the Ocean""}]}"
