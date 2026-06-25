@@ -192,9 +192,16 @@ export default function LessonPlayerView({ courseId, lessonId }: { courseId: str
         teacherUsername: courseData.profiles?.username ?? null,
         courseSlug: courseData.slug ?? null,
       });
+      // BVC commodity map: keyed off the generic Series & Season fields
+      // (single source of truth), gated to the Better Vice Club series so
+      // other multi-season courses (Speedway, etc.) don't get the
+      // BVC-specific map. Supersedes the retired `bvc_season` column.
       setCourseBvcSeason(
-        courseData.bvc_season === 1 || courseData.bvc_season === 2 || courseData.bvc_season === 3
-          ? courseData.bvc_season
+        courseData.series_slug === 'better-vice-club' &&
+          (courseData.season_number === 1 ||
+            courseData.season_number === 2 ||
+            courseData.season_number === 3)
+          ? courseData.season_number
           : null,
       );
 

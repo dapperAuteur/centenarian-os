@@ -21,7 +21,18 @@ import fs from 'fs';
 import path from 'path';
 
 const ROOT = '/Users/bam/Code_NOiCloud/ai-builds/gemini/centenarian-os';
-const COURSE_ID = 'ca047c66-f03c-4924-9ebe-16e6bf076a85'; // "Better Vice Club"
+// BVC was split into one course row per season (see scripts/bvc-split-seasons.mjs).
+// Episodes 1-7 -> Season 1, 8-14 -> Season 2, 15-21 -> Season 3. COURSE_ID is
+// resolved per episode from its moduleOrder below.
+const SEASON_COURSE = {
+  1: 'ca047c66-f03c-4924-9ebe-16e6bf076a85', // Better Vice Club: Season 1 — The Daily Ritual
+  2: '880da0c1-176b-4546-8f38-2c0d13e28803', // Better Vice Club: Season 2 — The Oldest Toast
+  3: 'f4b2e611-71f4-4d19-ba83-c85e1f7b549a', // Better Vice Club: Season 3 — The Forbidden Leaf
+};
+const courseIdForEpisode = (moduleTitle) => {
+  const n = Number((moduleTitle.match(/Episode\s+(\d+)/) || [])[1]);
+  return SEASON_COURSE[n <= 7 ? 1 : n <= 14 ? 2 : 3];
+};
 const DRY = process.argv.includes('--dry');
 const slug = process.argv[2];
 
@@ -509,6 +520,7 @@ if (!slug || !EPISODES[slug]) {
   process.exit(1);
 }
 const EP = EPISODES[slug];
+const COURSE_ID = courseIdForEpisode(EP.moduleTitle); // per-season course row
 const SRC = path.join(ROOT, 'plans/BVC/ver1', slug);
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
