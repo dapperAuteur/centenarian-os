@@ -41,6 +41,7 @@ const EPISODES = {
   coca: { ep: 18, label: 'Coca' },
   psychedelics: { ep: 19, label: 'Psychedelics' },
   khat: { ep: 20, label: 'Khat' },
+  'full-spectrum': { ep: 21, label: 'The Full Spectrum' },
 };
 
 const slug = process.argv[2];

@@ -32,6 +32,7 @@ const EPISODES = {
   coca: 'Episode 18: Coca — White Lines',
   psychedelics: 'Episode 19: Psychedelics — The Mushroom\'s Message',
   khat: 'Episode 20: Khat — The Afternoon Leaf',
+  'full-spectrum': 'Episode 21: The Full Spectrum — Who Draws the Line?',
 };
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: bvc-generate-embeddings.mjs <episode-slug>`); process.exit(1); }

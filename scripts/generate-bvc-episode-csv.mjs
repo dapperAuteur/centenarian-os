@@ -433,6 +433,27 @@ const EPISODES = {
       [17, '17-quiz.md', 'Knowledge Check: Khat', 'quiz', 720, 'false', null, []],
     ],
   },
+  'full-spectrum': {
+    ep: 21, moduleTitle: 'Episode 21: The Full Spectrum — Who Draws the Line?', moduleOrder: 21,
+    lessons: [
+      [2, '02-intro.md', 'The Full Spectrum: Who Draws the Line?', 'text', 180, 'true', null, ['teacher-resources', 'samhsa-help']],
+      [3, '03-geo-the-prohibition-map.md', 'The Prohibition Map', 'text', 360, 'true', 'map-prohibition.json', []],
+      [4, '04-geo-three-patterns-in-the-map.md', 'Three Patterns in the Map', 'text', 360, 'false', null, []],
+      [5, '05-geo-power-not-pharmacology.md', 'Power, Not Pharmacology', 'text', 360, 'false', null, ['nutt-lancet']],
+      [6, '06-social-the-social-control-pattern.md', 'The Social Control Pattern', 'text', 420, 'false', null, []],
+      [7, '07-social-the-eight-patterns.md', 'The Eight Patterns', 'text', 420, 'false', null, []],
+      [8, '08-social-structural-not-intentional.md', 'Structural, Not Just Intentional', 'text', 420, 'false', null, ['new-jim-crow']],
+      [9, '09-econ-the-full-cost.md', 'The Full Cost', 'text', 420, 'false', null, []],
+      [10, '10-econ-the-smile-curve-confirmed.md', 'The Smile Curve, Confirmed', 'text', 420, 'false', null, []],
+      [11, '11-econ-criminalization-transfers-profit.md', 'Criminalization Transfers Profit', 'text', 420, 'false', null, []],
+      [12, '12-ela-the-literature-of-consciousness.md', 'The Literature of Consciousness', 'text', 420, 'false', null, []],
+      [13, '13-ela-four-patterns-in-the-literature.md', 'Four Patterns in the Literature', 'text', 420, 'false', null, []],
+      [14, '14-key-terms.md', 'Key Terms: The Full Spectrum', 'text', 300, 'false', null, []],
+      [15, '15-review.md', 'Who Draws the Line: The Series in One Breath', 'text', 420, 'false', null, []],
+      [16, '16-references.md', 'Sources and Further Reading: The Full Spectrum', 'text', 180, 'false', null, []],
+      [17, '17-quiz.md', 'Knowledge Check: The Full Spectrum', 'quiz', 720, 'false', null, []],
+    ],
+  },
 };
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: generate-bvc-episode-csv.mjs <episode-slug>`); process.exit(1); }
