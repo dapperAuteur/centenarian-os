@@ -29,6 +29,7 @@ const EPISODES = {
   tobacco: 'Episode 15: Tobacco — Sacred Smoke',
   cannabis: 'Episode 16: Cannabis — The Green Revolution',
   opioids: 'Episode 17: Opioids — The Poppy\'s Promise',
+  coca: 'Episode 18: Coca — White Lines',
 };
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: bvc-generate-embeddings.mjs <episode-slug>`); process.exit(1); }

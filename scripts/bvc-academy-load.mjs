@@ -411,6 +411,29 @@ const EPISODES = {
       [17, '17-quiz.md', 'Knowledge Check: Opioids', 'quiz', 720, false, null, []],
     ],
   },
+  coca: {
+    moduleTitle: 'Episode 18: Coca — White Lines',
+    moduleOrder: 18,
+    assignmentTitle: 'Reading the Lines',
+    lessons: [
+      [2, '02-intro.md', 'White Lines: The Sacred Leaf and the Industrial Drug', 'text', 180, true, null, ['teacher-resources', 'samhsa-help', 'nida-cocaine']],
+      [3, '03-geo-the-yungas.md', 'The Yungas', 'text', 360, true, 'map-geography.json', []],
+      [4, '04-geo-the-balloon-effect.md', 'The Balloon Effect', 'text', 360, false, null, []],
+      [5, '05-geo-following-the-powder.md', 'Following the Powder', 'text', 360, false, 'map-trade.json', []],
+      [6, '06-social-leaf-and-powder.md', 'Leaf and Powder', 'text', 420, false, null, []],
+      [7, '07-social-the-100-to-1.md', 'The 100 to 1', 'text', 420, false, null, ['drug-policy-race']],
+      [8, '08-social-coca-si-cocaina-no.md', 'Coca Si, Cocaina No', 'text', 420, false, null, []],
+      [9, '09-econ-the-trillion-dollar-war.md', 'The Trillion-Dollar War', 'text', 480, false, null, []],
+      [10, '10-econ-the-cost-of-the-disparity.md', 'The Cost of the Disparity', 'text', 420, false, null, []],
+      [11, '11-econ-bolivias-bet.md', "Bolivia's Bet", 'text', 420, false, null, []],
+      [12, '12-ela-just-say-no.md', 'Just Say No', 'text', 420, false, null, ['reagan-just-say-no']],
+      [13, '13-ela-whose-voice.md', 'Whose Voice', 'text', 420, false, null, []],
+      [14, '14-key-terms.md', 'Key Terms: Coca', 'text', 300, false, null, []],
+      [15, '15-review.md', 'Cumulative Review: Coca', 'text', 360, false, null, []],
+      [16, '16-references.md', 'Sources and Further Reading: Coca', 'text', 180, false, null, []],
+      [17, '17-quiz.md', 'Knowledge Check: Coca', 'quiz', 720, false, null, []],
+    ],
+  },
 };
 if (!slug || !EPISODES[slug]) {
   console.error(`usage: bvc-academy-load.mjs <episode-slug> [--dry]  (known: ${Object.keys(EPISODES).join(', ')})`);
