@@ -26,7 +26,7 @@ if (!['prep', 'apply'].includes(cmd) || !courseId) {
 const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 const workDir = path.join(DIR, '_lesson-work', courseId);
 const backupDir = path.join(DIR, '_lesson-backups');
-const BEAT = /\[(WELCOME|RECALL|HOOK|TEACH|PICTURE|WATCH OUT|WATCH-OUT|CHECK)\]/g;
+const BEAT = /\[(WELCOME|RECALL|HOOK|TEACH|PICTURE|WATCH OUT|WATCH-OUT|REMEMBER|CHECK)\]/g;
 const CITE = /\([A-Z][A-Za-z'’-]+(?: et al\.| & [A-Z][A-Za-z'’-]+)?,? \d{4}[a-z]?\)/g;
 
 function beatsOf(text) { return [...text.matchAll(BEAT)].map((m) => m[1]); }
@@ -104,7 +104,7 @@ if (cmd === 'prep') {
     const cleaned = transform(original, headings);
     // guardrail: citations + key numbers unchanged
     const a = citesOf(original).join('|'); const b = citesOf(cleaned).join('|');
-    const leftover = (cleaned.match(/\[(WELCOME|RECALL|HOOK|TEACH|PICTURE|WATCH OUT|CHECK|Beat|Sound)/g) || []).length;
+    const leftover = (cleaned.match(/\[(WELCOME|RECALL|HOOK|TEACH|PICTURE|WATCH OUT|REMEMBER|CHECK|Beat|Sound)/g) || []).length;
     if (a !== b) { citeFail++; console.log(`  ✗ ${m.title}: CITATIONS CHANGED\n     was: ${a}\n     now: ${b}`); continue; }
     if (leftover) { console.log(`  ~ ${m.title}: ${leftover} bracket tags still present`); }
     ok++;
