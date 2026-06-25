@@ -1,7 +1,7 @@
 // app/dashboard/finance/forecast/page.tsx
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { DollarSign, TrendingUp, TrendingDown, Minus, AlertTriangle, Briefcase, FileText, CalendarClock, ArrowLeft, Settings } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -88,23 +88,29 @@ export default function ForecastPage() {
   useTrackPageView('forecast', '/dashboard/finance/forecast');
   const [data, setData] = useState<ForecastData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedDays, setSelectedDays] = useState(90);
   // Fiscal view: null = rolling periods, 'ytd' | 'full_year' | 'q1'-'q4'
   const [fiscalView, setFiscalView] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await offlineFetch('/api/finance/forecast');
-        if (res.ok) {
-          setData(await res.json());
-        }
-      } catch (error) {
-        console.error('[Forecast] Failed to load:', error);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await offlineFetch('/api/finance/forecast');
+      if (res.ok) {
+        setData(await res.json());
+      } else {
+        setError("We couldn't load your forecast. Please try again.");
       }
-      setLoading(false);
-    })();
+    } catch (e) {
+      console.error('[Forecast] Failed to load:', e);
+      setError("We couldn't load your forecast. Please try again.");
+    }
+    setLoading(false);
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   const isCalendar = !data?.fiscal_config || (data.fiscal_config.startMonth === 1 && data.fiscal_config.startDay === 1);
 
@@ -177,6 +183,24 @@ export default function ForecastPage() {
     return (
       <div className="max-w-5xl mx-auto px-4 py-10 flex justify-center">
         <div className="animate-spin h-8 w-8 border-4 border-emerald-600 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-10">
+        <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
+          <p className="text-sm font-semibold text-red-800">{error}</p>
+          <p className="text-xs text-red-600 mt-1">This is usually temporary.</p>
+          <button
+            type="button"
+            onClick={load}
+            className="mt-4 inline-flex items-center justify-center min-h-11 px-5 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
