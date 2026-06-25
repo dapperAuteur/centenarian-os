@@ -412,6 +412,27 @@ const EPISODES = {
       [17, '17-quiz.md', 'Knowledge Check: Psychedelics', 'quiz', 720, 'false', null, []],
     ],
   },
+  khat: {
+    ep: 20, moduleTitle: 'Episode 20: Khat — The Afternoon Leaf', moduleOrder: 20,
+    lessons: [
+      [2, '02-intro.md', 'The Afternoon Leaf: A Stimulant, a Parliament, and a Ban', 'text', 180, 'true', null, ['teacher-resources', 'samhsa-help', 'who-khat']],
+      [3, '03-geo-the-48-hour-leaf.md', 'The 48-Hour Leaf', 'text', 360, 'true', 'map-geography.json', []],
+      [4, '04-geo-the-khat-express.md', 'The Khat Express', 'text', 360, 'false', 'map-trade.json', []],
+      [5, '05-geo-yemens-thirsty-crop.md', "Yemen's Thirsty Crop", 'text', 300, 'false', null, []],
+      [6, '06-social-the-mafraj.md', 'The Mafraj', 'text', 420, 'false', null, []],
+      [7, '07-social-many-names-one-leaf.md', 'Many Names, One Leaf', 'text', 420, 'false', null, []],
+      [8, '08-social-the-ban-against-the-evidence.md', 'The Ban Against the Evidence', 'text', 480, 'false', null, ['acmd-khat']],
+      [9, '09-econ-the-second-crop.md', 'The Second Crop', 'text', 420, 'false', null, []],
+      [10, '10-econ-freshness-as-protection.md', 'Freshness as Protection', 'text', 420, 'false', null, []],
+      [11, '11-econ-the-formula-of-prohibition.md', 'The Formula of Prohibition', 'text', 420, 'false', null, []],
+      [12, '12-ela-poetry-in-the-chewing-room.md', 'Poetry in the Chewing Room', 'text', 420, 'false', null, []],
+      [13, '13-ela-the-rhetoric-of-who.md', 'The Rhetoric of Who', 'text', 420, 'false', null, []],
+      [14, '14-key-terms.md', 'Key Terms: Khat', 'text', 300, 'false', null, []],
+      [15, '15-review.md', 'Cumulative Review: Khat', 'text', 360, 'false', null, []],
+      [16, '16-references.md', 'Sources and Further Reading: Khat', 'text', 180, 'false', null, []],
+      [17, '17-quiz.md', 'Knowledge Check: Khat', 'quiz', 720, 'false', null, []],
+    ],
+  },
 };
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: generate-bvc-episode-csv.mjs <episode-slug>`); process.exit(1); }
