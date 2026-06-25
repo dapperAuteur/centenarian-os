@@ -9,9 +9,13 @@
 //   node --env-file=.env.local scripts/mark-feedback-resolved.mjs --dry
 //   node --env-file=.env.local scripts/mark-feedback-resolved.mjs --commit
 import { createClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
 
 const DRY = !process.argv.includes('--commit');
 const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const FROM = process.env.RESEND_FROM_EMAIL ?? 'noreply@centenarianos.com';
+const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.centenarianos.com';
 
 // feedback id -> resolution note (shown to the user in the thread)
 const RESOLVED = {
@@ -35,11 +39,12 @@ async function main() {
   if (!adminId) throw new Error(`Could not find admin user for ADMIN_EMAIL=${process.env.ADMIN_EMAIL}`);
   console.log(`Admin sender id: ${adminId}\n`);
 
+  // UUID id column doesn't support ilike, so fetch the app's feedback once and
+  // prefix-match in JS.
+  const { data: all } = await db.from('user_feedback').select('id, user_id, message, resolution_status').eq('app', 'centenarian');
+
   for (const [shortId, note] of Object.entries(RESOLVED)) {
-    const { data: fb } = await db.from('user_feedback')
-      .select('id, message, resolution_status')
-      .ilike('id', `${shortId}%`)
-      .maybeSingle();
+    const fb = (all ?? []).find((r) => r.id.startsWith(shortId));
     if (!fb) { console.log(`  ${shortId}: NOT FOUND, skipping`); continue; }
     if (fb.resolution_status === 'resolved' || fb.resolution_status === 'confirmed') {
       console.log(`  ${shortId}: already ${fb.resolution_status}, skipping`); continue;
@@ -54,6 +59,29 @@ async function main() {
     const { error: evErr } = await db.from('feedback_replies')
       .insert({ feedback_id: fb.id, sender_id: adminId, is_admin: true, kind: 'resolved', body: note });
     if (evErr) throw new Error(`${shortId} event: ${evErr.message}`);
+
+    // Email the submitter to confirm (same as the admin "Mark resolved" flow).
+    try {
+      const { data: authUser } = await db.auth.admin.getUserById(fb.user_id);
+      const email = authUser?.user?.email;
+      if (resend && email) {
+        await resend.emails.send({
+          from: FROM,
+          to: email,
+          subject: 'Your CentenarianOS feedback was marked resolved',
+          html: `<p>Good news, we believe your report is resolved:</p>
+                 <blockquote style="border-left:3px solid #16a34a;padding-left:12px;color:#374151;">${note}</blockquote>
+                 <p>Please open your feedback and confirm it's fixed, or reopen it if it still isn't working.</p>
+                 <p><a href="${SITE}/dashboard/feedback">Confirm or reopen →</a></p>
+                 <p style="color:#9ca3af;font-size:12px;">— CentenarianOS Team</p>`,
+        });
+        console.log(`     emailed ${email}`);
+      } else {
+        console.log(`     (no email sent: ${resend ? 'user has no email' : 'RESEND_API_KEY unset'})`);
+      }
+    } catch (e) {
+      console.log(`     email failed: ${e.message}`);
+    }
   }
 
   console.log(DRY ? '\nRe-run with --commit to apply.\n' : '\nDone. Users can now confirm or reopen from /dashboard/feedback.\n');
