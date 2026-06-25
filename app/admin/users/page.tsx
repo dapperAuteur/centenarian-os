@@ -60,6 +60,10 @@ function AdminUsersContent() {
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [bulkSending, setBulkSending] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selectedModalOpen, setSelectedModalOpen] = useState(false);
+  const [selectedSending, setSelectedSending] = useState(false);
+  const MAX_BULK = 100;
 
   async function reload() {
     setLoading(true);
@@ -112,6 +116,31 @@ function AdminUsersContent() {
     }
   }
 
+  async function handleResendSelected() {
+    setSelectedSending(true);
+    try {
+      const res = await fetch('/api/admin/users/resend-selected', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [...selected] }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      const parts = [`${data.succeeded} sent`];
+      if (data.failed > 0) parts.push(`${data.failed} failed`);
+      if (data.alreadyVerified > 0) parts.push(`${data.alreadyVerified} already verified`);
+      if (data.skippedMissingEmail > 0) parts.push(`${data.skippedMissingEmail} skipped (no email)`);
+      toast.success(parts.join(' · '));
+      setSelectedModalOpen(false);
+      setSelected(new Set());
+      reload();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Resend failed.');
+    } finally {
+      setSelectedSending(false);
+    }
+  }
+
   const unverifiedCount = users.filter((u) => !u.email_confirmed_at).length;
 
   function handleSort(key: SortKey) {
@@ -154,6 +183,21 @@ function AdminUsersContent() {
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  // Selection (unverified users only — verified users need no resend).
+  const unverifiedFiltered = filtered.filter((u) => !u.email_confirmed_at);
+  const allFilteredSelected = unverifiedFiltered.length > 0 && unverifiedFiltered.every((u) => selected.has(u.id));
+  function toggleOne(id: string) {
+    setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }
+  function toggleAllFiltered() {
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (allFilteredSelected) unverifiedFiltered.forEach((u) => n.delete(u.id));
+      else unverifiedFiltered.forEach((u) => n.add(u.id));
+      return n;
+    });
+  }
+
   function Th({ label, col }: { label: string; col: SortKey }) {
     const active = sortKey === col;
     return (
@@ -182,16 +226,37 @@ function AdminUsersContent() {
             )}
           </p>
         </div>
-        {unverifiedCount > 0 && (
-          <button
-            type="button"
-            onClick={() => setBulkModalOpen(true)}
-            className="min-h-11 inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold rounded-lg transition"
-          >
-            <Mail className="w-4 h-4" aria-hidden="true" />
-            Resend to all unverified
-          </button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {selected.size > 0 && (
+            <>
+              <button
+                type="button"
+                onClick={() => setSelectedModalOpen(true)}
+                className="min-h-11 inline-flex items-center gap-2 px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-sm font-semibold rounded-lg transition"
+              >
+                <Mail className="w-4 h-4" aria-hidden="true" />
+                Resend to {selected.size} selected
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelected(new Set())}
+                className="min-h-11 px-3 py-2 text-sm text-gray-400 hover:text-white transition"
+              >
+                Clear
+              </button>
+            </>
+          )}
+          {unverifiedCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setBulkModalOpen(true)}
+              className="min-h-11 inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold rounded-lg transition"
+            >
+              <Mail className="w-4 h-4" aria-hidden="true" />
+              Resend to all unverified
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -227,6 +292,16 @@ function AdminUsersContent() {
           <table className="w-full text-sm" aria-label="Users table">
             <thead>
               <tr className="border-b border-gray-800 text-gray-300 text-xs uppercase tracking-wide">
+                <th className="px-4 py-3 w-10">
+                  <input
+                    type="checkbox"
+                    checked={allFilteredSelected}
+                    onChange={toggleAllFiltered}
+                    disabled={unverifiedFiltered.length === 0}
+                    aria-label="Select all unverified users in view"
+                    className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-fuchsia-600 focus:ring-fuchsia-500 disabled:opacity-30"
+                  />
+                </th>
                 <Th label="Email / Username" col="email" />
                 <th className="text-left px-4 py-3">Verified</th>
                 <Th label="Plan" col="subscription_status" />
@@ -239,11 +314,22 @@ function AdminUsersContent() {
             <tbody>
               {sorted.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-gray-400">No users found</td>
+                  <td colSpan={8} className="text-center py-12 text-gray-400">No users found</td>
                 </tr>
               )}
               {paginated.map((u) => (
-                <tr key={u.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition">
+                <tr key={u.id} className={`border-b border-gray-800/50 hover:bg-gray-800/30 transition ${selected.has(u.id) ? 'bg-fuchsia-900/10' : ''}`}>
+                  <td className="px-4 py-3">
+                    {!u.email_confirmed_at ? (
+                      <input
+                        type="checkbox"
+                        checked={selected.has(u.id)}
+                        onChange={() => toggleOne(u.id)}
+                        aria-label={`Select ${u.email ?? u.username}`}
+                        className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-fuchsia-600 focus:ring-fuchsia-500"
+                      />
+                    ) : null}
+                  </td>
                   <td className="px-4 py-3">
                     <p className="text-white font-medium">{u.email ?? '—'}</p>
                     <p className="text-gray-400 text-xs">@{u.username}</p>
@@ -351,6 +437,52 @@ function AdminUsersContent() {
                 <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Sending…</>
               ) : (
                 <><Mail className="w-4 h-4" aria-hidden="true" /> Send {unverifiedCount} emails</>
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={selectedModalOpen}
+        onClose={() => !selectedSending && setSelectedModalOpen(false)}
+        title={`Resend to ${selected.size} selected`}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-300">
+            This will fire a verification email to the{' '}
+            <strong className="text-white">{selected.size}</strong>{' '}
+            selected {selected.size === 1 ? 'user' : 'users'}.
+          </p>
+          {selected.size > MAX_BULK ? (
+            <p className="text-xs text-amber-400">
+              That&rsquo;s over the {MAX_BULK}-per-send limit. Deselect {selected.size - MAX_BULK} and send the rest in another pass.
+            </p>
+          ) : (
+            <p className="text-xs text-gray-500">
+              Sequential send — Supabase&rsquo;s per-email rate limits apply. Already-verified users are skipped automatically.
+            </p>
+          )}
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setSelectedModalOpen(false)}
+              disabled={selectedSending}
+              className="min-h-11 px-4 py-2 text-sm text-gray-300 hover:text-white transition disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleResendSelected}
+              disabled={selectedSending || selected.size > MAX_BULK || selected.size === 0}
+              className="min-h-11 px-4 py-2 text-sm bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-semibold rounded-lg transition disabled:opacity-50 inline-flex items-center gap-2"
+            >
+              {selectedSending ? (
+                <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Sending…</>
+              ) : (
+                <><Mail className="w-4 h-4" aria-hidden="true" /> Send {Math.min(selected.size, MAX_BULK)} emails</>
               )}
             </button>
           </div>
