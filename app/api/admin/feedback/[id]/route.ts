@@ -111,3 +111,58 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   return NextResponse.json({ id: reply.id }, { status: 201 });
 }
+
+// PATCH: admin marks the report resolved. Posts a 'resolved' status event into
+// the conversation and emails the user to confirm.
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const admin = await getAdminUser();
+  if (!admin || admin.email !== process.env.ADMIN_EMAIL) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  const { note } = await req.json().catch(() => ({}));
+  const db = getDb();
+
+  const { data: feedback } = await db
+    .from('user_feedback')
+    .select('id, user_id, resolution_status')
+    .eq('id', id)
+    .maybeSingle();
+  if (!feedback) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (feedback.resolution_status === 'confirmed') return NextResponse.json({ error: 'Already confirmed by the user' }, { status: 409 });
+
+  const body = (note?.trim()) || 'We believe this is now resolved. Can you confirm it works for you?';
+
+  const { error: upErr } = await db.from('user_feedback')
+    .update({ resolution_status: 'resolved', resolved_at: new Date().toISOString(), resolved_by: admin.id, is_read_by_admin: true })
+    .eq('id', id);
+  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+
+  const { data: event } = await db.from('feedback_replies')
+    .insert({ feedback_id: id, sender_id: admin.id, is_admin: true, kind: 'resolved', body })
+    .select('id')
+    .single();
+
+  // Email the user to confirm.
+  try {
+    const { data: authUser } = await db.auth.admin.getUserById(feedback.user_id);
+    const userEmail = authUser?.user?.email;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+    if (userEmail) {
+      const resend = getResend();
+      await resend.emails.send({
+        from: process.env.RESEND_FROM_EMAIL ?? 'admin@centenarianos.com',
+        to: userEmail,
+        subject: 'Your CentenarianOS feedback was marked resolved',
+        html: `<p>Good news, we believe your report is resolved:</p>
+               <blockquote style="border-left:3px solid #16a34a;padding-left:12px;color:#374151;">${body}</blockquote>
+               <p>Please open your feedback and confirm it's fixed, or reopen it if it still isn't working.</p>
+               <p><a href="${siteUrl}/dashboard/feedback">Confirm or reopen →</a></p>
+               <p style="color:#9ca3af;font-size:12px;">— CentenarianOS Team</p>`,
+      });
+    }
+  } catch (e) {
+    console.error('[admin-feedback-resolve] Email failed:', e);
+  }
+
+  return NextResponse.json({ id: event?.id ?? null, resolution_status: 'resolved' });
+}

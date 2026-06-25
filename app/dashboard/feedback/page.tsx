@@ -4,10 +4,12 @@
 // User view of their submitted feedback and admin reply threads.
 
 import { useEffect, useState, useCallback } from 'react';
-import { Bug, Lightbulb, MessageSquare, ChevronDown, ChevronUp, Send, Loader2 } from 'lucide-react';
+import { Bug, Lightbulb, MessageSquare, ChevronDown, ChevronUp, Send, Loader2, Check, RotateCcw } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
 import ImageLightbox from '@/components/ui/ImageLightbox';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+
+type ResolutionStatus = 'open' | 'resolved' | 'confirmed' | 'reopened';
 
 interface FeedbackEntry {
   id: string;
@@ -15,6 +17,7 @@ interface FeedbackEntry {
   message: string;
   media_url?: string | null;
   created_at: string;
+  resolution_status?: ResolutionStatus;
 }
 
 interface Reply {
@@ -23,7 +26,20 @@ interface Reply {
   body: string;
   media_url?: string | null;
   created_at: string;
+  kind?: 'message' | 'resolved' | 'confirmed' | 'reopened';
 }
+
+const STATUS_CONFIG: Record<Exclude<ResolutionStatus, 'open'>, { label: string; cls: string }> = {
+  resolved:  { label: 'Resolved · confirm?', cls: 'bg-green-50 text-green-700 border border-green-200' },
+  confirmed: { label: 'Confirmed fixed',      cls: 'bg-green-100 text-green-800 border border-green-300' },
+  reopened:  { label: 'Reopened',             cls: 'bg-amber-50 text-amber-700 border border-amber-200' },
+};
+
+const EVENT_TEXT = {
+  resolved:  'The team marked this resolved',
+  confirmed: 'Confirmed fixed by you',
+  reopened:  'Reopened',
+} as const;
 
 interface ThreadState {
   replies: Reply[];
@@ -46,6 +62,33 @@ export default function FeedbackHistoryPage() {
   const [replyMedia, setReplyMedia] = useState<Record<string, string | null>>({});
   const [sending, setSending] = useState<string | null>(null);
   const [sendError, setSendError] = useState<Record<string, string>>({});
+  const [resolving, setResolving] = useState<string | null>(null);
+
+  async function setResolution(id: string, action: 'confirm' | 'reopen') {
+    setResolving(id);
+    setSendError((prev) => ({ ...prev, [id]: '' }));
+    try {
+      const r = await offlineFetch(`/api/feedback/${id}/replies`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      if (!r.ok) { const d = await r.json(); throw new Error(d.error ?? 'Failed'); }
+      const newStatus: ResolutionStatus = action === 'confirm' ? 'confirmed' : 'reopened';
+      const kind = action === 'confirm' ? 'confirmed' : 'reopened';
+      setItems((prev) => prev.map((it) => it.id === id ? { ...it, resolution_status: newStatus } : it));
+      const event: Reply = {
+        id: `evt-${Date.now()}`, is_admin: false, kind,
+        body: action === 'confirm' ? 'Confirmed — this is fixed for me. Thank you!' : "This still isn't working for me.",
+        created_at: new Date().toISOString(),
+      };
+      setThreads((prev) => ({ ...prev, [id]: { replies: [...(prev[id]?.replies ?? []), event], loaded: true } }));
+    } catch (e) {
+      setSendError((prev) => ({ ...prev, [id]: e instanceof Error ? e.message : 'Failed' }));
+    } finally {
+      setResolving(null);
+    }
+  }
 
   useEffect(() => {
     offlineFetch('/api/feedback')
@@ -145,6 +188,11 @@ export default function FeedbackHistoryPage() {
                     <Icon className="w-3 h-3" />
                     {cfg.label}
                   </span>
+                  {item.resolution_status && item.resolution_status !== 'open' && (
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold shrink-0 ${STATUS_CONFIG[item.resolution_status].cls}`}>
+                      {STATUS_CONFIG[item.resolution_status].label}
+                    </span>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-700 line-clamp-2">{item.message}</p>
                     <p className="text-xs text-gray-400 mt-1">
@@ -183,6 +231,17 @@ export default function FeedbackHistoryPage() {
                       <div className="space-y-3 pt-2 border-t border-gray-100">
                         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Conversation</p>
                         {thread.replies.map((reply) => (
+                          reply.kind && reply.kind !== 'message' ? (
+                            <div key={reply.id} className="flex justify-center">
+                              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
+                                reply.kind === 'reopened'
+                                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                  : 'bg-green-50 text-green-700 border border-green-200'
+                              }`}>
+                                {reply.kind === 'reopened' ? '↻' : '✓'} {EVENT_TEXT[reply.kind]}
+                              </span>
+                            </div>
+                          ) : (
                           <div
                             key={reply.id}
                             className={`flex ${reply.is_admin ? 'justify-start' : 'justify-end'}`}
@@ -202,7 +261,42 @@ export default function FeedbackHistoryPage() {
                               </p>
                             </div>
                           </div>
+                          )
                         ))}
+                      </div>
+                    )}
+
+                    {/* Resolution banner — confirm or reopen */}
+                    {item.resolution_status === 'resolved' && (
+                      <div className="rounded-xl border border-green-200 bg-green-50 p-4">
+                        <p className="text-sm font-semibold text-green-800">The team marked this resolved.</p>
+                        <p className="text-xs text-green-700 mt-0.5 mb-3">Does it work for you now?</p>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setResolution(item.id, 'confirm')}
+                            disabled={resolving === item.id}
+                            className="flex items-center justify-center gap-2 min-h-11 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition disabled:opacity-50"
+                          >
+                            {resolving === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                            Yes, it&apos;s fixed
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setResolution(item.id, 'reopen')}
+                            disabled={resolving === item.id}
+                            className="flex items-center justify-center gap-2 min-h-11 px-4 py-2 bg-white border border-amber-300 text-amber-700 rounded-lg text-sm font-semibold hover:bg-amber-50 transition disabled:opacity-50"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                            Still not working
+                          </button>
+                        </div>
+                        {sendError[item.id] && <p className="text-xs text-red-600 mt-2" role="alert">{sendError[item.id]}</p>}
+                      </div>
+                    )}
+                    {item.resolution_status === 'confirmed' && (
+                      <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800 font-medium flex items-center gap-2">
+                        <Check className="w-4 h-4 shrink-0" /> You confirmed this is fixed. Thanks for closing the loop!
                       </div>
                     )}
 

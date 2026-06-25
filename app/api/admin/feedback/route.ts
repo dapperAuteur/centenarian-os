@@ -42,7 +42,7 @@ export async function GET() {
   // PostgREST embedded join won't traverse it — fetch profiles separately.
   const { data, error } = await db
     .from('user_feedback')
-    .select('id, category, message, media_url, is_read_by_admin, created_at, user_id')
+    .select('id, category, message, media_url, is_read_by_admin, created_at, user_id, resolution_status')
     .order('created_at', { ascending: false })
     .limit(500);
 

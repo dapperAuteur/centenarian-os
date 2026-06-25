@@ -7,9 +7,11 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { Bug, Lightbulb, MessageSquare, ChevronDown, ChevronUp, Send, Loader2 } from 'lucide-react';
+import { Bug, Lightbulb, MessageSquare, ChevronDown, ChevronUp, Send, Loader2, CheckCircle2 } from 'lucide-react';
 import MediaUploader from '@/components/ui/MediaUploader';
 import ImageLightbox from '@/components/ui/ImageLightbox';
+
+type ResolutionStatus = 'open' | 'resolved' | 'confirmed' | 'reopened';
 
 interface FeedbackEntry {
   id: string;
@@ -21,6 +23,7 @@ interface FeedbackEntry {
   user_id: string;
   email?: string | null;
   profiles?: { username: string; display_name?: string | null } | null;
+  resolution_status?: ResolutionStatus;
 }
 
 interface Reply {
@@ -31,7 +34,20 @@ interface Reply {
   created_at: string;
   sender_username?: string | null;
   sender_display_name?: string | null;
+  kind?: 'message' | 'resolved' | 'confirmed' | 'reopened';
 }
+
+const STATUS_CONFIG: Record<Exclude<ResolutionStatus, 'open'>, { label: string; cls: string }> = {
+  resolved:  { label: 'Resolved · awaiting user', cls: 'bg-green-900/30 text-green-300 border border-green-800/50' },
+  confirmed: { label: 'Confirmed fixed',          cls: 'bg-green-900/50 text-green-200 border border-green-700/50' },
+  reopened:  { label: 'Reopened',                 cls: 'bg-amber-900/30 text-amber-300 border border-amber-800/50' },
+};
+
+const EVENT_TEXT = {
+  resolved:  'Marked resolved by the team',
+  confirmed: 'User confirmed this is fixed',
+  reopened:  'User reopened this',
+} as const;
 
 interface ThreadState {
   replies: Reply[];
@@ -54,6 +70,33 @@ export default function AdminFeedbackPage() {
   const [replyMedia, setReplyMedia] = useState<Record<string, string | null>>({});
   const [sending, setSending] = useState<string | null>(null);
   const [sendError, setSendError] = useState<Record<string, string>>({});
+  const [resolving, setResolving] = useState<string | null>(null);
+
+  async function markResolved(id: string) {
+    setResolving(id);
+    setSendError((prev) => ({ ...prev, [id]: '' }));
+    try {
+      const note = (replyText[id] ?? '').trim();
+      const r = await fetch(`/api/admin/feedback/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: note || undefined }),
+      });
+      if (!r.ok) { const d = await r.json(); throw new Error(d.error ?? 'Failed'); }
+      setItems((prev) => prev.map((it) => it.id === id ? { ...it, resolution_status: 'resolved' } : it));
+      const event: Reply = {
+        id: `evt-${Date.now()}`, is_admin: true, kind: 'resolved',
+        body: note || 'We believe this is now resolved. Can you confirm it works for you?',
+        created_at: new Date().toISOString(),
+      };
+      setThreads((prev) => ({ ...prev, [id]: { replies: [...(prev[id]?.replies ?? []), event], loaded: true } }));
+      setReplyText((prev) => ({ ...prev, [id]: '' }));
+    } catch (e) {
+      setSendError((prev) => ({ ...prev, [id]: e instanceof Error ? e.message : 'Failed' }));
+    } finally {
+      setResolving(null);
+    }
+  }
 
   useEffect(() => {
     fetch('/api/admin/feedback')
@@ -206,6 +249,11 @@ export default function AdminFeedbackPage() {
                     <cfg.icon className="w-3 h-3" />
                     {cfg.label}
                   </span>
+                  {item.resolution_status && item.resolution_status !== 'open' && (
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium shrink-0 ${STATUS_CONFIG[item.resolution_status].cls}`}>
+                      {STATUS_CONFIG[item.resolution_status].label}
+                    </span>
+                  )}
 
                   <div className="flex-1 min-w-0">
                     <p className="text-gray-300 text-sm truncate">{item.message}</p>
@@ -256,6 +304,17 @@ export default function AdminFeedbackPage() {
                       <div className="space-y-3">
                         <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold">Conversation</p>
                         {thread.replies.map((reply) => (
+                          reply.kind && reply.kind !== 'message' ? (
+                            <div key={reply.id} className="flex justify-center">
+                              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
+                                reply.kind === 'reopened'
+                                  ? 'bg-amber-900/30 text-amber-300 border border-amber-800/50'
+                                  : 'bg-green-900/30 text-green-300 border border-green-800/50'
+                              }`}>
+                                {reply.kind === 'reopened' ? '↻' : '✓'} {EVENT_TEXT[reply.kind]}
+                              </span>
+                            </div>
+                          ) : (
                           <div
                             key={reply.id}
                             className={`flex ${reply.is_admin ? 'justify-end' : 'justify-start'}`}
@@ -275,6 +334,7 @@ export default function AdminFeedbackPage() {
                               </p>
                             </div>
                           </div>
+                          )
                         ))}
                       </div>
                     )}
@@ -316,6 +376,30 @@ export default function AdminFeedbackPage() {
                           </button>
                         </div>
                       </div>
+
+                      {/* Resolution control */}
+                      {(item.resolution_status ?? 'open') !== 'resolved' && (item.resolution_status ?? 'open') !== 'confirmed' ? (
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-4 pt-4 border-t border-gray-800">
+                          <button
+                            type="button"
+                            onClick={() => markResolved(item.id)}
+                            disabled={resolving === item.id}
+                            className="flex items-center justify-center gap-2 min-h-11 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition disabled:opacity-50"
+                          >
+                            {resolving === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                            Mark resolved
+                          </button>
+                          <p className="text-xs text-gray-400">Uses the reply box above as an optional note. The user is emailed to confirm or reopen.</p>
+                        </div>
+                      ) : item.resolution_status === 'confirmed' ? (
+                        <div className="mt-4 pt-4 border-t border-gray-800 flex items-center gap-2 text-sm text-green-300 font-medium">
+                          <CheckCircle2 className="w-4 h-4 shrink-0" /> The user confirmed this is fixed.
+                        </div>
+                      ) : (
+                        <div className="mt-4 pt-4 border-t border-gray-800 text-xs text-gray-400">
+                          Marked resolved — waiting for the user to confirm or reopen.
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

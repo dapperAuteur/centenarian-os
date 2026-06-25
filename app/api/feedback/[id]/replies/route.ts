@@ -34,7 +34,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const { data: replies, error } = await db
     .from('feedback_replies')
-    .select('id, is_admin, body, media_url, created_at')
+    .select('id, is_admin, body, media_url, created_at, kind')
     .eq('feedback_id', id)
     .order('created_at', { ascending: true });
 
@@ -106,4 +106,74 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   return NextResponse.json({ id: reply.id }, { status: 201 });
+}
+
+// PATCH: the user confirms a resolved report is fixed, or reopens it. Posts a
+// status event into the conversation.
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { action, body } = await req.json().catch(() => ({}));
+  if (action !== 'confirm' && action !== 'reopen') return NextResponse.json({ error: "action must be 'confirm' or 'reopen'" }, { status: 400 });
+
+  const db = getDb();
+  const { data: feedback } = await db
+    .from('user_feedback')
+    .select('id, category, resolution_status')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (!feedback) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  const isAdmin = user.email === process.env.ADMIN_EMAIL;
+  const note = body?.trim();
+
+  if (action === 'confirm') {
+    const text = note || 'Confirmed — this is fixed for me. Thank you!';
+    const { error: upErr } = await db.from('user_feedback')
+      .update({ resolution_status: 'confirmed', confirmed_at: new Date().toISOString() })
+      .eq('id', id);
+    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+    const { data: ev } = await db.from('feedback_replies')
+      .insert({ feedback_id: id, sender_id: user.id, is_admin: isAdmin, kind: 'confirmed', body: text })
+      .select('id').single();
+    return NextResponse.json({ id: ev?.id ?? null, resolution_status: 'confirmed' });
+  }
+
+  // reopen
+  const text = note || "This still isn't working for me.";
+  const { error: upErr } = await db.from('user_feedback')
+    .update({ resolution_status: 'reopened', is_read_by_admin: false })
+    .eq('id', id);
+  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+  const { data: ev } = await db.from('feedback_replies')
+    .insert({ feedback_id: id, sender_id: user.id, is_admin: isAdmin, kind: 'reopened', body: text })
+    .select('id').single();
+
+  // Notify admin + mirror to the inbox so it re-enters triage.
+  try {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+    if (adminEmail && !isAdmin) {
+      const resend = getResend();
+      await resend.emails.send({
+        from: process.env.RESEND_FROM_EMAIL ?? 'admin@centenarianos.com',
+        to: adminEmail,
+        subject: `[CentenarianOS] User reopened a resolved feedback`,
+        html: `<p><strong>${user.email}</strong> reopened a report that was marked resolved:</p>
+               <blockquote style="border-left:3px solid #dc2626;padding-left:12px;color:#374151;">${text}</blockquote>
+               <p><a href="${siteUrl}/admin/feedback">View in Admin Dashboard →</a></p>`,
+      });
+    }
+  } catch (e) {
+    console.error('[feedback-reopen] Email failed:', e);
+  }
+  if (!isAdmin) {
+    after(() => mirrorFeedbackToInbox({ category: feedback.category, message: `[REOPENED] ${text}`, feedbackId: id, kind: 'reply', submitterEmail: user.email }));
+  }
+
+  return NextResponse.json({ id: ev?.id ?? null, resolution_status: 'reopened' });
 }
