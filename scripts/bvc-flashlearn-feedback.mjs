@@ -40,6 +40,13 @@ const EPISODES = {
   'tequila-mezcal': { ep: 12, quizTitle: 'Knowledge Check: Tequila and Mezcal' },
   sake: { ep: 13, quizTitle: 'Knowledge Check: Sake' },
   'the-toast': { ep: 14, quizTitle: 'Knowledge Check: The Toast' },
+  tobacco: { ep: 15, quizTitle: 'Knowledge Check: Tobacco' },
+  cannabis: { ep: 16, quizTitle: 'Knowledge Check: Cannabis' },
+  opioids: { ep: 17, quizTitle: 'Knowledge Check: Opioids' },
+  coca: { ep: 18, quizTitle: 'Knowledge Check: Coca' },
+  psychedelics: { ep: 19, quizTitle: 'Knowledge Check: Psychedelics' },
+  khat: { ep: 20, quizTitle: 'Knowledge Check: Khat' },
+  'full-spectrum': { ep: 21, quizTitle: 'Knowledge Check: The Full Spectrum' },
 };
 
 const slug = process.argv[2];

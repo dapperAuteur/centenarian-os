@@ -35,6 +35,13 @@ const EPISODES = {
   'tequila-mezcal': { ep: 12, label: 'Tequila and Mezcal' },
   sake: { ep: 13, label: 'Sake' },
   'the-toast': { ep: 14, label: 'The Toast' },
+  tobacco: { ep: 15, label: 'Tobacco' },
+  cannabis: { ep: 16, label: 'Cannabis' },
+  opioids: { ep: 17, label: 'Opioids' },
+  coca: { ep: 18, label: 'Coca' },
+  psychedelics: { ep: 19, label: 'Psychedelics' },
+  khat: { ep: 20, label: 'Khat' },
+  'full-spectrum': { ep: 21, label: 'The Full Spectrum' },
 };
 
 const slug = process.argv[2];

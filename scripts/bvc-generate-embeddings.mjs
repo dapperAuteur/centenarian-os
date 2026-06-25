@@ -26,6 +26,13 @@ const EPISODES = {
   'tequila-mezcal': 'Episode 12: Tequila & Mezcal — Heart of the Agave',
   sake: 'Episode 13: Sake — The Koji Path',
   'the-toast': 'Episode 14: The Toast — Season Synthesis',
+  tobacco: 'Episode 15: Tobacco — Sacred Smoke',
+  cannabis: 'Episode 16: Cannabis — The Green Revolution',
+  opioids: 'Episode 17: Opioids — The Poppy\'s Promise',
+  coca: 'Episode 18: Coca — White Lines',
+  psychedelics: 'Episode 19: Psychedelics — The Mushroom\'s Message',
+  khat: 'Episode 20: Khat — The Afternoon Leaf',
+  'full-spectrum': 'Episode 21: The Full Spectrum — Who Draws the Line?',
 };
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: bvc-generate-embeddings.mjs <episode-slug>`); process.exit(1); }
