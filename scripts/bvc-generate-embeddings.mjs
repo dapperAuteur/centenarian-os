@@ -10,7 +10,14 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const COURSE_ID = 'ca047c66-f03c-4924-9ebe-16e6bf076a85';
+// BVC was split into one course row per season (scripts/bvc-split-seasons.mjs).
+// Episodes 1-7 -> S1, 8-14 -> S2, 15-21 -> S3. COURSE_ID is resolved from the
+// episode number in the module title below.
+const SEASON_COURSE = {
+  1: 'ca047c66-f03c-4924-9ebe-16e6bf076a85', // Season 1 — The Daily Ritual
+  2: '880da0c1-176b-4546-8f38-2c0d13e28803', // Season 2 — The Oldest Toast
+  3: 'f4b2e611-71f4-4d19-ba83-c85e1f7b549a', // Season 3 — The Forbidden Leaf
+};
 const EPISODES = {
   coffee: 'Episode 1: Coffee — The Daily Global Connection',
   tea: 'Episode 2: Tea — The Way of Tea',
@@ -37,6 +44,8 @@ const EPISODES = {
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: bvc-generate-embeddings.mjs <episode-slug>`); process.exit(1); }
 const MODULE_TITLE = EPISODES[slug];
+const EP_NUM = Number((MODULE_TITLE.match(/Episode\s+(\d+)/) || [])[1]);
+const COURSE_ID = SEASON_COURSE[EP_NUM <= 7 ? 1 : EP_NUM <= 14 ? 2 : 3];
 const EMBEDDING_MODEL = 'gemini-embedding-001';
 
 const sUrl = process.env.NEXT_PUBLIC_SUPABASE_URL, sKey = process.env.SUPABASE_SERVICE_ROLE_KEY, gKey = process.env.GOOGLE_GEMINI_API_KEY;

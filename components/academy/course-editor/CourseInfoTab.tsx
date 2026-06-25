@@ -164,9 +164,11 @@ export default function CourseInfoTab({ course, saveCourseField, isAdmin, isOwne
         </p>
       </div>
       {/* Generic series + season grouping — works for ANY multi-season course
-          (Speedway, etc.). One course row per season; courses sharing a series
-          name group together and get a season switcher. Separate from BVC Season
-          below, which only controls the commodity-map embed. */}
+          (Speedway, Better Vice Club, etc.). One course row per season; courses
+          sharing a series name group together and get a season switcher. For the
+          Better Vice Club series, the season number is ALSO the single source of
+          truth for the per-season commodity world map embedded on each lesson
+          (the old BVC-specific season field has been retired). */}
       <div className="border border-gray-700 rounded-xl p-3 bg-gray-800/30 space-y-3">
         <p className="text-sm font-semibold text-gray-200">Series &amp; Season <span className="text-gray-400 font-normal">(optional)</span></p>
         <p className="text-xs text-gray-400 -mt-1">
@@ -211,30 +213,6 @@ export default function CourseInfoTab({ course, saveCourseField, isAdmin, isOwne
             />
           </div>
         </div>
-      </div>
-      <div>
-        <label className="block text-sm text-gray-200 mb-1.5" htmlFor="course-bvc-season">
-          BVC Season <span className="text-gray-400 font-normal">(optional)</span>
-        </label>
-        <select
-          id="course-bvc-season"
-          value={course.bvc_season ?? ''}
-          onChange={(e) => {
-            const v = e.target.value;
-            const parsed = v === '' ? null : (Number(v) as 1 | 2 | 3);
-            saveCourseField({ bvc_season: parsed });
-          }}
-          style={{ colorScheme: 'dark' }}
-          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 min-h-11"
-        >
-          <option value="" className="bg-gray-800 text-white">Not a BVC course</option>
-          <option value="1" className="bg-gray-800 text-white">Season 1 — Daily Rituals</option>
-          <option value="2" className="bg-gray-800 text-white">Season 2 — The Oldest Toast</option>
-          <option value="3" className="bg-gray-800 text-white">Season 3 — The Forbidden Leaf</option>
-        </select>
-        <p className="text-xs text-gray-400 mt-1.5">
-          Better Vice Club only. When set, every lesson shows an embedded world map filtered to this season&apos;s commodities. This is separate from the generic Series &amp; Season grouping above — for non-BVC multi-season courses, use that instead and leave this unset.
-        </p>
       </div>
 
       {/* Teacher-controlled: feature this course on the teacher's own profile page. */}
