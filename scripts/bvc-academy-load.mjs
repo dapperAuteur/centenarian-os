@@ -342,6 +342,29 @@ const EPISODES = {
       [15, '15-quiz.md', 'Knowledge Check: The Toast', 'quiz', 720, false, null, []],
     ],
   },
+  tobacco: {
+    moduleTitle: 'Episode 15: Tobacco — Sacred Smoke',
+    moduleOrder: 15,
+    assignmentTitle: 'Reading the Smoke',
+    lessons: [
+      [2, '02-intro.md', 'Sacred Smoke: Legal, Deadly, and the Bridge to Season 3', 'text', 180, true, null, ['teacher-resources', 'samhsa-help']],
+      [3, '03-geo-the-tobacco-belt.md', 'The Tobacco Belt', 'text', 360, true, 'map-geography.json', []],
+      [4, '04-geo-belt-and-plantation.md', 'The Belt and the Plantation', 'text', 360, false, null, []],
+      [5, '05-geo-footprint-beyond-the-leaf.md', 'The Footprint Beyond the Leaf', 'text', 300, false, null, []],
+      [6, '06-social-the-sacred-pipe.md', 'The Sacred Pipe', 'text', 480, false, null, []],
+      [7, '07-social-sacred-to-commodity.md', 'From Sacred to Commodity', 'text', 420, false, 'map-trade.json', []],
+      [8, '08-social-doubt-is-our-product.md', 'Doubt Is Our Product', 'text', 420, false, null, ['truth-tobacco-documents']],
+      [9, '09-econ-trillion-dollar-contradiction.md', 'The Trillion-Dollar Contradiction', 'text', 420, false, null, ['who-tobacco']],
+      [10, '10-econ-who-pays-for-a-cigarette.md', 'Who Pays for a Cigarette', 'text', 420, false, null, []],
+      [11, '11-econ-the-settlement-that-wasnt.md', "The Settlement That Wasn't", 'text', 420, false, null, []],
+      [12, '12-ela-torches-of-freedom.md', 'Torches of Freedom', 'text', 360, false, null, ['stanford-srita']],
+      [13, '13-ela-the-language-of-doubt.md', 'The Language of Doubt', 'text', 360, false, null, []],
+      [14, '14-key-terms.md', 'Key Terms: Tobacco', 'text', 300, false, null, []],
+      [15, '15-review.md', 'Cumulative Review: Tobacco', 'text', 360, false, null, []],
+      [16, '16-references.md', 'Sources and Further Reading: Tobacco', 'text', 180, false, null, []],
+      [17, '17-quiz.md', 'Knowledge Check: Tobacco', 'quiz', 720, false, null, []],
+    ],
+  },
 };
 if (!slug || !EPISODES[slug]) {
   console.error(`usage: bvc-academy-load.mjs <episode-slug> [--dry]  (known: ${Object.keys(EPISODES).join(', ')})`);

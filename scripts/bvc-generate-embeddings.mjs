@@ -26,6 +26,7 @@ const EPISODES = {
   'tequila-mezcal': 'Episode 12: Tequila & Mezcal — Heart of the Agave',
   sake: 'Episode 13: Sake — The Koji Path',
   'the-toast': 'Episode 14: The Toast — Season Synthesis',
+  tobacco: 'Episode 15: Tobacco — Sacred Smoke',
 };
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: bvc-generate-embeddings.mjs <episode-slug>`); process.exit(1); }
