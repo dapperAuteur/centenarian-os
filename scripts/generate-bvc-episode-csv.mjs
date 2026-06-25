@@ -288,6 +288,25 @@ const EPISODES = {
       [17, '17-quiz.md', 'Knowledge Check: Sake', 'quiz', 720, 'false', null, []],
     ],
   },
+  'the-toast': {
+    ep: 14, moduleTitle: 'Episode 14: The Toast — Season Synthesis', moduleOrder: 14,
+    lessons: [
+      [2, '02-intro.md', 'The Toast: Four Patterns in Every Glass', 'text', 180, 'true', null, ['teacher-resources', 'niaaa-alcohol']],
+      [3, '03-pattern1-ground-speaks-first.md', 'Pattern 1: The Ground Speaks First', 'text', 360, 'true', 'map-geography.json', []],
+      [4, '04-pattern1-stress-and-care.md', 'Pattern 1, Continued: Stress and Care', 'text', 300, 'false', null, []],
+      [5, '05-pattern2-fermentation-begins-sacred.md', 'Pattern 2: Fermentation Begins Sacred', 'text', 420, 'false', null, ['who-alcohol']],
+      [6, '06-pattern2-what-was-lost.md', 'Pattern 2, Continued: What Was Lost and What Came Back', 'text', 420, 'false', null, []],
+      [7, '07-pattern3-the-smile-curve.md', 'Pattern 3: Labor Captures the Smallest Share', 'text', 420, 'false', null, []],
+      [8, '08-pattern3-changing-the-curve.md', 'Pattern 3, Continued: Can the Curve Be Changed?', 'text', 420, 'false', null, []],
+      [9, '09-pattern4-whose-story-survives.md', 'Pattern 4: Whose Story Survives', 'text', 420, 'false', null, []],
+      [10, '10-pattern4-what-gets-saved.md', 'Pattern 4, Continued: What Gets Burned, What Gets Saved', 'text', 420, 'false', null, []],
+      [11, '11-the-toast-in-ten-languages.md', 'The Toast in Ten Languages', 'text', 360, 'false', 'map-trade.json', []],
+      [12, '12-key-terms.md', 'Key Terms: The Four Patterns', 'text', 300, 'false', null, []],
+      [13, '13-review.md', 'Cumulative Review: The Whole Season', 'text', 360, 'false', null, []],
+      [14, '14-references.md', 'Sources and Further Reading: The Toast', 'text', 180, 'false', null, []],
+      [15, '15-quiz.md', 'Knowledge Check: The Toast', 'quiz', 720, 'false', null, []],
+    ],
+  },
 };
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: generate-bvc-episode-csv.mjs <episode-slug>`); process.exit(1); }
