@@ -267,6 +267,27 @@ const EPISODES = {
       [17, '17-quiz.md', 'Knowledge Check: Tequila and Mezcal', 'quiz', 720, 'false', null, []],
     ],
   },
+  sake: {
+    ep: 13, moduleTitle: 'Episode 13: Sake — The Koji Path', moduleOrder: 13,
+    lessons: [
+      [2, '02-intro.md', 'The Koji Path: A Spirit Built by a Mold', 'text', 180, 'true', null, ['teacher-resources', 'niaaa-alcohol']],
+      [3, '03-geo-koji-the-national-mold.md', 'Koji, the National Mold', 'text', 360, 'true', null, ['aspergillus-oryzae']],
+      [4, '04-geo-three-waters-three-sakes.md', 'Three Waters, Three Sakes', 'text', 420, 'false', 'map-geography.json', []],
+      [5, '05-geo-rice-wine-belt.md', 'The Rice-Wine Belt of Asia', 'text', 360, 'false', 'map-trade.json', []],
+      [6, '06-social-sake-and-the-sacred.md', 'Sake and the Sacred', 'text', 420, 'false', null, []],
+      [7, '07-social-suppression-of-makgeolli.md', 'The Suppression of Makgeolli', 'text', 420, 'false', null, []],
+      [8, '08-social-why-fermentation-is-sacred.md', 'Why Fermentation Is Sacred', 'text', 420, 'false', null, []],
+      [9, '09-econ-volume-to-value.md', 'Volume to Value', 'text', 420, 'false', null, ['japan-sake-assoc']],
+      [10, '10-econ-the-polishing-ratio.md', 'The Polishing Ratio', 'text', 420, 'false', null, []],
+      [11, '11-econ-the-toji-guild.md', 'The Toji Guild', 'text', 420, 'false', null, []],
+      [12, '12-ela-words-english-borrowed.md', 'Words English Had to Borrow', 'text', 360, 'false', null, []],
+      [13, '13-ela-the-beauty-of-passing.md', 'The Beauty of Passing', 'text', 420, 'false', null, ['manyoshu']],
+      [14, '14-key-terms.md', 'Key Terms: Sake', 'text', 300, 'false', null, []],
+      [15, '15-review.md', 'Cumulative Review: Sake', 'text', 360, 'false', null, []],
+      [16, '16-references.md', 'Sources and Further Reading: Sake', 'text', 180, 'false', null, []],
+      [17, '17-quiz.md', 'Knowledge Check: Sake', 'quiz', 720, 'false', null, []],
+    ],
+  },
 };
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: generate-bvc-episode-csv.mjs <episode-slug>`); process.exit(1); }
