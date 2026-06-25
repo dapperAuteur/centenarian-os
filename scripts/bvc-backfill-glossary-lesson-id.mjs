@@ -26,6 +26,7 @@ const TERM_EPISODE = {
   'Coffee Belt': 1, 'Commodity': 1, 'Colonialism': 1, 'Public sphere': 1,
   'Penny Universities': 1, 'Elevation': 1, 'Bean Belt': 1, 'Supply chain': 1,
   'Commodity coffee': 1, 'Price elasticity': 1, 'Fair Trade': 1, 'Monoculture': 1, 'Subsidy': 1,
+  'Direct trade': 1, 'Local multiplier effect': 1,
   // Episode 2 — Tea
   'Darjeeling': 2, 'Assam': 2, 'Imperialism': 2, 'Opium': 2, 'Cha dao': 2,
   // Episode 3 — Chocolate
