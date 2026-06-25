@@ -365,6 +365,29 @@ const EPISODES = {
       [17, '17-quiz.md', 'Knowledge Check: Tobacco', 'quiz', 720, false, null, []],
     ],
   },
+  cannabis: {
+    moduleTitle: 'Episode 16: Cannabis — The Green Revolution',
+    moduleOrder: 16,
+    assignmentTitle: 'Drawing the Line',
+    lessons: [
+      [2, '02-intro.md', 'The Green Revolution: A Plant on Trial', 'text', 180, true, null, ['teacher-resources', 'samhsa-help', 'nida-cannabis']],
+      [3, '03-geo-born-in-the-mountains.md', 'Born in the Mountains', 'text', 360, true, 'map-geography.json', []],
+      [4, '04-geo-the-legal-patchwork.md', 'The Legal Patchwork', 'text', 360, false, 'map-trade.json', []],
+      [5, '05-geo-hemp-comes-home.md', 'Hemp Comes Home', 'text', 300, false, null, []],
+      [6, '06-social-the-sacred-plant.md', 'The Sacred Plant', 'text', 420, false, null, []],
+      [7, '07-social-how-cannabis-became-a-crime.md', 'How Cannabis Became a Crime', 'text', 480, false, null, ['baum-harpers']],
+      [8, '08-social-the-disparity.md', 'The Disparity', 'text', 420, false, null, ['aclu-report']],
+      [9, '09-econ-the-billion-dollar-leaf.md', 'The Billion-Dollar Leaf', 'text', 420, false, null, []],
+      [10, '10-econ-the-justice-gap.md', 'The Justice Gap', 'text', 420, false, null, []],
+      [11, '11-econ-indiana-on-the-border.md', 'Indiana on the Border', 'text', 420, false, null, []],
+      [12, '12-ela-reefer-madness.md', 'Reefer Madness and the Language of Fear', 'text', 420, false, null, []],
+      [13, '13-ela-three-sentences-three-policies.md', 'Three Sentences, Three Policies', 'text', 420, false, null, []],
+      [14, '14-key-terms.md', 'Key Terms: Cannabis', 'text', 300, false, null, []],
+      [15, '15-review.md', 'Cumulative Review: Cannabis', 'text', 360, false, null, []],
+      [16, '16-references.md', 'Sources and Further Reading: Cannabis', 'text', 180, false, null, []],
+      [17, '17-quiz.md', 'Knowledge Check: Cannabis', 'quiz', 720, false, null, []],
+    ],
+  },
 };
 if (!slug || !EPISODES[slug]) {
   console.error(`usage: bvc-academy-load.mjs <episode-slug> [--dry]  (known: ${Object.keys(EPISODES).join(', ')})`);

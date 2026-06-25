@@ -36,6 +36,7 @@ const EPISODES = {
   sake: { ep: 13, label: 'Sake' },
   'the-toast': { ep: 14, label: 'The Toast' },
   tobacco: { ep: 15, label: 'Tobacco' },
+  cannabis: { ep: 16, label: 'Cannabis' },
 };
 
 const slug = process.argv[2];
