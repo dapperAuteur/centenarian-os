@@ -434,6 +434,29 @@ const EPISODES = {
       [17, '17-quiz.md', 'Knowledge Check: Coca', 'quiz', 720, false, null, []],
     ],
   },
+  psychedelics: {
+    moduleTitle: 'Episode 19: Psychedelics — The Mushroom\'s Message',
+    moduleOrder: 19,
+    assignmentTitle: 'The Message',
+    lessons: [
+      [2, '02-intro.md', "The Mushroom's Message: Sacred Medicine, Schedule I, and a Research Revival", 'text', 180, true, null, ['teacher-resources', 'samhsa-help']],
+      [3, '03-geo-the-living-geography.md', 'The Living Geography', 'text', 360, true, 'map-geography.json', []],
+      [4, '04-geo-peyotes-endangered-geography.md', "Peyote's Endangered Geography", 'text', 300, false, null, []],
+      [5, '05-geo-the-new-map-of-access.md', 'The New Map of Access', 'text', 300, false, 'map-trade.json', ['oregon-psilocybin']],
+      [6, '06-social-the-four-traditions.md', 'The Four Traditions', 'text', 420, false, null, []],
+      [7, '07-social-maria-sabina.md', 'Maria Sabina', 'text', 420, false, null, ['un-declaration']],
+      [8, '08-social-from-sacrament-to-schedule-i.md', 'From Sacrament to Schedule I', 'text', 420, false, null, []],
+      [9, '09-econ-the-10-billion-question.md', 'The Ten-Billion-Dollar Question', 'text', 420, false, null, []],
+      [10, '10-econ-biopiracy.md', 'Biopiracy', 'text', 480, false, null, []],
+      [11, '11-econ-prohibitions-hidden-cost.md', "Prohibition's Hidden Cost", 'text', 420, false, null, []],
+      [12, '12-ela-writing-the-indescribable.md', 'Writing the Indescribable', 'text', 420, false, null, []],
+      [13, '13-ela-peer-review-vs-press-release.md', 'Peer Review Versus Press Release', 'text', 420, false, null, ['davis-jama']],
+      [14, '14-key-terms.md', 'Key Terms: Psychedelics', 'text', 300, false, null, []],
+      [15, '15-review.md', 'Cumulative Review: Psychedelics', 'text', 360, false, null, []],
+      [16, '16-references.md', 'Sources and Further Reading: Psychedelics', 'text', 180, false, null, []],
+      [17, '17-quiz.md', 'Knowledge Check: Psychedelics', 'quiz', 720, false, null, []],
+    ],
+  },
 };
 if (!slug || !EPISODES[slug]) {
   console.error(`usage: bvc-academy-load.mjs <episode-slug> [--dry]  (known: ${Object.keys(EPISODES).join(', ')})`);

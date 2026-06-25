@@ -30,6 +30,7 @@ const EPISODES = {
   cannabis: 'Episode 16: Cannabis — The Green Revolution',
   opioids: 'Episode 17: Opioids — The Poppy\'s Promise',
   coca: 'Episode 18: Coca — White Lines',
+  psychedelics: 'Episode 19: Psychedelics — The Mushroom\'s Message',
 };
 const slug = process.argv[2];
 if (!slug || !EPISODES[slug]) { console.error(`usage: bvc-generate-embeddings.mjs <episode-slug>`); process.exit(1); }

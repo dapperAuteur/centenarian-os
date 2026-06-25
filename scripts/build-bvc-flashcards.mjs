@@ -39,6 +39,7 @@ const EPISODES = {
   cannabis: { ep: 16, label: 'Cannabis' },
   opioids: { ep: 17, label: 'Opioids' },
   coca: { ep: 18, label: 'Coca' },
+  psychedelics: { ep: 19, label: 'Psychedelics' },
 };
 
 const slug = process.argv[2];
