@@ -388,6 +388,29 @@ const EPISODES = {
       [17, '17-quiz.md', 'Knowledge Check: Cannabis', 'quiz', 720, false, null, []],
     ],
   },
+  opioids: {
+    moduleTitle: 'Episode 17: Opioids — The Poppy\'s Promise',
+    moduleOrder: 17,
+    assignmentTitle: 'Following the Poppy',
+    lessons: [
+      [2, '02-intro.md', "The Poppy's Promise: Medicine, Crisis, and Harm Reduction", 'text', 180, true, null, ['teacher-resources', 'samhsa-help', 'cdc-opioids']],
+      [3, '03-geo-where-the-poppy-grows.md', 'Where the Poppy Grows', 'text', 360, true, 'map-geography.json', []],
+      [4, '04-geo-the-fentanyl-map.md', 'The Fentanyl Map', 'text', 360, false, 'map-trade.json', []],
+      [5, '05-geo-where-the-harm-concentrated.md', 'Where the Harm Concentrated', 'text', 360, false, null, []],
+      [6, '06-social-from-joy-plant-to-medicine.md', 'From Joy Plant to Medicine', 'text', 480, false, null, []],
+      [7, '07-social-the-opium-wars.md', 'The Opium Wars', 'text', 480, false, null, []],
+      [8, '08-social-purdue-and-the-sacklers.md', 'Purdue and the Sacklers', 'text', 480, false, null, []],
+      [9, '09-econ-who-profited-who-paid.md', 'Who Profited, Who Paid', 'text', 420, false, null, []],
+      [10, '10-econ-treatment-vs-punishment.md', 'Treatment Versus Punishment', 'text', 420, false, null, ['nida-mat']],
+      [11, '11-econ-the-scott-county-lesson.md', 'The Scott County Lesson', 'text', 420, false, null, ['cdc-opioids']],
+      [12, '12-ela-lin-zexus-letter.md', "Lin Zexu's Letter", 'text', 420, false, null, ['lin-zexu']],
+      [13, '13-ela-whose-story-gets-told.md', 'Whose Story Gets Told', 'text', 420, false, null, []],
+      [14, '14-key-terms.md', 'Key Terms: Opioids', 'text', 300, false, null, []],
+      [15, '15-review.md', 'Cumulative Review: Opioids', 'text', 360, false, null, []],
+      [16, '16-references.md', 'Sources and Further Reading: Opioids', 'text', 180, false, null, []],
+      [17, '17-quiz.md', 'Knowledge Check: Opioids', 'quiz', 720, false, null, []],
+    ],
+  },
 };
 if (!slug || !EPISODES[slug]) {
   console.error(`usage: bvc-academy-load.mjs <episode-slug> [--dry]  (known: ${Object.keys(EPISODES).join(', ')})`);

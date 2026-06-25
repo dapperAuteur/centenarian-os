@@ -37,6 +37,7 @@ const EPISODES = {
   'the-toast': { ep: 14, label: 'The Toast' },
   tobacco: { ep: 15, label: 'Tobacco' },
   cannabis: { ep: 16, label: 'Cannabis' },
+  opioids: { ep: 17, label: 'Opioids' },
 };
 
 const slug = process.argv[2];
