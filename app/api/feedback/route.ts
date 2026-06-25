@@ -26,7 +26,7 @@ export async function GET() {
   const db = getServiceClient();
   const { data, error } = await db
     .from('user_feedback')
-    .select('id, category, message, media_url, created_at')
+    .select('id, category, message, media_url, created_at, resolution_status, resolved_at, confirmed_at')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
