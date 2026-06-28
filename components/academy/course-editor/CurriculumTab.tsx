@@ -73,6 +73,8 @@ interface QuizQuestionDraft {
   citation: string;
   subjectTag: string;
   imageUrl: string;
+  // Optional "where to find this in the curriculum" pointer shown under the explanation.
+  lessonRef?: { title: string; href: string };
 }
 
 type QuizSetter = React.Dispatch<React.SetStateAction<QuizQuestionDraft[]>>;
@@ -625,6 +627,7 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
             id?: string; questionText?: string; questionType?: string;
             options?: Array<{ id?: string; text?: string }>;
             correctOptionId?: string; explanation?: string; citation?: string; subjectTag?: string; imageUrl?: string;
+            lessonRef?: { title?: string; href?: string };
           }>;
           passingScore?: number; attemptsAllowed?: number;
         } | null;
@@ -641,6 +644,9 @@ export default function CurriculumTab({ course, courseId, onCourseUpdated, setFe
               citation: q.citation ?? '',
               subjectTag: q.subjectTag ?? '',
               imageUrl: q.imageUrl ?? '',
+              lessonRef: q.lessonRef && q.lessonRef.href
+                ? { title: q.lessonRef.title ?? '', href: q.lessonRef.href }
+                : undefined,
             }))
           : [];
         setEditingQuizQuestions(questions);
