@@ -1,1 +1,0 @@
-user should be able to undo things like sent/paid of invoices when marked by mistake
