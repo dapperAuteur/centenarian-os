@@ -60,6 +60,7 @@ interface Lesson {
       explanation: string;
       citation?: string;
       imageUrl?: string;
+      lessonRef?: { title: string; href: string };
     }>;
     passingScore: number;
     attemptsAllowed: number;
