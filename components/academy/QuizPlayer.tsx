@@ -32,6 +32,7 @@ interface QuizQuestion {
   explanation: string;
   citation?: string;
   imageUrl?: string; // optional figure (e.g. a Cloudinary-hosted FAA chart) shown above the question
+  lessonRef?: { title: string; href: string }; // "where to find this in the curriculum" link shown under the explanation
 }
 
 interface QuizContent {
@@ -269,6 +270,15 @@ export default function QuizPlayer({ quizContent, courseId, lessonId, onComplete
               {expl.citation && (
                 <p className="text-xs text-gray-500 mt-2 italic">{expl.citation}</p>
               )}
+              {q.lessonRef?.href && (
+                <a
+                  href={q.lessonRef.href}
+                  className="inline-flex items-center gap-1.5 mt-3 text-xs font-medium text-sky-400 hover:text-sky-300 min-h-11"
+                >
+                  <BookOpen className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                  <span>Where to find this: {q.lessonRef.title}</span>
+                </a>
+              )}
             </div>
           )}
           <div className="flex gap-2">
@@ -423,6 +433,15 @@ export default function QuizPlayer({ quizContent, courseId, lessonId, onComplete
           <p className="text-sm text-gray-300">{currentQuestion.explanation}</p>
           {currentQuestion.citation && (
             <p className="text-xs text-gray-500 mt-2 italic">{currentQuestion.citation}</p>
+          )}
+          {currentQuestion.lessonRef?.href && (
+            <a
+              href={currentQuestion.lessonRef.href}
+              className="inline-flex items-center gap-1.5 mt-3 text-xs font-medium text-sky-400 hover:text-sky-300 min-h-11"
+            >
+              <BookOpen className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              <span>Where to find this: {currentQuestion.lessonRef.title}</span>
+            </a>
           )}
         </div>
       )}
