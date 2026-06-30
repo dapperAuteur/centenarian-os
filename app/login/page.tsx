@@ -355,7 +355,7 @@ function LoginContent() {
             <div className="my-2 text-center text-xs uppercase tracking-wide text-gray-400">or</div>
             <a
               href="/api/auth/witus/authorize"
-              className="flex w-full items-center justify-center rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold hover:bg-gray-50"
+              className="flex w-full items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800"
             >
               Sign in with WitUS
             </a>
