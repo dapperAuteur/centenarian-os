@@ -350,6 +350,17 @@ function LoginContent() {
             </form>
           )}
 
+          {/* ── Sign in with WitUS (ecosystem SSO) ──────────────────── */}
+          <div className="pt-2">
+            <div className="my-2 text-center text-xs uppercase tracking-wide text-gray-400">or</div>
+            <a
+              href="/api/auth/witus/authorize"
+              className="flex w-full items-center justify-center rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold hover:bg-gray-50"
+            >
+              Sign in with WitUS
+            </a>
+          </div>
+
           {/* ── Email link tab ──────────────────────────────────────── */}
           {EMAIL_AUTH_ENABLED && tab === 'otp' && (
             <div className="space-y-6">
