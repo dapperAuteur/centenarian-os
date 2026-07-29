@@ -8,9 +8,12 @@
 //
 // Keep this file dependency-free — no imports from @/components or @/lib
 // that might themselves be broken. Inline styles only; no Tailwind, since
-// we can't assume globals.css loaded.
+// we can't assume globals.css loaded. The one deliberate exception is the
+// Sentry SDK: it is the whole reason we would ever learn this fired, and it
+// is a no-op when no DSN is configured.
 
 import { useEffect } from 'react';
+import * as Sentry from '@sentry/nextjs';
 
 interface GlobalErrorProps {
   error: Error & { digest?: string };
@@ -29,6 +32,9 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
     };
     // eslint-disable-next-line no-console
     console.error('[centos-error]', JSON.stringify(payload));
+    // Plus Sentry, for a real stack trace off a user's machine. No-op when no
+    // DSN is configured; scrubbed by lib/sentry-scrub.ts when one is.
+    Sentry.captureException(error);
   }, [error]);
 
   return (

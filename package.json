@@ -20,6 +20,7 @@
     "@photo-sphere-viewer/markers-plugin": "^5.14.1",
     "@photo-sphere-viewer/video-plugin": "^5.14.1",
     "@photo-sphere-viewer/virtual-tour-plugin": "^5.14.1",
+    "@sentry/nextjs": "^10.69.0",
     "@stripe/stripe-js": "^8.7.0",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.75.1",

@@ -1,5 +1,6 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { withSentryConfig } from '@sentry/nextjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -72,4 +73,14 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// Wrap with Sentry's build plugin. Safe with no Sentry env set: without
+// SENTRY_AUTH_TOKEN it simply skips the source-map upload (you just get
+// minified stack traces), and the runtime SDK stays inert without a DSN.
+// org/project/authToken all come from env so nothing secret is committed here.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  disableLogger: true,
+});
