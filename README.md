@@ -154,6 +154,25 @@ CLOUDINARY_API_SECRET=
 NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=
 ```
 
+### Optional: Error Monitoring (Better Stack)
+
+Crash reporting runs through the Sentry SDK, pointed at Better Stack (which speaks
+the Sentry protocol). Every variable below is **optional**: with none of them set
+the SDK never initializes and the app behaves exactly as it did before.
+
+```env
+SENTRY_DSN=                 # server + edge runtimes
+NEXT_PUBLIC_SENTRY_DSN=     # browser runtime
+SENTRY_ORG=                 # source-map upload only
+SENTRY_PROJECT=
+SENTRY_AUTH_TOKEN=          # omit and the build just skips the upload
+```
+
+Because this app holds health data, reports are scrubbed before they leave the
+process: `lib/sentry-scrub.ts` drops the user object, cookies, auth headers, the
+request body, and every query string, and masks token-shaped URL segments.
+Tracing and Session Replay are both hard-coded to `0`.
+
 ### Database Setup
 
 ```bash
