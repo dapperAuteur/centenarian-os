@@ -5,7 +5,7 @@
 // Supabase is down, so a green check means nothing. This route always does a
 // real round trip to Postgres before it answers.
 //
-// Safety rules this file must keep (see CLAUDE.md — this app holds health data):
+// Safety rules this file must keep (see CLAUDE.md; this app holds health data):
 //   1. Anon/publishable key only. Never the service-role key on a public route.
 //   2. Never echo a raw error. A Supabase/Postgres error can carry connection
 //      details, host names, or key context. Only a fixed reason token escapes.

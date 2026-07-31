@@ -193,13 +193,13 @@ the string `"ok":true` in the body.
 Design notes, because this app holds health data:
 
 - The route is public and unauthenticated but leaks nothing. The raw database
-  error is **never** echoed (it can carry host names and credential context) —
+  error is **never** echoed (it can carry host names and credential context),
   only the fixed reason token is returned.
 - It runs on the **anon/publishable key**, never `SUPABASE_SERVICE_ROLE_KEY`. A
   public endpoint must not hold elevated credentials.
 - It returns, counts, and hints at **no user data**. The probe is a `HEAD`
   request against `metric_config` (a seeded configuration table of metric labels
-  and unlock rules — it has no user rows), so PostgREST returns no body and no
+  and unlock rules, with no user rows), so PostgREST returns no body and no
   count, and RLS denies the anon role anyway. The only assertion is "Postgres
   answered".
 - The check aborts after 4 seconds, so a hung database returns `503` fast
