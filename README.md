@@ -173,6 +173,40 @@ process: `lib/sentry-scrub.ts` drops the user object, cookies, auth headers, the
 request body, and every query string, and masks token-shaped URL segments.
 Tracing and Session Replay are both hard-coded to `0`.
 
+### Uptime Monitoring: point monitors at `/api/health`
+
+**Point every uptime monitor at `https://<your-domain>/api/health`, not at the
+homepage.** The homepage can serve a cached `200` while Supabase is down, so a
+green check there proves nothing. `/api/health` is never cached
+(`force-dynamic` plus `Cache-Control: no-store`) and always makes a live round
+trip to the database before it answers.
+
+| Condition | Status | Body |
+|---|---|---|
+| Database answered | `200` | `{"ok":true,"service":"centenarian-os","checks":{"database":"ok"},"latencyMs":42,"checkedAt":"..."}` |
+| Database errored, timed out (4s), or is not configured | `503` | `{"ok":false,"service":"centenarian-os","error":"database_unreachable","checks":{"database":"fail"},"latencyMs":4001,"checkedAt":"..."}` |
+
+The `error` field is one of two fixed tokens, `database_unreachable` or
+`not_configured`. Configure the monitor to alert on any non-`200`, or to expect
+the string `"ok":true` in the body.
+
+Design notes, because this app holds health data:
+
+- The route is public and unauthenticated but leaks nothing. The raw database
+  error is **never** echoed (it can carry host names and credential context),
+  only the fixed reason token is returned.
+- It runs on the **anon/publishable key**, never `SUPABASE_SERVICE_ROLE_KEY`. A
+  public endpoint must not hold elevated credentials.
+- It returns, counts, and hints at **no user data**. The probe is a `HEAD`
+  request against `metric_config` (a seeded configuration table of metric labels
+  and unlock rules, with no user rows), so PostgREST returns no body and no
+  count, and RLS denies the anon role anyway. The only assertion is "Postgres
+  answered".
+- The check aborts after 4 seconds, so a hung database returns `503` fast
+  instead of holding the monitor open.
+
+Source: [`app/api/health/route.ts`](./app/api/health/route.ts).
+
 ### Database Setup
 
 ```bash
@@ -203,6 +237,7 @@ centenarian-os/
 │   │   ├── exercises/         # Exercise library CRUD
 │   │   ├── finance/           # Finance APIs
 │   │   ├── fuel/              # Nutrition APIs
+│   │   ├── health/            # Public uptime probe (checks Supabase)
 │   │   ├── health-metrics/    # Metrics APIs
 │   │   ├── planner/           # Planner APIs
 │   │   ├── pricing/           # Public pricing data (founders, promos)
