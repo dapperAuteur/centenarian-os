@@ -28,6 +28,11 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // NOTE for error monitoring: this policy sets no `connect-src` and no `default-src`, so
+        // outbound fetch/XHR is unrestricted and the Sentry browser transport is NOT blocked here.
+        // If a `connect-src` (or a `default-src`) is ever added, the DSN's ORIGIN must be listed in
+        // it, otherwise every browser-side error report is silently dropped by the browser and the
+        // dashboard just looks quiet. Add the origin only, never the DSN key.
         source: '/blog/:path*',
         headers: [
           {
@@ -82,5 +87,10 @@ export default withSentryConfig(nextConfig, {
   project: process.env.SENTRY_PROJECT,
   silent: !process.env.CI,
   widenClientFileUpload: true,
-  disableLogger: true,
+  webpack: {
+    // Strips the SDK's own debug logging from the bundle. Replaces the deprecated top-level
+    // `disableLogger` option. Webpack-only, so it is a no-op under Turbopack (same as the old
+    // flag was), but it silences the v10 deprecation warning.
+    treeshake: { removeDebugLogging: true },
+  },
 });
