@@ -165,8 +165,13 @@ SENTRY_DSN=                 # server + edge runtimes
 NEXT_PUBLIC_SENTRY_DSN=     # browser runtime
 SENTRY_ORG=                 # source-map upload only
 SENTRY_PROJECT=
-SENTRY_AUTH_TOKEN=          # omit and the build just skips the upload
+SENTRY_AUTH_TOKEN=          # omit and the build skips source maps entirely
 ```
+
+Setting `SENTRY_AUTH_TOKEN` is what turns source maps on. Without it the build
+neither generates nor uploads them, so production stack traces stay minified.
+That is a deliberate trade: generating maps that cannot be uploaded is expensive
+enough to have contributed to an out-of-memory Vercel build.
 
 Because this app holds health data, reports are scrubbed before they leave the
 process: `lib/sentry-scrub.ts` drops the user object, cookies, auth headers, the
