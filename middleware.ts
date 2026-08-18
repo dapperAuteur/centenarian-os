@@ -181,6 +181,6 @@ export const config = {
   // auth work is pathname-gated above so public pages don't hit
   // Supabase.
   matcher: [
-    '/((?!_next/static|_next/image|api/|favicon|.*\\..*).*)',
+    '/((?!_next/static|_next/image|api/|ingest|favicon|.*\\..*).*)',
   ],
 };
