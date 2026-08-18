@@ -54,6 +54,7 @@
     "next": "15.5.9",
     "next-cloudinary": "^6.17.5",
     "papaparse": "^5.5.3",
+    "posthog-js": "^1.418.1",
     "react": "^19.2.4",
     "react-circular-progressbar": "^2.2.0",
     "react-dom": "^19.2.4",
