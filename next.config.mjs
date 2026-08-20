@@ -9,6 +9,17 @@ const __dirname = path.dirname(__filename);
 const nextConfig = {
   reactStrictMode: true,
 
+  // PostHog's endpoints use trailing slashes (/e/, /flags/, /s/). Without this, Next
+  // issues a 308 to the slashless form before the rewrite runs and ingest breaks.
+  // Required by PostHog's documented Next.js proxy setup.
+  //
+  // SIDE EFFECT worth knowing: this disables Next's automatic trailing-slash redirect
+  // for EVERY route, not just /ingest. So /blog/ no longer 308s to /blog and both forms
+  // become reachable. The root layout's `alternates.canonical` (built from SITE_URL) is
+  // what keeps search engines pointed at one form — verify those survive any future
+  // metadata refactor. See the witus repo, plans/26.
+  skipTrailingSlashRedirect: true,
+
   // BUILD MEMORY. Vercel builds this app on a 2-core / 8 GB container, and it was
   // being OOM-killed (SIGKILL) during "Linting and checking validity of types".
   //
@@ -64,12 +75,37 @@ const nextConfig = {
   },
 
   async rewrites() {
-    const umamiHost = process.env.UMAMI_HOST_URL;
-    if (!umamiHost) return [];
-    return [
-      { source: '/a/script.js', destination: `${umamiHost}/script.js` },
-      { source: '/a/api/send', destination: `${umamiHost}/api/send` },
+    // Reverse-proxy PostHog through our own origin. us.i.posthog.com is on uBlock
+    // Origin, Brave Shields, and Safari's tracker list, so a meaningful share of
+    // events never leave the browser — including, reliably, our own test visits.
+    // Routing ingest through centenarianos.com leaves blockers nothing to match on.
+    //
+    // Assets come from a different upstream host than ingest, hence two rules. The
+    // more specific /static rule must come first.
+    //
+    // Unconditional, unlike the Umami rules below: these point at fixed PostHog hosts,
+    // and the client half is already inert without NEXT_PUBLIC_POSTHOG_KEY. A rewrite
+    // that nothing calls costs nothing; a missing one 404s every event.
+    const rewrites = [
+      {
+        source: '/ingest/static/:path*',
+        destination: 'https://us-assets.i.posthog.com/static/:path*',
+      },
+      {
+        source: '/ingest/:path*',
+        destination: 'https://us.i.posthog.com/:path*',
+      },
     ];
+
+    const umamiHost = process.env.UMAMI_HOST_URL;
+    if (umamiHost) {
+      rewrites.push(
+        { source: '/a/script.js', destination: `${umamiHost}/script.js` },
+        { source: '/a/api/send', destination: `${umamiHost}/api/send` },
+      );
+    }
+
+    return rewrites;
   },
 
   webpack: (config, { isServer }) => {

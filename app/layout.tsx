@@ -10,6 +10,7 @@ import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 import SocialReferralTracker from '@/components/SocialReferralTracker';
 import MarketingBanner from '@/components/marketing/MarketingBanner';
 import { ToastProvider } from '@/components/ui/ToastProvider';
+import { PostHogProvider } from '@/lib/analytics/posthog-provider';
 import { organizationSchema, softwareApplicationSchema } from '@/lib/seo/json-ld';
 import { getLocale, getDictionary } from '@/lib/i18n/server';
 import { LocaleProvider } from '@/lib/i18n/client';
@@ -104,6 +105,19 @@ export default async function RootLayout({
             <MarketingBanner />
             {children}
           <SocialReferralTracker />
+          {/* Product analytics. Read the key HERE, in the Server Component, and pass it
+              down — the client component must not touch process.env. `?? null` is what
+              puts the provider in its supported keyless state (renders, captures
+              nothing) rather than initialising PostHog with `undefined`.
+
+              apiHost is our own path; next.config.mjs rewrites /ingest to PostHog so ad
+              blockers have no vendor hostname to match on. This app serves health data
+              and some flows are used by minors, so autocapture and session recording
+              stay OFF in the provider — see lib/analytics/posthog-provider.tsx. */}
+          <PostHogProvider
+            apiKey={process.env.NEXT_PUBLIC_POSTHOG_KEY ?? null}
+            apiHost="/ingest"
+          />
           <Analytics />
           {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL || process.env.UMAMI_HOST_URL) && (
             <Script
