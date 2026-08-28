@@ -16,6 +16,8 @@
 //   node --env-file=.env.local scripts/audit-transaction-ownership.mjs --email=you@example.com
 //   node --env-file=.env.local scripts/audit-transaction-ownership.mjs --list=60
 //   node --env-file=.env.local scripts/audit-transaction-ownership.mjs --csv > audit.csv
+//   node --env-file=.env.local scripts/audit-transaction-ownership.mjs --email=you@x.com --accounts
+//   node --env-file=.env.local scripts/audit-transaction-ownership.mjs --email=you@x.com --no-account
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -33,6 +35,8 @@ const arg = (name) => {
 const ONLY_EMAIL = arg('email');
 const LIST_N = Number.parseInt(arg('list') ?? '40', 10);
 const CSV = process.argv.includes('--csv');
+const ACCOUNTS = process.argv.includes('--accounts');
+const NO_ACCOUNT = process.argv.includes('--no-account');
 
 const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
@@ -176,6 +180,75 @@ console.log('-'.repeat(78));
 console.log('Read this as: a column with high coverage AND few distinct values is a usable');
 console.log('business/personal flag. High coverage with hundreds of distinct values (account_id,');
 console.log('category_id) only helps if you can say which of those values are the business ones.');
+
+// --- 5c. Account breakdown. When account_id is the winning discriminator, the whole split
+//         reduces to classifying a short list of accounts once, by hand. Print that list with
+//         enough context to decide each one, plus the rows that have no account at all. ---
+if (ACCOUNTS) {
+  const ids = [...new Set(scoped.map((r) => r.account_id).filter(Boolean))];
+  const { data: accts, error: acctErr } = await db
+    .from('financial_accounts')
+    .select('id, name, account_type, institution_name, last_four, is_active')
+    .in('id', ids);
+  if (acctErr) {
+    console.error(`Could not read financial_accounts: ${acctErr.message}`);
+  } else {
+    const byId = new Map((accts ?? []).map((a) => [a.id, a]));
+    const stats = new Map();
+    for (const r of scoped) {
+      const k = r.account_id ?? '(none)';
+      const e = stats.get(k) ?? { n: 0, income: 0, expense: 0, first: r.transaction_date, last: r.transaction_date };
+      e.n++;
+      if (r.type === 'income') e.income += Number(r.amount ?? 0);
+      else e.expense += Number(r.amount ?? 0);
+      if (r.transaction_date < e.first) e.first = r.transaction_date;
+      if (r.transaction_date > e.last) e.last = r.transaction_date;
+      stats.set(k, e);
+    }
+
+    console.log(`\nACCOUNTS (${stats.size}) — classify each B(usiness) or P(ersonal) once, and the split is decided`);
+    console.log('-'.repeat(118));
+    console.log(
+      'B/P'.padEnd(5) + 'account'.padEnd(30) + 'type'.padEnd(13) + 'institution'.padEnd(20) +
+      'txns'.padStart(6) + 'income'.padStart(13) + 'expense'.padStart(13) + '  active window',
+    );
+    console.log('-'.repeat(118));
+    const money = (n) => (n ? n.toFixed(2) : '-');
+    for (const [id, e] of [...stats.entries()].sort((a, b) => b[1].n - a[1].n)) {
+      const a = byId.get(id);
+      const name = id === '(none)' ? '(no account set)' : (a?.name ?? '(deleted account)');
+      console.log(
+        '[ ] '.padEnd(5) +
+        name.slice(0, 29).padEnd(30) +
+        (a?.account_type ?? '-').padEnd(13) +
+        (a?.institution_name ?? '-').slice(0, 19).padEnd(20) +
+        String(e.n).padStart(6) +
+        money(e.income).padStart(13) +
+        money(e.expense).padStart(13) +
+        `  ${e.first} to ${e.last}`,
+      );
+    }
+    console.log('-'.repeat(118));
+    const none = stats.get('(none)');
+    if (none) {
+      console.log(`\n${none.n} row(s) have NO account_id. Those are the manual remainder — list them with:`);
+      console.log('  ... --no-account');
+    }
+  }
+}
+
+if (NO_ACCOUNT) {
+  const orphans = scoped.filter((r) => r.account_id == null);
+  console.log(`\nROWS WITH NO account_id (${orphans.length}) — the manual remainder`);
+  console.log('-'.repeat(110));
+  for (const r of orphans.slice(0, LIST_N)) {
+    console.log(
+      `${r.transaction_date}  ${String(r.amount).padStart(10)}  ${r.type.padEnd(8)}` +
+      `${(r.vendor ?? '').slice(0, 26).padEnd(27)} ${(r.description ?? '').slice(0, 44)}`,
+    );
+  }
+  if (orphans.length > LIST_N) console.log(`...and ${orphans.length - LIST_N} more (use --list=N)`);
+}
 
 console.log('\nVERDICT');
 if (suspects.length === 0 && totalWithJob > 0) {
