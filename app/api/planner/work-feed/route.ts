@@ -5,6 +5,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { getExpectedIncome, type ExpectedPaymentRow } from '@/lib/finance/income-source';
+import { getWorkSchedule } from '@/lib/planner/work-schedule-source';
 
 function getDb() {
   return createServiceClient(
@@ -31,69 +33,58 @@ export async function GET(request: NextRequest) {
   // Fetch all data sources in parallel.
   // Job queries are wrapped in try/catch for graceful fallback when
   // contractor_jobs table doesn't exist (user only uses CentOS).
-  const [ownJobs, assignedJobs, invoiceResult, viewPayments, schedulePayments] = await Promise.all([
-    // 1. Own jobs
-    (async () => {
-      try {
-        const { data, error } = await db
-          .from('contractor_jobs')
-          .select('id, job_number, client_name, event_name, location_name, status, start_date, end_date, is_multi_day, scheduled_dates, pay_rate, rate_type, brand_id, notes')
-          .eq('user_id', user.id)
-          .not('status', 'in', '("cancelled","paid")')
-          .or(`start_date.gte.${from},end_date.gte.${from}`)
-          .or(`start_date.lte.${to},end_date.lte.${to}`)
-          .order('start_date', { ascending: true });
-        if (error) return [];
-        // Filter more precisely in JS for the 3-condition date overlap
-        return (data ?? []).filter((j: Record<string, string | null>) => {
-          const s = j.start_date ?? j.end_date;
-          const e = j.end_date ?? j.start_date;
-          if (!s) return false;
-          return (s <= to && (e ?? s) >= from);
-        }).map((j: Record<string, unknown>) => ({ ...j, source: 'own' }));
-      } catch {
-        return [];
-      }
-    })(),
+  // Jobs come from the local work_schedule_events projection (falling back to the contractor
+  // tables while Phase 2b is in flight) rather than from contractor_jobs directly.
+  // See lib/planner/work-schedule-source.ts.
+  const scheduleRows = await getWorkSchedule(db, user.id, from, to);
 
-    // 2. Assigned jobs (from listers)
-    (async () => {
-      try {
-        const { data, error } = await db
-          .from('contractor_job_assignments')
-          .select(`
-            status,
-            assigned_by,
-            job:contractor_jobs!inner(id, job_number, client_name, event_name, location_name, status, start_date, end_date, is_multi_day, scheduled_dates, pay_rate, rate_type, brand_id, notes),
-            assigner:profiles!contractor_job_assignments_assigned_by_fkey(display_name)
-          `)
-          .eq('assigned_to', user.id)
-          .eq('status', 'accepted');
-        if (error) return [];
-        return (data ?? [])
-          .filter((a: Record<string, unknown>) => {
-            const j = a.job as Record<string, string | null> | null;
-            if (!j || j.status === 'cancelled' || j.status === 'paid') return false;
-            const s = j.start_date ?? j.end_date;
-            const e = j.end_date ?? j.start_date;
-            if (!s) return false;
-            return (s <= to && (e ?? s) >= from);
-          })
-          .map((a: Record<string, unknown>) => {
-            const j = a.job as Record<string, unknown>;
-            const assigner = a.assigner as Record<string, string> | null;
-            return {
-              ...j,
-              source: 'assigned',
-              assignment_status: a.status,
-              assigned_by_name: assigner?.display_name ?? 'Unknown',
-            };
-          });
-      } catch {
-        return [];
-      }
-    })(),
+  // work-feed's response splits own vs assigned, and the UI labels them differently, so the
+  // split is preserved here rather than pushed into the projection's shape.
+  const ownJobs = scheduleRows
+    .filter((r) => r.source === 'own')
+    .map((r) => ({
+      id: r.job_id,
+      job_number: r.job_number,
+      client_name: r.client_name,
+      event_name: r.event_name,
+      location_name: r.location_name,
+      status: r.status,
+      start_date: r.start_date,
+      end_date: r.end_date,
+      is_multi_day: r.is_multi_day,
+      scheduled_dates: r.scheduled_dates,
+      pay_rate: r.pay_rate,
+      rate_type: r.rate_type,
+      brand_id: r.brand_id,
+      notes: r.notes,
+      source: 'own',
+    }));
 
+  const assignedJobs = scheduleRows
+    .filter((r) => r.source === 'assigned')
+    .map((r) => ({
+      id: r.job_id,
+      job_number: r.job_number,
+      client_name: r.client_name,
+      event_name: r.event_name,
+      location_name: r.location_name,
+      status: r.status,
+      start_date: r.start_date,
+      end_date: r.end_date,
+      is_multi_day: r.is_multi_day,
+      scheduled_dates: r.scheduled_dates,
+      pay_rate: r.pay_rate,
+      rate_type: r.rate_type,
+      brand_id: r.brand_id,
+      notes: r.notes,
+      source: 'assigned',
+      // Only 'accepted' assignments are projected, so this is constant. Kept because the client
+      // reads it.
+      assignment_status: 'accepted',
+      assigned_by_name: r.assigner_name ?? 'Unknown',
+    }));
+
+  const [invoiceResult, viewPayments, schedulePayments] = await Promise.all([
     // 3. Outstanding invoices (sent or overdue)
     (async () => {
       const { data, error } = await db
@@ -107,22 +98,10 @@ export async function GET(request: NextRequest) {
       return data ?? [];
     })(),
 
-    // 4. Expected payments from VIEW (jobs + invoices with pay dates)
-    (async () => {
-      try {
-        const { data, error } = await db
-          .from('expected_payments')
-          .select('*')
-          .eq('user_id', user.id)
-          .gte('expected_date', from)
-          .lte('expected_date', to)
-          .order('expected_date');
-        if (error) return [];
-        return data ?? [];
-      } catch {
-        return []; // VIEW may not exist
-      }
-    })(),
+    // 4. Expected income (jobs + invoices with pay dates).
+    //    Reads the local income_events projection, falling back to the legacy cross-app
+    //    expected_payments VIEW while Phase 2 is in flight. See lib/finance/income-source.ts.
+    getExpectedIncome(db, user.id, from, to),
 
     // 5. Schedule-based expected payments (CentOS-only)
     (async () => {
@@ -167,11 +146,12 @@ export async function GET(request: NextRequest) {
     })(),
   ]);
 
-  // Merge expected payments from VIEW + schedules
-  const expected_payments = [...viewPayments, ...schedulePayments]
-    .sort((a: Record<string, string>, b: Record<string, string>) =>
-      (a.expected_date ?? '').localeCompare(b.expected_date ?? '')
-    );
+  // Merge expected income (projection or legacy view) + CentOS-only schedule pay periods.
+  // Both sides already share the ExpectedPaymentRow shape, so no normalization is needed.
+  const expected_payments: ExpectedPaymentRow[] = [...viewPayments, ...schedulePayments];
+  expected_payments.sort((a, b) =>
+    (a.expected_date ?? '').localeCompare(b.expected_date ?? '')
+  );
 
   // Compute summary
   const outstanding_receivable_total = invoiceResult.reduce(
@@ -181,7 +161,7 @@ export async function GET(request: NextRequest) {
     (inv: Record<string, string>) => inv.status === 'overdue'
   ).length;
   const expected_payments_total = expected_payments.reduce(
-    (sum: number, p: Record<string, number>) => sum + (Number(p.expected_amount) || 0), 0
+    (sum, p) => sum + (Number(p.expected_amount) || 0), 0
   );
 
   return NextResponse.json({
