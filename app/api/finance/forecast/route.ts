@@ -1,11 +1,13 @@
 // app/api/finance/forecast/route.ts
 // GET: rolling income forecast across 30/60/90/180/270/365-day horizons.
-// Sources: expected_payments VIEW (jobs+invoices), schedule pay periods, historical income.
+// Sources: income_events projection (jobs+invoices pushed by Work.WitUS), schedule pay
+// periods, historical income. See lib/finance/income-source.ts for the transition.
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { getFiscalPeriods, type FiscalConfig } from '@/lib/fiscal';
+import { getExpectedIncome } from '@/lib/finance/income-source';
 
 function getDb() {
   return createServiceClient(
@@ -108,22 +110,10 @@ export async function GET() {
 
   // Fetch all data sources in parallel
   const [confirmedRes, schedulesRes, historicalRes, fiscalProfile] = await Promise.all([
-    // 1. Confirmed expected payments from VIEW (up to 1 year out)
-    (async () => {
-      try {
-        const { data, error } = await db
-          .from('expected_payments')
-          .select('*')
-          .eq('user_id', user.id)
-          .gte('expected_date', today)
-          .lte('expected_date', maxDate)
-          .order('expected_date');
-        if (error) return [];
-        return data ?? [];
-      } catch {
-        return [];
-      }
-    })(),
+    // 1. Confirmed expected income (up to 1 year out).
+    //    Reads the local income_events projection, falling back to the legacy cross-app
+    //    expected_payments VIEW while Phase 2 is in flight. See lib/finance/income-source.ts.
+    getExpectedIncome(db, user.id, today, maxDate),
 
     // 2. Active work schedule templates with finance data
     (async () => {

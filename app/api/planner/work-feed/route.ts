@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { getExpectedIncome, type ExpectedPaymentRow } from '@/lib/finance/income-source';
 
 function getDb() {
   return createServiceClient(
@@ -107,22 +108,10 @@ export async function GET(request: NextRequest) {
       return data ?? [];
     })(),
 
-    // 4. Expected payments from VIEW (jobs + invoices with pay dates)
-    (async () => {
-      try {
-        const { data, error } = await db
-          .from('expected_payments')
-          .select('*')
-          .eq('user_id', user.id)
-          .gte('expected_date', from)
-          .lte('expected_date', to)
-          .order('expected_date');
-        if (error) return [];
-        return data ?? [];
-      } catch {
-        return []; // VIEW may not exist
-      }
-    })(),
+    // 4. Expected income (jobs + invoices with pay dates).
+    //    Reads the local income_events projection, falling back to the legacy cross-app
+    //    expected_payments VIEW while Phase 2 is in flight. See lib/finance/income-source.ts.
+    getExpectedIncome(db, user.id, from, to),
 
     // 5. Schedule-based expected payments (CentOS-only)
     (async () => {
@@ -167,11 +156,12 @@ export async function GET(request: NextRequest) {
     })(),
   ]);
 
-  // Merge expected payments from VIEW + schedules
-  const expected_payments = [...viewPayments, ...schedulePayments]
-    .sort((a: Record<string, string>, b: Record<string, string>) =>
-      (a.expected_date ?? '').localeCompare(b.expected_date ?? '')
-    );
+  // Merge expected income (projection or legacy view) + CentOS-only schedule pay periods.
+  // Both sides already share the ExpectedPaymentRow shape, so no normalization is needed.
+  const expected_payments: ExpectedPaymentRow[] = [...viewPayments, ...schedulePayments];
+  expected_payments.sort((a, b) =>
+    (a.expected_date ?? '').localeCompare(b.expected_date ?? '')
+  );
 
   // Compute summary
   const outstanding_receivable_total = invoiceResult.reduce(
@@ -181,7 +171,7 @@ export async function GET(request: NextRequest) {
     (inv: Record<string, string>) => inv.status === 'overdue'
   ).length;
   const expected_payments_total = expected_payments.reduce(
-    (sum: number, p: Record<string, number>) => sum + (Number(p.expected_amount) || 0), 0
+    (sum, p) => sum + (Number(p.expected_amount) || 0), 0
   );
 
   return NextResponse.json({
