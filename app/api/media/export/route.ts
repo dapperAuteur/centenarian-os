@@ -47,16 +47,27 @@ export async function GET(request: NextRequest) {
     r.notes || '',
     r.is_favorite ? 'true' : 'false',
     r.visibility || 'private',
+    // `is_favorite` alias — see the header comment below.
+    r.is_favorite ? 'true' : 'false',
   ]);
 
+  // Header names must be snake_case, not Title Case. Both importers that consume this file
+  // key off the header row by exact name:
+  //   - our own /api/media/import reads row.title, row.media_type, row.favorite, ...
+  //   - Stream.WitUS's csvToMediaItems reads r.title, r.media_type, r.is_favorite, ...
+  // Columns 1-20 match public/templates/media-import-template.csv exactly, so an export
+  // re-imports here cleanly. The trailing `is_favorite` is a deliberate duplicate of
+  // `favorite`: it is the only field whose name differs between the two importers, and an
+  // unrecognized extra column is ignored by both, so carrying both names loses nothing.
   return buildCsvResponse(
     [
-      'Title', 'Creator', 'Media Type', 'Status', 'Rating',
-      'Start Date', 'End Date', 'Genre', 'Tags',
-      'Cover Image URL', 'External URL',
-      'Current Progress', 'Total Length',
-      'Season', 'Episode', 'Year Released',
-      'Source Platform', 'Notes', 'Favorite', 'Visibility',
+      'title', 'creator', 'media_type', 'status', 'rating',
+      'start_date', 'end_date', 'genre', 'tags',
+      'cover_image_url', 'external_url',
+      'current_progress', 'total_length',
+      'season_number', 'episode_number', 'year_released',
+      'source_platform', 'notes', 'favorite', 'visibility',
+      'is_favorite',
     ],
     rows,
     'centenarianos-media-export.csv',
