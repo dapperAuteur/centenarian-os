@@ -37,6 +37,9 @@ const LIST_N = Number.parseInt(arg('list') ?? '40', 10);
 const CSV = process.argv.includes('--csv');
 const ACCOUNTS = process.argv.includes('--accounts');
 const NO_ACCOUNT = process.argv.includes('--no-account');
+// Comma-separated account NAMES classified as business. Validates the split rule before any
+// migration acts on it: how many rows move, and — more importantly — which rows the rule misses.
+const BUSINESS = (arg('business') ?? '').split(',').map((x) => x.trim()).filter(Boolean);
 
 const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
@@ -266,6 +269,56 @@ if (NO_ACCOUNT) {
     );
   }
   if (orphans.length > LIST_N) console.log(`...and ${orphans.length - LIST_N} more (use --list=N)`);
+}
+
+// --- 5d. Validate a proposed business/personal rule. A rule is only as good as what it MISSES:
+//         a business row left behind in CentOS is silent data in the wrong database. ---
+if (BUSINESS.length > 0) {
+  const ids = [...new Set(scoped.map((r) => r.account_id).filter(Boolean))];
+  const { data: accts, error: acctErr } = await db
+    .from('financial_accounts')
+    .select('id, name')
+    .in('id', ids);
+  if (acctErr) {
+    console.error(`Could not read financial_accounts: ${acctErr.message}`);
+  } else {
+    const norm = (x) => (x ?? '').trim().toLowerCase();
+    const wanted = new Set(BUSINESS.map(norm));
+    const bizIds = new Set((accts ?? []).filter((a) => wanted.has(norm(a.name))).map((a) => a.id));
+    const matchedNames = new Set((accts ?? []).filter((a) => bizIds.has(a.id)).map((a) => a.name));
+
+    // A name in --business that matched nothing is a typo, and a typo silently shrinks the
+    // business set. Say so loudly rather than reporting a confident wrong number.
+    const unmatched = BUSINESS.filter((b) => ![...matchedNames].some((m) => norm(m) === norm(b)));
+    console.log(`\nRULE CHECK — account_id IN (${bizIds.size} account(s) matched)`);
+    console.log('-'.repeat(78));
+    for (const n of matchedNames) console.log(`  business: ${n}`);
+    if (unmatched.length) {
+      console.log(`\n  !! ${unmatched.length} name(s) in --business matched NO account:`);
+      for (const u of unmatched) console.log(`     "${u}"`);
+      console.log('     Fix these before trusting the numbers below.');
+    }
+
+    const moves = scoped.filter((r) => r.account_id && bizIds.has(r.account_id));
+    const stays = scoped.filter((r) => !(r.account_id && bizIds.has(r.account_id)));
+    console.log('-'.repeat(78));
+    console.log(`  moves to Work.WitUS: ${moves.length}`);
+    console.log(`  stays in CentOS    : ${stays.length}  (incl. ${stays.filter((r) => !r.account_id).length} with no account)`);
+
+    // The two error classes, named for what they cost.
+    const missed = stays.filter(looksBusiness);
+    const swept = moves.filter((r) => !looksBusiness(r));
+    console.log(`\n  MISSES — business-looking rows the rule LEAVES in CentOS: ${missed.length}`);
+    for (const r of missed.slice(0, LIST_N)) {
+      const acct = (accts ?? []).find((a) => a.id === r.account_id);
+      console.log(
+        `    ${r.transaction_date}  ${String(r.amount).padStart(9)}  ` +
+        `${(r.vendor ?? '').slice(0, 26).padEnd(27)} ${(acct?.name ?? '(no account)').slice(0, 30)}`,
+      );
+    }
+    if (missed.length > LIST_N) console.log(`    ...and ${missed.length - LIST_N} more`);
+    console.log(`\n  (${swept.length} rows on business accounts do not look business by keyword — expected, keywords are weak)`);
+  }
 }
 
 console.log('\nVERDICT');
