@@ -134,22 +134,47 @@ async function readLegacyTables(
 
   const assigned = await (async () => {
     try {
+      // The route this replaced embedded the assigner as
+      //   assigner:profiles!contractor_job_assignments_assigned_by_fkey(display_name)
+      // which PostgREST cannot resolve: assigned_by references auth.users(id) and there is no
+      // foreign key from contractor_job_assignments to profiles. That query always errored, and
+      // the old code's `if (error) return []` swallowed it — so assigned jobs have silently never
+      // reached the planner. Fixed here rather than reproduced, so this fallback and the
+      // projection agree instead of diverging the day the projection fills up.
       const { data, error } = await db
         .from('contractor_job_assignments')
         .select(`
           status,
-          job:contractor_jobs!inner(id, job_number, client_name, event_name, location_name, status, start_date, end_date, is_multi_day, scheduled_dates, pay_rate, rate_type, brand_id, notes),
-          assigner:profiles!contractor_job_assignments_assigned_by_fkey(display_name)
+          assigned_by,
+          job:contractor_jobs!inner(id, job_number, client_name, event_name, location_name, status, start_date, end_date, is_multi_day, scheduled_dates, pay_rate, rate_type, brand_id, notes)
         `)
         .eq('assigned_to', userId)
         .eq('status', 'accepted');
       if (error) return [];
-      return (data ?? [])
+
+      const rows = data ?? [];
+      // profiles.id IS auth.users.id, so resolve the names in one keyed lookup.
+      const assignerIds = [...new Set(
+        rows.map((a) => (a as Record<string, unknown>).assigned_by as string | null).filter(Boolean),
+      )] as string[];
+      const nameById = new Map<string, string | null>();
+      if (assignerIds.length > 0) {
+        const { data: profs } = await db
+          .from('profiles')
+          .select('id, display_name')
+          .in('id', assignerIds);
+        for (const pr of profs ?? []) {
+          const rec = pr as { id: string; display_name: string | null };
+          nameById.set(rec.id, rec.display_name ?? null);
+        }
+      }
+
+      return rows
         .map((a) => {
           const rec = a as Record<string, unknown>;
           const job = rec.job as Record<string, unknown> | null;
-          const assigner = rec.assigner as { display_name?: string } | null;
-          return job ? shape(job, 'assigned', assigner?.display_name ?? null) : null;
+          const by = rec.assigned_by as string | null;
+          return job ? shape(job, 'assigned', (by ? nameById.get(by) : null) ?? null) : null;
         })
         .filter((r): r is WorkScheduleRow => r !== null);
     } catch {
