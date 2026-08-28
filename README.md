@@ -1,15 +1,28 @@
 # CentenarianOS
 
-> **Solo-built personal OS.** 14 modules in one Next.js 14 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online)), offline-first via service-worker + IndexedDB queue, **187 migrations** to date.
+> **One job: the longevity correlation engine over your personal data.** Health, habits, focus,
+> nutrition and personal finance are co-located in one datastore so the synthesis surfaces
+> ([`/dashboard/correlations`](./app/dashboard/correlations), [`/dashboard/retrospective`](./app/dashboard/retrospective),
+> [`/dashboard/weekly-review`](./app/dashboard/weekly-review)) can surface cross-domain patterns no
+> single-vertical tracker can see. That co-location is the product, not an accident of scope.
+
+> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online)), offline-first via service-worker + IndexedDB queue, **198 migrations** to date.
+
+**Actively decomposing.** Modules that a sibling WitUS app already owns are being removed under
+the ecosystem's "one app, one job" rule (see [CLAUDE.md](./CLAUDE.md)) — Media → Stream.WitUS,
+Academy → Learn.WitUS, contractor residue → Work.WitUS, Travel → RideWitUS. The correlation core
+stays integrated on purpose. The staged plan and the ecosystem registry live in the untracked
+`plans/` working area (`plans/49-decomposition-staged-plan.md`, `plans/ecosystem/README.md`).
+Module lists below still describe the pre-decomposition surface.
 
 ```mermaid
 flowchart LR
   classDef shared fill:#1e1e2e,stroke:#fab387,color:#fab387,stroke-width:3px
   classDef external fill:#11111b,stroke:#a6adc8,color:#a6adc8
 
-  CentOS[centenarian-os<br/>Next.js 14 · Vercel<br/>14 modules]
+  CentOS[centenarian-os<br/>Next.js 15 · Vercel<br/>14 modules]
   Contractor[contractor-os<br/>Work.WitUS]
-  DB[(Supabase Postgres<br/>187 migrations)]:::shared
+  DB[(Supabase Postgres<br/>198 migrations)]:::shared
 
   CentOS -->|service-role + publishable| DB
   Contractor -->|service-role + publishable| DB
@@ -18,7 +31,7 @@ flowchart LR
 For dev-audience readers:
 
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** — full module map, Mermaid diagrams of the shared-DB boundary, cross-app traffic via the `unified-schedule` edge function, offline-sync layer, repo layout, and stack table.
-- **[MIGRATIONS.md](./MIGRATIONS.md)** — 187 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
+- **[MIGRATIONS.md](./MIGRATIONS.md)** — 198 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
 - **[CLAUDE.md](./CLAUDE.md)** — AI-collaborator instructions doubling as the project conventions doc (style, a11y, the Shared Database rule, branch workflow).
 - **[STYLE_GUIDE.md](./STYLE_GUIDE.md)** — git workflow, branch naming, Conventional Commits, PR rules. Every change starts on a new branch off `main`; `main` is never pushed to directly.
 - **[docs/CentenarianAcademy/](./docs/CentenarianAcademy/)** — course-authoring standards: `CourseAuthoringGuide.md` (craft), `CourseProductionPlaybook.md` (process), `CitationIntegrityGuide.md` (verify every source, never ship a fake citation), and `CourseCreationWithAI.md` (hand to your AI). Per-course recipes: `CourseAuthoringGuide NASM CPT/CES/CNC.md` and `CourseAuthoringGuide BVC.md` (Better Vice Club: audio-first, four-lens episodes; episode-per-module; rotating quizzes + FlashLearn recall loop + season-wide glossary). Courses cite only verified, peer-reviewed sources and ship a teacher evidence ledger.
@@ -37,18 +50,24 @@ Operated by B4C LLC / AwesomeWebStore.com. Built solo by [Brand Anthony McDonald
 ```
 B4C LLC / AwesomeWebStore.com  ← legal entity
 └── WitUS.online               ← parent brand (philosophy + product directory)
-    ├── CentenarianOS.com      ← this repo — multi-decade personal OS
-    │   └── Academy (LMS)      ← module inside CentenarianOS, hosts BVC curriculum
-    └── Work.WitUS.Online      ← separate app, contractor operations (shares DB)
+    ├── CentenarianOS.com      ← this repo — the longevity correlation engine
+    │   └── Academy (LMS)      ← module inside CentenarianOS today; migrating to Learn.WitUS
+    ├── Learn.WitUS.Online     ← separate app, live multi-tenant LMS (BVC tenant)
+    ├── Stream.WitUS.Online    ← separate app, cross-media tracker
+    └── Work.WitUS.Online      ← separate app, contractor operations (shares DB today)
 ```
 
-The Academy is a module of CentenarianOS — not a separate product. There is no standalone "Learn.WitUS" app.
+The Academy is still a module of CentenarianOS, but it is **no longer the ecosystem's LMS
+of record.** `learn.witus.online` is a live, standalone, multi-tenant LMS (repo
+`claude/witus-learn`) already serving the BVC tenant. The Academy's courses are slated to
+migrate into it; CentenarianOS keeps in-app tutorials and links out. Earlier revisions of
+this README claimed "there is no standalone Learn.WitUS app" — that is no longer true.
 
 ## Stack
 
 | Layer | Choice | Notes |
 |---|---|---|
-| Framework | Next.js 14 App Router | Server Components by default, route handlers for the API surface (200+ endpoints). |
+| Framework | Next.js 15 App Router | Server Components by default, route handlers for the API surface (365 route handlers). |
 | Hosting | Vercel | Fluid Compute for Node.js routes. |
 | Database | Supabase Postgres | RLS as the security model. **Shared with contractor-os.** |
 | Auth | `@supabase/ssr` | Cookie-based; browser + SSR via the same client. New publishable + secret key system. |
@@ -222,7 +241,7 @@ supabase db push
 # Run migrations in order from supabase/migrations/
 ```
 
-There are 187 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the ContractorOS (Work.WitUS) app — read [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" before adding any.
+There are 198 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the ContractorOS (Work.WitUS) app — read [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" before adding any.
 
 ### Run Development Server
 
@@ -273,7 +292,7 @@ centenarian-os/
 ├── content/tutorials/         # 15+ tutorial course scripts
 ├── public/templates/          # CSV import templates (10+ modules)
 └── supabase/
-    └── migrations/            # 187 database migrations — see MIGRATIONS.md
+    └── migrations/            # 198 database migrations — see MIGRATIONS.md
 ```
 
 For the full module map and the cross-app shared-DB story, see **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
