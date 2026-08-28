@@ -1,6 +1,13 @@
 # CentenarianOS — Architecture
 
-> A solo-built personal operating system. Next.js 14 App Router on Vercel, Supabase Postgres + Auth, **shared database with a sibling product** ([Work.WitUS / contractor-os](https://github.com/dapperAuteur/contractor-os)), offline-first via service-worker + IndexedDB queue, AI coach via Gemini, OCR via Gemini Vision, payments via Stripe Connect, transactional email via Resend.
+> **One job: the longevity correlation engine over your personal data.** The breadth below exists
+> so health, habits, focus, nutrition and personal finance can share one datastore — that
+> co-location is what `/dashboard/correlations`, `/dashboard/retrospective` and
+> `/dashboard/weekly-review` are built on. Modules a sibling WitUS app already owns are being
+> carved out (see the decomposition plan in the untracked `plans/` area); the correlation core
+> stays integrated on purpose.
+
+> A solo-built personal operating system. Next.js 15 App Router on Vercel, Supabase Postgres + Auth, **shared database with a sibling product** ([Work.WitUS / contractor-os](https://github.com/dapperAuteur/contractor-os)), offline-first via service-worker + IndexedDB queue, AI coach via Gemini, OCR via Gemini Vision, payments via Stripe Connect, transactional email via Resend.
 
 ## The 14-module layout
 
@@ -11,7 +18,7 @@ flowchart TB
   classDef shared fill:#1e1e2e,stroke:#fab387,color:#fab387,stroke-width:3px
   classDef external fill:#11111b,stroke:#a6adc8,color:#a6adc8
 
-  subgraph CentOS["centenarian-os (Next.js 14 App Router · Vercel)"]
+  subgraph CentOS["centenarian-os (Next.js 15 App Router · Vercel)"]
     direction TB
 
     subgraph Life["Life modules"]
@@ -47,7 +54,7 @@ flowchart TB
 
   subgraph Shared["Shared infrastructure"]
     direction TB
-    Supabase[(Supabase Postgres<br/>187 migrations · 14 modules)]:::shared
+    Supabase[(Supabase Postgres<br/>198 migrations · 14 modules)]:::shared
     SupaAuth[Supabase Auth<br/>publishable + secret keys]
     SupaStorage[Supabase Storage]
   end
@@ -144,7 +151,7 @@ Trade-off: this wrapper isn't applied uniformly. Pages that talk Supabase-direct
 
 | Layer | Choice | Why |
 |---|---|---|
-| Framework | Next.js 14 App Router | Server Components by default, route handlers for the API surface. |
+| Framework | Next.js 15 App Router | Server Components by default, route handlers for the API surface. |
 | Hosting | Vercel | Fluid Compute for the Node.js routes, native Next.js deployment, Marketplace integrations for Supabase + Resend. |
 | Database | Supabase Postgres | Single-vendor managed Postgres + Auth + Storage + Edge Functions; RLS is the security model. Shared with contractor-os. |
 | Auth | Supabase Auth via `@supabase/ssr` | Cookie-based session, browser + SSR access via the same package. Migrated to publishable + secret key system in plans 39 + 43. |
@@ -182,7 +189,7 @@ centenarian-os/
 │   ├── csv/               # Import/export helpers
 │   └── …
 ├── supabase/
-│   ├── migrations/        # 187 sequential SQL files (see MIGRATIONS.md)
+│   ├── migrations/        # 198 sequential SQL files (see MIGRATIONS.md)
 │   └── functions/         # Edge functions (unified-schedule lives in contractor-os)
 ├── public/
 │   ├── sw.js              # Service worker
