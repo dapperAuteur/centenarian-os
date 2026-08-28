@@ -116,15 +116,20 @@ if (totalWithJob === 0) {
 
 // --- 4. Business scan. The rows that decide the answer are business-looking rows WITHOUT a
 //        job_id: if any exist, `job_id IS NOT NULL` cannot be trusted to move the right rows. ---
+// NOTE: /union/ was removed. It matched "Everwise Credit Union" on every ATM row, which is
+// personal banking, and inflated the first run's count. Union LOCALS are matched specifically.
 const BUSINESS_HINTS = [
-  /\bcrew\b/i, /\bunion\b/i, /\bdues\b/i, /\bIBEW\b/i, /\bIATSE\b/i, /\blocal \d+/i,
+  /\bcrew\b/i, /\bdues\b/i, /\bIBEW\b/i, /\bIATSE\b/i, /\blocal \d+\b/i,
   /\binvoice\b/i, /\bclient\b/i, /\bconsult/i, /\bcontract/i,
   /\bB&H\b/i, /\bcamera\b/i, /\baudio\b/i, /\bgear\b/i, /\bequipment\b/i, /\bcable/i,
   /\bper ?diem\b/i, /\bstadium\b/i, /\bvenue\b/i, /\bjob\b/i, /\bgig\b/i,
   /\boffice supplies\b/i, /\bsubscription\b/i, /\bworkspace\b/i,
 ];
+// Personal banking mechanics are never business signal, however they are worded.
+const NOT_BUSINESS = [/\bATM\b/i, /credit union/i, /\bdeposit at\b/i, /\bwithdrawal\b/i, /\btransfer to\b/i];
 const looksBusiness = (r) => {
   const hay = `${r.vendor ?? ''} ${r.description ?? ''}`;
+  if (NOT_BUSINESS.some((re) => re.test(hay))) return false;
   return BUSINESS_HINTS.some((re) => re.test(hay));
 };
 
@@ -146,6 +151,31 @@ const withCat = suspects.filter((r) => r.category_id != null).length;
 const withBrand = suspects.filter((r) => r.brand_id != null).length;
 console.log('\nWOULD ANOTHER COLUMN WORK BETTER?');
 console.log(`  of those ${suspects.length} business-looking rows: ${withCat} have a category_id, ${withBrand} have a brand_id`);
+
+// --- 5b. Which column actually PARTITIONS this ledger? job_id is measured above; if it is
+//         unused, the split still needs a rule, and these are the candidates. Coverage is what
+//         matters: a discriminator that leaves half the rows unclassified is not a discriminator. ---
+const scopeLabel = ONLY_EMAIL ?? 'all users';
+console.log(`\nCANDIDATE DISCRIMINATORS (${scopeLabel}, ${scoped.length} rows)`);
+console.log('-'.repeat(78));
+console.log('column'.padEnd(16) + 'rows set'.padStart(11) + 'rows null'.padStart(11) + 'coverage'.padStart(11) + '  distinct values');
+console.log('-'.repeat(78));
+for (const col of ['job_id', 'brand_id', 'category_id', 'account_id']) {
+  const set = scoped.filter((r) => r[col] != null);
+  const distinct = new Set(set.map((r) => r[col])).size;
+  const pct = scoped.length ? ((set.length / scoped.length) * 100).toFixed(1) : '0.0';
+  console.log(
+    col.padEnd(16) +
+    String(set.length).padStart(11) +
+    String(scoped.length - set.length).padStart(11) +
+    `${pct}%`.padStart(11) +
+    `  ${distinct}`,
+  );
+}
+console.log('-'.repeat(78));
+console.log('Read this as: a column with high coverage AND few distinct values is a usable');
+console.log('business/personal flag. High coverage with hundreds of distinct values (account_id,');
+console.log('category_id) only helps if you can say which of those values are the business ones.');
 
 console.log('\nVERDICT');
 if (suspects.length === 0 && totalWithJob > 0) {
