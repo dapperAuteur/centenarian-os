@@ -67,20 +67,43 @@ for (const j of jobs ?? []) {
 
 // --- assigned jobs. Only 'accepted' assignments occupied the calendar before, so only those
 //     are projected; the consumers filtered on exactly this. ---
+// NOTE: do NOT try to embed the assigner as
+//   assigner:profiles!contractor_job_assignments_assigned_by_fkey(display_name)
+// PostgREST cannot resolve it: assigned_by references auth.users(id), and there is no foreign key
+// from contractor_job_assignments to profiles, so the relationship does not exist in the schema
+// cache. The route this backfill replaces used exactly that join and swallowed the error with
+// `if (error) return []`, which is why assigned jobs silently never reached the planner.
+// profiles.id IS auth.users.id, so a second keyed lookup gets the same data honestly.
 const { data: assigns, error: asgErr } = await db
   .from('contractor_job_assignments')
-  .select(`id, assigned_to, status, job:contractor_jobs!inner(${JOB_COLS}), assigner:profiles!contractor_job_assignments_assigned_by_fkey(display_name)`)
+  .select(`id, assigned_to, assigned_by, status, job:contractor_jobs!inner(${JOB_COLS})`)
   .eq('status', 'accepted');
 if (asgErr) {
   console.error(`Could not read contractor_job_assignments: ${asgErr.message}`);
   console.error('(If that table does not exist here, own jobs alone may be enough.)');
 } else {
+  // Resolve assigner display names in one round trip.
+  const assignerIds = [...new Set((assigns ?? []).map((a) => a.assigned_by).filter(Boolean))];
+  const assignerName = new Map();
+  if (assignerIds.length > 0) {
+    const { data: profs, error: profErr } = await db
+      .from('profiles')
+      .select('id, display_name')
+      .in('id', assignerIds);
+    if (profErr) {
+      // Cosmetic only — the label is nice to have, the booking is not.
+      console.warn(`Could not resolve assigner names: ${profErr.message} (continuing without them)`);
+    } else {
+      for (const pr of profs ?? []) assignerName.set(pr.id, pr.display_name ?? null);
+    }
+  }
+
   for (const a of assigns ?? []) {
     const j = a.job;
     if (!j) { skipped.push(`assignment ${a.id}: no job`); continue; }
     if (!a.assigned_to) { skipped.push(`assignment ${a.id}: no assignee`); continue; }
     if (!j.start_date && !j.end_date) { skipped.push(`assignment ${a.id}: job has no dates`); continue; }
-    payload.push(shape(j, a.assigned_to, `assignment:${a.id}`, 'assigned', a.assigner?.display_name ?? null));
+    payload.push(shape(j, a.assigned_to, `assignment:${a.id}`, 'assigned', assignerName.get(a.assigned_by) ?? null));
   }
 }
 
