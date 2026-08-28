@@ -1,0 +1,161 @@
+#!/usr/bin/env node
+// scripts/audit-transaction-ownership.mjs
+// Answers one question for the CentOS/Work.WitUS database split: in financial_transactions, is
+// `job_id IS NOT NULL` a reliable business/personal discriminator? That decides whether the
+// finance half of the split is a script or a manual pass (plans/55-stage2-db-split.md §3).
+//
+// It joins transactions to auth.users so every row carries an EMAIL. That matters because both
+// apps seed this table (centenarian-os/lib/demo/seed.ts and
+// contractor-os/lib/demo/seed-lister.ts:180) and a query without emails cannot tell a fixture
+// from a real entry.
+//
+// Read-only. Never writes.
+//
+// Usage:
+//   node --env-file=.env.local scripts/audit-transaction-ownership.mjs
+//   node --env-file=.env.local scripts/audit-transaction-ownership.mjs --email=you@example.com
+//   node --env-file=.env.local scripts/audit-transaction-ownership.mjs --list=60
+//   node --env-file=.env.local scripts/audit-transaction-ownership.mjs --csv > audit.csv
+
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+  console.error('Missing SUPABASE env vars. Run with: node --env-file=.env.local scripts/audit-transaction-ownership.mjs');
+  process.exit(1);
+}
+
+const arg = (name) => {
+  const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
+  return hit ? hit.slice(name.length + 3) : null;
+};
+const ONLY_EMAIL = arg('email');
+const LIST_N = Number.parseInt(arg('list') ?? '40', 10);
+const CSV = process.argv.includes('--csv');
+
+const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false },
+});
+
+// --- 1. user_id -> email. auth.users is not exposed through PostgREST, so use the admin API. ---
+const emailById = new Map();
+for (let page = 1; ; page++) {
+  const { data, error } = await db.auth.admin.listUsers({ page, perPage: 1000 });
+  if (error) {
+    console.error(`Could not list users: ${error.message}`);
+    process.exit(1);
+  }
+  for (const u of data.users) emailById.set(u.id, u.email ?? '(no email)');
+  if (data.users.length < 1000) break;
+}
+
+// --- 2. All transactions, paged. Service role bypasses RLS, so this sees every user. ---
+const rows = [];
+const PAGE = 1000;
+for (let from = 0; ; from += PAGE) {
+  const { data, error } = await db
+    .from('financial_transactions')
+    .select('id, user_id, transaction_date, type, amount, vendor, description, source, job_id, category_id, brand_id, account_id, created_at')
+    .order('created_at', { ascending: false })
+    .range(from, from + PAGE - 1);
+  if (error) {
+    console.error(`Could not read financial_transactions: ${error.message}`);
+    process.exit(1);
+  }
+  rows.push(...(data ?? []));
+  if (!data || data.length < PAGE) break;
+}
+
+const withEmail = rows.map((r) => ({ ...r, email: emailById.get(r.user_id) ?? '(unknown user)' }));
+const scoped = ONLY_EMAIL ? withEmail.filter((r) => r.email === ONLY_EMAIL) : withEmail;
+
+if (CSV) {
+  const cols = ['email', 'transaction_date', 'type', 'amount', 'vendor', 'description', 'source', 'has_job_id', 'category_id', 'brand_id'];
+  const esc = (v) => {
+    const s = v == null ? '' : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  console.log(cols.join(','));
+  for (const r of scoped) {
+    console.log(cols.map((c) => esc(c === 'has_job_id' ? r.job_id != null : r[c])).join(','));
+  }
+  process.exit(0);
+}
+
+// --- 3. Per-user summary. This is the number that actually matters. ---
+console.log(`\n${rows.length} transactions across ${new Set(rows.map((r) => r.user_id)).size} user(s).\n`);
+console.log('PER USER');
+console.log('-'.repeat(78));
+console.log('email'.padEnd(38) + 'with job_id'.padStart(12) + 'no job_id'.padStart(12) + 'total'.padStart(10));
+console.log('-'.repeat(78));
+
+const byEmail = new Map();
+for (const r of scoped) {
+  const e = byEmail.get(r.email) ?? { withJob: 0, noJob: 0 };
+  if (r.job_id != null) e.withJob++;
+  else e.noJob++;
+  byEmail.set(r.email, e);
+}
+for (const [email, c] of [...byEmail.entries()].sort((a, b) => (b[1].withJob + b[1].noJob) - (a[1].withJob + a[1].noJob))) {
+  console.log(
+    email.slice(0, 37).padEnd(38) +
+    String(c.withJob).padStart(12) +
+    String(c.noJob).padStart(12) +
+    String(c.withJob + c.noJob).padStart(10),
+  );
+}
+
+const totalWithJob = scoped.filter((r) => r.job_id != null).length;
+console.log('-'.repeat(78));
+if (totalWithJob === 0) {
+  console.log('\n>> NO transaction anywhere has a job_id.');
+  console.log('   The discriminator is dead on arrival: it cannot separate anything.');
+  console.log('   Test category_id / brand_id instead (see the business scan below).');
+}
+
+// --- 4. Business scan. The rows that decide the answer are business-looking rows WITHOUT a
+//        job_id: if any exist, `job_id IS NOT NULL` cannot be trusted to move the right rows. ---
+const BUSINESS_HINTS = [
+  /\bcrew\b/i, /\bunion\b/i, /\bdues\b/i, /\bIBEW\b/i, /\bIATSE\b/i, /\blocal \d+/i,
+  /\binvoice\b/i, /\bclient\b/i, /\bconsult/i, /\bcontract/i,
+  /\bB&H\b/i, /\bcamera\b/i, /\baudio\b/i, /\bgear\b/i, /\bequipment\b/i, /\bcable/i,
+  /\bper ?diem\b/i, /\bstadium\b/i, /\bvenue\b/i, /\bjob\b/i, /\bgig\b/i,
+  /\boffice supplies\b/i, /\bsubscription\b/i, /\bworkspace\b/i,
+];
+const looksBusiness = (r) => {
+  const hay = `${r.vendor ?? ''} ${r.description ?? ''}`;
+  return BUSINESS_HINTS.some((re) => re.test(hay));
+};
+
+const suspects = scoped.filter((r) => r.job_id == null && looksBusiness(r));
+console.log(`\nBUSINESS-LOOKING ROWS WITH NO job_id: ${suspects.length}`);
+console.log('These are what break the discriminator. Each one would be left behind in CentOS');
+console.log('by a `job_id IS NOT NULL` migration, even though it belongs to the business.');
+console.log('-'.repeat(110));
+for (const r of suspects.slice(0, LIST_N)) {
+  console.log(
+    `${r.transaction_date}  ${String(r.amount).padStart(9)}  ` +
+    `${(r.vendor ?? '').slice(0, 24).padEnd(25)} ${(r.description ?? '').slice(0, 40).padEnd(41)} ${r.email.slice(0, 22)}`,
+  );
+}
+if (suspects.length > LIST_N) console.log(`...and ${suspects.length - LIST_N} more (use --list=N)`);
+
+// --- 5. Do category_id / brand_id do a better job? ---
+const withCat = suspects.filter((r) => r.category_id != null).length;
+const withBrand = suspects.filter((r) => r.brand_id != null).length;
+console.log('\nWOULD ANOTHER COLUMN WORK BETTER?');
+console.log(`  of those ${suspects.length} business-looking rows: ${withCat} have a category_id, ${withBrand} have a brand_id`);
+
+console.log('\nVERDICT');
+if (suspects.length === 0 && totalWithJob > 0) {
+  console.log('  job_id looks RELIABLE. No business-looking row is missing one.');
+  console.log('  -> The finance split can be a script.');
+} else {
+  console.log(`  job_id is NOT reliable: ${suspects.length} business-looking rows have no job_id.`);
+  console.log('  -> The finance split needs a manual pass or a better rule.');
+  console.log('     Check the category_id/brand_id counts above before designing one.');
+}
+console.log('\nNote: rows seeded by the demo fixtures are included. Compare emails above against your');
+console.log('demo account (DEMO_VISITOR_USER_EMAIL, default demo@centenarianos.com), and re-run with');
+console.log('--email=<your real address> to scope the verdict to your own ledger.\n');
