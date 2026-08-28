@@ -188,7 +188,7 @@ if (ACCOUNTS) {
   const ids = [...new Set(scoped.map((r) => r.account_id).filter(Boolean))];
   const { data: accts, error: acctErr } = await db
     .from('financial_accounts')
-    .select('id, name, account_type, institution_name, last_four, is_active')
+    .select('id, name, account_type, institution_name, last_four, is_active, teller_account_id')
     .in('id', ids);
   if (acctErr) {
     console.error(`Could not read financial_accounts: ${acctErr.message}`);
@@ -208,15 +208,27 @@ if (ACCOUNTS) {
 
     console.log(`\nACCOUNTS (${stats.size}) — classify each B(usiness) or P(ersonal) once, and the split is decided`);
     console.log('-'.repeat(118));
+    // Same name + same institution across two ids almost always means one manual account and one
+    // Teller-linked copy of the same real account. They MUST be classified identically or the
+    // split will send half of one account's history to the wrong database.
+    const nameKey = (a) => `${(a?.name ?? '').toLowerCase()}|${(a?.institution_name ?? '').toLowerCase()}`;
+    const nameCounts = new Map();
+    for (const id of stats.keys()) {
+      if (id === '(none)') continue;
+      const k = nameKey(byId.get(id));
+      nameCounts.set(k, (nameCounts.get(k) ?? 0) + 1);
+    }
+
     console.log(
       'B/P'.padEnd(5) + 'account'.padEnd(30) + 'type'.padEnd(13) + 'institution'.padEnd(20) +
-      'txns'.padStart(6) + 'income'.padStart(13) + 'expense'.padStart(13) + '  active window',
+      'txns'.padStart(6) + 'income'.padStart(13) + 'expense'.padStart(13) + '  src   active window',
     );
     console.log('-'.repeat(118));
     const money = (n) => (n ? n.toFixed(2) : '-');
     for (const [id, e] of [...stats.entries()].sort((a, b) => b[1].n - a[1].n)) {
       const a = byId.get(id);
       const name = id === '(none)' ? '(no account set)' : (a?.name ?? '(deleted account)');
+      const dup = id !== '(none)' && (nameCounts.get(nameKey(a)) ?? 0) > 1 ? ' *DUP' : '';
       console.log(
         '[ ] '.padEnd(5) +
         name.slice(0, 29).padEnd(30) +
@@ -225,10 +237,16 @@ if (ACCOUNTS) {
         String(e.n).padStart(6) +
         money(e.income).padStart(13) +
         money(e.expense).padStart(13) +
-        `  ${e.first} to ${e.last}`,
+        `  ${(a?.teller_account_id ? 'teller' : 'manual').padEnd(6)}${e.first} to ${e.last}${dup}`,
       );
     }
     console.log('-'.repeat(118));
+    const dups = [...nameCounts.values()].filter((n) => n > 1).length;
+    if (dups > 0) {
+      console.log(`\n${dups} account name(s) appear more than once (*DUP above), usually one manual`);
+      console.log('row and one Teller-linked row for the SAME real account. Classify every copy the');
+      console.log('same way, or half that account\'s history lands in the wrong database.');
+    }
     const none = stats.get('(none)');
     if (none) {
       console.log(`\n${none.n} row(s) have NO account_id. Those are the manual remainder — list them with:`);
