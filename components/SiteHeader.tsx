@@ -11,6 +11,8 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { useSubscription } from '@/lib/hooks/useSubscription';
 import { useUnreadCount } from '@/lib/hooks/useUnreadCount';
 import { createClient } from '@/lib/supabase/client';
+import { useWitusSso } from '@/lib/auth/witus-sso-client';
+import { witusLogoutUrl } from '@/lib/auth/witus-sso';
 import { GraduationCap, Radio, LogIn, BookOpen, ChefHat, Zap, Dumbbell, Activity, Globe, Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -134,6 +136,8 @@ function AuthenticatedHeader() {
   const { status: subStatus, loading: subLoading } = useSubscription();
   const router = useRouter();
   const supabase = createClient();
+  // Server-resolved ecosystem SSO config (null endSessionUrl = purely local sign-out).
+  const { endSessionUrl } = useWitusSso();
   const unreadMessages = useUnreadCount();
 
   const isPaid = subStatus === 'monthly' || subStatus === 'lifetime';
@@ -153,8 +157,23 @@ function AuthenticatedHeader() {
       .catch(() => {});
   }, []);
 
+  // GLOBAL SIGN-OUT (BAM's decision, 2026-08-30: signing out of one WitUS app signs you out of
+  // every WitUS app in this browser). `endSessionUrl` is resolved on the SERVER and is null unless
+  // this app is a configured ecosystem OIDC client, in which case sign-out stays purely local.
   const handleLogout = async () => {
+    // ORDER IS THE SAFETY PROPERTY. Destroy the LOCAL session first, so if the IdP is unreachable
+    // or refuses the logout, the person is still signed out HERE. Never hand off first — that turns
+    // any IdP failure into "I clicked sign out and I'm still signed in".
     await supabase.auth.signOut();
+    if (endSessionUrl) {
+      // A full navigation, not router.push: this leaves our origin for the IdP, which then returns
+      // to `<origin>/`. Do NOT add a restrictive Referrer-Policy to this app: centenarianos.com is
+      // a different registrable domain from accounts.witus.online, so better-auth's endSession
+      // handler only accepts this cross-site navigation because the browser's default
+      // strict-origin-when-cross-origin referrer lets the IdP match it against its trustedOrigins.
+      window.location.assign(witusLogoutUrl(endSessionUrl, window.location.origin));
+      return;
+    }
     router.push('/login');
     router.refresh();
   };

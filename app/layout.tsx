@@ -15,6 +15,8 @@ import { organizationSchema, softwareApplicationSchema } from '@/lib/seo/json-ld
 import { getLocale, getDictionary } from '@/lib/i18n/server';
 import { LocaleProvider } from '@/lib/i18n/client';
 import type { LocaleBundle } from '@/lib/i18n/config';
+import { WitusSsoProvider } from '@/lib/auth/witus-sso-client';
+import { resolveWitusSsoConfig } from '@/lib/auth/witus-sso-server';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -103,7 +105,11 @@ export default async function RootLayout({
         <LocaleProvider value={bundle}>
           <ToastProvider>
             <MarketingBanner />
-            {children}
+            {/* Ecosystem SSO ("Continue as ...", global sign-out). Resolved HERE, in the Server
+                Component, and passed down — the login button and the nav logout rows are all client
+                components and must not touch process.env.WITUS_OIDC_*. Fully dark (every field
+                null) when WITUS_OIDC_CLIENT_ID is unset. See lib/auth/witus-sso.ts. */}
+            <WitusSsoProvider value={resolveWitusSsoConfig()}>{children}</WitusSsoProvider>
           <SocialReferralTracker />
           {/* Product analytics. Read the key HERE, in the Server Component, and pass it
               down — the client component must not touch process.env. `?? null` is what

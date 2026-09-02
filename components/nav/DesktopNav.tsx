@@ -22,6 +22,8 @@ import {
   Settings,
 } from 'lucide-react';
 import { getVisibleGroups, isGroupActive, isItemActive } from './NavConfig';
+import { useWitusSso } from '@/lib/auth/witus-sso-client';
+import { signOutLabel } from '@/lib/auth/witus-sso';
 import MobileDrawer from './MobileDrawer';
 
 export interface DesktopNavProps {
@@ -52,6 +54,8 @@ export default function DesktopNav({
   registerDrawerClose,
 }: DesktopNavProps) {
   const pathname = usePathname();
+  // Ecosystem sign-out: the label admits when Logout also ends the shared WitUS session.
+  const { endSessionUrl } = useWitusSso();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -287,7 +291,7 @@ export default function DesktopNav({
                     role="menuitem"
                   >
                     <LogOut className="w-4 h-4 shrink-0" />
-                    Logout
+                    {signOutLabel(endSessionUrl)}
                   </button>
                 </div>
               )}
