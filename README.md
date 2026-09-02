@@ -173,6 +173,29 @@ CLOUDINARY_API_SECRET=
 NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=
 ```
 
+### Optional: Sign in with WitUS (ecosystem SSO)
+
+```env
+WITUS_OIDC_CLIENT_ID=
+WITUS_OIDC_CLIENT_SECRET=
+```
+
+An OIDC code flow against the shared WitUS identity provider
+(`accounts.witus.online`), on top of the normal Supabase session: `app/api/auth/witus/authorize`
+-> IdP -> `.../witus/callback`, which finds-or-creates the user by email and mints an ordinary
+CentOS session. The same client id also powers two ecosystem behaviours:
+
+- **"Continue as \<name\>"** — the login page asks the IdP, in parallel with rendering the form,
+  whether this browser already has a WitUS session, and relabels the button if it does. The answer
+  depends on a third-party cookie, so Safari and Firefox return nothing; a failed or blocked check
+  is invisible and the ordinary button remains.
+- **Global sign-out** — Logout ends the shared IdP session too, so signing out here signs you out of
+  every WitUS app in that browser. The local session is always destroyed first.
+
+Without `WITUS_OIDC_CLIENT_ID` both are dark: the button does not render and sign-out is purely
+local. Endpoint overrides and the full reasoning are documented in `.env.example` and
+`lib/auth/witus-sso.ts`.
+
 ### Optional: Error Monitoring (Better Stack)
 
 Crash reporting runs through the Sentry SDK, pointed at Better Stack (which speaks
