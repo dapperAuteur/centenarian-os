@@ -3,17 +3,23 @@
 // The IdP returns to /api/auth/witus/callback with a code.
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'node:crypto';
+import { WITUS_OIDC_AUTHORIZE_FALLBACK, withAttemptMarker } from '@/lib/auth/witus-sso';
 
-const AUTHORIZE_URL =
-  process.env.WITUS_OIDC_AUTHORIZE_URL ??
-  'https://accounts.witus.online/api/idp/oauth2/authorize';
+// Single source for the IdP host — lib/auth/witus-sso.ts derives the endsession and ecosystem
+// session-probe URLs from this same value, so accounts.witus.online is asserted in one place only.
+const AUTHORIZE_URL = process.env.WITUS_OIDC_AUTHORIZE_URL ?? WITUS_OIDC_AUTHORIZE_FALLBACK;
 
 const b64url = (buf: Buffer) => buf.toString('base64url');
 
 export async function GET(request: NextRequest) {
   const clientId = process.env.WITUS_OIDC_CLIENT_ID;
   if (!clientId) {
-    return NextResponse.redirect(new URL('/login?error=witus_not_configured', request.url));
+    // `?sso=tried` is the half of the "Continue as ..." loop guard that survives a browser with no
+    // usable sessionStorage: the login page reads it and skips the silent probe, so a bounce can
+    // never turn into probe -> click -> bounce -> probe forever.
+    return NextResponse.redirect(
+      new URL(withAttemptMarker('/login?error=witus_not_configured'), request.url),
+    );
   }
 
   // Must EXACTLY match the redirect URI registered for `centenarianos` in the IdP

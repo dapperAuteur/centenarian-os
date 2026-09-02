@@ -16,6 +16,8 @@ import {
   Gem,
 } from 'lucide-react';
 import BottomSheet from './BottomSheet';
+import { useWitusSso } from '@/lib/auth/witus-sso-client';
+import { signOutLabel } from '@/lib/auth/witus-sso';
 
 interface Props {
   open: boolean;
@@ -36,6 +38,9 @@ export default function MeSheet({
   unreadMessages,
   onLogout,
 }: Props) {
+  // Ecosystem sign-out: the label admits when Logout also ends the shared WitUS session.
+  const { endSessionUrl } = useWitusSso();
+
   return (
     <BottomSheet open={open} onClose={onClose} title="Account">
       <div className="py-2">
@@ -134,7 +139,7 @@ export default function MeSheet({
           className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition"
         >
           <LogOut className="w-5 h-5 shrink-0" />
-          Logout
+          {signOutLabel(endSessionUrl)}
         </button>
       </div>
     </BottomSheet>

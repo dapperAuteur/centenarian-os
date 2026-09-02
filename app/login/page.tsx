@@ -20,6 +20,7 @@ import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import SiteFooter from '@/components/ui/SiteFooter';
 import MfaVerifyStep from '@/components/login/MfaVerifyStep';
+import WitusSsoButton from '@/components/login/WitusSsoButton';
 import { getAalAndFactors, needsMfaVerification } from '@/lib/mfa/helpers';
 
 type LoginTab = 'password' | 'otp';
@@ -350,16 +351,17 @@ function LoginContent() {
             </form>
           )}
 
-          {/* ── Sign in with WitUS (ecosystem SSO) ──────────────────── */}
-          <div className="pt-2">
-            <div className="my-2 text-center text-xs uppercase tracking-wide text-gray-400">or</div>
-            <a
-              href="/api/auth/witus/authorize"
-              className="flex w-full items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800"
-            >
-              Sign in with WitUS
-            </a>
-          </div>
+          {/* ── Sign in with WitUS (ecosystem SSO) ──────────────────────
+              Renders the same button as before, and in parallel asks the IdP whether this
+              browser already has a WitUS session — if so the label becomes "Continue as
+              <name>". A blocked or timed-out check changes nothing. Renders null entirely
+              when this app is not a configured OIDC client.
+
+              `signedIn`: middleware bounces an authenticated visitor off /login to the
+              dashboard, so the only way to be here WITH a local session is ?mfa=pending
+              (middleware's one exemption). Skip the probe in that case — the visitor is
+              already signed in locally and just owes a second factor. */}
+          <WitusSsoButton signedIn={searchParams.get('mfa') === 'pending'} />
 
           {/* ── Email link tab ──────────────────────────────────────── */}
           {EMAIL_AUTH_ENABLED && tab === 'otp' && (

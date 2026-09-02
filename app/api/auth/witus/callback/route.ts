@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { withAttemptMarker } from '@/lib/auth/witus-sso';
 
 const TOKEN_URL =
   process.env.WITUS_OIDC_TOKEN_URL ?? 'https://accounts.witus.online/api/idp/oauth2/token';
@@ -35,7 +36,13 @@ export async function GET(request: NextRequest) {
   };
   const fail = (reason: string) => {
     clearTransient();
-    return NextResponse.redirect(new URL(`/login?error=${reason}`, request.url));
+    // `?sso=tried` is the half of the "Continue as ..." loop guard that survives a browser with no
+    // usable sessionStorage (and a return into a different tab). Without it, a stale IdP session
+    // gives: probe says "Continue as X" -> click -> the IdP cannot finish -> back here -> /login ->
+    // probe -> forever. See lib/auth/witus-sso.ts.
+    return NextResponse.redirect(
+      new URL(withAttemptMarker(`/login?error=${reason}`), request.url),
+    );
   };
 
   if (!code || !state || !expectedState || state !== expectedState || !verifier) {
