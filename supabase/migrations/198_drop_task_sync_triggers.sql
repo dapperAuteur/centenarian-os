@@ -2,6 +2,12 @@
 -- Stage 2, Phase 3: remove the two cross-app triggers that write CentOS planner tasks from
 -- Work.WitUS writes. Their behaviour now lives in application code.
 --
+-- ⚠️ APPLIED OUT OF ORDER ON 2026-09-07 — ahead of the verification step, not ahead of the code.
+-- Both replacements were already merged to main by then (centenarian-os `lib/planner/sync-tasks.ts`
+-- and contractor-os `fireInvoiceIncomeEvent` + `fireJobIncomeEvent`), so the end state is correct
+-- IF both are deployed. The skipped step was proving a test invoice creates its task first.
+-- If planner tasks are missing, migration 199 restores the triggers (run 157 first).
+--
 -- ⚠️ PRECONDITIONS — do not run this until BOTH are true:
 --   1. centenarian-os `lib/planner/sync-tasks.ts` is MERGED AND DEPLOYED. It is what creates the
 --      planner tasks now, driven by income events at POST /api/events/income.
