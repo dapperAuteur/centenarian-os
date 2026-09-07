@@ -41,8 +41,66 @@ export default function SiteFooter({ theme = 'dark' }: SiteFooterProps) {
 
   const dividerCls = isDark ? 'border-gray-800' : 'border-gray-200';
 
+  // Card tones: sky is CentOS's action colour, per the ecosystem footer recipe's instruction to
+  // match the host app's palette rather than copying the reference implementation's.
+  const cardCls = isDark
+    ? 'mb-6 rounded-lg border border-sky-900 bg-sky-950/30 p-5'
+    : 'mb-6 rounded-lg border border-sky-100 bg-sky-50/60 p-5';
+  const eyebrowCls = isDark ? 'text-sky-400' : 'text-sky-700';
+  const headingCls = isDark ? 'text-gray-100' : 'text-gray-900';
+  const bodyCls = isDark ? 'text-gray-400' : 'text-gray-600';
+  const actionCls = isDark
+    ? 'text-sky-400 hover:text-sky-300 transition'
+    : 'text-sky-700 hover:text-sky-600 transition';
+
   return (
     <footer className={containerCls}>
+      {/*
+        Rise Wellness callout — canonical across the WitUS ecosystem, per
+        witus/public/brand/footer-recipe.md. It sits ABOVE the nav rather than inside the link
+        row because mental-health resources warrant prominence.
+
+        This is the SHORT form the recipe prescribes for CentenarianOS specifically: CentOS hosts
+        the full Rise Wellness section itself at /safety#rise-wellness, so the footer points there
+        instead of repeating the services list and address that sibling apps have to carry.
+
+        The non-affiliation line is mandatory and stays verbatim — Rise Wellness is an independent
+        provider, not part of WitUS.
+      */}
+      <section aria-labelledby="rise-wellness-heading" className={`max-w-5xl mx-auto ${cardCls}`}>
+        <p className={`text-[11px] uppercase tracking-wide font-semibold ${eyebrowCls}`}>
+          Mental health support
+        </p>
+        <h2 id="rise-wellness-heading" className={`text-base font-semibold ${headingCls}`}>
+          Rise Wellness of Indiana
+        </h2>
+        <p className={`text-xs mt-0.5 ${bodyCls}`}>
+          Independent mental health provider &middot; Not affiliated with CentenarianOS
+        </p>
+        <p className={`text-sm leading-relaxed mt-3 ${bodyCls}`}>
+          Compassionate, personalized, holistic mental health care &mdash; evidence-based medicine,
+          trauma-informed care, and a whole-person approach to help you heal, grow, and thrive in
+          mind, body, and spirit.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+          <Link href="/safety#rise-wellness" className={`inline-flex items-center min-h-11 font-medium ${actionCls}`}>
+            Services, hours &amp; location
+          </Link>
+          <a href="tel:+13179650299" className={`inline-flex items-center min-h-11 font-medium ${actionCls}`}>
+            317-965-0299
+          </a>
+          <a
+            href="https://risewellnessofindiana.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`inline-flex items-center min-h-11 font-medium ${actionCls}`}
+          >
+            risewellnessofindiana.com
+            <span className="sr-only"> (opens in a new tab)</span>
+          </a>
+        </div>
+      </section>
+
       <div className="max-w-5xl mx-auto mb-6">
         <p className={`text-xs uppercase tracking-widest mb-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
           Part of the WitUS ecosystem
