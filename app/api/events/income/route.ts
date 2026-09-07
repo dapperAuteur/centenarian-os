@@ -14,7 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { verifyWitusSignature } from '@/lib/events/verify-signature';
 import { logWarn } from '@/lib/logging';
-import { syncInvoiceTask } from '@/lib/planner/invoice-task-sync';
+import { syncInvoiceTask, syncJobPaymentTask } from '@/lib/planner/sync-tasks';
 
 function getDb() {
   return createServiceClient(
@@ -166,27 +166,41 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Mirror invoice events onto planner tasks. This is the application-side replacement for the
-  // trg_invoice_due_to_task trigger, which cannot survive the database split because it writes
-  // CentOS's tasks table from a write to Work.WitUS's invoices table.
+  // Mirror income events onto planner tasks. Application-side replacement for BOTH
+  // trg_invoice_due_to_task and trg_pay_date_to_task, neither of which can survive the database
+  // split because both write CentOS's tasks table from writes to Work.WitUS's tables.
   //
-  // Idempotent with that trigger — both match on (source_type, source_id) — so the two can run
-  // side by side until the trigger is dropped. Awaited so a caller's 200 means the planner is
-  // actually in step, but individually failure-tolerant inside syncInvoiceTask.
+  // Idempotent with the triggers — all match on (source_type, source_id) — so they run side by
+  // side until the triggers are dropped. Awaited so a caller's 200 means the planner is actually
+  // in step, but individually failure-tolerant inside each sync.
+  const planner = getDb();
   await Promise.all(
-    rows
-      .filter((r) => r.source_type === 'invoice')
-      .map((r) =>
-        syncInvoiceTask(getDb(), {
-          userId: r.user_id as string,
+    rows.map((r) => {
+      const common = { userId: r.user_id as string, status: r.status as string | null };
+      if (r.source_type === 'invoice') {
+        return syncInvoiceTask(planner, {
+          ...common,
           invoiceId: (r.source_id as string) ?? (r.event_id as string),
-          status: r.status as string | null,
           dueDate: r.expected_date as string | null,
           label: r.label as string | null,
           referenceNumber: r.reference_number as string | null,
           amount: r.expected_amount as number,
-        }),
-      ),
+        });
+      }
+      if (r.source_type === 'job') {
+        return syncJobPaymentTask(planner, {
+          ...common,
+          jobId: (r.source_id as string) ?? (r.event_id as string),
+          // is_active false means the row was retired (cleared pay date, cancelled), which the
+          // sync treats the same way the trigger treated a NULL est_pay_date.
+          expectedDate: r.is_active === false ? null : (r.expected_date as string | null),
+          clientName: r.label as string | null,
+          jobNumber: r.reference_number as string | null,
+          expectedAmount: r.expected_amount as number,
+        });
+      }
+      return Promise.resolve();
+    }),
   );
 
   // Report both numbers. A caller that sent 40 and sees accepted:38 knows to look.
