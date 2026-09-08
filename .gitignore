@@ -200,3 +200,4 @@ test-results/
 # Lesson reformatter working artifacts (per-lesson dumps + original backups)
 scripts/_lesson-work/
 scripts/_lesson-backups/
+phase3-export/
