@@ -12,9 +12,10 @@
 #   ./scripts/phase3-generate-ddl.sh "$SUPABASE_POSTGRES_URL" > supabase/neon/002_contractor_schema.sql
 set -euo pipefail
 
-URL="${1:?usage: phase3-generate-ddl.sh <postgres-url>}"
+URL="${1:?usage: phase3-generate-ddl.sh <postgres-url> [moves|copies]}"
+SET_NAME="${2:-moves}"
 
-TABLES=(
+MOVES=(
   contractor_jobs contractor_job_assignments contractor_events contractor_rate_cards
   job_time_entries job_notes job_documents job_replacement_requests
   invoices invoice_items invoice_templates invoice_template_items
@@ -24,6 +25,20 @@ TABLES=(
   contact_phones contact_emails contact_tags contact_job_roles contact_shares
   contact_addresses contact_locations
 )
+
+# COPIED, not moved: both databases keep a row set. These are CentOS-owned tables that the moving
+# tables hold foreign keys into — 15 to user_contacts, 3 each to user_brands and
+# financial_accounts, 2 to budget_categories — so without them the contractor schema cannot be
+# created on Neon at all. profiles is the Route B identity copy.
+#
+# financial_transactions is here because Work.WitUS needs its OWN table (plan 55 section 3): three
+# FKs point into it (invoices.transaction_id, paycheck_deposits.transaction_id,
+# union_dues_payments.transaction_id). Its ROWS are split by the finance rule, not copied wholesale.
+COPIES=(
+  profiles user_brands financial_accounts budget_categories user_contacts financial_transactions
+)
+
+if [ "$SET_NAME" = "copies" ]; then TABLES=("${COPIES[@]}"); else TABLES=("${MOVES[@]}"); fi
 
 cat <<'HDR'
 -- supabase/neon/002_contractor_schema.sql
