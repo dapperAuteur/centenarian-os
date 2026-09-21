@@ -5,6 +5,7 @@ import { Plus, ChevronRight, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useMilestoneHierarchy } from '@/lib/hooks/useMilestoneHierarchy';
 import type { TaskTag } from '@/lib/types';
+import { toLocalDateString } from '@/lib/dates/local';
 
 interface RoadmapItemPickerProps {
   value: string;
@@ -115,8 +116,8 @@ export default function RoadmapItemPicker({ value, onChange, required }: Roadmap
             user_id: user.id,
             title: newTitle.trim(),
             description: '',
-            start_date: today.toISOString().split('T')[0],
-            end_date: future.toISOString().split('T')[0],
+            start_date: toLocalDateString(today),
+            end_date: toLocalDateString(future),
           }])
           .select('id')
           .single();
@@ -147,7 +148,7 @@ export default function RoadmapItemPicker({ value, onChange, required }: Roadmap
             goal_id: selectedGoalId,
             title: newTitle.trim(),
             description: '',
-            target_date: targetDate.toISOString().split('T')[0],
+            target_date: toLocalDateString(targetDate),
             status: 'not_started',
           }])
           .select('id')

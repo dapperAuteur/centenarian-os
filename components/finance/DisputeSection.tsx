@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { Flag, Loader2, Check } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import { todayLocal } from '@/lib/dates/local';
 
 interface DisputeSectionProps {
   transactionId: string;
@@ -70,7 +71,7 @@ export default function DisputeSection({
         body: JSON.stringify({
           id: transactionId,
           dispute_status: 'flagged',
-          dispute_date: new Date().toISOString().slice(0, 10),
+          dispute_date: todayLocal(),
         }),
       });
       if (res.ok) onUpdate();

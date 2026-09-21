@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { ChevronLeft, Plus, Pencil, Trash2, BarChart2, Download } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Modal from '@/components/ui/Modal';
+import { todayLocal } from '@/lib/dates/local';
 
 interface Brand {
   id: string;
@@ -71,7 +72,7 @@ export default function BrandsPage() {
     const d = new Date();
     return `${d.getFullYear()}-01-01`;
   });
-  const [plTo, setPlTo] = useState(() => new Date().toISOString().split('T')[0]);
+  const [plTo, setPlTo] = useState(() => todayLocal());
   const [plLoading, setPlLoading] = useState(false);
 
   const load = useCallback(async () => {

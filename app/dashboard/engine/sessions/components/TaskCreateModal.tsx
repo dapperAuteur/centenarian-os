@@ -4,6 +4,7 @@
 import { useState, memo } from 'react';
 import Modal from '@/components/ui/Modal';
 import { Plus } from 'lucide-react';
+import { todayLocal } from '@/lib/dates/local';
 
 interface TaskCreateModalProps {
   isOpen: boolean;
@@ -89,7 +90,7 @@ const TaskCreateModal = memo(function TaskCreateModal({
       }
 
       // Create the task
-      const today = new Date().toISOString().split('T')[0];
+      const today = todayLocal();
       
       const { data: task, error: taskError } = await supabase
         .from('tasks')
