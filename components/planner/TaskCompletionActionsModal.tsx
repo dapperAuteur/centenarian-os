@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { DollarSign, MapPin, Dumbbell, Heart, FileText, Check, ChevronDown, Clock, Package, Fuel, Wrench } from 'lucide-react';
+import { DollarSign, MapPin, Dumbbell, Heart, FileText, Check, ChevronDown, Clock, Package, Fuel, Wrench, AlertTriangle } from 'lucide-react';
 import { Task } from '@/lib/types';
 import Modal from '@/components/ui/Modal';
 import { createClient } from '@/lib/supabase/client';
@@ -89,8 +89,32 @@ const ACTIONS: ActionConfig[] = [
   },
 ];
 
-async function createActivityLink(taskId: string, targetType: string, targetId: string) {
-  await offlineFetch('/api/activity-links', {
+/** What the action row shows after a form finishes. `warn` flags a partial result. */
+interface SaveOutcome {
+  label: string;
+  warn?: boolean;
+}
+
+const SAVED: SaveOutcome = { label: 'Saved' };
+const QUEUED_UNLINKED: SaveOutcome = {
+  label: "Queued offline. It will sync when you reconnect, but won't be linked to this task.",
+  warn: true,
+};
+const SAVED_UNLINKED: SaveOutcome = { label: "Saved, but couldn't link it to this task.", warn: true };
+
+async function errorMessage(res: Response, fallback: string): Promise<string> {
+  const body = await res.json().catch(() => null);
+  return typeof body?.error === 'string' ? body.error : fallback;
+}
+
+/**
+ * Link a record to the task. Throws when the server rejects the link.
+ * A queued (offline) link counts as success; it replays on reconnect.
+ * 409 means the link already exists, which is the state we wanted.
+ */
+async function createActivityLink(taskId: string, targetType: string, targetId: string | undefined) {
+  if (!targetId) throw new Error(`No ${targetType} id to link`);
+  const res = await offlineFetch('/api/activity-links', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -100,19 +124,60 @@ async function createActivityLink(taskId: string, targetType: string, targetId: 
       target_id: targetId,
     }),
   });
+  if (res.ok || res.status === 409) return;
+  throw new Error(await errorMessage(res, `Link failed (${res.status})`));
 }
+
+/**
+ * Read the created record from a create-route response and link it to the task.
+ * `wrapKey` names the envelope the route returns (e.g. `{ transaction }`);
+ * omit it for routes that return the row itself.
+ */
+async function linkCreatedRecord(
+  res: Response,
+  taskId: string,
+  targetType: string,
+  wrapKey?: string,
+): Promise<SaveOutcome> {
+  if (!res.ok) throw new Error(await errorMessage(res, `Save failed (${res.status})`));
+  const data = await res.json();
+  // offlineFetch queued the create: there is no id yet, so nothing to link.
+  if (data?.queued) return QUEUED_UNLINKED;
+  const record = wrapKey ? data?.[wrapKey] : data;
+  try {
+    await createActivityLink(taskId, targetType, record?.id);
+    return SAVED;
+  } catch (err) {
+    console.error(`Linking ${targetType} to task failed:`, err);
+    return SAVED_UNLINKED;
+  }
+}
+
+function FormError({ message }: { message: string | null }) {
+  if (!message) return null;
+  return <p role="alert" className="text-sm text-red-600">{message}</p>;
+}
+
+function failureText(err: unknown, what: string): string {
+  const detail = err instanceof Error && err.message ? ` ${err.message}` : '';
+  return `Couldn't save the ${what}.${detail}`;
+}
+
+type FormProps = { task: Task; onDone: (outcome?: SaveOutcome) => void };
 
 // --- Individual action forms ---
 
-function TransactionForm({ task, onDone }: { task: Task; onDone: () => void }) {
+function TransactionForm({ task, onDone }: FormProps) {
   const [amount, setAmount] = useState(task.actual_cost > 0 ? String(task.actual_cost) : '');
   const [type, setType] = useState<'expense' | 'income'>('expense');
   const [vendor, setVendor] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSave = async () => {
     if (!amount || Number(amount) <= 0) return;
     setSaving(true);
+    setError(null);
     try {
       const res = await offlineFetch('/api/finance/transactions', {
         method: 'POST',
@@ -128,12 +193,11 @@ function TransactionForm({ task, onDone }: { task: Task; onDone: () => void }) {
           source_module_id: task.id,
         }),
       });
-      if (!res.ok) throw new Error('Failed');
-      const data = await res.json();
-      await createActivityLink(task.id, 'transaction', data.id);
-      onDone();
+      // POST /api/finance/transactions returns { transaction }
+      onDone(await linkCreatedRecord(res, task.id, 'transaction', 'transaction'));
     } catch (err) {
       console.error('Transaction creation failed:', err);
+      setError(failureText(err, 'transaction'));
     } finally {
       setSaving(false);
     }
@@ -173,6 +237,7 @@ function TransactionForm({ task, onDone }: { task: Task; onDone: () => void }) {
         placeholder="Vendor (optional)"
         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent"
       />
+      <FormError message={error} />
       <button
         onClick={handleSave}
         disabled={saving || !amount || Number(amount) <= 0}
@@ -184,16 +249,18 @@ function TransactionForm({ task, onDone }: { task: Task; onDone: () => void }) {
   );
 }
 
-function TripForm({ task, onDone }: { task: Task; onDone: () => void }) {
+function TripForm({ task, onDone }: FormProps) {
   const [mode, setMode] = useState('car');
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const modes = ['car', 'bike', 'walk', 'bus', 'train', 'plane', 'rideshare', 'other'];
 
   const handleSave = async () => {
     setSaving(true);
+    setError(null);
     try {
       const res = await offlineFetch('/api/travel/trips', {
         method: 'POST',
@@ -206,12 +273,11 @@ function TripForm({ task, onDone }: { task: Task; onDone: () => void }) {
           purpose: task.activity,
         }),
       });
-      if (!res.ok) throw new Error('Failed');
-      const data = await res.json();
-      await createActivityLink(task.id, 'trip', data.id);
-      onDone();
+      // POST /api/travel/trips returns { trip }
+      onDone(await linkCreatedRecord(res, task.id, 'trip', 'trip'));
     } catch (err) {
       console.error('Trip creation failed:', err);
+      setError(failureText(err, 'trip'));
     } finally {
       setSaving(false);
     }
@@ -242,6 +308,7 @@ function TripForm({ task, onDone }: { task: Task; onDone: () => void }) {
         placeholder="Destination"
         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent"
       />
+      <FormError message={error} />
       <button
         onClick={handleSave}
         disabled={saving}
@@ -253,14 +320,16 @@ function TripForm({ task, onDone }: { task: Task; onDone: () => void }) {
   );
 }
 
-function WorkoutForm({ task, onDone }: { task: Task; onDone: () => void }) {
+function WorkoutForm({ task, onDone }: FormProps) {
   const [name, setName] = useState(task.activity);
   const [durationMin, setDurationMin] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSave = async () => {
     if (!name.trim()) return;
     setSaving(true);
+    setError(null);
     try {
       const res = await offlineFetch('/api/workouts/logs', {
         method: 'POST',
@@ -271,12 +340,11 @@ function WorkoutForm({ task, onDone }: { task: Task; onDone: () => void }) {
           duration_min: durationMin ? Number(durationMin) : null,
         }),
       });
-      if (!res.ok) throw new Error('Failed');
-      const data = await res.json();
-      await createActivityLink(task.id, 'workout', data.id);
-      onDone();
+      // POST /api/workouts/logs returns the row itself
+      onDone(await linkCreatedRecord(res, task.id, 'workout'));
     } catch (err) {
       console.error('Workout creation failed:', err);
+      setError(failureText(err, 'workout'));
     } finally {
       setSaving(false);
     }
@@ -299,6 +367,7 @@ function WorkoutForm({ task, onDone }: { task: Task; onDone: () => void }) {
         min="0"
         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent"
       />
+      <FormError message={error} />
       <button
         onClick={handleSave}
         disabled={saving || !name.trim()}
@@ -310,15 +379,17 @@ function WorkoutForm({ task, onDone }: { task: Task; onDone: () => void }) {
   );
 }
 
-function HealthForm({ task, onDone }: { task: Task; onDone: () => void }) {
+function HealthForm({ task, onDone }: FormProps) {
   const [steps, setSteps] = useState('');
   const [sleepHours, setSleepHours] = useState('');
   const [restingHr, setRestingHr] = useState('');
   const [activityMin, setActivityMin] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSave = async () => {
     setSaving(true);
+    setError(null);
     try {
       const body: Record<string, unknown> = { logged_date: task.date };
       if (steps) body.steps = Number(steps);
@@ -331,10 +402,12 @@ function HealthForm({ task, onDone }: { task: Task; onDone: () => void }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error('Failed');
-      onDone();
+      if (!res.ok) throw new Error(await errorMessage(res, `Save failed (${res.status})`));
+      const data = await res.json().catch(() => null);
+      onDone(data?.queued ? { label: 'Queued offline. It will sync when you reconnect.' } : SAVED);
     } catch (err) {
       console.error('Health metrics save failed:', err);
+      setError(failureText(err, 'health metrics'));
     } finally {
       setSaving(false);
     }
@@ -377,6 +450,7 @@ function HealthForm({ task, onDone }: { task: Task; onDone: () => void }) {
           className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent"
         />
       </div>
+      <FormError message={error} />
       <button
         onClick={handleSave}
         disabled={saving || (!steps && !sleepHours && !restingHr && !activityMin)}
@@ -388,16 +462,18 @@ function HealthForm({ task, onDone }: { task: Task; onDone: () => void }) {
   );
 }
 
-function InvoiceForm({ task, onDone }: { task: Task; onDone: () => void }) {
+function InvoiceForm({ task, onDone }: FormProps) {
   const [direction, setDirection] = useState<'receivable' | 'payable'>('receivable');
   const [contactName, setContactName] = useState('');
   const [itemDesc, setItemDesc] = useState(task.activity);
   const [unitPrice, setUnitPrice] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSave = async () => {
     if (!contactName.trim()) return;
     setSaving(true);
+    setError(null);
     try {
       const res = await offlineFetch('/api/finance/invoices', {
         method: 'POST',
@@ -412,12 +488,11 @@ function InvoiceForm({ task, onDone }: { task: Task; onDone: () => void }) {
           }],
         }),
       });
-      if (!res.ok) throw new Error('Failed');
-      const data = await res.json();
-      await createActivityLink(task.id, 'invoice', data.id);
-      onDone();
+      // POST /api/finance/invoices returns the row itself
+      onDone(await linkCreatedRecord(res, task.id, 'invoice'));
     } catch (err) {
       console.error('Invoice creation failed:', err);
+      setError(failureText(err, 'invoice'));
     } finally {
       setSaving(false);
     }
@@ -464,6 +539,7 @@ function InvoiceForm({ task, onDone }: { task: Task; onDone: () => void }) {
         placeholder="Amount"
         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent"
       />
+      <FormError message={error} />
       <button
         onClick={handleSave}
         disabled={saving || !contactName.trim()}
@@ -477,7 +553,7 @@ function InvoiceForm({ task, onDone }: { task: Task; onDone: () => void }) {
 
 const FOCUS_TAGS = ['deep-work', 'meeting', 'admin', 'learning', 'creative', 'coding', 'planning', 'review'];
 
-function FocusForm({ task, onDone }: { task: Task; onDone: () => void }) {
+function FocusForm({ task, onDone }: FormProps) {
   const [durationMin, setDurationMin] = useState('');
   const [sessionType, setSessionType] = useState<'focus' | 'work'>('focus');
   const [hourlyRate, setHourlyRate] = useState('');
@@ -486,6 +562,7 @@ function FocusForm({ task, onDone }: { task: Task; onDone: () => void }) {
   const [equipmentItems, setEquipmentItems] = useState<{ id: string; name: string; category: string }[]>([]);
   const [selectedEquipment, setSelectedEquipment] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     offlineFetch('/api/equipment').then(r => r.ok ? r.json() : { equipment: [] }).then(d => {
@@ -511,6 +588,7 @@ function FocusForm({ task, onDone }: { task: Task; onDone: () => void }) {
   const handleSave = async () => {
     if (!durationMin || Number(durationMin) <= 0) return;
     setSaving(true);
+    setError(null);
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -542,11 +620,20 @@ function FocusForm({ task, onDone }: { task: Task; onDone: () => void }) {
 
       if (error) throw error;
 
-      await createActivityLink(task.id, 'focus_session', session.id);
+      // The session is saved from here on; a link failure is reported, not retried,
+      // so the user doesn't create a duplicate session.
+      let linked = true;
+      try {
+        await createActivityLink(task.id, 'focus_session', session.id);
+      } catch (linkErr) {
+        console.error('Linking focus session to task failed:', linkErr);
+        linked = false;
+      }
 
       // Link selected equipment to the focus session
+      let equipmentFailures = 0;
       for (const equipId of selectedEquipment) {
-        await offlineFetch('/api/activity-links', {
+        const res = await offlineFetch('/api/activity-links', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -556,11 +643,16 @@ function FocusForm({ task, onDone }: { task: Task; onDone: () => void }) {
             target_id: equipId,
           }),
         });
+        if (!res.ok && res.status !== 409) equipmentFailures++;
       }
 
-      onDone();
+      if (!linked) onDone(SAVED_UNLINKED);
+      else if (equipmentFailures > 0) {
+        onDone({ label: `Saved, but ${equipmentFailures} equipment link${equipmentFailures !== 1 ? 's' : ''} failed.`, warn: true });
+      } else onDone(SAVED);
     } catch (err) {
       console.error('Focus session creation failed:', err);
+      setError(failureText(err, 'focus session'));
     } finally {
       setSaving(false);
     }
@@ -646,6 +738,7 @@ function FocusForm({ task, onDone }: { task: Task; onDone: () => void }) {
           </div>
         </div>
       )}
+      <FormError message={error} />
       <button
         onClick={handleSave}
         disabled={saving || !durationMin || Number(durationMin) <= 0}
@@ -657,11 +750,12 @@ function FocusForm({ task, onDone }: { task: Task; onDone: () => void }) {
   );
 }
 
-function EquipmentForm({ task, onDone }: { task: Task; onDone: () => void }) {
+function EquipmentForm({ task, onDone }: FormProps) {
   const [items, setItems] = useState<{ id: string; name: string; category: string }[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     offlineFetch('/api/equipment').then(r => r.ok ? r.json() : { equipment: [] }).then(d => {
@@ -684,13 +778,23 @@ function EquipmentForm({ task, onDone }: { task: Task; onDone: () => void }) {
   const handleSave = async () => {
     if (selected.size === 0) return;
     setSaving(true);
+    setError(null);
     try {
+      let failures = 0;
       for (const equipId of selected) {
-        await createActivityLink(task.id, 'equipment', equipId);
+        try {
+          await createActivityLink(task.id, 'equipment', equipId);
+        } catch (linkErr) {
+          console.error('Equipment link failed:', linkErr);
+          failures++;
+        }
       }
-      onDone();
+      if (failures === selected.size) throw new Error('No items were linked.');
+      onDone(failures > 0 ? { label: `Linked ${selected.size - failures} of ${selected.size} items.`, warn: true } : SAVED);
     } catch (err) {
       console.error('Equipment linking failed:', err);
+      const detail = err instanceof Error && err.message ? ` ${err.message}` : '';
+      setError(`Couldn't link the equipment.${detail}`);
     } finally {
       setSaving(false);
     }
@@ -715,6 +819,7 @@ function EquipmentForm({ task, onDone }: { task: Task; onDone: () => void }) {
           </label>
         ))}
       </div>
+      <FormError message={error} />
       <button
         onClick={handleSave}
         disabled={saving || selected.size === 0}
@@ -726,7 +831,7 @@ function EquipmentForm({ task, onDone }: { task: Task; onDone: () => void }) {
   );
 }
 
-function FuelForm({ task, onDone }: { task: Task; onDone: () => void }) {
+function FuelForm({ task, onDone }: FormProps) {
   const [vehicles, setVehicles] = useState<{ id: string; nickname: string }[]>([]);
   const [vehicleId, setVehicleId] = useState('');
   const [gallons, setGallons] = useState('');
@@ -734,6 +839,7 @@ function FuelForm({ task, onDone }: { task: Task; onDone: () => void }) {
   const [station, setStation] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     offlineFetch('/api/travel/vehicles').then(r => r.ok ? r.json() : { vehicles: [] }).then(d => {
@@ -745,6 +851,7 @@ function FuelForm({ task, onDone }: { task: Task; onDone: () => void }) {
 
   const handleSave = async () => {
     setSaving(true);
+    setError(null);
     try {
       const res = await offlineFetch('/api/travel/fuel', {
         method: 'POST',
@@ -758,12 +865,11 @@ function FuelForm({ task, onDone }: { task: Task; onDone: () => void }) {
           notes: notes.trim() || null,
         }),
       });
-      if (!res.ok) throw new Error('Failed');
-      const data = await res.json();
-      await createActivityLink(task.id, 'fuel_log', data.id);
-      onDone();
+      // POST /api/travel/fuel returns { log }
+      onDone(await linkCreatedRecord(res, task.id, 'fuel_log', 'log'));
     } catch (err) {
       console.error('Fuel log creation failed:', err);
+      setError(failureText(err, 'fuel log'));
     } finally {
       setSaving(false);
     }
@@ -817,6 +923,7 @@ function FuelForm({ task, onDone }: { task: Task; onDone: () => void }) {
         placeholder="Notes (optional)"
         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
       />
+      <FormError message={error} />
       <button
         onClick={handleSave}
         disabled={saving}
@@ -834,7 +941,7 @@ const SERVICE_TYPES = [
   'alignment', 'detailing', 'other',
 ];
 
-function MaintenanceForm({ task, onDone }: { task: Task; onDone: () => void }) {
+function MaintenanceForm({ task, onDone }: FormProps) {
   const [vehicles, setVehicles] = useState<{ id: string; nickname: string }[]>([]);
   const [vehicleId, setVehicleId] = useState('');
   const [serviceType, setServiceType] = useState('');
@@ -842,6 +949,7 @@ function MaintenanceForm({ task, onDone }: { task: Task; onDone: () => void }) {
   const [vendor, setVendor] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     offlineFetch('/api/travel/vehicles').then(r => r.ok ? r.json() : { vehicles: [] }).then(d => {
@@ -854,6 +962,7 @@ function MaintenanceForm({ task, onDone }: { task: Task; onDone: () => void }) {
   const handleSave = async () => {
     if (!serviceType) return;
     setSaving(true);
+    setError(null);
     try {
       const res = await offlineFetch('/api/travel/maintenance', {
         method: 'POST',
@@ -867,12 +976,11 @@ function MaintenanceForm({ task, onDone }: { task: Task; onDone: () => void }) {
           notes: notes.trim() || null,
         }),
       });
-      if (!res.ok) throw new Error('Failed');
-      const data = await res.json();
-      await createActivityLink(task.id, 'maintenance', data.id);
-      onDone();
+      // POST /api/travel/maintenance returns { record }
+      onDone(await linkCreatedRecord(res, task.id, 'maintenance', 'record'));
     } catch (err) {
       console.error('Maintenance record creation failed:', err);
+      setError(failureText(err, 'maintenance record'));
     } finally {
       setSaving(false);
     }
@@ -925,6 +1033,7 @@ function MaintenanceForm({ task, onDone }: { task: Task; onDone: () => void }) {
         placeholder="Notes (optional)"
         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
       />
+      <FormError message={error} />
       <button
         onClick={handleSave}
         disabled={saving || !serviceType}
@@ -940,32 +1049,32 @@ function MaintenanceForm({ task, onDone }: { task: Task; onDone: () => void }) {
 
 export default function TaskCompletionActionsModal({ isOpen, onClose, task }: TaskCompletionActionsModalProps) {
   const [expandedAction, setExpandedAction] = useState<ActionType | null>(null);
-  const [completed, setCompleted] = useState<Set<ActionType>>(new Set());
+  const [completed, setCompleted] = useState<Map<ActionType, SaveOutcome>>(new Map());
 
   // Reset state when switching to a different task
   useEffect(() => {
     setExpandedAction(null);
-    setCompleted(new Set());
+    setCompleted(new Map());
   }, [task?.id]);
 
   if (!task) return null;
 
-  const handleDone = (type: ActionType) => {
-    setCompleted(prev => new Set(prev).add(type));
+  const handleDone = (type: ActionType, outcome: SaveOutcome = SAVED) => {
+    setCompleted(prev => new Map(prev).set(type, outcome));
     setExpandedAction(null);
   };
 
   const renderForm = (type: ActionType) => {
     switch (type) {
-      case 'transaction': return <TransactionForm task={task} onDone={() => handleDone('transaction')} />;
-      case 'trip': return <TripForm task={task} onDone={() => handleDone('trip')} />;
-      case 'workout': return <WorkoutForm task={task} onDone={() => handleDone('workout')} />;
-      case 'health': return <HealthForm task={task} onDone={() => handleDone('health')} />;
-      case 'invoice': return <InvoiceForm task={task} onDone={() => handleDone('invoice')} />;
-      case 'focus': return <FocusForm task={task} onDone={() => handleDone('focus')} />;
-      case 'equipment': return <EquipmentForm task={task} onDone={() => handleDone('equipment')} />;
-      case 'fuel': return <FuelForm task={task} onDone={() => handleDone('fuel')} />;
-      case 'maintenance': return <MaintenanceForm task={task} onDone={() => handleDone('maintenance')} />;
+      case 'transaction': return <TransactionForm task={task} onDone={o => handleDone('transaction', o)} />;
+      case 'trip': return <TripForm task={task} onDone={o => handleDone('trip', o)} />;
+      case 'workout': return <WorkoutForm task={task} onDone={o => handleDone('workout', o)} />;
+      case 'health': return <HealthForm task={task} onDone={o => handleDone('health', o)} />;
+      case 'invoice': return <InvoiceForm task={task} onDone={o => handleDone('invoice', o)} />;
+      case 'focus': return <FocusForm task={task} onDone={o => handleDone('focus', o)} />;
+      case 'equipment': return <EquipmentForm task={task} onDone={o => handleDone('equipment', o)} />;
+      case 'fuel': return <FuelForm task={task} onDone={o => handleDone('fuel', o)} />;
+      case 'maintenance': return <MaintenanceForm task={task} onDone={o => handleDone('maintenance', o)} />;
     }
   };
 
@@ -978,7 +1087,8 @@ export default function TaskCompletionActionsModal({ isOpen, onClose, task }: Ta
 
         <div className="space-y-3">
           {ACTIONS.map(action => {
-            const isCompleted = completed.has(action.type);
+            const outcome = completed.get(action.type);
+            const isCompleted = !!outcome;
             const isExpanded = expandedAction === action.type;
 
             return (
@@ -989,10 +1099,12 @@ export default function TaskCompletionActionsModal({ isOpen, onClose, task }: Ta
                   className="w-full flex items-center justify-between p-3 text-left hover:opacity-80"
                 >
                   <div className="flex items-center gap-3">
-                    {isCompleted ? <Check className="w-5 h-5 text-green-600" /> : action.icon}
+                    {outcome?.warn
+                      ? <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" aria-hidden="true" />
+                      : isCompleted ? <Check className="w-5 h-5 text-green-600" /> : action.icon}
                     <div>
                       <div className="font-medium text-sm">{action.label}</div>
-                      <div className="text-xs opacity-75">{isCompleted ? 'Saved' : action.description}</div>
+                      <div className="text-xs opacity-75">{outcome ? outcome.label : action.description}</div>
                     </div>
                   </div>
                   {!isCompleted && (
