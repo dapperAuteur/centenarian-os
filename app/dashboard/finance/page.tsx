@@ -17,6 +17,7 @@ import { todayLocal } from '@/lib/dates/local';
 import CategorySelect from '@/components/finance/CategorySelect';
 import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import TransferModal from '@/components/finance/TransferModal';
+import LearnCategoryPrompt, { type LearnCategoryRequest } from '@/components/finance/LearnCategoryPrompt';
 import Modal from '@/components/ui/Modal';
 
 interface CategoryBreakdown {
@@ -111,6 +112,8 @@ export default function FinanceDashboardPage() {
   const [saving, setSaving] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
   const [addNotice, setAddNotice] = useState<string | null>(null);
+  // "Always categorize this vendor as ...?" prompt shown after a save
+  const [learnPrompt, setLearnPrompt] = useState<{ id: number; request: LearnCategoryRequest } | null>(null);
 
   // Transfer modal
   const [showTransfer, setShowTransfer] = useState(false);
@@ -177,13 +180,26 @@ export default function FinanceDashboardPage() {
     e.preventDefault();
     setSaving(true);
     setAddError(null);
+    const submitted = addForm;
     try {
       const res = await offlineFetch('/api/finance/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(addForm),
+        body: JSON.stringify(submitted),
       });
       if (res.ok) {
+        // The user picked a category for a vendor: offer to remember it. The
+        // prompt shows nothing if the vendor already has that category.
+        setLearnPrompt(!isQueuedResponse(res) && submitted.vendor.trim() && submitted.category_id
+          ? {
+              id: Date.now(),
+              request: {
+                vendor: submitted.vendor.trim(),
+                type: submitted.type === 'income' ? 'income' : 'expense',
+                categoryId: submitted.category_id,
+              },
+            }
+          : null);
         setShowAdd(false);
         setAddForm({
           amount: '', type: 'expense', description: '', vendor: '',
@@ -363,6 +379,16 @@ export default function FinanceDashboardPage() {
             <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
+      )}
+
+      {learnPrompt && (
+        <LearnCategoryPrompt
+          key={learnPrompt.id}
+          {...learnPrompt.request}
+          categoryName={categories.find((c) => c.id === learnPrompt.request.categoryId)?.name ?? 'this category'}
+          onClose={() => setLearnPrompt(null)}
+          onPastApplied={load}
+        />
       )}
 
       {/* Reminders Banner */}

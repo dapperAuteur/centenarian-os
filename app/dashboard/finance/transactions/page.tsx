@@ -2,10 +2,12 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight, Link2, X, Search, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight, Link2, X, Search, Check, Loader2, Landmark } from 'lucide-react';
 import Link from 'next/link';
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
-import { offlineFetch } from '@/lib/offline/offline-fetch';
+import LearnCategoryPrompt, { type LearnCategoryRequest } from '@/components/finance/LearnCategoryPrompt';
+import { offlineFetch, isQueuedResponse } from '@/lib/offline/offline-fetch';
+import { vendorKey } from '@/lib/finance/transaction-matching';
 
 interface Category {
   id: string;
@@ -42,7 +44,25 @@ interface Transaction {
   budget_categories: Category | null;
   financial_accounts: { id: string; name: string } | null;
   notes: string | null;
+  teller_transaction_id: string | null;
   created_at: string;
+}
+
+/** A manual or scanned entry that a bank sync linked to its bank transaction. */
+function isBankMatched(tx: Transaction): boolean {
+  return !!tx.teller_transaction_id && tx.source !== 'bank_sync';
+}
+
+function BankMatchedBadge() {
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded bg-teal-50 text-teal-700"
+      title="Linked to the matching transaction from your bank sync"
+    >
+      <Landmark className="w-3 h-3" aria-hidden="true" />
+      Bank matched
+    </span>
+  );
 }
 
 const SOURCE_MODULE_BADGE: Record<string, { label: string; className: string }> = {
@@ -102,6 +122,8 @@ export default function TransactionsPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Record<string, string>>({});
   const [linkingId, setLinkingId] = useState<string | null>(null);
+  // "Always categorize this vendor as ...?" prompt after an edit or bulk change
+  const [learnPrompt, setLearnPrompt] = useState<{ id: number; request: LearnCategoryRequest } | null>(null);
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
@@ -150,12 +172,22 @@ export default function TransactionsPage() {
   };
 
   const handleEditSave = async (id: string) => {
+    const original = transactions.find((tx) => tx.id === id);
     const res = await offlineFetch('/api/finance/transactions', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, ...editForm }),
     });
     if (res.ok) {
+      // The category was set or changed: offer to remember it for this vendor.
+      const categoryId = editForm.category_id || '';
+      const vendor = (editForm.vendor || '').trim();
+      if (!isQueuedResponse(res) && categoryId && vendor && categoryId !== (original?.category_id || '')) {
+        setLearnPrompt({
+          id: Date.now(),
+          request: { vendor, type: editForm.type === 'income' ? 'income' : 'expense', categoryId },
+        });
+      }
       setEditId(null);
       fetchTransactions();
     }
@@ -228,6 +260,18 @@ export default function TransactionsPage() {
       });
       const data = await res.json();
       if (res.ok) {
+        // Every selected row is from one vendor: offer to remember the category.
+        if (bulkCategory && !isQueuedResponse(res)) {
+          const rows = transactions.filter((tx) => selected.has(tx.id));
+          const keys = new Set(rows.map((tx) => vendorKey(tx.vendor)));
+          const types = new Set(rows.map((tx) => tx.type));
+          if (rows.length > 0 && keys.size === 1 && !keys.has('') && types.size === 1) {
+            setLearnPrompt({
+              id: Date.now(),
+              request: { vendor: (rows[0].vendor ?? '').trim(), type: rows[0].type, categoryId: bulkCategory },
+            });
+          }
+        }
         setBulkResult(`Updated ${selected.size} transaction${selected.size !== 1 ? 's' : ''}`);
         setSelected(new Set());
         setBulkCategory('');
@@ -467,6 +511,16 @@ export default function TransactionsPage() {
         </div>
       )}
 
+      {learnPrompt && (
+        <LearnCategoryPrompt
+          key={learnPrompt.id}
+          {...learnPrompt.request}
+          categoryName={categories.find((c) => c.id === learnPrompt.request.categoryId)?.name ?? 'this category'}
+          onClose={() => setLearnPrompt(null)}
+          onPastApplied={fetchTransactions}
+        />
+      )}
+
       {/* Transactions Table */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         {loading ? (
@@ -499,6 +553,18 @@ export default function TransactionsPage() {
                         className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-900"
                         placeholder="Description"
                       />
+                      <label htmlFor={`edit-category-${tx.id}`} className="sr-only">Category</label>
+                      <select
+                        id={`edit-category-${tx.id}`}
+                        value={editForm.category_id}
+                        onChange={(e) => setEditForm((p) => ({ ...p, category_id: e.target.value }))}
+                        className="w-full min-h-11 px-2 py-1 text-sm border border-gray-300 rounded text-gray-900"
+                      >
+                        <option value="">No category</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
                       <div className="flex gap-2">
                         <button onClick={() => handleEditSave(tx.id)} className="px-3 py-1 bg-fuchsia-600 text-white rounded text-xs">Save</button>
                         <button onClick={() => setEditId(null)} className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">Cancel</button>
@@ -518,6 +584,11 @@ export default function TransactionsPage() {
                         onClick={() => router.push(`/dashboard/finance/transactions/${tx.id}`)}
                       >
                         <p className="text-sm font-medium text-gray-900">{tx.description || tx.vendor || 'Transaction'}</p>
+                        {isBankMatched(tx) && (
+                          <div className="mt-1">
+                            <BankMatchedBadge />
+                          </div>
+                        )}
                         <p className="text-xs text-gray-500 mt-0.5">
                           {new Date(tx.transaction_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           {tx.financial_accounts?.name && <span className="ml-2 text-gray-400">{tx.financial_accounts.name}</span>}
@@ -629,6 +700,7 @@ export default function TransactionsPage() {
                               {SOURCE_BADGE[tx.source].label}
                             </span>
                           )}
+                          {isBankMatched(tx) && <BankMatchedBadge />}
                         </div>
                       )}
                     </td>
@@ -653,6 +725,7 @@ export default function TransactionsPage() {
                           <select
                             value={editForm.category_id}
                             onChange={(e) => setEditForm((p) => ({ ...p, category_id: e.target.value }))}
+                            aria-label="Category"
                             className="px-2 py-1 text-xs border border-gray-300 rounded text-gray-900"
                           >
                             <option value="">No category</option>
