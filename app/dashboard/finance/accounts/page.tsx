@@ -313,16 +313,21 @@ export default function AccountsPage() {
   };
 
   const handleUnlinkTeller = async (acct: Account) => {
+    // Unlink only clears this account's Teller link in CentenarianOS. It does not
+    // revoke the enrollment at Teller, so the copy must not claim a full disconnect.
     if (!confirm(
-      `Stop syncing "${acct.name}" with your bank?\n\n` +
-      `All existing transactions will be kept. Only the live bank connection will be removed. ` +
-      `You can re-link later.`
+      `Stop syncing "${acct.name}" in CentenarianOS?\n\n` +
+      `All existing transactions will be kept. Unlinking stops CentenarianOS from syncing this account, ` +
+      `but your bank connection itself stays active with Teller, our bank-linking provider.\n\n` +
+      `To fully disconnect your bank, tap the Help & Feedback (+) button in the bottom-right corner, ` +
+      `choose Feedback, and ask us to disconnect it.\n\n` +
+      `You can re-link this account later.`
     )) return;
     setUnlinking(acct.id);
     try {
       const res = await offlineFetch(`/api/finance/accounts/${acct.id}/unlink-teller`, { method: 'POST' });
       if (res.ok) {
-        setSyncResult('Account unlinked from bank sync. Transactions preserved.');
+        setSyncResult('Account unlinked: CentenarianOS will no longer sync it. Transactions preserved. Your bank connection is still active with Teller; to fully disconnect it, send us a request through Help & Feedback → Feedback.');
         load();
       } else {
         const data = await res.json();
@@ -719,6 +724,7 @@ export default function AccountsPage() {
                           disabled={unlinking === acct.id}
                           className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition disabled:opacity-50"
                           title="Unlink from bank sync"
+                          aria-label={`Unlink ${acct.name} from bank sync`}
                         >
                           {unlinking === acct.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlink className="w-4 h-4" />}
                         </button>

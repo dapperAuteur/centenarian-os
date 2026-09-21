@@ -289,7 +289,7 @@ Open [http://localhost:3000](http://localhost:3000)
 npm run test:unit
 ```
 
-Runs the pure-function tests in `tests/*.test.ts` with Node's built-in test runner (`node --test --experimental-strip-types`, Node 22.6+). No database or network access. Today this covers bank matching, Teller reconciliation, and learned vendor categories (`lib/finance/transaction-matching.ts`).
+Runs the pure-function tests with Node's built-in test runner (`node --test --experimental-strip-types`, Node 22.6+). No database, network or extra dependencies. Covers bank matching, Teller reconciliation and learned vendor categories (`tests/transaction-matching.test.ts`), and Teller webhook signatures, 429 retry timing and revoke handling (`tests/unit/*.test.ts`).
 
 ## Project Structure
 

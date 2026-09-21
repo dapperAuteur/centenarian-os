@@ -68,11 +68,18 @@ function authHeaders(accessToken: string) {
   };
 }
 
-/** Makes an HTTPS request with mTLS client certificate. */
-async function tellerFetch(
+interface TellerResponse {
+  ok: boolean;
+  status: number;
+  retryAfter: string | undefined;
+  json: () => Promise<unknown>;
+}
+
+/** Makes one HTTPS request with the mTLS client certificate. */
+function tellerRequestOnce(
   url: string,
   init: { method?: string; headers: Record<string, string>; body?: string },
-): Promise<{ ok: boolean; status: number; json: () => Promise<unknown> }> {
+): Promise<TellerResponse> {
   const agent = getTlsAgent();
   const parsed = new URL(url);
 
@@ -91,9 +98,11 @@ async function tellerFetch(
         res.on('data', (chunk: Buffer) => chunks.push(chunk));
         res.on('end', () => {
           const body = Buffer.concat(chunks).toString('utf8');
+          const retryAfter = res.headers['retry-after'];
           resolve({
             ok: res.statusCode! >= 200 && res.statusCode! < 300,
             status: res.statusCode!,
+            retryAfter: Array.isArray(retryAfter) ? retryAfter[0] : retryAfter,
             json: () => Promise.resolve(JSON.parse(body)),
           });
         });
@@ -103,6 +112,104 @@ async function tellerFetch(
     if (init.body) req.write(init.body);
     req.end();
   });
+}
+
+// ── Rate limits (HTTP 429) ──────────────────────────────────────
+// Teller: "If your application triggers rate limits, Teller will respond with
+// an HTTP 429 status code. Your system should back off and retry after an
+// appropriate delay." Thresholds are not published.
+// https://teller.io/docs/api (Rate Limits). Teller does not document a
+// Retry-After header; it is honored here only if one is sent.
+
+/** Total tries per request, including the first. */
+export const TELLER_MAX_ATTEMPTS = 3;
+/** Longest single wait. A longer Retry-After means "give up now", not "retry early". */
+export const TELLER_MAX_RETRY_WAIT_MS = 5_000;
+const TELLER_BASE_BACKOFF_MS = 500;
+
+/**
+ * How long to wait before retrying a 429, or null to stop retrying.
+ * `attempt` is the 1-based number of the attempt that just got the 429.
+ */
+export function tellerRetryDelayMs(
+  attempt: number,
+  retryAfter: string | undefined,
+  nowMs: number = Date.now(),
+  random: () => number = Math.random,
+): number | null {
+  if (attempt >= TELLER_MAX_ATTEMPTS) return null;
+
+  const header = retryAfter?.trim();
+  if (header) {
+    let waitMs: number | null = null;
+    if (/^\d+$/.test(header)) {
+      waitMs = Number(header) * 1000; // delta-seconds
+    } else {
+      const at = Date.parse(header); // HTTP-date
+      if (!Number.isNaN(at)) waitMs = Math.max(0, at - nowMs);
+    }
+    if (waitMs !== null) {
+      return waitMs > TELLER_MAX_RETRY_WAIT_MS ? null : waitMs;
+    }
+  }
+
+  // Exponential backoff with jitter: ~500ms, then ~1s.
+  const backoff = TELLER_BASE_BACKOFF_MS * 2 ** (attempt - 1);
+  return Math.min(backoff + Math.floor(random() * 250), TELLER_MAX_RETRY_WAIT_MS);
+}
+
+/** Makes a Teller request, retrying HTTP 429 with backoff. Other statuses return as-is. */
+async function tellerFetch(
+  url: string,
+  init: { method?: string; headers: Record<string, string>; body?: string },
+): Promise<TellerResponse> {
+  for (let attempt = 1; ; attempt++) {
+    const res = await tellerRequestOnce(url, init);
+    if (res.status !== 429) return res;
+
+    const waitMs = tellerRetryDelayMs(attempt, res.retryAfter);
+    if (waitMs === null) return res;
+    await new Promise((r) => setTimeout(r, waitMs));
+  }
+}
+
+// ── Errors ──────────────────────────────────────────────────────
+
+/**
+ * A non-2xx Teller response. `code` is Teller's `error.code` when the body has one,
+ * e.g. "enrollment.disconnected.credentials_invalid".
+ * Body shape: { "error": { "code": string, "message": string } }
+ * https://teller.io/docs/api/errors
+ */
+export class TellerApiError extends Error {
+  readonly status: number;
+  readonly code: string | null;
+
+  constructor(message: string, status: number, code: string | null) {
+    super(message);
+    this.name = 'TellerApiError';
+    this.status = status;
+    this.code = code;
+  }
+}
+
+async function readErrorCode(res: TellerResponse): Promise<string | null> {
+  try {
+    const body = (await res.json()) as { error?: { code?: unknown } } | null;
+    const code = body?.error?.code;
+    return typeof code === 'string' ? code : null;
+  } catch {
+    return null;
+  }
+}
+
+async function toTellerError(label: string, res: TellerResponse): Promise<TellerApiError> {
+  const code = await readErrorCode(res);
+  return new TellerApiError(
+    `Teller ${label} failed: ${res.status}${code ? ` (${code})` : ''}`,
+    res.status,
+    code,
+  );
 }
 
 // ── Token encryption (AES-256-GCM) ─────────────────────────────
@@ -183,10 +290,15 @@ export async function listAccounts(accessToken: string): Promise<TellerAccount[]
   const res = await tellerFetch(`${API_BASE}/accounts`, {
     headers: authHeaders(accessToken),
   });
-  if (!res.ok) throw new Error(`Teller listAccounts failed: ${res.status}`);
+  if (!res.ok) throw await toTellerError('listAccounts', res);
   return res.json() as Promise<TellerAccount[]>;
 }
 
+/**
+ * BILLED PER CALL in production: Teller's Balance product is priced per API call
+ * (https://teller.io/, pricing). Not called anywhere today. Never call it from an
+ * automatic path (sync, webhook, cron) without a cost decision.
+ */
 export async function getAccountBalances(
   accessToken: string,
   accountId: string,
@@ -194,7 +306,7 @@ export async function getAccountBalances(
   const res = await tellerFetch(`${API_BASE}/accounts/${accountId}/balances`, {
     headers: authHeaders(accessToken),
   });
-  if (!res.ok) throw new Error(`Teller getBalances failed: ${res.status}`);
+  if (!res.ok) throw await toTellerError('getBalances', res);
   return res.json() as Promise<TellerBalance>;
 }
 
@@ -225,18 +337,46 @@ export async function listTransactions(
   const url = `${API_BASE}/accounts/${accountId}/transactions${qs ? `?${qs}` : ''}`;
 
   const res = await tellerFetch(url, { headers: authHeaders(accessToken) });
-  if (!res.ok) throw new Error(`Teller listTransactions failed: ${res.status}`);
+  if (!res.ok) throw await toTellerError('listTransactions', res);
   return res.json() as Promise<TellerTransaction[]>;
 }
 
-export async function deleteEnrollment(accessToken: string): Promise<void> {
-  const res = await tellerFetch(`${API_BASE}/`, {
+/**
+ * True when a failed revoke means the enrollment is already gone at Teller, so
+ * there is nothing left to revoke or bill (https://teller.io/docs/api/errors):
+ *   - 403 "A request was made with an invalid or revoked access token."
+ *   - 404 "The requested resource was not found." EXCEPT codes starting with
+ *     `enrollment.disconnected`: that enrollment still exists and can be
+ *     repaired through Teller Connect, so it is not gone.
+ *   - 410 "the resource requested is no longer available and that condition is permanent"
+ */
+export function isEnrollmentAlreadyGone(status: number, code: string | null): boolean {
+  if (status === 403 || status === 410) return true;
+  if (status === 404) return !code?.startsWith('enrollment.disconnected');
+  return false;
+}
+
+/**
+ * Revokes the whole enrollment: `DELETE /accounts`.
+ * Teller: "This deletes your application's authorization to access any account in
+ * the enrollment, i.e. effectively deletes the enrollment ... Removing access will
+ * cancel billing for subscription billed products associated with the enrollment,
+ * e.g. transactions." Success is 204 No Content. https://teller.io/docs/api/accounts
+ *
+ * Resolves `{ alreadyGone: true }` when Teller says the token or enrollment no
+ * longer exists. Throws TellerApiError for anything else, so the caller must NOT
+ * treat the bank as disconnected.
+ */
+export async function deleteEnrollment(accessToken: string): Promise<{ alreadyGone: boolean }> {
+  const res = await tellerFetch(`${API_BASE}/accounts`, {
     method: 'DELETE',
     headers: authHeaders(accessToken),
   });
-  if (!res.ok && res.status !== 404) {
-    throw new Error(`Teller deleteEnrollment failed: ${res.status}`);
-  }
+  if (res.ok) return { alreadyGone: false };
+
+  const err = await toTellerError('revoke (DELETE /accounts)', res);
+  if (isEnrollmentAlreadyGone(err.status, err.code)) return { alreadyGone: true };
+  throw err;
 }
 
 // ── Mappers ─────────────────────────────────────────────────────
