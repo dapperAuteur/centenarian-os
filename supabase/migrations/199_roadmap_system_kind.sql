@@ -12,8 +12,9 @@
 --                       lib/planner/sync-tasks.ts#ensureMilestone (formerly by the triggers from
 --                       migrations 148/154, dropped in 198).
 -- NULL means a roadmap the person made. The Roadmap page shows system roadmaps with an "Auto"
--- badge and hides their delete and archive controls. No correlation math reads this column yet;
--- how system roadmaps should count there is an open decision.
+-- badge and hides their permanent-delete controls (archiving still works; the app rebuilds an
+-- archived Inbox). No correlation math reads this column yet; how system roadmaps should count
+-- there is an open decision.
 --
 -- WHY A COLUMN, NOT THE TITLE
 -- Until now the only way to find these roadmaps was by title, and a person can rename a roadmap
