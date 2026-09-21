@@ -71,7 +71,7 @@ This app's Supabase database is shared with other apps (e.g. the Contractor/JobH
 
 ---
 
-<!-- BEGIN:witus-shared-rules v1 -->
+<!-- BEGIN:witus-shared-rules v3 -->
 <!-- MANAGED BLOCK — do not edit by hand. Source: gemini/witus/docs/shared-rules.md.
      Update the source, then run `node scripts/sync-claude-rules.mjs` in the witus repo. -->
 
@@ -142,6 +142,26 @@ All implementation plans live in `./plans/` as `NN-description-of-plan.md` (two-
 kebab-case, next available number, don't skip). Sub-queues: `./plans/user-tasks/NN-slug.md`
 (operator tasks), `./plans/bugs/`, `./plans/future/`. (`plans/` is typically gitignored.)
 
+**Finding what BAM mentions: search gitignored files.** Most ideas, plans, decisions, and drafts BAM
+refers to live in a `plans/` dir of this repo or another ecosystem repo, and are not tracked by git.
+Default `rg`, `git grep`, `git log -S`, and editor search skip gitignored paths, so they miss every
+`plans/` dir and report a false "nothing found". Search with `rg -uu` (or `rg --no-ignore`, `grep -r`,
+`find`), excluding `node_modules`, `.next`, `.git`, worktrees, and virtualenvs: this repo first, then
+the repos in `gemini/witus/docs/ecosystem-repos.json`. A miss from a git-aware search proves nothing;
+if the gitignore-aware search also misses, say what you searched and ask BAM where it lives.
+Untracked also means unrecoverable: git can't restore an overwritten plan, so read before replacing.
+Full rule: `gemini/witus/CLAUDE.md` §"Plans convention".
+
+## New app ideas — vet before building
+
+Before writing code, creating a repo, or onboarding any new product idea, score it with the WitUS
+app-idea rubric (`gemini/witus/docs/app-idea-vetting-rubric.md`): search gitignored `plans/` for prior
+work, declare the goal with BAM (business / portfolio / community), write the sourced analysis at
+`gemini/witus/plans/NN-<slug>-analysis.md`, apply the gates and weighted scores, and file a user task
+for any validation BAM does outside the editor. Append lessons and outcomes to the rubric's logs;
+gate, weight, and threshold changes need BAM's approval. Full rule: `gemini/witus/CLAUDE.md`
+§"New-product vetting rule".
+
 ## Citation rule
 
 Anything publishable, teachable, or partner-facing (curriculum, teaching-oriented help articles,
@@ -165,4 +185,4 @@ default Neon+Drizzle+pnpm+Vitest stack) are consolidated in `gemini/witus/docs/s
 Read it before writing UI or API code. Two repos are grandfathered on Supabase+Jest and documented
 there as exceptions.
 
-<!-- END:witus-shared-rules v1 -->
+<!-- END:witus-shared-rules v3 -->
