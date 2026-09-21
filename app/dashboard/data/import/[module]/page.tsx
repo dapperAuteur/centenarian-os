@@ -165,7 +165,7 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
     apiEndpoint: '/api/planner/import',
     templateUrl: '/templates/tasks-import-template.csv',
     instructions:
-      'Upload planner tasks. Required: date, activity. Optional hierarchy columns (roadmap_title, goal_title + goal_category + goal_target_year, milestone_title + milestone_target_date) let you import a full Roadmap → Goal → Milestone → Task tree in one CSV. Rows with blank hierarchy columns fall back to the default "Imported Tasks" milestone. goal_category must be one of: FITNESS, CREATIVE, SKILL, OUTREACH, LIFESTYLE, MINDSET, FUEL.',
+      'Upload planner tasks. Required: date, activity. Optional hierarchy columns (roadmap_title, goal_title + goal_category + goal_target_year, milestone_title + milestone_target_date) let you import a full Roadmap → Goal → Milestone → Task tree in one CSV. A new roadmap without dates starts today and runs 10 years. Rows with blank hierarchy columns go to an "Imported Tasks" milestone in your oldest roadmap (never an Auto roadmap), or to your Inbox if you have no roadmap of your own. goal_category must be one of: FITNESS, CREATIVE, SKILL, OUTREACH, LIFESTYLE, MINDSET, FUEL.',
     columns: [
       { key: 'roadmap_title', label: 'Roadmap Title' },
       { key: 'roadmap_start_date', label: 'Roadmap Start (YYYY-MM-DD)' },
