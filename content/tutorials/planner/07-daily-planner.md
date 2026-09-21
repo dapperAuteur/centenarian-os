@@ -55,6 +55,8 @@ Next to the view modes is a row of filter chips: **All**, **Inbox (N)**, **Calen
 
 **Inbox (N)** shows the tasks in your Inbox for the period you're viewing, and N is how many there are. It's a quick triage list: open a task's Edit form and choose a milestone to move it into a goal. You can also open the planner straight to it at `/dashboard/planner?filter=inbox`.
 
+**Calendar** shows tasks imported from Google Calendar, which live in a "Google Calendar: *calendar name*" milestone in your own roadmap. If you import a calendar before you have a roadmap of your own, its events go to your Inbox instead, so look for them under **Inbox (N)**.
+
 ---
 
 ### Completing Tasks
