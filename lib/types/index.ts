@@ -42,7 +42,7 @@ export interface Roadmap {
   actual_cost: number;
   revenue: number;
   /**
-   * Set on roadmaps the app creates itself: 'inbox' or 'work_witus_sync' (migration 199).
+   * Set on roadmaps the app creates itself: 'inbox' or 'work_witus_sync' (migration 200).
    * Absent until that migration is applied, so optional; read it through systemKindOf().
    */
   system_kind?: string | null;

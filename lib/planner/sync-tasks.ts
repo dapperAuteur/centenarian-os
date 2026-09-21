@@ -71,9 +71,9 @@ async function ensureMilestone(db: SupabaseClient, userId: string, title: string
 
   const { today, yearOut, year } = hierarchyDates();
 
-  // Found by roadmaps.system_kind = 'work_witus_sync' (migration 199), falling back to the title
+  // Found by roadmaps.system_kind = 'work_witus_sync' (migration 200), falling back to the title
   // "Work.WitUS Sync" when the column isn't there yet. Created with system_kind set, retrying
-  // without it on a missing-column error, so this works before and after 199 is applied.
+  // without it on a missing-column error, so this works before and after 200 is applied.
   const found = await findSystemRoadmapId(db, userId, 'work_witus_sync');
   if (found.failed) return null;
   let roadmapId = found.id ?? undefined;

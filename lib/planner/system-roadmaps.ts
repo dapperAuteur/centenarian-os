@@ -1,6 +1,6 @@
 // lib/planner/system-roadmaps.ts
 // Roadmaps the app creates on its own ("system" roadmaps), and how to find them whether or not
-// migration 199 (roadmaps.system_kind) has been applied yet.
+// migration 200 (roadmaps.system_kind) has been applied yet.
 //
 // Two kinds exist:
 //   inbox           - "Inbox > Inbox > Inbox", where one-field task capture files tasks
@@ -8,7 +8,7 @@
 //   work_witus_sync - "Work.WitUS Sync > Finances > ...", where Work.WitUS income-event tasks go
 //                     (lib/planner/sync-tasks.ts).
 //
-// BEFORE AND AFTER MIGRATION 199
+// BEFORE AND AFTER MIGRATION 200
 // The code ships before BAM applies the migration, so every read and write here tolerates the
 // column being absent: a missing-column error (Postgres 42703, PostgREST PGRST204) switches to the
 // title, which is how these roadmaps were found before. After the migration the column is
@@ -41,7 +41,7 @@ export function isMissingColumnError(error: { code?: string } | null | undefined
 /**
  * Which system roadmap a row is, or null for a person's own roadmap.
  *
- * When the row has a `system_kind` key (migration 199 applied, row selected with `*`), that value
+ * When the row has a `system_kind` key (migration 200 applied, row selected with `*`), that value
  * is the answer. When the key is absent (migration not applied yet), FALLBACK to the title. The
  * fallback can mislabel a person's own roadmap named "Inbox"; it disappears once the column exists.
  */
@@ -59,7 +59,7 @@ export function systemKindOf(roadmap: { title?: string | null; system_kind?: str
 
 export interface FoundRoadmap {
   id: string | null;
-  /** True when the roadmaps.system_kind column does not exist yet (migration 199 not applied). */
+  /** True when the roadmaps.system_kind column does not exist yet (migration 200 not applied). */
   columnMissing: boolean;
   /**
    * True when a lookup failed for another reason. Callers must not create a roadmap then: a
@@ -169,7 +169,7 @@ export async function insertSystemRoadmap(
       console.error(`[system-roadmaps] ${kind} roadmap insert failed:`, error?.message);
       return null;
     }
-    // Column not there yet (migration 199 not applied): fall through and insert without it.
+    // Column not there yet (migration 200 not applied): fall through and insert without it.
   }
 
   const { data, error } = await db

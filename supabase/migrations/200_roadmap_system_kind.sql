@@ -1,4 +1,4 @@
--- 199_roadmap_system_kind.sql
+-- 200_roadmap_system_kind.sql
 -- Flag the roadmaps the app creates on its own, so pages and correlation code can tell them apart
 -- from roadmaps a person built by hand.
 --

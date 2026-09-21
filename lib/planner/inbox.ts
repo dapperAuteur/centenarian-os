@@ -16,7 +16,7 @@
 // set below, and goals.category must satisfy goals_category_check (LIFESTYLE).
 //
 // FINDING IT
-// The roadmap is found by roadmaps.system_kind = 'inbox' (migration 199), falling back to the
+// The roadmap is found by roadmaps.system_kind = 'inbox' (migration 200), falling back to the
 // title "Inbox" before that migration is applied. Goal and milestone are found by title under it.
 // Archived levels are skipped, so an archived Inbox goal or milestone is replaced, not reused.
 

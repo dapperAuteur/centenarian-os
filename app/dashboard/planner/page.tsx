@@ -672,7 +672,7 @@ export default function PlannerPage() {
     // milestones has `title`, not `name`: selecting `name` errored, which left
     // this map empty and the Calendar/Recurring filters matching nothing.
     // roadmaps(*) rather than a column list so this works whether or not
-    // roadmaps.system_kind (migration 199) exists yet.
+    // roadmaps.system_kind (migration 200) exists yet.
     const fetchMilestones = async () => {
       const map: Record<string, string> = {};
       const inbox = new Set<string>();
