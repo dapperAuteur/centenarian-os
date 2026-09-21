@@ -221,7 +221,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How to use Smart Scan for receipts and documents',
-    content: `Go to Dashboard → Scan. Take a photo or upload an image of a receipt, fuel receipt, maintenance invoice, recipe, or medical document. The AI automatically detects the document type, extracts key data (line items, totals, dates, vendors), and lets you save the results to the appropriate module. For receipts, individual line items are tracked with price history per vendor — you can see how prices change over time. Scanned documents can be linked to contacts and financial transactions.`,
+    content: `Go to Dashboard → Scan. Take a photo or upload an image of a receipt, fuel receipt, maintenance invoice, recipe, or medical document. The AI automatically detects the document type, extracts key data (line items, totals, dates, vendors), and lets you save the results to the appropriate module. For receipts, individual line items are tracked with price history per vendor — you can see how prices change over time. Scanned documents can be linked to contacts and financial transactions. When you save a receipt as a transaction, the AI's suggested category becomes the transaction's budget category if it matches the name of one of your categories (capitalization doesn't matter); otherwise it is saved as a tag.`,
   },
 
   // ─── DATA HUB ───────────────────────────────────────────────────────────────
@@ -339,7 +339,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How does offline mode work?',
-    content: `CentenarianOS pages work offline. When you load any page while connected, data is automatically cached in your browser's IndexedDB. If you lose connectivity, cached data is displayed so you can still browse your dashboard content. Changes you make while offline (creating, editing, deleting) are queued and automatically replayed when your connection returns. Text-based pages like tutorials and academy lessons are also available offline once loaded. The offline system uses the offlineFetch wrapper around standard fetch calls.`,
+    content: `CentenarianOS pages work offline. When you load any page while connected, data is automatically cached in your browser's IndexedDB. If you lose connectivity, cached data is displayed so you can still browse your dashboard content. Changes you make while offline (creating, editing, deleting) are queued and automatically replayed when your connection returns. The Add Transaction form, the recurring-task form, and the actions offered after you complete a task tell you when a save was only queued; the new item appears once it syncs. Text-based pages like tutorials and academy lessons are also available offline once loaded. The offline system uses the offlineFetch wrapper around standard fetch calls.`,
   },
 
   // ─── WORKOUTS & NOMAD OS ──────────────────────────────────────────────────
