@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useMilestoneHierarchy } from '@/lib/hooks/useMilestoneHierarchy';
 import type { TaskTag } from '@/lib/types';
 import { toLocalDateString } from '@/lib/dates/local';
+import { systemKindOf } from '@/lib/planner/system-roadmaps';
 
 interface RoadmapItemPickerProps {
   value: string;
@@ -37,6 +38,11 @@ export default function RoadmapItemPicker({ value, onChange, required }: Roadmap
     () => milestones.filter(m => m.goal_id === selectedGoalId),
     [milestones, selectedGoalId]
   );
+
+  const isSystemRoadmapSelected = useMemo(() => {
+    const r = roadmaps.find(r => r.id === selectedRoadmapId);
+    return !!r && systemKindOf(r) !== null;
+  }, [roadmaps, selectedRoadmapId]);
 
   // Track whether we've done the initial sync from hierarchy data
   const initializedRef = useRef(false);
@@ -261,7 +267,8 @@ export default function RoadmapItemPicker({ value, onChange, required }: Roadmap
         >
           <Plus className="w-4 h-4" aria-hidden="true" />
         </button>
-        {selectedRoadmapId && (
+        {/* System roadmaps (Inbox, Work.WitUS Sync) are rebuilt by the app; no delete. */}
+        {selectedRoadmapId && !isSystemRoadmapSelected && (
           <button
             type="button"
             onClick={() => {

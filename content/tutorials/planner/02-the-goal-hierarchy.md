@@ -105,6 +105,19 @@ You don't need to have everything figured out before you start. Start with one r
 
 The hierarchy grows as you plan more. Most people find that the act of filling in the hierarchy reveals gaps in their thinking — "wait, I don't actually know how I'm going to get from here to there." That clarity is the point.
 
+You can even skip the setup on day one. When you add a task from the Daily Planner without picking a goal, it goes to your **Inbox**: a roadmap, goal, and milestone that CentenarianOS creates for you the first time you need it. The Inbox follows the same four levels, so every task still has a home. Sort Inbox tasks into real goals when you plan (Lesson 06 shows how).
+
+---
+
+### Roadmaps the App Creates
+
+Two roadmaps can appear without you making them. Both show an **Auto** badge on the Roadmap page, and neither can be permanently deleted, because the app would only rebuild them:
+
+- **Inbox** — holds tasks you captured without picking a goal.
+- **Work.WitUS Sync** — holds invoice due dates and expected payments from Work.WitUS, under a "Finances" goal.
+
+You can still open, edit, and archive them like any other roadmap.
+
 ---
 
 ## Screen Recording Notes
@@ -136,4 +149,5 @@ The hierarchy grows as you plan more. Most people find that the act of filling i
 - **Milestone** — a binary checkpoint with a specific due date; status: not started / in progress / completed / blocked
 - **Task** — a specific daily action; has a date, time, tag, and priority; lives in the Daily Planner
 - Every task traces back to a goal — that's what makes daily work feel meaningful
+- Tasks captured without a goal go to the Inbox, an "Auto" roadmap the app creates for you; sort them into goals later
 - Start simple: one roadmap, two goals, one milestone each, a few tasks — build from there

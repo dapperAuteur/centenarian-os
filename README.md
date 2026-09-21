@@ -107,7 +107,7 @@ No free plan. All users must subscribe to access paid modules.
 
 | Module | Description | Access |
 |--------|-------------|--------|
-| **Planner** | Roadmap, Goals, Milestones, Tasks hierarchy with week/3-day/daily views | Paid |
+| **Planner** | Roadmap, Goals, Milestones, Tasks hierarchy with day/week/month views; one-field task capture into an auto-created Inbox (works offline), searchable goal picker, Inbox filter | Paid |
 | **Fuel** | Nutrition tracking with NCV framework, USDA/Open Food Facts APIs, auto inventory | Paid |
 | **Engine** | Pomodoro focus sessions, doodle canvas, daily debrief, AI weekly reviews | Paid |
 | **Health Metrics** | RHR, steps, sleep, body composition; Garmin/Oura/WHOOP sync; CSV import | Paid |
