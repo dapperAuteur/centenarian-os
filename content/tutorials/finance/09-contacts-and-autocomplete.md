@@ -49,6 +49,29 @@ The save operation is an upsert — if a contact with the same name and type alr
 
 ---
 
+### Learned Categories: "Always" or "Just this once"
+
+You don't have to set default categories by hand. Whenever you pick or change a transaction's category (in the Add Transaction form, when editing a row in the transaction list, or with a bulk category change on rows from one vendor), a prompt appears on the page:
+
+> Always categorize 'CHIPOTLE' as Dining? **[Always]** **[Just this once]**
+
+- **Always** saves Dining as the default category on the Chipotle contact, creating the contact if you hadn't saved it yet. That default is the vendor's **learned category**.
+- **Just this once** changes nothing else.
+
+After Always, you're offered the chance to apply Dining to Chipotle's past transactions. The prompt shows how many there are, and how many have no category, before anything changes. You can update all of them or only the uncategorized ones.
+
+A learned category is applied automatically to that vendor's new transactions that arrive without one:
+- transactions you add by hand with Category left empty
+- receipt scans (a learned category wins over the AI's guess)
+- CSV imports
+- bank syncs
+
+Vendor names are compared ignoring capitalization, store numbers, and punctuation, so "CHIPOTLE #1234", "Chipotle", and "TST* Chipotle" all count as the same vendor. Expenses use your saved **vendors**; income uses your saved **customers** (payers). A category you choose yourself always wins. To change or stop a learned category, edit the contact's default category.
+
+The prompt doesn't appear when the vendor already has the category you chose, so you'll only see it when there's something new to learn.
+
+---
+
 ### Managing Contacts
 
 Navigate to the contacts management area to:
@@ -90,6 +113,10 @@ In the Finance module, locations aren't used directly — the vendor name and ca
 
 > [SCREEN: Click Save — set default category to "Dining" — show the contact saved]
 
+> [SCREEN: Change a Chipotle transaction's category to Dining — the "Always categorize 'CHIPOTLE' as Dining?" prompt appears — click Always — the "Apply Dining to N past transactions" offer appears]
+
+> [SCREENSHOT: Past-transactions offer — callout: "Count shown before anything changes; update all or only the uncategorized"]
+
 > [SCREEN: Navigate to contacts management — show the list with use counts]
 
 ---
@@ -99,5 +126,7 @@ In the Finance module, locations aren't used directly — the vendor name and ca
 - Saved Contacts store vendor/customer names with default budget categories
 - ContactAutocomplete: type 2+ chars → dropdown → click to auto-fill vendor + category
 - "Save?" prompt appears for new vendors — upserts to avoid duplicates
+- After you categorize a transaction, "Always" teaches the vendor's category (its default category); "Just this once" changes nothing else
+- Learned categories fill in manual entries left uncategorized, receipt scans, CSV imports, and bank syncs
 - Contacts are shared across Finance, Travel, and Planner modules
 - Contacts can have multiple locations (sub-addresses) used primarily in Travel and Planner

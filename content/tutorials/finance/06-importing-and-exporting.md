@@ -52,6 +52,8 @@ This is the most time-consuming step, especially on first import. For each row (
 
 The table supports bulk category assignment: select multiple rows of the same type and assign them all to a category at once.
 
+Rows you leave without a category (or whose category name doesn't match one of yours) still get one if their vendor has a learned category, the one you set by answering "Always" to the categorize prompt (Lessons 03 and 09).
+
 **Step 4: Set the vendor field (optional)**
 If your bank descriptions include merchant names, the tool may parse them into the Vendor field automatically. Review and correct as needed.
 
@@ -131,6 +133,7 @@ This has two advantages: you review your transactions before they enter the syst
 
 - Import from any bank's CSV export: upload the file or paste raw CSV text
 - Import workflow: parse → review table → assign type + category (bulk assign supported) → import
+- Uncategorized rows from a vendor with a learned category get that category on import
 - Duplicate detection: same date + amount + description skips on re-import
 - Do monthly imports (30 days at a time) for best efficiency and freshness
 - Export uses your current filter — filter by year or category before exporting for targeted outputs

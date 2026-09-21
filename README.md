@@ -112,7 +112,7 @@ No free plan. All users must subscribe to access paid modules.
 | **Engine** | Pomodoro focus sessions, doodle canvas, daily debrief, AI weekly reviews | Paid |
 | **Health Metrics** | RHR, steps, sleep, body composition; Garmin/Oura/WHOOP sync; CSV import | Paid |
 | **Workouts & Exercises** | Exercise library with categories; workout templates; Nomad Longevity OS | Paid |
-| **Financial Dashboard** | Accounts, transactions, budgets, invoices, bank linking via Teller | Paid |
+| **Financial Dashboard** | Accounts, transactions, budgets, invoices, bank linking via Teller (manual sync that links your own entries instead of duplicating them), learned vendor categories ("Always categorize this vendor as...?") | Paid |
 | **Travel & Vehicles** | Fuel logs with OCR, trip tracking, multi-stop routes, maintenance, IRS mileage | Paid |
 | **Equipment & Assets** | Asset tracking, valuation history, media gallery, cross-module links | Paid |
 | **Correlations & Analytics** | Cross-module data correlations, trend charts, daily/weekly aggregates | Paid |
@@ -282,6 +282,14 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
+
+### Run Unit Tests
+
+```bash
+npm run test:unit
+```
+
+Runs the pure-function tests in `tests/*.test.ts` with Node's built-in test runner (`node --test --experimental-strip-types`, Node 22.6+). No database or network access. Today this covers bank matching, Teller reconciliation, and learned vendor categories (`lib/finance/transaction-matching.ts`).
 
 ## Project Structure
 
