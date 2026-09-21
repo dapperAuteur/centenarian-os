@@ -21,7 +21,7 @@ Navigate to `/demo`. The page has one big button: **Login as Demo User**. Click 
 
 Important notes:
 - The demo is a shared account — anyone can access it at the same time
-- Data resets daily — anything you add or change will be gone tomorrow
+- Data resets daily, and sometimes sooner when an admin refreshes it — anything you add or change won't last
 - Do not enter personal information (real finances, health data, etc.)
 
 ---
@@ -119,6 +119,6 @@ When you're ready for your own data, click the pricing link at the bottom of the
 
 - Demo at /demo — one-click login, no signup needed
 - Pre-loaded: 4 financial accounts, 50+ transactions, 2 vehicles, 12 fuel logs, 8 contacts, 5 maintenance records
-- Data resets daily — explore freely but don't enter personal info
+- Data resets daily (or sooner if an admin refreshes it) — explore freely but don't enter personal info
 - Start with Finance and Travel to see the richest demo data
 - All tutorial courses are free and accessible from the demo
