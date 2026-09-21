@@ -15,9 +15,10 @@ stays integrated on purpose. The staged plan and the ecosystem registry live in 
 `plans/` working area (`plans/49-decomposition-staged-plan.md`, `plans/ecosystem/README.md`).
 
 - **Stage 1, Media → [Stream.WitUS](https://stream.witus.online): in progress.** Media is out of
-  the nav, Data Hub, Discover, and the features pages. `/dashboard/media` stays reachable by URL,
-  read-only, with a banner whose primary action is the CSV export (`/api/media/export`), the file
-  users import in Stream.WitUS. Every media write route returns `410 Gone`
+  the nav, Data Hub, Discover, and the features pages; `/features/media` 308-redirects to
+  Stream.WitUS (`next.config.mjs`). `/dashboard/media` stays reachable by URL, read-only with no
+  add/edit/delete controls, and its banner's primary action is the CSV export
+  (`/api/media/export`), the file users import on Stream.WitUS's media page. Every media write route returns `410 Gone`
   ([`lib/media/retired.ts`](./lib/media/retired.ts)). Pages and routes are removed after a grace
   period; the tables stay until a later stage.
 
