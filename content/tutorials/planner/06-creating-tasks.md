@@ -13,15 +13,42 @@
 
 Tasks are where planning meets execution. They're the daily actions — the 7 AM training session, the 9 PM writing block, the Tuesday lunch prep — that accumulate over time into milestones, then goals, then roadmaps.
 
-This lesson covers how to create tasks from the Roadmap page, what each field does, and how to think about building a realistic task schedule.
+This lesson covers the two ways to create a task (quick capture from the Daily Planner, and from a milestone on the Roadmap page), what each field does, and how to think about building a realistic task schedule.
 
 ---
 
-### Adding a Task
+### Quick Capture from the Daily Planner
+
+The fastest way to get a task out of your head is the **Add Task** button at the top of `/dashboard/planner`.
+
+1. Click **Add Task**. The cursor is already in the **Activity** field.
+2. Type what needs doing, for example "Dentist".
+3. Press **Enter** (or click **Create Task**).
+
+That's it. The other fields are filled in for you:
+- **Date** is the day you're looking at in the planner.
+- **Time** is the next quarter-hour (at 2:07 PM it's 2:15 PM). Change it if the task has a set time.
+- **Goal: Inbox** — the task goes to your **Inbox** unless you pick a goal.
+
+**The Inbox.** You don't need a roadmap, goal, or milestone before your first task. The first time you save a task without picking a goal, CentenarianOS creates an **Inbox** roadmap with an Inbox goal and an Inbox milestone to hold it. On the Roadmap page it shows an **Auto** badge, and it can't be permanently deleted. Think of it as a holding area: capture now, and sort tasks into real goals when you plan.
+
+**Picking a goal.** Tap the **Goal: Inbox** chip. A search box opens with every "Roadmap › Goal › Milestone" path you have. Type part of any name (it tolerates typos), then tap a result, or press Enter to take the top match. To go back to the Inbox, clear the search and tap **Inbox**. Roadmaps, goals, and milestones are built and deleted on the Roadmap page, not in this form.
+
+**More.** Description, tag, and priority are under **More**, with a one-line summary of the current values next to it.
+
+**Remembered defaults.** The form remembers the goal, tag, and priority you used last, on this device. If that goal is later deleted, the form switches back to the Inbox.
+
+**Offline.** Add Task works without a connection. The task is queued, the planner shows "You're offline. The task is queued…", and the task appears once you reconnect. A task queued for the Inbox, or for a goal that was deleted in the meantime, lands in the Inbox when it syncs.
+
+**Sorting the Inbox.** On the planner, the **Inbox (N)** filter shows the Inbox tasks in the period you're viewing. To move one to a goal, click its Edit button and choose a new milestone.
+
+---
+
+### Adding a Task from the Roadmap Page
 
 Navigate to `/dashboard/roadmap`, expand your roadmap and goal, then expand a milestone. You'll see a **+ Add Task** button under the milestone.
 
-Click it. The task creation form opens.
+Click it. The task creation form opens, already attached to that milestone.
 
 ---
 
@@ -29,7 +56,7 @@ Click it. The task creation form opens.
 
 **Date** — The specific calendar date for this task. Not "sometime this week" — a specific day. The date determines when this task appears in your Daily Planner.
 
-**Time** — What time of day you'll do this. Enter it in 24-hour format (e.g., 07:00 for 7 AM, 19:30 for 7:30 PM). This orders your tasks within a day — earlier tasks appear first.
+**Time** — What time of day you'll do this. The time field follows your device's clock format (for example 07:00 or 7:00 AM). This orders your tasks within a day — earlier tasks appear first.
 
 **Activity** — A short title describing what you'll do. This is what you see in the Daily Planner list. Keep it concise but specific: "Morning track session: 6×400m intervals" is better than "Track workout" because it eliminates decision-making when you open the planner.
 
@@ -83,6 +110,20 @@ You can change the date (reschedule), time (adjust your schedule), activity name
 
 ## Screen Recording Notes
 
+> [SCREEN: Navigate to /dashboard/planner — click "Add Task" — show the cursor already in Activity]
+
+> [SCREEN: Type "Dentist" — press Enter — the task appears in the planner]
+
+> [SCREENSHOT: Add Task form — callouts: Activity (autofocused), "Goal: Inbox" chip, Date, Time (next quarter-hour), "More"]
+
+> [SCREEN: Open Add Task again — tap "Goal: Inbox" — type "mile" — tap a milestone result — chip now shows the goal]
+
+> [SCREEN: Tap "More" — show Description, Tag, Priority]
+
+> [SCREEN: Click the "Inbox (N)" filter — show the captured task]
+
+> [SCREEN: Navigate to /dashboard/roadmap — show the Inbox roadmap with its "Auto" badge]
+
 > [SCREEN: Navigate to /dashboard/roadmap — expand to the milestone level — click "+ Add Task"]
 
 > [SCREEN: Task form opens]
@@ -121,7 +162,9 @@ You can change the date (reschedule), time (adjust your schedule), activity name
 
 ## Key Takeaways
 
-- Tasks require: Date, Time, Activity, Tag, and Priority — description is optional but highly recommended
+- Quick capture: Add Task on the planner needs only an Activity; press Enter to save
+- Tasks saved without a goal go to your Inbox, created for you the first time (shown with an "Auto" badge)
+- Every task has a Date, Time, Activity, Tag, and Priority, but the planner form fills in all but the Activity; description is optional but highly recommended
 - Date and Time determine when the task appears in the Daily Planner
 - Activity name should be specific enough to eliminate decision-making at execution time
 - Use description for protocols, notes, targets, or anything you'll want at execution time

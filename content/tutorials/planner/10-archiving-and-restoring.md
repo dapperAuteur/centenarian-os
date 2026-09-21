@@ -38,6 +38,8 @@ Archiving is not permanent. You have 30 days to change your mind. After that, th
 
 There's no direct delete from the active view — you must archive first, then delete. This two-step process prevents accidental data loss.
 
+**Auto roadmaps.** Roadmaps with an **Auto** badge (your Inbox, and Work.WitUS Sync) are created by the app and have no delete button. You can archive them. If you archive the Inbox, a fresh one is created the next time you save a task without a goal.
+
 ---
 
 ### How to Archive an Item

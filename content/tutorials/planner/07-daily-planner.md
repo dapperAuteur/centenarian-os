@@ -23,6 +23,8 @@ Go to `/dashboard/planner`. You'll see your tasks organized by date, starting fr
 
 If you've created tasks on the Roadmap page, they appear here automatically — no extra steps needed. The planner is a live view of all your tasks, regardless of which milestone or goal they belong to.
 
+To add a task right here, click **Add Task**, type what needs doing, and press Enter. It lands on the day you're viewing, at the next quarter-hour, in your Inbox unless you pick a goal. Lesson 06 covers the form.
+
 ---
 
 ### View Modes
@@ -44,6 +46,14 @@ Toggle between modes using the Day/Week/Month buttons. The date picker adjusts a
 Use the **date picker** to jump to any specific date. Change the view mode and the date picker together to see, say, "the week of March 10" or "next month."
 
 For the Day view, clicking forward or backward moves by one day. For Week, it moves a full week. For Month, a full month.
+
+---
+
+### Filtering Tasks
+
+Next to the view modes is a row of filter chips: **All**, **Inbox (N)**, **Calendar**, **Manual**, **Recurring**, **Schedules**, and **Work**. Each one narrows the list to tasks from that source.
+
+**Inbox (N)** shows the tasks in your Inbox for the period you're viewing, and N is how many there are. It's a quick triage list: open a task's Edit form and choose a milestone to move it into a goal. You can also open the planner straight to it at `/dashboard/planner?filter=inbox`.
 
 ---
 
@@ -129,6 +139,8 @@ The planner is only as useful as the habits around it. Two minutes in the mornin
 
 > [SCREEN: Return to today]
 
+> [SCREEN: Click the "Inbox (N)" filter chip — show only Inbox tasks — click "All" to return]
+
 > [SCREEN: Check the checkbox on a P1 task — show the strikethrough appear, progress bar increment, task count update]
 
 > [SCREENSHOT: Task card before/after completion — strikethrough text, progress bar change callout]
@@ -146,6 +158,7 @@ The planner is only as useful as the habits around it. Two minutes in the mornin
 ## Key Takeaways
 
 - Three view modes: Day (today's focus), Week (the week's shape), Month (big picture)
+- Add Task captures a task with just a title; the Inbox (N) filter shows what still needs a goal
 - Check the checkbox to mark a task complete — strikethrough + progress bar update instantly
 - Completion percentage at the top shows your progress for the current view period
 - P1/P2/P3 priorities help you triage on busy days — always protect your P1 tasks

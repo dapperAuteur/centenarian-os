@@ -35,7 +35,7 @@ The Planner module has three main pages, each with a different scope:
 
 **Roadmap** (`/dashboard/roadmap`) — The big picture. This is where you create and manage your roadmap, add goals, set milestones, and see the entire hierarchy in one expandable tree view. You use this page to structure your long-term plan and periodically review whether everything is set up correctly.
 
-**Daily Planner** (`/dashboard/planner`) — The everyday view. This shows your tasks for today, this week, or this month. It's your operating dashboard: check tasks off as you complete them, see your completion percentage for the day, and manage the work in front of you. Most days, this is the only page you need to visit.
+**Daily Planner** (`/dashboard/planner`) — The everyday view. This shows your tasks for today, this week, or this month. It's your operating dashboard: add a task by typing just a title, check tasks off as you complete them, see your completion percentage for the day, and manage the work in front of you. Most days, this is the only page you need to visit.
 
 **Weekly Review** (`/dashboard/weekly-review`) — The reflection layer. Once a week, generate an AI-written summary of how your week went: tasks completed, nutrition quality, focus sessions, travel, health metrics, and more. It ends with one actionable focus for the coming week.
 
