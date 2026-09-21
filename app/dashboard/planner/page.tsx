@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Task, RecurringTask } from '@/lib/types';
 import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import Link from 'next/link';
-import { Calendar, DollarSign, Plus, Repeat, Upload, Download, Filter, Plane, MapPin, Briefcase, CalendarClock, Pencil, Trash2 } from 'lucide-react';
+import { Calendar, DollarSign, Plus, Repeat, Upload, Download, Filter, Plane, MapPin, Briefcase, CalendarClock, Pencil, Trash2, X } from 'lucide-react';
 import { EditTaskModal } from '@/components/EditTaskModal';
 import CreateRecurringTaskModal, { RecurringTaskData } from '@/components/planner/CreateRecurringTaskModal';
 import CreateTaskModal from '@/components/planner/CreateTaskModal';
@@ -27,9 +27,10 @@ import type { ScheduleTemplate, ScheduleException, SchedulePayPeriod, ScheduleTe
 import { offlineFetch, isQueuedResponse } from '@/lib/offline/offline-fetch';
 import { OfflineSyncManager } from '@/lib/offline/sync-manager';
 import { todayLocal, toLocalDateString, parseLocalDate } from '@/lib/dates/local';
+import { systemKindOf } from '@/lib/planner/system-roadmaps';
 
 type ViewMode = 'day' | 'week' | 'month';
-type SourceFilter = 'all' | 'calendar' | 'manual' | 'recurring' | 'work' | 'schedule';
+type SourceFilter = 'all' | 'inbox' | 'calendar' | 'manual' | 'recurring' | 'work' | 'schedule';
 
 interface TaskCardProps {
   task: Task;
@@ -158,6 +159,7 @@ export default function PlannerPage() {
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>(() => {
     const f = searchParams.get('filter');
     if (f === 'work') return 'work';
+    if (f === 'inbox') return 'inbox';
     return 'all';
   });
 
@@ -198,6 +200,8 @@ export default function PlannerPage() {
 
   // Create task state
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
+  // Shown after a create that needs explaining (queued offline, or filed in the Inbox instead).
+  const [createNotice, setCreateNotice] = useState<string | null>(null);
 
   // Completion actions state
   const [completedTask, setCompletedTask] = useState<Task | null>(null);
@@ -652,8 +656,9 @@ export default function PlannerPage() {
     }), { estimatedCost: 0, actualCost: 0, revenue: 0, netProfit: 0 });
   }, [tasks]);
 
-  // Milestone name lookup for source filtering
+  // Milestone name lookup for source filtering, plus which milestones are the Inbox
   const [milestoneNames, setMilestoneNames] = useState<Record<string, string>>({});
+  const [inboxMilestoneIds, setInboxMilestoneIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const ids = [...new Set(
@@ -663,22 +668,52 @@ export default function PlannerPage() {
     )];
     if (ids.length === 0) return;
 
-    // Batch in chunks of 50 to avoid Supabase URL length limits
+    // Batch in chunks of 50 to avoid Supabase URL length limits.
+    // milestones has `title`, not `name`: selecting `name` errored, which left
+    // this map empty and the Calendar/Recurring filters matching nothing.
+    // roadmaps(*) rather than a column list so this works whether or not
+    // roadmaps.system_kind (migration 199) exists yet.
     const fetchMilestones = async () => {
       const map: Record<string, string> = {};
+      const inbox = new Set<string>();
       for (let i = 0; i < ids.length; i += 50) {
         const batch = ids.slice(i, i + 50);
-        const { data } = await supabase.from('milestones').select('id, name').in('id', batch);
-        if (data) data.forEach(m => { map[m.id] = m.name; });
+        const { data } = await supabase
+          .from('milestones')
+          .select('id, title, goal:goals(title, roadmap:roadmaps(*))')
+          .in('id', batch);
+        if (data) {
+          (data as unknown as {
+            id: string;
+            title: string;
+            goal: { title: string; roadmap: { title: string; system_kind?: string | null } | null } | null;
+          }[]).forEach(m => {
+            map[m.id] = m.title;
+            if (
+              m.title === 'Inbox' &&
+              m.goal?.title === 'Inbox' &&
+              m.goal.roadmap && systemKindOf(m.goal.roadmap) === 'inbox'
+            ) {
+              inbox.add(m.id);
+            }
+          });
+        }
       }
       setMilestoneNames(map);
+      setInboxMilestoneIds(inbox);
     };
     fetchMilestones();
   }, [tasks, backlogTasks, supabase]);
 
+  const inboxCount = useMemo(
+    () => tasks.filter(t => inboxMilestoneIds.has(t.milestone_id)).length,
+    [tasks, inboxMilestoneIds],
+  );
+
   const filteredTasks = useMemo(() => {
     if (sourceFilter === 'all') return tasks;
     return tasks.filter((task) => {
+      if (sourceFilter === 'inbox') return inboxMilestoneIds.has(task.milestone_id);
       if (sourceFilter === 'schedule') return task.source_type === 'schedule';
       if (sourceFilter === 'work') return !!task.source_type && task.source_type !== 'schedule';
       const milestoneName = milestoneNames[task.milestone_id] ?? '';
@@ -689,7 +724,7 @@ export default function PlannerPage() {
       // 'manual' = everything else
       return !isCalendar && !isRecurring && task.source_type !== 'schedule';
     });
-  }, [tasks, sourceFilter, milestoneNames]);
+  }, [tasks, sourceFilter, milestoneNames, inboxMilestoneIds]);
 
   const tasksByDate = useMemo(() => {
     const grouped: Record<string, Task[]> = {};
@@ -738,11 +773,13 @@ export default function PlannerPage() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-1.5">
-            <Filter className="w-4 h-4 text-gray-400" />
-            {([['all', 'All'], ['calendar', 'Calendar'], ['manual', 'Manual'], ['recurring', 'Recurring'], ['schedule', 'Schedules'], ['work', 'Work']] as [SourceFilter, string][]).map(([key, label]) => (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Filter className="w-4 h-4 text-gray-400" aria-hidden="true" />
+            {([['all', 'All'], ['inbox', `Inbox (${inboxCount})`], ['calendar', 'Calendar'], ['manual', 'Manual'], ['recurring', 'Recurring'], ['schedule', 'Schedules'], ['work', 'Work']] as [SourceFilter, string][]).map(([key, label]) => (
               <button
                 key={key}
+                type="button"
+                aria-pressed={sourceFilter === key}
                 onClick={() => setSourceFilter(key)}
                 className={`min-h-11 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                   sourceFilter === key
@@ -808,6 +845,20 @@ export default function PlannerPage() {
           </div>
         </div>
       </div>
+
+      {createNotice && (
+        <div role="status" className="flex items-center justify-between gap-3 p-3 mb-6 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+          <span>{createNotice}</span>
+          <button
+            type="button"
+            onClick={() => setCreateNotice(null)}
+            aria-label="Dismiss"
+            className="shrink-0 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-amber-100 transition"
+          >
+            <X className="w-4 h-4" aria-hidden="true" />
+          </button>
+        </div>
+      )}
 
       {/* Financial Summary */}
       <div className="bg-linear-to-r from-lime-500 to-emerald-600 rounded-2xl shadow-xl p-6 text-white mb-6">
@@ -1049,7 +1100,10 @@ export default function PlannerPage() {
         isOpen={showCreateTaskModal}
         onClose={() => setShowCreateTaskModal(false)}
         defaultDate={selectedDate}
-        onCreated={loadTasks}
+        onCreated={(notice) => {
+          setCreateNotice(notice);
+          loadTasks();
+        }}
       />
 
       <TaskCompletionActionsModal
