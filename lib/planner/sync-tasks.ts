@@ -75,6 +75,7 @@ async function ensureMilestone(db: SupabaseClient, userId: string, title: string
   // "Work.WitUS Sync" when the column isn't there yet. Created with system_kind set, retrying
   // without it on a missing-column error, so this works before and after 199 is applied.
   const found = await findSystemRoadmapId(db, userId, 'work_witus_sync');
+  if (found.failed) return null;
   let roadmapId = found.id ?? undefined;
   if (!roadmapId) {
     const created = await insertSystemRoadmap(

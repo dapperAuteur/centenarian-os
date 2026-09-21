@@ -61,6 +61,11 @@ export interface FoundRoadmap {
   id: string | null;
   /** True when the roadmaps.system_kind column does not exist yet (migration 199 not applied). */
   columnMissing: boolean;
+  /**
+   * True when a lookup failed for another reason. Callers must not create a roadmap then: a
+   * transient error would otherwise leave the user with a duplicate.
+   */
+  failed: boolean;
 }
 
 /**
@@ -92,10 +97,11 @@ export async function findSystemRoadmapId(
   if (kindErr) {
     if (!isMissingColumnError(kindErr)) {
       console.error(`[system-roadmaps] ${kind} lookup failed:`, kindErr.message);
+      return { id: null, columnMissing: false, failed: true };
     }
-    columnMissing = isMissingColumnError(kindErr);
+    columnMissing = true;
   } else if (tagged?.id) {
-    return { id: tagged.id as string, columnMissing: false };
+    return { id: tagged.id as string, columnMissing: false, failed: false };
   }
 
   // Fallback: the title the app has always created this roadmap with.
@@ -106,12 +112,16 @@ export async function findSystemRoadmapId(
     .eq('title', SYSTEM_ROADMAP_TITLES[kind]);
   if (!columnMissing) byTitle = byTitle.is('system_kind', null);
   if (opts.activeOnly) byTitle = byTitle.eq('status', 'active');
-  const { data: titled } = await byTitle
+  const { data: titled, error: titleErr } = await byTitle
     .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle();
 
-  if (!titled?.id) return { id: null, columnMissing };
+  if (titleErr) {
+    console.error(`[system-roadmaps] ${kind} title lookup failed:`, titleErr.message);
+    return { id: null, columnMissing, failed: true };
+  }
+  if (!titled?.id) return { id: null, columnMissing, failed: false };
 
   if (!columnMissing) {
     // Adopt it: tag so the column finds it next time. Best effort; the id is right either way.
@@ -123,7 +133,7 @@ export async function findSystemRoadmapId(
       console.error(`[system-roadmaps] tagging ${kind} roadmap failed:`, tagErr.message);
     }
   }
-  return { id: titled.id as string, columnMissing };
+  return { id: titled.id as string, columnMissing, failed: false };
 }
 
 /**

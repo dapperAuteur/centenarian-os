@@ -54,6 +54,7 @@ export async function resolveInboxMilestone(db: SupabaseClient, userId: string):
 
   // 1. Roadmap
   const found = await findSystemRoadmapId(db, userId, 'inbox', { activeOnly: true });
+  if (found.failed) return null;
   let roadmapId = found.id;
   if (!roadmapId) {
     roadmapId = await insertSystemRoadmap(
@@ -70,7 +71,7 @@ export async function resolveInboxMilestone(db: SupabaseClient, userId: string):
   }
 
   // 2. Goal
-  const { data: goal } = await db
+  const { data: goal, error: goalErr } = await db
     .from('goals')
     .select('id')
     .eq('roadmap_id', roadmapId)
@@ -79,6 +80,11 @@ export async function resolveInboxMilestone(db: SupabaseClient, userId: string):
     .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle();
+  // A failed lookup must not fall through to an insert, or a transient error makes a duplicate.
+  if (goalErr) {
+    console.error('[inbox] goal lookup failed:', goalErr.message);
+    return null;
+  }
   let goalId = goal?.id as string | undefined;
   if (!goalId) {
     const { data: created, error } = await db
@@ -101,7 +107,7 @@ export async function resolveInboxMilestone(db: SupabaseClient, userId: string):
   }
 
   // 3. Milestone
-  const { data: milestone } = await db
+  const { data: milestone, error: msLookupErr } = await db
     .from('milestones')
     .select('id')
     .eq('goal_id', goalId)
@@ -110,6 +116,10 @@ export async function resolveInboxMilestone(db: SupabaseClient, userId: string):
     .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle();
+  if (msLookupErr) {
+    console.error('[inbox] milestone lookup failed:', msLookupErr.message);
+    return null;
+  }
   if (milestone?.id) return milestone.id as string;
 
   const { data: createdMs, error: msErr } = await db
