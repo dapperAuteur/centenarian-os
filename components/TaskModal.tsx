@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { TaskTag } from '@/lib/types';
 import { X } from 'lucide-react';
+import { todayLocal } from '@/lib/dates/local';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -105,7 +106,7 @@ export function TaskModal({ isOpen, onClose, milestoneId, taskId }: TaskModalPro
   };
 
   const resetForm = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayLocal();
     setDate(today);
     setTime('06:00');
     setActivity('');

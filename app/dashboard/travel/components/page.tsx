@@ -7,6 +7,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Plus, AlertTriangle, CheckCircle2, Trash2, Archive } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import { todayLocal } from '@/lib/dates/local';
 
 interface Vehicle {
   id: string;
@@ -71,7 +72,7 @@ export default function ComponentWearPage() {
 
   const [form, setForm] = useState({
     vehicle_id: '', component_type: 'front_tire', brand: '', model: '',
-    installed_date: new Date().toISOString().split('T')[0],
+    installed_date: todayLocal(),
     installed_miles: '0', expected_life_miles: '', notes: '',
   });
 
@@ -127,7 +128,7 @@ export default function ComponentWearPage() {
       });
       if (res.ok) {
         setShowForm(false);
-        setForm({ vehicle_id: '', component_type: 'front_tire', brand: '', model: '', installed_date: new Date().toISOString().split('T')[0], installed_miles: '0', expected_life_miles: '', notes: '' });
+        setForm({ vehicle_id: '', component_type: 'front_tire', brand: '', model: '', installed_date: todayLocal(), installed_miles: '0', expected_life_miles: '', notes: '' });
         load();
       }
     } finally {

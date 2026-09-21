@@ -9,6 +9,7 @@ import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import CategorySelect from '@/components/finance/CategorySelect';
 import Modal from '@/components/ui/Modal';
+import { todayLocal } from '@/lib/dates/local';
 
 interface MaintenanceRecord {
   id: string;
@@ -45,7 +46,7 @@ const SERVICE_LABELS: Record<string, string> = {
 const BLANK_FORM = {
   vehicle_id: '',
   service_type: 'oil_change',
-  date: new Date().toISOString().split('T')[0],
+  date: todayLocal(),
   odometer_at_service: '',
   cost: '',
   vendor: '',

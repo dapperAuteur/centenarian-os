@@ -6,6 +6,7 @@ import Modal from '@/components/ui/Modal';
 import LogExerciseRow, { LogExercise } from './LogExerciseRow';
 import WorkoutPurposeSelect from './WorkoutPurposeSelect';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import { todayLocal } from '@/lib/dates/local';
 
 const FEELING_LABELS = ['', 'Awful', 'Hard', 'OK', 'Good', 'Great'];
 
@@ -73,7 +74,7 @@ interface Props {
 }
 
 export default function WorkoutLogForm({ isOpen, onClose, onSaved, template, existingLog, title, onWorkoutLogged }: Props) {
-  const [form, setForm] = useState({ name: '', date: new Date().toISOString().split('T')[0], duration_min: '', notes: '' });
+  const [form, setForm] = useState({ name: '', date: todayLocal(), duration_min: '', notes: '' });
   const [startedAt, setStartedAt] = useState('');
   const [purpose, setPurpose] = useState<string[]>([]);
   const [overallFeeling, setOverallFeeling] = useState<number | null>(null);
@@ -110,7 +111,7 @@ export default function WorkoutLogForm({ isOpen, onClose, onSaved, template, exi
       // New log from template
       setForm({
         name: template.name,
-        date: new Date().toISOString().split('T')[0],
+        date: todayLocal(),
         duration_min: template.estimated_duration_min ? String(template.estimated_duration_min) : '',
         notes: '',
       });
@@ -150,7 +151,7 @@ export default function WorkoutLogForm({ isOpen, onClose, onSaved, template, exi
       );
     } else {
       // Quick log
-      setForm({ name: '', date: new Date().toISOString().split('T')[0], duration_min: '', notes: '' });
+      setForm({ name: '', date: todayLocal(), duration_min: '', notes: '' });
       setStartedAt('');
       setPurpose([]);
       setOverallFeeling(null);

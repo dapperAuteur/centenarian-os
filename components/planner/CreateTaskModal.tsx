@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { TaskTag } from '@/lib/types';
 import Modal from '@/components/ui/Modal';
@@ -24,6 +24,12 @@ export default function CreateTaskModal({ isOpen, onClose, defaultDate, onCreate
   const [priority, setPriority] = useState<1 | 2 | 3>(2);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  // The modal stays mounted, so useState(defaultDate) only captured the date
+  // from first render. Resync each time it opens or the planner date changes.
+  useEffect(() => {
+    if (isOpen) setDate(defaultDate);
+  }, [isOpen, defaultDate]);
 
   const supabase = createClient();
 
@@ -147,8 +153,8 @@ export default function CreateTaskModal({ isOpen, onClose, defaultDate, onCreate
         </div>
 
         {/* Tag */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Tag</label>
+        <fieldset>
+          <legend className="block text-sm font-medium text-gray-700 mb-1">Tag</legend>
           <div className="flex flex-wrap gap-2">
             {TAGS.map(t => (
               <button
@@ -156,7 +162,7 @@ export default function CreateTaskModal({ isOpen, onClose, defaultDate, onCreate
                 type="button"
                 aria-pressed={tag === t}
                 onClick={() => setTag(t)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                className={`min-h-11 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
                   tag === t
                     ? TAG_COLORS[t]
                     : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
@@ -166,11 +172,11 @@ export default function CreateTaskModal({ isOpen, onClose, defaultDate, onCreate
               </button>
             ))}
           </div>
-        </div>
+        </fieldset>
 
         {/* Priority */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+        <fieldset>
+          <legend className="block text-sm font-medium text-gray-700 mb-1">Priority</legend>
           <div className="flex gap-2">
             {([1, 2, 3] as const).map(p => (
               <button
@@ -178,7 +184,7 @@ export default function CreateTaskModal({ isOpen, onClose, defaultDate, onCreate
                 type="button"
                 aria-pressed={priority === p}
                 onClick={() => setPriority(p)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
+                className={`min-h-11 px-4 py-2 rounded-lg text-sm font-medium border transition ${
                   priority === p
                     ? p === 1 ? 'bg-red-100 text-red-700 border-red-300'
                       : p === 2 ? 'bg-yellow-100 text-yellow-700 border-yellow-300'
@@ -190,7 +196,7 @@ export default function CreateTaskModal({ isOpen, onClose, defaultDate, onCreate
               </button>
             ))}
           </div>
-        </div>
+        </fieldset>
 
         {/* Actions */}
         <div className="flex gap-3 pt-4 border-t border-gray-200">
@@ -198,14 +204,14 @@ export default function CreateTaskModal({ isOpen, onClose, defaultDate, onCreate
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+            className="flex-1 min-h-11 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving || !activity.trim() || !milestoneId}
-            className="flex-1 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition disabled:opacity-50"
+            className="flex-1 min-h-11 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition disabled:opacity-50"
           >
             {saving ? 'Creating...' : 'Create Task'}
           </button>

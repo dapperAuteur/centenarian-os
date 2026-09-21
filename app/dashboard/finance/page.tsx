@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   DollarSign, TrendingUp, TrendingDown, Plus, ArrowRight,
   Upload, Download, Settings, Loader2, CreditCard, Wallet, FileText, AlertTriangle,
-  ArrowRightLeft, RefreshCw, Building2, Landmark, ScanLine,
+  ArrowRightLeft, RefreshCw, Building2, Landmark, ScanLine, X,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -12,7 +12,8 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
-import { offlineFetch } from '@/lib/offline/offline-fetch';
+import { offlineFetch, isQueuedResponse } from '@/lib/offline/offline-fetch';
+import { todayLocal } from '@/lib/dates/local';
 import CategorySelect from '@/components/finance/CategorySelect';
 import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import TransferModal from '@/components/finance/TransferModal';
@@ -102,12 +103,14 @@ export default function FinanceDashboardPage() {
 
   // Add transaction modal
   const [showAdd, setShowAdd] = useState(false);
-  const [addForm, setAddForm] = useState({
+  const [addForm, setAddForm] = useState(() => ({
     amount: '', type: 'expense', description: '', vendor: '',
-    transaction_date: new Date().toISOString().split('T')[0],
+    transaction_date: todayLocal(),
     category_id: '', account_id: '', brand_id: '',
-  });
+  }));
   const [saving, setSaving] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [addNotice, setAddNotice] = useState<string | null>(null);
 
   // Transfer modal
   const [showTransfer, setShowTransfer] = useState(false);
@@ -173,6 +176,7 @@ export default function FinanceDashboardPage() {
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    setAddError(null);
     try {
       const res = await offlineFetch('/api/finance/transactions', {
         method: 'POST',
@@ -183,11 +187,23 @@ export default function FinanceDashboardPage() {
         setShowAdd(false);
         setAddForm({
           amount: '', type: 'expense', description: '', vendor: '',
-          transaction_date: new Date().toISOString().split('T')[0],
+          transaction_date: todayLocal(),
           category_id: '', account_id: '', brand_id: '',
         });
+        // Queued offline: the row won't show until it syncs, so say so
+        // rather than leaving the user to wonder (and enter it twice).
+        setAddNotice(isQueuedResponse(res)
+          ? "You're offline. The transaction is queued and will appear after you reconnect."
+          : null);
         load();
+      } else {
+        const body = await res.json().catch(() => null);
+        setAddError(typeof body?.error === 'string'
+          ? `Couldn't save the transaction: ${body.error}`
+          : `Couldn't save the transaction (error ${res.status}). Please try again.`);
       }
+    } catch {
+      setAddError("Couldn't save the transaction. Check your connection and try again.");
     } finally {
       setSaving(false);
     }
@@ -256,7 +272,7 @@ export default function FinanceDashboardPage() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => setShowAdd(true)}
+            onClick={() => { setAddError(null); setAddNotice(null); setShowAdd(true); }}
             className="flex items-center gap-1.5 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 transition"
           >
             <Plus className="w-4 h-4" />
@@ -334,6 +350,20 @@ export default function FinanceDashboardPage() {
           </a>
         </div>
       </div>
+
+      {addNotice && (
+        <div role="status" className="flex items-center justify-between gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+          <span>{addNotice}</span>
+          <button
+            type="button"
+            onClick={() => setAddNotice(null)}
+            aria-label="Dismiss"
+            className="shrink-0 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-amber-100 transition"
+          >
+            <X className="w-4 h-4" aria-hidden="true" />
+          </button>
+        </div>
+      )}
 
       {/* Reminders Banner */}
       {(reminders.overdue_count > 0 || reminders.due_soon_count > 0) && (
@@ -755,6 +785,11 @@ export default function FinanceDashboardPage() {
                   ))}
                 </select>
               </div>
+            )}
+            {addError && (
+              <p role="alert" className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                {addError}
+              </p>
             )}
           </div>
           <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 pt-3 pb-3 flex gap-3"

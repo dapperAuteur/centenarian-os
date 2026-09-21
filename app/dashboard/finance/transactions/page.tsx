@@ -533,11 +533,21 @@ export default function TransactionsPage() {
                         <span className={`text-sm font-semibold ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                           {tx.type === 'income' ? '+' : '-'}${Number(tx.amount).toFixed(2)}
                         </span>
-                        <button onClick={() => startEdit(tx)} className="p-1.5 hover:bg-gray-100 rounded-lg" title="Edit">
-                          <Edit3 className="w-4 h-4 text-gray-500" />
+                        <button
+                          onClick={() => startEdit(tx)}
+                          className="min-h-11 min-w-11 flex items-center justify-center hover:bg-gray-100 rounded-lg"
+                          title="Edit"
+                          aria-label={`Edit ${tx.description || tx.vendor || 'transaction'}`}
+                        >
+                          <Edit3 className="w-4 h-4 text-gray-500" aria-hidden="true" />
                         </button>
-                        <button onClick={() => handleDelete(tx.id)} className="p-1.5 hover:bg-red-50 rounded-lg" title="Delete">
-                          <Trash2 className="w-4 h-4 text-red-400" />
+                        <button
+                          onClick={() => handleDelete(tx.id)}
+                          className="min-h-11 min-w-11 flex items-center justify-center hover:bg-red-50 rounded-lg"
+                          title="Delete"
+                          aria-label={`Delete ${tx.description || tx.vendor || 'transaction'}`}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-400" aria-hidden="true" />
                         </button>
                       </div>
                     </div>
@@ -695,14 +705,14 @@ export default function TransactionsPage() {
                         </div>
                       ) : (
                         <div className="flex items-center justify-center gap-0.5">
-                          <button onClick={() => startEdit(tx)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 rounded-lg transition" title="Edit">
-                            <Edit3 className="w-4 h-4" />
+                          <button onClick={() => startEdit(tx)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 rounded-lg transition" title="Edit" aria-label={`Edit ${tx.description || tx.vendor || 'transaction'}`}>
+                            <Edit3 className="w-4 h-4" aria-hidden="true" />
                           </button>
-                          <button onClick={() => setLinkingId(tx.id)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:bg-sky-50 hover:text-sky-700 rounded-lg transition" title="Link activities">
-                            <Link2 className="w-4 h-4" />
+                          <button onClick={() => setLinkingId(tx.id)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:bg-sky-50 hover:text-sky-700 rounded-lg transition" title="Link activities" aria-label={`Link activities to ${tx.description || tx.vendor || 'transaction'}`}>
+                            <Link2 className="w-4 h-4" aria-hidden="true" />
                           </button>
-                          <button onClick={() => handleDelete(tx.id)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition" title="Delete">
-                            <Trash2 className="w-4 h-4" />
+                          <button onClick={() => handleDelete(tx.id)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition" title="Delete" aria-label={`Delete ${tx.description || tx.vendor || 'transaction'}`}>
+                            <Trash2 className="w-4 h-4" aria-hidden="true" />
                           </button>
                         </div>
                       )}

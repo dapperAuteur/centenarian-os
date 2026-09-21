@@ -221,7 +221,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How to use Smart Scan for receipts and documents',
-    content: `Go to Dashboard → Scan. Take a photo or upload an image of a receipt, fuel receipt, maintenance invoice, recipe, or medical document. The AI automatically detects the document type, extracts key data (line items, totals, dates, vendors), and lets you save the results to the appropriate module. For receipts, individual line items are tracked with price history per vendor — you can see how prices change over time. Scanned documents can be linked to contacts and financial transactions.`,
+    content: `Go to Dashboard → Scan. Take a photo or upload an image of a receipt, fuel receipt, maintenance invoice, recipe, or medical document. The AI automatically detects the document type, extracts key data (line items, totals, dates, vendors), and lets you save the results to the appropriate module. For receipts, individual line items are tracked with price history per vendor — you can see how prices change over time. Scanned documents can be linked to contacts and financial transactions. When you save a receipt as a transaction, the AI's suggested category becomes the transaction's budget category if it matches the name of one of your categories (capitalization doesn't matter); otherwise it is saved as a tag.`,
   },
 
   // ─── DATA HUB ───────────────────────────────────────────────────────────────
@@ -339,7 +339,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How does offline mode work?',
-    content: `CentenarianOS pages work offline. When you load any page while connected, data is automatically cached in your browser's IndexedDB. If you lose connectivity, cached data is displayed so you can still browse your dashboard content. Changes you make while offline (creating, editing, deleting) are queued and automatically replayed when your connection returns. Text-based pages like tutorials and academy lessons are also available offline once loaded. The offline system uses the offlineFetch wrapper around standard fetch calls.`,
+    content: `Pages you've opened while online are cached in your browser, so you can still view them if you lose your connection. That includes tutorials and academy lessons. Many saves are queued while you're offline and sent automatically when you reconnect: finance (transactions, transfers, accounts, invoices, recurring payments), travel (trips, fuel, maintenance), workouts, equipment, health metrics, recurring tasks and schedules, and the actions offered after you complete a task (except Log Focus Time). Add Transaction, recurring tasks, the task-completion actions, and saving a scanned receipt or recipe tell you when a save was only queued; the item appears once it syncs. Some things still need a connection for now: creating, editing, or completing a planner task; roadmaps, goals, and milestones; Focus Engine sessions, debriefs, and pain logs; Fuel meal logs, meal prep, ingredients, and inventory; the recipe editor; and scanning a document.`,
   },
 
   // ─── WORKOUTS & NOMAD OS ──────────────────────────────────────────────────

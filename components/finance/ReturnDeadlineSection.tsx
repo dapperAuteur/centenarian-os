@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { RotateCcw, Loader2, Check } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import { toLocalDateString } from '@/lib/dates/local';
 
 interface ReturnDeadlineSectionProps {
   transactionId: string;
@@ -79,7 +80,7 @@ export default function ReturnDeadlineSection({
     const days = accountDefaultReturnDays ?? 30;
     const d = new Date(transactionDate + 'T00:00:00');
     d.setDate(d.getDate() + days);
-    const dl = d.toISOString().slice(0, 10);
+    const dl = toLocalDateString(d);
 
     setSaving(true);
     try {

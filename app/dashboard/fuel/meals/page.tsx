@@ -8,6 +8,7 @@ import { MealLog, Protocol, MealType } from '@/lib/types';
 import { Plus, FlaskConical } from 'lucide-react';
 import { Ingredient } from '@/lib/types';
 import { IngredientModal } from '@/components/IngredientModal';
+import { toLocalDateString } from '@/lib/dates/local';
 
 export default function MealLoggingPage() {
   const [mealLogs, setMealLogs] = useState<MealLog[]>([]);
@@ -55,7 +56,7 @@ export default function MealLoggingPage() {
   
   useEffect(() => {
     const today = new Date();
-    setDate(today.toISOString().split('T')[0]);
+    setDate(toLocalDateString(today));
     setTime(today.toTimeString().slice(0, 5));
     loadData();
   }, [loadData]);
