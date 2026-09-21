@@ -14,7 +14,12 @@
 // this would silently delete a feature: due dates and expected payments would stop appearing as
 // planner tasks.
 //
-// Behaviour is a faithful port of both migrations, status for status.
+// Behaviour is a faithful port of both migrations, status for status, INCLUDING migration 157's
+// fix: roadmaps.start_date/end_date, goals.target_year and milestones.target_date are NOT NULL
+// with no default. The first port copied the pre-157 inserts, so every user without an existing
+// "Expected Payments" or "Invoice Due Dates" milestone silently got no task. Found 2026-09-20 by a
+// signed production probe: the invoice event worked (milestone already existed), the job event did
+// not (it had to create one).
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -22,6 +27,17 @@ const ROADMAP_TITLE = 'Work.WitUS Sync';
 const GOAL_TITLE = 'Finances';
 const MILESTONE_INVOICE = 'Invoice Due Dates';
 const MILESTONE_JOB = 'Expected Payments';
+
+/** YYYY-MM-DD in UTC, matching the CURRENT_DATE the triggers used. */
+const isoDate = (d: Date): string => d.toISOString().split('T')[0];
+
+/** Migration 157's dates: today, a year out, and this year. */
+function hierarchyDates(): { today: string; yearOut: string; year: number } {
+  const now = new Date();
+  const out = new Date(now);
+  out.setUTCFullYear(out.getUTCFullYear() + 1);
+  return { today: isoDate(now), yearOut: isoDate(out), year: now.getUTCFullYear() };
+}
 
 export interface InvoiceTaskInput {
   userId: string;
@@ -52,6 +68,8 @@ async function ensureMilestone(db: SupabaseClient, userId: string, title: string
     .maybeSingle();
   if (existing?.id) return existing.id as string;
 
+  const { today, yearOut, year } = hierarchyDates();
+
   const { data: roadmap } = await db
     .from('roadmaps')
     .select('id')
@@ -63,10 +81,13 @@ async function ensureMilestone(db: SupabaseClient, userId: string, title: string
   if (!roadmapId) {
     const { data: created, error } = await db
       .from('roadmaps')
-      .insert({ user_id: userId, title: ROADMAP_TITLE, status: 'active' })
+      .insert({ user_id: userId, title: ROADMAP_TITLE, status: 'active', start_date: today, end_date: yearOut })
       .select('id')
       .single();
-    if (error || !created) return null;
+    if (error || !created) {
+      console.error('[planner-sync] roadmap insert failed:', error?.message);
+      return null;
+    }
     roadmapId = created.id as string;
   }
 
@@ -81,19 +102,25 @@ async function ensureMilestone(db: SupabaseClient, userId: string, title: string
   if (!goalId) {
     const { data: created, error } = await db
       .from('goals')
-      .insert({ roadmap_id: roadmapId, title: GOAL_TITLE, category: 'LIFESTYLE', status: 'active' })
+      .insert({ roadmap_id: roadmapId, title: GOAL_TITLE, category: 'LIFESTYLE', status: 'active', target_year: year })
       .select('id')
       .single();
-    if (error || !created) return null;
+    if (error || !created) {
+      console.error('[planner-sync] goal insert failed:', error?.message);
+      return null;
+    }
     goalId = created.id as string;
   }
 
   const { data: milestone, error: msErr } = await db
     .from('milestones')
-    .insert({ goal_id: goalId, title, status: 'in_progress' })
+    .insert({ goal_id: goalId, title, status: 'in_progress', target_date: yearOut })
     .select('id')
     .single();
-  if (msErr || !milestone) return null;
+  if (msErr || !milestone) {
+    console.error('[planner-sync] milestone insert failed:', msErr?.message);
+    return null;
+  }
   return milestone.id as string;
 }
 

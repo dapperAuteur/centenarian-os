@@ -126,6 +126,7 @@ No free plan. All users must subscribe to access paid modules.
 - **Academy settings**: teacher fee (10%), course management, assignment grading
 - **Engagement metrics**: feature usage, conversion funnels, SEO, shortlinks
 - **AI Education chat**: codebase Q&A with 5 modes (interview, investor, onboarding, demo, general)
+- **Demo reset**: "Reset demo data" on the overview wipes and reseeds the tutorial and visitor demo accounts on demand (the same reset also runs nightly at 00:00 UTC via cron)
 
 ## Quick Start
 
