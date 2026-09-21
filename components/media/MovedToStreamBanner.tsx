@@ -19,8 +19,8 @@ export default function MovedToStreamBanner() {
               Media is moving to Stream.WitUS
             </h2>
             <p className="mt-1 text-sm text-gray-700">
-              Your media list is read-only here, so new items and edits won&apos;t save.
-              Export your list as a CSV file, then import that file in Stream.WitUS.
+              Your media list is read-only here. Export it as a CSV file, then import that
+              file in Stream.WitUS.
             </p>
           </div>
 
