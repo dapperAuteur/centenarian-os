@@ -24,7 +24,7 @@ import PayPeriodCard from '@/components/planner/PayPeriodCard';
 import PaycheckReconcileModal, { ReconcileSaveData } from '@/components/planner/PaycheckReconcileModal';
 import { getScheduleIndicators } from '@/components/planner/ScheduleCalendarOverlay';
 import type { ScheduleTemplate, ScheduleException, SchedulePayPeriod, ScheduleTemplateFinance } from '@/lib/types';
-import { offlineFetch } from '@/lib/offline/offline-fetch';
+import { offlineFetch, isQueuedResponse } from '@/lib/offline/offline-fetch';
 import { OfflineSyncManager } from '@/lib/offline/sync-manager';
 import { todayLocal, toLocalDateString, parseLocalDate } from '@/lib/dates/local';
 
@@ -51,19 +51,25 @@ function TaskCard({ task, onToggle, onEdit }: TaskCardProps) {
             : 'bg-white border-sky-500 hover:shadow-md'
     }`}>
       <div className="flex items-start gap-3">
+        {/* 44px hit area around the 24px circle; negative margins keep the layout */}
         <button
+          type="button"
           onClick={() => onToggle(task.id, !task.completed)}
-          className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition mt-1 ${
-            task.completed 
-              ? 'bg-lime-500 hover:bg-lime-600' 
-              : 'border-2 border-gray-300 hover:border-lime-500'
-          }`}
+          aria-label={`Complete ${task.activity}`}
+          aria-pressed={task.completed}
+          className="group shrink-0 min-h-11 min-w-11 -mx-2.5 -mt-1.5 -mb-2.5 flex items-center justify-center rounded-full"
         >
-          {task.completed && (
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-            </svg>
-          )}
+          <span className={`w-6 h-6 rounded-full flex items-center justify-center transition ${
+            task.completed
+              ? 'bg-lime-500 group-hover:bg-lime-600'
+              : 'border-2 border-gray-300 group-hover:border-lime-500'
+          }`}>
+            {task.completed && (
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </span>
         </button>
 
         <div className="flex-grow">
@@ -84,18 +90,23 @@ function TaskCard({ task, onToggle, onEdit }: TaskCardProps) {
                 </div>
               )}
               <button
+                type="button"
                 onClick={() => onEdit(task)}
-                className="p-1 hover:bg-gray-100 rounded transition"
+                aria-label={`Edit ${task.activity}`}
+                className="min-h-11 min-w-11 -my-2.5 flex items-center justify-center hover:bg-gray-100 rounded transition"
               >
-                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </button>
               <button
+                type="button"
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="p-1 hover:bg-gray-100 rounded transition"
+                aria-label={`Details for ${task.activity}`}
+                aria-expanded={isExpanded}
+                className="min-h-11 min-w-11 -my-2.5 flex items-center justify-center hover:bg-gray-100 rounded transition"
               >
-                <svg className={`w-4 h-4 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
@@ -385,6 +396,9 @@ export default function PlannerPage() {
       });
 
       if (response.ok) {
+        // Offline: the create is only queued. The generate call below queues
+        // behind it and replays in order, so say that instead of "created".
+        const queued = isQueuedResponse(response);
         await loadRecurringTasks();
 
         // Generate tasks for today
@@ -399,7 +413,9 @@ export default function PlannerPage() {
         // Reload tasks to show newly generated
         await loadTasks();
         
-        alert('Recurring task created! Today\'s task has been generated.');
+        alert(queued
+          ? 'You\'re offline. The recurring task is queued and will be created, with today\'s task, when you reconnect.'
+          : 'Recurring task created! Today\'s task has been generated.');
       } else {
         throw new Error('Failed to create recurring task');
       }
@@ -742,9 +758,9 @@ export default function PlannerPage() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setShowCreateTaskModal(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition"
+            className="min-h-11 flex items-center space-x-2 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4" aria-hidden="true" />
             <span>Add Task</span>
           </button>
           <button

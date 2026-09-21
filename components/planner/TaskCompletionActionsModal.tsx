@@ -5,7 +5,7 @@ import { DollarSign, MapPin, Dumbbell, Heart, FileText, Check, ChevronDown, Cloc
 import { Task } from '@/lib/types';
 import Modal from '@/components/ui/Modal';
 import { createClient } from '@/lib/supabase/client';
-import { offlineFetch } from '@/lib/offline/offline-fetch';
+import { offlineFetch, isQueuedResponse } from '@/lib/offline/offline-fetch';
 
 interface TaskCompletionActionsModalProps {
   isOpen: boolean;
@@ -140,9 +140,9 @@ async function linkCreatedRecord(
   wrapKey?: string,
 ): Promise<SaveOutcome> {
   if (!res.ok) throw new Error(await errorMessage(res, `Save failed (${res.status})`));
-  const data = await res.json();
   // offlineFetch queued the create: there is no id yet, so nothing to link.
-  if (data?.queued) return QUEUED_UNLINKED;
+  if (isQueuedResponse(res)) return QUEUED_UNLINKED;
+  const data = await res.json();
   const record = wrapKey ? data?.[wrapKey] : data;
   try {
     await createActivityLink(taskId, targetType, record?.id);
@@ -403,8 +403,7 @@ function HealthForm({ task, onDone }: FormProps) {
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error(await errorMessage(res, `Save failed (${res.status})`));
-      const data = await res.json().catch(() => null);
-      onDone(data?.queued ? { label: 'Queued offline. It will sync when you reconnect.' } : SAVED);
+      onDone(isQueuedResponse(res) ? { label: 'Queued offline. It will sync when you reconnect.' } : SAVED);
     } catch (err) {
       console.error('Health metrics save failed:', err);
       setError(failureText(err, 'health metrics'));
