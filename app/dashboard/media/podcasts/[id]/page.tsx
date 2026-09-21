@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Trash2, Loader2, Plus, X } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import MovedToStreamBanner from '@/components/media/MovedToStreamBanner';
 
 interface Episode {
   id: string;
@@ -181,6 +182,8 @@ export default function PodcastEpisodeDetailPage() {
           {episode.air_date && <p className="text-sm text-gray-500">{fmtDate(episode.air_date)}</p>}
         </div>
       </div>
+
+      <MovedToStreamBanner />
 
       {/* Details */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-4">

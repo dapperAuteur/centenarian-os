@@ -12,6 +12,7 @@ import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
 import AudioRecorder from '@/components/ui/AudioRecorder';
 import MediaRelationships from '@/components/media/MediaRelationships';
 import MediaForm from '@/components/media/MediaForm';
+import MovedToStreamBanner from '@/components/media/MovedToStreamBanner';
 
 interface MediaItem {
   id: string;
@@ -286,6 +287,8 @@ export default function MediaDetailPage() {
           </div>
         </div>
       </div>
+
+      <MovedToStreamBanner />
 
       {/* Details Card */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-4">

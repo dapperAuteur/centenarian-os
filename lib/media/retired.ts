@@ -6,20 +6,7 @@
 // can still see and export their list. Pages and tables stay until a later stage.
 
 import { NextResponse } from 'next/server';
-
-/** Stream.WitUS origin, as listed in components/ui/SiteFooter.tsx and the WitUS product registry. */
-export const STREAM_WITUS_URL = 'https://stream.witus.online';
-
-/**
- * Stream.WitUS media tracker. The path comes from Stream's own code
- * (src/app/dashboard/media/page.tsx; signed-out visitors are sent to /signin by
- * src/app/dashboard/layout.tsx). Stream has no CSV-upload page yet, only the
- * POST /api/media/import endpoint, so this points at the tracker home. Point it at
- * the import page once Stream ships one.
- */
-export const STREAM_WITUS_MEDIA_URL = `${STREAM_WITUS_URL}/dashboard/media`;
-
-export const MEDIA_EXPORT_PATH = '/api/media/export';
+import { MEDIA_EXPORT_PATH, STREAM_WITUS_MEDIA_URL } from './stream-handoff';
 
 export const MEDIA_RETIRED_MESSAGE =
   'Media has moved to Stream.WitUS and is read-only in CentenarianOS. ' +

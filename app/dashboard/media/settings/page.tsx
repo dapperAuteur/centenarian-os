@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { ArrowLeft, Plus, Edit3, Trash2, Check, X, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import MovedToStreamBanner from '@/components/media/MovedToStreamBanner';
 
 interface SavedItem {
   id: string;
@@ -265,6 +266,8 @@ export default function MediaSettingsPage() {
         </Link>
         <h1 className="text-lg font-bold text-gray-900">Media Settings</h1>
       </div>
+
+      <MovedToStreamBanner />
 
       <p className="text-sm text-gray-500">
         Manage your saved creators and platforms. These appear as suggestions when adding media to reduce typos and speed up entry.

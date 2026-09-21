@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Plus, Loader2 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Modal from '@/components/ui/Modal';
+import MovedToStreamBanner from '@/components/media/MovedToStreamBanner';
 
 interface Episode {
   id: string;
@@ -105,6 +106,8 @@ export default function PodcastEpisodesPage() {
           <Plus className="w-4 h-4" /> New Episode
         </button>
       </div>
+
+      <MovedToStreamBanner />
 
       {loading ? (
         <div className="py-16 flex items-center justify-center">
