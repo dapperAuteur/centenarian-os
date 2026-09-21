@@ -46,11 +46,11 @@ export default function MovedToStreamBanner() {
           </div>
 
           <p className="text-xs text-gray-600">
-            Import the file once. Each import adds every row, so importing it again creates
-            duplicates. The file includes titles, types, status, ratings, dates, genres, tags,
-            links, progress, favorites, visibility, and each item&apos;s notes field. Season and
-            episode numbers, categories, and entries in an item&apos;s Notes section are not
-            included.
+            On Stream.WitUS, open your media page and choose Import CSV. Importing the same file
+            again skips items you already have. The file includes titles, types, status, ratings,
+            dates, genres, tags, links, progress, season and episode numbers, favorites,
+            visibility, and each item&apos;s notes field. Categories and entries in an item&apos;s
+            Notes section are not included.
           </p>
         </div>
       </div>
