@@ -6,11 +6,11 @@
 export const STREAM_WITUS_URL = 'https://stream.witus.online';
 
 /**
- * Stream.WitUS media tracker. The path comes from Stream's own code
- * (src/app/dashboard/media/page.tsx; signed-out visitors are sent to /signin by
- * src/app/dashboard/layout.tsx). Stream has no CSV-upload page yet, only the
- * POST /api/media/import endpoint, so this points at the tracker home. Point it at
- * the import page once Stream ships one.
+ * Stream.WitUS media tracker, and where users import the CSV this app exports. The
+ * path comes from Stream's own code (src/app/dashboard/media/page.tsx; signed-out
+ * visitors are sent to /signin by src/app/dashboard/layout.tsx). The CSV import
+ * control lives on this page (added in Stream's feat/media-csv-import branch, backed
+ * by its POST /api/media/import), so there is no separate import URL to point at.
  */
 export const STREAM_WITUS_MEDIA_URL = `${STREAM_WITUS_URL}/dashboard/media`;
 
