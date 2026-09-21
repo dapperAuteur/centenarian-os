@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { mediaRetiredResponse } from '@/lib/media/retired';
 
 export async function GET(
   _request: NextRequest,
@@ -68,73 +69,11 @@ export async function GET(
   return NextResponse.json({ relationships: [...parents, ...children] });
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const { id } = await params;
-  const body = await request.json();
-  const { related_id, relationship_type, direction } = body;
-
-  if (!related_id || !relationship_type) {
-    return NextResponse.json({ error: 'related_id and relationship_type are required' }, { status: 400 });
-  }
-
-  if (related_id === id) {
-    return NextResponse.json({ error: 'Cannot link an item to itself' }, { status: 400 });
-  }
-
-  const parent_id = direction === 'child' ? id : related_id;
-  const child_id = direction === 'child' ? related_id : id;
-
-  const { data, error } = await supabase
-    .from('media_relationships')
-    .insert({
-      user_id: user.id,
-      parent_id,
-      child_id,
-      relationship_type,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    if (error.message.includes('duplicate')) {
-      return NextResponse.json({ error: 'This relationship already exists' }, { status: 409 });
-    }
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ relationship: data }, { status: 201 });
+// Media moved to Stream.WitUS: writes are retired (410 Gone). See lib/media/retired.ts.
+export function POST() {
+  return mediaRetiredResponse();
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  await params; // consume params
-  const { searchParams } = request.nextUrl;
-  const relationshipId = searchParams.get('relationship_id');
-
-  if (!relationshipId) {
-    return NextResponse.json({ error: 'relationship_id query param required' }, { status: 400 });
-  }
-
-  const { error } = await supabase
-    .from('media_relationships')
-    .delete()
-    .eq('id', relationshipId)
-    .eq('user_id', user.id);
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  return NextResponse.json({ ok: true });
+export function DELETE() {
+  return mediaRetiredResponse();
 }
