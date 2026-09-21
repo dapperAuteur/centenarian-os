@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:unit": "node --test --experimental-strip-types tests/transaction-matching.test.ts",
     "test:a11y": "playwright test --config=playwright.a11y.config.ts",
     "test:a11y:baseline": "SKIP_ENFORCEMENT=1 playwright test --config=playwright.a11y.config.ts"
   },

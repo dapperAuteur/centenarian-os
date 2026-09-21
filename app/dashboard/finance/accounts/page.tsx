@@ -73,6 +73,14 @@ const emptyForm = {
   monthly_fee: '', due_date: '', statement_date: '', notes: '',
 };
 
+/** One-line result of a Teller sync, from the counts /api/teller/sync returns. */
+function syncSummary(
+  prefix: string,
+  data: { new?: number; matched?: number; updated?: number; skipped?: number },
+): string {
+  return `${prefix}: ${data.new ?? 0} new, ${data.matched ?? 0} matched to your entries, ${data.updated ?? 0} updated, ${data.skipped ?? 0} unchanged`;
+}
+
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
@@ -205,7 +213,7 @@ export default function AccountsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setSyncResult(`All accounts synced: ${data.new} new, ${data.matched} matched, ${data.skipped} unchanged`);
+        setSyncResult(syncSummary('All accounts synced', data));
         load();
       } else {
         setSyncResult(data.error || 'Sync failed');
@@ -229,7 +237,7 @@ export default function AccountsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setSyncResult(`Full re-sync complete: ${data.new} new, ${data.matched} matched, ${data.skipped} unchanged${data.oldestTransactionDate ? ` (history back to ${data.oldestTransactionDate})` : ''}`);
+        setSyncResult(`${syncSummary('Full re-sync complete', data)}${data.oldestTransactionDate ? ` (history back to ${data.oldestTransactionDate})` : ''}`);
         load();
       } else {
         setSyncResult(data.error || 'Full re-sync failed');
@@ -252,7 +260,7 @@ export default function AccountsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setSyncResult(`Synced: ${data.new} new, ${data.matched} matched, ${data.skipped} unchanged`);
+        setSyncResult(syncSummary('Synced', data));
         load();
       } else {
         setSyncResult(data.error || 'Sync failed');

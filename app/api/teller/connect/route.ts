@@ -9,9 +9,10 @@ import {
   listAccounts,
   listTransactions,
   mapAccountType,
-  mapTellerTransaction,
 } from '@/lib/teller';
 import { logInfo, logError } from '@/lib/logging';
+import { loadLearnedCategoryIndex } from '@/lib/finance/learned-categories';
+import { reconcileTellerTransactions } from '@/lib/finance/teller-sync';
 
 function getDb() {
   return createServiceClient(
@@ -130,6 +131,8 @@ export async function POST(request: NextRequest) {
   // 3. Initial sync — fetch all available transaction history per account
   let totalSynced = 0;
   let oldestDate: string | null = null;
+  const learned = await loadLearnedCategoryIndex(db, user.id);
+  const claimedManualIds = new Set<string>();
 
   for (const acct of upsertedAccounts) {
     if (!acct.teller_account_id) continue;
@@ -142,14 +145,19 @@ export async function POST(request: NextRequest) {
       const acctOldest = dates[0];
       if (!oldestDate || acctOldest < oldestDate) oldestDate = acctOldest;
 
-      // Map and insert (skip duplicates via teller_transaction_id unique index)
-      const mapped = txns.map((t) => mapTellerTransaction(t, acct.id, user.id));
-      for (const row of mapped) {
-        const { error } = await db
-          .from('financial_transactions')
-          .upsert(row, { onConflict: 'teller_transaction_id', ignoreDuplicates: true });
-        if (!error) totalSynced++;
-      }
+      // Reconcile like a sync: skip what's already imported, link manual and
+      // scanned entries of the same purchase instead of duplicating them, and
+      // insert the rest with learned vendor categories. This also drops the old
+      // upsert with onConflict on the partial unique index, which Postgres may
+      // refuse to infer (untested; see plans/58 §7).
+      const counts = await reconcileTellerTransactions(db, {
+        userId: user.id,
+        accountId: acct.id,
+        txns,
+        learned,
+        claimedManualIds,
+      });
+      totalSynced += counts.new + counts.matched + counts.updated;
 
       // Update account with sync timestamp and oldest date
       await db

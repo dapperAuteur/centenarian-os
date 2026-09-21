@@ -1,11 +1,12 @@
 // app/api/finance/transactions/route.ts
 // GET: list transactions with filters (date range, category, type)
-// POST: create a new transaction
+// POST: create a new transaction (fills a missing category from the vendor's learned category)
 // PATCH: update a transaction
 // DELETE: delete a transaction
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { findLearnedCategory } from '@/lib/finance/learned-categories';
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -62,10 +63,24 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { amount, type, description, vendor, transaction_date, category_id, account_id, brand_id, tags, notes } = body;
+  const {
+    amount, type, description, vendor, transaction_date, category_id, suggested_category_id,
+    account_id, brand_id, tags, notes,
+  } = body;
 
   if (!amount || !transaction_date) {
     return NextResponse.json({ error: 'Amount and date are required' }, { status: 400 });
+  }
+
+  // Category, in order: what the user picked; the vendor's learned category
+  // (set by answering "Always" to the categorize prompt); then a suggestion
+  // such as the receipt scanner's guess, so a learned category beats the AI.
+  let resolvedCategoryId: string | null = category_id || null;
+  if (!resolvedCategoryId && typeof vendor === 'string' && vendor.trim()) {
+    resolvedCategoryId = await findLearnedCategory(supabase, user.id, vendor, type || 'expense');
+  }
+  if (!resolvedCategoryId && typeof suggested_category_id === 'string' && suggested_category_id) {
+    resolvedCategoryId = suggested_category_id;
   }
 
   const { data, error } = await supabase
@@ -77,7 +92,7 @@ export async function POST(request: NextRequest) {
       description: description?.trim() || null,
       vendor: vendor?.trim() || null,
       transaction_date,
-      category_id: category_id || null,
+      category_id: resolvedCategoryId,
       account_id: account_id || null,
       brand_id: brand_id || null,
       tags: tags || null,

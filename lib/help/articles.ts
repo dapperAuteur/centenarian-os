@@ -221,7 +221,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How to use Smart Scan for receipts and documents',
-    content: `Go to Dashboard → Scan. Take a photo or upload an image of a receipt, fuel receipt, maintenance invoice, recipe, or medical document. The AI automatically detects the document type, extracts key data (line items, totals, dates, vendors), and lets you save the results to the appropriate module. For receipts, individual line items are tracked with price history per vendor — you can see how prices change over time. Scanned documents can be linked to contacts and financial transactions. When you save a receipt as a transaction, the AI's suggested category becomes the transaction's budget category if it matches the name of one of your categories (capitalization doesn't matter); otherwise it is saved as a tag.`,
+    content: `Go to Dashboard → Scan. Take a photo or upload an image of a receipt, fuel receipt, maintenance invoice, recipe, or medical document. The AI automatically detects the document type, extracts key data (line items, totals, dates, vendors), and lets you save the results to the appropriate module. For receipts, individual line items are tracked with price history per vendor — you can see how prices change over time. Scanned documents can be linked to contacts and financial transactions. When you save a receipt as a transaction and the vendor has a learned category (you answered "Always" to the categorize prompt for that vendor), the transaction gets that category. Otherwise the AI's suggested category becomes the transaction's budget category if it matches the name of one of your categories (capitalization doesn't matter); if it matches none, it is saved as a tag.`,
   },
 
   // ─── DATA HUB ───────────────────────────────────────────────────────────────
@@ -365,7 +365,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How to use saved contacts',
-    content: `Saved contacts let you store frequently-used vendors, customers, and locations across all modules. Go to Dashboard → Contacts or use the contact autocomplete on any form that supports it (finance transactions, travel trips, planner tasks). Contacts have a type (vendor, customer, or location), optional default budget category, and notes. When you select a saved vendor on a transaction, its default category auto-fills. Contacts also support sub-locations — for example, a venue contact can have multiple addresses (main entrance, loading dock, parking lot). Import contacts in bulk via the Data Hub.`,
+    content: `Saved contacts let you store frequently-used vendors, customers, and locations across all modules. Go to Dashboard → Contacts or use the contact autocomplete on any form that supports it (finance transactions, travel trips, planner tasks). Contacts have a type (vendor, customer, or location), optional default budget category, and notes. When you select a saved vendor on a transaction, its default category auto-fills. The default category is also what "Always" sets when you answer the categorize prompt after categorizing a transaction, and it is applied automatically to that vendor's new transactions from bank syncs, receipt scans, and CSV imports. Contacts also support sub-locations — for example, a venue contact can have multiple addresses (main entrance, loading dock, parking lot). Import contacts in bulk via the Data Hub.`,
   },
 
   // ─── COACHING GEMS ────────────────────────────────────────────────────────
@@ -413,7 +413,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How to manage financial accounts and bank linking',
-    content: `Go to Dashboard → Finance → Accounts to add and manage your financial accounts: checking, savings, credit card, loan, and cash accounts. Each account tracks institution name, last four digits, interest rate, credit limit, opening balance, monthly fees, and due/statement dates. Balance is calculated as opening balance plus income minus expenses. You can link bank accounts via the Teller API for automatic transaction syncing — click Connect Bank Account, complete the OAuth flow, and transactions import automatically. Deactivated accounts preserve transaction history but hide from active views.`,
+    content: `Go to Dashboard → Finance → Accounts to add and manage your financial accounts: checking, savings, credit card, loan, and cash accounts. Each account tracks institution name, last four digits, interest rate, credit limit, opening balance, monthly fees, and due/statement dates. Balance is calculated as opening balance plus income minus expenses. You can link bank accounts via the Teller API — click Connect Bank Account and complete the bank's sign-in. Connecting imports the history your bank provides; after that, click Sync on the Accounts page to bring in new transactions (sync does not run on its own yet). Deactivated accounts preserve transaction history but hide from active views.`,
   },
 
   // ─── PLANNER DETAILS ──────────────────────────────────────────────────────
@@ -429,7 +429,12 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How does Teller bank account syncing work?',
-    content: `Teller is a bank account linking API that lets you automatically import transactions. Go to Dashboard → Finance → Accounts and click Connect Bank Account. Select your bank from the Teller enrollment flow and authorize access. Once connected, your transactions sync daily. Each synced transaction includes date, amount, description, and merchant. You can categorize synced transactions and link them to contacts. If you disconnect, historical synced transactions remain in your account. Teller supports most major US banks and credit unions.`,
+    content: `Teller is a bank account linking API that imports your bank transactions. Go to Dashboard → Finance → Accounts and click Connect Bank Account. Select your bank from the Teller enrollment flow and authorize access. Connecting imports the history your bank provides. After that, sync is manual: click Sync (or Sync all) on the Accounts page. Each sync re-checks the last 10 days before your previous sync, so a pending charge that posts with a new amount, date, or description (for example a restaurant tip) is updated, as long as you haven't edited that transaction. Each synced transaction includes date, amount, description, and merchant, and it gets the vendor's learned category if you set one with "Always". If you disconnect, historical synced transactions remain in your account. Teller supports most major US banks and credit unions.`,
+  },
+  {
+    role: 'all',
+    title: 'How does bank sync avoid duplicates of transactions I entered myself?',
+    content: `When a sync finds a bank transaction that matches one you already added by hand or with a receipt scan, it links the two instead of adding a second copy. A match needs: the same amount (within one cent), dates no more than 5 days apart, and a similar vendor or description. Names are compared after lowercasing and removing store numbers, punctuation, and tags like "SQ *", so "Chipotle" matches "CHIPOTLE #1234". An entry with no vendor and no description is never matched. Your entry can be on the same account or have no account; if it had none, the sync fills in the bank account. When several entries could match, the closest date wins, then an exact name. Matched entries show a "Bank matched" badge in the transaction list. If the sync linked two different purchases, open the transaction and click Unmatch from bank: your entry stays as it is, and the bank's transaction is added as its own row that later syncs leave alone. Sync also watches for a pending bank transaction that your bank re-creates under a new ID when it posts, and moves the existing row to the new ID instead of adding a duplicate.`,
   },
 
   // ─── TRAVEL MODULE ────────────────────────────────────────────────────────
@@ -690,7 +695,12 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How to manage saved contacts',
-    content: `Contacts (/dashboard/contacts or via the ContactAutocomplete component) let you save vendors, customers, and locations. Each contact has a name, type, optional default category, and notes. When you type a vendor name in a finance transaction, the autocomplete suggests saved contacts. Selecting a contact with a default_category_id auto-fills the transaction category.`,
+    content: `Contacts (/dashboard/contacts or via the ContactAutocomplete component) let you save vendors, customers, and locations. Each contact has a name, type, optional default category, and notes. When you type a vendor name in a finance transaction, the autocomplete suggests saved contacts. Selecting a contact with a default_category_id auto-fills the transaction category. The same default category is the vendor's learned category, set by answering "Always" to the categorize prompt.`,
+  },
+  {
+    role: 'all',
+    title: 'How do I make a vendor always get the same category?',
+    content: `When you pick or change a transaction's category, CentenarianOS asks, right on the page: "Always categorize 'CHIPOTLE' as Dining?" with two buttons. Always makes that the vendor's learned category: new transactions from that vendor that arrive without a category get it automatically, whether you add them by hand, scan a receipt, import a CSV, or sync your bank. Just this once changes nothing else. After Always, you can apply the category to the vendor's past transactions; the prompt shows how many there are (and how many have no category) before anything changes, and you can update all of them or only the uncategorized ones. The prompt appears after Add Transaction, after editing a transaction's category in the transaction list, and after a bulk category change when every selected transaction is from the same vendor. It doesn't appear when the vendor already has that category. Vendor names are matched ignoring capitalization, store numbers, and punctuation, so "CHIPOTLE #1234" and "Chipotle" count as the same vendor. Expenses use your saved vendors and income uses your saved customers. The learned category is stored as the vendor contact's default category, so you can change or clear it by editing the contact. A category you choose yourself always wins over a learned one.`,
   },
   {
     role: 'all',

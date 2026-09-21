@@ -39,6 +39,19 @@ Click **Save**. The transaction is logged immediately and your dashboard stats u
 
 ---
 
+### Teaching CentenarianOS Your Vendors
+
+If you gave the transaction both a vendor and a category, a small prompt appears at the top of the dashboard after you save:
+
+> Always categorize 'Whole Foods' as Groceries? **[Always]** **[Just this once]**
+
+- **Always** makes Groceries the learned category for Whole Foods. From then on, any Whole Foods transaction that arrives without a category gets Groceries automatically, whether you add it by hand, scan a receipt, import a CSV, or sync your bank. You'll then be offered the chance to apply Groceries to your past Whole Foods transactions too, with the count shown before anything changes.
+- **Just this once** changes nothing else.
+
+The prompt only appears when the vendor has no learned category yet, or has a different one. If you leave Category empty for a vendor that already has a learned category, the transaction gets that category when it saves. A category you pick yourself always wins.
+
+---
+
 ### Expense vs. Income — Practical Examples
 
 **Expenses:**
@@ -98,6 +111,8 @@ One vendor visit can span multiple categories — a Target run that includes gro
 
 > [SCREEN: Click Save — modal closes — dashboard stats update]
 
+> [SCREENSHOT: The "Always categorize 'Whole Foods' as Groceries?" prompt at the top of the dashboard — callout: "Always teaches the vendor's category; Just this once changes nothing else"]
+
 > [SCREENSHOT: Dashboard after save — Expenses summary card shows updated total — Groceries budget progress bar has advanced]
 
 > [SCREEN: Click "+ Add Transaction" again — add an Income transaction: $2,400, Business Income, "March retainer payment", vendor "Client Co."]
@@ -118,3 +133,4 @@ One vendor visit can span multiple categories — a Target run that includes gro
 - Split a single vendor visit into multiple transactions if it spans multiple categories
 - Description should be recognizable at a glance weeks later — not a full receipt, not a useless vague label
 - Vendor field enables vendor-level search and spending analysis in transaction history
+- After saving a vendor + category, answer "Always" to have that vendor's future transactions categorized automatically, or "Just this once" to leave it at this one

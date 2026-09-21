@@ -59,8 +59,9 @@ export default function ScanPage() {
           ? data.line_items.map((li) => li.description).join(', ')
           : undefined;
 
-        // Use the suggested category as the transaction's category when it
-        // matches one of the user's budget categories; otherwise keep it as a tag.
+        // Send the suggested category as a suggestion when it matches one of
+        // the user's budget categories; otherwise keep it as a tag. The server
+        // uses the vendor's learned category first, if it has one.
         const categoryId = data.suggested_category
           ? await findBudgetCategoryId(data.suggested_category)
           : null;
@@ -75,7 +76,7 @@ export default function ScanPage() {
             vendor: data.vendor,
             transaction_date: data.date || todayLocal(),
             source: 'scan',
-            category_id: categoryId,
+            suggested_category_id: categoryId,
             tags: !categoryId && data.suggested_category ? [data.suggested_category] : [],
           }),
         });
