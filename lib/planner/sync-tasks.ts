@@ -22,8 +22,9 @@
 // not (it had to create one).
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { findSystemRoadmapId, insertSystemRoadmap } from '@/lib/planner/system-roadmaps';
 
-const ROADMAP_TITLE = 'Work.WitUS Sync';
+// The roadmap title ("Work.WitUS Sync") lives in SYSTEM_ROADMAP_TITLES.work_witus_sync.
 const GOAL_TITLE = 'Finances';
 const MILESTONE_INVOICE = 'Invoice Due Dates';
 const MILESTONE_JOB = 'Expected Payments';
@@ -70,25 +71,21 @@ async function ensureMilestone(db: SupabaseClient, userId: string, title: string
 
   const { today, yearOut, year } = hierarchyDates();
 
-  const { data: roadmap } = await db
-    .from('roadmaps')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('title', ROADMAP_TITLE)
-    .limit(1)
-    .maybeSingle();
-  let roadmapId = roadmap?.id as string | undefined;
+  // Found by roadmaps.system_kind = 'work_witus_sync' (migration 199), falling back to the title
+  // "Work.WitUS Sync" when the column isn't there yet. Created with system_kind set, retrying
+  // without it on a missing-column error, so this works before and after 199 is applied.
+  const found = await findSystemRoadmapId(db, userId, 'work_witus_sync');
+  let roadmapId = found.id ?? undefined;
   if (!roadmapId) {
-    const { data: created, error } = await db
-      .from('roadmaps')
-      .insert({ user_id: userId, title: ROADMAP_TITLE, status: 'active', start_date: today, end_date: yearOut })
-      .select('id')
-      .single();
-    if (error || !created) {
-      console.error('[planner-sync] roadmap insert failed:', error?.message);
-      return null;
-    }
-    roadmapId = created.id as string;
+    const created = await insertSystemRoadmap(
+      db,
+      userId,
+      'work_witus_sync',
+      { startDate: today, endDate: yearOut },
+      { skipKind: found.columnMissing },
+    );
+    if (!created) return null;
+    roadmapId = created;
   }
 
   const { data: goal } = await db
