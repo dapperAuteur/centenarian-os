@@ -173,33 +173,47 @@ export async function POST(request: NextRequest) {
   // Idempotent with the triggers — all match on (source_type, source_id) — so they run side by
   // side until the triggers are dropped. Awaited so a caller's 200 means the planner is actually
   // in step, but individually failure-tolerant inside each sync.
+  //
+  // Users run in parallel; ONE user's events run in order. A batch for a user who has no
+  // "Expected Payments" milestone yet (the nightly demo reset, the backfill, the resync script)
+  // would otherwise have every event call ensureMilestone at once, each find nothing, and each
+  // create its own milestone.
   const planner = getDb();
+  const syncOne = (r: Record<string, unknown>): Promise<void> => {
+    const common = { userId: r.user_id as string, status: r.status as string | null };
+    if (r.source_type === 'invoice') {
+      return syncInvoiceTask(planner, {
+        ...common,
+        invoiceId: (r.source_id as string) ?? (r.event_id as string),
+        dueDate: r.expected_date as string | null,
+        label: r.label as string | null,
+        referenceNumber: r.reference_number as string | null,
+        amount: r.expected_amount as number,
+      });
+    }
+    if (r.source_type === 'job') {
+      return syncJobPaymentTask(planner, {
+        ...common,
+        jobId: (r.source_id as string) ?? (r.event_id as string),
+        // is_active false means the row was retired (cleared pay date, cancelled), which the
+        // sync treats the same way the trigger treated a NULL est_pay_date.
+        expectedDate: r.is_active === false ? null : (r.expected_date as string | null),
+        clientName: r.label as string | null,
+        jobNumber: r.reference_number as string | null,
+        expectedAmount: r.expected_amount as number,
+      });
+    }
+    return Promise.resolve();
+  };
+  const byUser = new Map<string, Record<string, unknown>[]>();
+  for (const r of rows) {
+    const list = byUser.get(r.user_id as string);
+    if (list) list.push(r);
+    else byUser.set(r.user_id as string, [r]);
+  }
   await Promise.all(
-    rows.map((r) => {
-      const common = { userId: r.user_id as string, status: r.status as string | null };
-      if (r.source_type === 'invoice') {
-        return syncInvoiceTask(planner, {
-          ...common,
-          invoiceId: (r.source_id as string) ?? (r.event_id as string),
-          dueDate: r.expected_date as string | null,
-          label: r.label as string | null,
-          referenceNumber: r.reference_number as string | null,
-          amount: r.expected_amount as number,
-        });
-      }
-      if (r.source_type === 'job') {
-        return syncJobPaymentTask(planner, {
-          ...common,
-          jobId: (r.source_id as string) ?? (r.event_id as string),
-          // is_active false means the row was retired (cleared pay date, cancelled), which the
-          // sync treats the same way the trigger treated a NULL est_pay_date.
-          expectedDate: r.is_active === false ? null : (r.expected_date as string | null),
-          clientName: r.label as string | null,
-          jobNumber: r.reference_number as string | null,
-          expectedAmount: r.expected_amount as number,
-        });
-      }
-      return Promise.resolve();
+    [...byUser.values()].map(async (userRows) => {
+      for (const r of userRows) await syncOne(r);
     }),
   );
 
