@@ -163,18 +163,18 @@ export default function ContactAutocomplete({
       </datalist>
       {showSave && value.trim() && (
         <div className="flex items-center gap-1.5 mt-1">
-          <span className="text-xs text-gray-400">Save &ldquo;{value.trim()}&rdquo; as a contact?</span>
+          <span className="text-xs text-gray-500">Save &ldquo;{value.trim()}&rdquo; as a contact?</span>
           <button
             type="button"
             onClick={handleSave}
-            className="text-xs text-fuchsia-600 hover:underline font-medium"
+            className="min-h-11 min-w-11 px-2 text-xs text-fuchsia-600 hover:underline font-medium"
           >
             Save
           </button>
           <button
             type="button"
             onClick={() => setShowSave(false)}
-            className="text-xs text-gray-400 hover:text-gray-600"
+            className="min-h-11 min-w-11 px-2 text-xs text-gray-500 hover:text-gray-700"
           >
             Dismiss
           </button>
