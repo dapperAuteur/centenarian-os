@@ -1,14 +1,21 @@
 // app/api/teller/sync/route.ts
 // POST: Sync transactions from Teller for user's connected accounts.
-// - Deduplicates by teller_transaction_id
-// - Fuzzy-matches against existing manual/scan entries (amount + date ±2d + merchant)
+// - Fetches from 10 days before the last sync, per Teller's advice to overlap
+//   7-10 days so pending-to-posted date shifts are caught
+// - Reconciles by teller_transaction_id: refreshes rows Teller changed (when
+//   nobody edited them), moves a row to its re-created ID, links manual/scan
+//   entries of the same purchase, inserts the rest with learned categories.
+//   See lib/finance/teller-sync.ts.
 // - Tracks oldest_transaction_date per account
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
-import { decryptToken, listTransactions, mapTellerTransaction } from '@/lib/teller';
+import { decryptToken, listTransactions } from '@/lib/teller';
 import { logInfo, logError } from '@/lib/logging';
+import { shiftDate } from '@/lib/finance/transaction-matching';
+import { loadLearnedCategoryIndex } from '@/lib/finance/learned-categories';
+import { addSyncCounts, emptySyncCounts, reconcileTellerTransactions } from '@/lib/finance/teller-sync';
 
 function getDb() {
   return createServiceClient(
@@ -17,12 +24,12 @@ function getDb() {
   );
 }
 
-/** Subtract N days from a YYYY-MM-DD string. */
-function subtractDays(dateStr: string, days: number): string {
-  const d = new Date(dateStr + 'T00:00:00Z');
-  d.setUTCDate(d.getUTCDate() - days);
-  return d.toISOString().slice(0, 10);
-}
+/**
+ * Days before the last sync to start fetching. Teller: "Expand the window 7-10
+ * days beyond your last sync to capture transactions that shift dates when
+ * moving from pending to posted." (plans/58-teller-auto-sync-research.md §4)
+ */
+const RESYNC_OVERLAP_DAYS = 10;
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -52,11 +59,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No connected enrollments' }, { status: 404 });
   }
 
-  let totalNew = 0;
-  let totalMatched = 0;
-  let totalSkipped = 0;
+  const totals = emptySyncCounts();
   const errors: string[] = [];
   let globalOldest: string | null = null;
+  const learned = await loadLearnedCategoryIndex(db, user.id);
+  const claimedManualIds = new Set<string>();
 
   for (const enrollment of enrollments) {
     let accessToken: string;
@@ -85,11 +92,11 @@ export async function POST(request: NextRequest) {
       try {
         // Determine sync window
         // full_resync or initial sync: no startDate → fetch all available history
-        // Subsequent: last_synced date minus 10 days (catch pending→posted drift)
+        // Subsequent: last_synced date minus RESYNC_OVERLAP_DAYS (catch pending→posted drift)
         const startDate = fullResync
           ? undefined
           : acct.last_synced_at
-            ? subtractDays(new Date(acct.last_synced_at).toISOString().slice(0, 10), 10)
+            ? shiftDate(new Date(acct.last_synced_at).toISOString().slice(0, 10), -RESYNC_OVERLAP_DAYS)
             : undefined;
 
         const txns = await listTransactions(accessToken, acct.teller_account_id!, {
@@ -103,71 +110,15 @@ export async function POST(request: NextRequest) {
         const acctOldest = dates[0];
         if (!globalOldest || acctOldest < globalOldest) globalOldest = acctOldest;
 
-        for (const txn of txns) {
-          // Skip if already imported (dedup by teller_transaction_id)
-          const { data: existing } = await db
-            .from('financial_transactions')
-            .select('id')
-            .eq('teller_transaction_id', txn.id)
-            .maybeSingle();
-
-          if (existing) {
-            totalSkipped++;
-            continue;
-          }
-
-          // Fuzzy match against manual/scan entries
-          const numAmount = Math.abs(parseFloat(txn.amount));
-          const merchantName = txn.details?.counterparty?.name ?? txn.description;
-
-          // Look for manual/scan transactions with:
-          // - Same amount (±$0.01)
-          // - Same date (±2 days)
-          // - Similar vendor/description
-          const matchDateFrom = subtractDays(txn.date, 2);
-          const matchDateTo = subtractDays(txn.date, -2);
-
-          const { data: candidates } = await db
-            .from('financial_transactions')
-            .select('id, vendor, description')
-            .eq('user_id', user.id)
-            .eq('account_id', acct.id)
-            .is('teller_transaction_id', null)
-            .in('source', ['manual', 'scan'])
-            .gte('amount', numAmount - 0.01)
-            .lte('amount', numAmount + 0.01)
-            .gte('transaction_date', matchDateFrom)
-            .lte('transaction_date', matchDateTo);
-
-          // Check merchant name similarity
-          const match = (candidates ?? []).find((c) => {
-            const cVendor = (c.vendor ?? '').toLowerCase();
-            const cDesc = (c.description ?? '').toLowerCase();
-            const mLower = merchantName.toLowerCase();
-            return (
-              cVendor.includes(mLower) ||
-              mLower.includes(cVendor) ||
-              cDesc.includes(mLower) ||
-              mLower.includes(cDesc)
-            );
-          });
-
-          if (match) {
-            // Link existing transaction to bank data instead of creating duplicate
-            await db
-              .from('financial_transactions')
-              .update({ teller_transaction_id: txn.id })
-              .eq('id', match.id);
-            totalMatched++;
-          } else {
-            // Insert as new bank_sync transaction
-            const mapped = mapTellerTransaction(txn, acct.id, user.id);
-            const { error } = await db
-              .from('financial_transactions')
-              .insert(mapped);
-            if (!error) totalNew++;
-          }
-        }
+        const counts = await reconcileTellerTransactions(db, {
+          userId: user.id,
+          accountId: acct.id,
+          txns,
+          windowStart: startDate,
+          learned,
+          claimedManualIds,
+        });
+        addSyncCounts(totals, counts);
 
         // Update account sync metadata
         const updateData: Record<string, unknown> = {
@@ -196,12 +147,13 @@ export async function POST(request: NextRequest) {
       .eq('id', enrollment.id);
   }
 
-  logInfo({ source: 'sync', module: 'finance', message: 'Teller sync completed', metadata: { newTransactions: totalNew, matched: totalMatched, skipped: totalSkipped, errors: errors.length } });
+  logInfo({ source: 'sync', module: 'finance', message: 'Teller sync completed', metadata: { newTransactions: totals.new, matched: totals.matched, updated: totals.updated, skipped: totals.skipped, errors: errors.length } });
 
   return NextResponse.json({
-    new: totalNew,
-    matched: totalMatched,
-    skipped: totalSkipped,
+    new: totals.new,
+    matched: totals.matched,
+    updated: totals.updated,
+    skipped: totals.skipped,
     oldestTransactionDate: globalOldest,
     errors: errors.length ? errors : undefined,
   });
