@@ -26,6 +26,7 @@ import { getScheduleIndicators } from '@/components/planner/ScheduleCalendarOver
 import type { ScheduleTemplate, ScheduleException, SchedulePayPeriod, ScheduleTemplateFinance } from '@/lib/types';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { OfflineSyncManager } from '@/lib/offline/sync-manager';
+import { todayLocal, toLocalDateString, parseLocalDate } from '@/lib/dates/local';
 
 type ViewMode = 'day' | 'week' | 'month';
 type SourceFilter = 'all' | 'calendar' | 'manual' | 'recurring' | 'work' | 'schedule';
@@ -140,7 +141,7 @@ export default function PlannerPage() {
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = searchParams.get('date');
     if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
-    return new Date().toISOString().split('T')[0];
+    return todayLocal();
   });
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>(() => {
@@ -217,16 +218,18 @@ export default function PlannerPage() {
     let startDate = selectedDate;
     let endDate = selectedDate;
 
+    // Parse and format in local time: mixing a UTC parse with local
+    // getDay()/setDate() shifted the week window by a day in US time zones.
     if (viewMode === 'week') {
-      const date = new Date(selectedDate);
+      const date = parseLocalDate(selectedDate);
       const day = date.getDay();
       const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-      startDate = new Date(date.setDate(diff)).toISOString().split('T')[0];
-      endDate = new Date(date.setDate(date.getDate() + 6)).toISOString().split('T')[0];
+      startDate = toLocalDateString(new Date(date.setDate(diff)));
+      endDate = toLocalDateString(new Date(date.setDate(date.getDate() + 6)));
     } else if (viewMode === 'month') {
-      const date = new Date(selectedDate);
-      startDate = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
-      endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
+      const date = parseLocalDate(selectedDate);
+      startDate = toLocalDateString(new Date(date.getFullYear(), date.getMonth(), 1));
+      endDate = toLocalDateString(new Date(date.getFullYear(), date.getMonth() + 1, 0));
     }
 
     const cacheKey = `supabase://tasks?start=${startDate}&end=${endDate}`;
@@ -389,7 +392,7 @@ export default function PlannerPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            targetDate: new Date().toISOString().split('T')[0] 
+            targetDate: todayLocal()
           }),
         });
         
@@ -425,7 +428,7 @@ export default function PlannerPage() {
       if (!res.ok) throw new Error('Failed to create schedule');
 
       // Backfill from start_date (or today) through today
-      const today = new Date().toISOString().split('T')[0];
+      const today = todayLocal();
       const fromDate = data.start_date || today;
       await offlineFetch('/api/schedules/generate', {
         method: 'POST',
@@ -462,7 +465,7 @@ export default function PlannerPage() {
   const handleBackfillSchedule = async (templateId: string) => {
     const tmpl = scheduleTemplates.find(t => t.id === templateId);
     if (!tmpl) return;
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayLocal();
     const fromDate = tmpl.start_date || today;
 
     const dayCount = Math.floor((new Date(today).getTime() - new Date(fromDate).getTime()) / 86400000);
@@ -774,7 +777,7 @@ export default function PlannerPage() {
           </a>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+              onClick={() => setSelectedDate(todayLocal())}
               className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
             >
               Today
@@ -1123,7 +1126,7 @@ export default function PlannerPage() {
                     {tmpl.week_interval > 1 && ` q${tmpl.week_interval}w`}
                   </span>
                 </span>
-                {tmpl.start_date && tmpl.start_date < new Date().toISOString().split('T')[0] && (!tmpl.last_generated_date || tmpl.last_generated_date < new Date().toISOString().split('T')[0]) && (
+                {tmpl.start_date && tmpl.start_date < todayLocal() && (!tmpl.last_generated_date || tmpl.last_generated_date < todayLocal()) && (
                   <button
                     onClick={() => handleBackfillSchedule(tmpl.id)}
                     className="min-h-6 px-2 py-0.5 rounded-full bg-white/70 text-[10px] font-semibold hover:bg-white transition"
