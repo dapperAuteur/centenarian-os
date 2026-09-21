@@ -11,6 +11,24 @@ import ScanResultRouter from '@/components/scan/ScanResultRouter';
 import type { ScanResult } from '@/components/scan/ScanButton';
 import type { ReceiptExtraction, RecipeExtraction, MaintenanceExtraction } from '@/lib/ocr/extractors';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import { todayLocal } from '@/lib/dates/local';
+
+/**
+ * Find the user's budget category whose name matches the OCR's suggested
+ * category (case-insensitive). Returns null when none matches or the list
+ * can't be loaded.
+ */
+async function findBudgetCategoryId(name: string): Promise<string | null> {
+  try {
+    const res = await offlineFetch('/api/finance/categories');
+    if (!res.ok) return null;
+    const { categories } = (await res.json()) as { categories?: { id: string; name: string | null }[] };
+    const target = name.trim().toLowerCase();
+    return categories?.find((c) => c.name?.trim().toLowerCase() === target)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export default function ScanPage() {
   const router = useRouter();
@@ -39,6 +57,12 @@ export default function ScanPage() {
           ? data.line_items.map((li) => li.description).join(', ')
           : undefined;
 
+        // Use the suggested category as the transaction's category when it
+        // matches one of the user's budget categories; otherwise keep it as a tag.
+        const categoryId = data.suggested_category
+          ? await findBudgetCategoryId(data.suggested_category)
+          : null;
+
         const res = await offlineFetch('/api/finance/transactions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -47,9 +71,10 @@ export default function ScanPage() {
             type: 'expense',
             description: description?.slice(0, 500),
             vendor: data.vendor,
-            transaction_date: data.date || new Date().toISOString().slice(0, 10),
+            transaction_date: data.date || todayLocal(),
             source: 'scan',
-            tags: data.suggested_category ? [data.suggested_category] : [],
+            category_id: categoryId,
+            tags: !categoryId && data.suggested_category ? [data.suggested_category] : [],
           }),
         });
 
@@ -77,7 +102,7 @@ export default function ScanPage() {
                   unit_price: li.unit_price,
                   vendor_contact_id: contactId || null,
                   vendor_name: data.vendor,
-                  recorded_date: data.date || new Date().toISOString().slice(0, 10),
+                  recorded_date: data.date || todayLocal(),
                   source: 'scan',
                 }),
               }),
