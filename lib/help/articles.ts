@@ -647,6 +647,11 @@ export const HELP_ARTICLES: HelpArticle[] = [
   },
   {
     role: 'all',
+    title: 'Where imported planner tasks go (CSV and Google Calendar)',
+    content: `Every task belongs to a milestone, so imported tasks are filed for you. In a Tasks CSV (Data Hub → Tasks → Import), rows that name a roadmap, goal, and milestone go there, and any level that doesn't exist yet is created: a new roadmap without dates starts today and runs 10 years, a new goal needs goal_category and goal_target_year, and a new milestone needs milestone_target_date. CSV rows without those columns go to an "Imported Tasks" milestone. Google Calendar imports (Data Hub → Import .ics) go to a "Google Calendar: <calendar name>" milestone. Those milestones are created under the first active goal of your oldest roadmap (an "Imported" goal is added if that roadmap has none), and later imports reuse them. Roadmaps the app creates for you, Inbox and Work.WitUS Sync (the ones with an "Auto" badge), are never used for this. If you have no roadmap of your own yet, the tasks go to your Inbox instead; the import result says so, and the planner's Inbox (N) filter lists them for sorting into goals. The planner's Calendar filter shows tasks in "Google Calendar:" milestones, so calendar events filed in the Inbox show under Inbox until you move them. All-day calendar events are scheduled at 09:00.`,
+  },
+  {
+    role: 'all',
     title: 'How to export data to CSV',
     content: `Go to Dashboard → Data Hub and click Export on any module card. Set optional date range filters (from/to) and click Download CSV. The export includes all fields for the module. You can use exported CSVs for backup, analysis in Excel or Google Sheets, or migrating to another system.`,
   },

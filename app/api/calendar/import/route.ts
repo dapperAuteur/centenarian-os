@@ -1,11 +1,14 @@
 // app/api/calendar/import/route.ts
 // POST: parse an .ics file and import events as planner tasks.
+// Tasks go to a "Google Calendar: <name>" milestone in the user's own roadmap, or to the Inbox
+// when they have no roadmap of their own (lib/planner/import-milestone.ts).
 // For "future money" calendars, also creates draft invoices from the PPI CBS template.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { parseIcs, extractCalendarName, type CalendarEvent } from '@/lib/calendar/ics-parser';
+import { resolveImportMilestone, type ImportMilestone } from '@/lib/planner/import-milestone';
 
 function getDb() {
   return createServiceClient(
@@ -41,102 +44,6 @@ function detectTag(calendarName: string, event: CalendarEvent, tagOverride?: str
 function isFutureMoneyCalendar(calendarName: string): boolean {
   const lower = calendarName.toLowerCase();
   return lower.includes('future money') || (lower.includes('money') && lower.includes('future'));
-}
-
-/**
- * Finds or creates a milestone titled "Google Calendar: [calendarName]"
- * under the user's first active roadmap → goal.
- */
-async function resolveCalendarMilestone(
-  db: ReturnType<typeof getDb>,
-  userId: string,
-  calendarName: string,
-): Promise<string> {
-  const milestoneTitle = `Google Calendar: ${calendarName}`;
-
-  // Check for existing milestone with this exact title
-  const { data: existing } = await db
-    .from('milestones')
-    .select('id, goal_id')
-    .eq('title', milestoneTitle)
-    .neq('status', 'archived')
-    .limit(1)
-    .maybeSingle();
-
-  if (existing) {
-    const { data: goal } = await db
-      .from('goals')
-      .select('id, roadmap_id')
-      .eq('id', existing.goal_id)
-      .maybeSingle();
-
-    if (goal) {
-      const { data: roadmap } = await db
-        .from('roadmaps')
-        .select('id')
-        .eq('id', goal.roadmap_id)
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (roadmap) return existing.id;
-    }
-  }
-
-  // Find or create a roadmap
-  let roadmapId: string;
-  const { data: existingRoadmap } = await db
-    .from('roadmaps')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (existingRoadmap) {
-    roadmapId = existingRoadmap.id;
-  } else {
-    const { data: newRoadmap, error } = await db
-      .from('roadmaps')
-      .insert({ user_id: userId, title: 'General', status: 'active' })
-      .select('id')
-      .single();
-    if (error || !newRoadmap) throw new Error('Failed to create roadmap');
-    roadmapId = newRoadmap.id;
-  }
-
-  // Find or create a goal
-  let goalId: string;
-  const { data: existingGoal } = await db
-    .from('goals')
-    .select('id')
-    .eq('roadmap_id', roadmapId)
-    .eq('status', 'active')
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (existingGoal) {
-    goalId = existingGoal.id;
-  } else {
-    const { data: newGoal, error } = await db
-      .from('goals')
-      .insert({ roadmap_id: roadmapId, title: 'Imported', status: 'active' })
-      .select('id')
-      .single();
-    if (error || !newGoal) throw new Error('Failed to create goal');
-    goalId = newGoal.id;
-  }
-
-  // Create the milestone
-  const { data: newMilestone, error } = await db
-    .from('milestones')
-    .insert({ goal_id: goalId, title: milestoneTitle, status: 'in_progress' })
-    .select('id')
-    .single();
-  if (error || !newMilestone) throw new Error('Failed to create milestone');
-
-  return newMilestone.id;
 }
 
 /** Create a draft invoice from the PPI CBS template for a calendar event. */
@@ -240,15 +147,32 @@ export async function POST(request: NextRequest) {
   const resolvedName = calendar_name?.trim() || extractCalendarName(ics_content);
   const futureMoney = isFutureMoneyCalendar(resolvedName);
 
-  // Parse all events
+  // Parse all events, then drop the ones that can't become tasks
   const events = parseIcs(ics_content);
+  const importable = events.filter(
+    // Skip cancelled events and events without a parseable date
+    (event) => event.status !== 'CANCELLED' && !!event.dtstart && /^\d{4}-\d{2}-\d{2}$/.test(event.dtstart),
+  );
+  const skipped = events.length - importable.length;
+
+  // Checked before the milestone is resolved, so an empty file creates no milestone or Inbox.
+  if (importable.length === 0) {
+    return NextResponse.json({
+      imported: 0,
+      skipped,
+      invoices_created: 0,
+      message: `No valid events to import. ${skipped} skipped (cancelled or missing date).`,
+    });
+  }
 
   const db = getDb();
 
-  // Resolve or create milestone
-  let milestoneId: string;
+  // "Google Calendar: <name>" in one of the user's own roadmaps, or the Inbox when they have no
+  // roadmap of their own. Never a system roadmap (lib/planner/import-milestone.ts).
+  const milestoneTitle = `Google Calendar: ${resolvedName}`;
+  let target: ImportMilestone;
   try {
-    milestoneId = await resolveCalendarMilestone(db, user.id, resolvedName);
+    target = await resolveImportMilestone(db, user.id, milestoneTitle);
   } catch (err) {
     return NextResponse.json(
       { error: `Failed to resolve milestone: ${err instanceof Error ? err.message : 'unknown'}` },
@@ -271,30 +195,20 @@ export async function POST(request: NextRequest) {
 
   const payloads: Record<string, unknown>[] = [];
   let invoicesCreated = 0;
-  let skipped = 0;
 
-  for (const event of events) {
-    // Skip cancelled events
-    if (event.status === 'CANCELLED') {
-      skipped++;
-      continue;
-    }
-
-    // Skip events without a parseable date
-    if (!event.dtstart || !/^\d{4}-\d{2}-\d{2}$/.test(event.dtstart)) {
-      skipped++;
-      continue;
-    }
-
+  for (const event of importable) {
     const tag = detectTag(resolvedName, event, tag_override);
     const descParts = [event.description, event.location].filter(Boolean);
     const description = descParts.length > 0 ? descParts.join(' | ').slice(0, 1000) : null;
 
     payloads.push({
-      user_id: user.id,
-      milestone_id: milestoneId,
+      // tasks has no user_id column: ownership runs milestone -> goal -> roadmap.user_id.
+      // Sending user_id made every insert fail.
+      milestone_id: target.milestoneId,
       date: event.dtstart,
-      time: event.dtstart_time,
+      // tasks.time is NOT NULL. All-day events have no time; 09:00 matches the other task
+      // creation paths (app/api/tasks, the CSV import).
+      time: event.dtstart_time ?? '09:00',
       activity: event.summary.slice(0, 255),
       description,
       tag,
@@ -312,15 +226,6 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  if (payloads.length === 0) {
-    return NextResponse.json({
-      imported: 0,
-      skipped,
-      invoices_created: 0,
-      message: `No valid events to import. ${skipped} skipped (cancelled or missing date).`,
-    });
-  }
-
   const { data, error } = await db
     .from('tasks')
     .insert(payloads)
@@ -334,6 +239,9 @@ export async function POST(request: NextRequest) {
     : futureMoney && !ppiTemplateId
       ? ' (PPI CBS template not found — invoices skipped)'
       : '';
+  const whereNote = target.placement === 'inbox'
+    ? ' in your Inbox'
+    : ` under the "${milestoneTitle}" milestone`;
 
   // Compute date range from imported payloads
   const dates = payloads.map(p => p.date as string).filter(Boolean).sort();
@@ -343,9 +251,9 @@ export async function POST(request: NextRequest) {
     imported,
     skipped,
     invoices_created: invoicesCreated,
-    milestone_id: milestoneId,
+    milestone_id: target.milestoneId,
     calendar_name: resolvedName,
     date_range: dateRange,
-    message: `Imported ${imported} event${imported !== 1 ? 's' : ''} as tasks.${invoiceNote}${skipped > 0 ? ` ${skipped} skipped.` : ''}`,
+    message: `Imported ${imported} event${imported !== 1 ? 's' : ''} as tasks${whereNote}.${invoiceNote}${skipped > 0 ? ` ${skipped} skipped.` : ''}`,
   });
 }

@@ -27,10 +27,13 @@ export async function GET(request: NextRequest) {
   const tag = params.get('tag');
   const completed = params.get('completed');
 
+  // tasks has no user_id column. Ownership runs milestone -> goal -> roadmap.user_id, and this
+  // is the service-role client, so scope through that chain explicitly (as in
+  // app/api/planner/availability). Filtering on tasks.user_id errored, so the export always failed.
   let query = db
     .from('tasks')
-    .select('*')
-    .eq('user_id', user.id)
+    .select('*, milestones!inner(goals!inner(roadmaps!inner(user_id)))')
+    .eq('milestones.goals.roadmaps.user_id', user.id)
     .order('date', { ascending: true })
     .order('time', { ascending: true });
 
