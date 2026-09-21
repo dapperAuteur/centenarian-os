@@ -91,9 +91,11 @@ The exported CSV includes all transaction fields: Date, Type, Amount, Category, 
 
 ### No Automatic Sync
 
-CentenarianOS Finance doesn't connect directly to bank accounts or Plaid. The import process is intentionally manual — you download from your bank, review what you're importing, and categorize with intent.
+CSV import is intentionally manual — you download from your bank, review what you're importing, and categorize with intent.
 
-This has two advantages: you review your transactions before they enter the system (catching errors or fraud), and there are no OAuth connections to banking credentials in CentenarianOS.
+This has two advantages: you review your transactions before they enter the system (catching errors or fraud), and CSV import never needs a connection to your bank.
+
+If you'd rather pull transactions straight from your bank, you can link it through Teller on the Finance → Accounts page. Linked banks don't sync in the background either: new transactions come in when you press Sync.
 
 ---
 
@@ -135,4 +137,4 @@ This has two advantages: you review your transactions before they enter the syst
 - Do monthly imports (30 days at a time) for best efficiency and freshness
 - Export uses your current filter — filter by year or category before exporting for targeted outputs
 - Export CSV is your shareable ledger: tax prep, accountant, spreadsheet analysis, backup
-- No direct bank connection — intentionally manual for security and intentional categorization
+- CSV import is intentionally manual, for review and intentional categorization; banks linked through Teller update only when you press Sync

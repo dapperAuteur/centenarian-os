@@ -413,7 +413,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How to manage financial accounts and bank linking',
-    content: `Go to Dashboard → Finance → Accounts to add and manage your financial accounts: checking, savings, credit card, loan, and cash accounts. Each account tracks institution name, last four digits, interest rate, credit limit, opening balance, monthly fees, and due/statement dates. Balance is calculated as opening balance plus income minus expenses. You can link bank accounts via the Teller API for automatic transaction syncing — click Connect Bank Account, complete the OAuth flow, and transactions import automatically. Deactivated accounts preserve transaction history but hide from active views.`,
+    content: `Go to Dashboard → Finance → Accounts to add and manage your financial accounts: checking, savings, credit card, loan, and cash accounts. Each account tracks institution name, last four digits, interest rate, credit limit, opening balance, monthly fees, and due/statement dates. Balance is calculated as opening balance plus income minus expenses. You can link bank accounts through Teller: click Connect Bank, sign in to your bank in Teller's window, and the transaction history your bank makes available is imported. After that, press Sync on the Accounts page to bring in new transactions. Bank transactions do not sync on their own in the background. Deactivated accounts preserve transaction history but hide from active views.`,
   },
 
   // ─── PLANNER DETAILS ──────────────────────────────────────────────────────
@@ -429,7 +429,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How does Teller bank account syncing work?',
-    content: `Teller is a bank account linking API that lets you automatically import transactions. Go to Dashboard → Finance → Accounts and click Connect Bank Account. Select your bank from the Teller enrollment flow and authorize access. Once connected, your transactions sync daily. Each synced transaction includes date, amount, description, and merchant. You can categorize synced transactions and link them to contacts. If you disconnect, historical synced transactions remain in your account. Teller supports most major US banks and credit unions.`,
+    content: `Teller is a bank account linking service that brings your bank transactions into CentenarianOS. Go to Dashboard → Finance → Accounts and click Connect Bank. Select your bank in Teller's window and authorize access. When you first connect, CentenarianOS imports the transaction history your bank makes available (typically 90 days to 2+ years, depending on the bank). After that, new transactions come in only when you press Sync: Sync next to an account updates every account from that bank login, and Sync All updates all of your linked banks. Nothing syncs automatically in the background, so press Sync whenever you want your latest bank activity. Each synced transaction includes date, amount, description, and merchant. You can categorize synced transactions and link them to contacts. If you unlink an account from bank sync, its existing synced transactions stay in your account. Teller supports most major US banks and credit unions.`,
   },
 
   // ─── TRAVEL MODULE ────────────────────────────────────────────────────────

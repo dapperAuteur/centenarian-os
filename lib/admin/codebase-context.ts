@@ -20,7 +20,7 @@ CentenarianOS is a comprehensive longevity-focused life-management platform. It 
 - **Video Embedding**: VideoEmbed Tiptap node (YouTube, Viloud.tv, Mux, Cloudinary direct) — used in blog posts and recipes
 - **Offline**: offlineFetch wrapper caches GETs in IndexedDB, queues mutations for replay
 - **Charts**: Recharts (admin analytics, finance dashboards)
-- **Banking**: Teller API (bank account OAuth linking and auto-sync)
+- **Banking**: Teller API (bank account linking; transactions sync only when the user presses Sync or Sync All; no background sync)
 - **Bot Prevention**: Cloudflare Turnstile on signup
 
 ### Core Architecture
@@ -122,7 +122,7 @@ Overview, Users (list + detail), Messages, Content moderation, Engagement analyt
 - **Fire-and-forget logging**: App logs and usage events never block the user's request
 - **CYOA via embeddings**: Lesson navigation uses cosine similarity rather than manual prerequisite graphs, with cross-course matching option
 - **Tiptap + Markdown dual support**: Lessons can use either format, stored in same column with content_format flag
-- **Teller API for banking**: OAuth-based bank account linking for transaction auto-sync, institution policy tracking
+- **Teller API for banking**: Teller Connect bank linking with user-triggered transaction sync (the transactions.processed webhook is only logged), institution policy tracking
 - **offlineFetch pattern**: Drop-in fetch replacement caches in IndexedDB, queues mutations — enables offline-first pages
 - **VideoEmbed Tiptap node**: Isomorphic custom node stores src URL, auto-detects provider (YouTube/Viloud/Mux/Cloudinary)
 - **Module tours**: TourOverlay component with server-persisted step progress, event tracking, and restart capability

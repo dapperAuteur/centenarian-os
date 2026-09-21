@@ -52,5 +52,5 @@ Before recording:
 
 - Finance tracks income, expenses, and budgets in one module
 - CYOA navigation — start with Lessons 01–03 for setup, then explore as needed
-- No bank integrations — data is entered manually or imported via CSV
+- Optional bank linking via Teller (updates when you press Sync); otherwise data is entered manually or imported via CSV
 - Finance data contributes to the daily debrief financial snapshot and appears in the weekly review

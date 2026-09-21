@@ -29,7 +29,7 @@ The Finance module tracks two things:
 
 ### What It Doesn't Track
 
-No bank account integration. No automatic import from your bank, credit card, or Venmo. You enter transactions manually or import via CSV. This is intentional — keeping the system simple and avoiding the OAuth complexity of banking APIs — but it means Finance works best when you either log transactions regularly (daily or weekly) or do a bulk import from your bank's CSV export at the end of each month.
+No automatic background import. You can link a bank or credit card through Teller on the Accounts page, but new bank transactions come in only when you press Sync. Nothing imports on its own, and payment apps like Venmo aren't connected. Everything else you enter manually or import via CSV, so Finance works best when you log transactions regularly (daily or weekly), press Sync on your linked banks, or do a bulk import from your bank's CSV export at the end of each month.
 
 ---
 
@@ -83,7 +83,7 @@ The Finance module is the dedicated ledger. Use it for your actual household and
 ## Key Takeaways
 
 - Finance tracks budget categories (monthly targets) and transactions (income + expenses)
-- No bank integration — manual entry or CSV import
+- Bank linking via Teller is optional, and linked banks update only when you press Sync — otherwise, manual entry or CSV import
 - Dashboard: summary cards (month totals), 6-month trend chart, spending by category, budget progress bars
 - Finance connects to: Engine daily debrief (quick daily notes), Planner task financials (project-level cost/revenue)
 - Works best with regular logging (daily or weekly) or a monthly bulk import from your bank's CSV export

@@ -194,7 +194,7 @@ export const MODULES: ModuleData[] = [
     Icon: DollarSign,
     features: [
       'Checking, savings, credit card, loan, cash',
-      'Bank linking via Teller for auto-sync',
+      'Bank linking via Teller with on-demand sync',
       'Budget categories with spending charts',
       'Invoices with custom fields & CSV import',
     ],
