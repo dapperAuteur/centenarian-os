@@ -80,7 +80,10 @@ export interface ReconcileOptions {
   /** financial_accounts.id the transactions belong to. */
   accountId: string;
   txns: TellerTransaction[];
-  /** The start_date Teller was asked for, or undefined when all history was fetched. */
+  /**
+   * The start_date Teller was asked for, or undefined when all history was
+   * fetched (then the oldest returned date is used as the window start).
+   */
   windowStart?: string;
   learned: LearnedCategoryIndex;
   /**
@@ -110,6 +113,9 @@ export async function reconcileTellerTransactions(
     return { txn, mapped, fields };
   });
   const returnedIds = new Set(txns.map((t) => t.id));
+  // Rows dated before this can't be judged vanished: Teller wasn't asked for
+  // them (windowStart), or, on a full fetch, they predate the history it returned.
+  const vanishedFloor = windowStart ?? entries.map((e) => e.fields.date).sort()[0];
 
   // 1. Which of these are already imported? One query per ID_CHUNK IDs.
   const existing = new Map<string, StoredTellerRow>();
@@ -130,18 +136,19 @@ export async function reconcileTellerTransactions(
 
   if (fresh.length > 0) {
     // 2. Rows on this account holding a Teller ID that Teller didn't return,
-    //    dated inside the window Teller was asked for.
+    //    dated inside the window Teller covered.
     vanishedPool = (
-      await readAllPages<StoredTellerRow>((from, to) => {
-        let q = db
+      await readAllPages<StoredTellerRow>((from, to) =>
+        db
           .from('financial_transactions')
           .select(STORED_COLUMNS)
           .eq('user_id', userId)
           .eq('account_id', accountId)
-          .not('teller_transaction_id', 'is', null);
-        if (windowStart) q = q.gte('transaction_date', windowStart);
-        return q.order('id').range(from, to) as unknown as PageResult<StoredTellerRow>;
-      })
+          .not('teller_transaction_id', 'is', null)
+          .gte('transaction_date', vanishedFloor)
+          .order('id')
+          .range(from, to) as unknown as PageResult<StoredTellerRow>,
+      )
     ).filter((row) => !returnedIds.has(row.teller_transaction_id));
 
     // 3. Manual and scanned entries not yet linked to the bank, with no account
@@ -183,7 +190,7 @@ export async function reconcileTellerTransactions(
 
     // 2. Teller re-created a pending transaction under a new ID.
     const vanished = findVanishedRow(fields, vanishedPool, returnedIds, {
-      windowStart,
+      windowStart: vanishedFloor,
       claimed: claimedVanished,
     });
     if (vanished) {
