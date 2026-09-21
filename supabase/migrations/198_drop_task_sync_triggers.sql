@@ -6,7 +6,11 @@
 -- Both replacements were already merged to main by then (centenarian-os `lib/planner/sync-tasks.ts`
 -- and contractor-os `fireInvoiceIncomeEvent` + `fireJobIncomeEvent`), so the end state is correct
 -- IF both are deployed. The skipped step was proving a test invoice creates its task first.
--- If planner tasks are missing, migration 199 restores the triggers (run 157 first).
+-- That proof ran on 2026-09-20 (signed events against the demo account): invoice tasks create and
+-- complete correctly. It also found that job tasks failed for users with no "Expected Payments"
+-- milestone yet — fixed in lib/planner/sync-tasks.ts, not by restoring the triggers. The rollback
+-- migration that used to be 199 was removed: its guard pointed at re-creating triggers that write
+-- across the app boundary, which is the thing this split exists to remove.
 --
 -- ⚠️ PRECONDITIONS — do not run this until BOTH are true:
 --   1. centenarian-os `lib/planner/sync-tasks.ts` is MERGED AND DEPLOYED. It is what creates the
