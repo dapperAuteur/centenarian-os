@@ -283,6 +283,14 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
+### Unit Tests
+
+```bash
+npm run test:unit
+```
+
+Runs Node's built-in test runner over `tests/unit/*.test.ts` (Teller webhook signature checks, 429 retry timing, revoke handling). Needs Node 22.6+ for `--experimental-strip-types`. No extra dependencies.
+
 ## Project Structure
 
 ```
