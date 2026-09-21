@@ -1,9 +1,10 @@
-// lib/finance/vendor-match.ts
+// lib/finance/transaction-matching.ts
 // Pure helpers for comparing merchant names: matching a synced bank transaction
-// to a manual or scanned entry, and looking up a vendor's learned category.
+// to a manual or scanned entry, reconciling rows already linked to Teller, and
+// looking up a vendor's learned category.
 //
 // No imports on purpose. This file runs in API routes, in client components,
-// and under `node --test --experimental-strip-types` (tests/vendor-match.test.ts).
+// and under `node --test --experimental-strip-types` (tests/transaction-matching.test.ts).
 
 /** A bank transaction and a manual entry match when their dates are this many days apart or fewer. */
 export const MATCH_WINDOW_DAYS = 5;
@@ -206,6 +207,131 @@ function isBetter(a: MatchScore, b: MatchScore): boolean {
   if (a.exactName !== b.exactName) return a.exactName;
   if (a.sameAccount !== b.sameAccount) return a.sameAccount;
   return false;
+}
+
+// ── Reconciling rows already linked to Teller ─────────────────────────────
+//
+// Teller's transactions guide says to reconcile by transaction ID, inserting
+// new records and updating existing ones, and warns that a pending transaction
+// that changes a lot when it posts is sometimes re-created with a new ID.
+// See plans/58-teller-auto-sync-research.md §4 and §7.7.
+
+/** Days either side of a new bank transaction to look for the vanished row it replaces. */
+export const VANISHED_MATCH_WINDOW_DAYS = 7;
+
+/**
+ * How far apart created_at and updated_at can be for a row to count as never
+ * edited since it was synced. Both are set by the insert, and the table's
+ * updated_at trigger bumps updated_at on every later update.
+ */
+export const UNTOUCHED_TOLERANCE_MS = 2000;
+
+/** A stored transaction that is already linked to a Teller transaction. */
+export interface StoredTellerRow {
+  id: string;
+  teller_transaction_id: string;
+  source: string | null;
+  amount: number | string;
+  transaction_date: string;
+  description: string | null;
+  vendor: string | null;
+  category_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** The bank-owned fields of a Teller transaction, already mapped to app shapes. */
+export interface TellerFields {
+  id: string;
+  /** Absolute amount. */
+  amount: number;
+  /** YYYY-MM-DD. */
+  date: string;
+  description: string | null;
+  /** What the app stores as vendor: the counterparty name, else the description. */
+  vendor: string | null;
+}
+
+export interface BankDetailPatch {
+  amount?: number;
+  transaction_date?: string;
+  description?: string | null;
+  vendor?: string | null;
+}
+
+/**
+ * True when nobody has edited the row since the sync inserted it. There is no
+ * column recording which fields a person changed, so any later update (a new
+ * category, a bulk edit, a hand edit, or an earlier reconcile) counts as an
+ * edit and protects every field of the row.
+ */
+export function isUntouchedSinceSync(row: Pick<StoredTellerRow, 'created_at' | 'updated_at'>): boolean {
+  const created = Date.parse(row.created_at);
+  const updated = Date.parse(row.updated_at);
+  if (Number.isNaN(created) || Number.isNaN(updated)) return false;
+  return updated - created <= UNTOUCHED_TOLERANCE_MS;
+}
+
+function cents(n: number | string): number {
+  return Math.round(Math.abs(Number(n)) * 100);
+}
+
+function sameText(a: string | null | undefined, b: string | null | undefined): boolean {
+  return (a ?? '').trim() === (b ?? '').trim();
+}
+
+/**
+ * The bank-owned fields to refresh on a stored row, or null when nothing
+ * should change. Only rows the sync created (source 'bank_sync') that nobody
+ * has edited since are refreshed, so a category, a hand edit, or a manual
+ * entry that was matched to the bank is never overwritten.
+ */
+export function bankDetailChanges(row: StoredTellerRow, txn: TellerFields): BankDetailPatch | null {
+  if (row.source !== 'bank_sync') return null;
+  if (!isUntouchedSinceSync(row)) return null;
+
+  const patch: BankDetailPatch = {};
+  if (Number.isFinite(txn.amount) && cents(row.amount) !== cents(txn.amount)) patch.amount = Math.abs(txn.amount);
+  if (row.transaction_date.slice(0, 10) !== txn.date) patch.transaction_date = txn.date;
+  if (!sameText(row.description, txn.description)) patch.description = txn.description;
+  if (!sameText(row.vendor, txn.vendor)) patch.vendor = txn.vendor;
+  return Object.keys(patch).length > 0 ? patch : null;
+}
+
+/**
+ * Finds the stored row a new Teller transaction replaces: a row on the same
+ * account whose Teller ID was not in the list Teller just returned, with the
+ * same amount (to the cent) and a date within VANISHED_MATCH_WINDOW_DAYS.
+ * Prefers the closest date, then an exact vendor match.
+ *
+ * `pool` must only hold rows from the same account. Rows dated before
+ * `windowStart` are ignored: Teller wasn't asked for those dates, so their
+ * absence doesn't mean they vanished. Rows in `claimed` are skipped.
+ */
+export function findVanishedRow<T extends StoredTellerRow>(
+  txn: TellerFields,
+  pool: readonly T[],
+  returnedIds: ReadonlySet<string>,
+  opts: { windowStart?: string; claimed?: ReadonlySet<string> } = {},
+): T | null {
+  let best: { row: T; distance: number; exact: boolean } | null = null;
+  for (const row of pool) {
+    if (returnedIds.has(row.teller_transaction_id)) continue;
+    if (opts.claimed?.has(row.id)) continue;
+    if (opts.windowStart && row.transaction_date.slice(0, 10) < opts.windowStart) continue;
+    if (cents(row.amount) !== cents(txn.amount)) continue;
+    const distance = daysBetween(row.transaction_date, txn.date);
+    if (distance > VANISHED_MATCH_WINDOW_DAYS) continue;
+    const exact = compareNames(row.vendor, txn.vendor) === 'exact';
+    if (
+      !best ||
+      distance < best.distance ||
+      (distance === best.distance && exact && !best.exact)
+    ) {
+      best = { row, distance, exact };
+    }
+  }
+  return best?.row ?? null;
 }
 
 // ── Learned vendor categories ─────────────────────────────────────────────

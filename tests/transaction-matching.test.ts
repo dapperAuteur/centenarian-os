@@ -1,6 +1,6 @@
-// tests/vendor-match.test.ts
+// tests/transaction-matching.test.ts
 // Unit tests for the bank-matching and learned-category helpers in
-// lib/finance/vendor-match.ts. Run with `npm run test:unit`.
+// lib/finance/transaction-matching.ts. Run with `npm run test:unit`.
 //
 // Uses the Node built-in test runner with type stripping, so it adds no
 // test-framework dependency. Pure functions only: nothing here touches a
@@ -19,10 +19,15 @@ import {
   buildLearnedCategoryIndex,
   lookupLearnedCategory,
   contactTypeForTransaction,
+  isUntouchedSinceSync,
+  bankDetailChanges,
+  findVanishedRow,
   MATCH_WINDOW_DAYS,
   type BankTransactionForMatch,
   type ManualCandidate,
-} from '../lib/finance/vendor-match.ts';
+  type StoredTellerRow,
+  type TellerFields,
+} from '../lib/finance/transaction-matching.ts';
 
 const ACCT = 'acct-checking';
 const OTHER_ACCT = 'acct-credit';
@@ -234,6 +239,125 @@ test('two $5 coffees: each bank charge takes the entry closest in date', () => {
     claimed,
   );
   assert.equal(second?.id, 'mon');
+});
+
+// ── reconciling rows already linked to Teller ───────────────────────────────
+
+const SYNCED_AT = '2026-09-10T12:00:00.123456+00:00';
+
+function stored(overrides: Partial<StoredTellerRow> = {}): StoredTellerRow {
+  return {
+    id: 'row-1',
+    teller_transaction_id: 'txn_pending_1',
+    source: 'bank_sync',
+    amount: 12.4,
+    transaction_date: '2026-09-09',
+    description: 'CHIPOTLE PENDING',
+    vendor: 'CHIPOTLE',
+    category_id: null,
+    created_at: SYNCED_AT,
+    updated_at: SYNCED_AT,
+    ...overrides,
+  };
+}
+
+function teller(overrides: Partial<TellerFields> = {}): TellerFields {
+  return {
+    id: 'txn_pending_1',
+    amount: 12.4,
+    date: '2026-09-09',
+    description: 'CHIPOTLE PENDING',
+    vendor: 'CHIPOTLE',
+    ...overrides,
+  };
+}
+
+test('isUntouchedSinceSync is true only when updated_at stays at created_at', () => {
+  assert.equal(isUntouchedSinceSync({ created_at: SYNCED_AT, updated_at: SYNCED_AT }), true);
+  assert.equal(
+    isUntouchedSinceSync({ created_at: SYNCED_AT, updated_at: '2026-09-10T12:00:01.500000+00:00' }),
+    true,
+  );
+  assert.equal(
+    isUntouchedSinceSync({ created_at: SYNCED_AT, updated_at: '2026-09-11T08:00:00+00:00' }),
+    false,
+  );
+  assert.equal(isUntouchedSinceSync({ created_at: 'garbage', updated_at: SYNCED_AT }), false);
+});
+
+test('bankDetailChanges returns null when nothing changed', () => {
+  assert.equal(bankDetailChanges(stored(), teller()), null);
+  assert.equal(bankDetailChanges(stored({ amount: '12.40' }), teller()), null);
+  assert.equal(bankDetailChanges(stored({ description: ' CHIPOTLE PENDING ' }), teller()), null);
+});
+
+test('bankDetailChanges picks up a pending-to-posted change on an untouched synced row', () => {
+  const patch = bankDetailChanges(
+    stored(),
+    teller({ amount: 15, date: '2026-09-11', description: 'CHIPOTLE 1234 AUSTIN TX', vendor: 'Chipotle' }),
+  );
+  assert.deepEqual(patch, {
+    amount: 15,
+    transaction_date: '2026-09-11',
+    description: 'CHIPOTLE 1234 AUSTIN TX',
+    vendor: 'Chipotle',
+  });
+});
+
+test('bankDetailChanges only returns the fields that changed', () => {
+  assert.deepEqual(bankDetailChanges(stored(), teller({ date: '2026-09-11' })), { transaction_date: '2026-09-11' });
+});
+
+test('bankDetailChanges leaves a row alone once anyone has edited it', () => {
+  const edited = stored({ updated_at: '2026-09-12T09:30:00+00:00', category_id: 'dining' });
+  assert.equal(bankDetailChanges(edited, teller({ amount: 15 })), null);
+});
+
+test('bankDetailChanges never touches a manual or scanned entry matched to the bank', () => {
+  assert.equal(bankDetailChanges(stored({ source: 'manual' }), teller({ amount: 15 })), null);
+  assert.equal(bankDetailChanges(stored({ source: 'scan' }), teller({ amount: 15 })), null);
+});
+
+test('findVanishedRow finds the row Teller re-created under a new ID', () => {
+  const pool = [stored({ id: 'old', teller_transaction_id: 'txn_pending_1' })];
+  const posted = teller({ id: 'txn_posted_9', date: '2026-09-12' });
+  const returned = new Set(['txn_posted_9']);
+  assert.equal(findVanishedRow(posted, pool, returned)?.id, 'old');
+});
+
+test('findVanishedRow ignores rows Teller still returned', () => {
+  const pool = [stored({ id: 'old', teller_transaction_id: 'txn_pending_1' })];
+  const returned = new Set(['txn_posted_9', 'txn_pending_1']);
+  assert.equal(findVanishedRow(teller({ id: 'txn_posted_9' }), pool, returned), null);
+});
+
+test('findVanishedRow needs the same amount and a date within 7 days', () => {
+  const pool = [stored({ id: 'old' })];
+  const returned = new Set(['new']);
+  assert.equal(findVanishedRow(teller({ id: 'new', amount: 12.41 }), pool, returned), null);
+  assert.equal(findVanishedRow(teller({ id: 'new', date: '2026-09-17' }), pool, returned), null);
+  assert.equal(findVanishedRow(teller({ id: 'new', date: '2026-09-16' }), pool, returned)?.id, 'old');
+});
+
+test('findVanishedRow ignores rows dated before the window Teller was asked for', () => {
+  const pool = [stored({ id: 'old', transaction_date: '2026-09-01' })];
+  const returned = new Set(['new']);
+  const txn = teller({ id: 'new', date: '2026-09-05' });
+  assert.equal(findVanishedRow(txn, pool, returned, { windowStart: '2026-09-02' }), null);
+  assert.equal(findVanishedRow(txn, pool, returned, { windowStart: '2026-08-30' })?.id, 'old');
+  assert.equal(findVanishedRow(txn, pool, returned)?.id, 'old');
+});
+
+test('findVanishedRow prefers the closest date, then an exact vendor, and skips claimed rows', () => {
+  const pool = [
+    stored({ id: 'far', teller_transaction_id: 'p1', transaction_date: '2026-09-04' }),
+    stored({ id: 'near-other', teller_transaction_id: 'p2', transaction_date: '2026-09-08', vendor: 'Chipotle Grill' }),
+    stored({ id: 'near-exact', teller_transaction_id: 'p3', transaction_date: '2026-09-10', vendor: 'chipotle' }),
+  ];
+  const returned = new Set(['new']);
+  const txn = teller({ id: 'new', date: '2026-09-09', vendor: 'CHIPOTLE' });
+  assert.equal(findVanishedRow(txn, pool, returned)?.id, 'near-exact');
+  assert.equal(findVanishedRow(txn, pool, returned, { claimed: new Set(['near-exact']) })?.id, 'near-other');
 });
 
 // ── learned categories ────────────────────────────────────────────────────
