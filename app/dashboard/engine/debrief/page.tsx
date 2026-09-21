@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { DailyLog } from '@/lib/types';
 import EntryComposer from '@/components/ui/EntryComposer';
+import { todayLocal, parseLocalDate } from '@/lib/dates/local';
 
 export default function DailyDebriefPage() {
   const [log, setLog] = useState<Partial<DailyLog>>({
@@ -14,7 +15,7 @@ export default function DailyDebriefPage() {
   const [logId, setLogId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayLocal();
 
   const loadTodayLog = useCallback(async () => {
     const { data } = await supabase
@@ -72,7 +73,7 @@ export default function DailyDebriefPage() {
     <div className="max-w-3xl mx-auto p-6">
       <header className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900">Daily Debrief</h1>
-        <p className="text-gray-600">End-of-day reflection for {new Date(today).toLocaleDateString()}</p>
+        <p className="text-gray-600">End-of-day reflection for {parseLocalDate(today).toLocaleDateString()}</p>
       </header>
 
       <div className="bg-white rounded-2xl shadow-xl p-8">

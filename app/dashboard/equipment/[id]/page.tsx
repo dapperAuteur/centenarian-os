@@ -9,6 +9,7 @@ import ActivityLinker from '@/components/ui/ActivityLinker';
 import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
 import ValuationChart from '@/components/equipment/ValuationChart';
 import EquipmentMediaGallery, { type MediaItem } from '@/components/equipment/EquipmentMediaGallery';
+import { todayLocal } from '@/lib/dates/local';
 
 interface EquipmentDetail {
   id: string;
@@ -56,7 +57,7 @@ export default function EquipmentDetailPage() {
 
   // Add valuation form
   const [showValForm, setShowValForm] = useState(false);
-  const [valDate, setValDate] = useState(new Date().toISOString().split('T')[0]);
+  const [valDate, setValDate] = useState(todayLocal());
   const [valValue, setValValue] = useState('');
   const [valNotes, setValNotes] = useState('');
   const [valSaving, setValSaving] = useState(false);

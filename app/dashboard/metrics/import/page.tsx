@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Upload, Plus, Trash2, Loader2, CheckCircle2, AlertCircle, FileSpreadsheet, FileDown } from 'lucide-react';
+import { todayLocal, toLocalDateString } from '@/lib/dates/local';
 
 interface MetricRow {
   logged_date: string;
@@ -178,7 +179,7 @@ function parseCSV(text: string, source: Source): MetricRow[] {
     if (row.logged_date && !row.logged_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
       const d = new Date(row.logged_date);
       if (!isNaN(d.getTime())) {
-        row.logged_date = d.toISOString().split('T')[0];
+        row.logged_date = toLocalDateString(d);
       }
     }
 
@@ -208,7 +209,7 @@ export default function MetricsImportPage() {
   const searchParams = useSearchParams();
   const initialSource = (searchParams.get('source') as Source) || 'manual';
   const [source, setSource] = useState<Source>(initialSource);
-  const [rows, setRows] = useState<MetricRow[]>([{ ...EMPTY_ROW, logged_date: new Date().toISOString().split('T')[0] }]);
+  const [rows, setRows] = useState<MetricRow[]>([{ ...EMPTY_ROW, logged_date: todayLocal() }]);
   const [rawInBodyRows, setRawInBodyRows] = useState<Record<string, string>[]>([]);
   const [csvText, setCsvText] = useState('');
   const [importing, setImporting] = useState(false);

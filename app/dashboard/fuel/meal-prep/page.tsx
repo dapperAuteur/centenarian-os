@@ -9,6 +9,7 @@ import { MealPrepBatch, Protocol } from '@/lib/types';
 import { Plus } from 'lucide-react';
 import { MealPrepModal } from '@/components/MealPrepModal';
 import { MealPrepCard } from '@/components/MealPrepCard';
+import { todayLocal } from '@/lib/dates/local';
 
 export default function MealPrepPage() {
   const [batches, setBatches] = useState<(MealPrepBatch & { protocol?: Protocol })[]>([]);
@@ -59,7 +60,7 @@ export default function MealPrepPage() {
     const updates: any = { servings_remaining: newRemaining };
     
     if (newRemaining === 0 && !batch.date_finished) {
-      updates.date_finished = new Date().toISOString().split('T')[0];
+      updates.date_finished = todayLocal();
     }
 
     await supabase
