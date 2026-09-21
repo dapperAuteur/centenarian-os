@@ -21,6 +21,7 @@ declare global {
       setup: (config: {
         applicationId: string;
         environment: string;
+        products: string[];
         onSuccess: (enrollment: unknown) => void;
         onExit: () => void;
         onFailure: (error: { message: string }) => void;
@@ -28,6 +29,8 @@ declare global {
     };
   }
 }
+
+const TELLER_PRODUCTS = ['transactions'];
 
 export default function TellerConnectButton({ onSuccess }: TellerConnectButtonProps) {
   const [loading, setLoading] = useState(false);
@@ -74,6 +77,11 @@ export default function TellerConnectButton({ onSuccess }: TellerConnectButtonPr
     const teller = window.TellerConnect.setup({
       applicationId: appId,
       environment: env,
+      // Required by Teller Connect ("array, required"). Request only what the app
+      // reads: transaction data. Balance and Identity are billed per API call and
+      // Verify per account (pricing: https://teller.io/), so they stay off.
+      // Options: https://teller.io/docs/guides/connect
+      products: TELLER_PRODUCTS,
       onSuccess: async (enrollment: unknown) => {
         const enr = enrollment as Record<string, unknown>;
         setLoading(true);
@@ -126,7 +134,7 @@ export default function TellerConnectButton({ onSuccess }: TellerConnectButtonPr
         {loading ? 'Connecting...' : 'Connect Bank'}
       </button>
       {error && (
-        <p className="mt-1 text-xs text-red-400">{error}</p>
+        <p role="alert" className="mt-1 text-xs text-red-600">{error}</p>
       )}
     </div>
   );
