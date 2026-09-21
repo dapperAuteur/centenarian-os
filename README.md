@@ -13,7 +13,16 @@ the ecosystem's "one app, one job" rule (see [CLAUDE.md](./CLAUDE.md)) — Media
 Academy → Learn.WitUS, contractor residue → Work.WitUS, Travel → RideWitUS. The correlation core
 stays integrated on purpose. The staged plan and the ecosystem registry live in the untracked
 `plans/` working area (`plans/49-decomposition-staged-plan.md`, `plans/ecosystem/README.md`).
-Module lists below still describe the pre-decomposition surface.
+
+- **Stage 1, Media → [Stream.WitUS](https://stream.witus.online): in progress.** Media is out of
+  the nav, Data Hub, Discover, and the features pages; `/features/media` 308-redirects to
+  Stream.WitUS (`next.config.mjs`). `/dashboard/media` stays reachable by URL, read-only with no
+  add/edit/delete controls, and its banner's primary action is the CSV export
+  (`/api/media/export`), the file users import on Stream.WitUS's media page. Every media write route returns `410 Gone`
+  ([`lib/media/retired.ts`](./lib/media/retired.ts)). Pages and routes are removed after a grace
+  period; the tables stay until a later stage.
+
+Module lists below describe the pre-decomposition surface, minus Media.
 
 ```mermaid
 flowchart LR
@@ -107,9 +116,8 @@ No free plan. All users must subscribe to access paid modules.
 | **Travel & Vehicles** | Fuel logs with OCR, trip tracking, multi-stop routes, maintenance, IRS mileage | Paid |
 | **Equipment & Assets** | Asset tracking, valuation history, media gallery, cross-module links | Paid |
 | **Correlations & Analytics** | Cross-module data correlations, trend charts, daily/weekly aggregates | Paid |
-| **Data Hub** | CSV import/export for 12+ modules with Google Sheets templates | Paid |
+| **Data Hub** | CSV import/export for 11+ modules with Google Sheets templates | Paid |
 | **Life Categories** | Tag activities across all modules with custom life-area categories | Paid |
-| **Media Tracker** | Books, TV, movies, podcasts with notes and episode linking | Paid |
 | **Academy (LMS)** | Create/sell courses; CYOA navigation; rotating spaced-recall quizzes; FlashLearn flashcards (multiple-choice + classic); per-module key terms; maps, docs, audio, video | Free |
 | **Blog** | Rich text publishing, likes/saves, public author profiles | Free |
 | **Recipes** | Recipe sharing, URL import, cook profiles, JSON-LD scraping | Free |

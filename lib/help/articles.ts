@@ -464,18 +464,8 @@ export const HELP_ARTICLES: HelpArticle[] = [
 
   {
     role: 'all',
-    title: 'How to use the Media Tracker',
-    content: `Go to Dashboard → Media to track books, TV shows, movies, music, podcasts, art, articles, and more. Click Add Media to create an item with title, creator, type, status (Want to Consume, In Progress, Completed, Dropped), and an optional 1-5 star rating. Track your progress with current position and total length. For TV shows, track season and episode numbers. Add cover images, external URLs, genre tags, and release year. Use the filters at the top to view by media type or status.`,
-  },
-  {
-    role: 'all',
-    title: 'How to add notes and reviews to media items',
-    content: `On any media detail page, scroll to the Notes section. Click Add Note to create notes with different types: General, Quote, Review, Podcast Prep, Discussion Point, or Spoiler. Notes support both Markdown and Rich Text formatting. Use notes to capture your thoughts, favorite quotes, talking points for podcast episodes, or spoiler-tagged plot discussions.`,
-  },
-  {
-    role: 'all',
-    title: 'How to link media items to podcast episodes',
-    content: `If you produce a podcast, go to Dashboard → Media → Podcasts to manage episodes. Create episodes with title, episode/season numbers, air date, show notes, audio URL, and duration. Link media items to episodes from the episode detail page — click Link Media to search and attach books, movies, or shows you discussed. Each link can include discussion notes and timestamps.`,
+    title: 'Where did the Media Tracker go?',
+    content: `The Media Tracker has moved to Stream.WitUS (stream.witus.online), the WitUS app for tracking books, TV, movies, music, and podcasts. Media is no longer in the CentenarianOS menu, and your existing list is read-only here: you can still open /dashboard/media to browse your items, notes, and podcast episodes, but there are no add, edit, or delete controls. To take your list with you, open /dashboard/media, click "Export my media (CSV)", then import that file in Stream.WitUS. Import it only once, because each import adds every row. The file includes titles, types, status, ratings, dates, genres, tags, links, progress, favorites, visibility, and each item's notes field. Season and episode numbers, categories, and entries in an item's Notes section are not included, so copy anything you need from those by hand.`,
   },
 
   // ─── SOCIAL FEATURES ──────────────────────────────────────────────────────
@@ -483,7 +473,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How to like, share, and discover public content',
-    content: `Media items and equipment can be set to Public visibility, making them browsable on the Discover page. Visit Discover to browse public media lists and equipment collections from other users. Click the heart icon to like, the share icon to share via link or social media, and the bookmark icon to save for later. Like and share counts are visible on public items. Your own likes and bookmarks are accessible from your profile.`,
+    content: `Equipment can be set to Public visibility, making it browsable on the Discover page. Visit Discover to browse public equipment collections from other users. Click the heart icon to like, the share icon to share via link or social media, and the bookmark icon to save for later. Like and share counts are visible on public items. Your own likes and bookmarks are accessible from your profile. (Public media lists moved to Stream.WitUS along with the Media Tracker.)`,
   },
 
   // ─── EQUIPMENT TRACKER ────────────────────────────────────────────────────
@@ -749,11 +739,6 @@ export const HELP_ARTICLES: HelpArticle[] = [
 
   // ─── MEDIA LIBRARY ────────────────────────────────────────────────────────
 
-  {
-    role: 'all',
-    title: 'How to use the Media Tracker',
-    content: `The Media Tracker (/dashboard/media) lets you track books, TV shows, movies, podcasts, and other media you consume. Add items with title, type, status (watching/reading/completed), rating, and notes. The tracker helps you maintain a personal media log and connect it to your broader life goals via Activity Links and Life Categories.`,
-  },
   {
     role: 'all',
     title: 'How to add podcast links',

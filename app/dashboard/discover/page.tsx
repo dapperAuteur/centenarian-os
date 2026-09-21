@@ -5,28 +5,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Sparkles, Heart, Share2, Search, Loader2 } from 'lucide-react';
 
-const TYPE_FILTERS = [
-  { value: '', label: 'All' },
-  { value: 'book', label: '\u{1F4D6} Books' },
-  { value: 'tv_show', label: '\u{1F4FA} TV' },
-  { value: 'movie', label: '\u{1F3AC} Movies' },
-  { value: 'video', label: '\u{1F4F9} Video' },
-  { value: 'song', label: '\u{1F3B5} Songs' },
-  { value: 'album', label: '\u{1F4BF} Albums' },
-  { value: 'podcast', label: '\u{1F399} Pods' },
-  { value: 'art', label: '\u{1F3A8} Art' },
-  { value: 'article', label: '\u{1F4F0} Articles' },
-];
-
+// Media moved to Stream.WitUS (decomposition Stage 1), so Discover lists public
+// equipment only. Old /dashboard/discover/media/[id] links still resolve.
 interface PublicItem {
   id: string;
-  title?: string;
   name?: string;
-  creator?: string | null;
   brand?: string | null;
   model?: string | null;
-  media_type?: string;
-  cover_image_url?: string | null;
   image_url?: string | null;
   like_count: number;
   share_count: number;
@@ -35,12 +20,10 @@ interface PublicItem {
 
 export default function DiscoverPage() {
   const router = useRouter();
-  const [tab, setTab] = useState<'media' | 'equipment'>('media');
   const [items, setItems] = useState<PublicItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [mediaType, setMediaType] = useState('');
   const [page, setPage] = useState(0);
   const limit = 20;
 
@@ -48,12 +31,11 @@ export default function DiscoverPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams({
-        type: tab,
+        type: 'equipment',
         limit: String(limit),
         offset: String(page * limit),
       });
       if (search.trim()) params.set('search', search.trim());
-      if (tab === 'media' && mediaType) params.set('media_type', mediaType);
 
       const res = await fetch(`/api/social/public?${params}`);
       if (res.ok) {
@@ -63,7 +45,7 @@ export default function DiscoverPage() {
       }
     } catch { /* handled */ }
     finally { setLoading(false); }
-  }, [tab, page, search, mediaType]);
+  }, [page, search]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -92,51 +74,20 @@ export default function DiscoverPage() {
         <Sparkles className="w-6 h-6 text-fuchsia-600" aria-hidden="true" />
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Discover</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Explore public media and equipment shared by the community</p>
+          <p className="text-sm text-gray-500 mt-0.5">Explore public equipment shared by the community</p>
         </div>
-      </div>
-
-      {/* Tab toggle */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit">
-        {(['media', 'equipment'] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => { setTab(t); setPage(0); setSearch(''); setMediaType(''); }}
-            className={`px-4 min-h-11 rounded-lg text-sm font-medium transition capitalize ${
-              tab === t ? 'bg-white text-fuchsia-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            {t}
-          </button>
-        ))}
       </div>
 
       {/* Filters */}
       <div className="space-y-2">
-        {tab === 'media' && (
-          <div className="flex flex-wrap gap-1.5">
-            {TYPE_FILTERS.map((f) => (
-              <button
-                key={f.value}
-                onClick={() => { setMediaType(f.value); setPage(0); }}
-                className={`px-2.5 py-1.5 rounded-full text-xs font-medium transition ${
-                  mediaType === f.value
-                    ? 'bg-fuchsia-600 text-white'
-                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        )}
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
           <input
             type="text"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-            placeholder={tab === 'media' ? 'Search titles...' : 'Search equipment...'}
+            placeholder="Search equipment..."
+            aria-label="Search equipment"
             className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm"
           />
         </div>
@@ -154,16 +105,11 @@ export default function DiscoverPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {items.map((item) => {
-            const title = item.title || item.name || 'Untitled';
-            const subtitle = item.creator || [item.brand, item.model].filter(Boolean).join(' ') || null;
-            const imgUrl = item.cover_image_url || item.image_url;
-            const detailHref = tab === 'media'
-              ? `/dashboard/discover/media/${item.id}`
-              : `/dashboard/discover/equipment/${item.id}`;
-            const entityType = tab === 'media' ? 'media_item' : 'equipment';
-            const typeBadge = tab === 'media' && item.media_type
-              ? item.media_type.replace('_', ' ')
-              : item.equipment_categories?.name || null;
+            const title = item.name || 'Untitled';
+            const subtitle = [item.brand, item.model].filter(Boolean).join(' ') || null;
+            const imgUrl = item.image_url;
+            const detailHref = `/dashboard/discover/equipment/${item.id}`;
+            const typeBadge = item.equipment_categories?.name || null;
 
             return (
               <div key={item.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition group">
@@ -173,7 +119,7 @@ export default function DiscoverPage() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={imgUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition" />
                     ) : (
-                      <span className="text-4xl text-gray-300">{tab === 'media' ? '\u{1F3AC}' : '\u{1F4E6}'}</span>
+                      <span className="text-4xl text-gray-300">{'\u{1F4E6}'}</span>
                     )}
                   </div>
                 </Link>
@@ -192,7 +138,7 @@ export default function DiscoverPage() {
                     )}
                     <div className="flex items-center gap-3 ml-auto">
                       <button
-                        onClick={() => handleLike(entityType, item.id)}
+                        onClick={() => handleLike('equipment', item.id)}
                         aria-label="Like"
                         className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-500 transition min-h-11 min-w-11 justify-center"
                       >

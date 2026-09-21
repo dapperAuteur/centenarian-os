@@ -4,7 +4,7 @@
 import {
   Target, Utensils, Brain, Car, DollarSign, Heart, Dumbbell, Flame,
   Package, GraduationCap, BookOpen, TrendingUp, Database, ChartNetwork,
-  Camera, Tag, History, Library, ListChecks, type LucideIcon,
+  Camera, Tag, History, ListChecks, type LucideIcon,
 } from 'lucide-react';
 
 export interface ModuleHighlight {
@@ -707,44 +707,6 @@ export const MODULES: ModuleData[] = [
     ],
     dashboardPath: '/dashboard/retrospective',
     relatedSlugs: ['correlations', 'engine', 'health-metrics'],
-  },
-  {
-    slug: 'media',
-    name: 'Media Tracker',
-    tagline: 'Track everything you read, watch, and listen to',
-    description: 'A personal media consumption tracker for books, TV, movies, music, podcasts, and art. Add notes, reviews, and ratings — then link media to podcast episodes for content creation.',
-    color: 'border-indigo-500',
-    iconColor: 'text-indigo-600',
-    checkColor: 'text-indigo-600',
-    bgGradient: 'from-indigo-600 to-indigo-800',
-    Icon: Library,
-    features: [
-      'Books, TV, movies, music, podcasts & art',
-      'Status tracking (want / in progress / done)',
-      'Rich notes with quote & spoiler types',
-      'Podcast episode linking for content prep',
-    ],
-    highlights: [
-      {
-        title: 'Universal Media Library',
-        description: 'Track any media type: books, TV shows, movies, music, podcasts, art, and articles. Each type has conditional fields (season/episode for TV, chapter progress for books).',
-      },
-      {
-        title: 'Status & Rating System',
-        description: 'Mark items as want-to-consume, in-progress, completed, or dropped. Rate 1-5 stars and tag favorites for quick reference.',
-      },
-      {
-        title: 'Rich Notes & Reviews',
-        description: 'Add multiple notes per item with types: general, quote, review, podcast prep, discussion point, or spoiler. Rich text editor for detailed annotations.',
-      },
-      {
-        title: 'Podcast Episode Linking',
-        description: 'Link media items to podcast episodes for content creation. Track which books, shows, or movies you discussed in each episode with timestamps and discussion notes.',
-      },
-    ],
-    dashboardPath: '/dashboard/media',
-    tutorialSlug: 'media',
-    relatedSlugs: ['blog-recipes', 'categories', 'connections'],
   },
 ];
 
