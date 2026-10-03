@@ -80,10 +80,10 @@ export const STARTER_MODULES: Record<ModuleSlug, StarterModule> = {
   },
   equipment: {
     label: 'Equipment',
-    // Media library bundles with Equipment — equipment's gallery is
-    // the heaviest consumer of the library.
+    // /dashboard/media stays unlocked so Starter users can open their read-only media
+    // list and export it (Media moved to Stream.WitUS; see MovedToStreamBanner).
     prefixes: ['/dashboard/equipment', '/dashboard/media'],
-    description: 'Asset tracking, valuations, media library & gallery',
+    description: 'Asset tracking, valuations & gallery',
     icon: 'Package',
   },
   correlations: {
