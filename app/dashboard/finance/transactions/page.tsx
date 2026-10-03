@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight, Link2, X, Search, Check, Loader2, Landmark } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight, Link2, X, Search, Check, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
 import LearnCategoryPrompt, { type LearnCategoryRequest } from '@/components/finance/LearnCategoryPrompt';
@@ -26,7 +26,6 @@ interface Account {
   name: string;
   account_type: string;
   is_active: boolean;
-  teller_account_id: string | null;
 }
 
 interface Transaction {
@@ -44,25 +43,7 @@ interface Transaction {
   budget_categories: Category | null;
   financial_accounts: { id: string; name: string } | null;
   notes: string | null;
-  teller_transaction_id: string | null;
   created_at: string;
-}
-
-/** A manual or scanned entry that a bank sync linked to its bank transaction. */
-function isBankMatched(tx: Transaction): boolean {
-  return !!tx.teller_transaction_id && tx.source !== 'bank_sync';
-}
-
-function BankMatchedBadge() {
-  return (
-    <span
-      className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded bg-teal-50 text-teal-700"
-      title="Linked to the matching transaction from your bank sync"
-    >
-      <Landmark className="w-3 h-3" aria-hidden="true" />
-      Bank matched
-    </span>
-  );
 }
 
 const SOURCE_MODULE_BADGE: Record<string, { label: string; className: string }> = {
@@ -340,7 +321,7 @@ export default function TransactionsPage() {
           {filterSource && (
             <button onClick={() => { setFilterSource(''); setPage(0); }}
               className="flex items-center gap-1 text-xs bg-teal-50 text-teal-700 border border-teal-200 px-2.5 py-1 rounded-full hover:bg-teal-100 transition">
-              {filterSource === 'bank_sync' ? 'Bank Sync' : 'Manual'} <X className="w-3 h-3" />
+              {filterSource === 'bank_sync' ? 'Bank import' : 'Manual'} <X className="w-3 h-3" />
             </button>
           )}
           {(filterFrom || filterTo) && (
@@ -382,9 +363,10 @@ export default function TransactionsPage() {
               </button>
             ))}
           </div>
-          {/* Source toggle */}
+          {/* Source toggle. 'bank_sync' is the stored value on historic rows from the
+              removed bank-linking integration; it is shown as "Bank import". */}
           <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
-            {[['', 'All Sources'], ['manual', 'Manual'], ['bank_sync', 'Bank Sync']].map(([v, label]) => (
+            {[['', 'All Sources'], ['manual', 'Manual'], ['bank_sync', 'Bank import']].map(([v, label]) => (
               <button key={v} onClick={() => { setFilterSource(v); setPage(0); }}
                 className={`px-3 py-1.5 font-medium transition ${filterSource === v ? 'bg-teal-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
                 {label}
@@ -420,7 +402,6 @@ export default function TransactionsPage() {
                         onChange={() => toggleFilterId(setFilterAccountIds, acct.id)}
                         className="w-4 h-4 rounded border-gray-300 text-fuchsia-600 cursor-pointer" />
                       <span className="text-sm text-gray-700 group-hover:text-gray-900 truncate">{acct.name}</span>
-                      {acct.teller_account_id && <span className="text-[10px] text-teal-600">Sync</span>}
                     </label>
                   ))}
                 </div>
@@ -584,11 +565,6 @@ export default function TransactionsPage() {
                         onClick={() => router.push(`/dashboard/finance/transactions/${tx.id}`)}
                       >
                         <p className="text-sm font-medium text-gray-900">{tx.description || tx.vendor || 'Transaction'}</p>
-                        {isBankMatched(tx) && (
-                          <div className="mt-1">
-                            <BankMatchedBadge />
-                          </div>
-                        )}
                         <p className="text-xs text-gray-500 mt-0.5">
                           {new Date(tx.transaction_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           {tx.financial_accounts?.name && <span className="ml-2 text-gray-400">{tx.financial_accounts.name}</span>}
@@ -700,7 +676,6 @@ export default function TransactionsPage() {
                               {SOURCE_BADGE[tx.source].label}
                             </span>
                           )}
-                          {isBankMatched(tx) && <BankMatchedBadge />}
                         </div>
                       )}
                     </td>
