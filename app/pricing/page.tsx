@@ -384,7 +384,7 @@ export default function PricingPage() {
                 'Focus Engine (timer, doodle canvas, debrief, pain log)',
                 'Travel tracking with public transport, booking details & budgets',
                 'Financial dashboard (accounts, budgets, invoices)',
-                'Budget forecasting & bank linking via Teller',
+                'Budget forecasting',
                 'Health metrics & wearable sync (Garmin, Oura, WHOOP)',
                 'Workouts, exercises & Nomad Longevity OS protocol',
                 'Equipment & asset tracking with valuations',
@@ -394,7 +394,6 @@ export default function PricingPage() {
                 'Correlation analysis across health & lifestyle metrics',
                 'Academy courses & 15+ tutorial guides',
                 'Data Hub — bulk import/export for all modules',
-                'Media tracker — books, TV, movies, podcasts & notes',
                 'Cross-module linking, saved contacts & blog publishing',
                 'Interactive feature walkthroughs & guided onboarding',
               ].map((f) => (
