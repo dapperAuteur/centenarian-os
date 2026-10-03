@@ -97,7 +97,7 @@ CSV import is intentionally manual — you download from your bank, review what 
 
 This has two advantages: you review your transactions before they enter the system (catching errors or fraud), and CSV import never needs a connection to your bank.
 
-If you'd rather pull transactions straight from your bank, you can link it through Teller on the Finance → Accounts page. Linked banks don't sync in the background either: new transactions come in when you press Sync.
+CentenarianOS has no bank connection, so importing a statement CSV is the way to bring in bank transactions. A guided statement import is coming.
 
 ---
 
@@ -140,4 +140,4 @@ If you'd rather pull transactions straight from your bank, you can link it throu
 - Do monthly imports (30 days at a time) for best efficiency and freshness
 - Export uses your current filter — filter by year or category before exporting for targeted outputs
 - Export CSV is your shareable ledger: tax prep, accountant, spreadsheet analysis, backup
-- CSV import is intentionally manual, for review and intentional categorization; banks linked through Teller update only when you press Sync
+- CSV import is intentionally manual, for review and intentional categorization; there is no bank connection, so a statement CSV is how bank transactions come in

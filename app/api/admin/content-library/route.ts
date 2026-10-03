@@ -108,7 +108,7 @@ const TUTORIAL_SERIES = [
   {
     slug: 'finance',
     title: 'Finance Dashboard Guide',
-    description: 'Track transactions, manage accounts, set budgets, link bank accounts, and import/export financial data.',
+    description: 'Track transactions, manage accounts, set budgets, and import/export financial data.',
     category: 'Platform Guide',
     tags: ['tutorial', 'finance', 'budgets', 'transactions', 'banking'],
     type: 'academy' as const,

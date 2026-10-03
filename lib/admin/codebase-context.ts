@@ -20,7 +20,6 @@ CentenarianOS is a comprehensive longevity-focused life-management platform. It 
 - **Video Embedding**: VideoEmbed Tiptap node (YouTube, Viloud.tv, Mux, Cloudinary direct) — used in blog posts and recipes
 - **Offline**: offlineFetch wrapper caches GETs in IndexedDB, queues mutations for replay
 - **Charts**: Recharts (admin analytics, finance dashboards)
-- **Banking**: Teller API (bank account linking; transactions sync only when the user presses Sync or Sync All; no background sync)
 - **Bot Prevention**: Cloudflare Turnstile on signup
 
 ### Core Architecture
@@ -33,7 +32,7 @@ CentenarianOS is a comprehensive longevity-focused life-management platform. It 
 
 ### Modules (22+)
 
-1. **Finance** — Financial accounts (checking, savings, credit card, loan, cash), transactions with categories, budgets, recurring transactions, invoices, CSV import/export. Balance = opening_balance + SUM(income) - SUM(expenses). Teller API integration for bank account OAuth linking and auto-sync. Institution policies (APR, fees, rewards, dispute windows). Saved contacts with default categories for auto-fill.
+1. **Finance** — Financial accounts (checking, savings, credit card, loan, cash), transactions with categories, budgets, recurring transactions, invoices, CSV import/export. Balance = opening_balance + SUM(income) - SUM(expenses). No bank connection: bank transactions come in by CSV import (Teller bank linking was removed in 2026-10; historic rows keep source bank_sync, shown as "Bank import"). Institution policies (APR, fees, rewards, dispute windows). Saved contacts with default categories for auto-fill.
 
 2. **Health Metrics** — Three tiers: Core (RHR, steps, sleep, activity calories), Enrichment (per-metric unlock with disclaimer), Body Composition (locked, per-metric acknowledgment). Wearable OAuth: Oura, WHOOP, Garmin with auto-sync. CSV imports: Apple Health, Google Health, InBody, Hume Health. Admin controls global enable/disable and per-user access overrides.
 
@@ -102,7 +101,7 @@ Overview, Users (list + detail), Messages, Content moderation, Engagement analyt
 
 ### Database Architecture
 - **173+ migrations** in supabase/migrations/ (000 through 173)
-- **Key tables**: profiles, financial_accounts, financial_transactions, budget_categories, vehicles, trips, trip_routes, trip_shares, fuel_logs, vehicle_maintenance, equipment, equipment_categories, equipment_valuations, equipment_media, exercises, exercise_categories, workout_logs, workout_templates, courses, lessons, modules (academy), course_prerequisites, prerequisite_override_requests, gem_personas, language_coach_sessions, life_categories, entity_life_categories, activity_links, user_contacts, contact_locations, scan_images, receipt_line_items, item_prices, institutions, institution_offers, invited_users, teller_enrollments, admin_chats, admin_chat_messages, app_logs, usage_events, page_views, media_categories, media_items, media_notes, podcast_episodes, media_episode_links, social_likes, social_shares, social_bookmarks
+- **Key tables**: profiles, financial_accounts, financial_transactions, budget_categories, vehicles, trips, trip_routes, trip_shares, fuel_logs, vehicle_maintenance, equipment, equipment_categories, equipment_valuations, equipment_media, exercises, exercise_categories, workout_logs, workout_templates, courses, lessons, modules (academy), course_prerequisites, prerequisite_override_requests, gem_personas, language_coach_sessions, life_categories, entity_life_categories, activity_links, user_contacts, contact_locations, scan_images, receipt_line_items, item_prices, institutions, institution_offers, invited_users, teller_enrollments (deprecated 2026-10, unused), admin_chats, admin_chat_messages, app_logs, usage_events, page_views, media_categories, media_items, media_notes, podcast_episodes, media_episode_links, social_likes, social_shares, social_bookmarks
 - **Patterns**: Soft-delete via is_active flags, .maybeSingle() for optional rows, service role for admin ops, fire-and-forget logging
 - **RLS**: Enabled on all user-facing tables. Service role key bypasses RLS for admin/webhook routes.
 
@@ -122,7 +121,7 @@ Overview, Users (list + detail), Messages, Content moderation, Engagement analyt
 - **Fire-and-forget logging**: App logs and usage events never block the user's request
 - **CYOA via embeddings**: Lesson navigation uses cosine similarity rather than manual prerequisite graphs, with cross-course matching option
 - **Tiptap + Markdown dual support**: Lessons can use either format, stored in same column with content_format flag
-- **Teller API for banking**: Teller Connect bank linking with user-triggered transaction sync (the transactions.processed webhook is only logged), institution policy tracking
+- **No bank linking**: Teller was removed in 2026-10 so the app keeps no bank credentials (scripts/teller-revoke-all.mjs revokes the enrollments and overwrites the stored tokens); bank transactions come in by CSV import. The teller_enrollments table and teller_* columns remain, unused, under the shared-database additive rule (migration 201)
 - **offlineFetch pattern**: Drop-in fetch replacement caches in IndexedDB, queues mutations — enables offline-first pages
 - **VideoEmbed Tiptap node**: Isomorphic custom node stores src URL, auto-detects provider (YouTube/Viloud/Mux/Cloudinary)
 - **Module tours**: TourOverlay component with server-persisted step progress, event tracking, and restart capability

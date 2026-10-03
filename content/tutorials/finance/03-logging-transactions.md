@@ -45,7 +45,7 @@ If you gave the transaction both a vendor and a category, a small prompt appears
 
 > Always categorize 'Whole Foods' as Groceries? **[Always]** **[Just this once]**
 
-- **Always** makes Groceries the learned category for Whole Foods. From then on, any Whole Foods transaction that arrives without a category gets Groceries automatically, whether you add it by hand, scan a receipt, import a CSV, or sync your bank. You'll then be offered the chance to apply Groceries to your past Whole Foods transactions too, with the count shown before anything changes.
+- **Always** makes Groceries the learned category for Whole Foods. From then on, any Whole Foods transaction that arrives without a category gets Groceries automatically, whether you add it by hand, scan a receipt, or import a CSV. You'll then be offered the chance to apply Groceries to your past Whole Foods transactions too, with the count shown before anything changes.
 - **Just this once** changes nothing else.
 
 The prompt only appears when the vendor has no learned category yet, or has a different one. If you leave Category empty for a vendor that already has a learned category, the transaction gets that category when it saves. A category you pick yourself always wins.

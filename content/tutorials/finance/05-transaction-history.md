@@ -61,15 +61,7 @@ Common reasons to edit:
 - **Incomplete vendor** — you left it blank but want to add it for better analytics
 - **Amount error** — typo in the amount
 
-When you set or change the category of a transaction that has a vendor, a prompt appears above the list: "Always categorize 'CHIPOTLE' as Dining? [Always] [Just this once]". **Always** makes it that vendor's learned category, so its future transactions (including bank syncs and imports) are categorized automatically, and then offers to apply it to the vendor's past transactions, showing how many first. **Just this once** changes nothing else.
-
----
-
-### Bank-Matched Transactions
-
-If you connect a bank account (Finance → Accounts), each sync checks whether a bank transaction is one you already entered by hand or scanned. When the amount matches to the cent, the dates are within 5 days, and the vendor or description is similar, the sync links your entry to the bank transaction instead of adding a duplicate. Linked entries show a **Bank matched** badge in the list.
-
-If a sync linked two different purchases (two $5 coffees on nearby days, say), open the transaction and click **Unmatch from bank**. Your entry stays as it is, and the bank's transaction is added as its own row, which later syncs leave alone.
+When you set or change the category of a transaction that has a vendor, a prompt appears above the list: "Always categorize 'CHIPOTLE' as Dining? [Always] [Just this once]". **Always** makes it that vendor's learned category, so its future transactions (including receipt scans and CSV imports) are categorized automatically, and then offers to apply it to the vendor's past transactions, showing how many first. **Just this once** changes nothing else.
 
 ---
 
@@ -127,8 +119,6 @@ The transaction history is your ledger for tax and financial planning purposes. 
 
 > [SCREENSHOT: The "Always categorize ... as ...?" prompt above the list after saving — callout: "Always / Just this once"]
 
-> [SCREENSHOT: A row with the "Bank matched" badge — callout: "Your entry, linked to the bank's copy instead of duplicated"]
-
 > [SCREEN: Click Delete on a transaction — confirmation prompt — cancel (don't delete for demo)]
 
 > [SCREEN: Clear all filters — show the full unfiltered list]
@@ -144,7 +134,6 @@ The transaction history is your ledger for tax and financial planning purposes. 
 - Edit any transaction: fix category, amount, date, vendor, description
 - Changing a category offers "Always" (the vendor's future transactions get it too) or "Just this once"
 - Select rows to bulk-set a category, brand, or life tag
-- "Bank matched" marks your entries that a bank sync linked instead of duplicating; Unmatch from bank splits them if the match was wrong
 - Delete is permanent — use for duplicates and errors, not for over-budget regret
 - Vendor search is powerful: "Amazon" finds every Amazon transaction across all time
 - Year-end: filter to Jan 1–Dec 31, export CSV for accountant or tax purposes

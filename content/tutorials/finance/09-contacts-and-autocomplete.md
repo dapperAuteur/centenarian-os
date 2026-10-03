@@ -64,7 +64,6 @@ A learned category is applied automatically to that vendor's new transactions th
 - transactions you add by hand with Category left empty
 - receipt scans (a learned category wins over the AI's guess)
 - CSV imports
-- bank syncs
 
 Vendor names are compared ignoring capitalization, store numbers, and punctuation, so "CHIPOTLE #1234", "Chipotle", and "TST* Chipotle" all count as the same vendor. Expenses use your saved **vendors**; income uses your saved **customers** (payers). A category you choose yourself always wins. To change or stop a learned category, edit the contact's default category.
 
@@ -127,6 +126,6 @@ In the Finance module, locations aren't used directly — the vendor name and ca
 - ContactAutocomplete: type 2+ chars → dropdown → click to auto-fill vendor + category
 - "Save?" prompt appears for new vendors — upserts to avoid duplicates
 - After you categorize a transaction, "Always" teaches the vendor's category (its default category); "Just this once" changes nothing else
-- Learned categories fill in manual entries left uncategorized, receipt scans, CSV imports, and bank syncs
+- Learned categories fill in manual entries left uncategorized, receipt scans, and CSV imports
 - Contacts are shared across Finance, Travel, and Planner modules
 - Contacts can have multiple locations (sub-addresses) used primarily in Travel and Planner
