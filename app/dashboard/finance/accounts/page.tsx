@@ -13,7 +13,6 @@ import {
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import TransferModal from '@/components/finance/TransferModal';
-import TellerConnectButton from '@/components/finance/TellerConnectButton';
 import Modal from '@/components/ui/Modal';
 
 interface Account {
@@ -367,30 +366,6 @@ export default function AccountsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <TellerConnectButton
-            onSuccess={async (result) => {
-              setSyncResult(`Connected! ${result.synced} transactions imported${result.oldestTransactionDate ? ` (history back to ${result.oldestTransactionDate})` : ''}`);
-              // Reload accounts, then check for potential matches between new Teller accounts and existing manual ones
-              const res = await offlineFetch('/api/finance/accounts');
-              if (res.ok) {
-                const fresh: Account[] = await res.json();
-                setAccounts(fresh);
-                setLoading(false);
-                const manual = fresh.filter((a) => !a.teller_account_id);
-                const teller = fresh.filter((a) => a.teller_account_id);
-                const hasMatch = teller.some((t) =>
-                  manual.some((m) =>
-                    m.institution_name && t.institution_name &&
-                    m.institution_name.toLowerCase() === t.institution_name.toLowerCase() &&
-                    m.account_type === t.account_type
-                  )
-                );
-                if (hasMatch) {
-                  setSyncResult((prev) => (prev ?? '') + ' We found accounts that may match your existing ones — use the link button (🔗) on any manual account to merge them.');
-                }
-              }
-            }}
-          />
           <button
             onClick={() => setShowTransfer(true)}
             className="flex items-center gap-1.5 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
