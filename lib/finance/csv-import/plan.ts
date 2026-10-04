@@ -284,7 +284,7 @@ export function classifyRow(row: PlanInputRow, index: PlanIndex, claims: PlanCla
     return base('duplicate', 'skip', {
       duplicateOf: sameId,
       duplicateRule: 'external_id',
-      reason: 'This statement row was imported before.',
+      reason: 'This statement row is already in this account from an earlier import.',
     });
   }
 
