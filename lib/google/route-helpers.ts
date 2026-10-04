@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServiceClient, type SupabaseClient } from '@supabase/supabase-js';
 import { encryptSecret } from '@/lib/crypto/tokens';
+import { hasOAuthStateSecret } from '@/lib/oauth-state';
 import { GoogleApiError, GoogleAuthError, GoogleConfigError, isGoogleConfigured } from './calendar-client';
 import { CalendarSchemaMissingError, StoredTokenError } from './connection';
 
@@ -34,9 +35,9 @@ export function isTokenEncryptionReady(): boolean {
   }
 }
 
-/** True when lib/oauth-state.ts can sign the OAuth state (it signs with SUPABASE_JWT_SECRET). */
+/** True when lib/oauth-state.ts can sign the OAuth state (either name of the Supabase JWT secret). */
 export function isOAuthStateReady(): boolean {
-  return Boolean(process.env.SUPABASE_JWT_SECRET);
+  return hasOAuthStateSecret();
 }
 
 /** What the server still lacks before anyone can connect. Empty when it is ready. */
@@ -44,7 +45,7 @@ export function missingServerSetup(): string[] {
   const missing: string[] = [];
   if (!isGoogleConfigured()) missing.push('GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET');
   if (!isTokenEncryptionReady()) missing.push('TOKEN_ENCRYPTION_KEY');
-  if (!isOAuthStateReady()) missing.push('SUPABASE_JWT_SECRET');
+  if (!isOAuthStateReady()) missing.push('SUPABASE_JWT_SECRET (or SUPABASE__SUPABASE_JWT_SECRET)');
   return missing;
 }
 
