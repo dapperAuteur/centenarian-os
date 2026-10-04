@@ -12,6 +12,10 @@ import ActivityLinker from '@/components/ui/ActivityLinker';
 import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
 import DisputeSection from '@/components/finance/DisputeSection';
 import ReturnDeadlineSection from '@/components/finance/ReturnDeadlineSection';
+import TransferSection from '@/components/finance/TransferSection';
+import DeleteTransferDialog from '@/components/finance/DeleteTransferDialog';
+import type { TransferPartnerView } from '@/components/finance/TransferBadge';
+import { accountLabel } from '@/lib/finance/transfers/pairing';
 
 interface Transaction {
   id: string;
@@ -26,7 +30,9 @@ interface Transaction {
   category_id: string | null;
   account_id: string | null;
   brand_id: string | null;
-  transfer_group_id: string | null;
+  // Both are absent on a database that doesn't have the transfer columns yet.
+  transfer_group_id?: string | null;
+  transfer_kind?: string | null;
   tags: string[] | null;
   notes: string | null;
   created_at: string;
@@ -38,7 +44,14 @@ interface Transaction {
   return_policy_days: number | null;
   return_status: string | null;
   budget_categories: { id: string; name: string; color: string } | null;
-  financial_accounts: { id: string; name: string; account_type: string; default_return_days: number | null } | null;
+  financial_accounts: {
+    id: string;
+    name: string;
+    account_type: string;
+    institution_name: string | null;
+    last_four: string | null;
+    default_return_days: number | null;
+  } | null;
   user_brands: { id: string; name: string } | null;
 }
 
@@ -79,17 +92,22 @@ export default function TransactionDetailPage() {
   const router = useRouter();
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [linkedInvoice, setLinkedInvoice] = useState<LinkedInvoice | null>(null);
+  const [transferPartner, setTransferPartner] = useState<TransferPartnerView | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  // Deleting one side of a transfer asks what to do with the other side.
+  const [pairDelete, setPairDelete] = useState<{ partner: TransferPartnerView | null } | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  // `quiet` reloads in place (after a link or unlink) without swapping the page for a spinner.
+  const load = useCallback(async (quiet = false) => {
+    if (!quiet) setLoading(true);
     try {
       const res = await offlineFetch(`/api/finance/transactions/${id}`);
       if (res.ok) {
         const data = await res.json();
         setTransaction(data.transaction || null);
         setLinkedInvoice(data.linked_invoice || null);
+        setTransferPartner(data.transfer_partner || null);
       }
     } catch { /* handled */ }
     finally { setLoading(false); }
@@ -112,14 +130,21 @@ export default function TransactionDetailPage() {
   };
 
   const handleDelete = async () => {
+    // One side of a transfer: choose between deleting both sides and unlinking first.
+    if (transaction?.transfer_group_id && transferPartner) {
+      setPairDelete({ partner: transferPartner });
+      return;
+    }
     if (!confirm('Delete this transaction? This cannot be undone.')) return;
     setActionLoading('delete');
     try {
       const res = await offlineFetch(`/api/finance/transactions?id=${id}`, { method: 'DELETE' });
       if (res.ok) router.push('/dashboard/finance/transactions');
       else {
-        const err = await res.json();
-        alert(err.error || 'Delete failed');
+        const err = await res.json().catch(() => null);
+        // The server found a transfer this page didn't know about yet.
+        if (res.status === 409 && err?.transfer_group_id) setPairDelete({ partner: err.partner ?? null });
+        else alert(err?.error || 'Delete failed');
       }
     } finally { setActionLoading(null); }
   };
@@ -191,7 +216,7 @@ export default function TransactionDetailPage() {
               <span className="text-gray-400 text-xs block">Account</span>
               <span className="text-gray-900 font-medium flex items-center gap-1">
                 <CreditCard className="w-3.5 h-3.5 text-gray-400" />
-                {transaction.financial_accounts.name}
+                {accountLabel(transaction.financial_accounts)}
               </span>
             </div>
           )}
@@ -258,6 +283,16 @@ export default function TransactionDetailPage() {
         </div>
       )}
 
+      {/* Transfer: the other side, or the ways to mark this as one */}
+      <TransferSection
+        transaction={transaction}
+        partner={transferPartner}
+        onChanged={() => load(true)}
+        onRemoved={(goToId) =>
+          router.push(goToId ? `/dashboard/finance/transactions/${goToId}` : '/dashboard/finance/transactions')
+        }
+      />
+
       {/* Dispute & Return */}
       {transaction.type === 'expense' && (
         <div className="space-y-3">
@@ -311,6 +346,13 @@ export default function TransactionDetailPage() {
       <div className="bg-white border border-gray-200 rounded-2xl p-5">
         <LifeCategoryTagger entityType="transaction" entityId={transaction.id} />
       </div>
+
+      <DeleteTransferDialog
+        transactionId={pairDelete ? transaction.id : null}
+        partner={pairDelete?.partner ?? null}
+        onClose={() => setPairDelete(null)}
+        onDeleted={() => router.push('/dashboard/finance/transactions')}
+      />
     </div>
   );
 }

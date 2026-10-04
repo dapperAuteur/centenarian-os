@@ -8,11 +8,13 @@ import { ArrowRightLeft, Loader2 } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { todayLocal } from '@/lib/dates/local';
+import { accountLabel } from '@/lib/finance/transfers/pairing';
 
 interface Account {
   id: string;
   name: string;
   account_type: string;
+  institution_name?: string | null;
   last_four: string | null;
   balance: number;
   is_active: boolean;
@@ -79,24 +81,29 @@ export default function TransferModal({ isOpen, onClose, accounts, onSuccess }: 
     }
   }
 
-  function label(a: Account) {
-    return `${a.name}${a.last_four ? ` ··${a.last_four}` : ''}`;
-  }
+  // Institution, name and last four: two accounts can share a name.
+  const label = (a: Account) => accountLabel(a);
 
   return (
     <Modal isOpen={isOpen} onClose={() => { reset(); onClose(); }} title="Transfer Funds" size="sm">
       <form onSubmit={handleSubmit} className="p-6 space-y-4">
         {error && (
-          <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</div>
+          <div role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2 rounded-lg">{error}</div>
         )}
 
+        <p className="text-xs text-gray-600">
+          A transfer is recorded on both accounts and is not counted as spending or income. Paying a credit
+          card or a loan from a bank account is a transfer too.
+        </p>
+
         <div>
-          <label className="text-xs font-medium text-gray-600">From Account</label>
+          <label htmlFor="transfer-from" className="text-xs font-medium text-gray-600">From Account</label>
           <select
+            id="transfer-from"
             required
             value={fromId}
             onChange={(e) => setFromId(e.target.value)}
-            className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
+            className="w-full mt-1 min-h-11 px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-900"
           >
             <option value="">Select account…</option>
             {activeAccounts.map((a) => (
@@ -106,16 +113,17 @@ export default function TransferModal({ isOpen, onClose, accounts, onSuccess }: 
         </div>
 
         <div className="flex justify-center">
-          <ArrowRightLeft className="w-5 h-5 text-gray-400" />
+          <ArrowRightLeft className="w-5 h-5 text-gray-400" aria-hidden="true" />
         </div>
 
         <div>
-          <label className="text-xs font-medium text-gray-600">To Account</label>
+          <label htmlFor="transfer-to" className="text-xs font-medium text-gray-600">To Account</label>
           <select
+            id="transfer-to"
             required
             value={toId}
             onChange={(e) => setToId(e.target.value)}
-            className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
+            className="w-full mt-1 min-h-11 px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-900"
           >
             <option value="">Select account…</option>
             {activeAccounts.filter((a) => a.id !== fromId).map((a) => (
@@ -126,53 +134,56 @@ export default function TransferModal({ isOpen, onClose, accounts, onSuccess }: 
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs font-medium text-gray-600">Amount ($)</label>
+            <label htmlFor="transfer-amount" className="text-xs font-medium text-gray-600">Amount ($)</label>
             <input
+              id="transfer-amount"
               required
               type="number"
               step="0.01"
               min="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
+              className="w-full mt-1 min-h-11 px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-900"
               placeholder="0.00"
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600">Date</label>
+            <label htmlFor="transfer-date" className="text-xs font-medium text-gray-600">Date</label>
             <input
+              id="transfer-date"
               required
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
+              className="w-full mt-1 min-h-11 px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-900"
             />
           </div>
         </div>
 
         <div>
-          <label className="text-xs font-medium text-gray-600">Description (optional)</label>
+          <label htmlFor="transfer-description" className="text-xs font-medium text-gray-600">Description (optional)</label>
           <input
+            id="transfer-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
+            className="w-full mt-1 min-h-11 px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-900"
             placeholder="e.g. Credit card payment"
           />
         </div>
 
-        <div className="flex gap-3 pt-2">
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <button
             type="submit"
             disabled={saving}
-            className="flex-1 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 disabled:opacity-50 transition flex items-center justify-center gap-2"
+            className="flex-1 min-h-11 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 disabled:opacity-50 transition flex items-center justify-center gap-2"
           >
-            {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+            {saving && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
             Transfer
           </button>
           <button
             type="button"
             onClick={() => { reset(); onClose(); }}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+            className="min-h-11 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
           >
             Cancel
           </button>
