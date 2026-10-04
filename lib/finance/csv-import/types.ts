@@ -70,6 +70,8 @@ export interface StatementCsv {
   headerLabels: string[];
   /** False when the file has no header row and `headers` were made up from positions. */
   hasHeader: boolean;
+  /** The spreadsheet row the header sits on (the file's first line is row 1), or null when there is none. */
+  headerRowNumber: number | null;
   rows: RawRow[];
   /** Lines skipped above the table (a summary block, an account banner), for display. */
   preambleLines: string[];
