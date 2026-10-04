@@ -39,7 +39,8 @@ export default function EngineHistoryHub() {
         .order('date', { ascending: false }),
       supabase
         .from('focus_sessions')
-        .select('duration_seconds')
+        // focus_sessions.duration is stored in seconds (there is no duration_seconds column)
+        .select('duration')
         .gte('start_time', weekAgo.toISOString())
         .not('end_time', 'is', null),
     ]);
@@ -70,7 +71,7 @@ export default function EngineHistoryHub() {
 
     // Focus stats this week
     const focusSessions = focusRes.data || [];
-    const totalSec = focusSessions.reduce((sum, s) => sum + (s.duration_seconds || 0), 0);
+    const totalSec = focusSessions.reduce((sum, s) => sum + (s.duration || 0), 0);
 
     setStats({
       debriefStreak: streak,
