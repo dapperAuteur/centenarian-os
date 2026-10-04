@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { usableReferences } from '@/lib/auth/ownership';
 
 function getDb() {
   return createServiceClient(
@@ -175,6 +176,20 @@ export async function POST(
     return NextResponse.json({ error: 'No finance configuration for this schedule' }, { status: 400 });
   }
 
+  // The income transaction below is filed under the finance row's account and
+  // category. They are checked again here, not only when the schedule is saved:
+  // a schedule saved before /api/schedules checked them could point at someone
+  // else's records, and this client bypasses RLS. Anything that is not the
+  // caller's is left off the transaction. Checked before the pay period is
+  // written, so a failed lookup leaves nothing half-created.
+  const stored = await usableReferences(db, user.id, [
+    { field: 'pay_account_id', table: 'financial_accounts', id: finance.pay_account_id },
+    { field: 'pay_category_id', table: 'budget_categories', id: finance.pay_category_id },
+  ]);
+  if (stored.failed) {
+    return NextResponse.json({ error: 'Could not create the pay period' }, { status: 500 });
+  }
+
   // Calculate period boundaries
   const { period_start, period_end } = getPayPeriodDates(
     finance.pay_frequency,
@@ -293,8 +308,8 @@ export async function POST(
         description: `${template.name} — Pay period ${period_start} to ${period_end}`,
         vendor: template.name,
         transaction_date: period_end,
-        category_id: fin.pay_category_id || null,
-        account_id: fin.pay_account_id || null,
+        category_id: stored.values.pay_category_id,
+        account_id: stored.values.pay_account_id,
         source: 'schedule',
         source_module: 'schedule',
       }])
@@ -365,10 +380,12 @@ export async function PATCH(
 
   // Update linked transaction amount to actual_net if provided
   if (body.actual_net !== undefined && payPeriod.transaction_id) {
+    // Only ever the caller's own transaction, whatever the pay period row points at.
     await db
       .from('financial_transactions')
       .update({ amount: body.actual_net })
-      .eq('id', payPeriod.transaction_id);
+      .eq('id', payPeriod.transaction_id)
+      .eq('user_id', user.id);
   }
 
   return NextResponse.json(payPeriod);

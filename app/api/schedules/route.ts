@@ -1,14 +1,55 @@
 // app/api/schedules/route.ts
 // CRUD for schedule templates
+//
+// This route uses the service-role client. A schedule points at other records
+// (the milestone its tasks go under, the accounts, categories, invoice template
+// and contact its pay uses), and those ids come from the browser, so each one
+// is checked against the caller before it is stored (scheduleReferences below).
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import {
+  checkOwned,
+  checkReferences,
+  invalidReferenceMessage,
+  type Reference,
+} from '@/lib/auth/ownership';
 
 function getDb() {
   return createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
+}
+
+/** schedule_template_finance columns that point at another record, and the table each points into. */
+const FINANCE_REFERENCE_TABLES: Readonly<Record<string, string>> = {
+  pay_account_id: 'financial_accounts',
+  quarterly_tax_account_id: 'financial_accounts',
+  pay_category_id: 'budget_categories',
+  per_diem_category_id: 'budget_categories',
+  travel_category_id: 'budget_categories',
+  invoice_template_id: 'invoice_templates',
+  invoice_contact_id: 'user_contacts',
+};
+
+/**
+ * Every foreign id in a create or update request. All of them must be the
+ * caller's own: /generate writes tasks under the milestone, and /invoice and
+ * /pay-periods write invoices and transactions against the rest.
+ */
+function scheduleReferences(template: Record<string, unknown>, finance: unknown): Reference[] {
+  const references: Reference[] = [];
+  if ('milestone_id' in template) {
+    references.push({ field: 'milestone_id', table: 'milestones', id: template.milestone_id });
+  }
+  if (finance && typeof finance === 'object') {
+    const fields = finance as Record<string, unknown>;
+    for (const [field, table] of Object.entries(FINANCE_REFERENCE_TABLES)) {
+      if (field in fields) references.push({ field: `finance.${field}`, table, id: fields[field] });
+    }
+  }
+  return references;
 }
 
 /**
@@ -97,6 +138,20 @@ export async function POST(request: NextRequest) {
   }
 
   const db = getDb();
+
+  // Finance is only stored for work schedules, so only checked for them.
+  const storesFinance = finance && templateFields.template_type === 'work';
+  const references = await checkReferences(
+    db,
+    user.id,
+    scheduleReferences(templateFields, storesFinance ? finance : null),
+  );
+  if (references.failed) {
+    return NextResponse.json({ error: 'Could not save the schedule' }, { status: 500 });
+  }
+  if (!references.ok) {
+    return NextResponse.json({ error: invalidReferenceMessage(references.invalid) }, { status: 400 });
+  }
 
   const { data: template, error } = await db
     .from('schedule_templates')
@@ -193,6 +248,21 @@ export async function PATCH(request: NextRequest) {
     if (key in updates) templateUpdates[key] = updates[key];
   }
 
+  // The schedule must be the caller's before anything is written or read back.
+  // The finance row has no user_id of its own, so without this a caller could
+  // overwrite, and then read, the pay settings of any schedule id.
+  const owned = await checkOwned(db, user.id, 'schedule_templates', id);
+  if (owned.failed) return NextResponse.json({ error: 'Could not update the schedule' }, { status: 500 });
+  if (!owned.allowed) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  const references = await checkReferences(db, user.id, scheduleReferences(templateUpdates, finance));
+  if (references.failed) {
+    return NextResponse.json({ error: 'Could not update the schedule' }, { status: 500 });
+  }
+  if (!references.ok) {
+    return NextResponse.json({ error: invalidReferenceMessage(references.invalid) }, { status: 400 });
+  }
+
   if (Object.keys(templateUpdates).length > 0) {
     const { error } = await db
       .from('schedule_templates')
@@ -207,11 +277,17 @@ export async function PATCH(request: NextRequest) {
   }
 
   // Update finance if provided
-  if (finance) {
+  if (finance && typeof finance === 'object') {
+    // The row is addressed by this schedule only: a row id or another
+    // schedule's id sent by the client is not used.
+    const financeFields: Record<string, unknown> = { ...finance };
+    delete financeFields.id;
+    delete financeFields.template_id;
+
     const { error: finError } = await db
       .from('schedule_template_finance')
       .upsert({
-        ...finance,
+        ...financeFields,
         template_id: id,
       }, { onConflict: 'template_id' });
 
@@ -226,6 +302,7 @@ export async function PATCH(request: NextRequest) {
     .from('schedule_templates')
     .select('*')
     .eq('id', id)
+    .eq('user_id', user.id)
     .single();
 
   const { data: updatedFinance } = await db

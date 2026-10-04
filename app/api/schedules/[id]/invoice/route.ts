@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { usableReferences } from '@/lib/auth/ownership';
 
 function getDb() {
   return createServiceClient(
@@ -69,6 +70,23 @@ export async function POST(
     return NextResponse.json({ error: 'Pay period not found' }, { status: 404 });
   }
 
+  // The finance row's contact, account, category and invoice template are
+  // checked again here, not only when the schedule is saved: a schedule saved
+  // before /api/schedules checked them could point at someone else's records,
+  // and this client bypasses RLS. Anything that is not the caller's is left off
+  // the invoice.
+  const stored = await usableReferences(db, user.id, [
+    { field: 'invoice_template_id', table: 'invoice_templates', id: finance.invoice_template_id },
+    { field: 'invoice_contact_id', table: 'user_contacts', id: finance.invoice_contact_id },
+    { field: 'pay_account_id', table: 'financial_accounts', id: finance.pay_account_id },
+    { field: 'pay_category_id', table: 'budget_categories', id: finance.pay_category_id },
+  ]);
+  if (stored.failed) {
+    return NextResponse.json({ error: 'Could not create the invoice' }, { status: 500 });
+  }
+  const invoiceTemplateId = stored.values.invoice_template_id;
+  const invoiceContactId = stored.values.invoice_contact_id;
+
   // Build invoice line items
   const items: { description: string; quantity: number; unit_price: number; amount: number; sort_order: number; item_type: string }[] = [];
   let sortOrder = 0;
@@ -134,12 +152,13 @@ export async function POST(
 
   // Create invoice
   let invoiceNumber: string | undefined;
-  if (finance.invoice_template_id) {
+  if (invoiceTemplateId) {
     // Get next invoice number from template prefix
     const { data: tmpl } = await db
       .from('invoice_templates')
       .select('invoice_number_prefix')
-      .eq('id', finance.invoice_template_id)
+      .eq('id', invoiceTemplateId)
+      .eq('user_id', user.id)
       .maybeSingle();
 
     if (tmpl?.invoice_number_prefix) {
@@ -159,8 +178,8 @@ export async function POST(
       user_id: user.id,
       direction: 'receivable',
       status: 'draft',
-      contact_name: finance.invoice_contact_id ? undefined : template.name,
-      contact_id: finance.invoice_contact_id || null,
+      contact_name: invoiceContactId ? undefined : template.name,
+      contact_id: invoiceContactId,
       subtotal: Math.round(subtotal * 100) / 100,
       tax_amount: 0,
       total: Math.round(total * 100) / 100,
@@ -168,8 +187,8 @@ export async function POST(
       invoice_date: new Date().toISOString().split('T')[0],
       due_date: payPeriod.period_end,
       invoice_number: invoiceNumber || null,
-      account_id: finance.pay_account_id || null,
-      category_id: finance.pay_category_id || null,
+      account_id: stored.values.pay_account_id,
+      category_id: stored.values.pay_category_id,
       custom_fields: {
         schedule_name: template.name,
         period_start: payPeriod.period_start,

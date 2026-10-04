@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { resolveInboxMilestone } from '@/lib/planner/inbox';
+import { ownedIds, type OwnedIds } from '@/lib/auth/ownership';
 
 function getDb() {
   return createServiceClient(
@@ -60,11 +61,16 @@ type MilestoneResolver = (tmpl: TemplateRow) => Promise<string | null>;
  * tasks.milestone_id is NOT NULL, so a task generated from a template that has no
  * milestone still needs one. Fall back to the user's Inbox milestone
  * (lib/planner/inbox), looked up or created at most once per request.
+ *
+ * A template's milestone is only used when it is one of the caller's own
+ * (`ownMilestones`). This client bypasses RLS, and a schedule saved before
+ * /api/schedules checked the id could point at a milestone in someone else's
+ * planner; its tasks go to the caller's Inbox instead.
  */
-function createMilestoneResolver(db: Db, userId: string): MilestoneResolver {
+function createMilestoneResolver(db: Db, userId: string, ownMilestones: OwnedIds): MilestoneResolver {
   let inbox: Promise<string | null> | null = null;
   return (tmpl) => {
-    if (tmpl.milestone_id) return Promise.resolve(tmpl.milestone_id);
+    if (tmpl.milestone_id && ownMilestones.has(tmpl.milestone_id)) return Promise.resolve(tmpl.milestone_id);
     if (!inbox) inbox = resolveInboxMilestone(db, userId);
     return inbox;
   };
@@ -353,7 +359,19 @@ export async function POST(request: NextRequest) {
   }
 
   const backfillMode = dates.length > 1;
-  const resolveMilestone = createMilestoneResolver(db, user.id);
+
+  // Which of the templates' milestones are the caller's own. Checked on every
+  // run, not only when the schedule is saved (see createMilestoneResolver).
+  const ownMilestones = await ownedIds(
+    db,
+    user.id,
+    'milestones',
+    (templates as TemplateRow[]).map((tmpl) => tmpl.milestone_id),
+  );
+  if (ownMilestones.failed) {
+    return NextResponse.json({ error: 'Could not check the schedules\' milestones' }, { status: 500 });
+  }
+  const resolveMilestone = createMilestoneResolver(db, user.id, ownMilestones);
   let tasksGenerated = 0;
   let paydayTasksGenerated = 0;
   const errors: { templateId: string; date: string; error: string }[] = [];
