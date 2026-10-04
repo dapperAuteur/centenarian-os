@@ -125,10 +125,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }).filter((r) => !r.url.endsWith('/'));
 
   // ── Dynamic: published academy courses ───────────────────────────────────
+  // courses has no `status` column — "published" is is_published (migration 039)
+  // plus visibility (migration 040). Only list what an anonymous crawler can
+  // open: public courses, and scheduled ones whose published_at has passed.
+  // Members-only courses 404 for signed-out visitors, so they stay out.
   const { data: courses } = await db
     .from('courses')
     .select('id, slug, updated_at, profiles:teacher_id(username)')
-    .eq('status', 'published')
+    .eq('is_published', true)
+    .or(`visibility.eq.public,and(visibility.eq.scheduled,published_at.lte.${now})`)
     .limit(2000);
 
   const courseRoutes: MetadataRoute.Sitemap = (courses ?? []).map((c) => {
@@ -143,11 +148,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     };
   });
 
-  // ── Dynamic: active institutions ─────────────────────────────────────────
+  // ── Dynamic: institutions ────────────────────────────────────────────────
+  // institutions has no active flag (migration 099) — the public directory at
+  // /institutions lists every row, so the sitemap does too.
   const { data: institutions } = await db
     .from('institutions')
     .select('slug, updated_at')
-    .eq('is_active', true)
     .limit(500);
 
   const institutionRoutes: MetadataRoute.Sitemap = (institutions ?? []).map((i) => ({
