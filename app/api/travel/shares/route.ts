@@ -14,6 +14,33 @@ function getDb() {
   );
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+type ServerClient = Awaited<ReturnType<typeof createClient>>;
+
+/**
+ * True only when the row exists AND belongs to userId. A missing row, a row
+ * owned by someone else and a malformed id all come back false, so the caller
+ * can answer 404 for every one of them without confirming that an id exists.
+ * `failed` is a query error (answered 500, which says nothing about the id).
+ */
+async function ownsEntity(
+  supabase: ServerClient,
+  table: 'trips' | 'trip_routes',
+  id: unknown,
+  userId: string,
+): Promise<{ owned: boolean; failed: boolean }> {
+  if (typeof id !== 'string' || !UUID_RE.test(id)) return { owned: false, failed: false };
+  const { data, error } = await supabase
+    .from(table)
+    .select('id')
+    .eq('id', id)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) return { owned: false, failed: true };
+  return { owned: !!data, failed: false };
+}
+
 type EmailLookup = { userId: string | null; failed: boolean };
 
 // profiles has no email column — account emails live in auth.users and are only
@@ -98,6 +125,17 @@ export async function POST(request: NextRequest) {
 
   if (!trip_id && !route_id) {
     return NextResponse.json({ error: 'trip_id or route_id is required' }, { status: 400 });
+  }
+
+  // Only the owner may share a trip or route. The public link endpoint reads
+  // with the service role, so without this check anyone signed in could mint a
+  // link to another user's trip from its id alone. Not-found and not-yours get
+  // the same 404.
+  for (const [table, id] of [['trips', trip_id], ['trip_routes', route_id]] as const) {
+    if (!id) continue;
+    const { owned, failed } = await ownsEntity(supabase, table, id, user.id);
+    if (failed) return NextResponse.json({ error: 'Could not create share' }, { status: 500 });
+    if (!owned) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
   let shared_with: string | null = null;
