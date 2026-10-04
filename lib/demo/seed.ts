@@ -867,13 +867,14 @@ export async function seedVisitor(supabase: SupabaseClient, userId: string): Pro
   if (wExErr) throw new Error(`Visitor workout log exercises: ${wExErr.message}`);
 
   // ── Workout Feedback (for recent workouts) ──
+  // difficulty must be one of 'too-easy' | 'just-right' | 'too-hard' (migration 150 renamed easier/harder)
   const feedbackRows = [
     { user_id: userId, workout_log_id: wLogId('Push Day'), activity_category: 'WORKOUT_GYM', activity_duration: '60', mood_before: 3, mood_after: 4, difficulty: 'just-right', feedback: 'Bench press felt solid. Shoulder warm-up really helped today.' },
     { user_id: userId, workout_log_id: wLogId('Pull Day'), activity_category: 'WORKOUT_GYM', activity_duration: '45', mood_before: 4, mood_after: 5, difficulty: 'just-right', feedback: 'Best pull-up session in weeks. Back pump was great.' },
-    { user_id: userId, workout_log_id: wLogId('Leg Day'), activity_category: 'WORKOUT_GYM', activity_duration: '60', mood_before: 3, mood_after: 3, difficulty: 'harder', feedback: 'Squats were heavy today. Knee felt tight on the last set.' },
+    { user_id: userId, workout_log_id: wLogId('Leg Day'), activity_category: 'WORKOUT_GYM', activity_duration: '60', mood_before: 3, mood_after: 3, difficulty: 'too-hard', feedback: 'Squats were heavy today. Knee felt tight on the last set.' },
     { user_id: userId, workout_log_id: wLogId('Full Body HIIT'), activity_category: 'WORKOUT_GYM', activity_duration: '30', mood_before: 3, mood_after: 5, difficulty: 'just-right', feedback: 'Circuit format kept the heart rate up. Great conditioning workout.' },
     ...(wLogIds('Recovery & Mobility')[0] ? [
-      { user_id: userId, workout_log_id: wLogIds('Recovery & Mobility')[0], activity_category: 'PM' as const, activity_duration: '30', mood_before: 2, mood_after: 4, difficulty: 'easier' as const, feedback: 'Really needed this after a stressful week. Feel much looser now.' },
+      { user_id: userId, workout_log_id: wLogIds('Recovery & Mobility')[0], activity_category: 'PM' as const, activity_duration: '30', mood_before: 2, mood_after: 4, difficulty: 'too-easy' as const, feedback: 'Really needed this after a stressful week. Feel much looser now.' },
     ] : []),
   ].filter(r => r.workout_log_id);
   if (feedbackRows.length > 0) {
