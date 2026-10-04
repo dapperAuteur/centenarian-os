@@ -1,5 +1,5 @@
 // app/api/travel/shares/route.ts
-// GET: list shares for a trip or route
+// GET: list the caller's active shares for a trip or route
 // POST: create a share link for one of the caller's own trips or routes
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -42,10 +42,15 @@ export async function GET(request: NextRequest) {
   const tripId = params.get('trip_id');
   const routeId = params.get('route_id');
 
+  // The share modal lists these under "Active Shares", so leave out revoked
+  // shares (is_active = false) and shares whose expiry has passed. The public
+  // link endpoint already refuses both.
   let query = supabase
     .from('trip_shares')
     .select('*')
-    .eq('user_id', user.id);
+    .eq('user_id', user.id)
+    .eq('is_active', true)
+    .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`);
 
   if (tripId) query = query.eq('trip_id', tripId);
   if (routeId) query = query.eq('route_id', routeId);
