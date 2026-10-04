@@ -3,6 +3,7 @@
 
 import {
   CalendarClock,
+  CalendarSync,
   Briefcase,
   FileText,
   Map,
@@ -64,6 +65,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Weekly Review', href: '/dashboard/weekly-review', icon: FileText, paid: true },
       { label: 'Retrospective', href: '/dashboard/retrospective', icon: RotateCcw, paid: true },
       { label: 'Roadmap', href: '/dashboard/roadmap', icon: Map, paid: true },
+      // Google Calendar connection (one-way, Google -> CentenarianOS). Lives under settings, like Wearables.
+      { label: 'Calendar Sync', href: '/dashboard/settings/calendar', icon: CalendarSync, paid: true },
     ],
   },
   {
