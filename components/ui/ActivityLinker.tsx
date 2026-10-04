@@ -321,7 +321,8 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
           const supabase = createClient();
           const { data: workoutData } = await supabase
             .from('workout_logs')
-            .select('id, name, date, duration_minutes')
+            // workout_logs stores minutes in duration_min (there is no duration_minutes column)
+            .select('id, name, date, duration_min')
             .order('date', { ascending: false })
             .limit(20);
           if (workoutData) {
@@ -333,7 +334,7 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
               .slice(0, 10)
               .map((w) => ({
                 id: w.id,
-                display_name: `${w.name || 'Workout'} (${w.date})${w.duration_minutes ? ` ${w.duration_minutes}min` : ''}`,
+                display_name: `${w.name || 'Workout'} (${w.date})${w.duration_min ? ` ${w.duration_min}min` : ''}`,
               }));
           }
           break;
