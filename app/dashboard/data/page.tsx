@@ -29,7 +29,7 @@ const MODULES: ModuleCard[] = [
     exportUrl: '/api/finance/export',
     importHref: '/dashboard/finance/import',
     templateUrl: '/templates/finance-import-template.csv',
-    description: 'Transactions — income, expenses, and transfers',
+    description: 'Transactions — income, expenses, and transfers. Import reads a bank statement CSV into an account.',
     filters: '?from=YYYY-MM-DD&to=YYYY-MM-DD',
   },
   {

@@ -387,7 +387,7 @@ export function parseStatementCsv(text: string): StatementCsv {
     records.push({ rowNumber: index + 1, cells: cells.map((c) => String(c).trim()) });
   });
   if (records.length === 0) {
-    return { headers: [], headerLabels: [], hasHeader: false, rows: [], preambleLines: [], warnings };
+    return { headers: [], headerLabels: [], hasHeader: false, headerRowNumber: null, rows: [], preambleLines: [], warnings };
   }
 
   // The table's width is the width most dated lines share; summary lines above
@@ -447,7 +447,15 @@ export function parseStatementCsv(text: string): StatementCsv {
     .slice(0, hasHeader ? headerIndex : dataStart)
     .map((record) => record.cells.filter((c) => c !== '').join(', '));
 
-  return { headers, headerLabels, hasHeader, rows, preambleLines, warnings };
+  return {
+    headers,
+    headerLabels,
+    hasHeader,
+    headerRowNumber: hasHeader ? records[headerIndex].rowNumber : null,
+    rows,
+    preambleLines,
+    warnings,
+  };
 }
 
 // ── Guessing the column mapping ───────────────────────────────────────────

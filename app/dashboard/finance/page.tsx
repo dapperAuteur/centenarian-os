@@ -311,8 +311,8 @@ export default function FinanceDashboardPage() {
             href="/dashboard/finance/import"
             className="flex items-center gap-1.5 px-3 py-2 bg-fuchsia-50 text-fuchsia-700 rounded-lg text-sm font-medium hover:bg-fuchsia-100 transition"
           >
-            <Upload className="w-4 h-4" />
-            Import
+            <Upload className="w-4 h-4" aria-hidden="true" />
+            Import bank statement
           </Link>
           <Link
             href="/dashboard/finance/accounts"

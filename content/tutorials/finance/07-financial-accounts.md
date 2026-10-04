@@ -97,6 +97,8 @@ The accounts management page at `/dashboard/finance/accounts` lets you:
 
 **Reactivate** — if an account was soft-deactivated, you can reactivate it to bring it back.
 
+**Import statement** — each account has an **Import statement** link. It opens the bank statement import (Lesson 06) with that account already chosen, so the statement's transactions land in the right account.
+
 ---
 
 ## Screen Recording Notes
@@ -125,3 +127,4 @@ The accounts management page at `/dashboard/finance/accounts` lets you:
 - Accounts appear as a row at the top of the finance dashboard
 - Delete with transactions → soft deactivate (data preserved); delete without → hard delete
 - Assign transactions to accounts to maintain accurate per-account balances
+- **Import statement** on an account opens the bank statement import with that account chosen (Lesson 06)

@@ -614,11 +614,11 @@ The transaction history is your ledger for tax and financial planning purposes. 
 - Vendor search is powerful: ""Amazon"" finds every Amazon transaction across all time
 - Year-end: filter to Jan 1–Dec 31, export CSV for accountant or tax purposes
 ",markdown,,,,,,
-Lessons,1,6,Importing and Exporting,text,360,true,,"# Lesson 06: Importing and Exporting
+Lessons,1,6,Importing and Exporting,text,720,true,,"# Lesson 06: Importing and Exporting
 
 **Course:** Mastering Finance
 **Module:** Data Management
-**Duration:** ~4 min
+**Duration:** ~7 min
 **Lesson type:** text / video
 **is_free_preview:** true
 **CYOA navigation:** cyoa
@@ -627,136 +627,243 @@ Lessons,1,6,Importing and Exporting,text,360,true,,"# Lesson 06: Importing and E
 
 ## Narrator Script
 
-Manual entry works, but for most people the lowest-friction approach to Finance is a monthly import from your bank's CSV export. This lesson covers how to import transaction data in bulk and how to export your Finance data for use in spreadsheets, tax tools, or external analysis.
+CentenarianOS does not connect to your bank, so nothing arrives on its own. The low-effort way to keep Finance current is to download a statement from your bank once a month and import it. This lesson walks through the bank statement import step by step, shows how to undo an import, and ends with exporting your transactions.
 
 ---
 
-### Importing Transactions
+### Before You Start
 
-From the Finance dashboard, click **Import** (or navigate to the import option in the Finance menu).
+**Get the file from your bank.** Most banks and card providers let you download your transactions as a CSV file:
 
----
+1. Sign in to your bank's website
+2. Open the account's activity or statements page
+3. Look for Download or Export and choose CSV
+4. Pick the date range and save the file
 
-### Preparing Your Bank CSV
+**Have the account in Finance.** A statement is always imported into one account, so the account has to exist first. Lesson 07 covers adding accounts.
 
-Most banks and credit card providers let you export a CSV of your transaction history from their website or app. The typical process:
-
-1. Log in to your bank's web interface
-2. Navigate to account history or statements
-3. Find the export or download option (usually CSV, Excel, or OFX)
-4. Set the date range and download
-
-The resulting CSV will have columns for Date, Description/Merchant, and Amount. Different banks format these differently — the import tool handles common formats and normalizes column names.
+**Know the limits.** One import takes up to 5,000 rows and 4,000,000 characters. For a longer history, download shorter date ranges and import them one at a time.
 
 ---
 
-### The Import Workflow
+### Opening the Import
 
-**Step 1: Upload or paste your CSV**
-Drag the file onto the upload area or paste raw CSV text. The import tool parses it and shows a data table.
+There are two ways in:
 
-**Step 2: Review the parsed table**
-Each row represents a transaction. Check that:
-- Dates parsed correctly (YYYY-MM-DD)
-- Amounts are positive numbers (the Type field handles direction)
-- Descriptions look recognizable
+- On the Finance dashboard, click **Import bank statement**
+- On **Finance → Accounts**, click **Import statement** on an account. That account is already chosen when the import opens.
 
-**Step 3: Assign types and categories**
-This is the most time-consuming step, especially on first import. For each row (or in bulk):
-- Set **Type** to Expense or Income (the tool may auto-detect based on amount sign from your bank)
-- Assign a **Category** from your existing budget categories
-
-The table supports bulk category assignment: select multiple rows of the same type and assign them all to a category at once.
-
-Rows you leave without a category (or whose category name doesn't match one of yours) still get one if their vendor has a learned category, the one you set by answering ""Always"" to the categorize prompt (Lessons 03 and 09).
-
-**Step 4: Set the vendor field (optional)**
-If your bank descriptions include merchant names, the tool may parse them into the Vendor field automatically. Review and correct as needed.
-
-**Step 5: Import**
-Click **Import**. The system inserts all valid rows. You'll see a summary: imported count, skipped count (rows with missing or invalid data), and any errors.
-
-Duplicate detection: if a transaction with the same date, amount, and description already exists, the import will skip it. This prevents double-logging when you re-import overlapping date ranges.
+The import has four steps, shown across the top of the page: **1 Account and file · 2 Columns · 3 Review · 4 Done**. Nothing is saved until the end of step 3, and **Back** keeps everything you entered.
 
 ---
 
-### Tips for Efficient Monthly Imports
+### Step 1: Account and File
 
-- **Do it monthly, not annually** — 30 days of transactions is much faster to categorize than 365. The detail is fresher and easier to recognize.
-- **Download on the 1st of each month** for the prior month's complete data.
-- **Create specific budget categories before importing** — so you can assign categories during import rather than editing transactions after the fact.
-- **Bank descriptions are often abbreviated** — ""AMZN*MKTP US 123ABC"" is an Amazon purchase. Familiarize yourself with your bank's typical merchant name format.
+**Choose the account.** This is required. Each option shows the bank, the account name, and the last four digits, so two accounts with the same name are easy to tell apart. If the account isn't listed, the link under the list takes you to the Accounts page to add it.
+
+**Give it the statement.** Either choose the CSV file, or paste the file's text into the box and click **Use pasted text**.
+
+The file is read on your device first, and the page tells you what it found:
+
+- Whether it recognized the layout (""Looks like a Chase credit card export""), found the columns by their names, or needs you to choose them
+- Which line the header row is on
+- How many transaction rows there are
+- Any lines above the table that were skipped, such as a summary block
+- Warnings about damage in the file, such as a quotation mark that is never closed
+
+A recognized layout is a starting guess. You confirm the columns in the next step either way.
+
+If the file is over the limits, the page says so here and stops.
+
+---
+
+### Step 2: Columns
+
+This step answers three questions about the file.
+
+**Which column is which?** There is one list per role, already filled in from the file:
+
+| Role | Needed? | What it is |
+|------|---------|------------|
+| **Date** | Required | The transaction date |
+| **Description** | Required | What the bank printed for the transaction |
+| **Amount** | Required for one-column files | The money column |
+| **Debit** and **Credit** | Required for two-column files | Money out and money in, in separate columns |
+| **Type** | Required when a type column gives the direction | Says debit or credit for each row |
+| **Posted date** | Optional | Used only for a row that has no date |
+| **Merchant** | Optional | A clean store name, when the file has one |
+| **Memo** | Optional | Used as the description when a row has none |
+| **Category** | Optional | Matched by name to your budget categories |
+| **Bank ID** | Optional | The bank's own transaction or reference number |
+| **Status** | Optional | Says Pending or Posted |
+
+**How does the file show a purchase?** Banks disagree about this, so you choose one:
+
+- **Purchases are negative numbers**
+- **Purchases are positive numbers**
+- **Separate debit and credit columns**
+- **A type column says debit or credit**
+
+The starting choice comes from the settings you saved for this account, then from the file itself, and, when the file gives no clue, from the account type: a credit card account starts with ""purchases are positive"".
+
+**How does the file write dates?** Month/Day/Year, Day/Month/Year, or Year-Month-Day. When every date in the file could be read two ways (03/04/2026 is March 4 or April 3), the page shows an example and you have to choose before you can continue.
+
+Two switches sit under the columns:
+
+- **Include pending transactions** is off. Rows the bank marks as pending are left out, because a pending charge can change before it posts.
+- **Remember these settings for this account** is on. After a successful import, the settings are saved and filled in the next time you import into that account.
+
+**Check the sample.** At the bottom, the first five rows are shown the way they will be read: date, amount, Expense or Income, and description. A line under it counts the whole file, for example ""148 of 150 rows can be read: 140 as expenses and 8 as income"". If your purchases show up as Income, the sign choice is wrong. If the dates look off, the date order is wrong. Fix it here, before anything is sent.
+
+---
+
+### Step 3: Review
+
+Now the statement is compared with what is already in the account. Still nothing is saved.
+
+**Every row has a status:**
+
+| Status | What it means | What happens by default |
+|--------|---------------|-------------------------|
+| **New** | Not in the account yet | It is added |
+| **Already imported** | The same row, or a transaction with the same date, amount, and vendor, is already in the account | It is skipped |
+| **Repeated in this file** | An earlier row of this file has the same bank ID | It is skipped |
+| **Matches an entry you made** | You already typed or scanned this purchase. The row shows your entry's date, amount, and name | The statement row is linked to your entry, so there is no second copy |
+| **Can't import** | The row can't be used. The reason is shown, for example a pending row | It is left out |
+
+Rows the import could not read at all are listed at the bottom with their row number in your file and the reason, such as an amount that is not a number.
+
+**The tabs** above the list show the count for each status. Click one to see only those rows.
+
+**For each row you can:**
+
+- Choose what to do. The choices depend on the row: a new row can be imported or skipped, a matched row can be linked, imported as its own transaction, or skipped, and a row that only looks like a duplicate can be imported anyway.
+- Switch it between **Expense** and **Income**
+- Pick a **Category**. Rows from a vendor with a learned category, the one you set by answering ""Always"" to the categorize prompt (Lessons 03 and 09), arrive with that category filled in and marked **Learned from this vendor**.
+
+**To change several rows at once,** tick them (or tick **Select all on this page**), then use **Set category...** or **Skip selected**.
+
+**The summary line** at the top keeps count as you go: ""Will add 42, link 3, skip 7"".
+
+A statement with more than 200 rows is shown 200 at a time, with **Previous 200** and **Next 200** under the list.
+
+When it looks right, click **Import statement**.
+
+---
+
+### Step 4: Done
+
+The result shows how many rows were imported, linked to your own entries, skipped as duplicates, and rejected, with the reason for each rejected row.
+
+From here you can:
+
+- **Undo this import**
+- **View these transactions**, which opens the Transactions page
+- **Import another file**, which starts again with the same account chosen
+
+Under the result, **Import history** lists every import you have run: the date, the account, the file name, the counts, and whether it was undone. The same list is on step 1, so you can come back later and undo an import without running a new one.
+
+---
+
+### Undoing an Import
+
+Click **Undo this import** on the result, or **Undo** next to an import in Import history. You are asked to confirm first. Then:
+
+- Transactions that import added are deleted
+- Any of those you edited afterwards are kept, and the page lists them so you can decide what to do with each
+- Entries you made yourself that the import linked stay in your transactions. Only the link is removed
+
+---
+
+### Importing the Same File Twice
+
+It is safe. Every imported row carries an identity, either the bank's own ID or one built from its date, amount, direction, and description. When you import a file again, or a new statement whose dates overlap the last one, the rows already in the account show as **Already imported** and are skipped.
+
+---
+
+### Tips for Monthly Imports
+
+- **Import monthly.** Thirty days of transactions are quick to review, and you still remember what they were.
+- **Create your budget categories first** (Lesson 02), so you can assign them during the review.
+- **Answer ""Always""** when the categorize prompt appears. Each vendor you teach is one less row to categorize next month.
+- **One account at a time.** Download each account's statement separately and import it into that account.
+- **No bank export?** Step 1 has a simple template (date, amount, type, description, vendor, category) you can fill in by hand and import the same way.
 
 ---
 
 ### Exporting Transactions
 
-From the Finance dashboard or the Transactions page, click **Export** or **Download CSV**.
+On the Finance dashboard, click **Export**. A CSV file of all your transactions downloads, with these columns: Date, Type, Amount, Description, Vendor, Category, Notes.
 
-The export downloads all transactions within your current filter settings as a CSV file. To export:
+To export a date range, use the Finance card in the **Data Hub** (`/dashboard/data`). It shows the export address and the date filters it accepts: add `?from=YYYY-MM-DD&to=YYYY-MM-DD` to that address.
 
-- **All transactions ever:** clear all filters, then export
-- **Current year only:** set the date range to Jan 1–Dec 31 of the current year, then export
-- **A specific category:** apply the category filter, then export
+The exported file can be:
 
-The exported CSV includes all transaction fields: Date, Type, Amount, Category, Description, Vendor. This CSV can be:
-- Opened in Excel or Google Sheets for further analysis
+- Opened in Excel or Google Sheets for your own analysis
 - Shared with an accountant for tax preparation
-- Imported into tax software that accepts CSV input
-- Used as a backup of your Finance data
+- Kept as a backup of your Finance data
 
 ---
 
 ### No Automatic Sync
 
-CSV import is intentionally manual — you download from your bank, review what you're importing, and categorize with intent.
+Importing is manual on purpose. You download the statement, look at every row before it is saved, and categorize with intent. That review is also a chance to catch a charge you don't recognize.
 
-This has two advantages: you review your transactions before they enter the system (catching errors or fraud), and CSV import never needs a connection to your bank.
-
-CentenarianOS has no bank connection, so importing a statement CSV is the way to bring in bank transactions. A guided statement import is coming.
+Statement import needs a connection. If you are offline, the page says so, and the preview, import, and undo buttons wait until you are back online.
 
 ---
 
 ## Screen Recording Notes
 
-> [SCREEN: Navigate to /dashboard/finance — click ""Import""]
+> [SCREEN: Navigate to /dashboard/finance, click ""Import bank statement""]
 
-> [SCREEN: Import page or modal opens]
+> [SCREENSHOT: Step 1. Callouts: step indicator across the top, Account list showing bank + name + last four, Statement file input, paste box]
 
-> [SCREENSHOT: Import interface — callouts: Upload area (drag CSV), Paste CSV option, Data source note]
+> [SCREEN: Choose the account, choose a sample bank CSV. The green panel appears]
 
-> [SCREEN: Upload or paste a sample bank CSV — data table appears]
+> [SCREENSHOT: What the page found. Callouts: layout line, ""Header row found on line N"", row count]
 
-> [SCREENSHOT: Parsed import table — callouts: Date column, Type column (auto-detected or manual), Amount, Description, Category dropdown per row, Vendor field]
+> [SCREEN: Click ""Continue to columns""]
 
-> [SCREEN: Select multiple rows of the same type — use bulk category assignment to set them all to ""Groceries"" at once]
+> [SCREENSHOT: Step 2. Callouts: column lists, the four ""How does this file show a purchase?"" choices, date order choices, the two checkboxes]
 
-> [SCREENSHOT: Bulk category assignment — callout: ""Select rows → assign category → applies to all selected""]
+> [SCREEN: Switch the sign choice to the wrong one. The sample rows flip from Expense to Income. Switch it back]
 
-> [SCREEN: Click Import — result summary appears]
+> [SCREENSHOT: The sample. Callouts: Expense / Income chips, the ""N of N rows can be read"" line]
 
-> [SCREENSHOT: Import result — callouts: Imported count, Skipped count, Errors list]
+> [SCREEN: Click ""Continue to review""]
 
-> [SCREEN: Navigate back to /dashboard/finance — show updated dashboard with new transactions]
+> [SCREENSHOT: Step 3. Callouts: summary line ""Will add..., link..., skip..."", status tabs with counts, a New row with its category marked ""Learned from this vendor"", a ""Matches an entry you made"" row showing the entry]
 
-> [SCREEN: Navigate to Transactions page — apply a filter — click Export]
+> [SCREEN: Change one row's category. Tick three rows, use ""Set category..."" to set them all at once. Skip one row. The summary line updates each time]
 
-> [SCREENSHOT: Export prompt or download confirmation — callout: ""Downloads all transactions matching current filters as CSV""]
+> [SCREEN: Click ""Import statement"". Step 4 appears]
 
-> [SCREEN: End on the transactions page — end lesson and the course]
+> [SCREENSHOT: Step 4. Callouts: Imported / Linked / Skipped as duplicates / Rejected counts, Undo this import, View these transactions, Import another file, Import history below]
+
+> [SCREEN: Click ""Import another file"", choose the same CSV again, continue to Review. Every row shows ""Already imported""]
+
+> [SCREEN: Go back to step 1. In Import history, click Undo on the import, confirm. The summary of what was deleted, unlinked, and kept appears]
+
+> [SCREEN: Navigate to /dashboard/finance, click Export. The CSV downloads]
+
+> [SCREEN: End on the Finance dashboard]
 
 ---
 
 ## Key Takeaways
 
-- Import from any bank's CSV export: upload the file or paste raw CSV text
-- Import workflow: parse → review table → assign type + category (bulk assign supported) → import
-- Uncategorized rows from a vendor with a learned category get that category on import
-- Duplicate detection: same date + amount + description skips on re-import
-- Do monthly imports (30 days at a time) for best efficiency and freshness
-- Export uses your current filter — filter by year or category before exporting for targeted outputs
-- Export CSV is your shareable ledger: tax prep, accountant, spreadsheet analysis, backup
-- CSV import is intentionally manual, for review and intentional categorization; there is no bank connection, so a statement CSV is how bank transactions come in
+- There is no bank connection: download a CSV statement from your bank and import it
+- Open the import from the Finance dashboard (**Import bank statement**) or from an account on the Accounts page (**Import statement**)
+- Step 1: choose the account (required) and the file, or paste its text. One import takes up to 5,000 rows
+- Step 2: confirm the columns, how the file shows a purchase, and the date order. Check the five-row sample before continuing
+- Step 3: review every row. Statuses are New, Already imported, Repeated in this file, Matches an entry you made, and Can't import
+- A row that matches an entry you made is linked to it instead of being added twice
+- Set categories per row or for several selected rows at once. Learned vendor categories are filled in for you
+- Step 4: see what was imported, linked, skipped, and rejected. Every import can be undone, from the result or from Import history
+- Undo keeps any imported transaction you edited afterwards, and keeps your own entries
+- Importing the same file again is safe: rows already in the account are skipped
+- Export on the Finance dashboard downloads all transactions as a CSV
 ",markdown,,,,,,
 Lessons,1,7,Managing Financial Accounts,text,240,true,,"# Lesson 07: Managing Financial Accounts
 
@@ -853,6 +960,8 @@ The accounts management page at `/dashboard/finance/accounts` lets you:
 
 **Reactivate** — if an account was soft-deactivated, you can reactivate it to bring it back.
 
+**Import statement** — each account has an **Import statement** link. It opens the bank statement import (Lesson 06) with that account already chosen, so the statement's transactions land in the right account.
+
 ---
 
 ## Screen Recording Notes
@@ -880,6 +989,7 @@ The accounts management page at `/dashboard/finance/accounts` lets you:
 - Accounts appear as a row at the top of the finance dashboard
 - Delete with transactions → soft deactivate (data preserved); delete without → hard delete
 - Assign transactions to accounts to maintain accurate per-account balances
+- **Import statement** on an account opens the bank statement import with that account chosen (Lesson 06)
 ",markdown,,,,,,
 Lessons,1,8,Account Balances & Equipment Links,text,180,true,,"# Lesson 08: Account Balances & Equipment Links
 

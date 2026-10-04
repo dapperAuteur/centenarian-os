@@ -1,267 +1,573 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { ArrowLeft, Upload, FileText, CheckCircle2, AlertCircle, Download } from 'lucide-react';
-import Link from 'next/link';
+// app/dashboard/finance/import/page.tsx
+// Import a bank or card statement (CSV) into one account, in four steps:
+//   1 Account and file  -> AccountFileStep (the file is parsed in the browser)
+//   2 Columns           -> ColumnsStep (mapping, sign convention, date order)
+//   3 Review            -> ReviewStep (POST /api/finance/import/preview)
+//   4 Done              -> DoneStep (POST /api/finance/import), with Undo
+// plus the Import history list under steps 1 and 4.
+//
+// All state lives here so Back keeps what was entered. The server parses the
+// file again itself: this page only ever sends the file text, the settings,
+// and what to do with each spreadsheet row number.
 
-interface ParsedRow {
-  transaction_date: string;
-  amount: string;
-  type: string;
-  description: string;
-  vendor: string;
-  category_name: string;
-}
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { ArrowLeft, Loader2, Upload } from 'lucide-react';
+import type { BudgetCategory } from '@/components/finance/CategorySelect';
+import AccountFileStep from '@/components/finance/import/AccountFileStep';
+import ColumnsStep from '@/components/finance/import/ColumnsStep';
+import DoneStep from '@/components/finance/import/DoneStep';
+import ImportHistory, { batchTitle } from '@/components/finance/import/ImportHistory';
+import ReviewStep from '@/components/finance/import/ReviewStep';
+import StepIndicator, { type ImportStep } from '@/components/finance/import/StepIndicator';
+import UndoImportDialog from '@/components/finance/import/UndoImportDialog';
+import {
+  commitStatement,
+  fetchTransferSuggestionCount,
+  listImportBatches,
+  previewStatement,
+  saveAccountMapping,
+  undoImportBatch,
+  type StatementPayload,
+} from '@/components/finance/import/api';
+import { ErrorNotice, StatusNotice, type ParsedFile } from '@/components/finance/import/shared';
+import { useOnline } from '@/components/finance/import/useOnline';
+import type { ImportBatchSummary, PreviewResponse } from '@/lib/finance/csv-import/service';
+import type { CommitResult, SavedCsvMapping, UndoResult } from '@/lib/finance/csv-import/types';
+import {
+  MIGRATION_REQUIRED_TEXT,
+  NETWORK_ERROR_TEXT,
+  OFFLINE_TEXT,
+  accountLabel,
+  buildRowActions,
+  cleanMapping,
+  importErrorText,
+  importedDateRange,
+  initialSettings,
+  readSavedMapping,
+  type Decisions,
+  type ImportAccount,
+  type ImportSettings,
+  type InitialSettings,
+} from '@/lib/finance/csv-import/ui-helpers';
+import { offlineFetch } from '@/lib/offline/offline-fetch';
+
+type LoadState = 'loading' | 'ready' | 'error';
+
+type SettingsOrigin = Pick<InitialSettings, 'mappingSource' | 'signSource' | 'savedIgnored'>;
+
+const STEP_HEADINGS: Record<ImportStep, string> = {
+  1: 'Choose the account and the statement',
+  2: 'Check the columns',
+  3: 'Review what will be imported',
+  4: 'Import finished',
+};
 
 export default function FinanceImportPage() {
-  const [rawCsv, setRawCsv] = useState('');
-  const [rows, setRows] = useState<ParsedRow[]>([]);
-  const [importing, setImporting] = useState(false);
-  const [result, setResult] = useState<{ imported?: number; skipped?: number; errors?: string[] } | null>(null);
-
-  const parseCsv = useCallback((text: string) => {
-    const lines = text.trim().split('\n');
-    if (lines.length < 2) return;
-
-    const headers = lines[0].split(',').map((h) => h.trim().toLowerCase().replace(/['"]/g, ''));
-    const parsed: ParsedRow[] = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      const values = parseCsvLine(lines[i]);
-      const row: Record<string, string> = {};
-      headers.forEach((h, idx) => { row[h] = (values[idx] || '').trim(); });
-
-      // Normalize date — handle MM/DD/YYYY or YYYY-MM-DD
-      let date = row.date || row.transaction_date || '';
-      if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(date)) {
-        const [m, d, y] = date.split('/');
-        date = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-      }
-
-      // Determine type from amount sign or explicit column
-      const rawAmount = row.amount || row.total || '0';
-      const numAmount = parseFloat(rawAmount.replace(/[$,]/g, ''));
-      const type = row.type || (numAmount < 0 ? 'expense' : 'income');
-
-      parsed.push({
-        transaction_date: date,
-        amount: String(Math.abs(numAmount)),
-        type,
-        description: row.description || row.memo || row.name || '',
-        vendor: row.vendor || row.payee || row.merchant || '',
-        category_name: row.category || row.category_name || '',
-      });
-    }
-
-    setRows(parsed);
-  }, []);
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      setRawCsv(text);
-      parseCsv(text);
-      setResult(null);
-    };
-    reader.readAsText(file);
-  };
-
-  const handlePaste = () => {
-    if (rawCsv.trim()) {
-      parseCsv(rawCsv);
-      setResult(null);
-    }
-  };
-
-  const handleImport = async () => {
-    setImporting(true);
-    setResult(null);
-    try {
-      const res = await fetch('/api/finance/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rows }),
-      });
-      const data = await res.json();
-      setResult(data);
-      if (res.ok) setRows([]);
-    } finally {
-      setImporting(false);
-    }
-  };
-
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10 space-y-8">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Link href="/dashboard/finance" className="p-2 hover:bg-gray-100 rounded-lg transition">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Upload className="w-6 h-6 text-fuchsia-600" />
-            Import Transactions
-          </h1>
-          <p className="text-sm text-gray-500">Upload or paste a CSV file to bulk import</p>
+    // useSearchParams (for ?account=) needs a Suspense boundary above it.
+    <Suspense
+      fallback={
+        <div role="status" className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-gray-700">
+          <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+          Loading...
         </div>
-      </div>
-
-      {/* Template download */}
-      <div className="bg-fuchsia-50 border border-fuchsia-100 rounded-xl p-4 flex items-start gap-3">
-        <FileText className="w-5 h-5 text-fuchsia-600 shrink-0 mt-0.5" />
-        <div>
-          <p className="text-sm text-fuchsia-800 font-medium">CSV Format</p>
-          <p className="text-xs text-fuchsia-600 mt-1">
-            Required columns: <code className="bg-fuchsia-100 px-1 rounded">date</code>, <code className="bg-fuchsia-100 px-1 rounded">amount</code>.
-            Optional: <code className="bg-fuchsia-100 px-1 rounded">type</code>, <code className="bg-fuchsia-100 px-1 rounded">description</code>,
-            <code className="bg-fuchsia-100 px-1 rounded"> vendor</code>, <code className="bg-fuchsia-100 px-1 rounded">category</code>.
-            Negative amounts are auto-classified as expenses.
-          </p>
-          <a
-            href="/templates/finance-import-template.csv"
-            download
-            className="inline-flex items-center gap-1 mt-2 text-xs text-fuchsia-700 font-medium hover:underline"
-          >
-            <Download className="w-3 h-3" />
-            Download template
-          </a>
-        </div>
-      </div>
-
-      {/* Upload / Paste */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
-          <h3 className="font-medium text-gray-900 text-sm">Upload File</h3>
-          <input
-            type="file"
-            accept=".csv,.txt"
-            onChange={handleFileUpload}
-            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-fuchsia-50 file:text-fuchsia-700 hover:file:bg-fuchsia-100"
-          />
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
-          <h3 className="font-medium text-gray-900 text-sm">Or Paste CSV</h3>
-          <textarea
-            rows={4}
-            value={rawCsv}
-            onChange={(e) => setRawCsv(e.target.value)}
-            className="w-full text-xs font-mono border border-gray-200 rounded-lg p-2 resize-none"
-            placeholder="date,amount,description,vendor,category"
-          />
-          <button
-            onClick={handlePaste}
-            className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition"
-          >
-            Parse
-          </button>
-        </div>
-      </div>
-
-      {/* Preview Table */}
-      {rows.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700">{rows.length} rows parsed</span>
-            <button
-              onClick={handleImport}
-              disabled={importing}
-              className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 disabled:opacity-50 transition"
-            >
-              {importing ? 'Importing...' : `Import ${rows.length} Transactions`}
-            </button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-gray-50 text-gray-500">
-                <tr>
-                  <th className="px-3 py-2 text-left">Date</th>
-                  <th className="px-3 py-2 text-left">Type</th>
-                  <th className="px-3 py-2 text-right">Amount</th>
-                  <th className="px-3 py-2 text-left">Description</th>
-                  <th className="px-3 py-2 text-left">Vendor</th>
-                  <th className="px-3 py-2 text-left">Category</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {rows.slice(0, 50).map((row, i) => (
-                  <tr key={i} className="hover:bg-gray-50">
-                    <td className="px-3 py-2 text-gray-700">{row.transaction_date}</td>
-                    <td className="px-3 py-2">
-                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
-                        row.type === 'income' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                      }`}>
-                        {row.type}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-right font-medium">${parseFloat(row.amount).toFixed(2)}</td>
-                    <td className="px-3 py-2 text-gray-600 max-w-[200px] truncate">{row.description || '-'}</td>
-                    <td className="px-3 py-2 text-gray-600">{row.vendor || '-'}</td>
-                    <td className="px-3 py-2 text-gray-600">{row.category_name || '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {rows.length > 50 && (
-              <div className="px-4 py-2 text-xs text-gray-400 text-center border-t">
-                Showing first 50 of {rows.length} rows
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Result */}
-      {result && (
-        <div className={`flex items-start gap-3 px-4 py-3 rounded-xl ${
-          result.imported ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
-        }`}>
-          {result.imported ? (
-            <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-          ) : (
-            <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
-          )}
-          <div className="text-sm">
-            {result.imported && (
-              <p className="text-green-800 font-medium">{result.imported} transactions imported</p>
-            )}
-            {result.skipped ? (
-              <p className="text-amber-700">{result.skipped} rows skipped</p>
-            ) : null}
-            {result.errors?.map((err, i) => (
-              <p key={i} className="text-red-600 text-xs">{err}</p>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+      }
+    >
+      <StatementImport />
+    </Suspense>
   );
 }
 
-/** Simple CSV line parser that handles quoted fields */
-function parseCsvLine(line: string): string[] {
-  const result: string[] = [];
-  let current = '';
-  let inQuotes = false;
+function StatementImport() {
+  const requestedAccountId = useSearchParams().get('account') ?? '';
+  const online = useOnline();
 
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
+  // What the page loads once.
+  const [accounts, setAccounts] = useState<ImportAccount[]>([]);
+  const [accountsState, setAccountsState] = useState<LoadState>('loading');
+  const [accountsError, setAccountsError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<BudgetCategory[]>([]);
+  const [batches, setBatches] = useState<ImportBatchSummary[]>([]);
+  const [batchesState, setBatchesState] = useState<LoadState>('loading');
+  const [batchesError, setBatchesError] = useState<string | null>(null);
+  const [migrationNeeded, setMigrationNeeded] = useState(false);
+
+  // Steps 1 and 2: what the person entered.
+  const [step, setStep] = useState<ImportStep>(1);
+  const [accountId, setAccountId] = useState('');
+  const [file, setFile] = useState<ParsedFile | null>(null);
+  const [pasteText, setPasteText] = useState('');
+  const [settings, setSettings] = useState<ImportSettings | null>(null);
+  const [origin, setOrigin] = useState<SettingsOrigin | null>(null);
+  /** The account and file the settings were built for: a new pair gets fresh settings. */
+  const settingsKeyRef = useRef('');
+  const fileVersionRef = useRef(0);
+
+  // Step 3: the server's plan and the changes made to it.
+  const [preview, setPreview] = useState<PreviewResponse | null>(null);
+  const [decisions, setDecisions] = useState<Decisions>({});
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  /** Goes up whenever the preview is thrown away, so a late answer to an old request is ignored. */
+  const previewTokenRef = useRef(0);
+
+  // Step 4: the outcome.
+  const [importBusy, setImportBusy] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [result, setResult] = useState<CommitResult | null>(null);
+  const [resultAccountName, setResultAccountName] = useState('');
+  const [resultTitle, setResultTitle] = useState('');
+  const [settingsSaved, setSettingsSaved] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [transferCount, setTransferCount] = useState(0);
+
+  // Undo, from step 4 or from the history list.
+  const [undoTarget, setUndoTarget] = useState<{ id: string; label: string } | null>(null);
+  const [undoBusy, setUndoBusy] = useState(false);
+  const undoBusyRef = useRef(false);
+  const [undoError, setUndoError] = useState<string | null>(null);
+  const [resultUndo, setResultUndo] = useState<UndoResult | null>(null);
+  const [historyUndo, setHistoryUndo] = useState<UndoResult | null>(null);
+
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const focusedStepRef = useRef<ImportStep>(1);
+
+  const account = accounts.find((candidate) => candidate.id === accountId) ?? null;
+
+  // ── Loading ─────────────────────────────────────────────────────────────
+
+  const loadAccounts = useCallback(async () => {
+    setAccountsState('loading');
+    setAccountsError(null);
+    try {
+      // offlineFetch: a cached account list still lets steps 1 and 2 work offline.
+      const response = await offlineFetch('/api/finance/accounts');
+      const body: unknown = await response.json().catch(() => null);
+      if (!response.ok || !Array.isArray(body)) {
+        setAccountsError(
+          navigator.onLine
+            ? importErrorText(response.status, body)
+            : 'Your accounts could not be loaded while offline. Reconnect and try again.',
+        );
+        setAccountsState('error');
+        return;
       }
-    } else if (char === ',' && !inQuotes) {
-      result.push(current);
-      current = '';
+      const loaded = body as ImportAccount[];
+      setAccounts(loaded);
+      setAccountsState('ready');
+      // Preselect the account the link asked for, or the only one there is.
+      const requested = loaded.find((candidate) => candidate.id === requestedAccountId);
+      const preselect = requested?.id ?? (loaded.length === 1 ? loaded[0].id : '');
+      if (preselect) setAccountId((current) => current || preselect);
+    } catch {
+      setAccountsError(NETWORK_ERROR_TEXT);
+      setAccountsState('error');
+    }
+  }, [requestedAccountId]);
+
+  const loadCategories = useCallback(async () => {
+    try {
+      const response = await offlineFetch('/api/finance/categories');
+      if (!response.ok) return;
+      const body: unknown = await response.json().catch(() => null);
+      const list = (body as { categories?: unknown } | null)?.categories;
+      if (Array.isArray(list)) setCategories(list as BudgetCategory[]);
+    } catch {
+      // Without the list, rows can still be imported; they keep their suggested category.
+    }
+  }, []);
+
+  const loadBatches = useCallback(async (quiet = false) => {
+    if (!quiet) setBatchesState('loading');
+    setBatchesError(null);
+    const response = await listImportBatches();
+    if (response.ok) {
+      setBatches(Array.isArray(response.data?.batches) ? response.data.batches : []);
+      setBatchesState('ready');
+      return;
+    }
+    if (response.code === 'migration_required') setMigrationNeeded(true);
+    setBatchesError(response.message);
+    setBatchesState('error');
+  }, []);
+
+  useEffect(() => {
+    void loadAccounts();
+    void loadCategories();
+    void loadBatches();
+  }, [loadAccounts, loadCategories, loadBatches]);
+
+  // Moving to another step puts focus on its heading, so a screen reader starts at the top of it.
+  // Compared against the last step seen, so nothing takes focus when the page first loads.
+  useEffect(() => {
+    if (focusedStepRef.current === step) return;
+    focusedStepRef.current = step;
+    headingRef.current?.focus();
+  }, [step]);
+
+  // ── Steps 1 and 2 ───────────────────────────────────────────────────────
+
+  /** The plan belongs to one account, file and set of settings: any change to those discards it. */
+  function discardPreview() {
+    previewTokenRef.current += 1;
+    setPreview(null);
+    setDecisions({});
+    setPreviewError(null);
+    setImportError(null);
+  }
+
+  function handleAccountChange(nextAccountId: string) {
+    setAccountId(nextAccountId);
+    discardPreview();
+  }
+
+  function handleFileRead(next: Omit<ParsedFile, 'version'> | null) {
+    if (next) {
+      fileVersionRef.current += 1;
+      setFile({ ...next, version: fileVersionRef.current });
     } else {
-      current += char;
+      setFile(null);
+    }
+    discardPreview();
+  }
+
+  function goToColumns() {
+    if (!file || !account) return;
+    const key = `${account.id}:${file.version}`;
+    if (settingsKeyRef.current !== key || !settings) {
+      const initial = initialSettings({
+        saved: readSavedMapping(account.csv_import_mapping),
+        detected: file.detected,
+        table: file.table,
+        accountType: account.account_type,
+      });
+      setSettings(initial.settings);
+      setOrigin({
+        mappingSource: initial.mappingSource,
+        signSource: initial.signSource,
+        savedIgnored: initial.savedIgnored,
+      });
+      settingsKeyRef.current = key;
+    }
+    setStep(2);
+  }
+
+  function handleSettingsChange(next: ImportSettings) {
+    // "Remember these settings" doesn't change how the file is read, so the plan stays good.
+    const sameReading =
+      settings !== null &&
+      next.mapping === settings.mapping &&
+      next.sign === settings.sign &&
+      next.dateOrder === settings.dateOrder &&
+      next.includePending === settings.includePending;
+    setSettings(next);
+    if (!sameReading) discardPreview();
+  }
+
+  /** What preview and commit are both sent: the same file, read the same way. */
+  function buildPayload(): StatementPayload | null {
+    if (!file || !account || !settings || !settings.dateOrder) return null;
+    const saved = readSavedMapping(account.csv_import_mapping);
+    return {
+      account_id: account.id,
+      csv_text: file.text,
+      mapping: cleanMapping(settings.mapping, settings.sign),
+      sign: settings.sign,
+      dateOrder: settings.dateOrder,
+      include_pending: settings.includePending,
+      file_name: file.fileName,
+      preset: origin?.mappingSource === 'saved' && saved?.preset ? saved.preset : file.detected.preset,
+    };
+  }
+
+  // ── Step 3 ──────────────────────────────────────────────────────────────
+
+  async function goToReview() {
+    // Nothing changed since the last preview: keep it, and the choices made on it.
+    if (preview) {
+      setStep(3);
+      return;
+    }
+    const payload = buildPayload();
+    if (!payload || previewBusy) return;
+    if (!navigator.onLine) {
+      setPreviewError(OFFLINE_TEXT);
+      return;
+    }
+
+    const token = previewTokenRef.current;
+    setPreviewBusy(true);
+    setPreviewError(null);
+    const response = await previewStatement(payload);
+    setPreviewBusy(false);
+    // The settings changed while this was on its way: its answer is for a file read differently.
+    if (token !== previewTokenRef.current) return;
+
+    if (!response.ok) {
+      if (response.code === 'migration_required') setMigrationNeeded(true);
+      setPreviewError(response.message);
+      return;
+    }
+    setPreview(response.data);
+    setDecisions({});
+    setStep(3);
+  }
+
+  async function runImport() {
+    const payload = buildPayload();
+    if (!payload || !preview || !settings || importBusy) return;
+    if (!navigator.onLine) {
+      setImportError(OFFLINE_TEXT);
+      return;
+    }
+
+    setImportBusy(true);
+    setImportError(null);
+    const response = await commitStatement({ ...payload, actions: buildRowActions(preview.rows, decisions) });
+    setImportBusy(false);
+
+    if (!response.ok) {
+      if (response.code === 'migration_required') setMigrationNeeded(true);
+      setImportError(
+        response.code === 'network'
+          ? `${response.message} If the import did go through, importing this file again is safe: rows that are already in the account are skipped.`
+          : response.message,
+      );
+      return;
+    }
+
+    const committed = response.data;
+    setResult(committed);
+    setResultAccountName(accountLabel(preview.account));
+    setResultTitle(payload.file_name ?? 'Pasted text');
+    setResultUndo(null);
+    setHistoryUndo(null);
+    setSettingsSaved(false);
+    setSettingsError(null);
+    setTransferCount(0);
+    setStep(4);
+    void loadBatches(true);
+
+    if (settings.remember) {
+      const saved: SavedCsvMapping = {
+        mapping: payload.mapping,
+        sign: payload.sign,
+        dateOrder: payload.dateOrder,
+        includePending: payload.include_pending,
+        ...(payload.preset ? { preset: payload.preset } : {}),
+      };
+      void saveAccountMapping(payload.account_id, saved).then((savedResponse) => {
+        if (!savedResponse.ok) {
+          setSettingsError(savedResponse.message);
+          return;
+        }
+        setSettingsSaved(true);
+        setAccounts((current) =>
+          current.map((candidate) =>
+            candidate.id === payload.account_id ? { ...candidate, csv_import_mapping: saved } : candidate,
+          ),
+        );
+      });
+    }
+
+    // Transfer tracking ships separately: where its route is missing this stays 0 and shows nothing.
+    const range = importedDateRange(preview.rows, decisions);
+    if (range && committed.inserted + committed.linked > 0) {
+      void fetchTransferSuggestionCount(range.from, range.to).then(setTransferCount);
     }
   }
-  result.push(current);
-  return result;
+
+  // ── Step 4 and undo ─────────────────────────────────────────────────────
+
+  function startOver() {
+    setFile(null);
+    setPasteText('');
+    setSettings(null);
+    setOrigin(null);
+    settingsKeyRef.current = '';
+    discardPreview();
+    setResult(null);
+    setResultUndo(null);
+    setHistoryUndo(null);
+    setSettingsSaved(false);
+    setSettingsError(null);
+    setTransferCount(0);
+    setStep(1);
+  }
+
+  function askToUndo(id: string, label: string) {
+    setUndoError(null);
+    setUndoTarget({ id, label });
+  }
+
+  // Reads the ref, not state: the dialog keeps the function it was opened with.
+  const cancelUndo = useCallback(() => {
+    if (undoBusyRef.current) return;
+    setUndoTarget(null);
+    setUndoError(null);
+  }, []);
+
+  async function confirmUndo() {
+    if (!undoTarget || undoBusyRef.current) return;
+    if (!navigator.onLine) {
+      setUndoError(OFFLINE_TEXT);
+      return;
+    }
+    undoBusyRef.current = true;
+    setUndoBusy(true);
+    setUndoError(null);
+    const response = await undoImportBatch(undoTarget.id);
+    undoBusyRef.current = false;
+    setUndoBusy(false);
+
+    if (!response.ok) {
+      if (response.code === 'migration_required') setMigrationNeeded(true);
+      setUndoError(response.message);
+      return;
+    }
+    if (result && undoTarget.id === result.batchId) {
+      setResultUndo(response.data);
+      setHistoryUndo(null);
+    } else {
+      setHistoryUndo(response.data);
+    }
+    setUndoTarget(null);
+    void loadBatches(true);
+  }
+
+  const handleCategoryCreated = useCallback((category: BudgetCategory) => {
+    setCategories((current) => [...current, category]);
+  }, []);
+
+  // ── Render ──────────────────────────────────────────────────────────────
+
+  return (
+    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:py-10">
+      <header className="flex items-start gap-2">
+        <Link
+          href="/dashboard/finance"
+          aria-label="Back to Finance"
+          className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg transition hover:bg-gray-100"
+        >
+          <ArrowLeft className="h-5 w-5 text-gray-700" aria-hidden="true" />
+        </Link>
+        <div>
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
+            <Upload className="h-6 w-6 shrink-0 text-fuchsia-600" aria-hidden="true" />
+            Import bank statement
+          </h1>
+          <p className="mt-0.5 text-sm text-gray-600">
+            Bring in a CSV file you downloaded from your bank or card. You check every row before anything is saved,
+            and an import can be undone.
+          </p>
+        </div>
+      </header>
+
+      <StepIndicator current={step} />
+
+      {!online && (
+        <StatusNotice tone="warning">
+          <p id="import-offline-note">{OFFLINE_TEXT}</p>
+        </StatusNotice>
+      )}
+
+      {migrationNeeded && (
+        <ErrorNotice>
+          <p>{MIGRATION_REQUIRED_TEXT}</p>
+        </ErrorNotice>
+      )}
+
+      <h2 ref={headingRef} tabIndex={-1} className="scroll-mt-4 text-xl font-semibold text-gray-900">
+        {STEP_HEADINGS[step]}
+      </h2>
+
+      {step === 1 && (
+        <AccountFileStep
+          accounts={accounts}
+          accountsState={accountsState}
+          accountsError={accountsError}
+          onRetryAccounts={loadAccounts}
+          accountId={accountId}
+          onAccountChange={handleAccountChange}
+          file={file}
+          onFileRead={handleFileRead}
+          pasteText={pasteText}
+          onPasteTextChange={setPasteText}
+          onContinue={goToColumns}
+        />
+      )}
+
+      {step === 2 && file && settings && origin && (
+        <ColumnsStep
+          file={file}
+          account={account}
+          settings={settings}
+          origin={origin}
+          onChange={handleSettingsChange}
+          onBack={() => setStep(1)}
+          onContinue={goToReview}
+          busy={previewBusy}
+          error={previewError}
+          online={online}
+        />
+      )}
+
+      {step === 3 && preview && (
+        <ReviewStep
+          preview={preview}
+          decisions={decisions}
+          onDecisionsChange={setDecisions}
+          categories={categories}
+          onCategoryCreated={handleCategoryCreated}
+          onBack={() => setStep(2)}
+          onImport={runImport}
+          busy={importBusy}
+          error={importError}
+          online={online}
+        />
+      )}
+
+      {step === 4 && result && (
+        <DoneStep
+          result={result}
+          accountName={resultAccountName}
+          undo={resultUndo}
+          onUndo={() => askToUndo(result.batchId, `${resultTitle}, imported into ${resultAccountName}`)}
+          onImportAnother={startOver}
+          settingsSaved={settingsSaved}
+          settingsError={settingsError}
+          transferCount={transferCount}
+          online={online}
+        />
+      )}
+
+      {(step === 1 || step === 4) && (
+        <ImportHistory
+          batches={batches}
+          state={batchesState}
+          // The banner above already says the database needs its update.
+          error={migrationNeeded ? 'Your imports will be listed here once the database is updated.' : batchesError}
+          onRetry={() => void loadBatches()}
+          onUndo={(batch) =>
+            askToUndo(batch.id, `${batchTitle(batch)}, imported into ${accountLabel(batch.financial_accounts)}`)
+          }
+          undo={historyUndo}
+          online={online}
+        />
+      )}
+
+      <UndoImportDialog
+        target={undoTarget?.label ?? null}
+        busy={undoBusy}
+        error={undoError}
+        online={online}
+        onConfirm={confirmUndo}
+        onCancel={cancelUndo}
+      />
+    </div>
+  );
 }

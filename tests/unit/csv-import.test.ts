@@ -419,6 +419,7 @@ test('parseStatementCsv: skips summary lines above the table', () => {
     'Ending balance as of 01/31/2026, 2,682.46',
   ]);
   // Five summary lines, a blank line, the header on line 7, data from line 8.
+  assert.equal(parsed.headerRowNumber, 7);
   assert.deepEqual(parsed.rows.map((r) => r.rowNumber), [8, 9, 10]);
 });
 
@@ -427,6 +428,7 @@ test('parseStatementCsv: a file with no header row gets positional keys', () => 
   assert.equal(parsed.hasHeader, false);
   assert.deepEqual(parsed.headers, ['col_1', 'col_2', 'col_3', 'col_4', 'col_5']);
   assert.deepEqual(parsed.headerLabels, ['Column 1', 'Column 2', 'Column 3', 'Column 4', 'Column 5']);
+  assert.equal(parsed.headerRowNumber, null);
   assert.deepEqual(parsed.preambleLines, []);
   assert.deepEqual(parsed.rows.map((r) => r.rowNumber), [1, 2]);
   assert.equal(parsed.rows[0].cells.col_5, 'PURCHASE AUTHORIZED ON 01/12 SUNNY BAGELS');
@@ -546,6 +548,7 @@ test('parseStatementCsv: an empty file and a file with no dates', () => {
     headers: [],
     headerLabels: [],
     hasHeader: false,
+    headerRowNumber: null,
     rows: [],
     preambleLines: [],
     warnings: [],

@@ -18,6 +18,10 @@ interface CategorySelectProps<T extends { id: string; name: string }> {
   onCategoryCreated: (cat: BudgetCategory) => void;
   label?: string;
   className?: string;
+  /** The select's id. Pass one when several of these share a page: the default is built from the label. */
+  id?: string;
+  /** 'touch' gives every control a 44px target, for lists of rows used on a phone. */
+  size?: 'default' | 'touch';
 }
 
 export default function CategorySelect<T extends { id: string; name: string }>({
@@ -27,6 +31,8 @@ export default function CategorySelect<T extends { id: string; name: string }>({
   onCategoryCreated,
   label = 'Category',
   className = '',
+  id,
+  size = 'default',
 }: CategorySelectProps<T>) {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
@@ -56,7 +62,8 @@ export default function CategorySelect<T extends { id: string; name: string }>({
     }
   }
 
-  const selectId = `catsel-${label.toLowerCase().replace(/\s+/g, '-')}`;
+  const selectId = id ?? `catsel-${label.toLowerCase().replace(/\s+/g, '-')}`;
+  const touch = size === 'touch';
 
   return (
     <div className={className}>
@@ -66,7 +73,7 @@ export default function CategorySelect<T extends { id: string; name: string }>({
           id={selectId}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+          className={`flex-1 min-w-0 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 ${touch ? 'min-h-11' : ''}`}
         >
           <option value="">None</option>
           {categories.map((c) => (
@@ -76,10 +83,11 @@ export default function CategorySelect<T extends { id: string; name: string }>({
         <button
           type="button"
           onClick={() => setShowForm((p) => !p)}
-          className="shrink-0 p-2 rounded-lg border text-gray-500 hover:bg-gray-50 transition"
+          className={`shrink-0 rounded-lg border text-gray-500 hover:bg-gray-50 transition ${touch ? 'min-h-11 min-w-11 flex items-center justify-center' : 'p-2'}`}
           aria-label={showForm ? 'Close new category form' : 'Add new category'}
+          aria-expanded={showForm}
         >
-          {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+          {showForm ? <X className="w-4 h-4" aria-hidden="true" /> : <Plus className="w-4 h-4" aria-hidden="true" />}
         </button>
       </div>
       {showForm && (
@@ -92,7 +100,7 @@ export default function CategorySelect<T extends { id: string; name: string }>({
               aria-label="New category name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="flex-1 px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-900"
+              className={`flex-1 min-w-0 px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 ${touch ? 'min-h-11' : ''}`}
               placeholder="Category name"
               autoFocus
             />
@@ -100,13 +108,13 @@ export default function CategorySelect<T extends { id: string; name: string }>({
               type="color"
               value={color}
               onChange={(e) => setColor(e.target.value)}
-              className="w-8 h-8 border rounded-lg cursor-pointer shrink-0"
+              className={`border rounded-lg cursor-pointer shrink-0 ${touch ? 'w-11 h-11' : 'w-8 h-8'}`}
               aria-label="Category color"
             />
             <button
               type="submit"
               disabled={saving || !name.trim()}
-              className="shrink-0 px-3 py-1.5 bg-fuchsia-600 text-white rounded-lg text-xs font-medium hover:bg-fuchsia-700 disabled:opacity-50 transition"
+              className={`shrink-0 px-3 py-1.5 bg-fuchsia-600 text-white rounded-lg text-xs font-medium hover:bg-fuchsia-700 disabled:opacity-50 transition ${touch ? 'min-h-11' : ''}`}
             >
               {saving ? '...' : 'Add'}
             </button>
