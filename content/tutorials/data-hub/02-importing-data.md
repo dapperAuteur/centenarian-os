@@ -64,6 +64,7 @@ Follow these guidelines:
 
 | Module | Tips |
 |--------|------|
+| **Finance** | The Import button opens the bank statement import, not the importer described in this lesson: you choose an account, confirm the columns, and review every row before anything is saved. See Mastering Finance, Lesson 06. The Finance template imports there too. |
 | **Trips** | Vehicle nicknames must match existing vehicles. CO2 is auto-calculated. Linked finance transactions are NOT auto-created during bulk import. |
 | **Fuel** | If you provide `total_cost` and `gallons`, `cost_per_gallon` is calculated for you. |
 | **Maintenance** | `service_type` must be a valid type: oil_change, tire_rotation, brake_service, etc. |
