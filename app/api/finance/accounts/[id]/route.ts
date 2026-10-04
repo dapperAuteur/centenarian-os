@@ -1,10 +1,17 @@
 // app/api/finance/accounts/[id]/route.ts
-// PATCH: update account fields
+// PATCH: update account fields, including csv_import_mapping (the statement-import
+//        settings saved for the account: { mapping, sign, dateOrder, includePending?, preset? } or null)
 // DELETE: deactivate (soft) or hard-delete if no transactions
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import {
+  ImportError,
+  MIGRATION_REQUIRED_MESSAGE,
+  isMissingSchemaError,
+} from '@/lib/finance/csv-import/errors';
+import { sanitizeSavedMapping } from '@/lib/finance/csv-import/service';
 
 function getDb() {
   return createServiceClient(
@@ -42,8 +49,21 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     'promo_apr', 'promo_apr_expires', 'promo_description',
     'bt_apr', 'bt_fee_percent', 'bt_expires', 'bt_description',
     'rewards_type', 'rewards_rate', 'annual_fee',
+    // Statement-import settings remembered for this account (migration 203)
+    'csv_import_mapping',
   ];
   const updates = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
+
+  // { mapping, sign, dateOrder, includePending?, preset? } or null to forget it.
+  // Checked here so a malformed value can't be stored and break the next import.
+  if ('csv_import_mapping' in updates) {
+    try {
+      updates.csv_import_mapping = sanitizeSavedMapping(updates.csv_import_mapping);
+    } catch (err) {
+      const message = err instanceof ImportError ? err.message : 'csv_import_mapping is not valid.';
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+  }
 
   const { data, error } = await db
     .from('financial_accounts')
@@ -52,7 +72,16 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    // The column arrives with migration 203: say so instead of a raw schema error.
+    if (isMissingSchemaError(error)) {
+      return NextResponse.json(
+        { error: MIGRATION_REQUIRED_MESSAGE, code: 'migration_required' },
+        { status: 503 },
+      );
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
   return NextResponse.json(data);
 }
