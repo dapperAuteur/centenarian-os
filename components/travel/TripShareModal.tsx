@@ -302,7 +302,7 @@ export default function TripShareModal({
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {share.shared_with_email || 'Public link'}
+                      {share.shared_with_email || (share.is_public ? 'Public link' : 'CentenarianOS user')}
                     </p>
                     <p className="text-xs text-gray-500">
                       {share.expires_at

@@ -58,7 +58,27 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ shares: data || [] });
+  // The share modal reads is_public and shared_with_email, but trip_shares has
+  // neither column (migration 124): a share is a public link when it carries a
+  // share_token, and a per-user grant when it carries shared_with. Derive both.
+  const rows = data || [];
+  const recipientIds = [
+    ...new Set(rows.map((s) => s.shared_with as string | null).filter((id): id is string => !!id)),
+  ];
+  const emailById = new Map<string, string | null>();
+  if (recipientIds.length > 0) {
+    const db = getDb();
+    const results = await Promise.all(recipientIds.map((id) => db.auth.admin.getUserById(id)));
+    recipientIds.forEach((id, i) => emailById.set(id, results[i].data?.user?.email ?? null));
+  }
+
+  const shares = rows.map((s) => ({
+    ...s,
+    is_public: !!s.share_token,
+    shared_with_email: s.shared_with ? emailById.get(s.shared_with) ?? null : null,
+  }));
+
+  return NextResponse.json({ shares });
 }
 
 export async function POST(request: NextRequest) {
