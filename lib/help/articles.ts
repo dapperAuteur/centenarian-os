@@ -647,6 +647,11 @@ export const HELP_ARTICLES: HelpArticle[] = [
   },
   {
     role: 'all',
+    title: 'How to connect Google Calendar',
+    content: `Go to Dashboard → Operate → Calendar Sync (/dashboard/settings/calendar) and press Connect Google Calendar. Google asks you to choose an account and approve read-only access; leave the calendar permission ticked, and you are sent back to CentenarianOS. The connection is one-way, Google to CentenarianOS: CentenarianOS can only read your calendars and never creates, changes, or deletes anything in Google Calendar. Once connected, the page shows which Google account is connected and lists its calendars. Tick the calendars you want to sync. Every calendar starts switched off, and "Refresh list from Google" reloads the list after you add or remove a calendar in Google. Events are not imported yet: syncing events arrives in the next update, so for now your choices are saved and nothing new appears in the planner. If the page says "Needs reconnecting", Google has stopped accepting the saved authorization (for example, because access was removed in your Google Account). Press Reconnect and approve again; your calendar choices are kept. To stop, press Disconnect and confirm: CentenarianOS asks Google to remove its access, then deletes the saved connection and your calendar choices. Nothing in Google Calendar changes. If the page says Google Calendar is not available on this site yet, the site owner has not finished the Google setup. To bring events in today, use the one-time file import instead (Data Hub → Import .ics).`,
+  },
+  {
+    role: 'all',
     title: 'How to export data to CSV',
     content: `Go to Dashboard → Data Hub and click Export on any module card. Set optional date range filters (from/to) and click Download CSV. The export includes all fields for the module. You can use exported CSVs for backup, analysis in Excel or Google Sheets, or migrating to another system.`,
   },
