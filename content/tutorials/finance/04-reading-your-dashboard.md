@@ -27,6 +27,8 @@ At the top of the dashboard, three summary cards show your current month's finan
 
 These cards update immediately when you log or edit transactions.
 
+**Transfers are not counted.** Moving money between two of your own accounts, paying a credit card, and paying a loan are not spending or income, so linked transfers are left out of all three cards, the monthly trend chart, and the budget progress bars. Without that, a $500 card payment would show up as $500 of spending in your checking account and $500 of income on the card. Lesson 05 covers how transactions get linked as transfers.
+
 ---
 
 ### Monthly Trend Chart
@@ -112,6 +114,7 @@ The dashboard is a diagnostic, not a report. The right response to what you see:
 ## Key Takeaways
 
 - Three summary cards: Total Expenses, Total Income, Net — all for the current calendar month
+- Transfers between your own accounts, card payments, and loan payments are left out of the totals and charts
 - Monthly trend chart: 6 months of income vs. expenses — hover for exact values
 - Spending by category: pie chart by expense category — large uncategorized slice = uncategorized transactions to assign
 - Budget progress bars: green → healthy, amber → approaching limit, red → over budget

@@ -32,6 +32,24 @@ For **loans**: similar to credit cards — the balance tracks remaining debt.
 
 ---
 
+### Transfers, Card Payments, and Loan Payments
+
+When money moves between two of your own accounts, both balances have to change, but nothing was spent or earned. The app records that as a **transfer**: an expense on the account the money left, an income on the account it reached, and a link between the two.
+
+| What happened | Account the money left | Account it reached |
+|---------------|------------------------|--------------------|
+| Checking to savings | Expense: balance goes down | Income: balance goes up |
+| Paid a credit card | Expense on the bank account | Income on the card: what you owe goes down |
+| Paid a loan | Expense on the bank account | Income on the loan: what you owe goes down |
+
+Because the two transactions are linked, they are left out of spending and income totals: the dashboard cards and charts, budget progress, brand P&L, Life Categories spending, and the AI coach. Balances and exports still include them.
+
+Each side shows a **Transfer ↔ account** badge that opens the other side. The account is always written with its institution and last four digits, because two accounts can share a name.
+
+If only one account has a transaction for the payment (a loan you never import a statement for, say), open the payment and click **This is a payment to…**. One entry is added on the loan for the same amount and date, so the loan's balance goes down by the payment. Lesson 05 covers the Possible transfers panel, which finds these for you.
+
+---
+
 ### Per-Account Filtering
 
 On the finance dashboard, click any account in the accounts row to filter the view to just that account. The summary cards, budget bars, and transaction list all update to reflect only that account's data.
@@ -95,6 +113,7 @@ The entire chain — spending, ownership, and revenue — is traceable across mo
 ## Key Takeaways
 
 - Account balances are auto-calculated: Opening Balance + income - expenses
+- A transfer, card payment, or loan payment is two linked transactions: both balances change, and neither counts as spending or income
 - Click any account on the dashboard to filter to that account's transactions
 - Equipment items link to transactions via the purchase transaction field
 - Activity links connect transactions to equipment, trips, and tasks for cross-module tracing
