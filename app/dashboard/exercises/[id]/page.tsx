@@ -114,6 +114,8 @@ export default function ExerciseDetailPage() {
   const handleLike = async () => {
     setActionLoading('like');
     const res = await offlineFetch(`/api/exercises/${id}/like`, { method: 'POST' });
+    // 404 = the exercise is gone or no longer visible to you; leave the UI as it is
+    if (!res.ok) { setActionLoading(null); return; }
     const data = await res.json();
     setLiked(data.liked);
     if (exercise) setExercise({ ...exercise, like_count: data.like_count });
@@ -135,6 +137,8 @@ export default function ExerciseDetailPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ confirmed }),
     });
+    // 404 = the exercise is gone or no longer visible to you; leave the UI as it is
+    if (!res.ok) { setActionLoading(null); return; }
     const data = await res.json();
     if (data.confirm_needed) {
       if (window.confirm(`You marked this as done ${data.recent_count} time(s) in the last ${data.window_minutes} minutes. Add another?`)) {

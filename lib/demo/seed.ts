@@ -314,10 +314,11 @@ export async function seedTutorial(supabase: SupabaseClient, userId: string): Pr
   if (lcErr) throw new Error(`Tutorial life categories: ${lcErr.message}`);
 
   // Focus Sessions (3 sessions)
+  // focus_sessions.duration is stored in seconds (the timer and analytics all read seconds)
   const { error: tutFsErr } = await supabase.from('focus_sessions').insert([
-    { user_id: userId, start_time: new Date(Date.now() - 86400000 - 60 * 60000).toISOString(), end_time: new Date(Date.now() - 86400000 - 35 * 60000).toISOString(), duration: 25, notes: 'Reviewing monthly budget categories', session_type: 'work' },
-    { user_id: userId, start_time: new Date(Date.now() - 172800000 - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 172800000 - 40 * 60000).toISOString(), duration: 50, notes: 'Meal planning and recipe research for the week', session_type: 'focus' },
-    { user_id: userId, start_time: new Date(Date.now() - 259200000 - 45 * 60000).toISOString(), end_time: new Date(Date.now() - 259200000 - 15 * 60000).toISOString(), duration: 30, notes: 'Logging health metrics and daily reflection', session_type: 'focus' },
+    { user_id: userId, start_time: new Date(Date.now() - 86400000 - 60 * 60000).toISOString(), end_time: new Date(Date.now() - 86400000 - 35 * 60000).toISOString(), duration: 25 * 60, notes: 'Reviewing monthly budget categories', session_type: 'work' },
+    { user_id: userId, start_time: new Date(Date.now() - 172800000 - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 172800000 - 40 * 60000).toISOString(), duration: 50 * 60, notes: 'Meal planning and recipe research for the week', session_type: 'focus' },
+    { user_id: userId, start_time: new Date(Date.now() - 259200000 - 45 * 60000).toISOString(), end_time: new Date(Date.now() - 259200000 - 15 * 60000).toISOString(), duration: 30 * 60, notes: 'Logging health metrics and daily reflection', session_type: 'focus' },
   ]);
   if (tutFsErr) throw new Error(`Tutorial focus sessions: ${tutFsErr.message}`);
 
@@ -866,13 +867,14 @@ export async function seedVisitor(supabase: SupabaseClient, userId: string): Pro
   if (wExErr) throw new Error(`Visitor workout log exercises: ${wExErr.message}`);
 
   // ── Workout Feedback (for recent workouts) ──
+  // difficulty must be one of 'too-easy' | 'just-right' | 'too-hard' (migration 150 renamed easier/harder)
   const feedbackRows = [
     { user_id: userId, workout_log_id: wLogId('Push Day'), activity_category: 'WORKOUT_GYM', activity_duration: '60', mood_before: 3, mood_after: 4, difficulty: 'just-right', feedback: 'Bench press felt solid. Shoulder warm-up really helped today.' },
     { user_id: userId, workout_log_id: wLogId('Pull Day'), activity_category: 'WORKOUT_GYM', activity_duration: '45', mood_before: 4, mood_after: 5, difficulty: 'just-right', feedback: 'Best pull-up session in weeks. Back pump was great.' },
-    { user_id: userId, workout_log_id: wLogId('Leg Day'), activity_category: 'WORKOUT_GYM', activity_duration: '60', mood_before: 3, mood_after: 3, difficulty: 'harder', feedback: 'Squats were heavy today. Knee felt tight on the last set.' },
+    { user_id: userId, workout_log_id: wLogId('Leg Day'), activity_category: 'WORKOUT_GYM', activity_duration: '60', mood_before: 3, mood_after: 3, difficulty: 'too-hard', feedback: 'Squats were heavy today. Knee felt tight on the last set.' },
     { user_id: userId, workout_log_id: wLogId('Full Body HIIT'), activity_category: 'WORKOUT_GYM', activity_duration: '30', mood_before: 3, mood_after: 5, difficulty: 'just-right', feedback: 'Circuit format kept the heart rate up. Great conditioning workout.' },
     ...(wLogIds('Recovery & Mobility')[0] ? [
-      { user_id: userId, workout_log_id: wLogIds('Recovery & Mobility')[0], activity_category: 'PM' as const, activity_duration: '30', mood_before: 2, mood_after: 4, difficulty: 'easier' as const, feedback: 'Really needed this after a stressful week. Feel much looser now.' },
+      { user_id: userId, workout_log_id: wLogIds('Recovery & Mobility')[0], activity_category: 'PM' as const, activity_duration: '30', mood_before: 2, mood_after: 4, difficulty: 'too-easy' as const, feedback: 'Really needed this after a stressful week. Feel much looser now.' },
     ] : []),
   ].filter(r => r.workout_log_id);
   if (feedbackRows.length > 0) {
@@ -933,17 +935,18 @@ export async function seedVisitor(supabase: SupabaseClient, userId: string): Pro
 
   // ── Focus Sessions (10 sessions over 30 days) ──
   const DAY_MS = 86400000;
+  // focus_sessions.duration is stored in seconds (the timer and analytics all read seconds)
   const { error: fsErr } = await supabase.from('focus_sessions').insert([
-    { user_id: userId, start_time: new Date(Date.now() - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 40 * 60000).toISOString(), duration: 50, notes: 'Deep work on client proposal — DataCo SOW', session_type: 'focus', hourly_rate: 150, revenue: 125 },
-    { user_id: userId, start_time: new Date(Date.now() - DAY_MS - 120 * 60000).toISOString(), end_time: new Date(Date.now() - DAY_MS - 45 * 60000).toISOString(), duration: 75, notes: 'Code review and architecture planning', session_type: 'work', hourly_rate: 0, revenue: 0 },
-    { user_id: userId, start_time: new Date(Date.now() - 2 * DAY_MS - 60 * 60000).toISOString(), end_time: new Date(Date.now() - 2 * DAY_MS - 15 * 60000).toISOString(), duration: 45, notes: 'Blog writing — fuel tracking post', session_type: 'focus', hourly_rate: 0, revenue: 0 },
-    { user_id: userId, start_time: new Date(Date.now() - 3 * DAY_MS - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 3 * DAY_MS - 30 * 60000).toISOString(), duration: 60, notes: 'Financial reconciliation and invoice review', session_type: 'work', hourly_rate: 150, revenue: 150 },
-    { user_id: userId, start_time: new Date(Date.now() - 4 * DAY_MS - 50 * 60000).toISOString(), end_time: new Date(Date.now() - 4 * DAY_MS).toISOString(), duration: 50, notes: 'Client presentation prep — TechCorp Q1 review', session_type: 'focus', hourly_rate: 150, revenue: 125 },
-    { user_id: userId, start_time: new Date(Date.now() - 7 * DAY_MS - 80 * 60000).toISOString(), end_time: new Date(Date.now() - 7 * DAY_MS - 20 * 60000).toISOString(), duration: 60, notes: 'Market research for consulting pitch', session_type: 'focus', hourly_rate: 150, revenue: 150 },
-    { user_id: userId, start_time: new Date(Date.now() - 10 * DAY_MS - 45 * 60000).toISOString(), end_time: new Date(Date.now() - 10 * DAY_MS).toISOString(), duration: 45, notes: 'Quarterly goal review and roadmap update', session_type: 'work', hourly_rate: 0, revenue: 0 },
-    { user_id: userId, start_time: new Date(Date.now() - 14 * DAY_MS - 55 * 60000).toISOString(), end_time: new Date(Date.now() - 14 * DAY_MS - 10 * 60000).toISOString(), duration: 45, notes: 'Blog post outline — longevity habits for desk workers', session_type: 'focus', hourly_rate: 0, revenue: 0 },
-    { user_id: userId, start_time: new Date(Date.now() - 18 * DAY_MS - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 18 * DAY_MS - 30 * 60000).toISOString(), duration: 60, notes: 'StartupXYZ project planning session', session_type: 'work', hourly_rate: 150, revenue: 150 },
-    { user_id: userId, start_time: new Date(Date.now() - 22 * DAY_MS - 40 * 60000).toISOString(), end_time: new Date(Date.now() - 22 * DAY_MS).toISOString(), duration: 40, notes: 'Equipment inventory and valuation updates', session_type: 'work', hourly_rate: 0, revenue: 0 },
+    { user_id: userId, start_time: new Date(Date.now() - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 40 * 60000).toISOString(), duration: 50 * 60, notes: 'Deep work on client proposal — DataCo SOW', session_type: 'focus', hourly_rate: 150, revenue: 125 },
+    { user_id: userId, start_time: new Date(Date.now() - DAY_MS - 120 * 60000).toISOString(), end_time: new Date(Date.now() - DAY_MS - 45 * 60000).toISOString(), duration: 75 * 60, notes: 'Code review and architecture planning', session_type: 'work', hourly_rate: 0, revenue: 0 },
+    { user_id: userId, start_time: new Date(Date.now() - 2 * DAY_MS - 60 * 60000).toISOString(), end_time: new Date(Date.now() - 2 * DAY_MS - 15 * 60000).toISOString(), duration: 45 * 60, notes: 'Blog writing — fuel tracking post', session_type: 'focus', hourly_rate: 0, revenue: 0 },
+    { user_id: userId, start_time: new Date(Date.now() - 3 * DAY_MS - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 3 * DAY_MS - 30 * 60000).toISOString(), duration: 60 * 60, notes: 'Financial reconciliation and invoice review', session_type: 'work', hourly_rate: 150, revenue: 150 },
+    { user_id: userId, start_time: new Date(Date.now() - 4 * DAY_MS - 50 * 60000).toISOString(), end_time: new Date(Date.now() - 4 * DAY_MS).toISOString(), duration: 50 * 60, notes: 'Client presentation prep — TechCorp Q1 review', session_type: 'focus', hourly_rate: 150, revenue: 125 },
+    { user_id: userId, start_time: new Date(Date.now() - 7 * DAY_MS - 80 * 60000).toISOString(), end_time: new Date(Date.now() - 7 * DAY_MS - 20 * 60000).toISOString(), duration: 60 * 60, notes: 'Market research for consulting pitch', session_type: 'focus', hourly_rate: 150, revenue: 150 },
+    { user_id: userId, start_time: new Date(Date.now() - 10 * DAY_MS - 45 * 60000).toISOString(), end_time: new Date(Date.now() - 10 * DAY_MS).toISOString(), duration: 45 * 60, notes: 'Quarterly goal review and roadmap update', session_type: 'work', hourly_rate: 0, revenue: 0 },
+    { user_id: userId, start_time: new Date(Date.now() - 14 * DAY_MS - 55 * 60000).toISOString(), end_time: new Date(Date.now() - 14 * DAY_MS - 10 * 60000).toISOString(), duration: 45 * 60, notes: 'Blog post outline — longevity habits for desk workers', session_type: 'focus', hourly_rate: 0, revenue: 0 },
+    { user_id: userId, start_time: new Date(Date.now() - 18 * DAY_MS - 90 * 60000).toISOString(), end_time: new Date(Date.now() - 18 * DAY_MS - 30 * 60000).toISOString(), duration: 60 * 60, notes: 'StartupXYZ project planning session', session_type: 'work', hourly_rate: 150, revenue: 150 },
+    { user_id: userId, start_time: new Date(Date.now() - 22 * DAY_MS - 40 * 60000).toISOString(), end_time: new Date(Date.now() - 22 * DAY_MS).toISOString(), duration: 40 * 60, notes: 'Equipment inventory and valuation updates', session_type: 'work', hourly_rate: 0, revenue: 0 },
   ]);
   if (fsErr) throw new Error(`Visitor focus sessions: ${fsErr.message}`);
 
@@ -1179,45 +1182,62 @@ export async function seedVisitor(supabase: SupabaseClient, userId: string): Pro
   }
 
   // ── Invoices ──
+  // Column names follow migrations 058/081: the client is contact_name, the
+  // issue date is invoice_date, direction is required, and line items are rows
+  // in invoice_items. invoices has no client email/address columns, so those
+  // go in custom_fields (the invoice page lists every custom field). There is
+  // no tax_rate column either; tax_amount carries the (zero) tax.
   if (brandId) {
-    const { error: invErr } = await supabase.from('invoices').insert([
+    const demoInvoices = [
       {
-        user_id: userId, brand_id: brandId, invoice_number: 'INV-2026-001',
-        client_name: 'TechCorp Inc.', client_email: 'billing@techcorp.example.com',
-        client_address: '123 Tech Blvd, San Jose, CA 95110',
-        issue_date: daysAgo(30), due_date: daysAgo(0), status: 'paid', paid_date: daysAgo(5),
-        subtotal: 4800, tax_rate: 0, tax_amount: 0, total: 4800, notes: 'March consulting engagement',
+        invoice: {
+          user_id: userId, brand_id: brandId, direction: 'receivable', invoice_number: 'INV-2026-001',
+          contact_name: 'TechCorp Inc.',
+          custom_fields: { client_email: 'billing@techcorp.example.com', client_address: '123 Tech Blvd, San Jose, CA 95110' },
+          invoice_date: daysAgo(30), due_date: daysAgo(0), status: 'paid', paid_date: daysAgo(5),
+          subtotal: 4800, tax_amount: 0, total: 4800, amount_paid: 4800, notes: 'March consulting engagement',
+        },
         items: [{ description: 'Technology consulting — 40 hours @ $120/hr', quantity: 40, unit_price: 120, amount: 4800 }],
       },
       {
-        user_id: userId, brand_id: brandId, invoice_number: 'INV-2026-002',
-        client_name: 'StartupXYZ', client_email: 'accounts@startupxyz.example.com',
-        client_address: '789 Startup Way, Palo Alto, CA 94301',
-        issue_date: daysAgo(7), due_date: daysAgo(-23), status: 'sent',
-        subtotal: 3600, tax_rate: 0, tax_amount: 0, total: 3600, notes: 'Architecture review + recommendations',
+        invoice: {
+          user_id: userId, brand_id: brandId, direction: 'receivable', invoice_number: 'INV-2026-002',
+          contact_name: 'StartupXYZ',
+          custom_fields: { client_email: 'accounts@startupxyz.example.com', client_address: '789 Startup Way, Palo Alto, CA 94301' },
+          invoice_date: daysAgo(7), due_date: daysAgo(-23), status: 'sent',
+          subtotal: 3600, tax_amount: 0, total: 3600, notes: 'Architecture review + recommendations',
+        },
         items: [
           { description: 'Architecture review — 20 hours @ $120/hr', quantity: 20, unit_price: 120, amount: 2400 },
           { description: 'Written recommendations report', quantity: 1, unit_price: 1200, amount: 1200 },
         ],
       },
-    ]);
-    if (invErr) throw new Error(`Visitor invoices: ${invErr.message}`);
+    ];
+    for (const { invoice, items } of demoInvoices) {
+      const { data: inv, error: invErr } = await supabase.from('invoices').insert(invoice).select('id').single();
+      if (invErr || !inv) throw new Error(`Visitor invoices: ${invErr?.message ?? 'insert returned no row'}`);
+      const { error: itemErr } = await supabase
+        .from('invoice_items')
+        .insert(items.map((item, i) => ({ ...item, invoice_id: inv.id, sort_order: i })));
+      if (itemErr) throw new Error(`Visitor invoice items: ${itemErr.message}`);
+    }
   }
 
   // ── Equipment Valuations ──
+  // The date column is valued_at (migration 069), not valued_date.
   const vEqList = await supabase.from('equipment').select('id, name').eq('user_id', userId);
   const laptopEqId = vEqList?.data?.find(e => e.name?.includes('ThinkPad'))?.id;
   const barbellEqId = vEqList?.data?.find(e => e.name?.includes('Barbell'))?.id;
   if (laptopEqId) {
     await supabase.from('equipment_valuations').insert([
-      { equipment_id: laptopEqId, user_id: userId, value: 1400, valued_date: daysAgo(90), notes: 'Purchase value' },
-      { equipment_id: laptopEqId, user_id: userId, value: 1100, valued_date: daysAgo(30), notes: '1 year depreciation estimate' },
+      { equipment_id: laptopEqId, user_id: userId, value: 1400, valued_at: daysAgo(90), notes: 'Purchase value' },
+      { equipment_id: laptopEqId, user_id: userId, value: 1100, valued_at: daysAgo(30), notes: '1 year depreciation estimate' },
     ]);
   }
   if (barbellEqId) {
     await supabase.from('equipment_valuations').insert([
-      { equipment_id: barbellEqId, user_id: userId, value: 280, valued_date: daysAgo(60), notes: 'Purchase value' },
-      { equipment_id: barbellEqId, user_id: userId, value: 250, valued_date: daysAgo(0), notes: 'Current market estimate' },
+      { equipment_id: barbellEqId, user_id: userId, value: 280, valued_at: daysAgo(60), notes: 'Purchase value' },
+      { equipment_id: barbellEqId, user_id: userId, value: 250, valued_at: daysAgo(0), notes: 'Current market estimate' },
     ]);
   }
 

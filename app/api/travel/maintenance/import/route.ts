@@ -13,11 +13,26 @@ function getDb() {
   );
 }
 
+// Must match the vehicle_maintenance.service_type CHECK (migration 052).
 const VALID_SERVICE_TYPES = new Set([
-  'oil_change', 'tire_rotation', 'tire_replacement', 'brake_service',
-  'battery', 'transmission', 'coolant', 'filter', 'inspection',
-  'alignment', 'detailing', 'other',
+  'oil_change', 'tire_rotation', 'brake_pads', 'inspection', 'battery',
+  'transmission', 'tires', 'chain', 'tune_up', 'other',
 ]);
+
+// Names the import template used before it matched the table. Store the
+// equivalent value the CHECK constraint allows.
+const SERVICE_TYPE_ALIASES: Record<string, string> = {
+  brake_service: 'brake_pads',
+  tire_replacement: 'tires',
+};
+
+/** "Oil Change" / "oil-change" / "oil_change" → the stored service_type, or null if not allowed. */
+function normalizeServiceType(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const key = raw.trim().toLowerCase().replace(/[\s-]+/g, '_');
+  const value = SERVICE_TYPE_ALIASES[key] ?? key;
+  return VALID_SERVICE_TYPES.has(value) ? value : null;
+}
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -62,9 +77,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate required: service_type
-    const serviceType = row.service_type?.trim()?.toLowerCase();
-    if (!serviceType || !VALID_SERVICE_TYPES.has(serviceType)) {
-      errors.push(`Row ${i + 1}: invalid or missing service_type`);
+    const serviceType = normalizeServiceType(row.service_type);
+    if (!serviceType) {
+      errors.push(`Row ${i + 1}: invalid or missing service_type (use ${Array.from(VALID_SERVICE_TYPES).join(', ')})`);
       skipped++;
       continue;
     }

@@ -13,16 +13,39 @@ function getDb() {
   );
 }
 
-const VALID_MODES = new Set(['car', 'bike', 'walk', 'transit', 'flight', 'boat']);
+// Must match the trips CHECK constraints: mode and purpose (migration 052),
+// trip_category and tax_category (053).
+const VALID_MODES = new Set([
+  'bike', 'car', 'bus', 'train', 'plane', 'walk', 'run', 'ferry', 'rideshare', 'other',
+]);
+const VALID_PURPOSES = new Set(['commute', 'leisure', 'work', 'errand', 'exercise', 'other']);
+const VALID_TRIP_CATEGORIES = new Set(['travel', 'fitness']);
+const VALID_TAX_CATEGORIES = new Set(['personal', 'business', 'medical', 'charitable']);
 
+// Modes the import accepted before it matched the table; store the equivalent
+// mode the CHECK constraint allows. ("transit" has no single equivalent — the
+// row error asks for bus or train.)
+const MODE_ALIASES: Record<string, string> = {
+  flight: 'plane',
+  boat: 'ferry',
+};
+
+// Same factors this import has always used, keyed by the stored mode
+// (transit → bus/train, flight → plane, boat → ferry).
 const CO2_PER_MILE: Record<string, number> = {
   car: 0.404,
-  transit: 0.177,
-  flight: 0.255,
+  rideshare: 0.404,
+  bus: 0.177,
+  train: 0.177,
+  plane: 0.255,
+  ferry: 0,
   bike: 0,
   walk: 0,
-  boat: 0,
+  run: 0,
+  other: 0,
 };
+
+const listOf = (values: Set<string>) => Array.from(values).join(', ');
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -67,9 +90,33 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate required: mode
-    const mode = row.mode?.toLowerCase()?.trim();
+    const rawMode = row.mode?.toLowerCase()?.trim();
+    const mode = rawMode ? (MODE_ALIASES[rawMode] ?? rawMode) : undefined;
     if (!mode || !VALID_MODES.has(mode)) {
-      errors.push(`Row ${i + 1}: invalid or missing mode (must be car, bike, walk, transit, flight, boat)`);
+      errors.push(`Row ${i + 1}: invalid or missing mode (use ${listOf(VALID_MODES)})`);
+      skipped++;
+      continue;
+    }
+
+    // Optional enums: blank falls back to the column default (or null); a value
+    // the table would reject is reported per row instead of failing the batch.
+    const purpose = row.purpose?.trim()?.toLowerCase() || null;
+    if (purpose && !VALID_PURPOSES.has(purpose)) {
+      errors.push(`Row ${i + 1}: invalid purpose (use ${listOf(VALID_PURPOSES)}, or leave blank and describe the trip in notes)`);
+      skipped++;
+      continue;
+    }
+
+    const tripCategory = row.trip_category?.trim()?.toLowerCase() || 'travel';
+    if (!VALID_TRIP_CATEGORIES.has(tripCategory)) {
+      errors.push(`Row ${i + 1}: invalid trip_category (use ${listOf(VALID_TRIP_CATEGORIES)})`);
+      skipped++;
+      continue;
+    }
+
+    const taxCategory = row.tax_category?.trim()?.toLowerCase() || 'personal';
+    if (!VALID_TAX_CATEGORIES.has(taxCategory)) {
+      errors.push(`Row ${i + 1}: invalid tax_category (use ${listOf(VALID_TAX_CATEGORIES)})`);
       skipped++;
       continue;
     }
@@ -82,7 +129,9 @@ export async function POST(request: NextRequest) {
 
     const distanceMiles = row.distance_miles ? parseFloat(row.distance_miles) : null;
     const isRoundTrip = row.is_round_trip === 'true' || row.is_round_trip === '1';
-    const durationMin = row.duration_min ? parseFloat(row.duration_min) : null;
+    // trips.duration_min is an INT column — a fractional value would fail the whole batch
+    const durationRaw = row.duration_min ? parseFloat(row.duration_min) : NaN;
+    const durationMin = Number.isFinite(durationRaw) ? Math.round(durationRaw) : null;
     const cost = row.cost ? parseFloat(row.cost) : null;
 
     // Auto-calculate CO2
@@ -101,11 +150,11 @@ export async function POST(request: NextRequest) {
       destination: row.destination?.trim() || null,
       distance_miles: distanceMiles,
       duration_min: durationMin,
-      purpose: row.purpose?.trim() || null,
+      purpose,
       cost: cost,
       co2_kg: co2Kg,
-      trip_category: row.trip_category?.trim() || 'travel',
-      tax_category: row.tax_category?.trim() || 'personal',
+      trip_category: tripCategory,
+      tax_category: taxCategory,
       is_round_trip: isRoundTrip,
       vehicle_id: vehicleId,
       notes: row.notes?.trim() || null,

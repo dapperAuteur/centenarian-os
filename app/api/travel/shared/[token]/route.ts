@@ -35,6 +35,12 @@ export async function GET(_request: NextRequest, { params }: Params) {
 
   const included_sections = share.included_sections ?? null;
 
+  // A share only ever exposes its creator's own data. Share creation checks
+  // ownership now, but shares minted before that check existed could point at
+  // someone else's trip — every read below is pinned to share.user_id so those
+  // resolve to 404.
+  const ownerId = share.user_id as string;
+
   // Helper to format date range
   function fmtDateRange(start: string, end?: string | null) {
     const fmt = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('en-US', {
@@ -50,6 +56,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
     const { data: links } = await db
       .from('activity_links')
       .select('target_id, relationship')
+      .eq('user_id', ownerId)
       .eq('source_type', entityType)
       .eq('source_id', entityId)
       .eq('target_type', 'equipment');
@@ -57,7 +64,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
     if (!links || links.length === 0) return [];
 
     const eqIds = links.map((l: { target_id: string }) => l.target_id);
-    const { data: eqData } = await db.from('equipment').select('id, name').in('id', eqIds);
+    const { data: eqData } = await db.from('equipment').select('id, name').eq('user_id', ownerId).in('id', eqIds);
     if (!eqData) return [];
 
     const eqMap = new Map(eqData.map((e: { id: string; name: string }) => [e.id, e.name]));
@@ -73,6 +80,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
       .from('trips')
       .select('*, vehicles(nickname, type)')
       .eq('id', share.trip_id)
+      .eq('user_id', ownerId)
       .maybeSingle();
 
     if (tripError) return NextResponse.json({ error: tripError.message }, { status: 500 });
@@ -98,6 +106,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
       .from('trip_routes')
       .select('*')
       .eq('id', share.route_id)
+      .eq('user_id', ownerId)
       .maybeSingle();
 
     if (routeError) return NextResponse.json({ error: routeError.message }, { status: 500 });
@@ -107,6 +116,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
       .from('trips')
       .select('*, vehicles(nickname, type)')
       .eq('route_id', share.route_id)
+      .eq('user_id', ownerId)
       .order('leg_order', { ascending: true });
 
     const trips = legs || [];

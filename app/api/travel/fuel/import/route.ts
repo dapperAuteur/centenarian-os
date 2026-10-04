@@ -13,7 +13,16 @@ function getDb() {
   );
 }
 
-const VALID_FUEL_GRADES = new Set(['regular', 'mid_grade', 'premium', 'diesel']);
+// Must match the fuel_logs.fuel_grade CHECK (migration 052).
+const VALID_FUEL_GRADES = new Set(['regular', 'midgrade', 'premium', 'diesel', 'e85']);
+
+// Accept common spellings ("mid_grade", "mid-grade", "Mid Grade", "E-85") and
+// return the spelling the fuel_logs CHECK constraint allows.
+function normalizeFuelGrade(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const grade = raw.trim().toLowerCase().replace(/[\s_-]+/g, '');
+  return VALID_FUEL_GRADES.has(grade) ? grade : null;
+}
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -73,9 +82,8 @@ export async function POST(request: NextRequest) {
       costPerGallon = parseFloat((totalCost / gallons).toFixed(3));
     }
 
-    // Validate fuel_grade
-    const fuelGrade = row.fuel_grade?.trim()?.toLowerCase();
-    const resolvedGrade = fuelGrade && VALID_FUEL_GRADES.has(fuelGrade) ? fuelGrade : 'regular';
+    // Validate fuel_grade (unknown or blank falls back to regular)
+    const resolvedGrade = normalizeFuelGrade(row.fuel_grade) ?? 'regular';
 
     payloads.push({
       user_id: user.id,
@@ -88,7 +96,8 @@ export async function POST(request: NextRequest) {
       fuel_grade: resolvedGrade,
       station: row.station?.trim() || null,
       notes: row.notes?.trim() || null,
-      source: 'csv_import',
+      // fuel_logs.source CHECK allows only 'manual' | 'image_ocr' | 'import'
+      source: 'import',
     });
   }
 

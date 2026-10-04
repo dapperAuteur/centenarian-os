@@ -49,7 +49,7 @@ const MODULES: ModuleCard[] = [
     exportUrl: '/api/travel/trips/export',
     importHref: '/dashboard/data/import/trips',
     templateUrl: '/templates/trips-import-template.csv',
-    description: 'All trip logs — car, bike, walk, transit, flight',
+    description: 'All trip logs — car, bike, walk, bus, train, plane',
     filters: '?from=&to=&mode=&trip_category=',
   },
   {

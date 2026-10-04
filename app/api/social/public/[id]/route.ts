@@ -59,10 +59,12 @@ export async function GET(
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    // Fetch equipment media (images only)
+    // Fetch equipment media (images only).
+    // equipment_media has no caption column — the text lives in `title`
+    // (migration 119). Alias it so the response keeps its `caption` field.
     const { data: media } = await serviceDb
       .from('equipment_media')
-      .select('id, url, media_type, caption')
+      .select('id, url, media_type, caption:title')
       .eq('equipment_id', id)
       .eq('media_type', 'image')
       .order('sort_order', { ascending: true });

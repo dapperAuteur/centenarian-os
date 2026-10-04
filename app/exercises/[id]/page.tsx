@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { createClient } from '@supabase/supabase-js';
-import { redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import SiteHeader from '@/components/SiteHeader';
 import MedicalDisclaimer from '@/components/ui/MedicalDisclaimer';
@@ -32,16 +32,24 @@ type ExerciseDetail = {
   media_url: string | null;
 };
 
+// Both generateMetadata and the page read through this function, so a private
+// exercise is "not found" in the page AND in its title/OG metadata.
 async function getExerciseDetail(id: string): Promise<ExerciseDetail | null> {
   const db = getDb();
 
-  // 1. Check user-created exercises (service role bypasses RLS — UUID is the access control)
+  // 1. User-created exercises. This client is service-role and bypasses RLS, so
+  //    the public rule from migration 117 (exercises_public_read) is applied
+  //    here: visibility = 'public' AND is_active. The id is NOT access control —
+  //    exercises are private by default and their ids are not secret. Like the
+  //    public recipe and blog pages, there is no owner preview here; owners view
+  //    their own exercises at /dashboard/exercises/[id].
   const { data: userEx } = await db
     .from('exercises')
     .select(
       'id, name, difficulty, instructions, form_cues, primary_muscles, video_url, media_url, exercise_categories(name)',
     )
     .eq('id', id)
+    .eq('visibility', 'public')
     .eq('is_active', true)
     .maybeSingle();
 
@@ -61,7 +69,7 @@ async function getExerciseDetail(id: string): Promise<ExerciseDetail | null> {
     };
   }
 
-  // 2. Fall back to system exercise library
+  // 2. Fall back to the system exercise library (public to everyone)
   const { data: sysEx } = await db
     .from('system_exercises')
     .select('id, name, category, difficulty, instructions, form_cues, primary_muscles')
@@ -132,7 +140,7 @@ export default async function ExerciseDetailPage({
   const { id } = await params;
   const { from } = await searchParams;
   const ex = await getExerciseDetail(id);
-  if (!ex) redirect('/exercises');
+  if (!ex) notFound();
 
   const primaryMuscles = ex.primary_muscles ?? [];
 

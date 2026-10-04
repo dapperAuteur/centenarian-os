@@ -258,7 +258,8 @@ async function fetchTravelData(
       .lte('date', today),
     db
       .from('vehicles')
-      .select('name, year, make, model, active, ownership_type')
+      // vehicles has no `name` column — the label is `nickname` (migration 052)
+      .select('nickname, year, make, model, active, ownership_type')
       .eq('user_id', userId)
       .eq('active', true),
   ]);
@@ -297,7 +298,8 @@ async function fetchTravelData(
   if (totalCals > 0) lines.push(`Calories burned (active transport): ${totalCals}`);
   if (fuelSpend > 0) lines.push(`Fuel spend: $${fuelSpend.toFixed(2)} | Avg MPG: ${fmt(avgMpg)}`);
   if (vehicles.length) {
-    lines.push(`Vehicles: ${vehicles.map((v) => `${v.year} ${v.make} ${v.model} (${v.ownership_type})`).join(', ')}`);
+    // year/make/model are optional (bikes often have none) — fall back to the nickname
+    lines.push(`Vehicles: ${vehicles.map((v) => `${[v.year, v.make, v.model].filter(Boolean).join(' ') || v.nickname} (${v.ownership_type})`).join(', ')}`);
   }
 
   // Tax category breakdown

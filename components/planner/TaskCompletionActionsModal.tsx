@@ -934,10 +934,11 @@ function FuelForm({ task, onDone }: FormProps) {
   );
 }
 
+// Must match the vehicle_maintenance.service_type CHECK (migration 052) — the
+// same list the Travel > Maintenance page offers.
 const SERVICE_TYPES = [
-  'oil_change', 'tire_rotation', 'tire_replacement', 'brake_service',
-  'battery', 'transmission', 'coolant', 'filter', 'inspection',
-  'alignment', 'detailing', 'other',
+  'oil_change', 'tire_rotation', 'brake_pads', 'inspection', 'battery',
+  'transmission', 'tires', 'chain', 'tune_up', 'other',
 ];
 
 function MaintenanceForm({ task, onDone }: FormProps) {

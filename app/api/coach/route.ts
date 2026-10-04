@@ -499,22 +499,11 @@ async function processFlashcards(responseText: string, userId: string, gemPerson
       if (cardsError || !newCards) {
         console.error('Error inserting flashcards:', cardsError);
       } else {
+        // No per-card analytics row to create: migration 016 dropped
+        // flashcard_analytics and moved the review state onto flashcards,
+        // whose defaults (repetitions 0, next_review_at NOW()) already mark a
+        // new card as due.
         console.log(`Successfully inserted ${newCards.length} cards.`);
-
-        const analyticsToInsert = newCards.map(card => ({
-          card_id: card.id,
-          user_id: userId,
-          status: 'new',
-          next_review_at: new Date().toISOString(),
-        }));
-
-        const { error: analyticsError } = await supabase
-          .from('flashcard_analytics')
-          .insert(analyticsToInsert);
-
-        if (analyticsError) {
-          console.error('Error creating flashcard analytics:', analyticsError);
-        }
       }
     }
   }
