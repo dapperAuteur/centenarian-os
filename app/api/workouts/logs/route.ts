@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { checkOwned, ownedIds } from '@/lib/auth/ownership';
 
 function getDb() {
   return createServiceClient(
@@ -42,14 +43,35 @@ export async function POST(request: NextRequest) {
   const { template_id, name, date, started_at, finished_at, duration_min, notes, purpose, overall_feeling, warmup_notes, cooldown_notes, exercises = [] } = body;
 
   const db = getDb();
+  const exerciseList: unknown[] = Array.isArray(exercises) ? exercises : [];
+  const idsOf = (key: 'exercise_id' | 'equipment_id') =>
+    exerciseList.map((ex) => (ex && typeof ex === 'object' ? (ex as Record<string, unknown>)[key] : null));
 
-  // If from template, increment use_count and use template name if not provided
+  // A log points at a workout template and, per exercise, at an exercise and a
+  // piece of equipment. Those ids come from the browser and this client
+  // bypasses RLS, so each is kept only when the caller may reference it: their
+  // own record, or one that is public under its table's rule
+  // (lib/auth/ownership). Anything else is saved as "no link" rather than
+  // refused: every row also carries its own name, and a workout copied from a
+  // public one can still hold its author's ids, which must not stop the copy
+  // from being logged. A dropped id is never read and never has a counter bumped.
+  const [templateRef, exerciseRefs, equipmentRefs] = await Promise.all([
+    checkOwned(db, user.id, 'workout_templates', template_id, { allowPublic: true }),
+    ownedIds(db, user.id, 'exercises', idsOf('exercise_id'), { allowPublic: true }),
+    ownedIds(db, user.id, 'equipment', idsOf('equipment_id'), { allowPublic: true }),
+  ]);
+  if (templateRef.failed || exerciseRefs.failed || equipmentRefs.failed) {
+    return NextResponse.json({ error: 'Could not save the workout' }, { status: 500 });
+  }
+  const templateId: string | null = templateRef.allowed ? template_id : null;
+
+  // If from the caller's own template, increment use_count and use the template name if not provided
   let logName = name;
-  if (template_id) {
+  if (templateId) {
     const { data: tmpl } = await db
       .from('workout_templates')
       .select('name, use_count')
-      .eq('id', template_id)
+      .eq('id', templateId)
       .eq('user_id', user.id)
       .maybeSingle();
 
@@ -58,7 +80,8 @@ export async function POST(request: NextRequest) {
       await db
         .from('workout_templates')
         .update({ use_count: tmpl.use_count + 1 })
-        .eq('id', template_id);
+        .eq('id', templateId)
+        .eq('user_id', user.id);
     }
   }
 
@@ -70,7 +93,7 @@ export async function POST(request: NextRequest) {
     .from('workout_logs')
     .insert({
       user_id: user.id,
-      template_id: template_id ?? null,
+      template_id: templateId,
       name: logName.trim(),
       date: date ?? new Date().toISOString().split('T')[0],
       started_at: started_at ?? null,
@@ -88,12 +111,12 @@ export async function POST(request: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   // Insert exercises
-  if (exercises.length > 0) {
+  if (exerciseList.length > 0) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows = exercises.map((ex: any, i: number) => ({
+    const rows = exerciseList.map((ex: any, i: number) => ({
       log_id: log.id,
       name: ex.name,
-      exercise_id: ex.exercise_id || null,
+      exercise_id: exerciseRefs.has(ex.exercise_id) ? ex.exercise_id : null,
       sets_completed: ex.sets_completed ?? null,
       reps_completed: ex.reps_completed ?? null,
       weight_lbs: ex.weight_lbs ? Number(ex.weight_lbs) : null,
@@ -101,7 +124,7 @@ export async function POST(request: NextRequest) {
       rest_sec: ex.rest_sec ?? 60,
       sort_order: i,
       notes: ex.notes ?? null,
-      equipment_id: ex.equipment_id || null,
+      equipment_id: equipmentRefs.has(ex.equipment_id) ? ex.equipment_id : null,
       is_circuit: ex.is_circuit ?? false,
       is_negative: ex.is_negative ?? false,
       is_isometric: ex.is_isometric ?? false,
@@ -125,7 +148,9 @@ export async function POST(request: NextRequest) {
 
     await db.from('workout_log_exercises').insert(rows);
 
-    // Increment use_count on referenced exercises
+    // Increment use_count on referenced exercises. Only ids that passed the
+    // check above are left in `rows`, so no other user's private exercise is
+    // read or counted.
     const exerciseIds = rows
       .map((r: { exercise_id: string | null }) => r.exercise_id)
       .filter(Boolean) as string[];
