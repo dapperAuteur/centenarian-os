@@ -210,7 +210,7 @@ local. Endpoint overrides and the full reasoning are documented in `.env.example
 GOOGLE_OAUTH_CLIENT_ID=
 GOOGLE_OAUTH_CLIENT_SECRET=
 TOKEN_ENCRYPTION_KEY=       # openssl rand -hex 32; encrypts the stored Google tokens
-SUPABASE_JWT_SECRET=        # signs the OAuth state (lib/oauth-state.ts)
+SUPABASE_JWT_SECRET=        # signs the OAuth state (lib/oauth-state.ts); SUPABASE__SUPABASE_JWT_SECRET also works
 ```
 
 One-way, Google -> CentenarianOS. The only Calendar scope requested is
