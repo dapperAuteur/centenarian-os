@@ -21,7 +21,7 @@ import { loadLearnedCategoryIndex } from '../learned-categories.ts';
 import type { LearnedCategoryIndex } from '../transaction-matching.ts';
 import { chunk } from './db.ts';
 import { ImportError, dbFailure, isMissingSchemaError, isUniqueViolation } from './errors.ts';
-import { LINKABLE_SOURCES, loadCategories, suggestCategory } from './plan.ts';
+import { LINKABLE_SOURCES, allowedActions, loadCategories, suggestCategory } from './plan.ts';
 import type {
   CommitResult,
   DecidedRow,
@@ -46,11 +46,13 @@ export function tooManyRowsMessage(count: number): string {
  * step. `actions` are matched to rows by spreadsheet row number; a row with no
  * action gets its default (new -> insert, matches -> link, the rest -> skip).
  *
- * - An invalid row is always skipped.
- * - `link` only holds on a row the server itself matched; otherwise the row's
- *   default applies (the entry may have been linked or deleted since preview).
- * - `insert` is allowed on a duplicate ("import it anyway"); the database's
- *   unique index still refuses a true repeat of the same statement row.
+ * - An action counts only when the row allows it (PlannedRow.allowedActions);
+ *   otherwise the row's default applies. So `link` only holds on a row the
+ *   server itself matched (the entry may have been linked or deleted since
+ *   the preview), and an invalid row is always skipped.
+ * - `insert` is allowed on a same-transaction duplicate ("import it anyway"),
+ *   but not on a row already imported from this statement: the unique index
+ *   would refuse it, one slow row at a time.
  * - `type` and `categoryId` are kept only when well formed.
  */
 export function resolveActions(
@@ -69,10 +71,10 @@ export function resolveActions(
     const requested = byRow.get(row.rowNumber);
     if (!requested) return decided;
 
-    if (requested.action === 'skip' || requested.action === 'insert') {
+    // Worked out again here rather than read from the row, so the rule holds
+    // whatever the caller put in `allowedActions`.
+    if (requested.action && allowedActions(row).includes(requested.action)) {
       decided.action = requested.action;
-    } else if (requested.action === 'link') {
-      decided.action = row.status === 'matches' && row.match ? 'link' : row.defaultAction;
     }
     if (requested.type === 'expense' || requested.type === 'income') {
       decided.typeOverride = requested.type;

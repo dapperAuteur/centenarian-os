@@ -32,9 +32,13 @@ BEGIN;
 -- ── 1. import_batches ───────────────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.import_batches (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id         UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id         UUID NOT NULL
+                    CONSTRAINT import_batches_user_id_fkey REFERENCES auth.users(id) ON DELETE CASCADE,
   -- SET NULL, not CASCADE: deleting an account must not erase the record of what was imported.
-  account_id      UUID REFERENCES public.financial_accounts(id) ON DELETE SET NULL,
+  -- The constraint is named because the app's batch list embeds the account through it
+  -- (financial_accounts!import_batches_account_id_fkey in lib/finance/csv-import/service.ts).
+  account_id      UUID
+                    CONSTRAINT import_batches_account_id_fkey REFERENCES public.financial_accounts(id) ON DELETE SET NULL,
   source          TEXT NOT NULL DEFAULT 'csv_import',
   file_name       TEXT,
   -- The bank layout the mapping started from (a BANK_PRESETS id, or 'generic').
@@ -73,7 +77,8 @@ END $$;
 
 -- ── 2. financial_transactions: import tracking + transfer kind ──────────────────────────────────
 ALTER TABLE public.financial_transactions
-  ADD COLUMN IF NOT EXISTS import_batch_id UUID REFERENCES public.import_batches(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS import_batch_id UUID
+    CONSTRAINT financial_transactions_import_batch_id_fkey REFERENCES public.import_batches(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS external_id TEXT,
   ADD COLUMN IF NOT EXISTS transfer_kind TEXT;
 

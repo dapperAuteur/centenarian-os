@@ -571,6 +571,56 @@ test('resolveActions: link only holds on a row the server matched', () => {
   assert.deepEqual(decided.map((r) => r.action), ['skip', 'insert']);
 });
 
+test('allowedActions: what the person may choose for each status, default first', () => {
+  const rows = plan(
+    [
+      statementRow(2),
+      statementRow(3, { description: 'RED FOX DINER', vendor: 'Red Fox Diner' }),
+      statementRow(4, { description: 'CORNER MARKET', vendor: 'Corner Market' }),
+      statementRow(5, { bankId: 'REF-1', description: 'NEW SHOP', vendor: 'New Shop' }),
+      statementRow(6, { bankId: 'REF-1', description: 'NEW SHOP', vendor: 'New Shop' }),
+      statementRow(7, { bankId: 'REF-2', description: 'SEEN BEFORE', vendor: 'Seen Before' }),
+      statementRow(8, { issues: ['No date'] }),
+    ],
+    {
+      accountRows: [
+        stored('old1'),
+        stored('m1', { source: 'manual', description: 'Red Fox Diner' }),
+        stored('t1', { source: 'csv_import', external_id: 'bank:REF-2', description: 'SEEN BEFORE' }),
+      ],
+    },
+  );
+  assert.deepEqual(rows.map((r) => [r.status, r.duplicateRule ?? null, r.allowedActions]), [
+    ['duplicate', 'same_transaction', ['skip', 'insert']],
+    ['matches', null, ['link', 'insert', 'skip']],
+    ['new', null, ['insert', 'skip']],
+    ['new', null, ['insert', 'skip']],
+    ['duplicate_in_file', null, ['skip']],
+    ['duplicate', 'external_id', ['skip']],
+    ['invalid', null, ['skip']],
+  ]);
+  for (const row of rows) assert.equal(row.allowedActions[0], row.defaultAction);
+});
+
+test('resolveActions: a row already imported from this statement cannot be forced in', () => {
+  const planned = plan(
+    [statementRow(2, { bankId: 'REF-2' }), statementRow(3, { bankId: 'REF-3' }), statementRow(4, { bankId: 'REF-3' })],
+    { accountRows: [stored('t1', { source: 'csv_import', external_id: 'bank:REF-2' })] },
+  );
+  assert.deepEqual(statuses(planned), ['duplicate', 'new', 'duplicate_in_file']);
+  const decided = resolveActions(planned, [
+    { row: 2, action: 'insert' },
+    { row: 4, action: 'insert' },
+  ]);
+  assert.deepEqual(decided.map((r) => r.action), ['skip', 'insert', 'skip']);
+});
+
+test('resolveActions: a same-transaction duplicate can be imported anyway', () => {
+  const planned = plan([statementRow(2)], { accountRows: [stored('old1')] });
+  assert.equal(planned[0].status, 'duplicate');
+  assert.equal(resolveActions(planned, [{ row: 2, action: 'insert' }])[0].action, 'insert');
+});
+
 test('resolveActions: a null category override is kept as "no category"', () => {
   const planned = plan([statementRow(2)]);
   assert.equal(resolveActions(planned, [{ row: 2, categoryId: null }])[0].categoryOverride, null);

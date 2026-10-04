@@ -232,6 +232,25 @@ function invalidReason(row: PlanInputRow): string | null {
 }
 
 /**
+ * What the person may choose for a row, default first.
+ * - new: insert or skip.
+ * - matches: link, insert it as its own transaction after all, or skip.
+ * - duplicate by the same-transaction rule: skip, or insert anyway (the rule
+ *   compares date, amount and vendor, so it can be wrong about two real
+ *   purchases).
+ * - duplicate by external id, duplicate_in_file, invalid: skip only. The
+ *   unique index would refuse the first two, and the last can't be read.
+ */
+export function allowedActions(
+  row: Pick<PlannedRow, 'status' | 'duplicateRule'>,
+): RowActionKind[] {
+  if (row.status === 'new') return ['insert', 'skip'];
+  if (row.status === 'matches') return ['link', 'insert', 'skip'];
+  if (row.status === 'duplicate' && row.duplicateRule === 'same_transaction') return ['skip', 'insert'];
+  return ['skip'];
+}
+
+/**
  * Decides one statement row's status. Pure: it reads `claims` and changes
  * nothing, so the caller records what the result used (see planRows).
  */
@@ -243,14 +262,17 @@ export function classifyRow(row: PlanInputRow, index: PlanIndex, claims: PlanCla
   ): PlannedRow => {
     const suggestion =
       status === 'invalid' ? { id: null, source: null } : suggestCategory(row, row.type, index);
-    return {
+    const planned: PlannedRow = {
       ...row,
       status,
       defaultAction,
+      allowedActions: [],
       suggestedCategoryId: suggestion.id,
       suggestedCategorySource: suggestion.source,
       ...extra,
     };
+    planned.allowedActions = allowedActions(planned);
+    return planned;
   };
 
   const invalid = invalidReason(row);

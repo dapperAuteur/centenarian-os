@@ -219,6 +219,12 @@ export interface PlannedRow extends NormalizedRow {
   suggestedCategorySource: 'learned' | 'category_name' | null;
   /** What commit does when the request says nothing about this row. */
   defaultAction: RowActionKind;
+  /**
+   * The actions commit accepts for this row; anything else falls back to
+   * `defaultAction`. A row already imported from this statement (or repeated
+   * inside the file) can only be skipped, because the database would refuse it.
+   */
+  allowedActions: RowActionKind[];
 }
 
 export interface PlanTotals {

@@ -357,8 +357,10 @@ export interface ImportBatchSummary {
   financial_accounts: { id: string; name: string; institution_name: string | null; last_four: string | null } | null;
 }
 
+// The account is embedded through its named foreign key (migration 203), so the
+// embed stays unambiguous whatever other paths link the two tables.
 const BATCH_LIST_COLUMNS =
-  'id, account_id, source, file_name, preset, row_count, inserted_count, linked_count, duplicate_count, invalid_count, status, undone_at, created_at, financial_accounts(id, name, institution_name, last_four)';
+  'id, account_id, source, file_name, preset, row_count, inserted_count, linked_count, duplicate_count, invalid_count, status, undone_at, created_at, financial_accounts!import_batches_account_id_fkey(id, name, institution_name, last_four)';
 
 /** GET /api/finance/import/batches: the user's imports, newest first. */
 export async function listBatches(
