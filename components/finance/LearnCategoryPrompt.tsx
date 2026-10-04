@@ -173,7 +173,7 @@ export default function LearnCategoryPrompt({
               </p>
               <p className="text-xs text-sky-800">
                 &ldquo;Always&rdquo; files this vendor&rsquo;s new transactions under {categoryName} automatically,
-                including bank syncs, receipt scans, and CSV imports.
+                including receipt scans and CSV imports.
               </p>
               <div className="flex flex-col sm:flex-row gap-2">
                 <button type="button" onClick={handleAlways} disabled={phase.name === 'saving'} className={primaryButton}>

@@ -7,13 +7,11 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   ArrowLeft, Plus, Pencil, Trash2, Loader2, CreditCard,
   Building2, Check, X, ArrowRightLeft, Percent,
-  RefreshCw, ChevronDown, ChevronUp, Landmark, Info,
-  Link2, Unlink, RotateCcw,
+  ChevronDown, ChevronUp,
 } from 'lucide-react';
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import TransferModal from '@/components/finance/TransferModal';
-import TellerConnectButton from '@/components/finance/TellerConnectButton';
 import Modal from '@/components/ui/Modal';
 
 interface Account {
@@ -31,11 +29,6 @@ interface Account {
   is_active: boolean;
   notes: string | null;
   balance: number;
-  // Teller fields
-  teller_account_id: string | null;
-  teller_enrollment_id: string | null;
-  last_synced_at: string | null;
-  oldest_transaction_date: string | null;
   // Institution policy fields
   dispute_window_days: number | null;
   default_return_days: number | null;
@@ -73,14 +66,6 @@ const emptyForm = {
   monthly_fee: '', due_date: '', statement_date: '', notes: '',
 };
 
-/** One-line result of a Teller sync, from the counts /api/teller/sync returns. */
-function syncSummary(
-  prefix: string,
-  data: { new?: number; matched?: number; updated?: number; skipped?: number },
-): string {
-  return `${prefix}: ${data.new ?? 0} new, ${data.matched ?? 0} matched to your entries, ${data.updated ?? 0} updated, ${data.skipped ?? 0} unchanged`;
-}
-
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,15 +76,7 @@ export default function AccountsPage() {
   const [editForm, setEditForm] = useState<Record<string, string>>({});
   const [showTransfer, setShowTransfer] = useState(false);
   const [applyingInterest, setApplyingInterest] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState<string | null>(null);
-  const [syncResult, setSyncResult] = useState<string | null>(null);
   const [expandedPolicies, setExpandedPolicies] = useState<Set<string>>(new Set());
-  const [linkTarget, setLinkTarget] = useState<Account | null>(null);
-  const [linking, setLinking] = useState(false);
-  const [unlinking, setUnlinking] = useState<string | null>(null);
-  const [syncingAll, setSyncingAll] = useState(false);
-  const [fullResyncing, setFullResyncing] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -112,10 +89,6 @@ export default function AccountsPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
-
-  useEffect(() => {
-    offlineFetch('/api/auth/me').then((r) => r.json()).then((d) => setIsAdmin(!!d.isAdmin)).catch(() => {});
-  }, []);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,76 +175,6 @@ export default function AccountsPage() {
     load();
   };
 
-  const handleSyncAll = async () => {
-    setSyncingAll(true);
-    setSyncResult(null);
-    try {
-      const res = await offlineFetch('/api/teller/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setSyncResult(syncSummary('All accounts synced', data));
-        load();
-      } else {
-        setSyncResult(data.error || 'Sync failed');
-      }
-    } catch {
-      setSyncResult('Sync failed');
-    } finally {
-      setSyncingAll(false);
-    }
-  };
-
-  const handleFullResync = async () => {
-    if (!confirm('Full re-sync will pull ALL available transaction history from your bank (may take a while). Continue?')) return;
-    setFullResyncing(true);
-    setSyncResult(null);
-    try {
-      const res = await offlineFetch('/api/teller/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ full_resync: true }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setSyncResult(`${syncSummary('Full re-sync complete', data)}${data.oldestTransactionDate ? ` (history back to ${data.oldestTransactionDate})` : ''}`);
-        load();
-      } else {
-        setSyncResult(data.error || 'Full re-sync failed');
-      }
-    } catch {
-      setSyncResult('Full re-sync failed');
-    } finally {
-      setFullResyncing(false);
-    }
-  };
-
-  const handleSync = async (enrollmentId: string) => {
-    setSyncing(enrollmentId);
-    setSyncResult(null);
-    try {
-      const res = await offlineFetch('/api/teller/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enrollment_id: enrollmentId }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setSyncResult(syncSummary('Synced', data));
-        load();
-      } else {
-        setSyncResult(data.error || 'Sync failed');
-      }
-    } catch {
-      setSyncResult('Sync failed');
-    } finally {
-      setSyncing(null);
-    }
-  };
-
   const togglePolicies = (id: string) => {
     setExpandedPolicies((prev) => {
       const next = new Set(prev);
@@ -280,68 +183,6 @@ export default function AccountsPage() {
       return next;
     });
   };
-
-  const handleLinkTeller = async (tellerAcctId: string) => {
-    if (!linkTarget) return;
-    const tellerAcct = accounts.find((a) => a.id === tellerAcctId);
-    if (!tellerAcct) return;
-    if (!confirm(
-      `Link "${tellerAcct.name}" to "${linkTarget.name}"?\n\n` +
-      `All transactions from "${tellerAcct.name}" will be merged into "${linkTarget.name}". ` +
-      `Duplicate transactions will be automatically removed. ` +
-      `The bank-connected account "${tellerAcct.name}" will be deleted after merging.\n\n` +
-      `Your manual account "${linkTarget.name}" will be preserved with bank sync enabled.`
-    )) return;
-    setLinking(true);
-    try {
-      const res = await offlineFetch(`/api/finance/accounts/${linkTarget.id}/link-teller`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tellerAccountId: tellerAcctId }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setSyncResult(`Linked! ${data.migrated} transactions merged, ${data.deduped} duplicates removed.`);
-        setLinkTarget(null);
-        load();
-      } else {
-        alert(data.error || 'Link failed');
-      }
-    } finally {
-      setLinking(false);
-    }
-  };
-
-  const handleUnlinkTeller = async (acct: Account) => {
-    // Unlink only clears this account's Teller link in CentenarianOS. It does not
-    // revoke the enrollment at Teller, so the copy must not claim a full disconnect.
-    if (!confirm(
-      `Stop syncing "${acct.name}" in CentenarianOS?\n\n` +
-      `All existing transactions will be kept. Unlinking stops CentenarianOS from syncing this account, ` +
-      `but your bank connection itself stays active with Teller, our bank-linking provider.\n\n` +
-      `To fully disconnect your bank, tap the Help & Feedback (+) button in the bottom-right corner, ` +
-      `choose Feedback, and ask us to disconnect it.\n\n` +
-      `You can re-link this account later.`
-    )) return;
-    setUnlinking(acct.id);
-    try {
-      const res = await offlineFetch(`/api/finance/accounts/${acct.id}/unlink-teller`, { method: 'POST' });
-      if (res.ok) {
-        setSyncResult('Account unlinked: CentenarianOS will no longer sync it. Transactions preserved. Your bank connection is still active with Teller; to fully disconnect it, send us a request through Help & Feedback → Feedback.');
-        load();
-      } else {
-        const data = await res.json();
-        alert(data.error || 'Unlink failed');
-      }
-    } finally {
-      setUnlinking(null);
-    }
-  };
-
-  const connectedAccounts = accounts.filter((a) => a.teller_account_id);
-  const hasConnectedAccounts = connectedAccounts.length > 0;
-  // Teller accounts available for linking (not already merged into a manual account)
-  const linkableTellerAccounts = connectedAccounts;
 
   if (loading) {
     return (
@@ -367,30 +208,6 @@ export default function AccountsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <TellerConnectButton
-            onSuccess={async (result) => {
-              setSyncResult(`Connected! ${result.synced} transactions imported${result.oldestTransactionDate ? ` (history back to ${result.oldestTransactionDate})` : ''}`);
-              // Reload accounts, then check for potential matches between new Teller accounts and existing manual ones
-              const res = await offlineFetch('/api/finance/accounts');
-              if (res.ok) {
-                const fresh: Account[] = await res.json();
-                setAccounts(fresh);
-                setLoading(false);
-                const manual = fresh.filter((a) => !a.teller_account_id);
-                const teller = fresh.filter((a) => a.teller_account_id);
-                const hasMatch = teller.some((t) =>
-                  manual.some((m) =>
-                    m.institution_name && t.institution_name &&
-                    m.institution_name.toLowerCase() === t.institution_name.toLowerCase() &&
-                    m.account_type === t.account_type
-                  )
-                );
-                if (hasMatch) {
-                  setSyncResult((prev) => (prev ?? '') + ' We found accounts that may match your existing ones — use the link button (🔗) on any manual account to merge them.');
-                }
-              }
-            }}
-          />
           <button
             onClick={() => setShowTransfer(true)}
             className="flex items-center gap-1.5 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
@@ -407,87 +224,6 @@ export default function AccountsPage() {
           </button>
         </div>
       </div>
-
-      {/* Sync result banner */}
-      {syncResult && (
-        <div className="flex items-center justify-between gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-800">
-          <span>{syncResult}</span>
-          <button onClick={() => setSyncResult(null)} className="text-emerald-600 hover:text-emerald-800">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
-      {/* Connected accounts sync controls */}
-      {hasConnectedAccounts && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <div className="flex items-center justify-between gap-3 mb-2">
-            <div className="flex items-center gap-2 text-sm font-medium text-blue-800">
-              <Landmark className="w-4 h-4" />
-              Bank-Connected Accounts
-            </div>
-            <div className="flex items-center gap-2">
-              {isAdmin && (
-                <button
-                  onClick={handleFullResync}
-                  disabled={fullResyncing || syncingAll}
-                  className="flex items-center gap-1 px-2.5 py-1 text-xs bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 disabled:opacity-50 transition"
-                  title="Pull all available transaction history (admin only)"
-                >
-                  <RotateCcw className={`w-3 h-3 ${fullResyncing ? 'animate-spin' : ''}`} />
-                  Full Re-sync
-                </button>
-              )}
-              <button
-                onClick={handleSyncAll}
-                disabled={syncingAll || fullResyncing}
-                className="flex items-center gap-1 px-2.5 py-1 text-xs bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50 transition"
-              >
-                <RefreshCw className={`w-3 h-3 ${syncingAll ? 'animate-spin' : ''}`} />
-                Sync All
-              </button>
-            </div>
-          </div>
-          <div className="space-y-2">
-            {connectedAccounts.map((acct) => (
-              <div key={acct.id} className="flex items-center justify-between gap-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-700 font-medium">{acct.name}</span>
-                  {acct.last_synced_at && (
-                    <span className="text-blue-500 text-xs">
-                      Last synced {new Date(acct.last_synced_at).toLocaleDateString()}
-                    </span>
-                  )}
-                  {acct.oldest_transaction_date && (
-                    <span className="text-blue-400 text-xs flex items-center gap-1" title="How far back your bank provides transaction history">
-                      <Info className="w-3 h-3" />
-                      History from {acct.oldest_transaction_date}
-                    </span>
-                  )}
-                </div>
-                <button
-                  onClick={() => handleSync(acct.teller_enrollment_id!)}
-                  disabled={syncing === acct.teller_enrollment_id}
-                  className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50 transition"
-                >
-                  <RefreshCw className={`w-3 h-3 ${syncing === acct.teller_enrollment_id ? 'animate-spin' : ''}`} />
-                  Sync
-                </button>
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-blue-400 mt-2">
-            Transaction history depth varies by institution — typically 90 days to 2+ years.
-          </p>
-        </div>
-      )}
-
-      {/* Transparency notice */}
-      {hasConnectedAccounts && (
-        <p className="text-xs text-gray-400 px-1">
-          Your institution details (rates, fees, policies) are anonymized and aggregated to help educate the community about financial products. No personal information is ever shared.
-        </p>
-      )}
 
       {accounts.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
@@ -653,16 +389,9 @@ export default function AccountsPage() {
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${TYPE_COLORS[acct.account_type] ?? 'bg-gray-100 text-gray-700'}`}>
                         {TYPE_LABELS[acct.account_type] ?? acct.account_type}
                       </span>
-                      {acct.teller_account_id ? (
-                        <span className="flex items-center gap-1 text-xs bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded-full">
-                          <Landmark className="w-3 h-3" aria-hidden="true" />
-                          Bank Sync
-                        </span>
-                      ) : (
-                        <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-                          Manual
-                        </span>
-                      )}
+                      <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                        Manual
+                      </span>
                       {!acct.is_active && (
                         <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Inactive</span>
                       )}
@@ -717,27 +446,6 @@ export default function AccountsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    {acct.teller_account_id ? (
-                      <>
-                        <button
-                          onClick={() => handleUnlinkTeller(acct)}
-                          disabled={unlinking === acct.id}
-                          className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition disabled:opacity-50"
-                          title="Unlink from bank sync"
-                          aria-label={`Unlink ${acct.name} from bank sync`}
-                        >
-                          {unlinking === acct.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlink className="w-4 h-4" />}
-                        </button>
-                      </>
-                    ) : linkableTellerAccounts.length > 0 ? (
-                      <button
-                        onClick={() => setLinkTarget(acct)}
-                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                        title="Link to bank account"
-                      >
-                        <Link2 className="w-4 h-4" />
-                      </button>
-                    ) : null}
                     <button
                       onClick={() => togglePolicies(acct.id)}
                       className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
@@ -846,44 +554,6 @@ export default function AccountsPage() {
         accounts={accounts}
         onSuccess={load}
       />
-
-      {/* Link Teller Modal */}
-      <Modal isOpen={!!linkTarget} onClose={() => setLinkTarget(null)} title="Link to Bank Account" size="sm">
-        <div className="p-6 space-y-4">
-          <p className="text-sm text-gray-600">
-            Select a bank-connected account to link with <strong>{linkTarget?.name}</strong>.
-            Transactions will be merged and duplicates removed. The bank-connected account will be
-            deleted after merging — your manual account is preserved.
-          </p>
-          {linkableTellerAccounts.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-4">No bank-connected accounts available to link.</p>
-          ) : (
-            <div className="space-y-2">
-              {linkableTellerAccounts.map((ta) => (
-                <button
-                  key={ta.id}
-                  onClick={() => handleLinkTeller(ta.id)}
-                  disabled={linking}
-                  className="w-full flex items-center justify-between gap-3 p-3 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition text-left disabled:opacity-50"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{ta.name}</p>
-                    <p className="text-xs text-gray-500">
-                      {ta.institution_name}{ta.last_four ? ` ··${ta.last_four}` : ''} · {TYPE_LABELS[ta.account_type] ?? ta.account_type}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-semibold text-gray-700">
-                      ${Math.abs(ta.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </p>
-                    {linking && <Loader2 className="w-3 h-3 animate-spin text-blue-600 ml-auto" />}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </Modal>
 
       {/* Add Account Modal */}
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add Account" size="sm">

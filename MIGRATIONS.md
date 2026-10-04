@@ -9,7 +9,7 @@
 > late stage, run against a DB clone first. Do not pre-emptively drop a table because its
 > module is slated to move.
 
-This doc is the visible evidence behind that headline. The full source is under [`supabase/migrations/`](./supabase/migrations/). Counts last refreshed 2026-08-27 from a live `ls supabase/migrations/*.sql | wc -l`.
+This doc is the visible evidence behind that headline. The full source is under [`supabase/migrations/`](./supabase/migrations/). Headline count last refreshed 2026-10-03 from a live `ls supabase/migrations/*.sql | wc -l`; the per-module counts below were last curated 2026-08-27.
 
 ---
 

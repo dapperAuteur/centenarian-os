@@ -87,7 +87,6 @@ this README claimed "there is no standalone Learn.WitUS app" — that is no long
 | Payments | Stripe Connect Express | Teacher payouts (LMS) + platform subscriptions. Webhook-driven sync. + CashApp (lifetime only). |
 | AI | Google Gemini | Coach (`gemini-2.5-flash`), embeddings (`text-embedding-004` for CYOA navigation), Vision (universal OCR). |
 | Email | Resend (via Supabase native integration) | Transactional auth + admin notifications. |
-| Bank linking | Teller | mTLS-authenticated personal-banking API. |
 | Bot prevention | Cloudflare Turnstile | Signup gate. |
 | Maps | Leaflet + OSRM | Academy lessons + travel route planning. |
 | 360° / VR | Photo Sphere Viewer | Lessons + virtual tours with hotspots. |
@@ -112,7 +111,7 @@ No free plan. All users must subscribe to access paid modules.
 | **Engine** | Pomodoro focus sessions, doodle canvas, daily debrief, AI weekly reviews | Paid |
 | **Health Metrics** | RHR, steps, sleep, body composition; Garmin/Oura/WHOOP sync; CSV import | Paid |
 | **Workouts & Exercises** | Exercise library with categories; workout templates; Nomad Longevity OS | Paid |
-| **Financial Dashboard** | Accounts, transactions, budgets, invoices, bank linking via Teller (manual sync that links your own entries instead of duplicating them), learned vendor categories ("Always categorize this vendor as...?") | Paid |
+| **Financial Dashboard** | Accounts, transactions, budgets, invoices, CSV import and export, learned vendor categories ("Always categorize this vendor as...?") | Paid |
 | **Travel & Vehicles** | Fuel logs with OCR, trip tracking, multi-stop routes, maintenance, IRS mileage | Paid |
 | **Equipment & Assets** | Asset tracking, valuation history, media gallery, cross-module links | Paid |
 | **Correlations & Analytics** | Cross-module data correlations, trend charts, daily/weekly aggregates | Paid |
@@ -289,7 +288,7 @@ Open [http://localhost:3000](http://localhost:3000)
 npm run test:unit
 ```
 
-Runs the pure-function tests with Node's built-in test runner (`node --test --experimental-strip-types`, Node 22.6+). No database, network or extra dependencies. Covers bank matching, Teller reconciliation and learned vendor categories (`tests/transaction-matching.test.ts`), and Teller webhook signatures, 429 retry timing and revoke handling (`tests/unit/*.test.ts`).
+Runs the pure-function tests with Node's built-in test runner (`node --test --experimental-strip-types`, Node 22.6+). No database, network or extra dependencies. Covers merchant-name matching and learned vendor categories (`tests/transaction-matching.test.ts`) and the stored-secret encryption helper (`tests/unit/crypto-tokens.test.ts`).
 
 ## Project Structure
 

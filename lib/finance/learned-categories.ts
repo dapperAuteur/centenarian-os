@@ -5,8 +5,7 @@
 // transaction, or by editing the contact.
 //
 // Applied whenever a transaction arrives with no category: manual POST
-// /api/finance/transactions (which the receipt scan also uses), Teller sync
-// and connect, and CSV import.
+// /api/finance/transactions (which the receipt scan also uses) and CSV import.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {

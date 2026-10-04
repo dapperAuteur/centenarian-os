@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   DollarSign, TrendingUp, TrendingDown, Plus, ArrowRight,
   Upload, Download, Settings, Loader2, CreditCard, Wallet, FileText, AlertTriangle,
-  ArrowRightLeft, RefreshCw, Building2, Landmark, ScanLine, X,
+  ArrowRightLeft, RefreshCw, Building2, ScanLine, X,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -82,7 +82,6 @@ interface Account {
   last_four: string | null;
   balance: number;
   is_active: boolean;
-  teller_account_id: string | null;
 }
 
 const ACCOUNT_TYPE_LABEL: Record<string, string> = {
@@ -434,14 +433,7 @@ export default function FinanceDashboardPage() {
                     {ACCOUNT_TYPE_LABEL[acct.account_type] ?? acct.account_type}
                     {acct.last_four && <span className="ml-1">··{acct.last_four}</span>}
                   </p>
-                  {acct.teller_account_id ? (
-                    <span className="flex items-center gap-0.5 text-[10px] text-teal-600 bg-teal-50 border border-teal-200 px-1.5 py-0.5 rounded-full">
-                      <Landmark className="w-2.5 h-2.5" aria-hidden="true" />
-                      Sync
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">Manual</span>
-                  )}
+                  <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">Manual</span>
                 </div>
                 <p className="text-sm font-semibold text-gray-800 truncate">{acct.name}</p>
                 <p className={`text-base font-bold mt-0.5 ${acct.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
