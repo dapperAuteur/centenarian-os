@@ -7,7 +7,7 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   ArrowLeft, Plus, Pencil, Trash2, Loader2, CreditCard,
   Building2, Check, X, ArrowRightLeft, Percent,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, Upload,
 } from 'lucide-react';
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -444,6 +444,17 @@ export default function AccountsPage() {
                         </div>
                       )}
                     </div>
+                    {/* Opens the statement import with this account already chosen. */}
+                    <Link
+                      href={`/dashboard/finance/import?account=${acct.id}`}
+                      className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-sky-700 underline underline-offset-2 hover:text-sky-900"
+                    >
+                      <Upload className="w-4 h-4" aria-hidden="true" />
+                      Import statement
+                      <span className="sr-only">
+                        {' '}into {acct.name}{acct.last_four ? ` ending in ${acct.last_four}` : ''}
+                      </span>
+                    </Link>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <button
