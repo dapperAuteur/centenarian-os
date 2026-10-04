@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkOwned } from '@/lib/auth/ownership';
 
 export async function POST(
   _request: NextRequest,
@@ -10,6 +11,14 @@ export async function POST(
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
+
+  // Only the caller's own workouts, or public ones, can be liked (the
+  // workout_templates rule in lib/auth/ownership: visibility = 'public',
+  // migration 117). An unknown id and someone else's private workout get the
+  // same 404, and neither writes a like or bumps a counter.
+  const access = await checkOwned(supabase, user.id, 'workout_templates', id, { allowPublic: true });
+  if (access.failed) return NextResponse.json({ error: 'Could not update like' }, { status: 500 });
+  if (!access.allowed) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const { data: existing } = await supabase
     .from('workout_likes')

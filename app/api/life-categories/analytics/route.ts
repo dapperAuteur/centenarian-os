@@ -43,11 +43,16 @@ export async function GET(request: NextRequest) {
     // A tagged transaction that is a transfer between the person's own
     // accounts is not spending, so it adds nothing to a category's total.
     // Works before migration 202 too: see excludingTransfers().
+    //
+    // Only the caller's own transactions count. A tag row is not proof of
+    // ownership (tags saved before /tag checked could point at anyone's
+    // transaction), and this client bypasses RLS.
     const { data: txns } = await excludingTransfers((groupColumnExists) =>
       withoutTransfers(
         db
           .from('financial_transactions')
           .select('id, amount, type')
+          .eq('user_id', user.id)
           .in('id', uniqueIds),
         groupColumnExists,
       ),
