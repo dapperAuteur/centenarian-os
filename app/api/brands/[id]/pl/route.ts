@@ -1,9 +1,15 @@
 // app/api/brands/[id]/pl/route.ts
 // GET: P&L summary for a brand within a date range
-// Returns: { brand, income, expenses, net, transactions[] }
+// Returns: { brand, income, expenses, net, transactions[], transfers_excluded }
+//
+// Transfers between the person's own accounts (and card or loan payments) are
+// not income or expenses, so they are left out of the totals and of the
+// transaction list, which has to add up to those totals. `transfers_excluded`
+// says how many of the brand's rows were left out for that reason.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { countsTowardTotals } from '@/lib/finance/transfers/schema';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -40,7 +46,11 @@ export async function GET(request: NextRequest, { params }: Params) {
   const { data: transactions, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const txs = transactions || [];
+  // `select('*')` returns transfer_group_id only once migration 202 has added
+  // it, and countsTowardTotals() reads a missing value as "not a transfer",
+  // so this works on a database with or without the column.
+  const allRows = transactions || [];
+  const txs = allRows.filter(countsTowardTotals);
   const income = txs.filter((t) => t.type === 'income').reduce((sum, t) => sum + (t.amount ?? 0), 0);
   const expenses = txs.filter((t) => t.type === 'expense').reduce((sum, t) => sum + (t.amount ?? 0), 0);
 
@@ -50,5 +60,6 @@ export async function GET(request: NextRequest, { params }: Params) {
     expenses: parseFloat(expenses.toFixed(2)),
     net: parseFloat((income - expenses).toFixed(2)),
     transactions: txs,
+    transfers_excluded: allRows.length - txs.length,
   });
 }

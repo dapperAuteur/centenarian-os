@@ -5,6 +5,7 @@
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { systemKindOf } from '@/lib/planner/system-roadmaps';
+import { excludingTransfers, withoutTransfers } from '@/lib/finance/transfers/schema';
 
 export type DataSourceKey =
   | 'health'
@@ -161,14 +162,22 @@ async function fetchFinanceData(
   const { since, today } = dateRange(opts.days);
 
   const [txRes, acctRes, catRes] = await Promise.all([
-    db
-      .from('financial_transactions')
-      .select('amount, type, transaction_date, category_id, vendor, notes')
-      .eq('user_id', userId)
-      .gte('transaction_date', since)
-      .lte('transaction_date', today)
-      .order('transaction_date', { ascending: false })
-      .limit(200),
+    // Transfers between the person's own accounts (and card or loan payments)
+    // are not spending or income, so the AI never sees them as either.
+    // Works before migration 202 too: see excludingTransfers().
+    excludingTransfers((groupColumnExists) =>
+      withoutTransfers(
+        db
+          .from('financial_transactions')
+          .select('amount, type, transaction_date, category_id, vendor, notes')
+          .eq('user_id', userId)
+          .gte('transaction_date', since)
+          .lte('transaction_date', today),
+        groupColumnExists,
+      )
+        .order('transaction_date', { ascending: false })
+        .limit(200),
+    ),
     db
       .from('financial_accounts')
       .select('name, account_type, opening_balance, is_active')
