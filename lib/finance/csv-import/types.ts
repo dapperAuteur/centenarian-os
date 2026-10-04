@@ -155,3 +155,131 @@ export interface MappingGuess {
    */
   confidence: MappingConfidence;
 }
+
+// ── Importing: plan, commit, undo ─────────────────────────────────────────
+// Shapes shared by ./plan.ts, ./commit.ts, ./undo.ts and ./service.ts, the
+// /api/finance/import routes, and the import page that calls them.
+
+/** An account's saved statement settings (financial_accounts.csv_import_mapping). */
+export interface SavedCsvMapping {
+  mapping: Partial<ColumnMapping>;
+  sign: SignConvention;
+  dateOrder: DateOrder;
+  /** True when rows the bank marks pending are imported too. */
+  includePending?: boolean;
+  /** The BANK_PRESETS id the mapping started from, or 'generic'. */
+  preset?: string;
+}
+
+/**
+ * What the import would do with a statement row.
+ * - `new`: not in the account yet; it will be inserted.
+ * - `duplicate`: already in the account (see `duplicateRule`).
+ * - `duplicate_in_file`: an earlier row of this file carries the same bank ID.
+ * - `matches`: the same purchase as a manual or scanned entry; it will be linked, not inserted.
+ * - `invalid`: can't be imported; `reason` says why.
+ */
+export type PlanStatus = 'new' | 'duplicate' | 'duplicate_in_file' | 'matches' | 'invalid';
+
+/** What to do with a row at commit. */
+export type RowActionKind = 'insert' | 'link' | 'skip';
+
+/** The manual or scanned entry a statement row matched. */
+export interface MatchSummary {
+  id: string;
+  transaction_date: string;
+  amount: number;
+  vendor: string | null;
+  description: string | null;
+  /** Null when the entry has no account yet; linking fills it in. */
+  account_id: string | null;
+}
+
+/** A statement row with the import's verdict on it. */
+export interface PlannedRow extends NormalizedRow {
+  /** The dedupe key (see assignExternalIds). Null on a pending row that was left out. */
+  externalId: string | null;
+  status: PlanStatus;
+  /** Why the row is invalid, or what it duplicates, in plain words. */
+  reason?: string;
+  /** `duplicate`: the transaction already in the account. */
+  duplicateOf?: string;
+  /**
+   * `duplicate`: how it was recognized. `external_id` is the same statement row
+   * imported before; `same_transaction` is a row with the same date, amount,
+   * direction and vendor key (an old bank-sync row, or an import with no ID).
+   */
+  duplicateRule?: 'external_id' | 'same_transaction';
+  /** `duplicate_in_file`: the spreadsheet row that carries the same bank ID. */
+  duplicateOfRow?: number;
+  /** `matches`: the entry that would be linked. */
+  match?: MatchSummary;
+  /** The category the row gets when the person picks none: learned first, then the file's category name. */
+  suggestedCategoryId: string | null;
+  suggestedCategorySource: 'learned' | 'category_name' | null;
+  /** What commit does when the request says nothing about this row. */
+  defaultAction: RowActionKind;
+}
+
+export interface PlanTotals {
+  /** Rows the parser could read (the PlannedRow count). */
+  rows: number;
+  new: number;
+  duplicate: number;
+  duplicate_in_file: number;
+  matches: number;
+  invalid: number;
+}
+
+/** One reviewed row in a commit request. `row` is the spreadsheet row number. */
+export interface RowAction {
+  row: number;
+  action?: RowActionKind;
+  /** Flip the direction the parser worked out. */
+  type?: TransactionType;
+  /** A budget category id, or null for "no category". Leave out to use the suggestion. */
+  categoryId?: string | null;
+}
+
+/** A planned row plus the decision commit acts on. */
+export interface DecidedRow extends PlannedRow {
+  action: RowActionKind;
+  typeOverride?: TransactionType;
+  /** Undefined means "no override": the learned category, then the file's category name, apply. */
+  categoryOverride?: string | null;
+}
+
+export interface CommitResult {
+  batchId: string;
+  inserted: number;
+  linked: number;
+  /** Rows left out because they are already in the account, including collisions found while saving. */
+  duplicates: number;
+  /** Rows that could not be imported: unreadable, pending, or refused by the database. */
+  invalid: number;
+  /** Rows the person chose to skip. */
+  skipped: number;
+  /** Every row counted in `invalid`, with the reason. */
+  rejected: RejectedRow[];
+}
+
+/** A transaction an undo left in place because it was edited after the import. */
+export interface KeptTransaction {
+  id: string;
+  transaction_date: string;
+  amount: number;
+  description: string | null;
+  vendor: string | null;
+}
+
+export interface UndoResult {
+  batchId: string;
+  /** True when the batch was undone earlier: nothing was changed this time. */
+  alreadyUndone: boolean;
+  /** Imported rows removed. */
+  deleted: number;
+  /** Manual or scanned entries the import had linked, now unlinked (the entries stay). */
+  unlinked: number;
+  /** Imported rows kept because they were edited after the import. */
+  kept: KeptTransaction[];
+}

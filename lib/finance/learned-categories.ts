@@ -6,6 +6,11 @@
 //
 // Applied whenever a transaction arrives with no category: manual POST
 // /api/finance/transactions (which the receipt scan also uses) and CSV import.
+//
+// The relative import ends in `.ts` because the statement import
+// (lib/finance/csv-import/plan.ts) loads this file under
+// `node --test --experimental-strip-types`, which does not resolve
+// extensionless paths.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
@@ -13,7 +18,7 @@ import {
   lookupLearnedCategory,
   type LearnedCategoryContact,
   type LearnedCategoryIndex,
-} from './transaction-matching';
+} from './transaction-matching.ts';
 
 /**
  * Loads the user's vendor and customer contacts that have a default category
