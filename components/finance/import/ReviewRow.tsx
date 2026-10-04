@@ -99,7 +99,7 @@ function ReviewRow({
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <p className="min-w-0 break-words font-medium text-gray-900">{row.description}</p>
+            <p className="min-w-0 wrap-break-word font-medium text-gray-900">{row.description}</p>
             <p className="font-semibold tabular-nums text-gray-900">{formatCents(row.amountCents)}</p>
           </div>
           <p className="mt-0.5 text-xs text-gray-600">

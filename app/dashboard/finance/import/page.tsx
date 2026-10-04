@@ -134,7 +134,7 @@ function StatementImport() {
   const [historyUndo, setHistoryUndo] = useState<UndoResult | null>(null);
 
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const firstRenderRef = useRef(true);
+  const focusedStepRef = useRef<ImportStep>(1);
 
   const account = accounts.find((candidate) => candidate.id === accountId) ?? null;
 
@@ -202,11 +202,10 @@ function StatementImport() {
   }, [loadAccounts, loadCategories, loadBatches]);
 
   // Moving to another step puts focus on its heading, so a screen reader starts at the top of it.
+  // Compared against the last step seen, so nothing takes focus when the page first loads.
   useEffect(() => {
-    if (firstRenderRef.current) {
-      firstRenderRef.current = false;
-      return;
-    }
+    if (focusedStepRef.current === step) return;
+    focusedStepRef.current = step;
     headingRef.current?.focus();
   }, [step]);
 
@@ -482,7 +481,7 @@ function StatementImport() {
         </ErrorNotice>
       )}
 
-      <h2 ref={headingRef} tabIndex={-1} className="text-xl font-semibold text-gray-900 outline-none">
+      <h2 ref={headingRef} tabIndex={-1} className="scroll-mt-4 text-xl font-semibold text-gray-900">
         {STEP_HEADINGS[step]}
       </h2>
 

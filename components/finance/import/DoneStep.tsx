@@ -87,7 +87,7 @@ export default function DoneStep({
         <h3 id="import-result-heading" className="text-base font-semibold text-gray-900">
           {undo ? 'What the import had done' : 'What happened to each row'}
         </h3>
-        <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <dl className={`mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4 ${figures.length > 4 ? 'lg:grid-cols-5' : ''}`}>
           {figures.map((figure) => (
             <div key={figure.label} className="rounded-lg bg-gray-50 px-3 py-2">
               <dt className="text-xs text-gray-600">{figure.label}</dt>

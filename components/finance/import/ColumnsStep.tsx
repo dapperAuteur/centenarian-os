@@ -100,6 +100,9 @@ const SIGN_SOURCE_NOTE: Record<InitialSettings['signSource'], string> = {
 
 const clip = (text: string, max: number): string => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
 
+/** Column tracks of the sample, shared by its caption row and its rows from the sm breakpoint up. */
+const SAMPLE_GRID = 'sm:grid-cols-[4rem_7.5rem_6.5rem_8.5rem_1fr] sm:gap-x-3';
+
 export default function ColumnsStep({
   file,
   account,
@@ -428,30 +431,33 @@ export default function ColumnsStep({
 
         {sample && (
           <>
-            <div className="mt-3 overflow-x-auto">
-              <table className="w-full min-w-[32rem] text-left text-sm">
-                <caption className="sr-only">
-                  The first {sample.sample.length} rows of the file as they will be imported
-                </caption>
-                <thead className="border-b border-gray-200 text-xs text-gray-600">
-                  <tr>
-                    <th scope="col" className="py-2 pr-3 font-medium">Row</th>
-                    <th scope="col" className="py-2 pr-3 font-medium">Date</th>
-                    <th scope="col" className="py-2 pr-3 text-right font-medium">Amount</th>
-                    <th scope="col" className="py-2 pr-3 font-medium">Expense or income</th>
-                    <th scope="col" className="py-2 font-medium">Description</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {sample.sample.map((row) =>
-                    row.ok ? (
-                      <tr key={row.rowNumber}>
-                        <td className="py-2 pr-3 text-gray-600">{row.rowNumber}</td>
-                        <td className="py-2 pr-3 whitespace-nowrap text-gray-900">{formatIsoDate(row.date)}</td>
-                        <td className="py-2 pr-3 text-right font-medium tabular-nums text-gray-900">
+            {/*
+              A list, not a <table>: the app's global CSS turns every table into a
+              block, which stops its columns from filling the card. Each item reads
+              as one sentence, so the column captions are for sighted users only.
+            */}
+            <div className="mt-3 text-sm">
+              <div
+                aria-hidden="true"
+                className={`hidden border-b border-gray-200 pb-2 text-xs font-medium text-gray-600 sm:grid ${SAMPLE_GRID}`}
+              >
+                <span>Row</span>
+                <span>Date</span>
+                <span className="text-right">Amount</span>
+                <span>Expense or income</span>
+                <span>Description</span>
+              </div>
+              <ul role="list" aria-label="The first rows of the file as they will be imported" className="divide-y divide-gray-100">
+                {sample.sample.map((row) =>
+                  row.ok ? (
+                    <li key={row.rowNumber} className={`py-2 sm:grid sm:items-center ${SAMPLE_GRID}`}>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:contents">
+                        <span className="text-gray-600">Row {row.rowNumber}</span>
+                        <span className="whitespace-nowrap text-gray-900">{formatIsoDate(row.date)}</span>
+                        <span className="font-medium tabular-nums text-gray-900 sm:text-right">
                           {formatCents(row.amountCents ?? 0)}
-                        </td>
-                        <td className="py-2 pr-3">
+                        </span>
+                        <span>
                           <span
                             className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
                               row.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-50 text-red-800'
@@ -459,20 +465,18 @@ export default function ColumnsStep({
                           >
                             {row.type === 'income' ? 'Income' : 'Expense'}
                           </span>
-                        </td>
-                        <td className="py-2 text-gray-800">{row.description}</td>
-                      </tr>
-                    ) : (
-                      <tr key={row.rowNumber}>
-                        <td className="py-2 pr-3 text-gray-600">{row.rowNumber}</td>
-                        <td colSpan={4} className="py-2 text-red-800">
-                          Can&apos;t be read: {row.reason}
-                        </td>
-                      </tr>
-                    ),
-                  )}
-                </tbody>
-              </table>
+                        </span>
+                      </div>
+                      <p className="mt-0.5 min-w-0 wrap-break-word text-gray-800 sm:mt-0">{row.description}</p>
+                    </li>
+                  ) : (
+                    <li key={row.rowNumber} className={`py-2 sm:grid sm:items-center ${SAMPLE_GRID}`}>
+                      <span className="text-gray-600">Row {row.rowNumber}</span>
+                      <p className="mt-0.5 text-red-800 sm:col-span-4 sm:mt-0">Can&apos;t be read: {row.reason}</p>
+                    </li>
+                  ),
+                )}
+              </ul>
             </div>
             <p role="status" className="mt-3 text-sm text-gray-800">
               With these settings, {sample.readable.toLocaleString('en-US')} of{' '}
