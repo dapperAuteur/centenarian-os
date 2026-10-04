@@ -1,6 +1,7 @@
 // app/api/finance/transactions/route.ts
 // GET: list transactions with filters (date range, category, type). A row that is one
 //      side of a transfer comes with `transfer_partner`: the other side and its account.
+//      `?batch=<import_batch_id>` lists the rows of one statement import.
 // POST: create a new transaction (fills a missing category from the vendor's learned category)
 // PATCH: update a transaction. One side of a transfer can't change its amount or type alone.
 // DELETE: delete a transaction. One side of a transfer answers 409 with the other side,
@@ -11,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { findLearnedCategory } from '@/lib/finance/learned-categories';
 import { transferEditConflict } from '@/lib/finance/transfers/pairing';
-import { missingTransferColumn } from '@/lib/finance/transfers/schema';
+import { isMissingColumn, missingTransferColumn } from '@/lib/finance/transfers/schema';
 import { clearTransferGroup, loadGroupRows } from '@/lib/finance/transfers/server';
 
 export async function GET(request: NextRequest) {
@@ -55,10 +56,39 @@ export async function GET(request: NextRequest) {
   if (disputeStatus) query = query.eq('dispute_status', disputeStatus);
   const jobId = params.get('job_id');
   if (jobId) query = query.eq('job_id', jobId);
+  // One statement import. The column arrives with migration 203.
+  const batchId = params.get('batch')?.trim() || '';
+  if (batchId) query = query.eq('import_batch_id', batchId);
   if (q) query = query.or(`description.ilike.%${q}%,vendor.ilike.%${q}%,notes.ilike.%${q}%,amount::text.ilike.%${q}%`);
 
   const { data, error, count } = await query;
 
+  // The import filter can fail in two ways that are not the caller's fault and
+  // must not reach the screen as a raw Postgres error. Either way no row can be
+  // shown to belong to that import, so the list is empty and `notice` says why.
+  // (Running the query without the filter would show every transaction under a
+  // "from one import" label, which is worse than showing none.)
+  if (error && batchId) {
+    if (isMissingColumn(error, 'import_batch_id')) {
+      return NextResponse.json({
+        transactions: [],
+        total: 0,
+        code: 'import_batches_not_migrated',
+        notice:
+          "Transactions can't be listed by import yet because this database is missing an update (migration 203). " +
+          'Remove the "From one import" filter to see all transactions.',
+      });
+    }
+    // 22P02: the id is not in the form the column expects, so it names no import.
+    if (error.code === '22P02') {
+      return NextResponse.json({
+        transactions: [],
+        total: 0,
+        code: 'import_batch_not_found',
+        notice: 'That import was not found. Remove the "From one import" filter to see all transactions.',
+      });
+    }
+  }
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   // Rows that are one side of a transfer get the other side attached, so the

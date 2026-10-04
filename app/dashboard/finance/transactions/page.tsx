@@ -29,6 +29,8 @@ interface Account {
   id: string;
   name: string;
   account_type: string;
+  institution_name?: string | null;
+  last_four?: string | null;
   is_active: boolean;
 }
 
@@ -72,6 +74,11 @@ export default function TransactionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlAccountId = searchParams.get('account_id') || '';
+  // Two links the statement import screen uses:
+  //   ?batch=<import_batch_id>  lists the transactions of one import
+  //   ?review=transfers         opens the "Possible transfers" panel
+  const urlBatchId = searchParams.get('batch') || '';
+  const reviewTransfers = searchParams.get('review') === 'transfers';
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -96,7 +103,7 @@ export default function TransactionsPage() {
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeFilterCount = filterAccountIds.size + filterCategoryIds.size + filterBrandIds.size
-    + (filterType ? 1 : 0) + (filterSource ? 1 : 0) + (filterFrom || filterTo ? 1 : 0);
+    + (filterType ? 1 : 0) + (filterSource ? 1 : 0) + (filterFrom || filterTo ? 1 : 0) + (urlBatchId ? 1 : 0);
 
   // Bulk selection
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -119,6 +126,8 @@ export default function TransactionsPage() {
   const [pairDelete, setPairDelete] = useState<{ id: string; partner: TransferPartnerView | null } | null>(null);
   // Bumped after a delete, so the "Possible transfers" panel checks again.
   const [transfersVersion, setTransfersVersion] = useState(0);
+  // Something the server wants said about the list (the import filter can't be applied, say).
+  const [listNotice, setListNotice] = useState<string | null>(null);
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
@@ -133,6 +142,7 @@ export default function TransactionsPage() {
     if (filterFrom) params.set('from', filterFrom);
     if (filterTo) params.set('to', filterTo);
     if (filterSearch) params.set('q', filterSearch);
+    if (urlBatchId) params.set('batch', urlBatchId);
 
     try {
       const res = await offlineFetch(`/api/finance/transactions?${params}`);
@@ -140,11 +150,12 @@ export default function TransactionsPage() {
         const data = await res.json();
         setTransactions(data.transactions || []);
         setTotal(data.total || 0);
+        setListNotice(typeof data.notice === 'string' ? data.notice : null);
       }
     } finally {
       setLoading(false);
     }
-  }, [page, filterType, filterSource, filterAccountIds, filterCategoryIds, filterBrandIds, filterFrom, filterTo, filterSearch]);
+  }, [page, filterType, filterSource, filterAccountIds, filterCategoryIds, filterBrandIds, filterFrom, filterTo, filterSearch, urlBatchId]);
 
   useEffect(() => {
     Promise.all([
@@ -156,7 +167,10 @@ export default function TransactionsPage() {
   }, []);
 
   // Clear selection whenever filters or page change
-  useEffect(() => { setSelected(new Set()); }, [page, filterType, filterSource, filterAccountIds, filterCategoryIds, filterBrandIds, filterFrom, filterTo, filterSearch]);
+  useEffect(() => { setSelected(new Set()); }, [page, filterType, filterSource, filterAccountIds, filterCategoryIds, filterBrandIds, filterFrom, filterTo, filterSearch, urlBatchId]);
+
+  // A different import (or none) starts from its first page.
+  useEffect(() => { setPage(0); }, [urlBatchId]);
 
   useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
 
@@ -224,6 +238,14 @@ export default function TransactionsPage() {
   const toggleFilterId = (setter: React.Dispatch<React.SetStateAction<Set<string>>>, id: string) => {
     setter((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
     setPage(0);
+  };
+
+  // Drops only ?batch= from the address, keeping whatever else is there.
+  const clearBatchFilter = () => {
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete('batch');
+    const query = next.toString();
+    router.replace(`/dashboard/finance/transactions${query ? `?${query}` : ''}`);
   };
 
   const clearAllFilters = () => {
@@ -323,16 +345,23 @@ export default function TransactionsPage() {
             const acct = accounts.find((a) => a.id === id);
             return (
               <button key={id} onClick={() => toggleFilterId(setFilterAccountIds, id)}
-                className="flex items-center gap-1 text-xs bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 px-2.5 py-1 rounded-full hover:bg-fuchsia-100 transition">
-                {acct?.name ?? 'Account'} <X className="w-3 h-3" />
+                className="flex items-center gap-1 text-xs bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 min-h-11 px-3 rounded-full hover:bg-fuchsia-100 transition">
+                {acct ? accountLabel(acct) : 'Account'} <X className="w-3 h-3" />
               </button>
             );
           })}
+          {urlBatchId && (
+            <button onClick={clearBatchFilter}
+              aria-label="Remove the filter: transactions from one import"
+              className="flex items-center gap-1 text-xs bg-sky-50 text-sky-800 border border-sky-200 min-h-11 px-3 rounded-full hover:bg-sky-100 transition">
+              From one import <X className="w-3 h-3" aria-hidden="true" />
+            </button>
+          )}
           {Array.from(filterCategoryIds).map((id) => {
             const cat = categories.find((c) => c.id === id);
             return (
               <button key={id} onClick={() => toggleFilterId(setFilterCategoryIds, id)}
-                className="flex items-center gap-1 text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-1 rounded-full hover:bg-purple-100 transition">
+                className="flex items-center gap-1 text-xs bg-purple-50 text-purple-700 border border-purple-200 min-h-11 px-3 rounded-full hover:bg-purple-100 transition">
                 {cat?.name ?? 'Category'} <X className="w-3 h-3" />
               </button>
             );
@@ -341,26 +370,26 @@ export default function TransactionsPage() {
             const brand = brands.find((b) => b.id === id);
             return (
               <button key={id} onClick={() => toggleFilterId(setFilterBrandIds, id)}
-                className="flex items-center gap-1 text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-full hover:bg-amber-100 transition">
+                className="flex items-center gap-1 text-xs bg-amber-50 text-amber-700 border border-amber-200 min-h-11 px-3 rounded-full hover:bg-amber-100 transition">
                 {brand?.name ?? 'Brand'} <X className="w-3 h-3" />
               </button>
             );
           })}
           {filterType && (
             <button onClick={() => { setFilterType(''); setPage(0); }}
-              className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-full hover:bg-blue-100 transition">
+              className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 min-h-11 px-3 rounded-full hover:bg-blue-100 transition">
               {filterType === 'expense' ? 'Expenses' : 'Income'} <X className="w-3 h-3" />
             </button>
           )}
           {filterSource && (
             <button onClick={() => { setFilterSource(''); setPage(0); }}
-              className="flex items-center gap-1 text-xs bg-teal-50 text-teal-700 border border-teal-200 px-2.5 py-1 rounded-full hover:bg-teal-100 transition">
+              className="flex items-center gap-1 text-xs bg-teal-50 text-teal-700 border border-teal-200 min-h-11 px-3 rounded-full hover:bg-teal-100 transition">
               {filterSource === 'bank_sync' ? 'Bank import' : 'Manual'} <X className="w-3 h-3" />
             </button>
           )}
           {(filterFrom || filterTo) && (
             <button onClick={() => { setFilterFrom(''); setFilterTo(''); setPage(0); }}
-              className="flex items-center gap-1 text-xs bg-gray-100 text-gray-700 border border-gray-200 px-2.5 py-1 rounded-full hover:bg-gray-200 transition">
+              className="flex items-center gap-1 text-xs bg-gray-100 text-gray-700 border border-gray-200 min-h-11 px-3 rounded-full hover:bg-gray-200 transition">
               {filterFrom && filterTo ? `${filterFrom} – ${filterTo}` : filterFrom ? `From ${filterFrom}` : `To ${filterTo}`} <X className="w-3 h-3" />
             </button>
           )}
@@ -435,7 +464,7 @@ export default function TransactionsPage() {
                       <input type="checkbox" checked={filterAccountIds.has(acct.id)}
                         onChange={() => toggleFilterId(setFilterAccountIds, acct.id)}
                         className="w-4 h-4 rounded border-gray-300 text-fuchsia-600 cursor-pointer" />
-                      <span className="text-sm text-gray-700 group-hover:text-gray-900 truncate">{acct.name}</span>
+                      <span className="text-sm text-gray-700 group-hover:text-gray-900 truncate">{accountLabel(acct)}</span>
                     </label>
                   ))}
                 </div>
@@ -484,8 +513,15 @@ export default function TransactionsPage() {
         refreshKey={transfersVersion}
         from={filterFrom || undefined}
         to={filterTo || undefined}
+        requested={reviewTransfers}
         onChanged={fetchTransactions}
       />
+
+      {listNotice && (
+        <p role="status" className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          {listNotice}
+        </p>
+      )}
 
       {actionError && (
         <p role="alert" className="p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">

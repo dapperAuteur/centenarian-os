@@ -21,21 +21,28 @@ export interface DbErrorLike {
 export type TransferColumn = 'transfer_group_id' | 'transfer_kind';
 
 /**
- * Which transfer column an error says is missing, or null when the error is
- * about something else.
+ * True when an error says the named column doesn't exist.
  *
  * Postgres reports a missing column in a select or a filter as 42703
  * ("column financial_transactions.transfer_group_id does not exist");
  * PostgREST reports one in an insert or update body as PGRST204 ("Could not
  * find the 'transfer_kind' column of 'financial_transactions' in the schema
- * cache"). Any other missing column is a real bug and is not swallowed.
+ * cache"). Both messages name the column, so an error about some OTHER
+ * missing column is a real bug and returns false here.
+ */
+export function isMissingColumn(error: DbErrorLike | null | undefined, column: string): boolean {
+  if (!error) return false;
+  if (error.code !== '42703' && error.code !== 'PGRST204') return false;
+  return (error.message ?? '').includes(column);
+}
+
+/**
+ * Which transfer column an error says is missing (see isMissingColumn), or
+ * null when the error is about something else.
  */
 export function missingTransferColumn(error: DbErrorLike | null | undefined): TransferColumn | null {
-  if (!error) return null;
-  if (error.code !== '42703' && error.code !== 'PGRST204') return null;
-  const message = error.message ?? '';
-  if (message.includes('transfer_group_id')) return 'transfer_group_id';
-  if (message.includes('transfer_kind')) return 'transfer_kind';
+  if (isMissingColumn(error, 'transfer_group_id')) return 'transfer_group_id';
+  if (isMissingColumn(error, 'transfer_kind')) return 'transfer_kind';
   return null;
 }
 

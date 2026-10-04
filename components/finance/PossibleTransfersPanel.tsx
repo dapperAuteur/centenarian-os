@@ -15,9 +15,11 @@
 //   Link all high-confidence -> Link, once per high-confidence pair
 //
 // The panel shows nothing at all when there is nothing to review, and when
-// the database doesn't have the transfer columns yet.
+// the database doesn't have the transfer columns yet. The exception is a
+// visit that asked for it (`requested`, from ?review=transfers): then it
+// opens by itself and says what it found, even when that is nothing.
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRightLeft, Check, Loader2, RefreshCw } from 'lucide-react';
 import { TRANSFER_KIND_LABEL, type TransferKind } from '@/lib/finance/transfers/pairing';
@@ -71,6 +73,11 @@ interface PossibleTransfersPanelProps {
   to?: string;
   /** Change this to make the panel check again (after the page deleted a transaction, say). */
   refreshKey?: number;
+  /**
+   * The person came here to review transfers (the page was opened with
+   * ?review=transfers): start expanded, scroll into view, and never hide.
+   */
+  requested?: boolean;
   /** Called after something was linked, so the page can reload its list. */
   onChanged: () => void;
 }
@@ -140,13 +147,25 @@ function RowLine({ label, row }: { label: string; row: RowView }) {
   );
 }
 
-export default function PossibleTransfersPanel({ from, to, refreshKey = 0, onChanged }: PossibleTransfersPanelProps) {
+export default function PossibleTransfersPanel({
+  from,
+  to,
+  refreshKey = 0,
+  requested = false,
+  onChanged,
+}: PossibleTransfersPanelProps) {
   const [data, setData] = useState<Suggestions | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  /** False when the database has no transfer columns yet: the panel stays hidden. */
-  const [available, setAvailable] = useState(true);
-  const [open, setOpen] = useState(false);
+  /**
+   * Why suggestions can't be offered at all (the database has no transfer
+   * columns yet, or the device is offline), or null when they can. The panel
+   * stays hidden then, unless the visit asked for it.
+   */
+  const [unavailable, setUnavailable] = useState<string | null>(null);
+  const [open, setOpen] = useState(requested);
+  const sectionRef = useRef<HTMLElement>(null);
+  const scrolledRef = useRef(false);
   const [dismissed, setDismissed] = useState<string[]>([]);
   /** Suggestions already handled in this session, so they leave the list without a reload. */
   const [done, setDone] = useState<Set<string>>(new Set());
@@ -175,14 +194,14 @@ export default function PossibleTransfersPanel({ from, to, refreshKey = 0, onCha
       const body = await res.json().catch(() => null);
       if (!res.ok) {
         if (body?.code === 'transfers_not_migrated') {
-          setAvailable(false);
+          setUnavailable(typeof body?.error === 'string' ? body.error : 'Transfers can\u2019t be tracked yet.');
           setData(null);
           return;
         }
         setLoadError(typeof body?.error === 'string' ? body.error : 'Could not check for transfers.');
         return;
       }
-      setAvailable(true);
+      setUnavailable(null);
       setData({
         pairs: Array.isArray(body?.pairs) ? body.pairs : [],
         one_sided: Array.isArray(body?.one_sided) ? body.one_sided : [],
@@ -193,14 +212,25 @@ export default function PossibleTransfersPanel({ from, to, refreshKey = 0, onCha
     } catch {
       // Offline, the Transactions page shows cached data; a suggestion list
       // can't be acted on without a connection, so the panel just stays away.
-      if (typeof navigator !== 'undefined' && !navigator.onLine) setAvailable(false);
-      else setLoadError('Could not check for transfers. Check your connection and try again.');
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        setUnavailable('You\u2019re offline. Possible transfers can be reviewed once you reconnect.');
+      } else {
+        setLoadError('Could not check for transfers. Check your connection and try again.');
+      }
     } finally {
       setLoading(false);
     }
   }, [from, to]);
 
   useEffect(() => { load(); }, [load, refreshKey]);
+
+  // A visit that asked for the review opens the panel and brings it into view, once.
+  useEffect(() => { if (requested) setOpen(true); }, [requested]);
+  useEffect(() => {
+    if (!requested || loading || scrolledRef.current) return;
+    scrolledRef.current = true;
+    sectionRef.current?.scrollIntoView({ block: 'start' });
+  }, [requested, loading]);
 
   const dismissedSet = useMemo(() => new Set(dismissed), [dismissed]);
   const pairs = useMemo(
@@ -349,24 +379,37 @@ export default function PossibleTransfersPanel({ from, to, refreshKey = 0, onCha
     }
   };
 
-  if (!available) return null;
   if (!data) {
-    // Still loading the first time: stay out of the way. A failed check is
-    // said out loud, with a way to try again.
-    if (!loadError) return null;
+    // Nothing to show yet. Unless the visit asked for the review, stay out of
+    // the way while loading and when suggestions can't be offered. A failed
+    // check is always said out loud, with a way to try again.
+    if (!loadError && !requested) return null;
     return (
-      <section aria-labelledby="possible-transfers-heading" className="bg-white border border-sky-200 rounded-xl p-4 space-y-3">
+      <section
+        ref={sectionRef}
+        aria-labelledby="possible-transfers-heading"
+        className="bg-white border border-sky-200 rounded-xl p-4 space-y-3 scroll-mt-24"
+      >
         <h2 id="possible-transfers-heading" className="text-sm font-semibold text-gray-900">Possible transfers</h2>
-        <p role="alert" className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{loadError}</p>
-        <button type="button" onClick={load} disabled={loading} className={secondaryButton}>
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
-          Check again
-        </button>
+        {loadError ? (
+          <p role="alert" className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{loadError}</p>
+        ) : (
+          <p role="status" className="text-sm text-gray-700 flex items-center gap-2">
+            {loading && !unavailable && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
+            {unavailable ?? 'Checking your transactions for transfers\u2026'}
+          </p>
+        )}
+        {(loadError || unavailable) && (
+          <button type="button" onClick={load} disabled={loading} className={secondaryButton}>
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
+            Check again
+          </button>
+        )}
       </section>
     );
   }
   const nothingToReview = pairs.length === 0 && oneSided.length === 0;
-  if (nothingToReview && hiddenByDismissal === 0 && !status && !error && !loadError) return null;
+  if (nothingToReview && hiddenByDismissal === 0 && !status && !error && !loadError && !requested) return null;
 
   const summaryParts: string[] = [];
   if (pairs.length > 0) {
@@ -378,13 +421,17 @@ export default function PossibleTransfersPanel({ from, to, refreshKey = 0, onCha
   if (oneSided.length > 0) {
     summaryParts.push(`${plural(oneSided.length, 'payment has', 'payments have')} no matching transaction on the other account`);
   }
-  const summary = summaryParts.length > 0 ? `${summaryParts.join('; ')}.` : 'Nothing new to review.';
+  const summary =
+    summaryParts.length > 0
+      ? `${summaryParts.join('; ')}.`
+      : 'Nothing to review: no transactions look like transfers between your accounts.';
   const busy = busyKey !== null;
 
   return (
     <section
+      ref={sectionRef}
       aria-labelledby="possible-transfers-heading"
-      className="bg-white border border-sky-200 rounded-xl"
+      className="bg-white border border-sky-200 rounded-xl scroll-mt-24"
     >
       <div className="flex items-center gap-3 p-4 flex-wrap">
         <ArrowRightLeft className="w-5 h-5 text-sky-600 shrink-0" aria-hidden="true" />

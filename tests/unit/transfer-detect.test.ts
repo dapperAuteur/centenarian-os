@@ -29,6 +29,7 @@ import {
 import {
   countsTowardTotals,
   excludingTransfers,
+  isMissingColumn,
   missingTransferColumn,
   withOptionalKind,
   withoutTransfers,
@@ -513,6 +514,19 @@ test('missingTransferColumn recognizes only the two transfer columns', () => {
   assert.equal(missingTransferColumn({ code: '23514', message: 'violates check constraint on transfer_kind' }), null);
   assert.equal(missingTransferColumn(null), null);
   assert.equal(missingTransferColumn(undefined), null);
+});
+
+test('isMissingColumn matches one named column, for the import filter on the transactions list', () => {
+  const missingBatch = { code: '42703', message: 'column financial_transactions.import_batch_id does not exist' };
+  assert.equal(isMissingColumn(missingBatch, 'import_batch_id'), true);
+  // The same error is not about the transfer columns, and the other way round.
+  assert.equal(isMissingColumn(missingBatch, 'transfer_group_id'), false);
+  assert.equal(missingTransferColumn(missingBatch), null);
+  assert.equal(isMissingColumn(MISSING_GROUP, 'import_batch_id'), false);
+  // A bad id (22P02) or a timeout is not a missing column.
+  assert.equal(isMissingColumn({ code: '22P02', message: 'invalid input syntax for type uuid: "import_batch_id"' }, 'import_batch_id'), false);
+  assert.equal(isMissingColumn({ code: '57014', message: 'canceling statement due to statement timeout' }, 'import_batch_id'), false);
+  assert.equal(isMissingColumn(null, 'import_batch_id'), false);
 });
 
 /** A stand-in for a Supabase query: records the filters put on it. */
