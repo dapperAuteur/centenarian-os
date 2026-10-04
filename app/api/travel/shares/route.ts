@@ -58,14 +58,11 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // The share modal reads is_public and shared_with_email, but trip_shares has
-  // neither column (migration 124). A share is a public link when it carries a
-  // share_token. shared_with_email is always null: this route never resolves an
-  // email to an account (see POST), so there is no recipient email to show.
+  // The share modal reads is_public, which is not a trip_shares column
+  // (migration 124): a share is a link when it carries a share_token.
   const shares = (data || []).map((s) => ({
     ...s,
     is_public: !!s.share_token,
-    shared_with_email: null,
   }));
 
   return NextResponse.json({ shares });
@@ -99,8 +96,8 @@ export async function POST(request: NextRequest) {
     if (!owned) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  // Every share is a link share. The modal may send an email (body.email /
-  // body.shared_with_email); it is deliberately NOT looked up. Resolving it to
+  // Every share is a link share. If a client sends an email (body.email /
+  // body.shared_with_email) it is deliberately NOT looked up. Resolving it to
   // an account made this response differ depending on whether the address is
   // registered (shared_with set vs. share_token set), which let any signed-in
   // user test addresses for accounts. Nothing reads trip_shares.shared_with

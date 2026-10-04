@@ -457,7 +457,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How to share a trip itinerary',
-    content: `On any trip detail page, click the Share button and choose Create Public Link. You can set an optional expiration date and pick which sections to include first. The link opens a read-only itinerary showing the route, dates, booking details, and packing notes. Copy it from the Active Shares list and send it yourself: anyone who has the link can view the itinerary without signing in. Entering an email address creates the same kind of link. CentenarianOS does not email an invitation and does not limit the link to that person. To stop sharing, revoke the link from the Active Shares list on the trip detail page.`,
+    content: `On any trip detail page, click the Share button. Set an optional expiration date, pick which sections to include, and click Create share link. The link opens a read-only itinerary showing the route, dates, booking details, and packing notes. Copy it from the Active Shares list and send it yourself: anyone who has the link can view the itinerary without signing in. CentenarianOS does not email the link or limit it to a particular person. To stop sharing, revoke the link from the Active Shares list; revoked and expired links stop working.`,
   },
   {
     role: 'all',

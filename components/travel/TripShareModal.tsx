@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Copy, Trash2, Link2, Send, ChevronDown, ChevronUp } from 'lucide-react';
+import { Copy, Trash2, Link2, ChevronDown, ChevronUp } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
@@ -38,8 +38,7 @@ interface TripShareModalProps {
 
 interface Share {
   id: string;
-  share_token: string;
-  shared_with_email: string | null;
+  share_token: string | null;
   is_public: boolean;
   expires_at: string | null;
   is_active: boolean;
@@ -55,7 +54,6 @@ export default function TripShareModal({
 }: TripShareModalProps) {
   const [shares, setShares] = useState<Share[]>([]);
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
   const [error, setError] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -99,16 +97,14 @@ export default function TripShareModal({
     if (isOpen && entityId) {
       fetchShares();
       setError('');
-      setEmail('');
       setExpiresAt('');
     }
   }, [isOpen, entityId, fetchShares]);
 
-  const createShare = async (isPublic: boolean) => {
-    if (!isPublic && !email.trim()) {
-      setError('Enter an email address to share with.');
-      return;
-    }
+  // Every share is a link: anyone who has it can open the read-only itinerary.
+  // Nothing is emailed and a link is not tied to a person, so there is no
+  // recipient field — the owner copies the link and sends it themselves.
+  const createShare = async () => {
     setSubmitting(true);
     setError('');
 
@@ -116,9 +112,7 @@ export default function TripShareModal({
       const body: Record<string, unknown> = {
         entity_type: entityType,
         entity_id: entityId,
-        is_public: isPublic,
       };
-      if (!isPublic) body.shared_with_email = email.trim();
       if (expiresAt) body.expires_at = expiresAt;
       body.included_sections = sections;
 
@@ -130,11 +124,10 @@ export default function TripShareModal({
 
       if (!res.ok) {
         const errData = await res.json().catch(() => null);
-        setError(errData?.error || 'Failed to create share.');
+        setError(errData?.error || 'Failed to create share link.');
         return;
       }
 
-      setEmail('');
       setExpiresAt('');
       await fetchShares();
     } catch {
@@ -189,32 +182,6 @@ export default function TripShareModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Share Trip" size="md">
       <div className="p-6 space-y-6">
-        {/* Share by email */}
-        <div>
-          <label htmlFor="share-email" className="block text-sm font-medium text-gray-700 mb-1">
-            Share with someone
-          </label>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              id="share-email"
-              type="email"
-              placeholder="email@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="flex-1 min-h-11 rounded-lg border border-gray-300 px-3 text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none"
-            />
-            <button
-              onClick={() => createShare(false)}
-              disabled={submitting || !email.trim()}
-              className="min-h-11 px-4 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2 shrink-0"
-              aria-label="Send share invitation"
-            >
-              <Send className="w-4 h-4" aria-hidden="true" />
-              <span>Share</span>
-            </button>
-          </div>
-        </div>
-
         {/* Expiration date (optional) */}
         <div>
           <label htmlFor="share-expires" className="block text-sm font-medium text-gray-700 mb-1">
@@ -265,17 +232,21 @@ export default function TripShareModal({
           )}
         </div>
 
-        {/* Create public link */}
+        {/* Create share link */}
         <div className="border-t border-gray-200 pt-4">
           <button
-            onClick={() => createShare(true)}
+            type="button"
+            onClick={createShare}
             disabled={submitting}
-            className="min-h-11 w-full sm:w-auto px-4 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-700 text-sm font-medium rounded-lg transition flex items-center justify-center gap-2"
-            aria-label="Create public share link"
+            className="min-h-11 w-full sm:w-auto px-4 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2"
           >
             <Link2 className="w-4 h-4" aria-hidden="true" />
-            <span>Create Public Link</span>
+            <span>Create share link</span>
           </button>
+          <p className="text-xs text-gray-500 mt-2">
+            Anyone with the link can view this itinerary without signing in. Nothing is emailed:
+            copy the link below and send it yourself.
+          </p>
         </div>
 
         {/* Error message */}
@@ -302,7 +273,7 @@ export default function TripShareModal({
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {share.shared_with_email || (share.is_public ? 'Public link' : 'CentenarianOS user')}
+                      {share.is_public ? 'Share link' : 'Shared with a user (no link)'}
                     </p>
                     <p className="text-xs text-gray-500">
                       {share.expires_at
@@ -312,9 +283,10 @@ export default function TripShareModal({
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
-                    {share.is_public && (
+                    {share.is_public && share.share_token && (
                       <button
-                        onClick={() => copyLink(share.share_token, share.id)}
+                        type="button"
+                        onClick={() => copyLink(share.share_token as string, share.id)}
                         className="min-h-11 min-w-11 flex items-center justify-center text-gray-500 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition"
                         aria-label={copiedId === share.id ? 'Link copied' : 'Copy share link'}
                       >
@@ -325,9 +297,10 @@ export default function TripShareModal({
                       </button>
                     )}
                     <button
+                      type="button"
                       onClick={() => revokeShare(share.id)}
                       className="min-h-11 min-w-11 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                      aria-label={`Revoke share for ${share.shared_with_email || 'public link'}`}
+                      aria-label="Revoke share link"
                     >
                       <Trash2 className="w-4 h-4" aria-hidden="true" />
                     </button>
