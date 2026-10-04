@@ -106,7 +106,7 @@ No free plan. All users must subscribe to access paid modules.
 
 | Module | Description | Access |
 |--------|-------------|--------|
-| **Planner** | Roadmap, Goals, Milestones, Tasks hierarchy with day/week/month views; one-field task capture into an auto-created Inbox (works offline), searchable goal picker, Inbox filter | Paid |
+| **Planner** | Roadmap, Goals, Milestones, Tasks hierarchy with day/week/month views; one-field task capture into an auto-created Inbox (works offline), searchable goal picker, Inbox filter; Google Calendar connection (read-only, choose which calendars will sync; event sync is the next phase) | Paid |
 | **Fuel** | Nutrition tracking with NCV framework, USDA/Open Food Facts APIs, auto inventory | Paid |
 | **Engine** | Pomodoro focus sessions, doodle canvas, daily debrief, AI weekly reviews | Paid |
 | **Health Metrics** | RHR, steps, sleep, body composition; Garmin/Oura/WHOOP sync; CSV import | Paid |
@@ -204,6 +204,58 @@ Without `WITUS_OIDC_CLIENT_ID` both are dark: the button does not render and sig
 local. Endpoint overrides and the full reasoning are documented in `.env.example` and
 `lib/auth/witus-sso.ts`.
 
+### Optional: Google Calendar (one-way sync)
+
+```env
+GOOGLE_OAUTH_CLIENT_ID=
+GOOGLE_OAUTH_CLIENT_SECRET=
+TOKEN_ENCRYPTION_KEY=       # openssl rand -hex 32; encrypts the stored Google tokens
+SUPABASE_JWT_SECRET=        # signs the OAuth state (lib/oauth-state.ts)
+```
+
+One-way, Google -> CentenarianOS. The only Calendar scope requested is
+`https://www.googleapis.com/auth/calendar.readonly` (plus `openid email` to show which account
+is connected), so nothing is ever written to Google.
+
+**What ships today (phase 1, "connect"):** Settings -> Calendar Sync (`/dashboard/settings/calendar`)
+connects a Google account, lists its calendars, lets the user switch each one on or off, shows
+"Reconnect" when Google stops accepting the saved authorization, and disconnects (revokes the
+grant at Google, then deletes the saved tokens and calendar choices). **Events are not synced
+yet.** That is the next phase; the `calendar_sync_items` table is created now and stays empty.
+
+**Where the tokens live:** `calendar_connections`, encrypted with AES-256-GCM
+(`lib/crypto/tokens.ts`) before they are written. The table has Row Level Security on and no
+policies, so only the service-role API routes under `app/api/calendar/google/` can read it, and
+no response to the browser includes a token column.
+
+**Setup:**
+
+1. Apply `supabase/migrations/204_calendar_sync.sql`. Until it is applied, the routes answer
+   with a JSON error (`code: "migration_missing"`) and the page says so.
+2. In Google Cloud Console: enable the Google Calendar API, configure the OAuth consent screen,
+   and create an OAuth client of type "Web application".
+3. On that client, add one authorized redirect URI per origin the app is served from:
+   `<origin>/api/calendar/google/callback` (for local development,
+   `http://localhost:3000/api/calendar/google/callback`). The app builds the URI from the origin
+   of the request, and Google requires an exact match (scheme, host, case, no trailing slash).
+4. Set the four variables above. With any of them missing, the settings page shows "not
+   available on this site yet" instead of a Connect button.
+
+**Good to know (from Google's OAuth documentation):** while the consent screen's publishing
+status is "Testing", Google issues refresh tokens that expire after 7 days for scopes beyond
+name, email and profile
+([Refresh token expiration](https://developers.google.com/identity/protocols/oauth2#expiration)).
+In that state the page asks the user to Reconnect about once a week. Google describes that
+7-day limit only for the "Testing" status.
+
+**Not yet verified against a live Google OAuth client** (none existed when this was built; the
+client was written from Google's documentation and is covered by unit tests with a fake
+`fetch`). Check by hand once credentials exist: the consent screen appears and returns to the
+settings page as connected; the account email shows; the calendar list loads; a calendar toggle
+survives a reload; Disconnect removes the app from the Google Account's third-party access
+list; connecting again after that works; and an expired or revoked grant turns into "Needs
+reconnecting" rather than an error page.
+
 ### Optional: Error Monitoring (Better Stack)
 
 Crash reporting runs through the Sentry SDK, pointed at Better Stack (which speaks
@@ -288,7 +340,7 @@ Open [http://localhost:3000](http://localhost:3000)
 npm run test:unit
 ```
 
-Runs the pure-function tests with Node's built-in test runner (`node --test --experimental-strip-types`, Node 22.6+). No database, network or extra dependencies. Covers merchant-name matching and learned vendor categories (`tests/transaction-matching.test.ts`) and the stored-secret encryption helper (`tests/unit/crypto-tokens.test.ts`).
+Runs the pure-function tests with Node's built-in test runner (`node --test --experimental-strip-types`, Node 22.6+). No database, network or extra dependencies. Covers merchant-name matching and learned vendor categories (`tests/transaction-matching.test.ts`), the stored-secret encryption helper (`tests/unit/crypto-tokens.test.ts`), and the Google Calendar client and token refresh (`tests/unit/google-calendar-client.test.ts`, with a fake `fetch`).
 
 ## Project Structure
 
