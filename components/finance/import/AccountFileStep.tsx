@@ -1,0 +1,344 @@
+'use client';
+
+// components/finance/import/AccountFileStep.tsx
+// Step 1 of the statement import: choose the account (required), then give
+// the statement as a file or as pasted text. The file is read and parsed in
+// the browser, so this step works without a connection and can say what it
+// found before anything is sent.
+
+import { useRef, useState } from 'react';
+import Link from 'next/link';
+import { Download, FileText, Loader2, X } from 'lucide-react';
+import { detectMapping, parseStatementCsv } from '@/lib/finance/csv-import/parse';
+import type { StatementCsv } from '@/lib/finance/csv-import/types';
+import {
+  TOO_LARGE_TEXT,
+  accountLabel,
+  certainlyTooLarge,
+  describeDetection,
+  fileSizeProblem,
+  rowCountProblem,
+  sortAccountsForPicker,
+  type ImportAccount,
+} from '@/lib/finance/csv-import/ui-helpers';
+import {
+  ErrorNotice,
+  StatusNotice,
+  card,
+  fieldHint,
+  fieldLabel,
+  primaryButton,
+  secondaryButton,
+  selectInput,
+  textLink,
+  type ParsedFile,
+} from './shared';
+
+interface AccountFileStepProps {
+  accounts: ImportAccount[];
+  accountsState: 'loading' | 'ready' | 'error';
+  accountsError: string | null;
+  onRetryAccounts: () => void;
+  accountId: string;
+  onAccountChange: (accountId: string) => void;
+  file: ParsedFile | null;
+  /** A statement that was read and passed every check, or null to clear the current one. */
+  onFileRead: (file: Omit<ParsedFile, 'version'> | null) => void;
+  pasteText: string;
+  onPasteTextChange: (text: string) => void;
+  onContinue: () => void;
+}
+
+export default function AccountFileStep({
+  accounts,
+  accountsState,
+  accountsError,
+  onRetryAccounts,
+  accountId,
+  onAccountChange,
+  file,
+  onFileRead,
+  pasteText,
+  onPasteTextChange,
+  onContinue,
+}: AccountFileStepProps) {
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
+  const [attempted, setAttempted] = useState(false);
+  const accountRef = useRef<HTMLSelectElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const sortedAccounts = sortAccountsForPicker(accounts);
+  const accountMissing = attempted && !accountId;
+  const fileMissing = attempted && !file && !fileError;
+
+  /** Checks the text, parses it, and hands the result up. Nothing leaves the browser here. */
+  function loadText(text: string, fileName: string | null) {
+    const refuse = (message: string) => {
+      setFileError(message);
+      onFileRead(null);
+    };
+
+    const sizeProblem = fileSizeProblem(text.length);
+    if (sizeProblem) return refuse(sizeProblem);
+    if (text.trim() === '') return refuse('There is nothing in that file.');
+
+    let table: StatementCsv;
+    try {
+      table = parseStatementCsv(text);
+    } catch {
+      return refuse("This file couldn't be read as a CSV. Download it again from your bank as CSV and try once more.");
+    }
+    const rowProblem = rowCountProblem(table.rows.length);
+    if (rowProblem) return refuse(rowProblem);
+
+    setFileError(null);
+    onFileRead({ text, fileName, table, detected: detectMapping(table.headers, table.rows) });
+  }
+
+  async function handleFileChosen(event: React.ChangeEvent<HTMLInputElement>) {
+    const chosen = event.target.files?.[0];
+    if (!chosen) return;
+    // Far past the limit in any encoding: don't read it into memory at all.
+    if (certainlyTooLarge(chosen.size)) {
+      setFileError(TOO_LARGE_TEXT);
+      onFileRead(null);
+      return;
+    }
+    setReading(true);
+    try {
+      loadText(await chosen.text(), chosen.name);
+    } catch {
+      setFileError("The file couldn't be opened. Choose it again.");
+      onFileRead(null);
+    } finally {
+      setReading(false);
+    }
+  }
+
+  function handleUsePastedText() {
+    if (pasteText.trim() === '') {
+      setFileError('Paste the statement text into the box first.');
+      onFileRead(null);
+      return;
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    loadText(pasteText, null);
+  }
+
+  function handleRemoveFile() {
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    setFileError(null);
+    onFileRead(null);
+  }
+
+  function handleContinue() {
+    setAttempted(true);
+    if (!accountId) {
+      accountRef.current?.focus();
+      return;
+    }
+    if (!file) {
+      fileInputRef.current?.focus();
+      return;
+    }
+    onContinue();
+  }
+
+  const detection = file ? describeDetection(file.detected, file.table) : null;
+
+  return (
+    <div className="space-y-5">
+      {/* Account */}
+      <section className={card} aria-labelledby="import-account-heading">
+        <h3 id="import-account-heading" className="text-base font-semibold text-gray-900">
+          Which account is this statement for?
+        </h3>
+
+        {accountsState === 'loading' && (
+          <p role="status" className="mt-3 flex items-center gap-2 text-sm text-gray-700">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            Loading your accounts...
+          </p>
+        )}
+
+        {accountsState === 'error' && (
+          <div className="mt-3 space-y-3">
+            <ErrorNotice>
+              <p>{accountsError ?? 'Your accounts could not be loaded.'}</p>
+            </ErrorNotice>
+            <button type="button" onClick={onRetryAccounts} className={secondaryButton}>
+              Try again
+            </button>
+          </div>
+        )}
+
+        {accountsState === 'ready' && accounts.length === 0 && (
+          <div className="mt-3 space-y-2 text-sm text-gray-700">
+            <p>You have no accounts yet. A statement is always imported into an account, so add one first.</p>
+            <Link href="/dashboard/finance/accounts" className={textLink}>
+              Add an account
+            </Link>
+          </div>
+        )}
+
+        {accountsState === 'ready' && accounts.length > 0 && (
+          <div className="mt-3">
+            <label htmlFor="import-account" className={fieldLabel}>
+              Account <span className="font-normal text-gray-600">(required)</span>
+            </label>
+            <select
+              id="import-account"
+              ref={accountRef}
+              required
+              aria-required="true"
+              aria-invalid={accountMissing}
+              aria-describedby={accountMissing ? 'import-account-hint import-account-error' : 'import-account-hint'}
+              value={accountId}
+              onChange={(event) => onAccountChange(event.target.value)}
+              className={selectInput}
+            >
+              <option value="">Choose an account</option>
+              {sortedAccounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {accountLabel(account)}
+                  {account.is_active === false ? ' (inactive)' : ''}
+                </option>
+              ))}
+            </select>
+            <p id="import-account-hint" className={fieldHint}>
+              Every transaction in the file goes into this account. Each option shows the bank, the account name and
+              its last four digits.
+            </p>
+            {accountMissing && (
+              <p id="import-account-error" role="alert" className="mt-1 text-sm font-medium text-red-700">
+                Choose the account this statement belongs to.
+              </p>
+            )}
+            <Link href="/dashboard/finance/accounts" className={`${textLink} mt-1`}>
+              Account not listed? Add it on the Accounts page
+            </Link>
+          </div>
+        )}
+      </section>
+
+      {/* File or pasted text */}
+      <section className={card} aria-labelledby="import-file-heading">
+        <h3 id="import-file-heading" className="text-base font-semibold text-gray-900">
+          The statement
+        </h3>
+        <p className="mt-1 text-sm text-gray-700">
+          Download your transactions as a CSV file from your bank or card&apos;s website, then choose that file here.
+        </p>
+
+        <div className="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <div>
+            <label htmlFor="import-file" className={fieldLabel}>
+              Statement file (CSV)
+            </label>
+            <input
+              id="import-file"
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              onChange={handleFileChosen}
+              aria-invalid={fileMissing || Boolean(fileError)}
+              aria-describedby="import-file-messages"
+              className="block w-full text-sm text-gray-700 file:mr-3 file:min-h-11 file:cursor-pointer file:rounded-lg file:border-0 file:bg-sky-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-sky-800 hover:file:bg-sky-100"
+            />
+            <p className={fieldHint}>The file is read on this device first. Nothing is saved until you confirm in step 3.</p>
+          </div>
+
+          <div>
+            <label htmlFor="import-paste" className={fieldLabel}>
+              Or paste the statement text
+            </label>
+            <textarea
+              id="import-paste"
+              rows={4}
+              value={pasteText}
+              onChange={(event) => onPasteTextChange(event.target.value)}
+              spellCheck={false}
+              className="w-full rounded-lg border border-gray-300 p-2 font-mono text-xs text-gray-900"
+              placeholder={'Date,Description,Amount\n01/13/2026,Coffee shop,-4.75'}
+            />
+            <button type="button" onClick={handleUsePastedText} className={`${secondaryButton} mt-2 w-full sm:w-auto`}>
+              Use pasted text
+            </button>
+          </div>
+        </div>
+
+        <div id="import-file-messages" className="mt-4 space-y-3">
+          {reading && (
+            <p role="status" className="flex items-center gap-2 text-sm text-gray-700">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Reading the file...
+            </p>
+          )}
+
+          {fileError && (
+            <ErrorNotice>
+              <p>{fileError}</p>
+            </ErrorNotice>
+          )}
+
+          {fileMissing && (
+            <ErrorNotice>
+              <p>Choose a CSV file, or paste its text and press &quot;Use pasted text&quot;.</p>
+            </ErrorNotice>
+          )}
+
+          {file && detection && (
+            <StatusNotice tone="success">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="flex items-center gap-2 font-medium">
+                  <FileText className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className="break-all">{file.fileName ?? 'Pasted text'}</span>
+                </p>
+                <button
+                  type="button"
+                  onClick={handleRemoveFile}
+                  className="min-h-11 inline-flex items-center gap-1 rounded-lg px-3 text-sm font-medium text-green-900 underline underline-offset-2 hover:bg-green-100"
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                  Remove
+                </button>
+              </div>
+              <p>{detection.headline}</p>
+              <ul className="list-disc space-y-0.5 pl-5">
+                {detection.details.map((detail) => (
+                  <li key={detail}>{detail}</li>
+                ))}
+              </ul>
+              {file.table.warnings.length > 0 && (
+                <div className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
+                  <p className="font-medium">Check these before you continue:</p>
+                  <ul className="list-disc space-y-0.5 pl-5">
+                    {file.table.warnings.map((warning) => (
+                      <li key={warning}>{warning}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </StatusNotice>
+          )}
+        </div>
+
+        <p className="mt-4 text-sm text-gray-700">
+          No bank export? Fill in the simple template (date, amount, type, description, vendor, category) and import
+          it the same way.
+        </p>
+        <a href="/templates/finance-import-template.csv" download className={textLink}>
+          <Download className="h-4 w-4" aria-hidden="true" />
+          Download the simple template
+        </a>
+      </section>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+        <button type="button" onClick={handleContinue} disabled={reading} className={primaryButton}>
+          Continue to columns
+        </button>
+      </div>
+    </div>
+  );
+}
