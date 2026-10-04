@@ -14,9 +14,26 @@ function getDb() {
 
 const MAX_VEHICLE_ROWS = 200;
 
+// Must match the vehicles CHECK constraints: type (migration 129),
+// ownership_type (053) and trip_mode (067).
 const VALID_TYPES = new Set([
-  'car', 'truck', 'suv', 'motorcycle', 'bicycle', 'scooter', 'rv', 'boat', 'other',
+  'car', 'bike', 'ebike', 'motorcycle', 'scooter', 'shoes',
+  'plane', 'train', 'bus', 'ferry', 'rideshare', 'other',
 ]);
+const VALID_OWNERSHIP = new Set(['owned', 'rental', 'borrowed']);
+const VALID_TRIP_MODES = new Set([
+  'bike', 'car', 'bus', 'train', 'plane', 'walk', 'run', 'ferry', 'rideshare', 'other',
+]);
+
+// Types the import accepted before it matched the table. The table has no
+// body-style types, so these store the nearest type the CHECK allows.
+const TYPE_ALIASES: Record<string, string> = {
+  bicycle: 'bike',
+  truck: 'car',
+  suv: 'car',
+  rv: 'car',
+  boat: 'other',
+};
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -53,9 +70,26 @@ export async function POST(request: NextRequest) {
     const row = rows[i];
 
     // Validate required: type
-    const type = row.type?.trim()?.toLowerCase();
+    const rawType = row.type?.trim()?.toLowerCase();
+    const type = rawType ? (TYPE_ALIASES[rawType] ?? rawType) : undefined;
     if (!type || !VALID_TYPES.has(type)) {
-      errors.push(`Row ${i + 1}: invalid or missing type`);
+      errors.push(`Row ${i + 1}: invalid or missing type (use ${Array.from(VALID_TYPES).join(', ')})`);
+      skipped++;
+      continue;
+    }
+
+    // Optional enums: blank falls back to the column default; anything the
+    // table would reject is reported per row instead of failing the whole batch.
+    const ownershipType = row.ownership_type?.trim()?.toLowerCase() || 'owned';
+    if (!VALID_OWNERSHIP.has(ownershipType)) {
+      errors.push(`Row ${i + 1}: invalid ownership_type (use ${Array.from(VALID_OWNERSHIP).join(', ')})`);
+      skipped++;
+      continue;
+    }
+
+    const tripMode = row.trip_mode?.trim()?.toLowerCase() || null;
+    if (tripMode && !VALID_TRIP_MODES.has(tripMode)) {
+      errors.push(`Row ${i + 1}: invalid trip_mode (use ${Array.from(VALID_TRIP_MODES).join(', ')})`);
       skipped++;
       continue;
     }
@@ -88,8 +122,8 @@ export async function POST(request: NextRequest) {
       model: row.model?.trim() || null,
       year: year && !isNaN(year) ? year : null,
       color: row.color?.trim() || null,
-      ownership_type: row.ownership_type?.trim() || 'owned',
-      trip_mode: row.trip_mode?.trim() || null,
+      ownership_type: ownershipType,
+      trip_mode: tripMode,
     });
   }
 
