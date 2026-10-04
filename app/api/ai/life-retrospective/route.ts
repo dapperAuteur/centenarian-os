@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { excludingTransfers, withoutTransfers } from '@/lib/finance/transfers/schema';
 
 const GEMINI_MODEL = 'gemini-2.5-flash';
 
@@ -77,14 +78,20 @@ export async function POST(request: NextRequest) {
       .lte('date', to)
       .eq('status', 'active'),
 
-    // 2. Financial transactions
-    db
-      .from('financial_transactions')
-      .select('transaction_date, amount, type, category_id, vendor, description, notes')
-      .eq('user_id', user.id)
-      .gte('transaction_date', from)
-      .lte('transaction_date', to)
-      .order('transaction_date'),
+    // 2. Financial transactions, without transfers between the person's own
+    //    accounts (they are not income or spending). Works before migration
+    //    202 too: see excludingTransfers().
+    excludingTransfers((groupColumnExists) =>
+      withoutTransfers(
+        db
+          .from('financial_transactions')
+          .select('transaction_date, amount, type, category_id, vendor, description, notes')
+          .eq('user_id', user.id)
+          .gte('transaction_date', from)
+          .lte('transaction_date', to),
+        groupColumnExists,
+      ).order('transaction_date'),
+    ),
 
     // 3. Focus sessions
     db
