@@ -107,6 +107,7 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [addRelationship, setAddRelationship] = useState('');
+  const [error, setError] = useState('');
 
   // Show equipment relationship picker when linking equipment to trip or vice versa
   const showRelationshipPicker = (
@@ -131,13 +132,20 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
   useEffect(() => { loadLinks(); }, [loadLinks]);
 
   const handleRemove = async (linkId: string) => {
-    const res = await offlineFetch('/api/activity-links', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: linkId }),
-    });
-    if (res.ok) {
-      setLinks((prev) => prev.filter((l) => l.id !== linkId));
+    setError('');
+    try {
+      const res = await offlineFetch('/api/activity-links', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: linkId }),
+      });
+      if (res.ok) {
+        setLinks((prev) => prev.filter((l) => l.id !== linkId));
+      } else {
+        setError('Could not remove that link. Please try again.');
+      }
+    } catch {
+      setError('Could not remove that link. Please try again.');
     }
   };
 
@@ -401,6 +409,7 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
 
   const handleAdd = async (targetId: string) => {
     if (!addType) return;
+    setError('');
     const res = await offlineFetch('/api/activity-links', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -418,6 +427,13 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
       setSearchResults([]);
       setAddRelationship('');
       loadLinks();
+    } else if (res.status === 409) {
+      setError('Those two are already linked.');
+    } else if (res.status === 404) {
+      // The server answers 404 when either record is missing or is not yours to link.
+      setError('That item could not be linked. It may have been deleted.');
+    } else {
+      setError('Could not create the link. Please try again.');
     }
   };
 
@@ -472,6 +488,12 @@ export default function ActivityLinker({ entityType, entityId }: ActivityLinkerP
         </div>
       ) : (
         <p className="text-xs text-gray-400">No linked activities yet.</p>
+      )}
+
+      {error && (
+        <p role="alert" className="text-xs text-red-600 bg-red-50 px-2 py-1.5 rounded-lg">
+          {error}
+        </p>
       )}
 
       {/* Add link UI */}
