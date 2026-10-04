@@ -53,18 +53,26 @@ export async function GET(_request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Enrich with user emails
+  // Enrich with user emails + current membership.
+  // profiles has no email column — emails live in auth.users, so they come from
+  // the auth admin API (same lookup the PATCH handler below uses).
   const userIds = [...new Set((data ?? []).map((p) => p.user_id))];
-  const { data: profiles } = await db
-    .from('profiles')
-    .select('id, email, subscription_status')
-    .in('id', userIds);
+  const [{ data: profiles }, authResults] = await Promise.all([
+    db
+      .from('profiles')
+      .select('id, subscription_status')
+      .in('id', userIds),
+    Promise.all(userIds.map((userId) => db.auth.admin.getUserById(userId))),
+  ]);
 
   const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+  const emailMap = new Map(
+    userIds.map((userId, i) => [userId, authResults[i].data?.user?.email ?? null]),
+  );
 
   const enriched = (data ?? []).map((p) => ({
     ...p,
-    email: profileMap.get(p.user_id)?.email ?? null,
+    email: emailMap.get(p.user_id) ?? null,
     current_status: profileMap.get(p.user_id)?.subscription_status ?? 'free',
   }));
 

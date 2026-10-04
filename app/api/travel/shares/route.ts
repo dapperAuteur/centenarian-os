@@ -14,6 +14,30 @@ function getDb() {
   );
 }
 
+type EmailLookup = { userId: string | null; failed: boolean };
+
+// profiles has no email column — account emails live in auth.users and are only
+// reachable through the service-role auth admin API (the approach the admin and
+// teacher routes use). listUsers is paged, so walk the pages until a match.
+async function findUserIdByEmail(
+  db: ReturnType<typeof getDb>,
+  email: string,
+): Promise<EmailLookup> {
+  const target = email.trim().toLowerCase();
+  if (!target) return { userId: null, failed: false };
+
+  const perPage = 1000;
+  const maxPages = 50;
+  for (let page = 1; page <= maxPages; page++) {
+    const { data, error } = await db.auth.admin.listUsers({ page, perPage });
+    if (error) return { userId: null, failed: true };
+    const match = data.users.find((u) => u.email?.toLowerCase() === target);
+    if (match) return { userId: match.id, failed: false };
+    if (data.users.length < perPage) break;
+  }
+  return { userId: null, failed: false };
+}
+
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -47,7 +71,8 @@ export async function POST(request: NextRequest) {
   // Accept both direct trip_id/route_id and entity_type/entity_id formats
   const trip_id = body.trip_id || (body.entity_type === 'trip' ? body.entity_id : null);
   const route_id = body.route_id || (body.entity_type === 'route' ? body.entity_id : null);
-  const email = body.email || body.shared_with_email || null;
+  const rawEmail = body.email || body.shared_with_email || null;
+  const email = typeof rawEmail === 'string' && rawEmail.trim() ? rawEmail.trim() : null;
   const expires_at = body.expires_at || null;
   const included_sections = body.included_sections || null;
 
@@ -59,16 +84,16 @@ export async function POST(request: NextRequest) {
   let share_token: string | null = null;
 
   if (email) {
-    // Look up the user by email in profiles table
-    const db = getDb();
-    const { data: profile } = await db
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .maybeSingle();
+    // Look up the account by email (auth.users, via the auth admin API)
+    const lookup = await findUserIdByEmail(getDb(), email);
+    if (lookup.failed) {
+      // Don't fall through to a public link when the lookup itself broke —
+      // the caller asked to share with one person, not with anyone.
+      return NextResponse.json({ error: 'Could not look up that email. Please try again.' }, { status: 500 });
+    }
 
-    if (profile) {
-      shared_with = profile.id;
+    if (lookup.userId) {
+      shared_with = lookup.userId;
     } else {
       // Email not found — generate a public share token
       share_token = randomBytes(32).toString('hex');
