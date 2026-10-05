@@ -193,6 +193,12 @@ export const TABLE_ACCESS_RULES: Readonly<Record<string, TableAccessRule>> = {
   equipment: OWNER_OR_PUBLIC_ACTIVE,
   equipment_categories: OWNER_ONLY,
 
+  // ── Fuel (meals) ──
+  // meal_logs and protocols: user_id NOT NULL, policy "Users can CRUD their ..."
+  // (auth.uid() = user_id) in the base schema (20251021155203_remote_schema.sql).
+  meal_logs: OWNER_ONLY,
+  protocols: OWNER_ONLY,
+
   // ── Media, recipes, blog ──
   media_items: OWNER_OR_PUBLIC_ACTIVE,
   podcast_episodes: OWNER_ONLY,
