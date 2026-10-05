@@ -1,6 +1,6 @@
 # CentenarianOS — Migrations Gallery
 
-> **214 migrations across 14 modules**, shipped solo since project inception. Schema lives in a Supabase Postgres database **shared with a sibling product** (Work.WitUS / contractor-os), so every migration has to be additive, RLS-aware, and cross-app-safe.
+> **215 migrations across 14 modules**, shipped solo since project inception. Schema lives in a Supabase Postgres database **shared with a sibling product** (Work.WitUS / contractor-os), so every migration has to be additive, RLS-aware, and cross-app-safe.
 
 > **Decomposition note.** CentenarianOS is being decomposed toward the ecosystem's "one app,
 > one job" rule, so some modules below (Media, Academy, Travel, contractor residue) are
@@ -81,9 +81,9 @@ Pomodoro sessions with tags, goals, breaks, templates, analytics, daily-log cons
 
 Highlights: `009_add_session_tags.sql` through `020_add_session_type.sql` (the foundational batch), `076_focus_session_activity_link.sql` (cross-module link), `017_agility_engine_migration.sql`.
 
-### Equipment Tracker (3 migrations)
+### Equipment Tracker (4 migrations)
 
-Equipment categories, valuations history, multi-media gallery (images/videos/audio per item).
+Equipment categories, valuations history, multi-media gallery (images/videos/audio per item). `214_asset_depreciation.sql` adds depreciation settings for equipment and vehicles in a side table, so the shared `equipment` and `vehicles` tables stay unchanged.
 
 Highlights: `069_equipment.sql`, `086_equipment_catalog.sql`, `119_equipment_media.sql`.
 

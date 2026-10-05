@@ -11,7 +11,7 @@ CentenarianOS is a comprehensive longevity-focused life-management platform. It 
 ### Tech Stack
 - **Framework**: Next.js 15 App Router (TypeScript, app/ directory structure)
 - **Styling**: Tailwind CSS v4 (utility-first, dark theme with fuchsia accents)
-- **Database**: Supabase (PostgreSQL + Row-Level Security), 173+ migrations
+- **Database**: Supabase (PostgreSQL + Row-Level Security), 215 migrations
 - **Auth**: Supabase Auth (email/password, magic link)
 - **Payments**: Stripe (checkout sessions, webhooks, subscription management, Stripe Connect for teacher payouts)
 - **AI**: Google Gemini 2.5 Flash (chat, coaching, embeddings, vision/OCR)
@@ -42,7 +42,7 @@ CentenarianOS is a comprehensive longevity-focused life-management platform. It 
 
 5. **Academy (LMS)** — Full learning management system. Courses with modules and lessons (markdown or Tiptap rich text). CYOA (Choose Your Own Adventure) navigation via semantic embeddings, including cross-course CYOA matching. Course prerequisites (required/recommended) with student override request workflow. Assignments with grading. Live sessions (Viloud.tv iframe embeds). Teacher role with Stripe Connect payouts (configurable platform fee, default 15%). Bulk course import via CSV. Lesson glossary with phonetic spelling. Content-seen tracking for enrollment progress.
 
-6. **Equipment Tracker** — Categories (auto-seeded defaults), items with purchase price, valuations over time (value chart). Links to financial transactions. Cross-module activity linking. Equipment catalog with system-suggested items.
+6. **Equipment Tracker** — Categories (auto-seeded defaults), items with purchase price, valuations over time (value chart). Links to financial transactions. Cross-module activity linking. Equipment catalog with system-suggested items. Depreciation for every item and vehicle (migration 214, asset_depreciation side table; lib/equipment/depreciation.ts: straight line, declining balance, units of use, salvage floor, yearly schedule, book value) and work use (task <-> equipment activity links with relationship 'work' from the planner's Used equipment picker; vehicles use trip miles with purpose work or tax_category business) giving uses, work share, cost per use and work-share depreciation. /api/equipment/depreciation (+ /summary), vehicle page /dashboard/travel/vehicles/[id]. Save for replacement prefills a savings goal.
 
 7. **Workouts & Exercises** — Exercise library with categories (10 defaults + user-created), instructions, form cues, video/audio/media URLs, muscle groups, equipment links, difficulty levels (beginner/intermediate/advanced), equipment classification (none/minimal/gym). 110+ system-seeded exercises. Workout templates and logs with 16+ enhanced fields: RPE, tempo, supersets, circuits, negatives, isometrics, to-failure, unilateral, balance, distance, hold time. Nomad Longevity OS protocol (28 seeded exercises, 12 templates, AM/PM/Hotel/Gym programs, Friction Protocol). Workout feedback system with mood tracking. Social layer: public visibility toggle, like/copy/done counts, shareable links via public alias (no PII), discover pages for browsing public content.
 
@@ -100,8 +100,8 @@ Overview, Users (list + detail), Messages, Content moderation, Engagement analyt
 - **Invited users**: Admin can grant trial or lifetime access without payment, with optional module restrictions
 
 ### Database Architecture
-- **173+ migrations** in supabase/migrations/ (000 through 173)
-- **Key tables**: profiles, financial_accounts, financial_transactions, budget_categories, vehicles, trips, trip_routes, trip_shares, fuel_logs, vehicle_maintenance, equipment, equipment_categories, equipment_valuations, equipment_media, exercises, exercise_categories, workout_logs, workout_templates, courses, lessons, modules (academy), course_prerequisites, prerequisite_override_requests, gem_personas, language_coach_sessions, life_categories, entity_life_categories, activity_links, user_contacts, contact_locations, scan_images, receipt_line_items, item_prices, institutions, institution_offers, invited_users, teller_enrollments (deprecated 2026-10, unused), admin_chats, admin_chat_messages, app_logs, usage_events, page_views, media_categories, media_items, media_notes, podcast_episodes, media_episode_links, social_likes, social_shares, social_bookmarks
+- **215 migrations** in supabase/migrations/ (000 through 214, plus a few unnumbered drafts)
+- **Key tables**: profiles, financial_accounts, financial_transactions, budget_categories, vehicles, trips, trip_routes, trip_shares, fuel_logs, vehicle_maintenance, equipment, equipment_categories, equipment_valuations, equipment_media, asset_depreciation, exercises, exercise_categories, workout_logs, workout_templates, courses, lessons, modules (academy), course_prerequisites, prerequisite_override_requests, gem_personas, language_coach_sessions, life_categories, entity_life_categories, activity_links, user_contacts, contact_locations, scan_images, receipt_line_items, item_prices, institutions, institution_offers, invited_users, teller_enrollments (deprecated 2026-10, unused), admin_chats, admin_chat_messages, app_logs, usage_events, page_views, media_categories, media_items, media_notes, podcast_episodes, media_episode_links, social_likes, social_shares, social_bookmarks
 - **Patterns**: Soft-delete via is_active flags, .maybeSingle() for optional rows, service role for admin ops, fire-and-forget logging
 - **RLS**: Enabled on all user-facing tables. Service role key bypasses RLS for admin/webhook routes.
 
@@ -132,7 +132,7 @@ Getting Started, Planner, Finance, Travel, Fuel, Engine, Health Metrics, Workout
 
 ### Project Stats
 - ~450+ TypeScript files
-- 126+ database migrations
+- 215 database migrations
 - 22+ user-facing modules (including social layer and trip sharing; the media tracker moved to Stream.WitUS)
 - 20 admin management pages
 - 12 AI-powered features

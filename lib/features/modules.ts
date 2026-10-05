@@ -387,6 +387,8 @@ export const MODULES: ModuleData[] = [
       'Valuation history with chart visualization',
       'Link equipment to trips, workouts, finance',
       'Total asset value dashboard',
+      'Depreciation schedules and book value for every item and vehicle',
+      'Work use: work share and cost per use from linked tasks and calendar events',
     ],
     highlights: [
       {
@@ -404,6 +406,10 @@ export const MODULES: ModuleData[] = [
       {
         title: 'Cross-Module Connections',
         description: 'Link gear to workouts (which equipment did you use?), trips (what did you bring?), and maintenance records.',
+      },
+      {
+        title: 'Depreciation and Work Use',
+        description: 'Straight line, declining balance, or per-use depreciation with a salvage floor, book value, and a yearly schedule. Mark work gear, link it to planner tasks and synced calendar events, and see work share, cost per use, and the work share of this year\'s depreciation. Estimates, not tax advice.',
       },
     ],
     dashboardPath: '/dashboard/equipment',

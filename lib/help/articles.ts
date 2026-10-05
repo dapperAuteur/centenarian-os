@@ -247,6 +247,21 @@ export const HELP_ARTICLES: HelpArticle[] = [
     title: 'How to track equipment and asset valuations',
     content: `Go to Dashboard → Equipment. You can add gear, electronics, fitness equipment, and other assets with purchase price, brand, model, condition, and category. Track current valuations over time — add a new valuation entry whenever the value changes, and the detail page shows a chart of value history. Equipment can be linked to financial transactions (the purchase transaction) and to other modules via Activity Links. Categories are auto-seeded with defaults (Electronics, Fitness, Travel, etc.) and you can add your own.`,
   },
+  {
+    role: 'all',
+    title: 'Equipment depreciation',
+    content: `Every equipment item and vehicle (bikes and shoes too) can show how much value it loses over time. Open an item from Dashboard → Equipment, or a vehicle's "value" link on Dashboard → Travel, and fill in the Depreciation section: the method, the expected life in years and/or in uses (miles for a vehicle), a salvage value (what it will still be worth at the end), and the in-service date. For equipment, the cost and in-service date default to the purchase price and purchase date; vehicles have no price, so enter the cost. Methods: Straight line (the default) spreads cost minus salvage evenly over the years. Declining balance takes a fixed share of the remaining value each year (factor 2 = double declining balance) and switches to straight line when that is larger, so it reaches the salvage value at the end of its life. Units of use charges a fixed amount per use or per mile: (cost minus salvage) divided by the expected uses. The value never drops below the salvage value, and nothing depreciates before the in-service date. The section shows book value today, depreciation so far, this year to date, when it is fully depreciated (or the cost per use or mile), a book value chart and a schedule table by calendar year. The equipment list shows each item's book value, and a summary shows total book value, this year's depreciation to date and the work share. These are estimates to help you plan, not tax advice: tax depreciation follows different rules, so check with a tax professional before using them on a return. Needs migration 214; until it is applied the section says "Run migration 214 first".`,
+  },
+  {
+    role: 'all',
+    title: 'Work equipment: uses, work share and cost per use',
+    content: `Tick "Used for work" in an item's Work use section, then record what you use it for. In a planner task (including events synced from Google Calendar, which become planner tasks), open the task and use "Used equipment": choose the item, tick "for work" if it was work, and click Add. Each linked task, workout, trip or focus session counts as one use; the Work or Personal button on a linked item switches it. Uses that happened outside the app can be typed in, with how many were for work. The section shows all uses, work uses, your work share this year (work uses divided by all uses; set a work share override in percent if you track it another way), the cost per use (depreciation so far divided by uses, or the units-of-use rate), and the work-share depreciation for the year so far, which you can keep with your business expense records. Vehicles count miles from their trips instead: trips with purpose "work" or tax category "business" are work miles. Estimates, not tax advice.`,
+  },
+  {
+    role: 'all',
+    title: 'Save for replacing equipment',
+    content: `On an item's Depreciation section (or a vehicle's value page), enter a replacement cost and a "replace by" date, then click Save for replacement. It opens a new savings goal prefilled with "Replace (item name)", the replacement cost as the target and the date as the target date, linked to the item. Pick the account the money sits in and save. See "Savings goals: envelopes inside a real account" for how goals work.`,
+  },
 
   // ─── COURSE PREREQUISITES ──────────────────────────────────────────────────
 

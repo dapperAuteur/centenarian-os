@@ -66,6 +66,27 @@ If no income transactions are linked, ROI is 0%. This metric is most useful for 
 
 ---
 
+### Book Value, Depreciation Schedules and Work Use
+
+The Depreciation card above counts valuations: what you paid minus what you say things are worth now. Each item can also have a planned depreciation schedule. Open an item and fill in its Depreciation section:
+
+- **Method** — Straight line (default), Declining balance, or Units of use
+- **Expected life** — in years, and/or in uses (miles for a vehicle)
+- **Salvage value** — what it will still be worth at the end of its life
+- **In service** — defaults to the purchase date; the cost defaults to the purchase price
+
+The section shows book value today, depreciation so far and this year, a book value chart and a schedule table by year. Book value never drops below the salvage value.
+
+Once any item has a schedule, the hub shows a **Depreciation** strip: total book value (equipment and vehicles), this year's depreciation to date, and the work share of it. Each equipment card shows its **Book** value.
+
+**Work use.** Tick "Used for work" on an item. Then, in a planner task (synced Google Calendar events are planner tasks too), use **Used equipment** to link the item and tick "for work". The Work use section counts uses, work uses, the work share (work uses ÷ all uses, or an override), the cost per use, and the work-share depreciation for the year: useful for business expense records. Vehicles count miles from their trips instead (purpose "work" or tax category "business" = work miles); open a vehicle's **value** link on the Travel page.
+
+**Save for replacement.** Enter a replacement cost and date, then click Save for replacement to open a savings goal prefilled with both.
+
+All of these are estimates, not tax advice.
+
+---
+
 ### What the Summary Doesn't Include
 
 - **Retired items** — excluded from all calculations. If you retire a laptop, its value drops out of the totals.
@@ -134,4 +155,5 @@ Here's what the `/api/equipment/summary` API returns:
 - ROI uses attributed revenue from income transactions linked via activity links
 - Retired items are excluded from all summary calculations
 - Category breakdown is sorted by current value — most valuable category first
+- An item's Depreciation section gives a planned schedule and book value; Work use gives work share and cost per use
 - Check monthly to track whether your gear is working for you or just depreciating
