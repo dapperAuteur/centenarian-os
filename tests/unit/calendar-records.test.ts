@@ -219,6 +219,19 @@ test('idempotent: the same event processed again changes nothing', async () => {
   assert.equal(db.writes().length, writesBefore);
 });
 
+test('idempotent: an update that ran but whose snapshot was not saved is not mistaken for a user edit', async () => {
+  const db = newDb();
+  const first = await run(db, { mode: 'create', fields: fieldsFor('Lunch at Chipotle #expense $12.40') });
+  const changed = fieldsFor('Lunch at Chipotle #expense $15');
+  await run(db, { mode: 'update', fields: changed, state: first.outcome });
+  // The sync row still holds the old snapshot; the event is processed again.
+  const writesBefore = db.writes().length;
+  const again = await run(db, { mode: 'update', fields: changed, state: first.outcome });
+  assert.equal(again.outcome.review, null);
+  assert.equal(again.outcome.snapshot?.amount, '15.00');
+  assert.equal(db.writes().length, writesBefore);
+});
+
 // ── Update ──────────────────────────────────────────────────────────────────────
 
 test('update: an untouched transaction follows the event (new amount and date)', async () => {

@@ -426,6 +426,11 @@ export async function syncEventRecord(db: SupabaseClient, input: SyncRecordInput
   }
   // Nothing the record holds changed (e.g. only the event's description did).
   if (sameValues(desired.values, state.snapshot)) return outcome(state);
+  // The record already holds the new values (a run that updated it but stopped before saving
+  // the snapshot, or the user made the same change): adopt them, write nothing.
+  if (sameValues(normalizeValues(storedType, row), desired.values)) {
+    return outcome({ ...state, record_type: storedType, snapshot: desired.values });
+  }
   if (await isTouched(db, storedType, row, state.snapshot)) {
     return outcome(
       state,
