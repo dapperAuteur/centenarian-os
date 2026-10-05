@@ -1,24 +1,17 @@
 // lib/ridewitus/witus-sub.ts
 // Server-only. The user's WitUS account id (`sub`), which every event to RideWitUS carries
-// (RideWitUS PRD §6.3). Read from witus_identities (migration 20260630120000), written by the
-// "Sign in with WitUS" callback.
-//
-// BUNDLE NOTE: a minimal local lookup. Another branch adds the shared lib/witus/identity.ts;
-// when both land, replace this with that helper.
+// (RideWitUS PRD §6.3). A thin wrapper over the shared lookup in lib/witus/identity.ts, kept so
+// the calendar activity feed's call sites stay unchanged.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { witusSubForUserId } from '../witus/identity.ts';
 
-/** The user's witus_sub, or null when they have never signed in with WitUS (or the table is missing). */
+/** The user's witus_sub, or null when they have never signed in with WitUS (or the lookup failed). */
 export async function witusSubForUser(db: SupabaseClient, userId: string): Promise<string | null> {
-  const { data, error } = await db
-    .from('witus_identities')
-    .select('witus_sub')
-    .eq('user_id', userId)
-    .maybeSingle();
-  if (error) {
-    console.error('[lib/ridewitus/witus-sub] could not read witus_identities:', error.code ?? error.message);
-    return null;
+  const result = await witusSubForUserId(db, userId);
+  if (result.ok) return result.sub;
+  if (result.reason === 'lookup_failed') {
+    console.error('[lib/ridewitus/witus-sub] could not read witus_identities');
   }
-  const sub = (data as { witus_sub?: unknown } | null)?.witus_sub;
-  return typeof sub === 'string' && sub ? sub : null;
+  return null;
 }
