@@ -72,7 +72,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   );
 
+  // Every query below runs with the service role (RLS bypassed), so each one
+  // must carry its entity's public rule itself. A row may only be listed if a
+  // signed-out visitor could open its page.
+
   // ── Dynamic: public profiles ───────────────────────────────────────────────
+  // profiles has no visibility column: every profile is publicly readable
+  // (migration 023) and /profiles/[username] serves any username.
   const { data: profiles } = await db
     .from('profiles')
     .select('username, updated_at')
@@ -87,6 +93,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // ── Dynamic: public blog posts ────────────────────────────────────────────
+  // Public rule (migration 024): visibility = 'public', or 'scheduled' once
+  // scheduled_at has passed. Only published 'public' posts are listed — never
+  // draft, private or authenticated_only.
   const { data: posts } = await db
     .from('blog_posts')
     .select('slug, published_at, updated_at, profiles!inner(username)')
@@ -106,6 +115,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }).filter((r) => !r.url.endsWith('/'));
 
   // ── Dynamic: public recipes ───────────────────────────────────────────────
+  // Public rule (migrations 027/032): visibility = 'public', or 'scheduled'
+  // once scheduled_at has passed. Only published 'public' recipes are listed.
   const { data: recipes } = await db
     .from('recipes')
     .select('slug, published_at, updated_at, profiles!inner(username)')
@@ -125,10 +136,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }).filter((r) => !r.url.endsWith('/'));
 
   // ── Dynamic: published academy courses ───────────────────────────────────
+  // courses has no `status` column — "published" is is_published (migration 039)
+  // plus visibility (migration 040). Only list what an anonymous crawler can
+  // open: public courses, and scheduled ones whose published_at has passed.
+  // Members-only courses 404 for signed-out visitors, so they stay out.
   const { data: courses } = await db
     .from('courses')
     .select('id, slug, updated_at, profiles:teacher_id(username)')
-    .eq('status', 'published')
+    .eq('is_published', true)
+    .or(`visibility.eq.public,and(visibility.eq.scheduled,published_at.lte.${now})`)
     .limit(2000);
 
   const courseRoutes: MetadataRoute.Sitemap = (courses ?? []).map((c) => {
@@ -143,11 +159,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     };
   });
 
-  // ── Dynamic: active institutions ─────────────────────────────────────────
+  // ── Dynamic: institutions ────────────────────────────────────────────────
+  // institutions has no active flag (migration 099) — the public directory at
+  // /institutions lists every row, so the sitemap does too.
   const { data: institutions } = await db
     .from('institutions')
     .select('slug, updated_at')
-    .eq('is_active', true)
     .limit(500);
 
   const institutionRoutes: MetadataRoute.Sitemap = (institutions ?? []).map((i) => ({
@@ -158,9 +175,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // ── Dynamic: public exercises ──────────────────────────────────────────
+  // User exercises are private by default (migration 117). Only rows the
+  // exercises_public_read policy exposes — visibility = 'public' AND
+  // is_active — may be listed; this client is service-role and bypasses RLS,
+  // so the filter has to be explicit. Listing by is_active alone published
+  // the id of every user's private exercise.
   const { data: exercises } = await db
     .from('exercises')
     .select('id, updated_at')
+    .eq('visibility', 'public')
     .eq('is_active', true)
     .limit(5000);
 

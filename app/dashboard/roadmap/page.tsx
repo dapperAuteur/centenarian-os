@@ -275,7 +275,7 @@ export default function RoadmapPage() {
       .from('milestones')
       .select('id, title')
       .eq('goal_id', goalId)
-      .eq('status', 'active');
+      .neq('status', 'archived');
       
     const goal = Object.values(goals).flat().find(g => g.id === goalId);
     const { data: otherGoals } = await supabase
@@ -306,7 +306,7 @@ export default function RoadmapPage() {
       .select('id, title')
       .eq('goal_id', milestone?.goal_id)
       .neq('id', milestoneId)
-      .eq('status', 'active');
+      .neq('status', 'archived');
       
     setArchiveTarget({
       type: 'milestone',
@@ -342,7 +342,7 @@ export default function RoadmapPage() {
             .from('milestones')
             .select('id')
             .in('goal_id', goalIds)
-            .eq('status', 'active');
+            .neq('status', 'archived');
           const milestoneIds = milestones?.map(m => m.id) || [];
           
           if (milestoneIds.length > 0) {
@@ -375,13 +375,13 @@ export default function RoadmapPage() {
           .from('milestones')
           .update({ goal_id: newParentId })
           .eq('goal_id', item.id)
-          .eq('status', 'active');
+          .neq('status', 'archived');
       } else if (cascade) {
         const { data: milestones } = await supabase
           .from('milestones')
           .select('id')
           .eq('goal_id', item.id)
-          .eq('status', 'active');
+          .neq('status', 'archived');
         const milestoneIds = milestones?.map(m => m.id) || [];
         
         if (milestoneIds.length > 0) {
@@ -428,9 +428,13 @@ export default function RoadmapPage() {
 
   // Restore handler
   const handleRestore = async (table: string, id: string) => {
+    // milestones has no 'active' status (its CHECK allows not_started | in_progress |
+    // completed | blocked | archived), so a restored milestone goes back to the
+    // column default. Roadmaps, goals and tasks restore to 'active'.
+    const restoredStatus = table === 'milestones' ? 'not_started' : 'active';
     await supabase
       .from(table)
-      .update({ status: 'active', archived_at: null })
+      .update({ status: restoredStatus, archived_at: null })
       .eq('id', id);
     loadData();
   };

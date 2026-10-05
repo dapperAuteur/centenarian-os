@@ -24,12 +24,20 @@ export async function GET() {
     .from('courses')
     .select(`
       id, title, is_published, price, price_type, category, created_at, teacher_id,
-      profiles!courses_teacher_id_fkey(username, display_name, email),
+      profiles!courses_teacher_id_fkey(username, display_name),
       enrollments(count)
     `)
     .order('created_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // profiles has no email column — teacher emails live in auth.users, so read
+  // them through the auth admin API.
+  const teacherIds = [...new Set((courses || []).map((c) => c.teacher_id))];
+  const teacherAuth = await Promise.all(teacherIds.map((id) => db.auth.admin.getUserById(id)));
+  const teacherEmail = new Map(
+    teacherIds.map((id, i) => [id, teacherAuth[i].data?.user?.email ?? '']),
+  );
 
   const formatted = (courses || []).map((c) => {
     const profile = Array.isArray(c.profiles) ? c.profiles[0] : c.profiles;
@@ -44,7 +52,7 @@ export async function GET() {
       created_at: c.created_at,
       teacher_id: c.teacher_id,
       teacher_name: profile?.display_name || profile?.username || 'Unknown',
-      teacher_email: profile?.email || '',
+      teacher_email: teacherEmail.get(c.teacher_id) || '',
       enrollment_count: enrollCount,
     };
   });

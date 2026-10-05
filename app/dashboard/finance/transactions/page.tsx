@@ -6,6 +6,10 @@ import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight, Link2, X, 
 import Link from 'next/link';
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
 import LearnCategoryPrompt, { type LearnCategoryRequest } from '@/components/finance/LearnCategoryPrompt';
+import PossibleTransfersPanel from '@/components/finance/PossibleTransfersPanel';
+import DeleteTransferDialog from '@/components/finance/DeleteTransferDialog';
+import TransferBadge, { type TransferPartnerView } from '@/components/finance/TransferBadge';
+import { accountLabel } from '@/lib/finance/transfers/pairing';
 import { offlineFetch, isQueuedResponse } from '@/lib/offline/offline-fetch';
 import { vendorKey } from '@/lib/finance/transaction-matching';
 
@@ -25,6 +29,8 @@ interface Account {
   id: string;
   name: string;
   account_type: string;
+  institution_name?: string | null;
+  last_four?: string | null;
   is_active: boolean;
 }
 
@@ -41,9 +47,13 @@ interface Transaction {
   category_id: string | null;
   brand_id: string | null;
   budget_categories: Category | null;
-  financial_accounts: { id: string; name: string } | null;
+  financial_accounts: { id: string; name: string; institution_name?: string | null; last_four?: string | null } | null;
   notes: string | null;
   created_at: string;
+  // Set when the row is one side of a transfer. Absent on a database that
+  // doesn't have the transfer columns yet.
+  transfer_group_id?: string | null;
+  transfer_partner?: TransferPartnerView | null;
 }
 
 const SOURCE_MODULE_BADGE: Record<string, { label: string; className: string }> = {
@@ -64,6 +74,11 @@ export default function TransactionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlAccountId = searchParams.get('account_id') || '';
+  // Two links the statement import screen uses:
+  //   ?batch=<import_batch_id>  lists the transactions of one import
+  //   ?review=transfers         opens the "Possible transfers" panel
+  const urlBatchId = searchParams.get('batch') || '';
+  const reviewTransfers = searchParams.get('review') === 'transfers';
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -88,7 +103,7 @@ export default function TransactionsPage() {
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeFilterCount = filterAccountIds.size + filterCategoryIds.size + filterBrandIds.size
-    + (filterType ? 1 : 0) + (filterSource ? 1 : 0) + (filterFrom || filterTo ? 1 : 0);
+    + (filterType ? 1 : 0) + (filterSource ? 1 : 0) + (filterFrom || filterTo ? 1 : 0) + (urlBatchId ? 1 : 0);
 
   // Bulk selection
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -105,6 +120,14 @@ export default function TransactionsPage() {
   const [linkingId, setLinkingId] = useState<string | null>(null);
   // "Always categorize this vendor as ...?" prompt after an edit or bulk change
   const [learnPrompt, setLearnPrompt] = useState<{ id: number; request: LearnCategoryRequest } | null>(null);
+  // Why the last save or delete was refused (one side of a transfer, for example).
+  const [actionError, setActionError] = useState<string | null>(null);
+  // Deleting one side of a transfer asks what to do with the other side.
+  const [pairDelete, setPairDelete] = useState<{ id: string; partner: TransferPartnerView | null } | null>(null);
+  // Bumped after a delete, so the "Possible transfers" panel checks again.
+  const [transfersVersion, setTransfersVersion] = useState(0);
+  // Something the server wants said about the list (the import filter can't be applied, say).
+  const [listNotice, setListNotice] = useState<string | null>(null);
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
@@ -119,6 +142,7 @@ export default function TransactionsPage() {
     if (filterFrom) params.set('from', filterFrom);
     if (filterTo) params.set('to', filterTo);
     if (filterSearch) params.set('q', filterSearch);
+    if (urlBatchId) params.set('batch', urlBatchId);
 
     try {
       const res = await offlineFetch(`/api/finance/transactions?${params}`);
@@ -126,11 +150,12 @@ export default function TransactionsPage() {
         const data = await res.json();
         setTransactions(data.transactions || []);
         setTotal(data.total || 0);
+        setListNotice(typeof data.notice === 'string' ? data.notice : null);
       }
     } finally {
       setLoading(false);
     }
-  }, [page, filterType, filterSource, filterAccountIds, filterCategoryIds, filterBrandIds, filterFrom, filterTo, filterSearch]);
+  }, [page, filterType, filterSource, filterAccountIds, filterCategoryIds, filterBrandIds, filterFrom, filterTo, filterSearch, urlBatchId]);
 
   useEffect(() => {
     Promise.all([
@@ -142,39 +167,62 @@ export default function TransactionsPage() {
   }, []);
 
   // Clear selection whenever filters or page change
-  useEffect(() => { setSelected(new Set()); }, [page, filterType, filterSource, filterAccountIds, filterCategoryIds, filterBrandIds, filterFrom, filterTo, filterSearch]);
+  useEffect(() => { setSelected(new Set()); }, [page, filterType, filterSource, filterAccountIds, filterCategoryIds, filterBrandIds, filterFrom, filterTo, filterSearch, urlBatchId]);
+
+  // A different import (or none) starts from its first page.
+  useEffect(() => { setPage(0); }, [urlBatchId]);
 
   useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (tx: Transaction) => {
+    setActionError(null);
+    // One side of a transfer: choose between deleting both sides and unlinking first.
+    if (tx.transfer_group_id && tx.transfer_partner) {
+      setPairDelete({ id: tx.id, partner: tx.transfer_partner });
+      return;
+    }
     if (!confirm('Delete this transaction?')) return;
-    const res = await offlineFetch(`/api/finance/transactions?id=${id}`, { method: 'DELETE' });
-    if (res.ok) fetchTransactions();
+    const res = await offlineFetch(`/api/finance/transactions?id=${tx.id}`, { method: 'DELETE' });
+    if (res.ok) {
+      fetchTransactions();
+      setTransfersVersion((v) => v + 1);
+      return;
+    }
+    const data = await res.json().catch(() => null);
+    // The server found a transfer this list didn't know about yet.
+    if (res.status === 409 && data?.transfer_group_id) setPairDelete({ id: tx.id, partner: data.partner ?? null });
+    else setActionError(typeof data?.error === 'string' ? data.error : 'Delete failed. Please try again.');
   };
 
   const handleEditSave = async (id: string) => {
     const original = transactions.find((tx) => tx.id === id);
+    setActionError(null);
     const res = await offlineFetch('/api/finance/transactions', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, ...editForm }),
     });
-    if (res.ok) {
-      // The category was set or changed: offer to remember it for this vendor.
-      const categoryId = editForm.category_id || '';
-      const vendor = (editForm.vendor || '').trim();
-      if (!isQueuedResponse(res) && categoryId && vendor && categoryId !== (original?.category_id || '')) {
-        setLearnPrompt({
-          id: Date.now(),
-          request: { vendor, type: editForm.type === 'income' ? 'income' : 'expense', categoryId },
-        });
-      }
-      setEditId(null);
-      fetchTransactions();
+    if (!res.ok) {
+      // Said out loud: a refused edit (one side of a transfer, say) used to fail silently.
+      const data = await res.json().catch(() => null);
+      setActionError(typeof data?.error === 'string' ? data.error : 'The change could not be saved. Please try again.');
+      return;
     }
+    // The category was set or changed: offer to remember it for this vendor.
+    const categoryId = editForm.category_id || '';
+    const vendor = (editForm.vendor || '').trim();
+    if (!isQueuedResponse(res) && categoryId && vendor && categoryId !== (original?.category_id || '')) {
+      setLearnPrompt({
+        id: Date.now(),
+        request: { vendor, type: editForm.type === 'income' ? 'income' : 'expense', categoryId },
+      });
+    }
+    setEditId(null);
+    fetchTransactions();
   };
 
   const startEdit = (tx: Transaction) => {
+    setActionError(null);
     setEditId(tx.id);
     setEditForm({
       amount: String(tx.amount),
@@ -190,6 +238,14 @@ export default function TransactionsPage() {
   const toggleFilterId = (setter: React.Dispatch<React.SetStateAction<Set<string>>>, id: string) => {
     setter((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
     setPage(0);
+  };
+
+  // Drops only ?batch= from the address, keeping whatever else is there.
+  const clearBatchFilter = () => {
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete('batch');
+    const query = next.toString();
+    router.replace(`/dashboard/finance/transactions${query ? `?${query}` : ''}`);
   };
 
   const clearAllFilters = () => {
@@ -289,16 +345,23 @@ export default function TransactionsPage() {
             const acct = accounts.find((a) => a.id === id);
             return (
               <button key={id} onClick={() => toggleFilterId(setFilterAccountIds, id)}
-                className="flex items-center gap-1 text-xs bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 px-2.5 py-1 rounded-full hover:bg-fuchsia-100 transition">
-                {acct?.name ?? 'Account'} <X className="w-3 h-3" />
+                className="flex items-center gap-1 text-xs bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 min-h-11 px-3 rounded-full hover:bg-fuchsia-100 transition">
+                {acct ? accountLabel(acct) : 'Account'} <X className="w-3 h-3" />
               </button>
             );
           })}
+          {urlBatchId && (
+            <button onClick={clearBatchFilter}
+              aria-label="Remove the filter: transactions from one import"
+              className="flex items-center gap-1 text-xs bg-sky-50 text-sky-800 border border-sky-200 min-h-11 px-3 rounded-full hover:bg-sky-100 transition">
+              From one import <X className="w-3 h-3" aria-hidden="true" />
+            </button>
+          )}
           {Array.from(filterCategoryIds).map((id) => {
             const cat = categories.find((c) => c.id === id);
             return (
               <button key={id} onClick={() => toggleFilterId(setFilterCategoryIds, id)}
-                className="flex items-center gap-1 text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-1 rounded-full hover:bg-purple-100 transition">
+                className="flex items-center gap-1 text-xs bg-purple-50 text-purple-700 border border-purple-200 min-h-11 px-3 rounded-full hover:bg-purple-100 transition">
                 {cat?.name ?? 'Category'} <X className="w-3 h-3" />
               </button>
             );
@@ -307,26 +370,26 @@ export default function TransactionsPage() {
             const brand = brands.find((b) => b.id === id);
             return (
               <button key={id} onClick={() => toggleFilterId(setFilterBrandIds, id)}
-                className="flex items-center gap-1 text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-full hover:bg-amber-100 transition">
+                className="flex items-center gap-1 text-xs bg-amber-50 text-amber-700 border border-amber-200 min-h-11 px-3 rounded-full hover:bg-amber-100 transition">
                 {brand?.name ?? 'Brand'} <X className="w-3 h-3" />
               </button>
             );
           })}
           {filterType && (
             <button onClick={() => { setFilterType(''); setPage(0); }}
-              className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-full hover:bg-blue-100 transition">
+              className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 min-h-11 px-3 rounded-full hover:bg-blue-100 transition">
               {filterType === 'expense' ? 'Expenses' : 'Income'} <X className="w-3 h-3" />
             </button>
           )}
           {filterSource && (
             <button onClick={() => { setFilterSource(''); setPage(0); }}
-              className="flex items-center gap-1 text-xs bg-teal-50 text-teal-700 border border-teal-200 px-2.5 py-1 rounded-full hover:bg-teal-100 transition">
+              className="flex items-center gap-1 text-xs bg-teal-50 text-teal-700 border border-teal-200 min-h-11 px-3 rounded-full hover:bg-teal-100 transition">
               {filterSource === 'bank_sync' ? 'Bank import' : 'Manual'} <X className="w-3 h-3" />
             </button>
           )}
           {(filterFrom || filterTo) && (
             <button onClick={() => { setFilterFrom(''); setFilterTo(''); setPage(0); }}
-              className="flex items-center gap-1 text-xs bg-gray-100 text-gray-700 border border-gray-200 px-2.5 py-1 rounded-full hover:bg-gray-200 transition">
+              className="flex items-center gap-1 text-xs bg-gray-100 text-gray-700 border border-gray-200 min-h-11 px-3 rounded-full hover:bg-gray-200 transition">
               {filterFrom && filterTo ? `${filterFrom} – ${filterTo}` : filterFrom ? `From ${filterFrom}` : `To ${filterTo}`} <X className="w-3 h-3" />
             </button>
           )}
@@ -401,7 +464,7 @@ export default function TransactionsPage() {
                       <input type="checkbox" checked={filterAccountIds.has(acct.id)}
                         onChange={() => toggleFilterId(setFilterAccountIds, acct.id)}
                         className="w-4 h-4 rounded border-gray-300 text-fuchsia-600 cursor-pointer" />
-                      <span className="text-sm text-gray-700 group-hover:text-gray-900 truncate">{acct.name}</span>
+                      <span className="text-sm text-gray-700 group-hover:text-gray-900 truncate">{accountLabel(acct)}</span>
                     </label>
                   ))}
                 </div>
@@ -444,6 +507,27 @@ export default function TransactionsPage() {
           </div>
         )}
       </div>
+
+      {/* Possible transfers between the person's own accounts */}
+      <PossibleTransfersPanel
+        refreshKey={transfersVersion}
+        from={filterFrom || undefined}
+        to={filterTo || undefined}
+        requested={reviewTransfers}
+        onChanged={fetchTransactions}
+      />
+
+      {listNotice && (
+        <p role="status" className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          {listNotice}
+        </p>
+      )}
+
+      {actionError && (
+        <p role="alert" className="p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
+          {actionError}
+        </p>
+      )}
 
       {/* Bulk action bar */}
       {selected.size > 0 && (
@@ -525,8 +609,16 @@ export default function TransactionsPage() {
                         step="0.01"
                         value={editForm.amount}
                         onChange={(e) => setEditForm((p) => ({ ...p, amount: e.target.value }))}
-                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-900"
+                        aria-label="Amount"
+                        disabled={Boolean(tx.transfer_group_id)}
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-900 disabled:bg-gray-100 disabled:text-gray-500"
                       />
+                      {tx.transfer_group_id && (
+                        <p className="text-xs text-gray-600">
+                          Part of a transfer: the amount is locked so both sides keep matching. Unlink it on the
+                          transaction&rsquo;s page to change it.
+                        </p>
+                      )}
                       <input
                         type="text"
                         value={editForm.description}
@@ -567,7 +659,7 @@ export default function TransactionsPage() {
                         <p className="text-sm font-medium text-gray-900">{tx.description || tx.vendor || 'Transaction'}</p>
                         <p className="text-xs text-gray-500 mt-0.5">
                           {new Date(tx.transaction_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          {tx.financial_accounts?.name && <span className="ml-2 text-gray-400">{tx.financial_accounts.name}</span>}
+                          {tx.financial_accounts?.name && <span className="ml-2 text-gray-500">{accountLabel(tx.financial_accounts)}</span>}
                           {tx.budget_categories && (
                             <span className="ml-2 inline-flex items-center gap-1">
                               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: tx.budget_categories.color }} />
@@ -575,6 +667,9 @@ export default function TransactionsPage() {
                             </span>
                           )}
                         </p>
+                        {tx.transfer_group_id && (
+                          <TransferBadge partner={tx.transfer_partner} className="mt-1" />
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`text-sm font-semibold ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
@@ -589,7 +684,7 @@ export default function TransactionsPage() {
                           <Edit3 className="w-4 h-4 text-gray-500" aria-hidden="true" />
                         </button>
                         <button
-                          onClick={() => handleDelete(tx.id)}
+                          onClick={() => handleDelete(tx)}
                           className="min-h-11 min-w-11 flex items-center justify-center hover:bg-red-50 rounded-lg"
                           title="Delete"
                           aria-label={`Delete ${tx.description || tx.vendor || 'transaction'}`}
@@ -671,11 +766,13 @@ export default function TransactionsPage() {
                               {SOURCE_MODULE_BADGE[tx.source_module].label}
                             </span>
                           )}
-                          {tx.source && SOURCE_BADGE[tx.source] && (
+                          {/* A linked row gets the transfer badge; the plain source badge is for the rest. */}
+                          {tx.source && SOURCE_BADGE[tx.source] && !tx.transfer_group_id && (
                             <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${SOURCE_BADGE[tx.source].className}`}>
                               {SOURCE_BADGE[tx.source].label}
                             </span>
                           )}
+                          {tx.transfer_group_id && <TransferBadge partner={tx.transfer_partner} />}
                         </div>
                       )}
                     </td>
@@ -691,8 +788,8 @@ export default function TransactionsPage() {
                         tx.vendor || '-'
                       )}
                     </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
-                      {tx.financial_accounts?.name ?? '-'}
+                    <td className="px-4 py-3 text-gray-500 text-xs">
+                      {tx.financial_accounts ? accountLabel(tx.financial_accounts) : '-'}
                     </td>
                     <td className="px-4 py-3">
                       {editId === tx.id ? (
@@ -737,7 +834,10 @@ export default function TransactionsPage() {
                           step="0.01"
                           value={editForm.amount}
                           onChange={(e) => setEditForm((p) => ({ ...p, amount: e.target.value }))}
-                          className="px-2 py-1 text-xs border border-gray-300 rounded w-24 text-right text-gray-900"
+                          aria-label="Amount"
+                          disabled={Boolean(tx.transfer_group_id)}
+                          title={tx.transfer_group_id ? 'Part of a transfer: unlink it to change the amount' : undefined}
+                          className="px-2 py-1 text-xs border border-gray-300 rounded w-24 text-right text-gray-900 disabled:bg-gray-100 disabled:text-gray-500"
                         />
                       ) : (
                         <span className={`font-medium ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
@@ -759,7 +859,7 @@ export default function TransactionsPage() {
                           <button onClick={() => setLinkingId(tx.id)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:bg-sky-50 hover:text-sky-700 rounded-lg transition" title="Link activities" aria-label={`Link activities to ${tx.description || tx.vendor || 'transaction'}`}>
                             <Link2 className="w-4 h-4" aria-hidden="true" />
                           </button>
-                          <button onClick={() => handleDelete(tx.id)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition" title="Delete" aria-label={`Delete ${tx.description || tx.vendor || 'transaction'}`}>
+                          <button onClick={() => handleDelete(tx)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition" title="Delete" aria-label={`Delete ${tx.description || tx.vendor || 'transaction'}`}>
                             <Trash2 className="w-4 h-4" aria-hidden="true" />
                           </button>
                         </div>
@@ -798,6 +898,17 @@ export default function TransactionsPage() {
           </div>
         </div>
       )}
+
+      <DeleteTransferDialog
+        transactionId={pairDelete?.id ?? null}
+        partner={pairDelete?.partner ?? null}
+        onClose={() => setPairDelete(null)}
+        onDeleted={() => {
+          setPairDelete(null);
+          fetchTransactions();
+          setTransfersVersion((v) => v + 1);
+        }}
+      />
 
       <ActivityLinkModal
         isOpen={!!linkingId}

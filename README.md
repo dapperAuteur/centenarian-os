@@ -6,7 +6,7 @@
 > [`/dashboard/weekly-review`](./app/dashboard/weekly-review)) can surface cross-domain patterns no
 > single-vertical tracker can see. That co-location is the product, not an accident of scope.
 
-> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online)), offline-first via service-worker + IndexedDB queue, **203 migrations** to date.
+> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online)), offline-first via service-worker + IndexedDB queue, **206 migrations** to date.
 
 **Actively decomposing.** Modules that a sibling WitUS app already owns are being removed under
 the ecosystem's "one app, one job" rule (see [CLAUDE.md](./CLAUDE.md)) — Media → Stream.WitUS,
@@ -31,7 +31,7 @@ flowchart LR
 
   CentOS[centenarian-os<br/>Next.js 15 · Vercel<br/>14 modules]
   Contractor[contractor-os<br/>Work.WitUS]
-  DB[(Supabase Postgres<br/>203 migrations)]:::shared
+  DB[(Supabase Postgres<br/>206 migrations)]:::shared
 
   CentOS -->|service-role + publishable| DB
   Contractor -->|service-role + publishable| DB
@@ -40,7 +40,7 @@ flowchart LR
 For dev-audience readers:
 
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** — full module map, Mermaid diagrams of the shared-DB boundary, cross-app traffic via the `unified-schedule` edge function, offline-sync layer, repo layout, and stack table.
-- **[MIGRATIONS.md](./MIGRATIONS.md)** — 203 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
+- **[MIGRATIONS.md](./MIGRATIONS.md)** — 206 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
 - **[CLAUDE.md](./CLAUDE.md)** — AI-collaborator instructions doubling as the project conventions doc (style, a11y, the Shared Database rule, branch workflow).
 - **[STYLE_GUIDE.md](./STYLE_GUIDE.md)** — git workflow, branch naming, Conventional Commits, PR rules. Every change starts on a new branch off `main`; `main` is never pushed to directly.
 - **[docs/CentenarianAcademy/](./docs/CentenarianAcademy/)** — course-authoring standards: `CourseAuthoringGuide.md` (craft), `CourseProductionPlaybook.md` (process), `CitationIntegrityGuide.md` (verify every source, never ship a fake citation), and `CourseCreationWithAI.md` (hand to your AI). Per-course recipes: `CourseAuthoringGuide NASM CPT/CES/CNC.md` and `CourseAuthoringGuide BVC.md` (Better Vice Club: audio-first, four-lens episodes; episode-per-module; rotating quizzes + FlashLearn recall loop + season-wide glossary). Courses cite only verified, peer-reviewed sources and ship a teacher evidence ledger.
@@ -106,12 +106,12 @@ No free plan. All users must subscribe to access paid modules.
 
 | Module | Description | Access |
 |--------|-------------|--------|
-| **Planner** | Roadmap, Goals, Milestones, Tasks hierarchy with day/week/month views; one-field task capture into an auto-created Inbox (works offline), searchable goal picker, Inbox filter | Paid |
+| **Planner** | Roadmap, Goals, Milestones, Tasks hierarchy with day/week/month views; one-field task capture into an auto-created Inbox (works offline), searchable goal picker, Inbox filter; Google Calendar connection (read-only, choose which calendars will sync; event sync is the next phase) | Paid |
 | **Fuel** | Nutrition tracking with NCV framework, USDA/Open Food Facts APIs, auto inventory | Paid |
 | **Engine** | Pomodoro focus sessions, doodle canvas, daily debrief, AI weekly reviews | Paid |
 | **Health Metrics** | RHR, steps, sleep, body composition; Garmin/Oura/WHOOP sync; CSV import | Paid |
 | **Workouts & Exercises** | Exercise library with categories; workout templates; Nomad Longevity OS | Paid |
-| **Financial Dashboard** | Accounts, transactions, budgets, invoices, CSV import and export, learned vendor categories ("Always categorize this vendor as...?") | Paid |
+| **Financial Dashboard** | Accounts, transactions, budgets, invoices, bank statement CSV import with duplicate detection, matching and undo, CSV export, learned vendor categories ("Always categorize this vendor as...?"), transfers between your own accounts (card and loan payments included) tracked as transfers instead of spending and income | Paid |
 | **Travel & Vehicles** | Fuel logs with OCR, trip tracking, multi-stop routes, maintenance, IRS mileage | Paid |
 | **Equipment & Assets** | Asset tracking, valuation history, media gallery, cross-module links | Paid |
 | **Correlations & Analytics** | Cross-module data correlations, trend charts, daily/weekly aggregates | Paid |
@@ -204,6 +204,58 @@ Without `WITUS_OIDC_CLIENT_ID` both are dark: the button does not render and sig
 local. Endpoint overrides and the full reasoning are documented in `.env.example` and
 `lib/auth/witus-sso.ts`.
 
+### Optional: Google Calendar (one-way sync)
+
+```env
+GOOGLE_OAUTH_CLIENT_ID=
+GOOGLE_OAUTH_CLIENT_SECRET=
+TOKEN_ENCRYPTION_KEY=       # openssl rand -hex 32; encrypts the stored Google tokens
+SUPABASE_JWT_SECRET=        # signs the OAuth state (lib/oauth-state.ts); SUPABASE__SUPABASE_JWT_SECRET also works
+```
+
+One-way, Google -> CentenarianOS. The only Calendar scope requested is
+`https://www.googleapis.com/auth/calendar.readonly` (plus `openid email` to show which account
+is connected), so nothing is ever written to Google.
+
+**What ships today (phase 1, "connect"):** Settings -> Calendar Sync (`/dashboard/settings/calendar`)
+connects a Google account, lists its calendars, lets the user switch each one on or off, shows
+"Reconnect" when Google stops accepting the saved authorization, and disconnects (revokes the
+grant at Google, then deletes the saved tokens and calendar choices). **Events are not synced
+yet.** That is the next phase; the `calendar_sync_items` table is created now and stays empty.
+
+**Where the tokens live:** `calendar_connections`, encrypted with AES-256-GCM
+(`lib/crypto/tokens.ts`) before they are written. The table has Row Level Security on and no
+policies, so only the service-role API routes under `app/api/calendar/google/` can read it, and
+no response to the browser includes a token column.
+
+**Setup:**
+
+1. Apply `supabase/migrations/204_calendar_sync.sql`. Until it is applied, the routes answer
+   with a JSON error (`code: "migration_missing"`) and the page says so.
+2. In Google Cloud Console: enable the Google Calendar API, configure the OAuth consent screen,
+   and create an OAuth client of type "Web application".
+3. On that client, add one authorized redirect URI per origin the app is served from:
+   `<origin>/api/calendar/google/callback` (for local development,
+   `http://localhost:3000/api/calendar/google/callback`). The app builds the URI from the origin
+   of the request, and Google requires an exact match (scheme, host, case, no trailing slash).
+4. Set the four variables above. With any of them missing, the settings page shows "not
+   available on this site yet" instead of a Connect button.
+
+**Good to know (from Google's OAuth documentation):** while the consent screen's publishing
+status is "Testing", Google issues refresh tokens that expire after 7 days for scopes beyond
+name, email and profile
+([Refresh token expiration](https://developers.google.com/identity/protocols/oauth2#expiration)).
+In that state the page asks the user to Reconnect about once a week. Google describes that
+7-day limit only for the "Testing" status.
+
+**Not yet verified against a live Google OAuth client** (none existed when this was built; the
+client was written from Google's documentation and is covered by unit tests with a fake
+`fetch`). Check by hand once credentials exist: the consent screen appears and returns to the
+settings page as connected; the account email shows; the calendar list loads; a calendar toggle
+survives a reload; Disconnect removes the app from the Google Account's third-party access
+list; connecting again after that works; and an expired or revoked grant turns into "Needs
+reconnecting" rather than an error page.
+
 ### Optional: Error Monitoring (Better Stack)
 
 Crash reporting runs through the Sentry SDK, pointed at Better Stack (which speaks
@@ -272,7 +324,7 @@ supabase db push
 # Run migrations in order from supabase/migrations/
 ```
 
-There are 203 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the ContractorOS (Work.WitUS) app — read [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" before adding any.
+There are 206 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the ContractorOS (Work.WitUS) app — read [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" before adding any.
 
 ### Run Development Server
 
@@ -288,7 +340,7 @@ Open [http://localhost:3000](http://localhost:3000)
 npm run test:unit
 ```
 
-Runs the pure-function tests with Node's built-in test runner (`node --test --experimental-strip-types`, Node 22.6+). No database, network or extra dependencies. Covers merchant-name matching and learned vendor categories (`tests/transaction-matching.test.ts`) and the stored-secret encryption helper (`tests/unit/crypto-tokens.test.ts`).
+Runs the pure-function tests with Node's built-in test runner (`node --test --experimental-strip-types`, Node 22.6+). No database, network or extra dependencies. Covers merchant-name matching and learned vendor categories (`tests/transaction-matching.test.ts`), the stored-secret encryption helper (`tests/unit/crypto-tokens.test.ts`), and the Google Calendar client and token refresh (`tests/unit/google-calendar-client.test.ts`, with a fake `fetch`).
 
 ## Project Structure
 
@@ -331,7 +383,7 @@ centenarian-os/
 ├── content/tutorials/         # 15+ tutorial course scripts
 ├── public/templates/          # CSV import templates (10+ modules)
 └── supabase/
-    └── migrations/            # 203 database migrations — see MIGRATIONS.md
+    └── migrations/            # 206 database migrations — see MIGRATIONS.md
 ```
 
 For the full module map and the cross-app shared-DB story, see **[ARCHITECTURE.md](./ARCHITECTURE.md)**.

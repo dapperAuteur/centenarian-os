@@ -64,7 +64,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
           if (lessonIds.length > 0) {
             const { count: done } = await db
               .from('lesson_progress')
-              .select('id', { count: 'exact', head: true })
+              // lesson_progress has a composite key (user_id, lesson_id) and no id column
+              .select('lesson_id', { count: 'exact', head: true })
               .eq('user_id', user.id)
               .in('lesson_id', lessonIds)
               .not('completed_at', 'is', null);

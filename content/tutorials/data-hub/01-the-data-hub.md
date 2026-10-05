@@ -31,7 +31,7 @@ The Data Hub lives at **Dashboard > Life > Data Hub** (or `/dashboard/data`). It
 |--------|--------------------------|
 | **Finance** | Transactions — income, expenses, transfers |
 | **Health Metrics** | Daily logs — RHR, steps, sleep, activity, body comp |
-| **Trips** | All trip logs — car, bike, walk, transit, flight |
+| **Trips** | All trip logs — car, bike, walk, bus, train, plane |
 | **Fuel Logs** | Fill-ups — gallons, cost, MPG, station |
 | **Maintenance** | Vehicle service records and reminders |
 | **Vehicles** | Your fleet — cars, bikes, trucks, boats |

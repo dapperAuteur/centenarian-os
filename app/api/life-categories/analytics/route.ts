@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { excludingTransfers, withoutTransfers } from '@/lib/finance/transfers/schema';
 
 function getDb() {
   return createServiceClient(
@@ -39,10 +40,23 @@ export async function GET(request: NextRequest) {
 
   if (taggedTransactionIds.length > 0) {
     const uniqueIds = [...new Set(taggedTransactionIds.map((t) => t.entity_id))];
-    const { data: txns } = await db
-      .from('financial_transactions')
-      .select('id, amount, type')
-      .in('id', uniqueIds);
+    // A tagged transaction that is a transfer between the person's own
+    // accounts is not spending, so it adds nothing to a category's total.
+    // Works before migration 202 too: see excludingTransfers().
+    //
+    // Only the caller's own transactions count. A tag row is not proof of
+    // ownership (tags saved before /tag checked could point at anyone's
+    // transaction), and this client bypasses RLS.
+    const { data: txns } = await excludingTransfers((groupColumnExists) =>
+      withoutTransfers(
+        db
+          .from('financial_transactions')
+          .select('id, amount, type')
+          .eq('user_id', user.id)
+          .in('id', uniqueIds),
+        groupColumnExists,
+      ),
+    );
 
     const txMap = new Map((txns || []).map((t) => [t.id, t]));
     transactionAmounts = {};

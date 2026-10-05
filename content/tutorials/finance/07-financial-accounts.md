@@ -45,8 +45,8 @@ The form includes:
 |-------|------|-------|
 | **Name** | text | Required — e.g., "Chase Checking" |
 | **Account Type** | select | checking / savings / credit_card / loan / cash |
-| **Institution Name** | text | Optional — bank or lender name |
-| **Last Four** | 4 chars | Last 4 digits of account number (for identification) |
+| **Institution Name** | text | Optional — bank or lender name. Shown next to the account name wherever you pick an account |
+| **Last Four** | 4 chars | Last 4 digits of account number. Tells apart two accounts with the same name, and helps the app recognize transfers: a description such as "TRANSFER TO ...5345" points at the account ending 5345 |
 | **Opening Balance** | number | Starting balance — used as the baseline for calculations |
 | **Interest Rate** | number | Optional — APR for savings/loans, APY for credit cards |
 | **Credit Limit** | number | Optional — only relevant for credit cards |
@@ -67,6 +67,10 @@ Balance = Opening Balance + SUM(income transactions) - SUM(expense transactions)
 Every transaction assigned to the account affects the balance. Income adds. Expenses subtract. The opening balance provides the starting point.
 
 This means you don't manually update balances — they stay accurate as long as your transactions are assigned to the right accounts.
+
+For **credit cards and loans**, the balance is what you owe: an expense (a charge) raises it and an income entry (a payment) lowers it.
+
+**Moving money between accounts.** Click **Transfer** on the accounts page or the finance dashboard, pick the From and To accounts, the amount, and the date. Two linked transactions are created: an expense on the From account and an income on the To account. Paying a credit card or a loan from a bank account is a transfer too. Transfers change both balances but are never counted as spending or income. Lesson 05 covers linking transactions that already exist, such as rows from two imported statements.
 
 ---
 
@@ -93,6 +97,8 @@ The accounts management page at `/dashboard/finance/accounts` lets you:
 
 **Reactivate** — if an account was soft-deactivated, you can reactivate it to bring it back.
 
+**Import statement** — each account has an **Import statement** link. It opens the bank statement import (Lesson 06) with that account already chosen, so the statement's transactions land in the right account.
+
 ---
 
 ## Screen Recording Notes
@@ -116,7 +122,9 @@ The accounts management page at `/dashboard/finance/accounts` lets you:
 ## Key Takeaways
 
 - 5 account types: checking, savings, credit_card, loan, cash
-- Balance = Opening Balance + income - expenses (auto-calculated from transactions)
+- Balance = Opening Balance + income - expenses (auto-calculated from transactions); on a card or loan the balance is what you owe
+- Use Transfer to move money between accounts, including card and loan payments: both balances change, and nothing counts as spending or income
 - Accounts appear as a row at the top of the finance dashboard
 - Delete with transactions → soft deactivate (data preserved); delete without → hard delete
 - Assign transactions to accounts to maintain accurate per-account balances
+- **Import statement** on an account opens the bank statement import with that account chosen (Lesson 06)

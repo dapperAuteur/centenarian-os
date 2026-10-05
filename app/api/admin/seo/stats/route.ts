@@ -136,8 +136,12 @@ export async function GET() {
     db.from('profiles').select('id', { count: 'exact', head: true }).not('username', 'is', null),
     db.from('blog_posts').select('id', { count: 'exact', head: true }).eq('visibility', 'public').not('published_at', 'is', null),
     db.from('recipes').select('id', { count: 'exact', head: true }).eq('visibility', 'public').not('published_at', 'is', null),
-    db.from('courses').select('id', { count: 'exact', head: true }).eq('status', 'published'),
-    db.from('institutions').select('id', { count: 'exact', head: true }).eq('is_active', true),
+    // Same filters as app/sitemap.ts: courses are is_published + anonymously
+    // visible (migrations 039/040); institutions have no active flag (099).
+    db.from('courses').select('id', { count: 'exact', head: true })
+      .eq('is_published', true)
+      .or(`visibility.eq.public,and(visibility.eq.scheduled,published_at.lte.${now.toISOString()})`),
+    db.from('institutions').select('id', { count: 'exact', head: true }),
   ]);
 
   return NextResponse.json({

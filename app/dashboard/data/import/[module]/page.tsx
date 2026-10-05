@@ -45,7 +45,7 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
     apiEndpoint: '/api/travel/trips/import',
     templateUrl: '/templates/trips-import-template.csv',
     instructions:
-      'Upload trip logs. Required: date, mode (car/bike/walk/transit/flight/boat). Optional: origin, destination, distance, cost, and more. Vehicle nicknames will be matched to your existing vehicles.',
+      'Upload trip logs. Required: date, mode (car, bike, walk, run, bus, train, plane, ferry, rideshare, other). Optional: origin, destination, distance, cost, and more. Purpose is one of commute, leisure, work, errand, exercise, other; category is travel or fitness; tax category is personal, business, medical, or charitable. Vehicle nicknames will be matched to your existing vehicles.',
     columns: [
       { key: 'date', label: 'Date (YYYY-MM-DD)', required: true },
       { key: 'mode', label: 'Mode', required: true },
@@ -87,7 +87,7 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
     apiEndpoint: '/api/travel/maintenance/import',
     templateUrl: '/templates/maintenance-import-template.csv',
     instructions:
-      'Upload vehicle service records. Required: date, service_type (oil_change, tire_rotation, brake_service, etc.). Vehicle nicknames must match existing vehicles.',
+      'Upload vehicle service records. Required: date, service_type (oil_change, tire_rotation, brake_pads, inspection, battery, transmission, tires, chain, tune_up, other). Vehicle nicknames must match existing vehicles.',
     columns: [
       { key: 'date', label: 'Date (YYYY-MM-DD)', required: true },
       { key: 'vehicle_nickname', label: 'Vehicle Nickname' },
@@ -106,7 +106,7 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
     apiEndpoint: '/api/travel/vehicles/import',
     templateUrl: '/templates/vehicles-import-template.csv',
     instructions:
-      'Upload your vehicle fleet. Required: type (car/truck/suv/motorcycle/bicycle/etc.), nickname. Existing vehicles with the same nickname are skipped. Max 200 vehicles.',
+      'Upload your vehicle fleet. Required: type (car, bike, ebike, motorcycle, scooter, shoes, other), nickname. Ownership is owned, rental, or borrowed. Existing vehicles with the same nickname are skipped. Max 200 vehicles.',
     columns: [
       { key: 'type', label: 'Type', required: true },
       { key: 'nickname', label: 'Nickname', required: true },

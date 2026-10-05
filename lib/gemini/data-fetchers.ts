@@ -5,6 +5,7 @@
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { systemKindOf } from '@/lib/planner/system-roadmaps';
+import { excludingTransfers, withoutTransfers } from '@/lib/finance/transfers/schema';
 
 export type DataSourceKey =
   | 'health'
@@ -161,14 +162,22 @@ async function fetchFinanceData(
   const { since, today } = dateRange(opts.days);
 
   const [txRes, acctRes, catRes] = await Promise.all([
-    db
-      .from('financial_transactions')
-      .select('amount, type, transaction_date, category_id, vendor, notes')
-      .eq('user_id', userId)
-      .gte('transaction_date', since)
-      .lte('transaction_date', today)
-      .order('transaction_date', { ascending: false })
-      .limit(200),
+    // Transfers between the person's own accounts (and card or loan payments)
+    // are not spending or income, so the AI never sees them as either.
+    // Works before migration 202 too: see excludingTransfers().
+    excludingTransfers((groupColumnExists) =>
+      withoutTransfers(
+        db
+          .from('financial_transactions')
+          .select('amount, type, transaction_date, category_id, vendor, notes')
+          .eq('user_id', userId)
+          .gte('transaction_date', since)
+          .lte('transaction_date', today),
+        groupColumnExists,
+      )
+        .order('transaction_date', { ascending: false })
+        .limit(200),
+    ),
     db
       .from('financial_accounts')
       .select('name, account_type, opening_balance, is_active')
@@ -249,7 +258,8 @@ async function fetchTravelData(
       .lte('date', today),
     db
       .from('vehicles')
-      .select('name, year, make, model, active, ownership_type')
+      // vehicles has no `name` column — the label is `nickname` (migration 052)
+      .select('nickname, year, make, model, active, ownership_type')
       .eq('user_id', userId)
       .eq('active', true),
   ]);
@@ -288,7 +298,8 @@ async function fetchTravelData(
   if (totalCals > 0) lines.push(`Calories burned (active transport): ${totalCals}`);
   if (fuelSpend > 0) lines.push(`Fuel spend: $${fuelSpend.toFixed(2)} | Avg MPG: ${fmt(avgMpg)}`);
   if (vehicles.length) {
-    lines.push(`Vehicles: ${vehicles.map((v) => `${v.year} ${v.make} ${v.model} (${v.ownership_type})`).join(', ')}`);
+    // year/make/model are optional (bikes often have none) — fall back to the nickname
+    lines.push(`Vehicles: ${vehicles.map((v) => `${[v.year, v.make, v.model].filter(Boolean).join(' ') || v.nickname} (${v.ownership_type})`).join(', ')}`);
   }
 
   // Tax category breakdown

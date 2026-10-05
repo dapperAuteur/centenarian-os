@@ -7,6 +7,7 @@
 import { useState, useRef } from 'react';
 import { Upload, Link2, FileSpreadsheet, Download, Loader2, AlertCircle } from 'lucide-react';
 import Papa from 'papaparse';
+import { normalizeHeader } from '@/lib/csv/normalize-header';
 
 interface ColumnDef {
   key: string;
@@ -44,7 +45,7 @@ export default function DataImporter({ columns, onImport, templateCsvUrl, label 
     const result = Papa.parse<Record<string, string>>(text, {
       header: true,
       skipEmptyLines: true,
-      transformHeader: (h) => h.trim().toLowerCase().replace(/\s+/g, '_'),
+      transformHeader: (h) => normalizeHeader(h),
     });
 
     if (result.errors.length > 0) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { checkOwned, ownedIds } from '@/lib/auth/ownership';
 
 function getDb() {
   return createServiceClient(
@@ -21,6 +22,15 @@ export async function POST(
 
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
+
+  // Only the caller's own workouts, or public ones, can be marked done (the
+  // workout_templates rule in lib/auth/ownership: visibility = 'public',
+  // migration 117). An unknown id and someone else's private workout get the
+  // same 404, and neither writes a completion, reads the workout's exercises
+  // or bumps a counter.
+  const access = await checkOwned(supabase, user.id, 'workout_templates', id, { allowPublic: true });
+  if (access.failed) return NextResponse.json({ error: 'Could not record completion' }, { status: 500 });
+  if (!access.allowed) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   // Check for recent completions within dedup window
   const windowStart = new Date(Date.now() - DEDUP_WINDOW_MINUTES * 60 * 1000).toISOString();
@@ -57,11 +67,18 @@ export async function POST(
     .not('exercise_id', 'is', null);
 
   if (templateExercises && templateExercises.length > 0) {
-    const exerciseCompletions = templateExercises.map((te: { exercise_id: string }) => ({
-      user_id: user.id,
-      exercise_id: te.exercise_id,
-    }));
-    await db.from('exercise_completions').insert(exerciseCompletions);
+    // A public workout can include exercises its author kept private. Those
+    // are skipped: a completion bumps the exercise's done_count, and the
+    // caller may only do that for an exercise they could mark done directly
+    // (their own, or public and active).
+    const exerciseIds = templateExercises.map((te: { exercise_id: string }) => te.exercise_id);
+    const visible = await ownedIds(db, user.id, 'exercises', exerciseIds, { allowPublic: true });
+    const exerciseCompletions = exerciseIds
+      .filter((exerciseId: string) => visible.has(exerciseId))
+      .map((exerciseId: string) => ({ user_id: user.id, exercise_id: exerciseId }));
+    if (exerciseCompletions.length > 0) {
+      await db.from('exercise_completions').insert(exerciseCompletions);
+    }
   }
 
   // Return updated count

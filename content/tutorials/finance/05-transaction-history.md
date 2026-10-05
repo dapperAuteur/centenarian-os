@@ -31,7 +31,10 @@ The transactions page shows all your transactions in reverse chronological order
 - **Category** — which budget category it's assigned to
 - **Description** — your transaction note
 - **Vendor** — the vendor if you logged one
+- **Account** — the institution, account name, and last four digits (two accounts can share a name, so all three are shown)
 - **Edit** and **Delete** buttons
+
+A transaction that is one side of a transfer between your own accounts also shows a **Transfer ↔ account** badge. Click the badge to open the other side.
 
 ---
 
@@ -65,9 +68,36 @@ When you set or change the category of a transaction that has a vendor, a prompt
 
 ---
 
+### Transfers Between Your Own Accounts
+
+Moving money from checking to savings, paying a credit card, and paying a loan are not spending or income. They are your own money changing accounts. The app tracks each one as a **transfer**: two linked transactions, an expense on the account the money left and an income on the account it reached. On a credit card or loan, that income entry is the payment, and it lowers what you owe.
+
+Linked transfers are left out of your spending and income totals everywhere: the dashboard cards and charts, budget progress, brand P&L, Life Categories spending, and the AI coach. They still count in each account's balance, and exports still include them.
+
+**The Possible transfers panel.** When some of your transactions look like transfers, a **Possible transfers** panel appears above the list. Click **Review** to open it. A pair is suggested when one account has an expense and another has an income for exactly the same amount within 5 days. Each suggestion shows both transactions with date, amount, account, and description, and says why it was suggested.
+
+- **High confidence** — each transaction has only one possible match, and a description supports it (wording such as "transfer" or "payment", or the other account's last four digits).
+- **Check this one** — more than one transaction could be the other side, or nothing in the descriptions says it is a transfer. Round amounts collide: a $300 loan payment and three $300 card payments on the same day all look alike. Read these before linking.
+
+For each pair, click **Link** or **Not a transfer**. Dismissals are remembered in the browser you are using; **Show dismissed** brings them back. **Link all high-confidence** links every high-confidence pair in one step. Nothing is linked until you click.
+
+**Payments with no matching transaction.** Below the pairs, the panel lists expenses that read like a card or loan payment when the other account has no transaction for them, such as a car loan you never import a statement for. Choose the account under **Paid to** and click **Record payment**. One entry for the same amount and date is added on that account, so its balance goes down by the payment.
+
+**From a single transaction.** Click a transaction to open its page. The **Transfer** card offers:
+
+- **Mark as transfer…** — pick the matching transaction on another account.
+- **This is a payment to…** — pick the account the money went to when that account has no transaction for it (expenses only).
+- **Unlink** — on a transaction that is already linked. Both transactions stay and count as spending and income again. If one side was added by "This is a payment to…", you choose whether to remove that added entry.
+
+**Editing a linked transaction.** The amount is locked, because both sides of a transfer have to match. Unlink first to change it. Category, notes, date, vendor, and description can be changed at any time.
+
+---
+
 ### Deleting a Transaction
 
 Click **Delete** on any row. A confirmation prompt appears. Deletion is permanent — the transaction is removed from all dashboard totals, charts, and budget progress bars immediately.
+
+Deleting one side of a transfer asks what to do with the other side: **Delete both sides** removes the transfer from both accounts, and **Unlink and delete only this one** keeps the other transaction as an ordinary one.
 
 Use delete for:
 - Duplicate transactions (logged the same transaction twice)
@@ -119,7 +149,19 @@ The transaction history is your ledger for tax and financial planning purposes. 
 
 > [SCREENSHOT: The "Always categorize ... as ...?" prompt above the list after saving — callout: "Always / Just this once"]
 
+> [SCREEN: Click Review on the Possible transfers panel — show a High confidence pair and a "Check this one" pair]
+
+> [SCREENSHOT: Possible transfers panel — callouts: confidence label, both accounts with institution and last four, Link, Not a transfer, Link all high-confidence]
+
+> [SCREEN: Click Link on a high-confidence pair — the pair leaves the panel and both rows in the list show the "Transfer ↔ account" badge]
+
+> [SCREEN: Under "Payments with no matching transaction", choose the loan account under "Paid to" and click Record payment]
+
+> [SCREEN: Click a linked transaction — show the Transfer card with the other side and the Unlink button]
+
 > [SCREEN: Click Delete on a transaction — confirmation prompt — cancel (don't delete for demo)]
+
+> [SCREEN: Click Delete on a linked transaction — show the "Delete both sides" and "Unlink and delete only this one" choices — cancel]
 
 > [SCREEN: Clear all filters — show the full unfiltered list]
 
@@ -134,6 +176,9 @@ The transaction history is your ledger for tax and financial planning purposes. 
 - Edit any transaction: fix category, amount, date, vendor, description
 - Changing a category offers "Always" (the vendor's future transactions get it too) or "Just this once"
 - Select rows to bulk-set a category, brand, or life tag
+- Transfers between your own accounts, card payments, and loan payments are linked pairs; they are not counted as spending or income
+- The Possible transfers panel suggests pairs; you decide with Link or Not a transfer, and only high-confidence pairs can be linked in bulk
+- Deleting one side of a transfer asks whether to delete both sides or unlink first
 - Delete is permanent — use for duplicates and errors, not for over-budget regret
 - Vendor search is powerful: "Amazon" finds every Amazon transaction across all time
 - Year-end: filter to Jan 1–Dec 31, export CSV for accountant or tax purposes

@@ -1,16 +1,19 @@
 // app/api/finance/transfers/route.ts
-// POST: create a paired transfer between two accounts
+// POST: create a paired transfer between two accounts (the Transfer Funds form).
+//
+// Writes two rows that share a transfer_group_id: an expense on the account
+// the money leaves and an income on the account it reaches. Both carry
+// source = 'transfer' and a transfer_kind taken from the destination account
+// (a credit card makes it a card payment, a loan a loan payment).
+//
+// Linking two rows that already exist, undoing a link, and recording a payment
+// whose other side has no row are in ./link, ./unlink and ./pay.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { createClient as createServiceClient } from '@supabase/supabase-js';
-
-function getDb() {
-  return createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
-}
+import { kindForDestination } from '@/lib/finance/transfers/pairing';
+import { missingTransferColumn, TRANSFERS_NOT_READY } from '@/lib/finance/transfers/schema';
+import { getServiceDb, insertTransferEntries } from '@/lib/finance/transfers/server';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -32,12 +35,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Date is required' }, { status: 400 });
   }
 
-  const db = getDb();
+  const db = getServiceDb();
 
   // Validate both accounts belong to the user and are active
   const { data: accounts } = await db
     .from('financial_accounts')
-    .select('id, name, is_active')
+    .select('id, name, account_type, is_active')
     .eq('user_id', user.id)
     .in('id', [from_account_id, to_account_id]);
 
@@ -53,33 +56,20 @@ export async function POST(request: NextRequest) {
   const toAcct = accounts.find((a) => a.id === to_account_id)!;
   const transferGroupId = crypto.randomUUID();
   const desc = description?.trim() || `Transfer: ${fromAcct.name} → ${toAcct.name}`;
+  const entry = { userId: user.id, amount: Number(amount), date, description: desc, groupId: transferGroupId };
 
-  const { data, error } = await db
-    .from('financial_transactions')
-    .insert([
-      {
-        user_id: user.id,
-        amount: Math.abs(Number(amount)),
-        type: 'expense',
-        description: desc,
-        transaction_date: date,
-        account_id: from_account_id,
-        source: 'transfer',
-        transfer_group_id: transferGroupId,
-      },
-      {
-        user_id: user.id,
-        amount: Math.abs(Number(amount)),
-        type: 'income',
-        description: desc,
-        transaction_date: date,
-        account_id: to_account_id,
-        source: 'transfer',
-        transfer_group_id: transferGroupId,
-      },
-    ])
-    .select();
+  const { data, error } = await insertTransferEntries(
+    db,
+    [
+      { ...entry, accountId: from_account_id, type: 'expense' },
+      { ...entry, accountId: to_account_id, type: 'income' },
+    ],
+    kindForDestination(toAcct.account_type),
+  );
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    if (missingTransferColumn(error)) return NextResponse.json(TRANSFERS_NOT_READY, { status: 503 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
   return NextResponse.json(data, { status: 201 });
 }

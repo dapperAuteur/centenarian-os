@@ -1,5 +1,10 @@
 // app/api/finance/transactions/[id]/duplicate/route.ts
 // POST: duplicate a transaction (copy fields, reset to today)
+//
+// The copy is always a plain manual transaction. When the original is one side
+// of a transfer, the copy does NOT join that transfer: transfer_group_id and
+// transfer_kind are never copied, because a group is exactly two matching rows
+// and a third would count the money twice.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -33,6 +38,8 @@ export async function POST(
   if (fetchErr) return NextResponse.json({ error: fetchErr.message }, { status: 500 });
   if (!original) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  // An explicit field list on purpose: transfer_group_id and transfer_kind
+  // must stay out of it (see the note at the top of this file).
   const { data: newTx, error: insertErr } = await db
     .from('financial_transactions')
     .insert({
@@ -53,5 +60,5 @@ export async function POST(
     .single();
 
   if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 });
-  return NextResponse.json({ id: newTx.id });
+  return NextResponse.json({ id: newTx.id, copied_from_transfer: Boolean(original.transfer_group_id) });
 }

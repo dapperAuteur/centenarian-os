@@ -24,7 +24,8 @@ export default function EnginePage() {
     const [sessionsRes, logRes, weekSessionsRes] = await Promise.all([
       supabase
         .from('focus_sessions')
-        .select('duration_seconds, revenue')
+        // focus_sessions.duration is stored in seconds (there is no duration_seconds column)
+        .select('duration, revenue')
         .gte('start_time', today + 'T00:00:00')
         .not('end_time', 'is', null),
       supabase
@@ -39,7 +40,7 @@ export default function EnginePage() {
         .not('end_time', 'is', null)
     ]);
 
-    const totalSeconds = sessionsRes.data?.reduce((sum, s) => sum + (s.duration_seconds || 0), 0) || 0;
+    const totalSeconds = sessionsRes.data?.reduce((sum, s) => sum + (s.duration || 0), 0) || 0;
     const todayRev = sessionsRes.data?.reduce((sum, s) => sum + (s.revenue || 0), 0) || 0;
     const weekRev = weekSessionsRes.data?.reduce((sum, s) => sum + (s.revenue || 0), 0) || 0;
 

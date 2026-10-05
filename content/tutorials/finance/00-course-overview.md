@@ -23,10 +23,10 @@ The Finance module is where you track income, expenses, and budgets alongside th
 | 02 | Setting Up Budget Categories | Creating categories, assigning monthly budgets, color coding |
 | 03 | Logging Transactions | Expense vs. income, all form fields, vendor, category assignment |
 | 04 | Reading Your Dashboard | Summary cards, monthly trend chart, spending by category, budget progress bars |
-| 05 | Transaction History | The transactions sub-page, filtering, searching, editing, and deleting |
-| 06 | Importing and Exporting | CSV import for bulk data entry, CSV export for external tools |
+| 05 | Transaction History | The transactions sub-page, filtering, searching, editing, deleting, and reviewing transfers between your own accounts |
+| 06 | Importing and Exporting | Importing a bank statement CSV into an account (columns, review, undo), CSV export for external tools |
 | 07 | Managing Financial Accounts | Checking, savings, credit card, loan, cash — creating, editing, balances |
-| 08 | Account Balances & Equipment Links | Per-account filtering, equipment transaction links, cross-module ROI |
+| 08 | Account Balances & Equipment Links | Per-account filtering, transfers and card or loan payments, equipment transaction links, cross-module ROI |
 | 09 | Saved Contacts & Vendor Autocomplete | ContactAutocomplete, default categories, "Save?" upsert, shared contacts |
 
 ---
@@ -53,4 +53,5 @@ Before recording:
 - Finance tracks income, expenses, and budgets in one module
 - CYOA navigation — start with Lessons 01–03 for setup, then explore as needed
 - No bank connection: data is entered manually or imported via CSV, including a statement CSV downloaded from your bank
+- Money moving between your own accounts (transfers, card payments, loan payments) is tracked as a transfer and never counted as spending or income
 - Finance data contributes to the daily debrief financial snapshot and appears in the weekly review

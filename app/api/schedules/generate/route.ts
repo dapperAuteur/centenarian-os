@@ -5,6 +5,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { resolveInboxMilestone } from '@/lib/planner/inbox';
+import { ownedIds, type OwnedIds } from '@/lib/auth/ownership';
 
 function getDb() {
   return createServiceClient(
@@ -51,6 +53,28 @@ interface FinanceRow {
 }
 
 type Db = ReturnType<typeof getDb>;
+
+/** Returns the milestone a template's tasks belong to, or null if none could be resolved. */
+type MilestoneResolver = (tmpl: TemplateRow) => Promise<string | null>;
+
+/**
+ * tasks.milestone_id is NOT NULL, so a task generated from a template that has no
+ * milestone still needs one. Fall back to the user's Inbox milestone
+ * (lib/planner/inbox), looked up or created at most once per request.
+ *
+ * A template's milestone is only used when it is one of the caller's own
+ * (`ownMilestones`). This client bypasses RLS, and a schedule saved before
+ * /api/schedules checked the id could point at a milestone in someone else's
+ * planner; its tasks go to the caller's Inbox instead.
+ */
+function createMilestoneResolver(db: Db, userId: string, ownMilestones: OwnedIds): MilestoneResolver {
+  let inbox: Promise<string | null> | null = null;
+  return (tmpl) => {
+    if (tmpl.milestone_id && ownMilestones.has(tmpl.milestone_id)) return Promise.resolve(tmpl.milestone_id);
+    if (!inbox) inbox = resolveInboxMilestone(db, userId);
+    return inbox;
+  };
+}
 
 /** Calculate daily revenue from finance config */
 function calcDailyRevenue(fin: FinanceRow | null): number {
@@ -103,6 +127,7 @@ async function generateForDate(
   tmpl: TemplateRow,
   dateStr: string,
   fin: FinanceRow | null,
+  resolveMilestone: MilestoneResolver,
 ): Promise<{ created: boolean; error?: string }> {
   const date = new Date(dateStr + 'T00:00:00');
   const dayOfWeek = date.getDay();
@@ -151,7 +176,13 @@ async function generateForDate(
   const taskActivity = isPaidOff ? `${tmpl.name} (Paid Day Off)` : tmpl.name;
   const dailyRevenue = calcDailyRevenue(fin);
 
+  const milestoneId = await resolveMilestone(tmpl);
+  if (!milestoneId) {
+    return { created: false, error: 'No milestone on this schedule and the Inbox could not be resolved' };
+  }
+
   const insertData: Record<string, unknown> = {
+    milestone_id: milestoneId,
     date: dateStr,
     time: taskTime,
     activity: taskActivity,
@@ -165,8 +196,6 @@ async function generateForDate(
     estimated_cost: 0,
   };
 
-  if (tmpl.milestone_id) insertData.milestone_id = tmpl.milestone_id;
-
   const { error: taskError } = await db.from('tasks').insert([insertData]);
   if (taskError) return { created: false, error: taskError.message };
 
@@ -179,6 +208,7 @@ async function generatePaydayTask(
   tmpl: TemplateRow,
   dateStr: string,
   fin: FinanceRow,
+  resolveMilestone: MilestoneResolver,
 ): Promise<boolean> {
   if (!isPayday(dateStr, fin)) return false;
 
@@ -203,7 +233,11 @@ async function generatePaydayTask(
 
   const estimatedGross = Math.round(dailyRevenue * periodDays * 100) / 100;
 
+  const milestoneId = await resolveMilestone(tmpl);
+  if (!milestoneId) return false;
+
   const insertData: Record<string, unknown> = {
+    milestone_id: milestoneId,
     date: dateStr,
     time: '12:00',
     activity: `Payday — ${tmpl.name}`,
@@ -216,8 +250,6 @@ async function generatePaydayTask(
     revenue: estimatedGross,
     estimated_cost: 0,
   };
-
-  if (tmpl.milestone_id) insertData.milestone_id = tmpl.milestone_id;
 
   const { error } = await db.from('tasks').insert([insertData]);
   return !error;
@@ -327,6 +359,19 @@ export async function POST(request: NextRequest) {
   }
 
   const backfillMode = dates.length > 1;
+
+  // Which of the templates' milestones are the caller's own. Checked on every
+  // run, not only when the schedule is saved (see createMilestoneResolver).
+  const ownMilestones = await ownedIds(
+    db,
+    user.id,
+    'milestones',
+    (templates as TemplateRow[]).map((tmpl) => tmpl.milestone_id),
+  );
+  if (ownMilestones.failed) {
+    return NextResponse.json({ error: 'Could not check the schedules\' milestones' }, { status: 500 });
+  }
+  const resolveMilestone = createMilestoneResolver(db, user.id, ownMilestones);
   let tasksGenerated = 0;
   let paydayTasksGenerated = 0;
   const errors: { templateId: string; date: string; error: string }[] = [];
@@ -338,7 +383,7 @@ export async function POST(request: NextRequest) {
 
       try {
         // Generate work-day task
-        const result = await generateForDate(db, tmpl, dateStr, fin);
+        const result = await generateForDate(db, tmpl, dateStr, fin, resolveMilestone);
         if (result.created) {
           tasksGenerated++;
           if (dateStr > latestDate) latestDate = dateStr;
@@ -349,7 +394,7 @@ export async function POST(request: NextRequest) {
 
         // Generate payday task (work templates only)
         if (fin && tmpl.template_type === 'work') {
-          const paydayCreated = await generatePaydayTask(db, tmpl, dateStr, fin);
+          const paydayCreated = await generatePaydayTask(db, tmpl, dateStr, fin, resolveMilestone);
           if (paydayCreated) paydayTasksGenerated++;
         }
       } catch (err) {

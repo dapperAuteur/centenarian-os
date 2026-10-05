@@ -148,11 +148,11 @@ export async function GET() {
       const twelveMonthsAgo = addDays(today, -365);
       const { data, error } = await db
         .from('financial_transactions')
-        .select('amount, date')
+        .select('amount, transaction_date')
         .eq('user_id', user.id)
         .eq('type', 'income')
-        .gte('date', twelveMonthsAgo)
-        .lte('date', today);
+        .gte('transaction_date', twelveMonthsAgo)
+        .lte('transaction_date', today);
       if (error) return [];
       return data ?? [];
     })(),
@@ -241,10 +241,10 @@ export async function GET() {
   const threeMonthsAgo = addDays(today, -90);
   const sixMonthsAgo = addDays(today, -180);
   const recentIncome = historicalRes
-    .filter((t: Record<string, string>) => (t.date ?? '') >= threeMonthsAgo)
+    .filter((t: Record<string, string>) => (t.transaction_date ?? '') >= threeMonthsAgo)
     .reduce((s: number, t: Record<string, unknown>) => s + Number(t.amount ?? 0), 0);
   const priorIncome = historicalRes
-    .filter((t: Record<string, string>) => (t.date ?? '') >= sixMonthsAgo && (t.date ?? '') < threeMonthsAgo)
+    .filter((t: Record<string, string>) => (t.transaction_date ?? '') >= sixMonthsAgo && (t.transaction_date ?? '') < threeMonthsAgo)
     .reduce((s: number, t: Record<string, unknown>) => s + Number(t.amount ?? 0), 0);
 
   const trend = recentIncome > priorIncome * 1.1 ? 'up'

@@ -1,8 +1,12 @@
 // app/api/finance/summary/route.ts
 // GET: monthly summary for the finance dashboard (totals, by-category, monthly trend)
+//
+// Transfers between the person's own accounts (including card and loan
+// payments) are left out of every total here: they are not spending or income.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { excludingTransfers, withoutTransfers } from '@/lib/finance/transfers/schema';
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -26,13 +30,18 @@ export async function GET(request: NextRequest) {
 
   // Fetch all transactions in range + categories
   const [txRes, catRes] = await Promise.all([
-    supabase
-      .from('financial_transactions')
-      .select('amount, type, transaction_date, category_id')
-      .eq('user_id', user.id)
-      .neq('source', 'transfer')
-      .gte('transaction_date', startDate)
-      .lte('transaction_date', endDate),
+    // Works before migration 202 too: see excludingTransfers().
+    excludingTransfers((groupColumnExists) =>
+      withoutTransfers(
+        supabase
+          .from('financial_transactions')
+          .select('amount, type, transaction_date, category_id')
+          .eq('user_id', user.id)
+          .gte('transaction_date', startDate)
+          .lte('transaction_date', endDate),
+        groupColumnExists,
+      ),
+    ),
     supabase
       .from('budget_categories')
       .select('id, name, color, monthly_budget')

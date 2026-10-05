@@ -88,13 +88,45 @@ export default async function WorkoutsPage({
   if (search) query = query.ilike('name', `%${search}%`);
   if (category) query = query.eq('category_id', category);
 
-  const { data: templates, count } = await query;
+  const { data: rawTemplates, count } = await query;
   const total = count ?? 0;
+
+  // A public workout can reference its owner's private exercises. The exercise
+  // name, sets and reps are part of the public workout, but /exercises/[id]
+  // only serves public exercises — so only keep the link (exercise_id) for
+  // exercises a visitor can actually open. The rest render as plain rows.
+  const fetched = (rawTemplates ?? []) as unknown as WorkoutTemplate[];
+  const linkedIds = [
+    ...new Set(
+      fetched.flatMap((wt) =>
+        (wt.workout_template_exercises ?? [])
+          .map((e) => e.exercise_id)
+          .filter((id): id is string => !!id),
+      ),
+    ),
+  ];
+  let publicExerciseIds = new Set<string>();
+  if (linkedIds.length > 0) {
+    const { data: publicExercises } = await db
+      .from('exercises')
+      .select('id')
+      .in('id', linkedIds)
+      .eq('visibility', 'public')
+      .eq('is_active', true);
+    publicExerciseIds = new Set((publicExercises ?? []).map((e) => e.id as string));
+  }
+  const templates: WorkoutTemplate[] = fetched.map((wt) => ({
+    ...wt,
+    workout_template_exercises: (wt.workout_template_exercises ?? []).map((e) => ({
+      ...e,
+      exercise_id: e.exercise_id && publicExerciseIds.has(e.exercise_id) ? e.exercise_id : null,
+    })),
+  }));
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const ldSchema = {
     '@context': 'https://schema.org',
-    '@graph': ((templates ?? []) as unknown as WorkoutTemplate[]).map((wt) =>
+    '@graph': templates.map((wt) =>
       workoutTemplateSchema({
         id: wt.id,
         name: wt.name,
@@ -203,12 +235,12 @@ export default async function WorkoutsPage({
         </p>
 
         {/* Workout cards */}
-        {templates && templates.length > 0 ? (
+        {templates.length > 0 ? (
           <ul
             role="list"
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
           >
-            {((templates ?? []) as unknown as WorkoutTemplate[]).map((wt) => (
+            {templates.map((wt) => (
               <li key={wt.id} role="listitem">
                 <PublicWorkoutCard wt={wt} />
               </li>
