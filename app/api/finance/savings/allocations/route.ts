@@ -15,12 +15,15 @@
 // When a goal with milestone tasks turned on crosses 25/50/75/100%, a
 // completed note task is added under the planner Inbox (once per level).
 // Response: { ok, inserted, milestones: [{ goal_id, levels, tasks_added }] }.
+// Goals linked to a trip or equipment item are then re-sent to RideWitUS as
+// envelope.balance (lib/integrations/ridewitus/envelope.ts).
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { resolveInboxMilestone } from '@/lib/planner/inbox';
 import { applyAllocation, noteMilestones, parseAllocationRequest } from '@/lib/finance/savings/server';
 import { errorResponse, resolveToday } from '@/lib/finance/savings/request';
+import { emitEnvelopeChanges } from '@/lib/integrations/ridewitus/server';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -36,7 +39,16 @@ export async function POST(request: NextRequest) {
 
   try {
     const today = resolveToday(body.today);
-    const result = await applyAllocation(supabase, user.id, parseAllocationRequest(body), today);
+    const allocation = parseAllocationRequest(body);
+    const result = await applyAllocation(supabase, user.id, allocation, today);
+    // Linked goals whose balance changed are re-sent to RideWitUS (envelope.balance), after the response.
+    const touched =
+      allocation.action === 'move'
+        ? [allocation.from_goal_id, allocation.to_goal_id]
+        : allocation.action === 'split'
+          ? allocation.parts.map((p) => p.goal_id)
+          : [allocation.goal_id];
+    after(() => emitEnvelopeChanges(user.id, touched, request.nextUrl.origin));
 
     // Milestone notes: the Inbox is resolved at most once per request, and only when a note is due.
     const nowIso = new Date().toISOString();

@@ -12,13 +12,17 @@
 //        { name, kind, target_amount, funding_account_id, target_date?, starting_amount?,
 //          priority?, linked_trip_id?, linked_equipment_id?, milestone_tasks?, notes? }
 //
+// Goals linked to a trip or equipment item are sent to RideWitUS as envelope.balance after
+// every write (lib/integrations/ridewitus/envelope.ts); a no-op until its env vars are set.
+//
 // Rules: lib/finance/savings/logic.ts.
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { parseMethod, parseWindow } from '@/lib/finance/budgets/logic';
 import { createGoal, loadSavingsOverview, parseGoalInput } from '@/lib/finance/savings/server';
 import { errorResponse, resolveToday } from '@/lib/finance/savings/request';
+import { emitEnvelopeChanges } from '@/lib/integrations/ridewitus/server';
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -50,6 +54,8 @@ export async function POST(request: NextRequest) {
   }
   try {
     const goal = await createGoal(supabase, user.id, parseGoalInput(body, false));
+    // A goal linked to a trip or equipment item is sent to RideWitUS (envelope.balance), after the response.
+    after(() => emitEnvelopeChanges(user.id, [goal.id], request.nextUrl.origin));
     return NextResponse.json({ goal }, { status: 201 });
   } catch (err) {
     return errorResponse(err);
