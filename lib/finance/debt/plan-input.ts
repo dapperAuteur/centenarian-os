@@ -1,5 +1,5 @@
 // lib/finance/debt/plan-input.ts
-// Validation for saved debt-free plans (POST/PATCH /api/finance/debt/plans). Pure.
+// Validation for saved debt-free plans (POST/PATCH /api/finance/debt/saved-plans). Pure.
 
 import { DEFAULT_STRATEGY, isStrategy } from './plan.ts';
 import type { Strategy } from './plan.ts';
