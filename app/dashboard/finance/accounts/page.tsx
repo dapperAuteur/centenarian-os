@@ -2,16 +2,23 @@
 
 // app/dashboard/finance/accounts/page.tsx
 // Financial accounts management: add, edit, deactivate bank/card/loan/cash accounts.
+// Each account has a currency (migration 210). Balances show in the account's currency; accounts
+// in another currency also show the home-currency value with the rate's date and source.
 
 import { useEffect, useState, useCallback } from 'react';
 import {
   ArrowLeft, Plus, Pencil, Trash2, Loader2, CreditCard,
   Building2, Check, X, ArrowRightLeft, Percent,
-  ChevronDown, ChevronUp, Upload,
+  ChevronDown, ChevronUp, Upload, Banknote,
 } from 'lucide-react';
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import TransferModal from '@/components/finance/TransferModal';
+import ExchangeModal from '@/components/finance/ExchangeModal';
+import FxAttribution from '@/components/finance/FxAttribution';
+import { formatMoney } from '@/lib/finance/fx/math';
+import { currencyOptions, fetchCurrencies, rateAsOf } from '@/lib/finance/fx/client';
+import type { CurrenciesResponse, RateView } from '@/lib/finance/fx/client';
 import Modal from '@/components/ui/Modal';
 
 interface Account {
@@ -42,6 +49,11 @@ interface Account {
   rewards_type: string | null;
   rewards_rate: string | null;
   annual_fee: number | null;
+  // Multi-currency (migration 210). Missing before it: USD.
+  currency?: string;
+  home_currency?: string;
+  balance_home?: number | null;
+  fx?: RateView | null;
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -64,6 +76,8 @@ const emptyForm = {
   name: '', account_type: 'checking', institution_name: '', last_four: '',
   interest_rate: '', credit_limit: '', opening_balance: '0',
   monthly_fee: '', due_date: '', statement_date: '', notes: '',
+  // '' = the user's home currency
+  currency: '',
 };
 
 export default function AccountsPage() {
@@ -77,6 +91,9 @@ export default function AccountsPage() {
   const [showTransfer, setShowTransfer] = useState(false);
   const [applyingInterest, setApplyingInterest] = useState<string | null>(null);
   const [expandedPolicies, setExpandedPolicies] = useState<Set<string>>(new Set());
+  const [showExchange, setShowExchange] = useState(false);
+  const [currencies, setCurrencies] = useState<CurrenciesResponse | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -89,6 +106,11 @@ export default function AccountsPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { fetchCurrencies().then(setCurrencies); }, []);
+
+  const homeCurrency = currencies?.home_currency ?? accounts[0]?.home_currency ?? 'USD';
+  const currencyChoices = currencyOptions(currencies, homeCurrency);
+  const hasForeign = accounts.some((a) => (a.currency ?? 'USD') !== (a.home_currency ?? homeCurrency));
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,13 +128,16 @@ export default function AccountsPage() {
         due_date: form.due_date ? Number(form.due_date) : null,
         statement_date: form.statement_date ? Number(form.statement_date) : null,
         notes: form.notes || null,
+        currency: form.currency || null,
       };
+      setSaveError(null);
       const res = await offlineFetch('/api/finance/accounts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
       if (res.ok) { setShowAdd(false); setForm({ ...emptyForm }); load(); }
+      else setSaveError((await res.json().catch(() => ({}))).error || 'The account could not be saved.');
     } finally {
       setSaving(false);
     }
@@ -131,12 +156,17 @@ export default function AccountsPage() {
         body[k] = v || null;
       }
     }
+    // Currency is sent only when it changed: it is locked once the account has transactions.
+    const original = accounts.find((a) => a.id === id);
+    if (!body.currency || body.currency === (original?.currency ?? 'USD')) delete body.currency;
+    setSaveError(null);
     const res = await offlineFetch(`/api/finance/accounts/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
     if (res.ok) { setEditId(null); load(); }
+    else setSaveError((await res.json().catch(() => ({}))).error || 'The account could not be saved.');
   };
 
   const handleDelete = async (id: string) => {
@@ -216,6 +246,13 @@ export default function AccountsPage() {
             Transfer
           </button>
           <button
+            onClick={() => setShowExchange(true)}
+            className="flex min-h-11 items-center gap-1.5 px-4 py-2 bg-sky-50 text-sky-800 rounded-lg text-sm font-medium hover:bg-sky-100 transition"
+          >
+            <Banknote className="w-4 h-4" aria-hidden="true" />
+            Exchange money
+          </button>
+          <button
             onClick={() => setShowAdd(true)}
             className="flex items-center gap-1.5 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium hover:bg-fuchsia-700 transition"
           >
@@ -224,6 +261,10 @@ export default function AccountsPage() {
           </button>
         </div>
       </div>
+
+      {saveError && (
+        <div role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2 rounded-lg">{saveError}</div>
+      )}
 
       {accounts.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
@@ -249,6 +290,15 @@ export default function AccountsPage() {
                         {Object.entries(TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                       </select>
                     </div>
+                    <div>
+                      <label htmlFor={`edit-currency-${acct.id}`} className="text-xs text-gray-500">Currency</label>
+                      <select id={`edit-currency-${acct.id}`} value={editForm.currency ?? 'USD'} onChange={(e) => setEditForm((f) => ({ ...f, currency: e.target.value }))}
+                        className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg">
+                        {currencyChoices.some((c) => c.code === (editForm.currency ?? 'USD')) ? null : <option value={editForm.currency ?? 'USD'}>{editForm.currency ?? 'USD'}</option>}
+                        {currencyChoices.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
+                      </select>
+                      <p className="mt-1 text-xs text-gray-500">Can change only while the account has no transactions.</p>
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
@@ -264,7 +314,7 @@ export default function AccountsPage() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="text-xs text-gray-500">Opening Balance ($)</label>
+                      <label className="text-xs text-gray-500">Opening Balance ({editForm.currency || 'USD'})</label>
                       <input type="number" step="0.01" value={editForm.opening_balance ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, opening_balance: e.target.value }))}
                         className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" />
                     </div>
@@ -410,8 +460,16 @@ export default function AccountsPage() {
                       <div>
                         <span className="text-gray-400 text-xs">Balance</span>
                         <p className={`font-bold ${acct.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                          {acct.balance < 0 ? '-' : ''}${Math.abs(acct.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          {formatMoney(acct.balance, acct.currency ?? 'USD')}
+                          {(acct.currency ?? 'USD') !== 'USD' && <span className="ml-1 text-xs font-medium text-gray-500">{acct.currency}</span>}
                         </p>
+                        {(acct.currency ?? 'USD') !== (acct.home_currency ?? homeCurrency) && (
+                          <p className="text-xs text-gray-600">
+                            {acct.balance_home != null && acct.fx
+                              ? <>≈ {formatMoney(acct.balance_home, acct.home_currency ?? homeCurrency)} · {rateAsOf(acct.fx)}</>
+                              : <>No rate yet. <Link href="/dashboard/settings#my-currencies" className="underline underline-offset-2 text-sky-700">Add your rate</Link></>}
+                          </p>
+                        )}
                       </div>
                       {acct.credit_limit != null && (
                         <div>
@@ -475,7 +533,7 @@ export default function AccountsPage() {
                       </button>
                     )}
                     <button
-                      onClick={() => { setEditId(acct.id); setEditForm({ name: acct.name, account_type: acct.account_type, institution_name: acct.institution_name ?? '', last_four: acct.last_four ?? '', interest_rate: acct.interest_rate?.toString() ?? '', credit_limit: acct.credit_limit?.toString() ?? '', opening_balance: String(acct.opening_balance ?? 0), monthly_fee: acct.monthly_fee?.toString() ?? '', due_date: acct.due_date?.toString() ?? '', statement_date: acct.statement_date?.toString() ?? '', notes: acct.notes ?? '', dispute_window_days: acct.dispute_window_days?.toString() ?? '', default_return_days: acct.default_return_days?.toString() ?? '', promo_apr: acct.promo_apr?.toString() ?? '', promo_apr_expires: acct.promo_apr_expires ?? '', promo_description: acct.promo_description ?? '', bt_apr: acct.bt_apr?.toString() ?? '', bt_fee_percent: acct.bt_fee_percent?.toString() ?? '', bt_expires: acct.bt_expires ?? '', bt_description: acct.bt_description ?? '', rewards_type: acct.rewards_type ?? '', rewards_rate: acct.rewards_rate ?? '', annual_fee: acct.annual_fee?.toString() ?? '' }); }}
+                      onClick={() => { setEditId(acct.id); setEditForm({ name: acct.name, account_type: acct.account_type, institution_name: acct.institution_name ?? '', last_four: acct.last_four ?? '', interest_rate: acct.interest_rate?.toString() ?? '', credit_limit: acct.credit_limit?.toString() ?? '', opening_balance: String(acct.opening_balance ?? 0), monthly_fee: acct.monthly_fee?.toString() ?? '', due_date: acct.due_date?.toString() ?? '', statement_date: acct.statement_date?.toString() ?? '', notes: acct.notes ?? '', dispute_window_days: acct.dispute_window_days?.toString() ?? '', default_return_days: acct.default_return_days?.toString() ?? '', promo_apr: acct.promo_apr?.toString() ?? '', promo_apr_expires: acct.promo_apr_expires ?? '', promo_description: acct.promo_description ?? '', bt_apr: acct.bt_apr?.toString() ?? '', bt_fee_percent: acct.bt_fee_percent?.toString() ?? '', bt_expires: acct.bt_expires ?? '', bt_description: acct.bt_description ?? '', rewards_type: acct.rewards_type ?? '', rewards_rate: acct.rewards_rate ?? '', annual_fee: acct.annual_fee?.toString() ?? '', currency: acct.currency ?? 'USD' }); }}
                       className="p-1.5 text-gray-400 hover:text-fuchsia-600 hover:bg-fuchsia-50 rounded-lg transition"
                       title="Edit"
                     >
@@ -566,6 +624,15 @@ export default function AccountsPage() {
         onSuccess={load}
       />
 
+      <ExchangeModal
+        isOpen={showExchange}
+        onClose={() => setShowExchange(false)}
+        accounts={accounts}
+        onSuccess={load}
+      />
+
+      {hasForeign && <FxAttribution />}
+
       {/* Add Account Modal */}
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add Account" size="sm">
         <form onSubmit={handleAdd}>
@@ -584,6 +651,16 @@ export default function AccountsPage() {
                 </select>
               </div>
             </div>
+            <div>
+              <label htmlFor="acct-currency" className="text-xs font-medium text-gray-600">Currency</label>
+              <select id="acct-currency" value={form.currency || homeCurrency} onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))}
+                className="w-full mt-1 min-h-11 px-3 py-2 text-sm border border-gray-200 rounded-lg">
+                {currencyChoices.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                Cash for a trip? Pick the local currency. Amounts on this account are entered in it.
+              </p>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label htmlFor="acct-institution" className="text-xs font-medium text-gray-600">Institution</label>
@@ -598,7 +675,7 @@ export default function AccountsPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label htmlFor="acct-opening-balance" className="text-xs font-medium text-gray-600">Opening Balance ($)</label>
+                <label htmlFor="acct-opening-balance" className="text-xs font-medium text-gray-600">Opening Balance ({form.currency || homeCurrency})</label>
                 <input id="acct-opening-balance" type="number" step="0.01" value={form.opening_balance} onChange={(e) => setForm((f) => ({ ...f, opening_balance: e.target.value }))}
                   className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="0.00" />
               </div>

@@ -12,6 +12,7 @@ import TransferBadge, { type TransferPartnerView } from '@/components/finance/Tr
 import { accountLabel } from '@/lib/finance/transfers/pairing';
 import { offlineFetch, isQueuedResponse } from '@/lib/offline/offline-fetch';
 import { vendorKey } from '@/lib/finance/transaction-matching';
+import TxAmount from '@/components/finance/TxAmount';
 
 interface Category {
   id: string;
@@ -47,7 +48,10 @@ interface Transaction {
   category_id: string | null;
   brand_id: string | null;
   budget_categories: Category | null;
-  financial_accounts: { id: string; name: string; institution_name?: string | null; last_four?: string | null } | null;
+  financial_accounts: { id: string; name: string; institution_name?: string | null; last_four?: string | null; currency?: string | null } | null;
+  // Multi-currency (migration 210): absent before it. currency null = the account's currency.
+  currency?: string | null;
+  amount_home?: number | null;
   notes: string | null;
   created_at: string;
   // Set when the row is one side of a transfer. Absent on a database that
@@ -83,6 +87,7 @@ export default function TransactionsPage() {
   const reviewTransfers = searchParams.get('review') === 'transfers';
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [homeCurrency, setHomeCurrency] = useState('USD');
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -152,6 +157,7 @@ export default function TransactionsPage() {
       if (res.ok) {
         const data = await res.json();
         setTransactions(data.transactions || []);
+        if (typeof data.home_currency === 'string') setHomeCurrency(data.home_currency);
         setTotal(data.total || 0);
         setListNotice(typeof data.notice === 'string' ? data.notice : null);
       }
@@ -682,9 +688,7 @@ export default function TransactionsPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`text-sm font-semibold ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                          {tx.type === 'income' ? '+' : '-'}${Number(tx.amount).toFixed(2)}
-                        </span>
+                        <TxAmount tx={tx} homeCurrency={homeCurrency} className="text-sm font-semibold" />
                         <button
                           onClick={() => startEdit(tx)}
                           className="min-h-11 min-w-11 flex items-center justify-center hover:bg-gray-100 rounded-lg"
@@ -850,9 +854,7 @@ export default function TransactionsPage() {
                           className="px-2 py-1 text-xs border border-gray-300 rounded w-24 text-right text-gray-900 disabled:bg-gray-100 disabled:text-gray-500"
                         />
                       ) : (
-                        <span className={`font-medium ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                          {tx.type === 'income' ? '+' : '-'}${Number(tx.amount).toFixed(2)}
-                        </span>
+                        <TxAmount tx={tx} homeCurrency={homeCurrency} className="font-medium" />
                       )}
                     </td>
                     <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>

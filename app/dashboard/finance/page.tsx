@@ -19,6 +19,7 @@ import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import TransferModal from '@/components/finance/TransferModal';
 import LearnCategoryPrompt, { type LearnCategoryRequest } from '@/components/finance/LearnCategoryPrompt';
 import Modal from '@/components/ui/Modal';
+import { formatMoney } from '@/lib/finance/fx/math';
 
 interface CategoryBreakdown {
   id: string;
@@ -75,6 +76,10 @@ interface Summary {
   categoryBreakdown: CategoryBreakdown[];
   monthlyTrend: MonthlyTrend[];
   projections?: Projections | null;
+  /** Multi-currency (migration 210): totals are in this currency. */
+  home_currency?: string;
+  /** Foreign-currency rows with no rate yet, left out of the totals. */
+  unconverted?: number;
 }
 
 interface Category {
@@ -92,6 +97,8 @@ interface Account {
   last_four: string | null;
   balance: number;
   is_active: boolean;
+  /** Migration 210; missing means USD. */
+  currency?: string;
 }
 
 const ACCOUNT_TYPE_LABEL: Record<string, string> = {
@@ -469,7 +476,8 @@ export default function FinanceDashboardPage() {
                 </div>
                 <p className="text-sm font-semibold text-gray-800 truncate">{acct.name}</p>
                 <p className={`text-base font-bold mt-0.5 ${acct.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                  {acct.balance < 0 ? '-' : ''}${Math.abs(acct.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  {formatMoney(acct.balance, acct.currency ?? 'USD')}
+                  {(acct.currency ?? 'USD') !== 'USD' && <span className="ml-1 text-xs font-medium text-gray-500">{acct.currency}</span>}
                 </p>
               </Link>
             ))}
@@ -484,14 +492,14 @@ export default function FinanceDashboardPage() {
             <TrendingDown className="w-4 h-4 text-red-500" />
             Expenses This Month
           </div>
-          <p className="text-2xl font-bold text-gray-900">${cm.expenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+          <p className="text-2xl font-bold text-gray-900">{formatMoney(cm.expenses, summary?.home_currency ?? 'USD')}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-2xl p-5">
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
             <TrendingUp className="w-4 h-4 text-green-500" />
             Income This Month
           </div>
-          <p className="text-2xl font-bold text-gray-900">${cm.income.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+          <p className="text-2xl font-bold text-gray-900">{formatMoney(cm.income, summary?.home_currency ?? 'USD')}</p>
         </div>
         <div className={`bg-white border rounded-2xl p-5 ${cm.net >= 0 ? 'border-green-200' : 'border-red-200'}`}>
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
@@ -503,6 +511,18 @@ export default function FinanceDashboardPage() {
           </p>
         </div>
       </div>
+      {((summary?.home_currency ?? 'USD') !== 'USD' || (summary?.unconverted ?? 0) > 0) && (
+        <p className="text-xs text-gray-600 -mt-2">
+          Totals in {summary?.home_currency ?? 'USD'}.
+          {(summary?.unconverted ?? 0) > 0 && (
+            <>
+              {' '}{summary?.unconverted} foreign-currency transaction{summary?.unconverted === 1 ? ' has' : 's have'} no exchange rate yet and
+              {summary?.unconverted === 1 ? ' is' : ' are'} left out.{' '}
+              <Link href="/dashboard/settings#my-currencies" className="underline underline-offset-2 text-sky-700">Update rates</Link>
+            </>
+          )}
+        </p>
+      )}
 
       {/* Projection Toggle Bar + Cards + Timeline */}
       {hasProjections && (
@@ -744,7 +764,9 @@ export default function FinanceDashboardPage() {
                 </select>
               </div>
               <div>
-                <label htmlFor="txn-amount" className="text-xs font-medium text-gray-600">Amount ($)</label>
+                <label htmlFor="txn-amount" className="text-xs font-medium text-gray-600">
+                  Amount ({accounts.find((a) => a.id === addForm.account_id)?.currency ?? summary?.home_currency ?? 'USD'})
+                </label>
                 <input
                   id="txn-amount"
                   type="number"
@@ -820,7 +842,7 @@ export default function FinanceDashboardPage() {
                   <option value="">No account</option>
                   {accounts.filter((a) => a.is_active).map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.name}{a.last_four ? ` ··${a.last_four}` : ''}
+                      {a.name}{a.last_four ? ` ··${a.last_four}` : ''}{a.currency && a.currency !== (summary?.home_currency ?? 'USD') ? ` (${a.currency})` : ''}
                     </option>
                   ))}
                 </select>
