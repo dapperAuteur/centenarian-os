@@ -8,6 +8,7 @@ import { NAV_GROUPS } from '@/components/nav/NavConfig';
 import { Settings, Check, Loader2, Sparkles, RotateCcw, Clock, DollarSign } from 'lucide-react';
 import MfaSetupSection from '@/components/settings/MfaSetupSection';
 import StatementsUploadSection from '@/components/settings/StatementsUploadSection';
+import CurrencySettingsSection from '@/components/settings/CurrencySettingsSection';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 // import TourRestartButton from '@/components/onboarding/TourRestartButton';
 import { invalidateClockFormatCache } from '@/lib/hooks/useClockFormat';
@@ -225,6 +226,9 @@ export default function DashboardSettingsPage() {
 
       {/* Statements: upload a CSV or PDF straight into the Finance import */}
       <StatementsUploadSection />
+
+      {/* Currencies: home currency, my currencies, rates (anchor #my-currencies) */}
+      <CurrencySettingsSection />
 
       {/* Clock Format */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mt-6">

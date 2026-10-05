@@ -195,6 +195,7 @@ export const MODULES: ModuleData[] = [
     features: [
       'Checking, savings, credit card, loan, cash',
       'Bank statement import from CSV or PDF, with duplicate detection and undo',
+      'Accounts in any currency (travel cash), converted to your home currency with daily or your own rates',
       'Budget categories with spending charts',
       'Invoices with custom fields & CSV import',
     ],

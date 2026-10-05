@@ -23,6 +23,8 @@ import {
   rolloverOn,
 } from './logic.ts';
 import type { BudgetMethod, BudgetReport, BudgetWindow, PeriodRow, SpendingRow } from './logic.ts';
+import { FX_TOTALS_COLUMNS, toHomeAmounts, withOptionalFx } from '../fx/totals.ts';
+import { loadHomeCurrency } from '../fx/server.ts';
 
 /** Rows per request when paging transactions (PostgREST's default max-rows). */
 export const PAGE_SIZE = 1000;
@@ -66,34 +68,42 @@ export async function loadDebtAccountIds(
   return { ids: new Set(((data ?? []) as { id: string }[]).map((row) => row.id)), error };
 }
 
-/** Every non-transfer transaction of the user between two dates, all pages. */
+/**
+ * Every non-transfer transaction of the user between two dates, all pages, with `amount` in the
+ * user's home currency (lib/finance/fx/totals.ts): foreign-currency rows count their amount_home,
+ * and foreign rows with no rate yet are left out rather than counted at face value.
+ */
 export async function loadSpendingRows(
   db: SupabaseClient,
   userId: string,
   fromDate: string,
   toDate: string,
 ): Promise<{ rows: SpendingRow[]; error: DbErrorLike | null }> {
+  const home = await loadHomeCurrency(db, userId);
   const rows: SpendingRow[] = [];
   const debt = await loadDebtAccountIds(db, userId);
   if (debt.error) return { rows, error: debt.error };
   for (let offset = 0; ; offset += PAGE_SIZE) {
-    const res = await excludingTransfers((groupColumnExists) =>
-      withoutTransfers(
-        db
-          .from('financial_transactions')
-          .select(SPENDING_SELECT)
-          .eq('user_id', userId)
-          .gte('transaction_date', fromDate)
-          .lte('transaction_date', toDate),
-        groupColumnExists,
-      )
-        .order('transaction_date', { ascending: true })
-        .order('id', { ascending: true })
-        .range(offset, offset + PAGE_SIZE - 1),
+    // Works before migrations 202 and 210: see excludingTransfers() and withOptionalFx().
+    const res = await withOptionalFx((fxColumnsExist) =>
+      excludingTransfers((groupColumnExists) =>
+        withoutTransfers(
+          db
+            .from('financial_transactions')
+            .select(fxColumnsExist ? `${SPENDING_SELECT}, ${FX_TOTALS_COLUMNS}` : SPENDING_SELECT)
+            .eq('user_id', userId)
+            .gte('transaction_date', fromDate)
+            .lte('transaction_date', toDate),
+          groupColumnExists,
+        )
+          .order('transaction_date', { ascending: true })
+          .order('id', { ascending: true })
+          .range(offset, offset + PAGE_SIZE - 1),
+      ),
     );
     if (res.error) return { rows, error: res.error };
-    const page = (res.data ?? []) as (SpendingRow & { account_id?: string | null; description?: string | null })[];
-    for (const row of page) {
+    const page = (res.data ?? []) as unknown as (SpendingRow & { account_id?: string | null; description?: string | null })[];
+    for (const row of toHomeAmounts(page, home).rows) {
       // Money back on a card or loan: a refund lowers spending; an unlinked
       // payment is a transfer and counts nowhere (lib/finance/refunds.ts).
       const role = totalsRole(row, debt.ids);

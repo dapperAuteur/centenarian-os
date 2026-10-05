@@ -45,6 +45,7 @@ The form includes:
 |-------|------|-------|
 | **Name** | text | Required — e.g., "Chase Checking" |
 | **Account Type** | select | checking / savings / credit_card / loan / cash |
+| **Currency** | select | Starts on your home currency. Pick the local currency for cash you carry on a trip (e.g. MXN). Can change only while the account has no transactions |
 | **Institution Name** | text | Optional — bank or lender name. Shown next to the account name wherever you pick an account |
 | **Last Four** | 4 chars | Last 4 digits of account number. Tells apart two accounts with the same name, and helps the app recognize transfers: a description such as "TRANSFER TO ...5345" points at the account ending 5345 |
 | **Opening Balance** | number | Starting balance — used as the baseline for calculations |
@@ -71,6 +72,17 @@ This means you don't manually update balances — they stay accurate as long as 
 For **credit cards and loans**, the balance is what you owe: an expense (a charge) raises it and an income entry (a payment) lowers it.
 
 **Moving money between accounts.** Click **Transfer** on the accounts page or the finance dashboard, pick the From and To accounts, the amount, and the date. Two linked transactions are created: an expense on the From account and an income on the To account. Paying a credit card or a loan from a bank account is a transfer too. Transfers change both balances but are never counted as spending or income. Lesson 05 covers linking transactions that already exist, such as rows from two imported statements.
+
+---
+
+### Accounts in Other Currencies
+
+Every account has a currency, and its opening balance, transactions and balance are all in that currency. Your **home currency** (Settings → Currencies) is the one totals are reported in.
+
+- A foreign-currency account shows its balance in its own currency and, under it, the value in your home currency with the rate's date and source ("rate as of Oct 5, 2026 (ECB via Frankfurter)").
+- Each transaction on it stores the amount converted at the rate for its date. Dashboard totals, budgets, brand P&L and Life Categories add up the converted amounts, so 350 pesos counts as about $20.
+- **Exchange money** (Accounts page) records swapping currency at a booth or ATM: what you handed over, what you received, and any fee. It is a linked transfer, so it is never spending or income; the fee is its own expense; and the rate you got is saved as your own rate for that day.
+- Rates come from Frankfurter (European Central Bank reference rates, with history) and, for other currencies, ExchangeRate-API; they refresh daily and on **Update rates now**. Rates you enter on Settings → Currencies always win.
 
 ---
 

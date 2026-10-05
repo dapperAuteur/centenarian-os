@@ -1,6 +1,8 @@
 // app/api/finance/accounts/[id]/route.ts
 // PATCH: update account fields, including csv_import_mapping (the statement-import
 //        settings saved for the account: { mapping, sign, dateOrder, includePending?, preset? } or null)
+//        and currency (ISO code; only while the account has no transactions, because changing it
+//        would re-read every amount on the account in a different currency)
 // DELETE: deactivate (soft) or hard-delete if no transactions
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -12,6 +14,8 @@ import {
   isMissingSchemaError,
 } from '@/lib/finance/csv-import/errors';
 import { sanitizeSavedMapping } from '@/lib/finance/csv-import/service';
+import { normalizeCurrency } from '@/lib/finance/fx/math';
+import { isFxSchemaMissing } from '@/lib/finance/fx/rates';
 
 function getDb() {
   return createServiceClient(
@@ -51,8 +55,49 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     'rewards_type', 'rewards_rate', 'annual_fee',
     // Statement-import settings remembered for this account (migration 203)
     'csv_import_mapping',
+    // Multi-currency (migration 210)
+    'currency',
   ];
   const updates = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
+
+  if ('currency' in updates) {
+    const code = normalizeCurrency(updates.currency);
+    if (!code) return NextResponse.json({ error: 'Currency must be a three-letter code, like USD or MXN.' }, { status: 400 });
+    const { data: current, error: currentError } = await db
+      .from('financial_accounts')
+      .select('currency')
+      .eq('id', id)
+      .maybeSingle();
+    if (currentError) {
+      if (isFxSchemaMissing(currentError)) {
+        return NextResponse.json(
+          { error: 'Accounts in other currencies need a database update (migration 210).', code: 'fx_not_migrated' },
+          { status: 503 },
+        );
+      }
+      return NextResponse.json({ error: currentError.message }, { status: 500 });
+    }
+    if ((current as { currency?: string } | null)?.currency === code) {
+      delete updates.currency;
+    } else {
+      const { count } = await db
+        .from('financial_transactions')
+        .select('id', { count: 'exact', head: true })
+        .eq('account_id', id);
+      if ((count ?? 0) > 0) {
+        return NextResponse.json(
+          {
+            error:
+              "This account already has transactions, so its currency can't change (their amounts would be read in the new currency). " +
+              'Create a new account in the other currency instead.',
+            code: 'currency_locked',
+          },
+          { status: 409 },
+        );
+      }
+      updates.currency = code;
+    }
+  }
 
   // { mapping, sign, dateOrder, includePending?, preset? } or null to forget it.
   // Checked here so a malformed value can't be stored and break the next import.

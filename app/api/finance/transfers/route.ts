@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase/server';
 import { kindForDestination } from '@/lib/finance/transfers/pairing';
 import { missingTransferColumn, TRANSFERS_NOT_READY } from '@/lib/finance/transfers/schema';
 import { getServiceDb, insertTransferEntries } from '@/lib/finance/transfers/server';
+import { isFxSchemaMissing } from '@/lib/finance/fx/rates';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -38,11 +39,18 @@ export async function POST(request: NextRequest) {
   const db = getServiceDb();
 
   // Validate both accounts belong to the user and are active
-  const { data: accounts } = await db
-    .from('financial_accounts')
-    .select('id, name, account_type, is_active')
-    .eq('user_id', user.id)
-    .in('id', [from_account_id, to_account_id]);
+  // `currency` arrives with migration 210; before it every account is in USD.
+  const accountQuery = (withCurrency: boolean) =>
+    db
+      .from('financial_accounts')
+      .select(withCurrency ? 'id, name, account_type, is_active, currency' : 'id, name, account_type, is_active')
+      .eq('user_id', user.id)
+      .in('id', [from_account_id, to_account_id]);
+  let accountRes = await accountQuery(true);
+  if (accountRes.error && isFxSchemaMissing(accountRes.error)) accountRes = await accountQuery(false);
+  const accounts = accountRes.data as unknown as
+    | { id: string; name: string; account_type: string; is_active: boolean; currency?: string }[]
+    | null;
 
   if (!accounts || accounts.length !== 2) {
     return NextResponse.json({ error: 'One or both accounts not found' }, { status: 400 });
@@ -54,6 +62,18 @@ export async function POST(request: NextRequest) {
 
   const fromAcct = accounts.find((a) => a.id === from_account_id)!;
   const toAcct = accounts.find((a) => a.id === to_account_id)!;
+  // The same amount on both sides only makes sense in one currency.
+  if ((fromAcct.currency ?? 'USD') !== (toAcct.currency ?? 'USD')) {
+    return NextResponse.json(
+      {
+        error:
+          `"${fromAcct.name}" is in ${fromAcct.currency} and "${toAcct.name}" is in ${toAcct.currency}. ` +
+          'Use Exchange money to record what you handed over and what you received.',
+        code: 'currency_mismatch',
+      },
+      { status: 400 },
+    );
+  }
   const transferGroupId = crypto.randomUUID();
   const desc = description?.trim() || `Transfer: ${fromAcct.name} → ${toAcct.name}`;
   const entry = { userId: user.id, amount: Number(amount), date, description: desc, groupId: transferGroupId };

@@ -5,11 +5,18 @@
 // payments) are left out of every total here: they are not spending or income.
 // Money back on a credit card or loan that isn't a payment is a refund: it
 // lowers spending (and its category's spending), and is never income.
+//
+// Totals are in the user's home currency (`home_currency`): each row counts its amount_home when
+// set, else its amount when it is in the home currency (lib/finance/fx/totals.ts). Foreign rows
+// with no rate yet are left out and counted in `unconverted`.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { excludingTransfers, withoutTransfers } from '@/lib/finance/transfers/schema';
 import { signedSpending } from '@/lib/finance/refunds';
+import { getServiceDb } from '@/lib/finance/transfers/server';
+import { FX_TOTALS_COLUMNS, toHomeAmounts, withOptionalFx } from '@/lib/finance/fx/totals';
+import { loadHomeCurrency } from '@/lib/finance/fx/server';
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -32,17 +39,19 @@ export async function GET(request: NextRequest) {
     .toISOString().split('T')[0];
 
   // Fetch all transactions in range + categories
-  const [txRes, catRes, debtRes] = await Promise.all([
-    // Works before migration 202 too: see excludingTransfers().
-    excludingTransfers((groupColumnExists) =>
-      withoutTransfers(
-        supabase
-          .from('financial_transactions')
-          .select('amount, type, transaction_date, category_id, account_id, description')
-          .eq('user_id', user.id)
-          .gte('transaction_date', startDate)
-          .lte('transaction_date', endDate),
-        groupColumnExists,
+  const [txRes, catRes, debtRes, homeCurrency] = await Promise.all([
+    // Works before migrations 202 and 210 too: see excludingTransfers() and withOptionalFx().
+    withOptionalFx((fxColumnsExist) =>
+      excludingTransfers((groupColumnExists) =>
+        withoutTransfers(
+          supabase
+            .from('financial_transactions')
+            .select(`amount, type, transaction_date, category_id, account_id, description${fxColumnsExist ? `, ${FX_TOTALS_COLUMNS}` : ''}`)
+            .eq('user_id', user.id)
+            .gte('transaction_date', startDate)
+            .lte('transaction_date', endDate),
+          groupColumnExists,
+        ),
       ),
     ),
     supabase
@@ -55,11 +64,16 @@ export async function GET(request: NextRequest) {
       .select('id')
       .eq('user_id', user.id)
       .in('account_type', ['credit_card', 'loan']),
+    loadHomeCurrency(getServiceDb(), user.id),
   ]);
 
   if (txRes.error) return NextResponse.json({ error: txRes.error.message }, { status: 500 });
 
-  const transactions = txRes.data || [];
+  // Amounts in the home currency; foreign rows with no rate yet are counted, not added.
+  const { rows: transactions, unconverted } = toHomeAmounts(
+    (txRes.data || []) as unknown as { amount: number; type: string; transaction_date: string; category_id: string | null; account_id: string | null; description: string | null }[],
+    homeCurrency,
+  );
   const categories = catRes.data || [];
   const debtAccountIds = new Set(((debtRes.data ?? []) as { id: string }[]).map((row) => row.id));
 
@@ -76,7 +90,7 @@ export async function GET(request: NextRequest) {
     const monthKey = tx.transaction_date.slice(0, 7); // YYYY-MM
     if (!monthlyMap[monthKey]) monthlyMap[monthKey] = { expenses: 0, income: 0 };
 
-    const amt = parseFloat(tx.amount);
+    const amt = tx.amount;
     // A refund on a card or loan is negative spending; other money in is income.
     const spent = signedSpending(tx, debtAccountIds);
     if (spent !== null) {
@@ -173,6 +187,8 @@ export async function GET(request: NextRequest) {
   } : null;
 
   return NextResponse.json({
+    home_currency: homeCurrency,
+    unconverted,
     currentMonth: {
       expenses: Math.round(currentExpenses * 100) / 100,
       income: Math.round(currentIncome * 100) / 100,

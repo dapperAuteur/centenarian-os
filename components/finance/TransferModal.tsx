@@ -18,6 +18,8 @@ interface Account {
   last_four: string | null;
   balance: number;
   is_active: boolean;
+  /** Migration 210; missing means USD. */
+  currency?: string;
 }
 
 interface TransferModalProps {
@@ -126,7 +128,14 @@ export default function TransferModal({ isOpen, onClose, accounts, onSuccess }: 
             className="w-full mt-1 min-h-11 px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-900"
           >
             <option value="">Select account…</option>
-            {activeAccounts.filter((a) => a.id !== fromId).map((a) => (
+            {/* Same currency only: money into another currency is an exchange (ExchangeModal). */}
+            {activeAccounts
+              .filter((a) => a.id !== fromId)
+              .filter((a) => {
+                const from = activeAccounts.find((x) => x.id === fromId);
+                return !from || (a.currency ?? 'USD') === (from.currency ?? 'USD');
+              })
+              .map((a) => (
               <option key={a.id} value={a.id}>{label(a)}</option>
             ))}
           </select>
