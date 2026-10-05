@@ -4,6 +4,7 @@
 import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
 import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Inter } from 'next/font/google';
 import './globals.css';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
@@ -125,6 +126,7 @@ export default async function RootLayout({
             apiHost="/ingest"
           />
           <Analytics />
+          <SpeedInsights />
           {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL || process.env.UMAMI_HOST_URL) && (
             <Script
               src={process.env.UMAMI_HOST_URL ? '/a/script.js' : (process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL || 'https://cloud.umami.is/script.js')}
