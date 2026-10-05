@@ -15,6 +15,13 @@ interface Category {
   color?: string | null;
 }
 
+interface DepreciationSummary {
+  ready: boolean;
+  year: number;
+  items: { kind: 'equipment' | 'vehicle'; id: string; bookValue: number | null }[];
+  totals: { bookValue: number; thisYearToDate: number; workDepreciationThisYear: number; configured: number };
+}
+
 interface Summary {
   totalItems: number;
   totalPurchaseValue: number;
@@ -31,6 +38,7 @@ export default function EquipmentHubPage() {
   const [items, setItems] = useState<EquipmentItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [dep, setDep] = useState<DepreciationSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
 
@@ -53,6 +61,19 @@ export default function EquipmentHubPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Book values (migration 214). Separate so an older database doesn't block the page.
+  useEffect(() => {
+    fetch('/api/equipment/depreciation/summary', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setDep(d))
+      .catch(() => setDep(null));
+  }, []);
+
+  const bookValues = new Map(
+    (dep?.items ?? []).filter((i) => i.kind === 'equipment').map((i) => [i.id, i.bookValue]),
+  );
+  const fmtMoney = (v: number) => `$${v.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 
   const filtered = selectedCat
     ? items.filter((i) => i.category_id === selectedCat)
@@ -114,6 +135,35 @@ export default function EquipmentHubPage() {
         </div>
       )}
 
+      {/* Depreciation summary (equipment + vehicles with depreciation settings) */}
+      {dep?.ready === false && (
+        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+          Depreciation: run migration 214 first to save expected life and salvage values.
+        </p>
+      )}
+      {dep?.ready && dep.totals.configured > 0 && (
+        <section aria-label="Depreciation summary" className="bg-white border border-gray-200 rounded-2xl p-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
+            <h2 className="text-sm font-semibold text-gray-900">Depreciation ({dep.totals.configured} items incl. vehicles)</h2>
+            <span className="text-[11px] text-gray-500">Estimates, not tax advice</span>
+          </div>
+          <dl className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <dt className="text-xs text-gray-500">Total book value</dt>
+              <dd className="text-lg font-bold text-gray-900">{fmtMoney(dep.totals.bookValue)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500">{dep.year} depreciation to date</dt>
+              <dd className="text-lg font-bold text-gray-900">{fmtMoney(dep.totals.thisYearToDate)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500">Work share of {dep.year} depreciation</dt>
+              <dd className="text-lg font-bold text-gray-900">{fmtMoney(dep.totals.workDepreciationThisYear)}</dd>
+            </div>
+          </dl>
+        </section>
+      )}
+
       {/* Category filter */}
       {categories.length > 0 && (
         <CategoryFilter
@@ -132,6 +182,7 @@ export default function EquipmentHubPage() {
             <EquipmentCard
               key={item.id}
               item={item}
+              bookValue={bookValues.get(item.id) ?? null}
               onClick={() => router.push(`/dashboard/equipment/${item.id}`)}
             />
           ))}

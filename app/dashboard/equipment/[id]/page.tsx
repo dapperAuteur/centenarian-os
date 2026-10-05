@@ -10,6 +10,7 @@ import ActivityLinker from '@/components/ui/ActivityLinker';
 import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
 import ValuationChart from '@/components/equipment/ValuationChart';
 import EquipmentMediaGallery, { type MediaItem } from '@/components/equipment/EquipmentMediaGallery';
+import AssetDepreciationPanel from '@/components/equipment/AssetDepreciationPanel';
 import { todayLocal } from '@/lib/dates/local';
 
 interface EquipmentDetail {
@@ -410,6 +411,9 @@ export default function EquipmentDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Depreciation + Work use (migration 214) */}
+      <AssetDepreciationPanel kind="equipment" id={id} name={item.name} />
 
       {/* Activity Links */}
       <div className="bg-white border border-gray-200 rounded-2xl p-5">
