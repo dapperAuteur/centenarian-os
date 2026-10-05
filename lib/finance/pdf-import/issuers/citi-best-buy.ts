@@ -313,7 +313,7 @@ export function readPromotions(lines: readonly PdfLine[]): StatementPromo[] {
 
     const balance = cellCents(cells.newBalance) ?? 0;
     const promo: StatementPromo = {
-      description: displayVendor(`${rowLabel ?? 'Promotion'}${balanceGroup ? ` (${balanceGroup.toLowerCase()})` : ''}`),
+      description: `${displayVendor(rowLabel ?? 'Promotion')}${balanceGroup ? ` (${balanceGroup.toLowerCase()})` : ''}`,
       balance,
       expiresOn,
     };
