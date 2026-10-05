@@ -715,7 +715,8 @@ export default function PlannerPage() {
     return tasks.filter((task) => {
       if (sourceFilter === 'inbox') return inboxMilestoneIds.has(task.milestone_id);
       if (sourceFilter === 'schedule') return task.source_type === 'schedule';
-      if (sourceFilter === 'work') return !!task.source_type && task.source_type !== 'schedule';
+      // Savings milestone notes (Finance > Savings) carry a source_type but are not Work.WitUS tasks.
+      if (sourceFilter === 'work') return !!task.source_type && task.source_type !== 'schedule' && !task.source_type.startsWith('savings_milestone_');
       const milestoneName = milestoneNames[task.milestone_id] ?? '';
       const isCalendar = milestoneName.startsWith('Google Calendar:');
       const isRecurring = milestoneName.toLowerCase().includes('recurring');

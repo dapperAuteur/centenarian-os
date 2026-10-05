@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Package, Calendar, DollarSign, Plus, Heart, Share2, Globe, Lock } from 'lucide-react';
+import { ArrowLeft, Package, Calendar, DollarSign, Plus, Heart, Share2, Globe, Lock, Target } from 'lucide-react';
+import Link from 'next/link';
 import Image from 'next/image';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import ActivityLinker from '@/components/ui/ActivityLinker';
@@ -214,6 +215,18 @@ export default function EquipmentDetailPage() {
                     Retired
                   </span>
                 )}
+                <Link
+                  href={`/dashboard/finance/savings?${new URLSearchParams({
+                    new: '1',
+                    kind: 'equipment',
+                    equipment_id: item.id,
+                    name: `Replace ${item.name}`,
+                    ...(item.purchase_price ? { target: String(item.purchase_price) } : {}),
+                  }).toString()}`}
+                  className="min-h-11 flex items-center justify-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-sky-50 text-sky-700 hover:bg-sky-100 transition"
+                >
+                  <Target className="w-3.5 h-3.5" aria-hidden="true" /> Save for this
+                </Link>
                 <button
                   onClick={toggleVisibility}
                   className={`min-h-11 min-w-11 flex items-center justify-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition ${
