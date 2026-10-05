@@ -531,9 +531,9 @@ export function buildCheatSheetMarkdown(): string {
     '',
     '## Location',
     '',
-    "Put the place in the event's Location field, not in the title. Today CentenarianOS adds it to the planner task's description. " +
-      'Proposed, not built: RideWitUS will use event locations to suggest trips to and from your activities, ' +
-      'only for calendars you choose to share with it.',
+    "Put the place in the event's Location field, not in the title. CentenarianOS adds it to the planner task's description, " +
+      'and the location is what RideWitUS uses: for a calendar you share with RideWitUS (Settings > Calendar Sync, off by default), ' +
+      'events with a location are sent so it can suggest trips to and from them. Events without a location are never sent.',
     '',
     '## When a title is flagged',
     '',
