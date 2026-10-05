@@ -194,7 +194,7 @@ export const MODULES: ModuleData[] = [
     Icon: DollarSign,
     features: [
       'Checking, savings, credit card, loan, cash',
-      'Bank statement CSV import with duplicate detection and undo',
+      'Bank statement import from CSV or PDF, with duplicate detection and undo',
       'Budget categories with spending charts',
       'Invoices with custom fields & CSV import',
     ],

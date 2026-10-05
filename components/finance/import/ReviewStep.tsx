@@ -10,6 +10,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import type { BudgetCategory } from '@/components/finance/CategorySelect';
 import type { PreviewResponse } from '@/lib/finance/csv-import/service';
 import type { PlannedRow } from '@/lib/finance/csv-import/types';
+import type { StatementPreview } from '@/lib/finance/pdf-import/service';
 import {
   REVIEW_PAGE_SIZE,
   STATUS_FILTERS,
@@ -27,6 +28,7 @@ import {
   type StatusFilter,
 } from '@/lib/finance/csv-import/ui-helpers';
 import ReviewRow from './ReviewRow';
+import StatementSummary from './StatementSummary';
 import { ErrorNotice, card, primaryButton, secondaryButton, selectInput } from './shared';
 
 interface ReviewStepProps {
@@ -41,6 +43,14 @@ interface ReviewStepProps {
   busy: boolean;
   error: string | null;
   online: boolean;
+  /** A PDF statement's summary, shown above the rows. Absent for a CSV. */
+  statement?: StatementPreview | null;
+  accountMatchesStatement?: boolean | null;
+  /** The "Import anyway" tick for a statement that doesn't add up. */
+  confirmUnreconciled?: boolean;
+  onConfirmUnreconciledChange?: (confirmed: boolean) => void;
+  /** What the Back button says. */
+  backLabel?: string;
 }
 
 /** How many unreadable rows are listed before "Show all". */
@@ -64,6 +74,11 @@ export default function ReviewStep({
   busy,
   error,
   online,
+  statement = null,
+  accountMatchesStatement = null,
+  confirmUnreconciled = false,
+  onConfirmUnreconciledChange,
+  backLabel = 'Back to columns',
 }: ReviewStepProps) {
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [page, setPage] = useState(1);
@@ -154,7 +169,8 @@ export default function ReviewStep({
   }
 
   const nothingToImport = summary.add + summary.link === 0;
-  const importDisabled = busy || !online || nothingToImport;
+  const needsConfirmation = statement !== null && !statement.reconciliation.ok && !confirmUnreconciled;
+  const importDisabled = busy || !online || nothingToImport || needsConfirmation;
   const firstShown = visible.length === 0 ? 0 : (currentPage - 1) * REVIEW_PAGE_SIZE + 1;
   const lastShown = Math.min(currentPage * REVIEW_PAGE_SIZE, visible.length);
   const shownRejected = showAllRejected ? rejected : rejected.slice(0, REJECTED_SHOWN);
@@ -164,7 +180,15 @@ export default function ReviewStep({
       type="button"
       onClick={onImport}
       disabled={importDisabled}
-      aria-describedby={!online ? 'import-offline-note' : nothingToImport ? 'import-nothing-note' : undefined}
+      aria-describedby={
+        !online
+          ? 'import-offline-note'
+          : nothingToImport
+            ? 'import-nothing-note'
+            : needsConfirmation
+              ? 'import-confirm-note'
+              : undefined
+      }
       className={primaryButton}
     >
       {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
@@ -194,10 +218,24 @@ export default function ReviewStep({
                 Every row is being skipped, so there is nothing to import.
               </p>
             )}
+            {needsConfirmation && !nothingToImport && (
+              <p id="import-confirm-note" className="mt-1 text-sm font-medium text-gray-900">
+                This statement doesn&apos;t add up. Tick &quot;Import anyway&quot; in the statement summary to import it.
+              </p>
+            )}
           </div>
           <div className="flex flex-col sm:shrink-0">{importButton}</div>
         </div>
       </section>
+
+      {statement && (
+        <StatementSummary
+          statement={statement}
+          accountMatchesStatement={accountMatchesStatement}
+          confirmUnreconciled={confirmUnreconciled}
+          onConfirmUnreconciledChange={(confirmed) => onConfirmUnreconciledChange?.(confirmed)}
+        />
+      )}
 
       {/* Filters */}
       <div role="group" aria-label="Show rows by status" className="flex flex-wrap gap-2">
@@ -389,7 +427,7 @@ export default function ReviewStep({
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
         <button type="button" onClick={onBack} disabled={busy} className={secondaryButton}>
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back to columns
+          {backLabel}
         </button>
         {importButton}
       </div>

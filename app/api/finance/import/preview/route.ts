@@ -14,11 +14,21 @@
 // 400 -> { error, code, ... } e.g. code 'mapping_incomplete' with missingColumns,
 //        file and detected, so the page can ask for the mapping.
 // 503 -> { error: "... Run migration 203 first ...", code: 'migration_required' }
+//
+// PDF statements: { account_id, pdf_base64, file_name? } instead of csv_text.
+// The PDF is read in this process (lib/finance/pdf-import), never sent
+// anywhere else. The answer has the same shape plus `statement` (issuer,
+// period, summary, APRs, promotions, reconciliation) and
+// `accountMatchesStatement`. 400 when the PDF has no readable text.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { importErrorResponse, readJson, unauthorizedResponse } from '@/lib/finance/csv-import/respond';
 import { previewImport } from '@/lib/finance/csv-import/service';
+import { isPdfBody, previewPdfImport } from '@/lib/finance/pdf-import/service';
+
+// pdfjs reads PDFs with Node APIs.
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -26,7 +36,9 @@ export async function POST(request: NextRequest) {
   if (!user) return unauthorizedResponse();
 
   try {
-    return NextResponse.json(await previewImport(supabase, user.id, await readJson(request)));
+    const body = await readJson(request);
+    if (isPdfBody(body)) return NextResponse.json(await previewPdfImport(supabase, user.id, body));
+    return NextResponse.json(await previewImport(supabase, user.id, body));
   } catch (error) {
     return importErrorResponse(error);
   }

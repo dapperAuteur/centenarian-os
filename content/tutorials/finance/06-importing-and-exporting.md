@@ -17,12 +17,14 @@ CentenarianOS does not connect to your bank, so nothing arrives on its own. The 
 
 ### Before You Start
 
-**Get the file from your bank.** Most banks and card providers let you download your transactions as a CSV file:
+**Get the file from your bank.** Most banks and card providers let you download your transactions as a CSV file, and every one lets you download your monthly statement as a PDF:
 
 1. Sign in to your bank's website
 2. Open the account's activity or statements page
-3. Look for Download or Export and choose CSV
-4. Pick the date range and save the file
+3. Look for Download or Export and choose CSV, or download the statement PDF
+4. Pick the date range (for a CSV) and save the file
+
+A CSV works for any bank. A PDF statement also brings in the statement's summary: balances, interest charged, interest rates, the minimum payment and due date, and any promotional balance with the date it expires (see "PDF Statements" below).
 
 **Have the account in Finance.** A statement is always imported into one account, so the account has to exist first. Lesson 07 covers adding accounts.
 
@@ -36,6 +38,7 @@ There are two ways in:
 
 - On the Finance dashboard, click **Import bank statement**
 - On **Finance → Accounts**, click **Import statement** on an account. That account is already chosen when the import opens.
+- On **Settings**, choose a CSV or PDF in the **Statements** box. The import opens with that file already loaded.
 
 The import has four steps, shown across the top of the page: **1 Account and file · 2 Columns · 3 Review · 4 Done**. Nothing is saved until the end of step 3, and **Back** keeps everything you entered.
 
@@ -45,7 +48,7 @@ The import has four steps, shown across the top of the page: **1 Account and fil
 
 **Choose the account.** This is required. Each option shows the bank, the account name, and the last four digits, so two accounts with the same name are easy to tell apart. If the account isn't listed, the link under the list takes you to the Accounts page to add it.
 
-**Give it the statement.** Either choose the CSV file, or paste the file's text into the box and click **Use pasted text**.
+**Give it the statement.** Either choose the CSV or PDF file, or paste a CSV's text into the box and click **Use pasted text**. A PDF skips step 2 and goes straight to review; see "PDF Statements" below.
 
 The file is read on your device first, and the page tells you what it found:
 
@@ -159,6 +162,30 @@ Click **Undo this import** on the result, or **Undo** next to an import in Impor
 
 ---
 
+### PDF Statements
+
+Choose the statement PDF in step 1, the same box a CSV goes in.
+
+**Private by design.** The PDF is read inside CentenarianOS itself. It is never sent to any other company or service, and no AI reads it. Only the rows you import and the statement's summary numbers are saved.
+
+**What works.** Text PDFs, the kind you download from your bank's website. A scanned or photographed statement has no text to read, and the page says so ("This PDF has no readable text; scanned statements aren't supported"). Password-protected PDFs are refused too: save a copy without the password first. A PDF can be up to 10 MB.
+
+**Which statements are recognized.** Best Buy credit card statements from Citibank are read section by section: the account summary, every transaction (purchases, payments, credits, fees, and interest), the interest rate table, and promotional balances. Any other statement is read by looking for lines with a date, a description, and an amount. Those imports are marked as an unrecognized layout, and you should check every row and its direction (expense or income) before importing.
+
+**The account picks itself.** The statement prints the last four digits of the account. When exactly one of your accounts ends in those digits, it is chosen for you. Otherwise choose it yourself; the review step warns you if the account you picked ends in different digits.
+
+**Card conventions.** Purchases, cash advances, fees, and interest are expenses. Payments and credits are income, because they lower what you owe.
+
+**The statement summary.** The review step shows the summary above the rows: previous balance, payments, other credits, purchases, cash advances, fees, interest, new balance, the minimum payment, and the due date. Next to it:
+
+- **Does it add up?** CentenarianOS checks previous balance − payments − credits + purchases + cash advances + fees + interest = new balance, and that the rows it found add up to each total. A green note means everything matched. Otherwise each difference is listed in plain words, and you have to tick **Import anyway: I've checked the differences** before **Import statement** works.
+- **Interest rates (APR)** for each kind of balance.
+- **Promotional balances** with the date each one expires and the deferred interest that would be charged if it isn't paid off by then.
+
+**What is saved.** After the import, the summary, interest rates, and promotional balances are saved with the account, one record per statement period. Undoing the import removes that record along with the transactions. Importing the same statement again updates it.
+
+---
+
 ### Importing the Same File Twice
 
 It is safe. Every imported row carries an identity, either the bank's own ID or one built from its date, amount, direction, and description. When you import a file again, or a new statement whose dates overlap the last one, the rows already in the account show as **Already imported** and are skipped.
@@ -229,6 +256,10 @@ Statement import needs a connection. If you are offline, the page says so, and t
 
 > [SCREEN: Go back to step 1. In Import history, click Undo on the import, confirm. The summary of what was deleted, unlinked, and kept appears]
 
+> [SCREEN: Click "Import another file", choose a text PDF statement (use a synthetic sample, never a real one on screen). The panel names the statement and the matched account. Click "Continue to review"]
+
+> [SCREEN: Review shows the statement summary, the green "adds up" note, the APRs, and the promotional balances]
+
 > [SCREEN: Navigate to /dashboard/finance, click Export. The CSV downloads]
 
 > [SCREEN: End on the Finance dashboard]
@@ -237,7 +268,9 @@ Statement import needs a connection. If you are offline, the page says so, and t
 
 ## Key Takeaways
 
-- There is no bank connection: download a CSV statement from your bank and import it
+- There is no bank connection: download a CSV or PDF statement from your bank and import it
+- A PDF is read inside CentenarianOS and never sent anywhere else; it must be a text PDF, not a scan
+- A PDF statement's summary is checked (does it add up?) and saved with its APRs and promotional balances
 - Open the import from the Finance dashboard (**Import bank statement**) or from an account on the Accounts page (**Import statement**)
 - Step 1: choose the account (required) and the file, or paste its text. One import takes up to 5,000 rows
 - Step 2: confirm the columns, how the file shows a purchase, and the date order. Check the five-row sample before continuing
