@@ -265,8 +265,19 @@ export function normalizeType(raw: string | null | undefined): TransactionType |
 // Tested against the description lowercased with punctuation turned into
 // spaces, so "E-PAY" and "ACCT_XFER" match "e pay" and "xfer".
 const HINT_PATTERNS: readonly (readonly [TransferHint, RegExp])[] = [
-  ['transfer', /\b(?:transfer|xfer|zelle|venmo)\b/],
-  ['card_payment', /\b(?:payment thank you|auto ?pay(?:ment)?|online payment|e ?pay(?:ment)?|card payment)\b/],
+  [
+    'transfer',
+    // PayPal's own wording for money moving between PayPal and a bank or PayPal Credit.
+    /\b(?:transfer|xfer|zelle|venmo|bank deposit to pp account|user initiated withdrawal|general card deposit)\b/,
+  ],
+  [
+    'card_payment',
+    // The card side ("PAYMENT THANK YOU") and the bank side, where the bank
+    // names the card issuer ("Withdrawal CITI CARD ONLINE", "CAPITAL ONE
+    // MOBILE PMT", "DISCOVER E-PAYMENT"), plus PayPal paying PayPal Credit
+    // ("Transfer To BML").
+    /\b(?:payment thank you|thank you for your payment|auto ?pay(?:ment)?|online payment|e ?pay(?:ment)?|card payment|crd ?pmt|card pmt|citi card|capital one|discover (?:e ?payment|card|cap one|bank)|withdrawal discover|withdrawal best buy|amex epayment|american express|chase credit crd|transfer to bml)\b/,
+  ],
   ['loan_payment', /\b(?:loan|mortgage)\b/],
   ['insurance', /\b(?:insurance|premium)\b/],
 ];
@@ -499,6 +510,12 @@ function matchPreset(headers: readonly string[], rows: readonly RawRow[]): BankP
         rows.length > 0 && rows.every((row) => expected.every(([h, text]) => cellOf(row, h) === text));
       if (!matches) continue;
     }
+    if (preset.cellPattern) {
+      const patterns = Object.entries(preset.cellPattern).map(([h, source]) => [h, new RegExp(source, 'i')] as const);
+      const matches =
+        rows.length > 0 && rows.every((row) => patterns.every(([h, pattern]) => pattern.test(cellOf(row, h))));
+      if (!matches) continue;
+    }
     if (!best || preset.headers.length > best.headers.length) best = preset;
   }
   return best;
@@ -628,7 +645,7 @@ export function detectMapping(headers: readonly string[], sampleRows: readonly R
 
 const ALL_ROLES: readonly ColumnRole[] = [
   'date', 'description', 'amount', 'debit', 'credit', 'type',
-  'postDate', 'merchant', 'memo', 'category', 'bankId', 'status',
+  'postDate', 'merchant', 'memo', 'detail', 'category', 'bankId', 'status',
 ];
 
 const ORDER_WORDS: Record<DateOrder, string> = {
@@ -748,6 +765,61 @@ function resolveMoney(
   return { amountCents, type: isNegative === expenseIsNegative ? 'expense' : 'income' };
 }
 
+// ── Detail columns ────────────────────────────────────────────────────────
+
+// Arizona Federal's memo carries the card's own date, a long reference number
+// and a merchant category code after the merchant, and "%%" notes on
+// dividends. None of it names anyone, so it is cut before the text is shown.
+const DETAIL_TAIL = /\s+(?:Date \d{1,2}\/\d{1,2}\/\d{2,4}\b|%%).*$/i;
+
+/**
+ * The part of a detail (memo) cell worth keeping: whitespace and line breaks
+ * collapsed, a trailing card date, reference number and "%%" note cut, runs of
+ * ten or more digits dropped, at most 80 characters. "" when nothing is left.
+ */
+export function cleanDetail(raw: string | null | undefined): string {
+  let text = (raw ?? '').replace(/\s+/g, ' ').trim();
+  if (text.startsWith('%%')) return '';
+  text = text.replace(DETAIL_TAIL, '');
+  text = text.replace(/\b\d{10,}\b/g, ' ').replace(/\s+/g, ' ').trim();
+  return text.length > 80 ? `${text.slice(0, 79).trimEnd()}…` : text;
+}
+
+// The transaction-type words some banks put in front of the description
+// ("Withdrawal Debit Card", "Deposit Home Banking"). Dropped when a vendor
+// is read from the description.
+const TYPE_PREFIX =
+  /^(?:withdrawal|deposit|purchase|payment|credit voucher|fee)\b\s*(?:(?:debit|credit) card|home banking(?: transfer)?)?\s*/i;
+
+/** The name to read a vendor from: a detail that names someone, else the description minus its type words. */
+function vendorSource(description: string, detail: string): string {
+  if (detail && !/^(?:type:|to |from |transfer )/i.test(detail)) return detail;
+  return description.replace(TYPE_PREFIX, '').trim() || description;
+}
+
+// ── Preset skip rules ─────────────────────────────────────────────────────
+
+/** Why a preset leaves this row out (it moves no money), or null to read it. */
+function presetSkipReason(raw: RawRow, presetId: string | null | undefined): string | null {
+  if (!presetId) return null;
+  const preset = BANK_PRESETS.find((candidate) => candidate.id === presetId);
+  if (!preset?.skipRows) return null;
+  for (const rule of preset.skipRows) {
+    // A rule about a column the file doesn't have never applies.
+    if (!has(raw.cells, rule.column)) continue;
+    if (new RegExp(rule.pattern, 'i').test(cellOf(raw, rule.column))) return rule.reason;
+  }
+  return null;
+}
+
+export interface ApplyOptions {
+  /**
+   * The BANK_PRESETS id the file was read as. Its skip rules leave out rows
+   * that move no money (PayPal holds and authorizations, for example).
+   */
+  preset?: string | null;
+}
+
 /**
  * Turns raw rows into transactions using a column mapping, a sign convention
  * and a date order (detectMapping's guess, or the person's corrections).
@@ -770,14 +842,21 @@ export function applyMapping(
   mapping: Partial<ColumnMapping>,
   sign: SignConvention,
   dateOrder: DateOrder,
+  options: ApplyOptions = {},
 ): StatementParseResult {
   const missingColumns = findMissingColumns(rows, mapping, sign);
-  if (missingColumns.length > 0) return { rows: [], rejected: [], missingColumns };
+  if (missingColumns.length > 0) return { rows: [], rejected: [], skipped: [], missingColumns };
 
   const normalized: NormalizedRow[] = [];
   const rejected: RejectedRow[] = [];
+  const skipped: RejectedRow[] = [];
 
   for (const raw of rows) {
+    const skipReason = presetSkipReason(raw, options.preset);
+    if (skipReason) {
+      skipped.push({ row: raw.rowNumber, reason: skipReason });
+      continue;
+    }
     const cell = (role: ColumnRole): string => cellOf(raw, mapping[role]);
     const issues: string[] = [];
 
@@ -785,7 +864,12 @@ export function applyMapping(
     const date = parseDate(dateText, dateOrder);
     if (!date) issues.push(dateIssue(dateText, dateOrder));
 
-    const description = cell('description') || cell('memo');
+    const detail = cleanDetail(cell('detail'));
+    const baseDescription = cell('description') || cell('memo') || detail;
+    const description =
+      detail && baseDescription !== detail && !baseDescription.toLowerCase().includes(detail.toLowerCase())
+        ? `${baseDescription} - ${detail}`
+        : baseDescription;
     if (!description) issues.push('No description');
 
     const money = resolveMoney(cell, sign, issues);
@@ -795,14 +879,16 @@ export function applyMapping(
       continue;
     }
 
+    const nameSource = mapping.detail ? vendorSource(baseDescription, detail) : description;
     const row: NormalizedRow = {
       rowNumber: raw.rowNumber,
       date,
       amountCents: money.amountCents,
       type: money.type,
       description,
-      vendor: cell('merchant') || displayCase(normalizeMerchant(description)) || description,
-      hints: transferHints(description),
+      vendor: cell('merchant') || displayCase(normalizeMerchant(nameSource)) || description,
+      // The memo can say more than the name (PayPal's Type: "Bank Deposit to PP Account").
+      hints: transferHints(mapping.memo && cell('memo') !== description ? `${description} ${cell('memo')}` : description),
       issues: [],
     };
     const bankId = cell('bankId');
@@ -813,7 +899,7 @@ export function applyMapping(
     normalized.push(row);
   }
 
-  return { rows: normalized, rejected, missingColumns: [] };
+  return { rows: normalized, rejected, skipped, missingColumns: [] };
 }
 
 // ── Dedupe keys ───────────────────────────────────────────────────────────

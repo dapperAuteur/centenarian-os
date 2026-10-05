@@ -41,7 +41,7 @@ export const MAX_CSV_CHARS = 4_000_000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const ROLES: readonly ColumnRole[] = [
-  'date', 'postDate', 'description', 'merchant', 'memo', 'amount',
+  'date', 'postDate', 'description', 'merchant', 'memo', 'detail', 'amount',
   'debit', 'credit', 'type', 'category', 'bankId', 'status',
 ];
 const SIGNS: readonly SignConvention[] = [
@@ -208,6 +208,8 @@ export interface ReadStatement {
   dateOrder: DateOrder;
   rows: NormalizedRow[];
   rejected: RejectedRow[];
+  /** Rows the layout leaves out because they move no money. */
+  skipped: RejectedRow[];
 }
 
 const fileSummary = (table: StatementCsv) => ({
@@ -226,7 +228,7 @@ const fileSummary = (table: StatementCsv) => ({
  * `missingColumns`, `file` and `detected` so the page can ask for the mapping.
  */
 export function readStatement(
-  request: Pick<ImportRequest, 'csvText' | 'mapping' | 'sign' | 'dateOrder'>,
+  request: Pick<ImportRequest, 'csvText' | 'mapping' | 'sign' | 'dateOrder'> & { preset?: string | null },
 ): ReadStatement {
   const table = parseStatementCsv(request.csvText);
   if (table.rows.length === 0) {
@@ -241,7 +243,11 @@ export function readStatement(
   const sign = request.sign ?? detected.sign;
   const dateOrder = request.dateOrder ?? detected.dateOrder;
 
-  const result = applyMapping(table.rows, mapping, sign, dateOrder);
+  // The layout's skip rules (rows that move no money) follow the preset the
+  // file was read as: the one the page sent, else the server's own guess.
+  const result = applyMapping(table.rows, mapping, sign, dateOrder, {
+    preset: request.preset ?? detected.preset,
+  });
   if (result.missingColumns.length > 0) {
     throw bad(
       'mapping_incomplete',
@@ -249,7 +255,16 @@ export function readStatement(
       { missingColumns: result.missingColumns, file: fileSummary(table), detected },
     );
   }
-  return { table, detected, mapping, sign, dateOrder, rows: result.rows, rejected: result.rejected };
+  return {
+    table,
+    detected,
+    mapping,
+    sign,
+    dateOrder,
+    rows: result.rows,
+    rejected: result.rejected,
+    skipped: result.skipped,
+  };
 }
 
 export interface OwnedAccount {

@@ -20,6 +20,12 @@ export interface ColumnMapping {
   merchant?: string;
   /** Used as the description when a row's description cell is blank. */
   memo?: string;
+  /**
+   * Extra detail added after the description ("Withdrawal Debit Card - CHIPOTLE 2113").
+   * Some credit unions (Arizona Federal) put the transaction type in Description
+   * and the merchant in Memo; this keeps both. The vendor is read from it.
+   */
+  detail?: string;
   amount?: string;
   debit?: string;
   credit?: string;
@@ -95,6 +101,11 @@ export interface NormalizedRow {
   pending?: boolean;
   hints: TransferHint[];
   /**
+   * What a PDF statement says the row is (purchase, payment, interest ...),
+   * when the statement's sections say so. CSV rows leave it out.
+   */
+  kind?: string;
+  /**
    * Reasons the row can't be imported. Always empty on rows applyMapping
    * returns (a row with issues goes to `rejected` instead); later steps may
    * add their own.
@@ -112,6 +123,11 @@ export interface StatementParseResult {
   rows: NormalizedRow[];
   rejected: RejectedRow[];
   /**
+   * Rows the layout's preset leaves out because they move no money (holds,
+   * authorizations, item detail lines), with the reason. Not errors.
+   */
+  skipped: RejectedRow[];
+  /**
    * Roles the mapping leaves out, or points at a column the file doesn't have
    * (`date`, `amount`, ...). Non-empty means nothing was parsed.
    */
@@ -123,6 +139,21 @@ export interface IdentifiedRow extends NormalizedRow {
   externalId: string;
 }
 
+/**
+ * A row a preset leaves out on purpose because it moves no money (a PayPal
+ * authorization, a hold, an item detail line). `column` is a header key;
+ * `pattern` is a case-insensitive regular expression tested against the
+ * trimmed cell ("^$" for a blank cell). `reason` is shown to the person.
+ */
+export interface PresetSkipRule {
+  column: string;
+  pattern: string;
+  reason: string;
+}
+
+/** What kind of account a layout belongs to, when the layout says so. */
+export type PresetAccountKind = 'bank' | 'card' | 'loan' | 'wallet';
+
 /** A known export layout. Only ever a starting guess: see BANK_PRESETS. */
 export interface BankPreset {
   id: string;
@@ -133,6 +164,12 @@ export interface BankPreset {
   headerless?: boolean;
   /** Cell text every sampled row must have, for layouts headers can't identify. */
   cellEquals?: Record<string, string>;
+  /** Case-insensitive patterns every sampled row's cell must match, for layouts headers can't identify. */
+  cellPattern?: Record<string, string>;
+  /** Rows that move no money and are left out (see PresetSkipRule). */
+  skipRows?: PresetSkipRule[];
+  /** The kind of account this export comes from, when only one kind uses it. */
+  accountKind?: PresetAccountKind;
   /** Roles whose column is absent from a given file are dropped from the guess. */
   mapping: ColumnMapping;
   sign: SignConvention;

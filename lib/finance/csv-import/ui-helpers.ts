@@ -16,6 +16,7 @@ import type {
   DateOrder,
   MappingGuess,
   MatchSummary,
+  NormalizedRow,
   PlanStatus,
   PlannedRow,
   RawRow,
@@ -131,7 +132,7 @@ export function sortAccountsForPicker<T extends ImportAccount>(accounts: readonl
 // ── Column mapping ────────────────────────────────────────────────────────
 
 export const ALL_ROLES: readonly ColumnRole[] = [
-  'date', 'postDate', 'description', 'merchant', 'memo', 'amount',
+  'date', 'postDate', 'description', 'merchant', 'memo', 'detail', 'amount',
   'debit', 'credit', 'type', 'category', 'bankId', 'status',
 ];
 
@@ -141,6 +142,7 @@ export const ROLE_LABELS: Record<ColumnRole, string> = {
   description: 'Description',
   merchant: 'Merchant',
   memo: 'Memo',
+  detail: 'Details',
   amount: 'Amount',
   debit: 'Debit (money out)',
   credit: 'Credit (money in)',
@@ -404,6 +406,8 @@ export interface SampleRow {
   description?: string;
   /** Why the row can't be read, when `ok` is false. */
   reason?: string;
+  /** True when the layout leaves the row out on purpose (it moves no money): not an error. */
+  skipped?: boolean;
 }
 
 export interface MappingPreview {
@@ -413,9 +417,13 @@ export interface MappingPreview {
   /** Rows of the whole file that can and can't be read with these settings. */
   readable: number;
   unreadable: number;
+  /** Rows the layout leaves out because they move no money (PayPal holds, item lines). */
+  skipped: number;
   /** How the readable rows split, so a flipped sign shows at a glance. */
   expenses: number;
   income: number;
+  /** Every readable row, for the card-terms count (charges vs payments). */
+  rows: NormalizedRow[];
 }
 
 /**
@@ -428,16 +436,29 @@ export function previewMapping(
   sign: SignConvention,
   dateOrder: DateOrder,
   limit: number = SAMPLE_ROW_COUNT,
+  preset: string | null = null,
 ): MappingPreview {
-  const result = applyMapping(rows, cleanMapping(mapping, sign), sign, dateOrder);
+  const result = applyMapping(rows, cleanMapping(mapping, sign), sign, dateOrder, { preset });
   if (result.missingColumns.length > 0) {
-    return { missingColumns: result.missingColumns, sample: [], readable: 0, unreadable: 0, expenses: 0, income: 0 };
+    return {
+      missingColumns: result.missingColumns,
+      sample: [],
+      readable: 0,
+      unreadable: 0,
+      skipped: 0,
+      expenses: 0,
+      income: 0,
+      rows: [],
+    };
   }
 
   const readByRow = new Map(result.rows.map((row) => [row.rowNumber, row]));
   const reasonByRow = new Map(result.rejected.map((row) => [row.row, row.reason]));
+  const skippedByRow = new Map(result.skipped.map((row) => [row.row, row.reason]));
   const sample: SampleRow[] = rows.slice(0, limit).map((raw) => {
     const read = readByRow.get(raw.rowNumber);
+    const skippedReason = skippedByRow.get(raw.rowNumber);
+    if (skippedReason) return { rowNumber: raw.rowNumber, ok: false, skipped: true, reason: skippedReason };
     if (read) {
       return {
         rowNumber: raw.rowNumber,
@@ -457,8 +478,10 @@ export function previewMapping(
     sample,
     readable: result.rows.length,
     unreadable: result.rejected.length,
+    skipped: result.skipped.length,
     expenses,
     income: result.rows.length - expenses,
+    rows: result.rows,
   };
 }
 
