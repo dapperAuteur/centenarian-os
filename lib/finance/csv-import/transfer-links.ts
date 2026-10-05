@@ -29,7 +29,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { daysBetween, shiftDate } from '../transaction-matching.ts';
 import { accountLabel, kindForDestination } from '../transfers/pairing.ts';
-import { missingTransferColumn, withOptionalKind } from '../transfers/schema.ts';
+import { isMissingColumn, missingTransferColumn, withOptionalKind } from '../transfers/schema.ts';
 import { ID_CHUNK, chunk } from './db.ts';
 import type { RejectedRow, TransactionType, TransferLinkResult } from './types.ts';
 
@@ -45,6 +45,8 @@ export interface LinkAccount {
   account_type: string;
   institution_name: string | null;
   last_four: string | null;
+  /** Migration 210; missing means USD. */
+  currency?: string | null;
 }
 
 /** One imported row the person tied to another account. */
@@ -92,12 +94,25 @@ export function pickCounterpart(
   return best;
 }
 
-/** The description of a recorded other side: "Payment to Citi Costco ••1234" / "Payment from AZFCU Checking ••5678". */
-export function counterEntryDescription(otherSideType: TransactionType, importedAccount: LinkAccount): string {
+/**
+ * The description of a recorded other side: "Payment to Citi Costco ••1234" /
+ * "Payment from AZFCU Checking ••5678", or for cash taken out of a bank
+ * account into a cash account, "Cash withdrawal from AZFCU Checking ••5678".
+ */
+export function counterEntryDescription(
+  otherSideType: TransactionType,
+  importedAccount: LinkAccount,
+  otherAccount?: Pick<LinkAccount, 'account_type'> | null,
+): string {
+  if (otherSideType === 'income' && otherAccount?.account_type === 'cash') {
+    return `Cash withdrawal from ${accountLabel(importedAccount)}`;
+  }
   return otherSideType === 'expense'
     ? `Payment to ${accountLabel(importedAccount)}`
     : `Payment from ${accountLabel(importedAccount)}`;
 }
+
+const currencyOf = (account: Pick<LinkAccount, 'currency'>): string => account.currency || 'USD';
 
 /**
  * Links each intent's imported row to the other account (see the top of
@@ -129,18 +144,25 @@ export async function linkStatementTransfers(
   }
 
   const otherIds = [...new Set(intents.map((intent) => intent.otherAccountId))];
-  const { data: accountRows, error: accountError } = await db
-    .from('financial_accounts')
-    .select('id, name, account_type, institution_name, last_four')
-    .eq('user_id', userId)
-    .in('id', otherIds);
+  // `currency` arrives with migration 210; before it every account is in USD.
+  const loadAccounts = (withCurrency: boolean) =>
+    db
+      .from('financial_accounts')
+      .select(withCurrency ? 'id, name, account_type, institution_name, last_four, currency' : 'id, name, account_type, institution_name, last_four')
+      .eq('user_id', userId)
+      .in('id', [...otherIds, account.id]);
+  let accountRes = await loadAccounts(true);
+  if (accountRes.error && isMissingColumn(accountRes.error, 'currency')) accountRes = await loadAccounts(false);
+  const { data: accountRows, error: accountError } = accountRes;
   if (accountError) {
     return {
       ...result,
       failed: intents.map((intent) => failure(intent.rowNumber, `Couldn't be linked as a transfer: ${accountError.message}`)),
     };
   }
-  const accounts = new Map(((accountRows ?? []) as LinkAccount[]).map((row) => [row.id, row]));
+  const accounts = new Map(((accountRows ?? []) as unknown as LinkAccount[]).map((row) => [row.id, row]));
+  // This account's currency as stored (undefined before migration 210: everything is USD then).
+  const thisCurrency = accounts.get(account.id)?.currency;
 
   const claimed = new Set<string>();
   const ordered = [...intents].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.rowNumber - b.rowNumber));
@@ -159,6 +181,16 @@ export async function linkStatementTransfers(
     const other = accounts.get(intent.otherAccountId);
     if (!other || other.id === account.id) {
       result.failed.push(failure(intent.rowNumber, "Couldn't be linked as a transfer: the other account wasn't found."));
+      continue;
+    }
+    // The same amount on both sides only makes sense in one currency.
+    if (thisCurrency !== undefined && currencyOf(other) !== currencyOf({ currency: thisCurrency })) {
+      result.failed.push(
+        failure(
+          intent.rowNumber,
+          `Couldn't be linked as a transfer: ${accountLabel(other)} is in ${currencyOf(other)}. Record it with Exchange money instead.`,
+        ),
+      );
       continue;
     }
 
@@ -224,7 +256,7 @@ export async function linkStatementTransfers(
           account_id: other.id,
           amount,
           type: otherType,
-          description: counterEntryDescription(otherType, account),
+          description: counterEntryDescription(otherType, account, other),
           transaction_date: intent.date,
           source: 'transfer',
           transfer_group_id: groupId,

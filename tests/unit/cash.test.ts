@@ -34,6 +34,22 @@ import {
   recordCashCount,
   undoLatestCount,
 } from '../../lib/finance/cash/server.ts';
+import { otherCurrencyCashAccounts, transferPickerAccounts, transferRoleFor } from '../../lib/finance/csv-import/card-terms.ts';
+import { commitImport, resolveActions } from '../../lib/finance/csv-import/commit.ts';
+import { transferHints } from '../../lib/finance/csv-import/parse.ts';
+import { buildPlanIndex, identifyRows, planImport, planRows } from '../../lib/finance/csv-import/plan.ts';
+import { suggestCashAccount } from '../../lib/finance/csv-import/service.ts';
+import type { NormalizedRow } from '../../lib/finance/csv-import/types.ts';
+import {
+  buildRowActions,
+  cashWithdrawalCounts,
+  effectiveTransferAccount,
+  rowTransferRole,
+  transferCounts,
+  type ImportAccount,
+  type TransferContext,
+} from '../../lib/finance/csv-import/ui-helpers.ts';
+import { undoBatch } from '../../lib/finance/csv-import/undo.ts';
 import { FakeDb } from './fake-supabase.ts';
 import type { Row } from './fake-supabase.ts';
 
@@ -44,6 +60,7 @@ const WALLET = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const PESOS = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const CHECKING = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const DINING = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const CARD_ID = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 const TODAY = '2026-10-05';
 
 // ── The adjustment ────────────────────────────────────────────────────────
@@ -312,4 +329,177 @@ test('isCashWithdrawalText: ATM, branch, teller and Spanish withdrawals; cash ba
   ];
   for (const text of yes) assert.equal(isCashWithdrawalText(text), true, text);
   for (const text of no) assert.equal(isCashWithdrawalText(text), false, text);
+});
+
+// ── ATM withdrawals in statement imports ──────────────────────────────────
+
+function bankRow(rowNumber: number, overrides: Partial<NormalizedRow> = {}): NormalizedRow {
+  const description = overrides.description ?? 'ATM WITHDRAWAL 0042 MAIN ST';
+  return {
+    rowNumber,
+    date: '2026-10-02',
+    amountCents: 6000,
+    type: 'expense',
+    description,
+    vendor: description,
+    hints: transferHints(description),
+    issues: [],
+    bankId: `CHK-${rowNumber}`,
+    ...overrides,
+  };
+}
+
+const IMPORT_ACCOUNTS: ImportAccount[] = [
+  { id: CHECKING, name: 'Checking', account_type: 'checking', institution_name: 'Desert CU', last_four: '2222', currency: 'USD' },
+  { id: WALLET, name: 'Wallet', account_type: 'cash', currency: 'USD' },
+  { id: PESOS, name: 'Pesos', account_type: 'cash', currency: 'MXN' },
+];
+
+function cashContext(overrides: Partial<TransferContext> = {}): TransferContext {
+  return {
+    accountId: CHECKING,
+    accountType: 'checking',
+    accounts: IMPORT_ACCOUNTS,
+    paidFromDefault: null,
+    cashDefault: null,
+    recordMissing: true,
+    ...overrides,
+  };
+}
+
+test('hints and roles: ATM wording on a bank account is a cash withdrawal; fees, cards and cash accounts are not', () => {
+  assert.ok(transferHints('ATM WITHDRAWAL 0042').includes('cash_withdrawal'));
+  assert.ok(!transferHints('ATM FEE').includes('cash_withdrawal'));
+  const atm = { type: 'expense' as const, description: 'ATM WITHDRAWAL', hints: transferHints('ATM WITHDRAWAL') };
+  assert.equal(transferRoleFor(atm, 'checking'), 'cash_withdrawal');
+  assert.equal(transferRoleFor(atm, 'savings'), 'cash_withdrawal');
+  assert.equal(transferRoleFor(atm, 'cash'), null, 'a cash account has no withdrawals into cash');
+  assert.equal(transferRoleFor(atm, 'checking', 'income'), null, 'money in is never a withdrawal');
+  assert.equal(transferRoleFor(atm, 'credit_card'), null, 'a card cash advance stays a charge');
+  const fee = { type: 'expense' as const, description: 'ATM FEE', hints: transferHints('ATM FEE') };
+  assert.equal(transferRoleFor(fee, 'checking'), null);
+  // A bank-owned ATM named after a card issuer is still cash.
+  const branded = { type: 'expense' as const, description: 'ATM WITHDRAWAL CAPITAL ONE', hints: transferHints('ATM WITHDRAWAL CAPITAL ONE') };
+  assert.equal(transferRoleFor(branded, 'checking'), 'cash_withdrawal');
+});
+
+test('picker: only active cash accounts in the same currency; other-currency cash is pointed at Exchange money', () => {
+  assert.deepEqual(transferPickerAccounts('cash_withdrawal', IMPORT_ACCOUNTS, CHECKING).map((a) => a.id), [WALLET]);
+  const inactive = IMPORT_ACCOUNTS.map((a) => (a.id === WALLET ? { ...a, is_active: false } : a));
+  assert.deepEqual(transferPickerAccounts('cash_withdrawal', inactive, CHECKING), []);
+  assert.deepEqual(otherCurrencyCashAccounts(IMPORT_ACCOUNTS, CHECKING).map((a) => a.id), [PESOS]);
+  const mxnBank = [...IMPORT_ACCOUNTS, { id: 'mxn-bank', name: 'Cuenta', account_type: 'checking', currency: 'MXN' }];
+  assert.deepEqual(transferPickerAccounts('cash_withdrawal', mxnBank, 'mxn-bank').map((a) => a.id), [PESOS]);
+});
+
+test('default cash account: the remembered one, else the only one; can be changed or cleared; carried at commit', () => {
+  const rows = planRows(
+    identifyRows([bankRow(2), bankRow(3, { description: 'ATM FEE', amountCents: 300 })], false),
+    buildPlanIndex({ accountId: CHECKING, accountRows: [] }),
+  );
+  const atm = rows[0];
+  assert.equal(rowTransferRole(atm, undefined, 'checking'), 'cash_withdrawal');
+  assert.equal(rowTransferRole(rows[1], undefined, 'checking'), null);
+  assert.equal(effectiveTransferAccount(atm, undefined, cashContext()), WALLET, 'the only USD cash account');
+  const two = [...IMPORT_ACCOUNTS, { id: 'jar', name: 'Cash jar', account_type: 'cash', currency: 'USD' }];
+  assert.equal(effectiveTransferAccount(atm, undefined, cashContext({ accounts: two })), null, 'two choices and no history: ask');
+  assert.equal(effectiveTransferAccount(atm, undefined, cashContext({ accounts: two, cashDefault: 'jar' })), 'jar');
+  assert.equal(effectiveTransferAccount(atm, undefined, cashContext({ cashDefault: PESOS })), WALLET, 'a remembered MXN account is not offered');
+  assert.equal(effectiveTransferAccount(atm, { transferAccountId: null }, cashContext()), null);
+  assert.deepEqual(cashWithdrawalCounts(rows, {}, cashContext()), { linked: 1, unassigned: 0 });
+  assert.deepEqual(transferCounts(rows, {}, cashContext()), { linked: 0, unassigned: 0 }, 'withdrawals are not counted as payments');
+  assert.deepEqual(buildRowActions(rows, {}, cashContext()), [{ row: 2, transfer_account_id: WALLET }]);
+});
+
+function importDb(): FakeDb {
+  const db = seeded();
+  db.seed('import_batches', []);
+  return db;
+}
+
+async function importBank(db: FakeDb, rows: NormalizedRow[], actions: Parameters<typeof resolveActions>[1]) {
+  const plan = await planImport(asDb(db), USER, CHECKING, rows);
+  return commitImport(asDb(db), USER, {
+    accountId: CHECKING,
+    account: { id: CHECKING, name: 'Checking', account_type: 'checking', institution_name: 'Desert CU', last_four: '2222' },
+    rows: resolveActions(plan.rows, actions),
+  });
+}
+
+test('commit: a withdrawal into cash records the cash side as a transfer; the ATM fee stays an expense', async () => {
+  const db = importDb();
+  const result = await importBank(
+    db,
+    [bankRow(2), bankRow(3, { description: 'NON-NETWORK ATM FEE', amountCents: 300 })],
+    [{ row: 2, transferAccountId: WALLET }],
+  );
+  assert.equal(result.inserted, 2);
+  assert.deepEqual(result.transfers, { linked: 0, recorded: 1, unmatched: 0, failed: [] });
+  const bank = txns(db).find((r) => r.external_id === 'bank:CHK-2') as Row;
+  const cash = txns(db).find((r) => r.account_id === WALLET && r.source === 'transfer') as Row;
+  assert.equal(cash.type, 'income');
+  assert.equal(cash.amount, 60);
+  assert.equal(cash.transaction_date, '2026-10-02');
+  assert.equal(cash.description, 'Cash withdrawal from Desert CU Checking ••2222');
+  assert.equal(cash.transfer_kind, 'transfer');
+  assert.equal(bank.transfer_kind, 'transfer');
+  assert.equal(bank.transfer_group_id, cash.transfer_group_id);
+  const fee = txns(db).find((r) => r.external_id === 'bank:CHK-3') as Row;
+  assert.equal(fee.type, 'expense');
+  assert.equal(fee.transfer_group_id ?? null, null);
+});
+
+test('commit: cash already entered on the cash account (same amount, within 5 days) is linked, not added twice', async () => {
+  const db = importDb();
+  db.seed('financial_transactions', [
+    { id: 'cash-in', user_id: USER, account_id: WALLET, type: 'income', amount: 60, transaction_date: '2026-10-03', description: 'ATM', source: 'manual', transfer_group_id: null },
+  ]);
+  const result = await importBank(db, [bankRow(2)], [{ row: 2, transferAccountId: WALLET }]);
+  assert.deepEqual(result.transfers, { linked: 1, recorded: 0, unmatched: 0, failed: [] });
+  const cashIn = txns(db).find((r) => r.id === 'cash-in') as Row;
+  assert.ok(cashIn.transfer_group_id);
+  assert.equal(txns(db).filter((r) => r.account_id === WALLET && r.source === 'transfer').length, 0);
+});
+
+test('commit: a cash account in another currency is refused for that row (Exchange money)', async () => {
+  const db = importDb();
+  const result = await importBank(db, [bankRow(2)], [{ row: 2, transferAccountId: PESOS }]);
+  assert.equal(result.inserted, 1);
+  assert.equal(result.transfers?.recorded, 0);
+  assert.match(result.transfers?.failed[0]?.reason ?? '', /in MXN\. Record it with Exchange money/);
+  assert.equal(txns(db).filter((r) => r.account_id === PESOS).length, 0);
+});
+
+test('undo: undoing the import removes the recorded cash side', async () => {
+  const db = importDb();
+  const result = await importBank(db, [bankRow(2)], [{ row: 2, transferAccountId: WALLET }]);
+  db.tick(3_600_000);
+  const undone = await undoBatch(asDb(db), USER, result.batchId);
+  assert.equal(undone.transfersUndone, 1);
+  assert.equal(txns(db).filter((r) => r.account_id === WALLET && r.source === 'transfer').length, 0);
+  assert.equal(txns(db).some((r) => r.external_id === 'bank:CHK-2'), false);
+});
+
+test('plan: a withdrawal recorded by hand with Withdraw (a transfer) is matched by the imported ATM row', async () => {
+  const db = importDb();
+  db.seed('financial_transactions', [
+    { id: 'w-out', user_id: USER, account_id: CHECKING, type: 'expense', amount: 60, transaction_date: '2026-10-01', description: 'Transfer: Checking to Wallet', source: 'transfer', transfer_group_id: 'g1' },
+    { id: 'w-in', user_id: USER, account_id: WALLET, type: 'income', amount: 60, transaction_date: '2026-10-01', description: 'Transfer: Checking to Wallet', source: 'transfer', transfer_group_id: 'g1' },
+  ]);
+  const plan = await planImport(asDb(db), USER, CHECKING, [bankRow(2)]);
+  assert.equal(plan.rows[0].status, 'matches');
+  assert.equal(plan.rows[0].match?.id, 'w-out');
+  assert.equal(rowTransferRole(plan.rows[0], undefined, 'checking'), null, 'already a transfer: no picker');
+});
+
+test('suggestCashAccount: the cash account that last received a transfer, else the last used; none for cards', async () => {
+  const db = importDb();
+  assert.equal(await suggestCashAccount(asDb(db), USER, { id: CARD_ID, account_type: 'credit_card' }), null);
+  // Only the Wallet has transactions so far.
+  assert.equal(await suggestCashAccount(asDb(db), USER, { id: CHECKING, account_type: 'checking' }), WALLET);
+  db.seed('financial_transactions', [
+    { user_id: USER, account_id: PESOS, type: 'income', amount: 500, transaction_date: '2026-10-04', transfer_group_id: 'gx', source: 'transfer' },
+  ]);
+  assert.equal(await suggestCashAccount(asDb(db), USER, { id: CHECKING, account_type: 'checking' }), PESOS);
+  assert.equal(await suggestCashAccount(asDb(new FakeDb()), USER, { id: CHECKING, account_type: 'checking' }), null);
 });

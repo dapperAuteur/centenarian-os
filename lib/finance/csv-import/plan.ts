@@ -362,8 +362,9 @@ function summarize(entry: MatchCandidate): MatchSummary {
 /**
  * A payment another import recorded on this account that this statement row
  * is the real version of: same direction and cents, within
- * TRANSFER_ENTRY_WINDOW_DAYS, and the row reads like a transfer or a payment
- * (a coincidental purchase of the same amount is not matched). Closest date
+ * TRANSFER_ENTRY_WINDOW_DAYS, and the row reads like a transfer, a payment
+ * or a cash withdrawal (a coincidental purchase of the same amount is not
+ * matched). Closest date
  * first; each entry is matched once.
  */
 export function findTransferEntry(
@@ -373,7 +374,9 @@ export function findTransferEntry(
 ): MatchCandidate | null {
   const paymentLike =
     row.kind === 'payment' ||
-    row.hints.some((hint) => hint === 'transfer' || hint === 'card_payment' || hint === 'loan_payment');
+    row.hints.some(
+      (hint) => hint === 'transfer' || hint === 'card_payment' || hint === 'loan_payment' || hint === 'cash_withdrawal',
+    );
   if (!paymentLike) return null;
   let best: MatchCandidate | null = null;
   let bestDays = Infinity;

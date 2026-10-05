@@ -130,7 +130,7 @@ export default function DoneStep({
         <StatusNotice
           tone={result.transfers.failed.length > 0 || result.transfers.unmatched > 0 ? 'attention' : 'success'}
         >
-          <p className="font-medium">Payments linked as transfers</p>
+          <p className="font-medium">Payments and cash withdrawals linked as transfers</p>
           <ul className="list-disc space-y-0.5 pl-5">
             {result.transfers.linked > 0 && (
               <li>

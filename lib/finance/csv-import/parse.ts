@@ -17,6 +17,7 @@
 import Papa from 'papaparse';
 import { normalizeHeader } from '../../csv/normalize-header.ts';
 import { normalizeMerchant, vendorKey } from '../transaction-matching.ts';
+import { isCashWithdrawalText } from '../cash/withdrawal.ts';
 import { BANK_PRESETS, GENERIC_PRESET_ID } from './presets.ts';
 import type {
   BankPreset,
@@ -291,7 +292,10 @@ const HINT_PATTERNS: readonly (readonly [TransferHint, RegExp])[] = [
 export function transferHints(description: string | null | undefined): TransferHint[] {
   const text = (description ?? '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
   if (!text) return [];
-  return HINT_PATTERNS.filter(([, pattern]) => pattern.test(text)).map(([hint]) => hint);
+  const hints = HINT_PATTERNS.filter(([, pattern]) => pattern.test(text)).map(([hint]) => hint);
+  // Cash out at an ATM, a branch or a teller (the rules are in lib/finance/cash/withdrawal.ts).
+  if (isCashWithdrawalText(text)) hints.push('cash_withdrawal');
+  return hints;
 }
 
 // ── Reading the file ──────────────────────────────────────────────────────
