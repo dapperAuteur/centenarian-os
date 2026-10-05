@@ -14,6 +14,7 @@
 // /callback) comes back here with ?connected=google&connection_id=<id> or ?error=<code>.
 
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   AlertCircle,
@@ -25,6 +26,7 @@ import {
   Plus,
   RefreshCw,
   Unlink,
+  Wand2,
   X,
 } from 'lucide-react';
 import { formatTime, useClockFormat } from '@/lib/hooks/useClockFormat';
@@ -789,6 +791,13 @@ function CalendarSettings() {
           </li>
           <li>For now only planner tasks are created; #expense, #trip and other tags are read but not yet turned into records.</li>
         </ul>
+        <Link
+          href="/dashboard/settings/calendar/event-builder"
+          className="mt-3 min-h-11 inline-flex items-center gap-1.5 px-4 text-sm font-medium text-sky-800 bg-white border border-sky-300 hover:bg-sky-100 rounded-lg transition"
+        >
+          <Wand2 className="w-4 h-4" aria-hidden="true" />
+          Event builder: write titles CentenarianOS can read
+        </Link>
       </section>
 
       {/* The connections could not be loaded (not signed in, offline, or the site is not set up) */}
