@@ -118,7 +118,9 @@ export class FakeDb {
 
   withDefaults(table: string, row: Row): Row {
     const stamp = this.timestamp();
-    return { id: this.newId(), created_at: stamp, updated_at: stamp, ...(COLUMN_DEFAULTS[table] ?? {}), ...row };
+    // cash_counts.counted_at defaults to NOW() (migration 213).
+    const clock = table === 'cash_counts' ? { counted_at: stamp } : {};
+    return { id: this.newId(), created_at: stamp, updated_at: stamp, ...clock, ...(COLUMN_DEFAULTS[table] ?? {}), ...row };
   }
 
   /** Requests that changed data. */
