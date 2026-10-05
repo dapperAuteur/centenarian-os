@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   DollarSign, TrendingUp, TrendingDown, Plus, ArrowRight,
   Upload, Download, Settings, Loader2, CreditCard, Wallet, FileText, AlertTriangle,
-  ArrowRightLeft, RefreshCw, Building2, ScanLine, X, PiggyBank,
+  ArrowRightLeft, RefreshCw, Building2, ScanLine, X, PiggyBank, Target,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -352,6 +352,13 @@ export default function FinanceDashboardPage() {
           >
             <PiggyBank className="w-4 h-4" aria-hidden="true" />
             Budgets
+          </Link>
+          <Link
+            href="/dashboard/finance/savings"
+            className="flex items-center gap-1.5 px-3 py-2 bg-sky-50 text-sky-700 rounded-lg text-sm font-medium hover:bg-sky-100 transition"
+          >
+            <Target className="w-4 h-4" aria-hidden="true" />
+            Savings goals
           </Link>
           <Link
             href="/dashboard/finance/recurring"

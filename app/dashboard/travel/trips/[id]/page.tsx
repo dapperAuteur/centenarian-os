@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, MapPin, Clock, Gauge, Flame, Leaf, DollarSign,
   Copy, Trash2, Loader2, Car, Bike, Footprints, Train, Plane,
-  FileText, CheckCircle, Share2,
+  FileText, CheckCircle, Share2, Target,
 } from 'lucide-react';
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -511,6 +511,21 @@ export default function TripDetailPage() {
             >
               Start Trip
             </button>
+          )}
+          {trip.trip_status === 'planned' && (
+            <Link
+              href={`/dashboard/finance/savings?${new URLSearchParams({
+                new: '1',
+                kind: 'trip',
+                trip_id: trip.id,
+                name: trip.origin && trip.destination ? `Trip: ${trip.origin} to ${trip.destination}` : `Trip on ${trip.date}`,
+                ...(trip.budget_amount ? { target: String(trip.budget_amount) } : {}),
+                date: trip.date,
+              }).toString()}`}
+              className="flex items-center gap-1.5 px-3 min-h-11 bg-sky-50 text-sky-700 rounded-lg text-sm font-medium hover:bg-sky-100 transition"
+            >
+              <Target className="w-3.5 h-3.5" aria-hidden="true" /> Save for this
+            </Link>
           )}
           <Link
             href={`/dashboard/travel/trips/${trip.id}/itinerary`}
