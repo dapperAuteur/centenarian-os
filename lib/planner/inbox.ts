@@ -50,6 +50,17 @@ function inboxDates(): { today: string; end: string; endYear: number } {
  * by userId explicitly.
  */
 export async function resolveInboxMilestone(db: SupabaseClient, userId: string): Promise<string | null> {
+  const goalId = await resolveInboxGoal(db, userId);
+  if (!goalId) return null;
+  return resolveMilestoneUnderGoal(db, goalId, INBOX_MILESTONE_TITLE);
+}
+
+/**
+ * Find or create the user's Inbox roadmap and goal ("Inbox > Inbox") and return the goal id, or
+ * null if it could not be built. Other system milestones (lib/planner/bills.ts "Bills") hang off
+ * this goal so they share the Inbox roadmap instead of needing a new roadmaps.system_kind.
+ */
+export async function resolveInboxGoal(db: SupabaseClient, userId: string): Promise<string | null> {
   const { today, end, endYear } = inboxDates();
 
   // 1. Roadmap
@@ -105,13 +116,20 @@ export async function resolveInboxMilestone(db: SupabaseClient, userId: string):
     }
     goalId = created.id as string;
   }
+  return goalId;
+}
 
-  // 3. Milestone
+/**
+ * Find or create a milestone with this title under a goal, skipping archived ones. Its
+ * target_date (NOT NULL) is the Inbox placeholder end date.
+ */
+export async function resolveMilestoneUnderGoal(db: SupabaseClient, goalId: string, title: string): Promise<string | null> {
+  const { end } = inboxDates();
   const { data: milestone, error: msLookupErr } = await db
     .from('milestones')
     .select('id')
     .eq('goal_id', goalId)
-    .eq('title', INBOX_MILESTONE_TITLE)
+    .eq('title', title)
     .neq('status', 'archived')
     .order('created_at', { ascending: true })
     .limit(1)
@@ -126,7 +144,7 @@ export async function resolveInboxMilestone(db: SupabaseClient, userId: string):
     .from('milestones')
     .insert({
       goal_id: goalId,
-      title: INBOX_MILESTONE_TITLE,
+      title,
       description: null,
       status: 'in_progress',
       target_date: end,

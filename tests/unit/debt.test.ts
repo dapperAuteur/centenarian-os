@@ -43,6 +43,8 @@ import {
   reminderToSend,
   upcomingDueItems,
 } from '../../lib/finance/debt/due.ts';
+import { makeBaseline, planProgress } from '../../lib/finance/debt/progress.ts';
+import { parsePlanInput } from '../../lib/finance/debt/plan-input.ts';
 
 // ── dates ───────────────────────────────────────────────────────────────────────────────────────
 
@@ -459,4 +461,57 @@ test('dueSoon: unpaid due dates from today to 3 days ahead', () => {
   assert.deepEqual(dueSoon(items, txns, '2026-10-17'), []);
   const paid: TxnRow = { id: 'p', account_id: 'card1', amount: 40, type: 'income', transaction_date: '2026-10-16', transfer_kind: 'card_payment' };
   assert.deepEqual(dueSoon(items, [paid], '2026-10-18'), []);
+});
+
+// ── saved plans ─────────────────────────────────────────────────────────────────────────────────
+
+test('parsePlanInput: defaults, validation, and partial updates', () => {
+  const full = parsePlanInput({});
+  assert.deepEqual(full, {
+    ok: true,
+    value: { name: 'My debt-free plan', strategy: 'avalanche', extra_monthly: 0, custom_order: [], protect_promos: true },
+  });
+  assert.equal(parsePlanInput({ strategy: 'random' }).ok, false);
+  assert.equal(parsePlanInput({ extra_monthly: -5 }).ok, false);
+  assert.equal(parsePlanInput({ custom_order: ['not-a-uuid'] }).ok, false);
+  assert.equal(parsePlanInput(null).ok, false);
+  assert.deepEqual(parsePlanInput({ extra_monthly: '125.456' }, true), { ok: true, value: { extra_monthly: 125.46 } });
+});
+
+test('planProgress compares linked payments since the baseline with the plan', () => {
+  const debts = [lowBalance, highApr];
+  const plan = buildPlan(debts, { extraMonthly: 100, startDate: '2026-10-05' });
+  const baseline = makeBaseline(plan, debts, '2026-10-05');
+  assert.equal(baseline.months[0].date, '2026-11-05');
+  assert.equal(baseline.months[0].payments.a + baseline.months[0].payments.b, 230);
+  const pay = (account: string, amount: number, date: string): TxnRow => ({
+    id: `${account}${date}`, account_id: account, amount, type: 'income', transaction_date: date, transfer_kind: 'card_payment',
+  });
+  const progress = planProgress(
+    baseline,
+    [pay('a', 200, '2026-11-03'), pay('b', 40, '2026-11-04'), pay('a', 999, '2026-10-01'), pay('z', 50, '2026-11-04')],
+    '2026-11-10',
+  );
+  assert.equal(progress.plannedToDate, 230);
+  assert.equal(progress.paidToDate, 240);
+  assert.equal(progress.onTrack, true);
+  assert.equal(planProgress(baseline, [pay('a', 100, '2026-11-03')], '2026-11-10').onTrack, false);
+});
+
+test('a card with both a regular and a promo balance: the guard still clears the promo in time', () => {
+  const mixed: PlanDebt = {
+    id: 'mx',
+    name: 'Mixed card',
+    balance: 2000,
+    apr: 29.99,
+    minPayment: 60,
+    promos: [{ id: 'p', balance: 900, expiresOn: '2027-06-30', deferredInterest: null, startedOn: '2026-06-30' }],
+  };
+  const plan = buildPlan([mixed], { extraMonthly: 150, startDate: '2026-10-05' });
+  assert.deepEqual(plan.missedPromos, []);
+  assert.equal(plan.neverPaysOff, false);
+  const noGuard = buildPlan([mixed], { extraMonthly: 0, startDate: '2026-10-05', protectPromos: false });
+  // Minimum goes to the regular part first, so the promo is missed and back interest estimated.
+  assert.equal(noGuard.missedPromos.length, 1);
+  assert.equal(noGuard.missedPromos[0].backInterestEstimated, true);
 });
