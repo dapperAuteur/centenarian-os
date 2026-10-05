@@ -6,8 +6,9 @@
 // parser (lib/capture/parse-tokens.ts) reads from it, then copy the title or open Google's
 // prefilled "create event" form. Also offers the examples as an .ics file and the cheat sheet.
 //
-// Truthful about today's behavior: the sync (lib/calendar/google-sync.ts) makes planner tasks
-// only; expense, income, trip, meal and workout records are coming (plan 59, phase 4.4).
+// Says what the sync does (lib/calendar/google-sync.ts, lib/capture/calendar-records.ts): a planner
+// task per event, plus a transaction, meal log or workout log for a tagged title. #trip makes no
+// trip: travel is moving to RideWitUS, so the details are only saved (plan 59, phase 4.4).
 // No writes anywhere: the only request is GET /api/travel/settings for the user's distance unit.
 
 import { useEffect, useMemo, useState } from 'react';
@@ -58,12 +59,12 @@ const WHAT_LABEL: Record<CaptureKind, { label: string; placeholder: string }> = 
   task: { label: 'What to do', placeholder: 'Call the plumber' },
 };
 
-const COMING: Record<CaptureKind, string> = {
-  expense: 'Creating the expense transaction from it is coming.',
-  income: 'Creating the income transaction from it is coming.',
-  trip: 'Creating the trip record from it is coming.',
-  meal: 'Creating the meal log from it is coming.',
-  workout: 'Creating the workout log from it is coming.',
+const RESULT: Record<CaptureKind, string> = {
+  expense: 'Plus an expense transaction in the account chosen in Calendar Sync, linked to the task.',
+  income: 'Plus an income transaction in the account chosen in Calendar Sync, linked to the task.',
+  trip: "No trip is created: the trip details are saved and will go to RideWitUS.",
+  meal: 'Plus a meal log for that date and time.',
+  workout: 'Plus a workout log, linked to the task.',
   task: 'A task is all this kind makes.',
 };
 
@@ -244,13 +245,15 @@ export default function CalendarEventBuilderPage() {
 
       <section aria-labelledby="today-heading" className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-sm text-gray-800">
         <h2 id="today-heading" className="font-semibold text-gray-900">
-          What happens today
+          What happens when an event syncs
         </h2>
         <p className="mt-1">
-          Every event on a calendar you sync becomes a planner task, named after the title without its tags. The
-          details in the title (amount, distance, mode, meal, duration) are read and saved with the synced event, and a
-          title with missing details is flagged. Turning them into expense, income, trip, meal and workout records is
-          coming; it is not built yet.
+          Every event on a calendar you sync becomes a planner task, named after the title without its tags. A tagged
+          title also creates a record linked to that task: #expense and #income a transaction (in the account chosen in
+          Calendar Sync), #meal a meal log, #workout a workout log. #trip events stay tasks: the trip details are saved
+          and will go to RideWitUS. A title with missing details (an #expense with no amount) creates only the task and
+          is flagged. A record follows later changes to its event until you edit it in CentenarianOS; cancelling an
+          event never deletes a transaction.
         </p>
       </section>
 
@@ -488,7 +491,8 @@ export default function CalendarEventBuilderPage() {
             ))}
           </ul>
           <p className="mt-2 text-sm text-gray-700">
-            Today: a planner task named &quot;{parsed.cleanTitle || title}&quot;. {COMING[parsed.kind]}
+            Creates: a planner task named &quot;{parsed.cleanTitle || title}&quot;.{' '}
+            {parsed.warnings.length > 0 ? 'Only the task, until the title is fixed.' : RESULT[parsed.kind]}
           </p>
           {parsed.warnings.length > 0 && (
             <div role="alert" className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-900">

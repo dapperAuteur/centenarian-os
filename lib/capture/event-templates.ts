@@ -11,10 +11,12 @@
 // Pure: no I/O, no clock, no user settings (tests/unit/event-templates.test.ts). The imports keep
 // their ".ts" extension because this file also runs under `node --test --experimental-strip-types`.
 //
-// What the sync does with a title TODAY (lib/calendar/google-sync.ts, phase 4.2): every event
-// becomes a planner task named after the title without its tokens, and the parsed data is stored
-// on the sync row. Expense, income, trip, meal and workout RECORDS are not created yet (plan 59,
-// phase 4.4). Copy built from these helpers must say so.
+// What the sync does with a title (lib/calendar/google-sync.ts + lib/capture/calendar-records.ts,
+// plan 59 phases 4.2 and 4.4): every event becomes a planner task named after the title without
+// its tokens, and the parsed data is stored on the sync row. A tagged title also creates a record
+// linked to the task: #expense / #income a transaction, #meal a meal log, #workout a workout log.
+// #trip creates NO trip (travel is moving to RideWitUS); its details stay on the sync row.
+// Copy built from these helpers must say so.
 
 import type { ParsedCapture } from './parse-tokens.ts';
 import {
@@ -498,9 +500,11 @@ export function buildCheatSheetMarkdown(): string {
     'Add a `#tag` and a few details to a Google Calendar event title. When the event syncs into CentenarianOS ' +
       '(Settings > Calendar Sync), the title is read. English and Spanish words both work, whatever your language setting.',
     '',
-    '**What happens today:** every synced event becomes a planner task named after the title without its tags. ' +
-      'The details (amount, distance, mode, meal, duration) are read and saved with the synced event. ' +
-      'Turning them into an expense, income, trip, meal or workout record is coming; it is not built yet.',
+    '**What happens when an event syncs:** every synced event becomes a planner task named after the title without its tags. ' +
+      'A tagged title also creates a record linked to that task: #expense and #income a transaction (in the account chosen ' +
+      'for that Google account in Calendar Sync, in its currency), #meal a meal log, #workout a workout log. ' +
+      "#trip events stay tasks: the trip details are saved and will go to RideWitUS. " +
+      'A title with missing details (an #expense with no amount) creates only the task and is flagged under Needs a look.',
     '',
     '## Copy-paste titles',
     '',

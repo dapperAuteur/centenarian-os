@@ -217,5 +217,6 @@ test('public/templates/calendar-event-cheat-sheet.md matches the generator and l
     assert.ok(sheet.includes(exampleTitle(example, 'en')));
     assert.ok(sheet.includes(exampleTitle(example, 'es')));
   }
-  assert.match(sheet, /not built yet/);
+  assert.match(sheet, /creates a record linked to that task/);
+  assert.match(sheet, /will go to RideWitUS/);
 });

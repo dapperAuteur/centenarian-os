@@ -2,7 +2,7 @@
 
 Add a `#tag` and a few details to a Google Calendar event title. When the event syncs into CentenarianOS (Settings > Calendar Sync), the title is read. English and Spanish words both work, whatever your language setting.
 
-**What happens today:** every synced event becomes a planner task named after the title without its tags. The details (amount, distance, mode, meal, duration) are read and saved with the synced event. Turning them into an expense, income, trip, meal or workout record is coming; it is not built yet.
+**What happens when an event syncs:** every synced event becomes a planner task named after the title without its tags. A tagged title also creates a record linked to that task: #expense and #income a transaction (in the account chosen for that Google account in Calendar Sync, in its currency), #meal a meal log, #workout a workout log. #trip events stay tasks: the trip details are saved and will go to RideWitUS. A title with missing details (an #expense with no amount) creates only the task and is flagged under Needs a look.
 
 ## Copy-paste titles
 
