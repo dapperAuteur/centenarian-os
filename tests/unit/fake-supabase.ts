@@ -234,6 +234,20 @@ export class FakeQuery implements PromiseLike<FakeResult> {
     return this;
   }
 
+  /** Case-insensitive LIKE: % and _ are wildcards, a backslash escapes the next character. */
+  ilike(column: string, pattern: string): this {
+    let source = '';
+    for (let i = 0; i < pattern.length; i++) {
+      const char = pattern[i];
+      if (char === '\\' && i + 1 < pattern.length) source += pattern[++i].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      else if (char === '%') source += '.*';
+      else if (char === '_') source += '.';
+      else source += char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+    const re = new RegExp(`^${source}$`, 'is');
+    return this.where(column, (v) => typeof v === 'string' && re.test(v));
+  }
+
   gte(column: string, value: string | number): this {
     return this.where(column, (v) => (v as string | number) >= value);
   }

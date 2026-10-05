@@ -11,7 +11,7 @@ CentenarianOS is a comprehensive longevity-focused life-management platform. It 
 ### Tech Stack
 - **Framework**: Next.js 15 App Router (TypeScript, app/ directory structure)
 - **Styling**: Tailwind CSS v4 (utility-first, dark theme with fuchsia accents)
-- **Database**: Supabase (PostgreSQL + Row-Level Security), 217 migrations
+- **Database**: Supabase (PostgreSQL + Row-Level Security), 218 migrations
 - **Auth**: Supabase Auth (email/password, magic link)
 - **Payments**: Stripe (checkout sessions, webhooks, subscription management, Stripe Connect for teacher payouts)
 - **AI**: Google Gemini 2.5 Flash (chat, coaching, embeddings, vision/OCR)
@@ -100,8 +100,8 @@ Overview, Users (list + detail), Messages, Content moderation, Engagement analyt
 - **Invited users**: Admin can grant trial or lifetime access without payment, with optional module restrictions
 
 ### Database Architecture
-- **217 migrations** in supabase/migrations/ (000 through 214, plus a few unnumbered drafts)
-- **Key tables**: profiles, financial_accounts, financial_transactions, budget_categories, vehicles, trips, trip_routes, trip_shares, fuel_logs, vehicle_maintenance, equipment, equipment_categories, equipment_valuations, equipment_media, asset_depreciation, exercises, exercise_categories, workout_logs, workout_templates, courses, lessons, modules (academy), course_prerequisites, prerequisite_override_requests, gem_personas, language_coach_sessions, life_categories, entity_life_categories, activity_links, user_contacts, contact_locations, scan_images, receipt_line_items, item_prices, institutions, institution_offers, invited_users, teller_enrollments (deprecated 2026-10, unused), admin_chats, admin_chat_messages, app_logs, usage_events, page_views, media_categories, media_items, media_notes, podcast_episodes, media_episode_links, social_likes, social_shares, social_bookmarks
+- **218 migrations** in supabase/migrations/ (000 through 217, plus a few unnumbered drafts)
+- **Key tables**: profiles, financial_accounts, financial_transactions, budget_categories, vehicles, trips, trip_routes, trip_shares, fuel_logs, vehicle_maintenance, equipment, equipment_categories, equipment_valuations, equipment_media, asset_depreciation, exercises, exercise_categories, workout_logs, workout_templates, courses, lessons, modules (academy), course_prerequisites, prerequisite_override_requests, gem_personas, language_coach_sessions, life_categories, entity_life_categories, activity_links, user_contacts, contact_locations, witus_identities, integration_outbox, scan_images, receipt_line_items, item_prices, institutions, institution_offers, invited_users, teller_enrollments (deprecated 2026-10, unused), admin_chats, admin_chat_messages, app_logs, usage_events, page_views, media_categories, media_items, media_notes, podcast_episodes, media_episode_links, social_likes, social_shares, social_bookmarks
 - **Patterns**: Soft-delete via is_active flags, .maybeSingle() for optional rows, service role for admin ops, fire-and-forget logging
 - **RLS**: Enabled on all user-facing tables. Service role key bypasses RLS for admin/webhook routes.
 
@@ -123,6 +123,7 @@ Overview, Users (list + detail), Messages, Content moderation, Engagement analyt
 - **CYOA via embeddings**: Lesson navigation uses cosine similarity rather than manual prerequisite graphs, with cross-course matching option
 - **Tiptap + Markdown dual support**: Lessons can use either format, stored in same column with content_format flag
 - **No bank linking**: Teller was removed in 2026-10 so the app keeps no bank credentials (scripts/teller-revoke-all.mjs revokes the enrollments and overwrites the stored tokens); bank transactions come in by CSV import. The teller_enrollments table and teller_* columns remain, unused, under the shared-database additive rule (migration 201)
+- **RideWitUS integration (server to server)**: signed X-Witus-* requests both ways (lib/events/verify-signature.ts receives, lib/events/sign-request.ts sends; a GET signs its path + query). Users are matched by WitUS sign-in subject through witus_identities (lib/witus/identity.ts: userIdForWitusSub / witusSubForUserId; no row = 404 unknown_subject). Incoming: GET /api/v1/ride/vendors (+ /[id], /[id]/prices) is a read-only, paginated list of the user's vendor contacts with locations (no lat/lng), category name and recent item_prices, plus create_vendor_url -> /dashboard/contacts/new?type=vendor (RIDE_VENDOR_API_SECRET); POST /api/v1/ride/resync { witus_sub, scopes, since } re-sends facts, 1 per user per 5 min (RIDE_RESYNC_SECRET; scope envelopes works, calendar is a registerResyncHandler hook, matches not built). Outgoing: envelope.balance for savings goals linked to a trip or equipment item (CentOS link ids, link_source centenarian-os; no vehicle link column yet), queued after goal/allocation writes via after() and nightly, through integration_outbox (migration 217: latest payload per (receiver, user, event_id), backoff 1m/5m/30m/2h/12h then failed, unknown_subject waits; daily cron /api/cron/integration-outbox). ENVELOPE_BALANCE_EVENTS_URL / _SECRET unset = logged no-op. Code: lib/integrations/outbox.ts, lib/integrations/ridewitus/*.
 - **offlineFetch pattern**: Drop-in fetch replacement caches in IndexedDB, queues mutations — enables offline-first pages
 - **VideoEmbed Tiptap node**: Isomorphic custom node stores src URL, auto-detects provider (YouTube/Viloud/Mux/Cloudinary)
 - **Module tours**: TourOverlay component with server-persisted step progress, event tracking, and restart capability
@@ -132,7 +133,7 @@ Getting Started, Planner, Finance, Travel, Fuel, Engine, Health Metrics, Workout
 
 ### Project Stats
 - ~450+ TypeScript files
-- 215 database migrations
+- 218 database migrations
 - 22+ user-facing modules (including social layer and trip sharing; the media tracker moved to Stream.WitUS)
 - 20 admin management pages
 - 12 AI-powered features
