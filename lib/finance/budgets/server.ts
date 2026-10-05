@@ -12,6 +12,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { excludingTransfers, withoutTransfers } from '../transfers/schema.ts';
 import type { DbErrorLike } from '../transfers/schema.ts';
+import { totalsRole } from '../refunds.ts';
 import { addMonths, firstDay, lastDay, monthOfDate } from './months.ts';
 import type { MonthKey } from './months.ts';
 import {
@@ -50,7 +51,20 @@ export class BudgetWriteError extends Error {
   }
 }
 
-const SPENDING_SELECT = 'id, amount, type, transaction_date, category_id, source';
+const SPENDING_SELECT = 'id, amount, type, transaction_date, category_id, source, account_id, description';
+
+/** The user's credit card and loan account ids: money back on one of them is a refund, not income. */
+export async function loadDebtAccountIds(
+  db: SupabaseClient,
+  userId: string,
+): Promise<{ ids: Set<string>; error: DbErrorLike | null }> {
+  const { data, error } = await db
+    .from('financial_accounts')
+    .select('id')
+    .eq('user_id', userId)
+    .in('account_type', ['credit_card', 'loan']);
+  return { ids: new Set(((data ?? []) as { id: string }[]).map((row) => row.id)), error };
+}
 
 /** Every non-transfer transaction of the user between two dates, all pages. */
 export async function loadSpendingRows(
@@ -60,6 +74,8 @@ export async function loadSpendingRows(
   toDate: string,
 ): Promise<{ rows: SpendingRow[]; error: DbErrorLike | null }> {
   const rows: SpendingRow[] = [];
+  const debt = await loadDebtAccountIds(db, userId);
+  if (debt.error) return { rows, error: debt.error };
   for (let offset = 0; ; offset += PAGE_SIZE) {
     const res = await excludingTransfers((groupColumnExists) =>
       withoutTransfers(
@@ -76,8 +92,14 @@ export async function loadSpendingRows(
         .range(offset, offset + PAGE_SIZE - 1),
     );
     if (res.error) return { rows, error: res.error };
-    const page = (res.data ?? []) as SpendingRow[];
-    rows.push(...page);
+    const page = (res.data ?? []) as (SpendingRow & { account_id?: string | null; description?: string | null })[];
+    for (const row of page) {
+      // Money back on a card or loan: a refund lowers spending; an unlinked
+      // payment is a transfer and counts nowhere (lib/finance/refunds.ts).
+      const role = totalsRole(row, debt.ids);
+      if (role === 'unlinked_payment') continue;
+      rows.push(role === 'refund' ? { ...row, refund: true } : row);
+    }
     if (page.length < PAGE_SIZE) return { rows, error: null };
   }
 }

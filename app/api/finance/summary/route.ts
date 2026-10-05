@@ -3,10 +3,13 @@
 //
 // Transfers between the person's own accounts (including card and loan
 // payments) are left out of every total here: they are not spending or income.
+// Money back on a credit card or loan that isn't a payment is a refund: it
+// lowers spending (and its category's spending), and is never income.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { excludingTransfers, withoutTransfers } from '@/lib/finance/transfers/schema';
+import { signedSpending } from '@/lib/finance/refunds';
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -29,13 +32,13 @@ export async function GET(request: NextRequest) {
     .toISOString().split('T')[0];
 
   // Fetch all transactions in range + categories
-  const [txRes, catRes] = await Promise.all([
+  const [txRes, catRes, debtRes] = await Promise.all([
     // Works before migration 202 too: see excludingTransfers().
     excludingTransfers((groupColumnExists) =>
       withoutTransfers(
         supabase
           .from('financial_transactions')
-          .select('amount, type, transaction_date, category_id')
+          .select('amount, type, transaction_date, category_id, account_id, description')
           .eq('user_id', user.id)
           .gte('transaction_date', startDate)
           .lte('transaction_date', endDate),
@@ -47,12 +50,18 @@ export async function GET(request: NextRequest) {
       .select('id, name, color, monthly_budget')
       .eq('user_id', user.id)
       .order('sort_order'),
+    supabase
+      .from('financial_accounts')
+      .select('id')
+      .eq('user_id', user.id)
+      .in('account_type', ['credit_card', 'loan']),
   ]);
 
   if (txRes.error) return NextResponse.json({ error: txRes.error.message }, { status: 500 });
 
   const transactions = txRes.data || [];
   const categories = catRes.data || [];
+  const debtAccountIds = new Set(((debtRes.data ?? []) as { id: string }[]).map((row) => row.id));
 
   // Current month totals
   let currentExpenses = 0;
@@ -68,18 +77,20 @@ export async function GET(request: NextRequest) {
     if (!monthlyMap[monthKey]) monthlyMap[monthKey] = { expenses: 0, income: 0 };
 
     const amt = parseFloat(tx.amount);
-    if (tx.type === 'expense') {
-      monthlyMap[monthKey].expenses += amt;
+    // A refund on a card or loan is negative spending; other money in is income.
+    const spent = signedSpending(tx, debtAccountIds);
+    if (spent !== null) {
+      monthlyMap[monthKey].expenses += spent;
     } else {
       monthlyMap[monthKey].income += amt;
     }
 
     // Current month specifics
     if (tx.transaction_date >= currentMonthStart && tx.transaction_date <= currentMonthEnd) {
-      if (tx.type === 'expense') {
-        currentExpenses += amt;
+      if (spent !== null) {
+        currentExpenses += spent;
         if (tx.category_id) {
-          categorySpending[tx.category_id] = (categorySpending[tx.category_id] || 0) + amt;
+          categorySpending[tx.category_id] = (categorySpending[tx.category_id] || 0) + spent;
         }
       } else {
         currentIncome += amt;

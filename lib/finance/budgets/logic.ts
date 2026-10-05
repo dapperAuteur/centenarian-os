@@ -15,6 +15,11 @@
 //       its income (so "Groceries" with a store refund is one; "Salary" or a
 //       client-income category is not, and its income is ignored here).
 //       Uncategorized income is ignored: it is usually pay, not a refund.
+//       An income row on a credit card or loan that isn't a payment (a
+//       payment is a transfer and is already left out) is always a refund
+//       (`refund: true`, set by the loader): it lowers its category's
+//       spending, or Uncategorized spending when it has no category, and is
+//       never counted as earnings.
 //       A month never goes below zero: a refund larger than that month's
 //       spending counts as zero spending for the month.
 //
@@ -75,6 +80,8 @@ export interface SpendingRow {
   category_id: string | null;
   source?: string | null;
   transfer_group_id?: string | null;
+  /** True for money back on a credit card or loan (a refund or credit), set by the loader. */
+  refund?: boolean;
 }
 
 export interface SeriesPoint {
@@ -118,6 +125,8 @@ export function buildSpendingSeries(rows: SpendingRow[]): Map<string, Map<MonthK
     const month = monthOfDate(row.transaction_date);
     if (row.type === 'expense') {
       add(row.category_id ?? UNCATEGORIZED, month, toCents(row.amount));
+    } else if (row.type === 'income' && row.refund) {
+      add(row.category_id ?? UNCATEGORIZED, month, -toCents(row.amount));
     } else if (row.type === 'income' && row.category_id && isExpenseCategory(row.category_id)) {
       add(row.category_id, month, -toCents(row.amount));
     }
