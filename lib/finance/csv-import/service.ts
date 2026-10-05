@@ -118,7 +118,8 @@ export interface ImportRequest {
   actions: RowAction[];
 }
 
-function readActions(value: unknown): RowAction[] {
+/** Checks the `actions` list of a commit body. Shared with the PDF import. */
+export function readActions(value: unknown): RowAction[] {
   if (value === undefined || value === null) return [];
   if (!Array.isArray(value)) throw bad('bad_actions', 'actions must be a list.');
   if (value.length > MAX_IMPORT_ROWS) throw bad('too_many_rows', tooManyRowsMessage(value.length));

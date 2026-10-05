@@ -68,7 +68,6 @@ export async function extractPdfLines(bytes: Uint8Array): Promise<ExtractedPdf> 
   const task = pdfjs.getDocument({
     // pdfjs takes ownership of the buffer it is given: pass a copy.
     data: new Uint8Array(bytes),
-    isEvalSupported: false,
     disableFontFace: true,
     useSystemFonts: false,
     stopAtErrors: false,

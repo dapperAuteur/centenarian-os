@@ -12,12 +12,15 @@
 //   - a manual or scanned entry the import only linked: the entry stays; its
 //     external_id and import_batch_id are cleared. Its account stays too, even
 //     when the import filled it in: the statement showed which account it was.
-// Then the batch is marked 'undone'. Undoing an undone batch changes nothing.
+// The statement summary a PDF import saved (account_statements, migration 209)
+// is deleted too. Then the batch is marked 'undone'. Undoing an undone batch
+// changes nothing.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ID_CHUNK, chunk, readAllPages } from './db.ts';
 import type { PageResult } from './db.ts';
 import { ImportError, dbFailure } from './errors.ts';
+import { deleteBatchStatements } from '../pdf-import/statements.ts';
 import type { KeptTransaction, UndoResult } from './types.ts';
 
 /** How far updated_at may sit from created_at on a row nobody has edited. */
@@ -134,6 +137,8 @@ export async function undoBatch(db: SupabaseClient, userId: string, batchId: str
     if (error) throw dbFailure(error, 'unlink the matched transactions');
     unlinked += (data ?? []).length;
   }
+
+  await deleteBatchStatements(db, userId, batchId);
 
   const marked = await db
     .from('import_batches')

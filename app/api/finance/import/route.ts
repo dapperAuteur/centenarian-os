@@ -11,6 +11,14 @@
 //    Needs migration 203; until it is applied the answer is 503 with
 //    "Run migration 203 first".
 //
+// 1b. PDF statement import (commit): { account_id, pdf_base64, file_name?,
+//     actions?, confirm_unreconciled? }. Same flow as 1; the PDF is read in
+//     this process. A statement that doesn't reconcile answers 409
+//     'reconciliation_unconfirmed' unless confirm_unreconciled is true. Saves
+//     the statement summary to account_statements: needs migration 209
+//     ("Run migration 209 first" until it is applied, checked before writing).
+//    -> the result of 1, plus { statementSaved, statementError? }
+//
 // 2. Template import (the current Import page): { rows: [...] } already parsed
 //    in the browser. No account, no duplicate check, no batch.
 //    -> { imported, skipped, errors? }
@@ -29,6 +37,10 @@ import {
   unauthorizedResponse,
 } from '@/lib/finance/csv-import/respond';
 import { runImport } from '@/lib/finance/csv-import/service';
+import { isPdfBody, runPdfImport } from '@/lib/finance/pdf-import/service';
+
+// pdfjs reads PDFs with Node APIs.
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -37,6 +49,15 @@ export async function POST(request: NextRequest) {
 
   const body = await readJson(request);
   const fields = typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {};
+
+  if (isPdfBody(body)) {
+    try {
+      const result = await runPdfImport(supabase, user.id, body);
+      return NextResponse.json({ ...result, imported: result.inserted + result.linked });
+    } catch (error) {
+      return importErrorResponse(error);
+    }
+  }
 
   // The statement import is recognized by the file text it carries.
   if (fields.csv_text !== undefined || fields.csvText !== undefined) {

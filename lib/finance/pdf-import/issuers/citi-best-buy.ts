@@ -61,7 +61,6 @@ import type {
 const LEFT_MARGIN = 30;
 
 const clean = (line: PdfLine): TextItem[] => line.items.filter((item) => item.x >= LEFT_MARGIN);
-const first = (line: PdfLine): string => clean(line)[0]?.str ?? '';
 const textOf = (items: readonly TextItem[]): string => items.map((item) => item.str).join(' ');
 
 const MONTH_DAY = /^\d{2}\/\d{2}$/;
