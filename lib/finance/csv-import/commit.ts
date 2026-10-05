@@ -20,6 +20,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { loadLearnedCategoryIndex } from '../learned-categories.ts';
 import type { LearnedCategoryIndex } from '../transaction-matching.ts';
 import { chunk } from './db.ts';
+import { fxFieldsFor, loadAccountCurrency, loadHomeCurrency, storableRate, type FxFields } from '../fx/server.ts';
+import { convert } from '../fx/math.ts';
 import { ImportError, dbFailure, isMissingSchemaError, isUniqueViolation } from './errors.ts';
 import { LINKABLE_SOURCES, allowedActions, loadCategories, suggestCategory } from './plan.ts';
 import { linkStatementTransfers, type LinkAccount, type TransferIntent } from './transfer-links.ts';
@@ -173,6 +175,41 @@ const clip = (text: string | null | undefined, max: number): string | null => {
  * row the database refuses for any other reason is returned in `rejected`
  * and the rest of the import carries on.
  */
+/**
+ * For an account in another currency than the user's home currency, a function giving each
+ * row's currency, fx_rate and amount_home (lib/finance/fx). Rates are looked up once per date.
+ * Null for a home-currency account, or when the lookup fails: such rows are converted later by
+ * the daily fx-rates cron or "Update rates now".
+ */
+async function importFxConverter(
+  db: SupabaseClient,
+  userId: string,
+  accountId: string,
+): Promise<((amount: number, date: string) => Promise<Partial<FxFields>>) | null> {
+  try {
+    const home = await loadHomeCurrency(db, userId);
+    const currency = await loadAccountCurrency(db, userId, accountId, home);
+    if (!currency || currency === home) return null;
+    const rateByDate = new Map<string, number | null>();
+    return async (amount, date) => {
+      try {
+        if (!rateByDate.has(date)) {
+          const { rate } = await fxFieldsFor(db, userId, currency, home, 1, date);
+          rateByDate.set(date, rate ? rate.rate : null);
+        }
+        const rate = rateByDate.get(date) ?? null;
+        if (rate === null) return { currency, fx_rate: null, amount_home: null };
+        // Same rounding as a hand-entered transaction (fxFieldsFor).
+        return { currency, fx_rate: storableRate(rate), amount_home: convert(Math.abs(amount), rate) };
+      } catch {
+        return { currency, fx_rate: null, amount_home: null };
+      }
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function commitImport(
   db: SupabaseClient,
   userId: string,
@@ -267,8 +304,13 @@ export async function commitImport(
       }
     }
 
+    const fxFor = await importFxConverter(db, userId, input.accountId);
     for (const group of chunk(toInsert, INSERT_CHUNK)) {
-      const payloads = group.map((row) => toInsertPayload(row, ids, context));
+      const payloads: Record<string, unknown>[] = [];
+      for (const row of group) {
+        const payload = toInsertPayload(row, ids, context) as Record<string, unknown>;
+        payloads.push(fxFor ? { ...payload, ...(await fxFor(row.amountCents / 100, row.date)) } : payload);
+      }
       const { error } = await db.from('financial_transactions').insert(payloads);
       if (!error) {
         inserted += group.length;

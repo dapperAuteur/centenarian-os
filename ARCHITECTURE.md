@@ -54,7 +54,7 @@ flowchart TB
 
   subgraph Shared["Shared infrastructure"]
     direction TB
-    Supabase[(Supabase Postgres<br/>212 migrations · 14 modules)]:::shared
+    Supabase[(Supabase Postgres<br/>214 migrations · 14 modules)]:::shared
     SupaAuth[Supabase Auth<br/>publishable + secret keys]
     SupaStorage[Supabase Storage]
   end
