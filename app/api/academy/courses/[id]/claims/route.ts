@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { lessonInCourse } from '@/lib/academy/access';
 
 function getDb() {
   return createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
@@ -53,6 +54,10 @@ export async function POST(request: NextRequest, { params }: Params) {
   const { db } = ctx;
   const { claim_text, location, lesson_id } = await request.json();
   if (!claim_text?.trim()) return NextResponse.json({ error: 'claim_text required' }, { status: 400 });
+  // A claim's lesson must be one of this course's lessons.
+  if (lesson_id && !(await lessonInCourse(db, courseId, lesson_id))) {
+    return NextResponse.json({ error: 'Invalid reference: lesson_id' }, { status: 400 });
+  }
   const { data, error } = await db
     .from('course_claims')
     .insert({ course_id: courseId, claim_text: claim_text.trim(), location: location?.trim() || null, lesson_id: lesson_id || null })
