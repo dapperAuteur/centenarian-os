@@ -13,8 +13,14 @@
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FileUp } from 'lucide-react';
-import { MAX_PDF_FILE_BYTES, PDF_TOO_LARGE_TEXT, isPdfFile, setPendingStatementFile } from '@/lib/finance/pdf-import/client';
+import { FileUp, XCircle } from 'lucide-react';
+import {
+  MAX_PDF_FILE_BYTES,
+  PDF_TOO_LARGE_TEXT,
+  isPdfFile,
+  isStatementFile,
+  setPendingStatementFile,
+} from '@/lib/finance/pdf-import/client';
 
 const IMPORT_URL = '/dashboard/finance/import?from=settings';
 
@@ -27,7 +33,7 @@ export default function StatementsUploadSection() {
     const file = event.target.files?.[0];
     if (!file) return;
     const pdf = isPdfFile(file);
-    if (!pdf && !/\.csv$/i.test(file.name) && file.type !== 'text/csv') {
+    if (!isStatementFile(file)) {
       setError('Choose a CSV or PDF statement.');
       if (inputRef.current) inputRef.current.value = '';
       return;
@@ -65,18 +71,23 @@ export default function StatementsUploadSection() {
         id="settings-statement-file"
         ref={inputRef}
         type="file"
-        accept=".csv,text/csv,.pdf,application/pdf"
+        accept=".csv,text/csv,.txt,.tsv,.pdf,application/pdf,.xls,.xlsx"
         onChange={handleChosen}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? 'settings-statement-hint settings-statement-error' : 'settings-statement-hint'}
         className="block w-full text-sm text-gray-700 file:mr-3 file:min-h-11 file:cursor-pointer file:rounded-lg file:border-0 file:bg-sky-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-sky-800 hover:file:bg-sky-100"
       />
       <p id="settings-statement-hint" className="text-xs text-gray-600 mt-1">
-        Text PDFs only; scanned statements can&apos;t be read. Up to 10 MB.
+        Text PDFs only; scanned statements can&apos;t be read. Up to 10 MB. Excel workbooks can&apos;t be read: use the
+        PDF statement instead.
       </p>
       {error && (
-        <p id="settings-statement-error" role="alert" className="mt-2 text-sm font-medium text-red-700">
-          {error}
+        <p id="settings-statement-error" role="alert" className="mt-2 flex items-start gap-1.5 text-sm font-medium text-red-700">
+          <XCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>
+            <span className="sr-only">Error: </span>
+            {error}
+          </span>
         </p>
       )}
       <Link

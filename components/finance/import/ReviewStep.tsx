@@ -6,7 +6,9 @@
 // the file when "Import statement" is pressed.
 
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRightLeft, Loader2 } from 'lucide-react';
+import { cardKindSummary, importExplanation, isDebtAccountType, type CardRowKind } from '@/lib/finance/csv-import/card-terms';
+import { needsReconciliationConfirmation } from '@/lib/finance/pdf-import/reconcile';
 import type { BudgetCategory } from '@/components/finance/CategorySelect';
 import type { PreviewResponse } from '@/lib/finance/csv-import/service';
 import type { PlannedRow } from '@/lib/finance/csv-import/types';
@@ -17,19 +19,25 @@ import {
   STATUS_LABELS,
   accountLabel,
   applyDecision,
+  effectiveCardKind,
+  effectiveDecision,
   filterRows,
   pageCount,
   pageOf,
+  pickerAccountsFor,
+  rowTransferRole,
   statusCounts,
   summarizeDecisions,
   summaryLine,
+  transferCounts,
   type Decisions,
   type RowDecision,
   type StatusFilter,
+  type TransferContext,
 } from '@/lib/finance/csv-import/ui-helpers';
 import ReviewRow from './ReviewRow';
 import StatementSummary from './StatementSummary';
-import { ErrorNotice, card, primaryButton, secondaryButton, selectInput } from './shared';
+import { ErrorNotice, StatusNotice, ToneIcon, card, primaryButton, secondaryButton, selectInput } from './shared';
 
 interface ReviewStepProps {
   preview: PreviewResponse;
@@ -51,6 +59,10 @@ interface ReviewStepProps {
   onConfirmUnreconciledChange?: (confirmed: boolean) => void;
   /** What the Back button says. */
   backLabel?: string;
+  /** The account, the person's other accounts, and the suggested "paid from" account. */
+  transfer: TransferContext;
+  /** Turns "record the payment on the other account when it has no matching row" on or off. */
+  onRecordMissingChange: (record: boolean) => void;
 }
 
 /** How many unreadable rows are listed before "Show all". */
@@ -79,6 +91,8 @@ export default function ReviewStep({
   confirmUnreconciled = false,
   onConfirmUnreconciledChange,
   backLabel = 'Back to columns',
+  transfer,
+  onRecordMissingChange,
 }: ReviewStepProps) {
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [page, setPage] = useState(1);
@@ -88,6 +102,13 @@ export default function ReviewStep({
   const listTopRef = useRef<HTMLDivElement>(null);
 
   const { rows, rejected } = preview;
+  const skipped = useMemo(() => preview.skipped ?? [], [preview.skipped]);
+  // "12: An item line that details another PayPal row." One line per reason.
+  const skippedReasons = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of skipped) counts.set(item.reason, (counts.get(item.reason) ?? 0) + 1);
+    return [...counts.entries()];
+  }, [skipped]);
   const counts = useMemo(() => statusCounts(rows), [rows]);
   const summary = useMemo(() => summarizeDecisions(rows, decisions), [rows, decisions]);
   const visible = useMemo(() => filterRows(rows, filter), [rows, filter]);
@@ -99,6 +120,35 @@ export default function ReviewStep({
   const pageFullySelected =
     selectablePageRows.length > 0 && selectablePageRows.every((row) => selected.has(row.rowNumber));
   const selectableInView = useMemo(() => visible.filter(isSelectable), [visible]);
+
+  const debt = isDebtAccountType(transfer.accountType);
+  const transfers = useMemo(() => transferCounts(rows, decisions, transfer), [rows, decisions, transfer]);
+  // Rows that will be saved, in card words: "40 charges, 3 payments, 1 refund or credit".
+  const kindCounts = useMemo(() => {
+    const counts: Record<CardRowKind, number> = { charge: 0, payment: 0, refund: 0, interest: 0, fee: 0 };
+    for (const row of rows) {
+      if (effectiveDecision(row, decisions[row.rowNumber]).action === 'skip') continue;
+      counts[effectiveCardKind(row, decisions[row.rowNumber])] += 1;
+    }
+    return counts;
+  }, [rows, decisions]);
+  const paymentRows = useMemo(
+    () => rows.filter((row) => rowTransferRole(row, decisions[row.rowNumber], transfer.accountType) === 'paid_from'),
+    [rows, decisions, transfer.accountType],
+  );
+  const paidFromOptions = debt ? pickerAccountsFor('paid_from', transfer) : [];
+
+  /** "Paid from" for every payment on this statement at once. */
+  function setPaidFromForAll(accountId: string) {
+    if (paymentRows.length === 0) return;
+    onDecisionsChange((current) => applyDecision(current, paymentRows, { transferAccountId: accountId || null }));
+    const chosen = paidFromOptions.find((account) => account.id === accountId);
+    setBulkMessage(
+      chosen
+        ? `${formatCount(paymentRows.length)} ${paymentRows.length === 1 ? 'payment' : 'payments'} set to paid from ${accountLabel(chosen)}.`
+        : `${formatCount(paymentRows.length)} ${paymentRows.length === 1 ? 'payment is' : 'payments are'} no longer linked.`,
+    );
+  }
 
   const changeRow = useCallback(
     (row: PlannedRow, patch: RowDecision) => {
@@ -169,7 +219,8 @@ export default function ReviewStep({
   }
 
   const nothingToImport = summary.add + summary.link === 0;
-  const needsConfirmation = statement !== null && !statement.reconciliation.ok && !confirmUnreconciled;
+  const needsConfirmation =
+    statement !== null && needsReconciliationConfirmation(statement.reconciliation) && !confirmUnreconciled;
   const importDisabled = busy || !online || nothingToImport || needsConfirmation;
   const firstShown = visible.length === 0 ? 0 : (currentPage - 1) * REVIEW_PAGE_SIZE + 1;
   const lastShown = Math.min(currentPage * REVIEW_PAGE_SIZE, visible.length);
@@ -213,14 +264,31 @@ export default function ReviewStep({
                 : '.'}{' '}
               Nothing is saved until you press Import statement.
             </p>
+            {debt && <p className="mt-1 text-sm text-gray-800">To import: {cardKindSummary(kindCounts, transfer.accountType)}.</p>}
+            <p className="mt-1 text-sm text-gray-700">{importExplanation(transfer.accountType)}</p>
+            {(transfers.linked > 0 || transfers.unassigned > 0) && (
+              <p className="mt-1 flex items-start gap-1.5 text-sm text-gray-800">
+                <ArrowRightLeft className="mt-0.5 h-4 w-4 shrink-0 text-sky-700" aria-hidden="true" />
+                <span>
+                  {formatCount(transfers.linked)} {transfers.linked === 1 ? 'payment' : 'payments'} will be linked as{' '}
+                  {transfers.linked === 1 ? 'a transfer' : 'transfers'}.
+                  {transfers.unassigned > 0 &&
+                    ` ${formatCount(transfers.unassigned)} more ${transfers.unassigned === 1 ? 'looks' : 'look'} like ${transfers.unassigned === 1 ? 'a payment' : 'payments'} with no account chosen.`}
+                </span>
+              </p>
+            )}
             {nothingToImport && (
               <p id="import-nothing-note" className="mt-1 text-sm font-medium text-gray-900">
                 Every row is being skipped, so there is nothing to import.
               </p>
             )}
             {needsConfirmation && !nothingToImport && (
-              <p id="import-confirm-note" className="mt-1 text-sm font-medium text-gray-900">
-                This statement doesn&apos;t add up. Tick &quot;Import anyway&quot; in the statement summary to import it.
+              <p id="import-confirm-note" className="mt-1 flex items-start gap-1.5 text-sm font-medium text-amber-900">
+                <ToneIcon tone="attention" className="mt-0.5 h-4 w-4" />
+                <span>
+                  Needs your attention: this statement doesn&apos;t add up. Tick &quot;Import anyway&quot; in the statement
+                  summary to import it.
+                </span>
               </p>
             )}
           </div>
@@ -235,6 +303,70 @@ export default function ReviewStep({
           confirmUnreconciled={confirmUnreconciled}
           onConfirmUnreconciledChange={(confirmed) => onConfirmUnreconciledChange?.(confirmed)}
         />
+      )}
+
+      {/* Payments: where they came from, for all of them at once */}
+      {(paymentRows.length > 0 || transfers.linked + transfers.unassigned > 0) && (
+        <section className={card} aria-labelledby="import-payments-heading">
+          <h3 id="import-payments-heading" className="text-base font-semibold text-gray-900">
+            {debt ? 'Payments on this statement' : 'Payments to your cards and loans'}
+          </h3>
+          <p className="mt-1 text-sm text-gray-700">
+            {debt
+              ? 'A payment moves money from another of your accounts, so it is linked to that account as a transfer instead of counting as income.'
+              : 'Money out that paid one of your cards or loans is linked to it as a transfer instead of counting as spending. Choose the card or loan on each row.'}
+          </p>
+          <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {debt && paymentRows.length > 0 && (
+              <div>
+                <label htmlFor="import-paid-from-all" className="mb-1 block text-sm font-medium text-gray-800">
+                  Paid from, for all {formatCount(paymentRows.length)} {paymentRows.length === 1 ? 'payment' : 'payments'}
+                </label>
+                <select
+                  id="import-paid-from-all"
+                  value=""
+                  onChange={(event) => setPaidFromForAll(event.target.value)}
+                  aria-describedby="import-paid-from-all-hint"
+                  className={selectInput}
+                >
+                  <option value="" disabled>
+                    Choose an account...
+                  </option>
+                  {paidFromOptions.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {accountLabel(account)}
+                    </option>
+                  ))}
+                </select>
+                <p id="import-paid-from-all-hint" className="mt-1 text-xs text-gray-600">
+                  {transfer.paidFromDefault
+                    ? 'Each payment starts with the account your last linked payment came from. Each row can still be changed.'
+                    : 'Once you link a payment, the next statement for this account starts with the same account.'}
+                </p>
+              </div>
+            )}
+            <div className="flex min-h-11 items-start gap-3">
+              <input
+                id="import-record-missing"
+                type="checkbox"
+                checked={transfer.recordMissing}
+                onChange={(event) => onRecordMissingChange(event.target.checked)}
+                aria-describedby="import-record-missing-hint"
+                className="mt-0.5 h-5 w-5 shrink-0 accent-sky-700"
+              />
+              <div>
+                <label htmlFor="import-record-missing" className="text-sm font-medium text-gray-900">
+                  Record the payment on the other account if it isn&apos;t there yet
+                </label>
+                <p id="import-record-missing-hint" className="text-xs text-gray-600">
+                  If the other account already has the same amount within 5 days, the two are linked. If not, this adds
+                  it there, so both balances are right. When you later import that account&apos;s statement, its row
+                  links to this one instead of being added twice.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
       )}
 
       {/* Filters */}
@@ -347,6 +479,7 @@ export default function ReviewStep({
                 onChange={changeRow}
                 categories={categories}
                 onCategoryCreated={onCategoryCreated}
+                transfer={transfer}
               />
             ))}
           </ul>
@@ -381,14 +514,33 @@ export default function ReviewStep({
         )}
       </section>
 
+      {/* Rows the layout leaves out on purpose: they move no money */}
+      {skipped.length > 0 && (
+        <StatusNotice>
+          <p className="font-medium">
+            {formatCount(skipped.length)} {skipped.length === 1 ? 'row was' : 'rows were'} left out because{' '}
+            {skipped.length === 1 ? 'it moves' : 'they move'} no money.
+          </p>
+          <ul className="list-disc space-y-0.5 pl-5">
+            {skippedReasons.map(([reason, n]) => (
+              <li key={reason}>
+                {formatCount(n)}: {reason}
+              </li>
+            ))}
+          </ul>
+        </StatusNotice>
+      )}
+
       {/* Rows the parser could not read */}
       {rejected.length > 0 && (
         <section className={card} aria-labelledby="import-rejected-heading">
-          <h3 id="import-rejected-heading" className="text-base font-semibold text-gray-900">
+          <h3 id="import-rejected-heading" className="flex items-center gap-2 text-base font-semibold text-gray-900">
+            <ToneIcon tone="attention" className="h-5 w-5" />
             Rows that couldn&apos;t be read ({formatCount(rejected.length)})
           </h3>
           <p className="mt-1 text-sm text-gray-700">
-            These rows are left out. The number is the row in your file, counting its first line as row 1.
+            Needs your attention: these rows are left out. Check them against your statement and add any that matter by
+            hand. The number is the row in your file, counting its first line as row 1.
           </p>
           <ul id="import-rejected-list" role="list" className="mt-3 divide-y divide-gray-100 text-sm">
             {shownRejected.map((item) => (
