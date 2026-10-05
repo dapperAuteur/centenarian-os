@@ -6,7 +6,7 @@
 > [`/dashboard/weekly-review`](./app/dashboard/weekly-review)) can surface cross-domain patterns no
 > single-vertical tracker can see. That co-location is the product, not an accident of scope.
 
-> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online)), offline-first via service-worker + IndexedDB queue, **217 migrations** to date.
+> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online)), offline-first via service-worker + IndexedDB queue, **218 migrations** to date.
 
 **Actively decomposing.** Modules that a sibling WitUS app already owns are being removed under
 the ecosystem's "one app, one job" rule (see [CLAUDE.md](./CLAUDE.md)) — Media → Stream.WitUS,
@@ -31,7 +31,7 @@ flowchart LR
 
   CentOS[centenarian-os<br/>Next.js 15 · Vercel<br/>14 modules]
   Contractor[contractor-os<br/>Work.WitUS]
-  DB[(Supabase Postgres<br/>217 migrations)]:::shared
+  DB[(Supabase Postgres<br/>218 migrations)]:::shared
 
   CentOS -->|service-role + publishable| DB
   Contractor -->|service-role + publishable| DB
@@ -40,7 +40,7 @@ flowchart LR
 For dev-audience readers:
 
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** — full module map, Mermaid diagrams of the shared-DB boundary, cross-app traffic via the `unified-schedule` edge function, offline-sync layer, repo layout, and stack table.
-- **[MIGRATIONS.md](./MIGRATIONS.md)** — 217 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
+- **[MIGRATIONS.md](./MIGRATIONS.md)** — 218 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
 - **[CLAUDE.md](./CLAUDE.md)** — AI-collaborator instructions doubling as the project conventions doc (style, a11y, the Shared Database rule, branch workflow).
 - **[STYLE_GUIDE.md](./STYLE_GUIDE.md)** — git workflow, branch naming, Conventional Commits, PR rules. Every change starts on a new branch off `main`; `main` is never pushed to directly.
 - **[docs/CentenarianAcademy/](./docs/CentenarianAcademy/)** — course-authoring standards: `CourseAuthoringGuide.md` (craft), `CourseProductionPlaybook.md` (process), `CitationIntegrityGuide.md` (verify every source, never ship a fake citation), and `CourseCreationWithAI.md` (hand to your AI). Per-course recipes: `CourseAuthoringGuide NASM CPT/CES/CNC.md` and `CourseAuthoringGuide BVC.md` (Better Vice Club: audio-first, four-lens episodes; episode-per-module; rotating quizzes + FlashLearn recall loop + season-wide glossary). Courses cite only verified, peer-reviewed sources and ship a teacher evidence ledger.
@@ -312,6 +312,49 @@ in Google and syncing moves the task; deleting it archives the task; removing ac
 myaccount.google.com/permissions shows "Needs reconnecting" on the next page load (allow up to 5
 minutes since the last check); and the daily cron run appears as a new "Last synced" time.
 
+### Optional: RideWitUS integration (server to server)
+
+```env
+RIDE_VENDOR_API_SECRET=           # RideWitUS -> CentOS: vendors read API
+RIDE_RESYNC_SECRET=               # RideWitUS -> CentOS: "Sync now"
+ENVELOPE_BALANCE_EVENTS_URL=      # CentOS -> RideWitUS: its /api/events/envelope-balance URL
+ENVELOPE_BALANCE_EVENTS_SECRET=
+# WITUS_SOURCE_SLUG=centenarianos # optional; X-Witus-Source on outgoing events
+```
+
+Names follow the RideWitUS PRD (§6.5, §6.9, §6.10). Every request in either direction uses the
+WitUS signed-request format: `X-Witus-Source`, `X-Witus-Timestamp`,
+`X-Witus-Signature: sha256=hex(HMAC(secret, "<timestamp>.<body>"))`, a 300-second window and a
+constant-time compare (`lib/events/verify-signature.ts` receives, `lib/events/sign-request.ts`
+sends). A **GET signs its path and query string** exactly as sent (for example
+`/api/v1/ride/vendors?witus_sub=abc&q=shell`), so the subject cannot be edited in flight. Each
+secret is shared with RideWitUS under the same name, and each can be rotated alone.
+
+The user is identified by `witus_sub`, the WitUS sign-in subject, resolved through
+`witus_identities` (`lib/witus/identity.ts`). A subject with no row (the person never signed in to
+CentenarianOS with WitUS) gets `404 unknown_subject`; RideWitUS keeps its request queued until they do.
+
+| Endpoint | What it does |
+|---|---|
+| `GET /api/v1/ride/vendors?witus_sub=&q=&limit=&offset=&since=` | The user's vendors (`user_contacts`, type vendor): id, name, company, category, phone, website, city, locations (no coordinates), and with `since` up to 10 recent `item_prices` each. Paginated with `next_offset`; returns `create_vendor_url`, a link to `/dashboard/contacts/new?type=vendor&name=…`. Read-only: RideWitUS never creates vendors (PRD Q14) |
+| `GET /api/v1/ride/vendors/[id]?witus_sub=&since=` | One vendor; `404 not_found` when it is not this user's |
+| `GET /api/v1/ride/vendors/[id]/prices?witus_sub=&since=&limit=` | Recent prices at that vendor (`currency: null`: prices store no currency yet) |
+| `POST /api/v1/ride/resync` `{ witus_sub, scopes?, since? }` | Re-sends this user's facts through the outbox. `envelopes` works today; `calendar` is a hook for the calendar feed; `matches` is not built. One per user per 5 minutes (429 + `Retry-After`). Answers `202` with a `request_id` and per-scope counts |
+
+Responses use `{ ok: true, data } | { ok: false, error, code }`. Missing secret: `503 not_configured`.
+
+**`envelope.balance` (CentOS -> RideWitUS).** A savings goal linked to a planned trip or an
+equipment item is sent after every goal or allocation write and nightly: goal id, link type
+(`trip` or `equipment`) and the **CentenarianOS** id of the linked record (`link_source:
+"centenarian-os"`), saved (`balance`), target, currency (the funding account's), target date,
+status and `is_active` (false when the goal is archived, deleted or unlinked). There is no vehicle
+link on `savings_goals` yet, so `link_type: "vehicle"` is not sent. Events go through
+`integration_outbox` (migration 217, apply by hand): one row per fact holding the latest payload,
+sent at once, then retried at 1 min, 5 min, 30 min, 2 h and 12 h by later writes and the daily
+cron `/api/cron/integration-outbox` (06:30 UTC, `CRON_SECRET`), then marked failed. A row
+RideWitUS refuses with `unknown_subject` waits without failing. With the URL or secret unset,
+nothing is queued or sent (logged once per instance).
+
 ### Optional: Error Monitoring (Better Stack)
 
 Crash reporting runs through the Sentry SDK, pointed at Better Stack (which speaks
@@ -380,7 +423,7 @@ supabase db push
 # Run migrations in order from supabase/migrations/
 ```
 
-There are 217 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the ContractorOS (Work.WitUS) app — read [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" before adding any.
+There are 218 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the ContractorOS (Work.WitUS) app — read [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" before adding any.
 
 ### Run Development Server
 
@@ -396,7 +439,7 @@ Open [http://localhost:3000](http://localhost:3000)
 npm run test:unit
 ```
 
-Runs the pure-function tests with Node's built-in test runner (`node --test --experimental-strip-types`, Node 22.6+). No database, network or extra dependencies. Covers merchant-name matching and learned vendor categories (`tests/transaction-matching.test.ts`), the stored-secret encryption helper (`tests/unit/crypto-tokens.test.ts`), the Google Calendar client and token refresh (`tests/unit/google-calendar-client.test.ts`, with a fake `fetch`), and the Google Calendar sync helpers: event to task fields, time zones, the sync decision and the 410 fallback (`tests/unit/google-sync.test.ts`).
+Runs the pure-function tests with Node's built-in test runner (`node --test --experimental-strip-types`, Node 22.6+). No database, network or extra dependencies. Covers merchant-name matching and learned vendor categories (`tests/transaction-matching.test.ts`), the stored-secret encryption helper (`tests/unit/crypto-tokens.test.ts`), the Google Calendar client and token refresh (`tests/unit/google-calendar-client.test.ts`, with a fake `fetch`), and the Google Calendar sync helpers: event to task fields, time zones, the sync decision and the 410 fallback (`tests/unit/google-sync.test.ts`), and the RideWitUS integration: signing, identity lookup, vendor scoping, the envelope.balance emitter, outbox delivery and resync (`tests/unit/witus-signing.test.ts`, `ridewitus-vendors.test.ts`, `ridewitus-envelope.test.ts`, with a fake `fetch`).
 
 ## Project Structure
 
