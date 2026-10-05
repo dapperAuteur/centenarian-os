@@ -9,6 +9,10 @@ const __dirname = path.dirname(__filename);
 const nextConfig = {
   reactStrictMode: true,
 
+  // PDF statement import (lib/finance/pdf-import/extract.ts) loads pdfjs-dist in Node routes.
+  // Kept out of the webpack bundle so Node loads the package as published, worker module included.
+  serverExternalPackages: ['pdfjs-dist'],
+
   // PostHog's endpoints use trailing slashes (/e/, /flags/, /s/). Without this, Next
   // issues a 308 to the slashless form before the rewrite runs and ingest breaks.
   // Required by PostHog's documented Next.js proxy setup.

@@ -7,6 +7,7 @@
 // offline and replayed later with a multi-megabyte body.
 
 import type { ImportBatchSummary, PreviewResponse } from '@/lib/finance/csv-import/service';
+import type { InspectResponse, PdfCommitResult, PdfPreviewResponse } from '@/lib/finance/pdf-import/service';
 import type {
   ColumnMapping,
   CommitResult,
@@ -79,6 +80,30 @@ export function previewStatement(payload: StatementPayload): Promise<ApiResult<P
 export function commitStatement(
   payload: StatementPayload & { actions: WireRowAction[] },
 ): Promise<ApiResult<CommitResult>> {
+  return postJson('/api/finance/import', payload);
+}
+
+/** A PDF statement, sent as base64 at preview and again at commit. */
+export interface PdfStatementPayload {
+  account_id: string;
+  pdf_base64: string;
+  file_name: string | null;
+}
+
+/** Reads a statement PDF on the server and finds the account by its last four. Writes nothing. */
+export function inspectPdfStatement(payload: { pdf_base64: string; file_name: string | null }): Promise<ApiResult<InspectResponse>> {
+  return postJson('/api/finance/import/pdf', payload);
+}
+
+/** What importing the PDF statement would do. Writes nothing. */
+export function previewPdfStatement(payload: PdfStatementPayload): Promise<ApiResult<PdfPreviewResponse>> {
+  return postJson('/api/finance/import/preview', payload);
+}
+
+/** Imports the PDF statement with the person's row choices. */
+export function commitPdfStatement(
+  payload: PdfStatementPayload & { actions: WireRowAction[]; confirm_unreconciled: boolean },
+): Promise<ApiResult<PdfCommitResult>> {
   return postJson('/api/finance/import', payload);
 }
 

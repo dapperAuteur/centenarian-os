@@ -133,6 +133,8 @@ export interface CommitInput {
   accountId: string;
   fileName?: string | null;
   preset?: string | null;
+  /** import_batches.source: 'csv_import' (the default) or 'pdf_import'. Transactions keep source 'csv_import' either way. */
+  source?: 'csv_import' | 'pdf_import';
   /** Stored on the batch as given: { mapping, sign, dateOrder, includePending }. */
   mapping?: unknown;
   rows: readonly DecidedRow[];
@@ -210,7 +212,7 @@ export async function commitImport(
     .insert({
       user_id: userId,
       account_id: input.accountId,
-      source: 'csv_import',
+      source: input.source ?? 'csv_import',
       file_name: clip(input.fileName, 255),
       preset: clip(input.preset, 60),
       mapping: input.mapping ?? null,
