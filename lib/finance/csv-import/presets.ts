@@ -138,9 +138,12 @@ export const BANK_PRESETS: readonly BankPreset[] = [
     sign: 'positive_is_expense',
   },
   {
-    // Status,Date,Description,Debit,Credit
+    // Status,Date,Description,Debit,Credit[,Member Name]
+    // VERIFIED against real Citi card exports (AAdvantage and Costco cards),
+    // read locally: charges in Debit as positive numbers, payments and
+    // refunds in Credit as negative numbers, Status "Cleared" or "Pending".
     id: 'citi',
-    label: 'Citi',
+    label: 'Citi credit card',
     headers: ['status', 'date', 'description', 'debit', 'credit'],
     mapping: {
       date: 'date',
@@ -150,6 +153,7 @@ export const BANK_PRESETS: readonly BankPreset[] = [
       status: 'status',
     },
     sign: 'split_columns',
+    accountKind: 'card',
   },
   {
     // A summary block, a blank line, then: Date,Description,Amount,Running Bal.
@@ -184,8 +188,13 @@ export const BANK_PRESETS: readonly BankPreset[] = [
   },
   {
     // Date,Time,TimeZone,Name,Type,Status,Currency,Gross,Fee,Net,From Email Address,
-    // To Email Address,Transaction ID,... PayPal's Type is a label ("General
-    // Payment"), not debit/credit, so it stands in for a blank Name.
+    // To Email Address,Transaction ID,..., Balance Impact, ...
+    // VERIFIED against real PayPal activity exports, read locally. PayPal's
+    // Type is a label ("Express Checkout Payment"), not debit/credit, so it
+    // stands in for a blank Name. Gross is signed: money out is negative.
+    // Many rows move no money and are left out (skipRows): item detail lines
+    // (blank Balance Impact), authorizations, holds and voids (Balance Impact
+    // "Memo"), denied payments, and the other-currency side of a conversion.
     id: 'paypal',
     label: 'PayPal',
     headers: ['date', 'name', 'type', 'status', 'gross', 'transaction_id'],
@@ -198,5 +207,94 @@ export const BANK_PRESETS: readonly BankPreset[] = [
       status: 'status',
     },
     sign: 'negative_is_expense',
+    accountKind: 'wallet',
+    skipRows: [
+      {
+        column: 'balance_impact',
+        pattern: '^$',
+        reason: 'An item line that details another PayPal row. No money moved on its own.',
+      },
+      {
+        column: 'balance_impact',
+        pattern: '^memo$',
+        reason: 'PayPal marks this as a memo (an authorization, a hold or a void). No money moved.',
+      },
+      { column: 'status', pattern: '^denied$', reason: 'PayPal denied this transaction, so no money moved.' },
+      {
+        column: 'type',
+        pattern: 'account hold|reversal of general account hold',
+        reason: 'A temporary hold or its release. No money moved.',
+      },
+      {
+        column: 'currency',
+        pattern: '^(?!usd$).+',
+        reason: 'In another currency. The US dollar side of the conversion is imported instead.',
+      },
+    ],
+  },
+  {
+    // A summary block ("Account Name : ...", "Account Number : ...", "Date
+    // Range : ..."), then:
+    // Transaction Number,Date,Description,Memo,Amount Debit,Amount Credit,Balance,Check Number
+    // and on card and loan exports also Fees,Principal,Interest.
+    // VERIFIED against real Arizona Federal Credit Union exports (checking,
+    // credit card and auto loan), read locally. Debits are negative numbers
+    // in Amount Debit, credits positive in Amount Credit. Description holds
+    // the transaction type ("Withdrawal Debit Card"); the merchant is in Memo.
+    id: 'azfcu',
+    label: 'Arizona Federal Credit Union',
+    headers: ['transaction_number', 'date', 'description', 'memo', 'amount_debit', 'amount_credit', 'balance'],
+    mapping: {
+      date: 'date',
+      description: 'description',
+      detail: 'memo',
+      debit: 'amount_debit',
+      credit: 'amount_credit',
+      bankId: 'transaction_number',
+    },
+    sign: 'split_columns',
+    skipRows: [
+      {
+        column: 'description',
+        pattern: '^(transaction )?comment$',
+        reason: 'A comment line from the credit union. No money moved.',
+      },
+    ],
+  },
+  {
+    // Posting Date,Transaction Date,Amount,Credit Debit Indicator,type,Type Group,Reference,
+    // Instructed Currency,Currency Exchange Rate,Instructed Amount,Description,Category,
+    // Check Serial Number,Card Ending,Rewards Total,Rewards Type
+    // VERIFIED against real Navy Federal checking and savings exports, read
+    // locally. Amount is unsigned; Credit Debit Indicator says which way.
+    id: 'navy_federal',
+    label: 'Navy Federal Credit Union',
+    headers: ['posting_date', 'transaction_date', 'amount', 'credit_debit_indicator', 'description'],
+    mapping: {
+      date: 'transaction_date',
+      postDate: 'posting_date',
+      description: 'description',
+      amount: 'amount',
+      type: 'credit_debit_indicator',
+      category: 'category',
+      bankId: 'reference',
+    },
+    sign: 'type_column',
+    accountKind: 'bank',
+  },
+  {
+    // No header row. Four tab-separated columns: date, amount ("$-25.00"),
+    // description, a type word ("payment"). Best Buy's card site downloads
+    // this as an ".xls" file, but it is plain text.
+    // VERIFIED against a real Best Buy (Citibank) download, read locally:
+    // a payment is negative, so purchases are positive.
+    id: 'best_buy_text',
+    label: 'Best Buy credit card (Citibank) download',
+    headers: ['col_1', 'col_2', 'col_3', 'col_4'],
+    headerless: true,
+    cellPattern: { col_2: '^\\$?[-+]?\\$?[\\d,]+\\.\\d{2}$', col_4: '^[a-z][a-z ]*$' },
+    mapping: { date: 'col_1', amount: 'col_2', description: 'col_3' },
+    sign: 'positive_is_expense',
+    accountKind: 'card',
   },
 ];

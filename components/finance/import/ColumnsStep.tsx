@@ -8,6 +8,15 @@
 
 import { useMemo, useState } from 'react';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import {
+  cardKindFor,
+  cardKindLabel,
+  cardKindSummary,
+  countCardKinds,
+  importExplanation,
+  isDebtAccountType,
+  signOptionText,
+} from '@/lib/finance/csv-import/card-terms';
 import { detectDateOrder, parseDate } from '@/lib/finance/csv-import/parse';
 import type { ColumnRole, DateOrder, SignConvention } from '@/lib/finance/csv-import/types';
 import {
@@ -24,7 +33,9 @@ import {
 } from '@/lib/finance/csv-import/ui-helpers';
 import {
   ErrorNotice,
+  StatusChip,
   StatusNotice,
+  ToneIcon,
   card,
   fieldHint,
   fieldLabel,
@@ -50,28 +61,8 @@ interface ColumnsStepProps {
   online: boolean;
 }
 
-const SIGN_OPTIONS: readonly { value: SignConvention; label: string; hint: string }[] = [
-  {
-    value: 'negative_is_expense',
-    label: 'Purchases are negative numbers',
-    hint: 'One amount column. Money coming in is positive.',
-  },
-  {
-    value: 'positive_is_expense',
-    label: 'Purchases are positive numbers',
-    hint: 'One amount column. Payments and refunds are negative.',
-  },
-  {
-    value: 'split_columns',
-    label: 'Separate debit and credit columns',
-    hint: 'Money out is in one column and money in is in another.',
-  },
-  {
-    value: 'type_column',
-    label: 'A type column says debit or credit',
-    hint: 'Amounts have no sign. Another column says which way the money went.',
-  },
-];
+/** The sign conventions, in the order shown. Their words depend on the account (see signOptionText). */
+const SIGN_VALUES: readonly SignConvention[] = ['negative_is_expense', 'positive_is_expense', 'split_columns', 'type_column'];
 
 const DATE_OPTIONS: readonly { value: DateOrder; label: string; example: string }[] = [
   { value: 'MDY', label: 'Month / Day / Year (MM/DD)', example: 'January 31 is written 01/31/2026' },
@@ -83,6 +74,7 @@ const ROLE_HINTS: Partial<Record<ColumnRole, string>> = {
   postDate: 'Used only for a row that has no date.',
   merchant: 'A clean store name, when the file has one.',
   memo: 'Used as the description when a row has none.',
+  detail: 'Added after the description, and the store name is read from it (for banks that put the store in a memo).',
   debit: 'The column that holds money going out.',
   credit: 'The column that holds money coming in.',
   type: 'The column that says debit or credit for each row.',
@@ -117,6 +109,8 @@ export default function ColumnsStep({
 }: ColumnsStepProps) {
   const [attempted, setAttempted] = useState(false);
   const { table } = file;
+  const accountType = account?.account_type ?? null;
+  const debt = isDebtAccountType(accountType);
 
   // Each column, with a value from the file so a numbered column can be told from its neighbors.
   const columnOptions = useMemo(
@@ -137,10 +131,11 @@ export default function ColumnsStep({
   const sample = useMemo(
     () =>
       problems.length === 0 && settings.dateOrder
-        ? previewMapping(table.rows, settings.mapping, settings.sign, settings.dateOrder)
+        ? previewMapping(table.rows, settings.mapping, settings.sign, settings.dateOrder, undefined, file.detected.preset)
         : null,
-    [problems, settings.mapping, settings.sign, settings.dateOrder, table.rows],
+    [problems, settings.mapping, settings.sign, settings.dateOrder, table.rows, file.detected.preset],
   );
+  const kindCounts = useMemo(() => (sample && debt ? countCardKinds(sample.rows) : null), [sample, debt]);
 
   // Whether the chosen date column settles day-first against month-first.
   const dateHeader = settings.mapping.date;
@@ -237,7 +232,7 @@ export default function ColumnsStep({
         </StatusNotice>
       )}
       {origin.savedIgnored && (
-        <StatusNotice tone="warning">
+        <StatusNotice tone="attention">
           <p>
             The settings saved for this account don&apos;t fit this file&apos;s columns, so the columns were worked
             out again from the file. Check them below.
@@ -254,7 +249,7 @@ export default function ColumnsStep({
           Each list shows this file&apos;s columns with a value from the file.
         </p>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {(['date', 'postDate', 'description', 'merchant', 'memo'] as const).map(roleSelect)}
+          {(['date', 'postDate', 'description', 'merchant', 'memo', 'detail'] as const).map(roleSelect)}
         </div>
       </section>
 
@@ -263,11 +258,15 @@ export default function ColumnsStep({
         <h3 id="import-money-heading" className="text-base font-semibold text-gray-900">
           Amounts
         </h3>
+        <p className="mt-1 text-sm text-gray-700">{importExplanation(accountType)}</p>
         <fieldset className="mt-3">
-          <legend className="text-sm font-medium text-gray-800">How does this file show a purchase?</legend>
+          <legend className="text-sm font-medium text-gray-800">
+            {debt ? 'How does this file show a charge?' : 'How does this file show a purchase?'}
+          </legend>
           <p className={fieldHint}>{SIGN_SOURCE_NOTE[origin.signSource]}</p>
           <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {SIGN_OPTIONS.map((option) => {
+            {SIGN_VALUES.map((value) => {
+              const option = { value, ...signOptionText(value, accountType) };
               const id = `import-sign-${option.value}`;
               const checked = settings.sign === option.value;
               return (
@@ -305,10 +304,7 @@ export default function ColumnsStep({
           Dates
         </h3>
         {dateCheck.ambiguous && (
-          <div
-            role={settings.dateOrder ? 'status' : 'alert'}
-            className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
-          >
+          <StatusNotice tone="attention" alert={!settings.dateOrder} className="mt-3">
             <p className="font-medium">
               {settings.dateOrder
                 ? 'Every date in this file can be read two ways, so check the dates in the sample below.'
@@ -320,7 +316,7 @@ export default function ColumnsStep({
                 {formatIsoDate(exampleAsDMY)} as day/month.
               </p>
             )}
-          </div>
+          </StatusNotice>
         )}
         <fieldset className="mt-3">
           <legend className="text-sm font-medium text-gray-800">
@@ -444,7 +440,7 @@ export default function ColumnsStep({
                 <span>Row</span>
                 <span>Date</span>
                 <span className="text-right">Amount</span>
-                <span>Expense or income</span>
+                <span>{debt ? 'What it is' : 'Expense or income'}</span>
                 <span>Description</span>
               </div>
               <ul role="list" aria-label="The first rows of the file as they will be imported" className="divide-y divide-gray-100">
@@ -458,21 +454,36 @@ export default function ColumnsStep({
                           {formatCents(row.amountCents ?? 0)}
                         </span>
                         <span>
-                          <span
-                            className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                              row.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-50 text-red-800'
-                            }`}
-                          >
-                            {row.type === 'income' ? 'Income' : 'Expense'}
-                          </span>
+                          {/* A direction, not a judgment: neutral, in the account's own words. */}
+                          <StatusChip tone="neutral">
+                            {debt
+                              ? cardKindLabel(
+                                  cardKindFor({ type: row.type ?? 'expense', description: row.description ?? '' }),
+                                  accountType,
+                                )
+                              : row.type === 'income'
+                                ? 'Income'
+                                : 'Expense'}
+                          </StatusChip>
                         </span>
                       </div>
                       <p className="mt-0.5 min-w-0 wrap-break-word text-gray-800 sm:mt-0">{row.description}</p>
                     </li>
+                  ) : row.skipped ? (
+                    <li key={row.rowNumber} className={`py-2 sm:grid sm:items-center ${SAMPLE_GRID}`}>
+                      <span className="text-gray-600">Row {row.rowNumber}</span>
+                      <p className="mt-0.5 flex items-start gap-1.5 text-gray-700 sm:col-span-4 sm:mt-0">
+                        <ToneIcon tone="neutral" className="mt-0.5 h-4 w-4" />
+                        <span>Left out (moves no money): {row.reason}</span>
+                      </p>
+                    </li>
                   ) : (
                     <li key={row.rowNumber} className={`py-2 sm:grid sm:items-center ${SAMPLE_GRID}`}>
                       <span className="text-gray-600">Row {row.rowNumber}</span>
-                      <p className="mt-0.5 text-red-800 sm:col-span-4 sm:mt-0">Can&apos;t be read: {row.reason}</p>
+                      <p className="mt-0.5 flex items-start gap-1.5 text-red-800 sm:col-span-4 sm:mt-0">
+                        <ToneIcon tone="error" className="mt-0.5 h-4 w-4" />
+                        <span>Can&apos;t be read: {row.reason}</span>
+                      </p>
                     </li>
                   ),
                 )}
@@ -481,8 +492,11 @@ export default function ColumnsStep({
             <p role="status" className="mt-3 text-sm text-gray-800">
               With these settings, {sample.readable.toLocaleString('en-US')} of{' '}
               {table.rows.length.toLocaleString('en-US')} rows can be read:{' '}
-              {sample.expenses.toLocaleString('en-US')} as expenses and {sample.income.toLocaleString('en-US')} as
-              income.
+              {kindCounts
+                ? `${cardKindSummary(kindCounts, accountType)}.`
+                : `${sample.expenses.toLocaleString('en-US')} as expenses and ${sample.income.toLocaleString('en-US')} as income.`}
+              {sample.skipped > 0 &&
+                ` ${sample.skipped.toLocaleString('en-US')} ${sample.skipped === 1 ? 'is' : 'are'} left out because ${sample.skipped === 1 ? 'it moves' : 'they move'} no money (holds, authorizations, item lines).`}
               {sample.unreadable > 0 &&
                 ` ${sample.unreadable.toLocaleString('en-US')} can't be read; the next step lists each one with the reason.`}
             </p>

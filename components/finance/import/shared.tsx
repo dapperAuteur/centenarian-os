@@ -4,7 +4,8 @@
 // Pieces every step of the statement import shares: the parsed file as the
 // page holds it, button and field classes, and the message boxes.
 
-import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Info, MinusCircle, XCircle } from 'lucide-react';
+import { TONE_CLASSES, type StatusTone } from '@/lib/finance/csv-import/status-tones';
 import type { MappingGuess, StatementCsv } from '@/lib/finance/csv-import/types';
 import type { StatementPreview } from '@/lib/finance/pdf-import/service';
 
@@ -55,46 +56,94 @@ export const selectInput =
 
 export const card = 'bg-white border border-gray-200 rounded-xl p-4 sm:p-5';
 
+/** The icon for each tone: color is never the only signal. */
+export function ToneIcon({ tone, className = 'w-5 h-5' }: { tone: StatusTone; className?: string }) {
+  const classes = `${className} shrink-0 ${TONE_CLASSES[tone].icon}`;
+  switch (tone) {
+    case 'success':
+      return <CheckCircle2 className={classes} aria-hidden="true" />;
+    case 'attention':
+      return <AlertTriangle className={classes} aria-hidden="true" />;
+    case 'error':
+      return <XCircle className={classes} aria-hidden="true" />;
+    case 'info':
+      return <Info className={classes} aria-hidden="true" />;
+    default:
+      return <MinusCircle className={classes} aria-hidden="true" />;
+  }
+}
+
 /** An error the person needs to act on. Announced as soon as it appears. */
 export function ErrorNotice({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
     <div
       role="alert"
-      className={`flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 ${className}`}
+      className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${TONE_CLASSES.error.box} ${className}`}
     >
-      <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-red-600" aria-hidden="true" />
-      <div className="min-w-0 space-y-1">{children}</div>
+      <ToneIcon tone="error" className="w-5 h-5 mt-0.5" />
+      <div className="min-w-0 space-y-1">
+        <span className="sr-only">{TONE_CLASSES.error.srLabel} </span>
+        {children}
+      </div>
     </div>
   );
 }
 
-/** Progress or a result. Announced politely. */
+/**
+ * A message box on the import's one color scale (lib/finance/csv-import/status-tones.ts):
+ * success (green) only for something done and fine, attention (amber) for
+ * something to check or decide, info (sky) for information. Errors use
+ * ErrorNotice. 'warning' is the old name for 'attention'.
+ *
+ * Announced politely (role=status); pass `alert` for something that blocks
+ * the next step and must be heard at once.
+ */
 export function StatusNotice({
   children,
   tone = 'info',
   className = '',
+  alert = false,
+  id,
 }: {
   children: React.ReactNode;
-  tone?: 'info' | 'success' | 'warning';
+  tone?: Exclude<StatusTone, 'error'> | 'warning';
   className?: string;
+  alert?: boolean;
+  id?: string;
 }) {
-  const tones = {
-    info: 'border-sky-200 bg-sky-50 text-sky-900',
-    success: 'border-green-200 bg-green-50 text-green-900',
-    warning: 'border-amber-200 bg-amber-50 text-amber-900',
-  } as const;
-  const icons = {
-    info: <Info className="w-5 h-5 shrink-0 mt-0.5 text-sky-700" aria-hidden="true" />,
-    success: <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5 text-green-700" aria-hidden="true" />,
-    warning: <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-amber-700" aria-hidden="true" />,
-  } as const;
+  const resolved: StatusTone = tone === 'warning' ? 'attention' : tone;
+  const label = TONE_CLASSES[resolved].srLabel;
   return (
     <div
-      role="status"
-      className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${tones[tone]} ${className}`}
+      id={id}
+      role={alert ? 'alert' : 'status'}
+      className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${TONE_CLASSES[resolved].box} ${className}`}
     >
-      {icons[tone]}
-      <div className="min-w-0 space-y-1">{children}</div>
+      <ToneIcon tone={resolved} className="w-5 h-5 mt-0.5" />
+      <div className="min-w-0 space-y-1">
+        {label && <span className="sr-only">{label} </span>}
+        {children}
+      </div>
     </div>
+  );
+}
+
+/** A small status chip: an icon and words, on the same color scale. */
+export function StatusChip({
+  tone,
+  children,
+  className = '',
+}: {
+  tone: StatusTone;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${TONE_CLASSES[tone].chip} ${className}`}
+    >
+      <ToneIcon tone={tone} className="h-3.5 w-3.5" />
+      {children}
+    </span>
   );
 }

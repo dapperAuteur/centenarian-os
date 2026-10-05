@@ -116,6 +116,15 @@ export interface ParsedStatement {
   statement: StatementFacts;
   /** Plain-language notes about anything the parser was unsure of. */
   warnings: string[];
+  /** Plain-language information that needs no action ("2 pending transactions were left out"). */
+  notes?: string[];
+  /**
+   * `statement` (the default): a periodic statement with a summary to check.
+   * `activity`: a transaction list printed from a card website. It has no
+   * previous or new balance, so there is nothing to reconcile, and no
+   * statement summary is saved for it.
+   */
+  documentKind?: 'statement' | 'activity';
 }
 
 /** An issuer's statement layout. */
@@ -143,5 +152,10 @@ export interface Reconciliation {
   ok: boolean;
   /** False when the statement lacked the numbers to check its balance at all. */
   checked: boolean;
+  /**
+   * False for a transaction list (documentKind 'activity'), which has no
+   * totals to check: `ok` is then false but nothing needs confirming.
+   */
+  applicable: boolean;
   differences: ReconciliationDifference[];
 }

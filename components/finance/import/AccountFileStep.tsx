@@ -11,7 +11,10 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Download, FileText, Loader2, X } from 'lucide-react';
+import { isDebtAccountType } from '@/lib/finance/csv-import/card-terms';
 import { detectMapping, parseStatementCsv } from '@/lib/finance/csv-import/parse';
+import { BANK_PRESETS } from '@/lib/finance/csv-import/presets';
+import { toneForCsvDetection, toneForPdfDetection } from '@/lib/finance/csv-import/status-tones';
 import type { StatementCsv } from '@/lib/finance/csv-import/types';
 import {
   TOO_LARGE_TEXT,
@@ -24,7 +27,15 @@ import {
   sortAccountsForPicker,
   type ImportAccount,
 } from '@/lib/finance/csv-import/ui-helpers';
-import { MAX_PDF_FILE_BYTES, PDF_TOO_LARGE_TEXT, fileToBase64, isPdfFile } from '@/lib/finance/pdf-import/client';
+import {
+  MAX_PDF_FILE_BYTES,
+  PDF_TOO_LARGE_TEXT,
+  SPREADSHEET_NOT_SUPPORTED_TEXT,
+  fileToBase64,
+  isPdfFile,
+  isSpreadsheetFile,
+  sniffSpreadsheet,
+} from '@/lib/finance/pdf-import/client';
 import { inspectPdfStatement } from './api';
 import {
   ErrorNotice,
@@ -69,7 +80,12 @@ function pdfHeadline(pdf: PdfFile): string {
   const { statement } = pdf;
   const { start, end } = statement.period;
   const period = start && end ? `, ${formatIsoDate(start)} to ${formatIsoDate(end)}` : end ? `, closing ${formatIsoDate(end)}` : '';
-  const what = statement.issuer === 'generic' ? 'A statement in a layout CentenarianOS does not know yet' : `${statement.issuerLabel} statement`;
+  const what =
+    statement.issuer === 'generic'
+      ? 'A statement in a layout CentenarianOS does not know yet'
+      : statement.documentKind === 'activity'
+        ? `${statement.issuerLabel}, a list of transactions`
+        : `${statement.issuerLabel} statement`;
   return `${what}${period}.`;
 }
 
@@ -165,6 +181,18 @@ export default function AccountFileStep({
     }
     setReading(true);
     try {
+      // Some card sites (Best Buy) download plain text with an ".xls" name; a real
+      // Excel workbook can't be read here, so say what to use instead.
+      if (isSpreadsheetFile(chosen)) {
+        const bytes = new Uint8Array(await chosen.arrayBuffer());
+        if (sniffSpreadsheet(bytes) === 'binary') {
+          setFileError(SPREADSHEET_NOT_SUPPORTED_TEXT);
+          onFileRead(null);
+          return;
+        }
+        loadText(new TextDecoder().decode(bytes), chosen.name);
+        return;
+      }
       loadText(await chosen.text(), chosen.name);
     } catch {
       setFileError("The file couldn't be opened. Choose it again.");
@@ -229,6 +257,33 @@ export default function AccountFileStep({
   }
 
   const detection = file ? describeDetection(file.detected, file.table) : null;
+  const chosenAccount = accounts.find((account) => account.id === accountId) ?? null;
+  // A layout that only one kind of account uses, against the account chosen.
+  const presetKind = file ? BANK_PRESETS.find((preset) => preset.id === file.detected.preset)?.accountKind : undefined;
+  const kindMismatch =
+    chosenAccount && presetKind
+      ? presetKind === 'card' && !isDebtAccountType(chosenAccount.account_type)
+        ? 'This looks like a credit card export, but the account you chose is not a credit card. Check the account above.'
+        : presetKind === 'bank' && isDebtAccountType(chosenAccount.account_type)
+          ? 'This looks like a bank account export, but the account you chose is a card or loan. Check the account above.'
+          : null
+      : null;
+  const csvTone = file
+    ? toneForCsvDetection({
+        confidence: file.detected.confidence,
+        warnings: file.table.warnings.length + (kindMismatch ? 1 : 0),
+      })
+    : 'info';
+  const pdfTone = pdfFile
+    ? toneForPdfDetection({
+        confidence: pdfFile.statement.confidence,
+        reconciliationOk: pdfFile.statement.reconciliation.ok,
+        reconciliationApplicable: pdfFile.statement.reconciliation.applicable !== false,
+        warnings: pdfFile.statement.warnings.length,
+        accountMatches: pdfFile.matchingAccountIds.length,
+        hasLastFour: Boolean(pdfFile.statement.accountLastFour),
+      })
+    : 'info';
   const pdfLastFour = pdfFile?.statement.accountLastFour ?? null;
   const matchedAccounts = pdfFile ? accounts.filter((account) => pdfFile.matchingAccountIds.includes(account.id)) : [];
 
@@ -326,7 +381,7 @@ export default function AccountFileStep({
               id="import-file"
               ref={fileInputRef}
               type="file"
-              accept=".csv,text/csv,.pdf,application/pdf"
+              accept=".csv,text/csv,.txt,.tsv,.pdf,application/pdf,.xls,.xlsx"
               onChange={handleFileChosen}
               aria-invalid={fileMissing || Boolean(fileError)}
               aria-describedby="import-file-messages"
@@ -334,7 +389,9 @@ export default function AccountFileStep({
             />
             <p className={fieldHint}>
               A CSV is read on this device first. A PDF is read by CentenarianOS itself and never sent to any other
-              service; only text PDFs work, not scans. Nothing is saved until you confirm in the review step.
+              service; only text PDFs work, not scans. Excel workbooks can&apos;t be read: use the PDF statement, or
+              save the sheet as CSV (some card sites&apos; &quot;.xls&quot; downloads are really text and do work).
+              Nothing is saved until you confirm in the review step.
             </p>
           </div>
 
@@ -378,7 +435,7 @@ export default function AccountFileStep({
           )}
 
           {pdfFile && (
-            <StatusNotice tone={pdfFile.statement.confidence === 'high' ? 'success' : 'warning'}>
+            <StatusNotice tone={pdfTone === 'error' ? 'attention' : pdfTone}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="flex items-center gap-2 font-medium">
                   <FileText className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -409,22 +466,29 @@ export default function AccountFileStep({
                 {pdfLastFour && matchedAccounts.length === 0 && (
                   <li>Account ending {pdfLastFour}: none of your accounts ends in those digits, so choose it above.</li>
                 )}
-                {!pdfFile.statement.reconciliation.ok && (
+                {pdfFile.statement.reconciliation.applicable === false ? (
+                  <li>A list printed from the card&apos;s website, not a statement: there are no totals to check.</li>
+                ) : pdfFile.statement.reconciliation.ok ? (
+                  <li>Adds up: the totals match the rows found.</li>
+                ) : (
                   <li>
                     {pdfFile.statement.reconciliation.checked
-                      ? "The statement's totals don't add up. The review step shows the differences."
-                      : "The statement's totals couldn't be checked. The review step says why."}
+                      ? "Needs your attention: the statement's totals don't add up. The review step shows the differences."
+                      : "Needs your attention: the statement's totals couldn't be checked. The review step says why."}
                   </li>
                 )}
                 {pdfFile.statement.warnings.map((warning) => (
                   <li key={warning}>{warning}</li>
+                ))}
+                {(pdfFile.statement.notes ?? []).map((note) => (
+                  <li key={note}>{note}</li>
                 ))}
               </ul>
             </StatusNotice>
           )}
 
           {file && detection && (
-            <StatusNotice tone="success">
+            <StatusNotice tone={csvTone === 'error' ? 'attention' : csvTone}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="flex items-center gap-2 font-medium">
                   <FileText className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -433,7 +497,7 @@ export default function AccountFileStep({
                 <button
                   type="button"
                   onClick={handleRemoveFile}
-                  className="min-h-11 inline-flex items-center gap-1 rounded-lg px-3 text-sm font-medium text-green-900 underline underline-offset-2 hover:bg-green-100"
+                  className="min-h-11 inline-flex items-center gap-1 rounded-lg px-3 text-sm font-medium underline underline-offset-2 hover:bg-white/60"
                 >
                   <X className="h-4 w-4" aria-hidden="true" />
                   Remove
@@ -445,10 +509,11 @@ export default function AccountFileStep({
                   <li key={detail}>{detail}</li>
                 ))}
               </ul>
-              {file.table.warnings.length > 0 && (
-                <div className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
-                  <p className="font-medium">Check these before you continue:</p>
+              {(file.table.warnings.length > 0 || kindMismatch) && (
+                <div className="mt-2">
+                  <p className="font-medium">Needs your attention. Check these before you continue:</p>
                   <ul className="list-disc space-y-0.5 pl-5">
+                    {kindMismatch && <li>{kindMismatch}</li>}
                     {file.table.warnings.map((warning) => (
                       <li key={warning}>{warning}</li>
                     ))}
