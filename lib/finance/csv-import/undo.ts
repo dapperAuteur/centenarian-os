@@ -13,14 +13,18 @@
 //     external_id and import_batch_id are cleared. Its account stays too, even
 //     when the import filled it in: the statement showed which account it was.
 // The statement summary a PDF import saved (account_statements, migration 209)
-// is deleted too. Then the batch is marked 'undone'. Undoing an undone batch
-// changes nothing.
+// is deleted too. Payments the import linked as transfers are taken apart:
+// for every deleted row that was one side of a transfer, the other side the
+// import recorded (source 'transfer', never linked to a statement row since)
+// is deleted, and any other row of that transfer is just unlinked. Then the
+// batch is marked 'undone'. Undoing an undone batch changes nothing.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ID_CHUNK, chunk, readAllPages } from './db.ts';
 import type { PageResult } from './db.ts';
 import { ImportError, dbFailure } from './errors.ts';
 import { deleteBatchStatements } from '../pdf-import/statements.ts';
+import { missingTransferColumn, withOptionalKind } from '../transfers/schema.ts';
 import type { KeptTransaction, UndoResult } from './types.ts';
 
 /** How far updated_at may sit from created_at on a row nobody has edited. */
@@ -94,6 +98,9 @@ export async function undoBatch(db: SupabaseClient, userId: string, batchId: str
       .range(from, to) as unknown as PageResult<BatchTransaction>,
   );
 
+  // Which rows are one side of a transfer, read before anything is deleted.
+  const groupOf = await readTransferGroups(db, userId, batchId);
+
   const toDelete: BatchTransaction[] = [];
   const toUnlink: BatchTransaction[] = [];
   const kept: BatchTransaction[] = [];
@@ -105,6 +112,7 @@ export async function undoBatch(db: SupabaseClient, userId: string, batchId: str
   }
 
   let deleted = 0;
+  const deletedIds = new Set<string>();
   for (const group of chunk(toDelete, ID_CHUNK)) {
     // The untouched test again, inside the delete itself: a row edited after
     // the read above has a newer updated_at and is left alone.
@@ -122,6 +130,7 @@ export async function undoBatch(db: SupabaseClient, userId: string, batchId: str
     if (error) throw dbFailure(error, 'remove the imported transactions');
     const gone = new Set(((data ?? []) as { id: string }[]).map((row) => row.id));
     deleted += gone.size;
+    for (const id of gone) deletedIds.add(id);
     for (const row of group) if (!gone.has(row.id)) kept.push(row);
   }
 
@@ -138,6 +147,12 @@ export async function undoBatch(db: SupabaseClient, userId: string, batchId: str
     unlinked += (data ?? []).length;
   }
 
+  const transfersUndone = await dissolveTransfers(
+    db,
+    userId,
+    [...deletedIds].map((id) => groupOf.get(id)).filter((group): group is string => Boolean(group)),
+  );
+
   await deleteBatchStatements(db, userId, batchId);
 
   const marked = await db
@@ -148,5 +163,53 @@ export async function undoBatch(db: SupabaseClient, userId: string, batchId: str
   if (marked.error) throw dbFailure(marked.error, 'mark the import as undone');
 
   kept.sort((a, b) => (a.transaction_date < b.transaction_date ? -1 : a.transaction_date > b.transaction_date ? 1 : 0));
-  return { batchId, alreadyUndone: false, deleted, unlinked, kept: kept.map(toKept) };
+  return { batchId, alreadyUndone: false, deleted, unlinked, kept: kept.map(toKept), transfersUndone };
+}
+
+/** Row id -> transfer group, for the batch's rows that are one side of a transfer. Empty before migration 202. */
+async function readTransferGroups(db: SupabaseClient, userId: string, batchId: string): Promise<Map<string, string>> {
+  const { data, error } = await db
+    .from('financial_transactions')
+    .select('id, transfer_group_id')
+    .eq('user_id', userId)
+    .eq('import_batch_id', batchId)
+    .not('transfer_group_id', 'is', null);
+  if (error) {
+    if (missingTransferColumn(error)) return new Map();
+    throw dbFailure(error, 'read the transfers this import linked');
+  }
+  const groups = new Map<string, string>();
+  for (const row of (data ?? []) as { id: string; transfer_group_id: string | null }[]) {
+    if (row.transfer_group_id) groups.set(row.id, row.transfer_group_id);
+  }
+  return groups;
+}
+
+/**
+ * Takes apart the transfers whose imported side was just deleted: deletes the
+ * other side when it is an entry a transfer wrote and no statement row has
+ * claimed (source 'transfer', no external id), and unlinks anything else left
+ * in the group. Returns how many transfers were taken apart.
+ */
+async function dissolveTransfers(db: SupabaseClient, userId: string, groupIds: readonly string[]): Promise<number> {
+  const groups = [...new Set(groupIds)];
+  for (const group of chunk(groups, ID_CHUNK)) {
+    const removed = await db
+      .from('financial_transactions')
+      .delete()
+      .eq('user_id', userId)
+      .eq('source', 'transfer')
+      .is('external_id', null)
+      .in('transfer_group_id', group);
+    if (removed.error) throw dbFailure(removed.error, 'remove the payments this import recorded');
+    const { error } = await withOptionalKind((kindColumnExists) =>
+      db
+        .from('financial_transactions')
+        .update(kindColumnExists ? { transfer_group_id: null, transfer_kind: null } : { transfer_group_id: null })
+        .eq('user_id', userId)
+        .in('transfer_group_id', group),
+    );
+    if (error) throw dbFailure(error, 'unlink the transfers this import made');
+  }
+  return groups.length;
 }

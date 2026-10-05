@@ -22,6 +22,7 @@ import type { LearnedCategoryIndex } from '../transaction-matching.ts';
 import { chunk } from './db.ts';
 import { ImportError, dbFailure, isMissingSchemaError, isUniqueViolation } from './errors.ts';
 import { LINKABLE_SOURCES, allowedActions, loadCategories, suggestCategory } from './plan.ts';
+import { linkStatementTransfers, type LinkAccount, type TransferIntent } from './transfer-links.ts';
 import type {
   CommitResult,
   DecidedRow,
@@ -82,6 +83,10 @@ export function resolveActions(
     if (requested.categoryId === null || typeof requested.categoryId === 'string') {
       decided.categoryOverride = requested.categoryId;
     }
+    if (typeof requested.transferAccountId === 'string' && requested.transferAccountId) {
+      decided.transferAccountId = requested.transferAccountId;
+      decided.recordMissing = requested.recordMissing !== false;
+    }
     return decided;
   });
 }
@@ -131,6 +136,11 @@ export function toInsertPayload(
 export interface CommitInput {
   /** The account the statement belongs to. The caller has checked it is the user's. */
   accountId: string;
+  /**
+   * The account's details, needed to link payments as transfers (rows with a
+   * transferAccountId). Without it no row is linked.
+   */
+  account?: LinkAccount;
   fileName?: string | null;
   preset?: string | null;
   /** import_batches.source: 'csv_import' (the default) or 'pdf_import'. Transactions keep source 'csv_import' either way. */
@@ -237,9 +247,11 @@ export async function commitImport(
         .update(values)
         .eq('id', entry.id)
         .eq('user_id', userId)
-        // Only while nobody else has linked it, and only an entry a person made.
+        // Only while nobody else has linked it, and only the kind of entry the
+        // plan matched: one a person made, or a payment another import
+        // recorded on this account.
         .is('external_id', null)
-        .in('source', [...LINKABLE_SOURCES]);
+        .in('source', entry.source === 'transfer' ? ['transfer'] : [...LINKABLE_SOURCES]);
       update = entry.account_id ? update.eq('account_id', input.accountId) : update.is('account_id', null);
       const { data, error } = await update.select('id');
 
@@ -288,5 +300,32 @@ export async function commitImport(
   }
 
   rejected.sort((a, b) => a.row - b.row);
-  return { batchId, inserted, linked, duplicates, invalid: rejected.length, skipped, rejected };
+  const result: CommitResult = { batchId, inserted, linked, duplicates, invalid: rejected.length, skipped, rejected };
+
+  // Payments the person tied to another account become transfers (see transfer-links.ts).
+  const intents = transferIntents([...toLink, ...toInsert]);
+  if (intents.length > 0 && input.account) {
+    result.transfers = await linkStatementTransfers(db, userId, input.account, intents);
+  }
+  return result;
+}
+
+/** The rows that were saved (inserted or linked) and carry a transfer account, as link requests. */
+export function transferIntents(rows: readonly DecidedRow[]): TransferIntent[] {
+  const intents: TransferIntent[] = [];
+  const seen = new Set<number>();
+  for (const row of rows) {
+    if (!row.transferAccountId || !row.externalId || seen.has(row.rowNumber)) continue;
+    seen.add(row.rowNumber);
+    intents.push({
+      rowNumber: row.rowNumber,
+      externalId: row.externalId,
+      type: row.typeOverride ?? row.type,
+      amountCents: row.amountCents,
+      date: row.date,
+      otherAccountId: row.transferAccountId,
+      recordMissing: row.recordMissing !== false,
+    });
+  }
+  return intents;
 }

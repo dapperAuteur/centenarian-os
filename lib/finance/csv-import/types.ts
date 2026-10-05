@@ -232,6 +232,11 @@ export interface MatchSummary {
   description: string | null;
   /** Null when the entry has no account yet; linking fills it in. */
   account_id: string | null;
+  /**
+   * 'transfer' when the entry is the payment another import recorded on this
+   * account ("Payment to <card>"): linking it completes that transfer.
+   */
+  source?: string | null;
 }
 
 /** A statement row with the import's verdict on it. */
@@ -284,6 +289,14 @@ export interface RowAction {
   type?: TransactionType;
   /** A budget category id, or null for "no category". Leave out to use the suggestion. */
   categoryId?: string | null;
+  /**
+   * The person's other account on the far side of a payment: the account a
+   * card or loan payment was paid from, or the card or loan a bank payment
+   * paid. The row is linked to it as a transfer at commit.
+   */
+  transferAccountId?: string | null;
+  /** When that account has no matching row, record the other side there (default true). */
+  recordMissing?: boolean;
 }
 
 /** A planned row plus the decision commit acts on. */
@@ -292,6 +305,20 @@ export interface DecidedRow extends PlannedRow {
   typeOverride?: TransactionType;
   /** Undefined means "no override": the learned category, then the file's category name, apply. */
   categoryOverride?: string | null;
+  transferAccountId?: string | null;
+  recordMissing?: boolean;
+}
+
+/** What linking payments as transfers did at commit. */
+export interface TransferLinkResult {
+  /** Linked to the matching row already on the other account. */
+  linked: number;
+  /** The other side was missing, so it was recorded on the other account. */
+  recorded: number;
+  /** No matching row, and recording it was turned off: left as an ordinary row. */
+  unmatched: number;
+  /** Rows that could not be linked, with the reason. The rows themselves were still imported. */
+  failed: RejectedRow[];
 }
 
 export interface CommitResult {
@@ -306,6 +333,8 @@ export interface CommitResult {
   skipped: number;
   /** Every row counted in `invalid`, with the reason. */
   rejected: RejectedRow[];
+  /** Payments linked as transfers (present when any row asked for one). */
+  transfers?: TransferLinkResult;
 }
 
 /** A transaction an undo left in place because it was edited after the import. */
@@ -327,4 +356,6 @@ export interface UndoResult {
   unlinked: number;
   /** Imported rows kept because they were edited after the import. */
   kept: KeptTransaction[];
+  /** Payments the import had linked as transfers that were taken apart. */
+  transfersUndone?: number;
 }

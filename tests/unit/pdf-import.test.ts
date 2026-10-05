@@ -294,7 +294,7 @@ test('citi-best-buy: a statement with only fees and interest (no transactions bl
 test('reconcile: the synthetic statement adds up', () => {
   const parsed = parseCitiBestBuy(syntheticCiti());
   assert.equal(expectedNewBalance(parsed.statement), 102500);
-  assert.deepEqual(reconcileStatement(parsed), { ok: true, checked: true, differences: [] });
+  assert.deepEqual(reconcileStatement(parsed), { ok: true, checked: true, applicable: true, differences: [] });
 });
 
 test('reconcile: a wrong new balance and a missing row are each reported', () => {

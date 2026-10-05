@@ -16,7 +16,14 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { MAX_IMPORT_ROWS, commitImport, resolveActions, tooManyRowsMessage } from '../csv-import/commit.ts';
 import { ImportError, dbFailure } from '../csv-import/errors.ts';
 import { planImport } from '../csv-import/plan.ts';
-import { isUuid, loadOwnedAccount, readActions, type OwnedAccount, type PreviewResponse } from '../csv-import/service.ts';
+import {
+  isUuid,
+  loadOwnedAccount,
+  readActions,
+  suggestPaidFrom,
+  type OwnedAccount,
+  type PreviewResponse,
+} from '../csv-import/service.ts';
 import type { CommitResult, RowAction } from '../csv-import/types.ts';
 import { MAX_PDF_BYTES, extractPdfLines } from './extract.ts';
 import { parseStatementLines } from './issuers/index.ts';
@@ -175,7 +182,10 @@ export async function previewPdfImport(db: SupabaseClient, userId: string, body:
   const request = parsePdfRequest(body, { requireAccount: true });
   const account = await loadOwnedAccount(db, userId, request.accountId as string);
   const read = await readPdfStatement(request.bytes);
-  const plan = await planImport(db, userId, account.id, read.parsed.rows);
+  const [plan, paidFromAccountId] = await Promise.all([
+    planImport(db, userId, account.id, read.parsed.rows),
+    suggestPaidFrom(db, userId, account),
+  ]);
   const statement = toStatementPreview(read);
   return {
     account,
@@ -201,7 +211,9 @@ export async function previewPdfImport(db: SupabaseClient, userId: string, body:
     },
     rows: plan.rows,
     rejected: [],
+    skipped: [],
     totals: { ...plan.totals, rejected: 0 },
+    paidFromAccountId,
     statement,
     accountMatchesStatement: accountMatches(account, read.parsed),
   };
@@ -292,6 +304,7 @@ export async function runPdfImport(db: SupabaseClient, userId: string, body: unk
   const plan = await planImport(db, userId, account.id, read.parsed.rows);
   const result = await commitImport(db, userId, {
     accountId: account.id,
+    account,
     fileName: request.fileName,
     preset: `pdf:${read.parsed.issuer}`,
     source: 'pdf_import',

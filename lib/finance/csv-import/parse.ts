@@ -794,7 +794,8 @@ const TYPE_PREFIX =
 /** The name to read a vendor from: a detail that names someone, else the description minus its type words. */
 function vendorSource(description: string, detail: string): string {
   if (detail && !/^(?:type:|to |from |transfer )/i.test(detail)) return detail;
-  return description.replace(TYPE_PREFIX, '').trim() || description;
+  // "Deposit Dividend 0.100%" -> "Dividend": a rate is not part of a name.
+  return description.replace(TYPE_PREFIX, '').replace(/\s+\d+(?:\.\d+)?%$/, '').trim() || description;
 }
 
 // ── Preset skip rules ─────────────────────────────────────────────────────

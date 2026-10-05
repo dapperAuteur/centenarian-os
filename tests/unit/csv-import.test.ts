@@ -14,6 +14,7 @@ import {
   BANK_PRESETS,
   applyMapping,
   assignExternalIds,
+  cleanDetail,
   detectDateOrder,
   detectMapping,
   normalizeType,
@@ -32,7 +33,7 @@ const UNICODE_MINUS = String.fromCharCode(0x2212);
 function importWithGuess(text: string) {
   const parsed = parseStatementCsv(text);
   const guess = detectMapping(parsed.headers, parsed.rows);
-  const result = applyMapping(parsed.rows, guess.mapping, guess.sign, guess.dateOrder);
+  const result = applyMapping(parsed.rows, guess.mapping, guess.sign, guess.dateOrder, { preset: guess.preset });
   return { parsed, guess, result };
 }
 
@@ -142,6 +143,45 @@ const PAYPAL = [
   '"01/13/2026","10:15:00","PST","Larkspur Games","Express Checkout Payment","Completed","USD","-19.99","0.00","-19.99","pat@example.com","sales@example.com","1AB23456CD789012E","80.01"',
   '"01/15/2026","09:00:00","PST","","General Withdrawal","Pending","USD","-50.00","0.00","-50.00","","","9ZY87654XW321098V","30.01"',
 ].join('\n');
+
+// A PayPal activity export with the rows that move no money: an item detail
+// line (blank Balance Impact), an authorization ("Memo"), a denied payment,
+// a hold, and the euro side of a currency conversion.
+const PAYPAL_ACTIVITY = [
+  '"Date","Time","TimeZone","Name","Type","Status","Currency","Gross","Fee","Net","Transaction ID","Balance Impact"',
+  '"02/01/2026","10:00:00","PST","Larkspur Games","Express Checkout Payment","Completed","USD","-19.99","0.00","-19.99","1AAA","Debit"',
+  '"02/01/2026","10:00:00","PST","Larkspur Games","Shopping Cart Item","Completed","USD","19.99","0.00","19.99","1AAB",""',
+  '"02/01/2026","10:00:00","PST","","Bank Deposit to PP Account","Completed","USD","19.99","0.00","19.99","1AAC","Credit"',
+  '"02/02/2026","11:00:00","PST","Fernwood Supply","General Authorization","Pending","USD","-40.00","0.00","-40.00","1AAD","Memo"',
+  '"02/03/2026","12:00:00","PST","Quill Books","PreApproved Payment Bill User Payment","Denied","USD","-12.00","0.00","-12.00","1AAE","Debit"',
+  '"02/04/2026","13:00:00","PST","","Account Hold for Open Authorization","Completed","USD","-5.00","0.00","-5.00","1AAF","Debit"',
+  '"02/05/2026","14:00:00","PST","Atelier Nord","General Currency Conversion","Completed","EUR","-10.00","0.00","-10.00","1AAG","Debit"',
+  '"02/05/2026","14:00:00","PST","Atelier Nord","General Currency Conversion","Completed","USD","-11.20","0.00","-11.20","1AAH","Debit"',
+  '"02/06/2026","15:00:00","PST","Quill Books","Payment Refund","Completed","USD","8.00","0.00","8.00","1AAI","Credit"',
+].join('\n');
+
+// Arizona Federal Credit Union: a summary block, then the table. The merchant
+// is in Memo, with the card's own date and a reference after it.
+const AZFCU = [
+  'Account Name : SAMPLE CHECKING',
+  'Account Number : 00000000S0001',
+  'Date Range : 01/01/2026-01/31/2026',
+  'Transaction Number,Date,Description,Memo,Amount Debit,Amount Credit,Balance,Check Number',
+  '"000000101",01/20/2026,"Withdrawal Debit Card ","BLUE HERON CAFE TEMPE AZ Date 01/19/26 12345678901234567890 5814",-4.75,,995.25,',
+  '"000000102",01/21/2026,"Withdrawal SAMPLE CARD ONLINE ","TYPE: PAYMENT ID: 0000 CO: SAMPLE CARD ONLINE",-120.00,,875.25,',
+  '"000000103",01/22/2026,"Deposit Dividend 0.100% ","%% APY Earned 0.10% %% Avg Daily Bal 900.00",,0.11,875.36,',
+  '"000000104",01/23/2026,"COMMENT","",,,875.36,',
+].join('\n');
+
+// Navy Federal: an unsigned amount and a Credit Debit Indicator column.
+const NAVY_FEDERAL = [
+  BOM + 'Posting Date,Transaction Date,Amount,Credit Debit Indicator,type,Type Group,Reference,Instructed Currency,Currency Exchange Rate,Instructed Amount,Description,Category,Check Serial Number,Card Ending,Rewards Total,Rewards Type',
+  '01/14/2026,01/13/2026,4.75,Debit,POS,POS,,,,,Blue Heron Cafe,Dining Out,,,,',
+  '01/15/2026,01/15/2026,1500.00,Credit,ACH Credit,ACH Credit,,,,,Acme Payroll,Income,,,,',
+].join('\n');
+
+// Best Buy's ".xls" download: tab-separated text, no header.
+const BEST_BUY_TEXT = ['01/05/2026\t$-25.00\tONLINE PAYMENT           SAMPLETOWN    IL\tpayment', '01/07/2026\t$89.99\tBEST BUY 00123\tpurchase'].join('\n');
 
 // ── normalizeHeader ───────────────────────────────────────────────────────
 
@@ -741,10 +781,89 @@ test('PayPal: transaction IDs, a pending row, and the type standing in for a bla
   );
 });
 
+test('PayPal activity: rows that move no money are left out with a reason, not rejected', () => {
+  const { guess, result } = importWithGuess(PAYPAL_ACTIVITY);
+  assert.equal(guess.preset, 'paypal');
+  assert.deepEqual(
+    result.rows.map((r) => [r.rowNumber, r.type, r.amountCents]),
+    [
+      [2, 'expense', 1999],
+      [4, 'income', 1999],
+      [9, 'expense', 1120],
+      [10, 'income', 800],
+    ],
+  );
+  assert.deepEqual(result.rejected, []);
+  assert.deepEqual(result.skipped.map((r) => r.row), [3, 5, 6, 7, 8]);
+  assert.match(result.skipped[0].reason, /item line/);
+  assert.match(result.skipped[1].reason, /memo/i);
+  assert.match(result.skipped[2].reason, /denied/);
+  assert.match(result.skipped[3].reason, /hold/);
+  assert.match(result.skipped[4].reason, /another currency/);
+  // Funding from the bank reads as a transfer, from PayPal's own Type wording.
+  assert.ok(result.rows[1].hints.includes('transfer'));
+});
+
+test('Arizona Federal: the memo is kept as detail, the vendor comes from it, comments are left out', () => {
+  const { guess, result } = importWithGuess(AZFCU);
+  assert.equal(guess.preset, 'azfcu');
+  assert.equal(guess.sign, 'split_columns');
+  assert.equal(guess.mapping.detail, 'memo');
+  assert.deepEqual(summarize(result.rows), [
+    [5, '2026-01-20', 'expense', 475, 'Blue Heron Cafe Tempe Az'],
+    [6, '2026-01-21', 'expense', 12000, 'Sample Card Online'],
+    [7, '2026-01-22', 'income', 11, 'Dividend'],
+  ]);
+  // The card date, the long reference and the %% note are cut from the description.
+  assert.equal(result.rows[0].description, 'Withdrawal Debit Card - BLUE HERON CAFE TEMPE AZ');
+  assert.equal(result.rows[2].description, 'Deposit Dividend 0.100%');
+  assert.equal(result.rows[0].bankId, '000000101');
+  assert.deepEqual(result.skipped.map((r) => r.row), [8]);
+});
+
+test('cleanDetail: collapses lines, cuts the card date, references and %% notes', () => {
+  assert.equal(cleanDetail('SUNNY BAGELS\nPHOENIX AZ Date 01/02/26 99999999999999 5814'), 'SUNNY BAGELS PHOENIX AZ');
+  assert.equal(cleanDetail('%% APY Earned 0.10%'), '');
+  assert.equal(cleanDetail(''), '');
+  assert.equal(cleanDetail('x'.repeat(100)).length, 80);
+});
+
+test('Navy Federal: the Credit Debit Indicator decides the direction', () => {
+  const { guess, result } = importWithGuess(NAVY_FEDERAL);
+  assert.equal(guess.preset, 'navy_federal');
+  assert.equal(guess.sign, 'type_column');
+  assert.deepEqual(summarize(result.rows), [
+    [2, '2026-01-13', 'expense', 475, 'Blue Heron Cafe'],
+    [3, '2026-01-15', 'income', 150000, 'Acme Payroll'],
+  ]);
+});
+
+test('Best Buy text download: headerless, tab-separated, purchases positive', () => {
+  const { guess, result } = importWithGuess(BEST_BUY_TEXT);
+  assert.equal(guess.preset, 'best_buy_text');
+  assert.equal(guess.sign, 'positive_is_expense');
+  assert.deepEqual(
+    result.rows.map((r) => [r.type, r.amountCents]),
+    [
+      ['income', 2500],
+      ['expense', 8999],
+    ],
+  );
+  assert.ok(result.rows[0].hints.includes('card_payment'));
+});
+
+test('transfer hints: a bank row that names a card issuer is a card payment', () => {
+  assert.ok(transferHints('Withdrawal CITI CARD ONLINE').includes('card_payment'));
+  assert.ok(transferHints('CAPITAL ONE MOBILE PMT').includes('card_payment'));
+  assert.ok(transferHints('ELECTRONIC PAYMENT-THANK YOU').includes('card_payment'));
+  assert.ok(transferHints('Buyer Credit Payment Withdrawal - Transfer To BML').includes('card_payment'));
+  assert.deepEqual(transferHints('Withdrawal Debit Card - BLUE HERON CAFE'), []);
+});
+
 test('every preset has a fixture above', () => {
   const fixtures = [
     CHASE_CARD, CHASE_CHECKING, AMEX, CAPITAL_ONE_CARD, CAPITAL_ONE_360, APPLE_CARD,
-    DISCOVER, CITI, BOFA_CHECKING, BOFA_CARD, WELLS_FARGO, PAYPAL,
+    DISCOVER, CITI, BOFA_CHECKING, BOFA_CARD, WELLS_FARGO, PAYPAL, AZFCU, NAVY_FEDERAL, BEST_BUY_TEXT,
   ];
   const detected = fixtures.map((text) => importWithGuess(text).guess.preset).sort();
   assert.deepEqual(detected, BANK_PRESETS.map((p) => p.id).sort());
@@ -1052,6 +1171,7 @@ test('applyMapping: a mapping that lacks what the sign convention needs parses n
   assert.deepEqual(applyMapping(rows, {}, 'negative_is_expense', 'MDY'), {
     rows: [],
     rejected: [],
+    skipped: [],
     missingColumns: ['date', 'description', 'amount'],
   });
   assert.deepEqual(
@@ -1074,6 +1194,7 @@ test('applyMapping: no rows in, nothing out', () => {
   assert.deepEqual(applyMapping([], SIMPLE_MAPPING, 'negative_is_expense', 'MDY'), {
     rows: [],
     rejected: [],
+    skipped: [],
     missingColumns: [],
   });
 });

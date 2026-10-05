@@ -946,7 +946,7 @@ test('undoBatch: deletes the untouched imported rows, unlinks the matched entry,
   db.tick(3_600_000);
 
   const result = await undoBatch(asDb(db), USER, batchId);
-  assert.deepEqual(result, { batchId, alreadyUndone: false, deleted: 2, unlinked: 1, kept: [] });
+  assert.deepEqual(result, { batchId, alreadyUndone: false, deleted: 2, unlinked: 1, kept: [], transfersUndone: 0 });
 
   const left = db.rows('financial_transactions');
   assert.equal(left.length, 1);
