@@ -106,7 +106,7 @@ No free plan. All users must subscribe to access paid modules.
 
 | Module | Description | Access |
 |--------|-------------|--------|
-| **Planner** | Roadmap, Goals, Milestones, Tasks hierarchy with day/week/month views; one-field task capture into an auto-created Inbox (works offline), searchable goal picker, Inbox filter; Google Calendar sync (read-only, one or more Google accounts; events on the calendars you choose become planner tasks, daily plus Sync now) | Paid |
+| **Planner** | Roadmap, Goals, Milestones, Tasks hierarchy with day/week/month views; one-field task capture into an auto-created Inbox (works offline), searchable goal picker, Inbox filter; Google Calendar sync (read-only, one or more Google accounts; events on the calendars you choose become planner tasks, daily plus Sync now); calendar event builder (build `#expense` / `#trip` / `#meal` titles, see what the parser reads, open Google's prefilled event form), example `.ics` and printable cheat sheet (English and Spanish) | Paid |
 | **Fuel** | Nutrition tracking with NCV framework, USDA/Open Food Facts APIs, auto inventory | Paid |
 | **Engine** | Pomodoro focus sessions, doodle canvas, daily debrief, AI weekly reviews | Paid |
 | **Health Metrics** | RHR, steps, sleep, body composition; Garmin/Oura/WHOOP sync; CSV import | Paid |
@@ -248,6 +248,18 @@ the event's or calendar's time zone; moved events move their task, cancelled eve
 completed tasks stay completed, and a task the user deleted is not recreated. Titles go through the
 capture-token parser and the result is stored in `calendar_sync_items.parsed`, but **only tasks are
 created for now**: `#expense`, `#trip` and the other tags do not create records yet (phase 4.4).
+
+**Writing titles the sync can read:** Calendar Sync -> Event builder
+(`/dashboard/settings/calendar/event-builder`) builds a title from simple fields, runs it through
+the real parser to show what is read and any warnings, copies it, or opens Google's prefilled
+create-event link (`calendar.google.com/calendar/render?action=TEMPLATE&text=…&dates=…&details=…&location=…&ctz=…`;
+Google does not publish a reference for this URL, so the button is labelled unofficial). It also
+downloads the examples as an `.ics` dated in the coming week, for a separate test calendar. The
+helpers live in `lib/capture/event-templates.ts`; `public/templates/calendar-event-examples.ics`
+and `public/templates/calendar-event-cheat-sheet.md` are generated from them
+(`node --experimental-strip-types scripts/generate-calendar-event-templates.ts`) and a unit test
+fails when they drift. The printable cheat sheet page is `/dashboard/settings/calendar/event-builder/cheat-sheet`.
+The ecosystem-wide title grammar is in the witus repo, `docs/calendar-event-conventions.md`.
 
 **Where the tokens live:** `calendar_connections`, encrypted with AES-256-GCM
 (`lib/crypto/tokens.ts`) before they are written. The table has Row Level Security on and no

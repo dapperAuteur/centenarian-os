@@ -1572,3 +1572,87 @@ All links are bidirectional — creating a link from a task to a trip also makes
 - Display names are auto-resolved (trip names, transaction vendors, equipment names)
 - Removing a link deletes only the cross-reference, not the underlying records
 ",markdown,,,,,,
+Lessons,1,14,Calendar Events CentenarianOS Can Read,text,300,true,,"# Lesson 14: Calendar Events CentenarianOS Can Read
+
+**Course:** Mastering the Planner
+**Module:** Connections
+**Duration:** ~5 min
+**Lesson type:** text / video
+**is_free_preview:** true
+**CYOA navigation:** cyoa
+
+---
+
+## Narrator Script
+
+If your day already lives in Google Calendar, you don't have to type it twice. Connect Google Calendar in Calendar Sync, switch on the calendars you want, and every event becomes a planner task. Add a short tag to an event's title and CentenarianOS also reads the details: what you spent, how far you went, what you ate.
+
+---
+
+### What Happens Today
+
+Every event on a calendar you sync becomes a planner task in a milestone called ""Google Calendar: <calendar name>"". The task is named after the title without its tags. The details in a tagged title (amount, distance, mode, meal, duration) are read and saved with the synced event.
+
+Turning tagged events into expense, income, trip, meal and workout records is coming. It is not built yet, so for now the details travel with the task, not into Finance or Travel.
+
+---
+
+### The Tags
+
+| Kind | English | Spanish | Needs |
+|---|---|---|---|
+| Expense | #expense | #gasto | an amount, such as $42.18 |
+| Income | #income | #ingreso | an amount |
+| Trip | #trip | #viaje | a distance in mi or km |
+| Meal | #meal | #comida | nothing (a meal word or the start time sets the meal) |
+| Workout | #workout | #entreno, #ejercicio | nothing (add a duration such as 45min) |
+| Task | #task | #tarea | nothing (an untagged title is a task too) |
+
+Examples:
+
+- `Groceries Corner Market #expense $42.18`
+- `To the trailhead #trip 7.8mi mode:bike`
+- `Al parque #viaje 12.5km mode:bici`
+- `Lunch Corner Cafe #meal`
+- `Strength session #workout 45min`
+
+Miles and kilometers both work. Kilometers are converted to miles and stored rounded to 0.1 mi.
+
+---
+
+### Use the Event Builder
+
+> [SCREEN: Calendar Sync page, click ""Event builder""]
+
+Go to Calendar Sync and click **Event builder**. Pick a kind, fill in a few fields, and the builder shows:
+
+1. The exact title to use
+2. What CentenarianOS will read from it
+3. A warning if something is missing, such as a #trip without a distance
+
+Then **Copy title**, or **Open in Google Calendar** to open Google's new-event form already filled in. Check which calendar it saves to: only calendars switched on in Calendar Sync are read.
+
+---
+
+### The Location Field
+
+Put the place in the event's Location field, not in the title. Today it is added to the task's description. Proposed, not built: RideWitUS will use event locations to suggest trips to and from your activities, only for calendars you choose to share with it.
+
+---
+
+### Try It on a Test Calendar
+
+The builder's **Download examples (.ics)** button gives you one example of each kind, in English and Spanish, dated in the coming week and titled ""Example: …"". In Google Calendar on a computer, create a new calendar, import the file into it (Settings → Import & export), switch that calendar on in Calendar Sync, and press **Sync now**. Delete the test calendar when you are done.
+
+The **Printable cheat sheet** puts every tag and copy-paste title on one page.
+
+---
+
+## Key Takeaways
+
+- Every synced event becomes a planner task; tags add details to it
+- #expense and #income need an amount; #trip needs a distance in mi or km
+- English and Spanish tags both work
+- Records from tags are coming; today the sync makes tasks
+- Use the event builder to get titles right the first time
+",markdown,,,,,,
