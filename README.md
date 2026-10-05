@@ -40,7 +40,7 @@ flowchart LR
 For dev-audience readers:
 
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** — full module map, Mermaid diagrams of the shared-DB boundary, cross-app traffic via the `unified-schedule` edge function, offline-sync layer, repo layout, and stack table.
-- **[MIGRATIONS.md](./MIGRATIONS.md)** — 217 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
+- **[MIGRATIONS.md](./MIGRATIONS.md)** — 218 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
 - **[CLAUDE.md](./CLAUDE.md)** — AI-collaborator instructions doubling as the project conventions doc (style, a11y, the Shared Database rule, branch workflow).
 - **[STYLE_GUIDE.md](./STYLE_GUIDE.md)** — git workflow, branch naming, Conventional Commits, PR rules. Every change starts on a new branch off `main`; `main` is never pushed to directly.
 - **[docs/CentenarianAcademy/](./docs/CentenarianAcademy/)** — course-authoring standards: `CourseAuthoringGuide.md` (craft), `CourseProductionPlaybook.md` (process), `CitationIntegrityGuide.md` (verify every source, never ship a fake citation), and `CourseCreationWithAI.md` (hand to your AI). Per-course recipes: `CourseAuthoringGuide NASM CPT/CES/CNC.md` and `CourseAuthoringGuide BVC.md` (Better Vice Club: audio-first, four-lens episodes; episode-per-module; rotating quizzes + FlashLearn recall loop + season-wide glossary). Courses cite only verified, peer-reviewed sources and ship a teacher evidence ledger.
@@ -277,6 +277,33 @@ and `public/templates/calendar-event-cheat-sheet.md` are generated from them
 fails when they drift. The printable cheat sheet page is `/dashboard/settings/calendar/event-builder/cheat-sheet`.
 The ecosystem-wide title grammar is in the witus repo, `docs/calendar-event-conventions.md`.
 
+**Calendar activity feed to RideWitUS** (RideWitUS PRD §5.8 / §6.5a, migration 216): RideWitUS
+suggests trips to and from calendar activities, and gets them from CentenarianOS (it never connects
+to Google). Since migration 216 the sync stores `starts_at`, `ends_at`, `all_day`, `time_zone` and
+`location` on each `calendar_sync_items` row it writes (`lib/calendar/event-times.ts`). Each
+switched-on calendar has two switches on the settings page, both off by default:
+**Share with RideWitUS** (`calendar_sync_calendars.share_with_ridewitus`) and **Hide titles**
+(`hide_titles_for_ridewitus`, sends `"Event"`). After each sync, the rows it wrote are sent as signed
+`calendar.activity` events (`lib/ridewitus/`): shared calendars only, a location required (all-day
+events too), start within the past 14 / next 30 days, `event_id` = `cal:` + SHA-256 of the sync row
+id, and never the description, attendees, meeting links or Google ids. Switching sharing on (or
+changing Hide titles) sends the calendar's window; switching it off sends `is_active: false` for
+the calendar's events; an event whose location is removed is retracted the same way. Delivery is a
+signed POST (`X-Witus-*`, source `centenarianos`, batches of 500, 3 attempts) behind the
+`ActivityDelivery` interface in `lib/ridewitus/delivery.ts`; the identity is the user's
+`witus_identities.witus_sub` (users who never signed in with WitUS send nothing). Without the two
+env vars below nothing is sent and nothing else changes.
+
+```env
+RIDEWITUS_CALENDAR_ACTIVITY_URL=   # RideWitUS POST /api/events/calendar-activity, full URL
+CALENDAR_ACTIVITY_EVENTS_SECRET=   # shared HMAC secret, the same value on RideWitUS
+```
+
+After applying migration 216, fill the new columns for events synced earlier (read-only against
+Google; writes only those columns):
+`node --env-file=.env.local --experimental-strip-types scripts/backfill-calendar-event-fields.mjs --dry`,
+then without `--dry`. Run it before switching sharing on.
+
 **Where the tokens live:** `calendar_connections`, encrypted with AES-256-GCM
 (`lib/crypto/tokens.ts`) before they are written. The table has Row Level Security on and no
 policies, so only the service-role API routes under `app/api/calendar/google/` can read it, and
@@ -286,7 +313,9 @@ no response to the browser includes a token column.
 
 1. Apply `supabase/migrations/204_calendar_sync.sql`, then `205_calendar_multi_account.sql`
    (several accounts per user, validation and last-run columns). Until both are applied, the routes
-   answer with a JSON error (`code: "migration_missing"`) and the page says so.
+   answer with a JSON error (`code: "migration_missing"`) and the page says so. Then
+   `216_calendar_activity_feed.sql` for the RideWitUS feed (event times and location, the share
+   switches); until it is applied the sync skips those columns and the switches are greyed out.
 2. In Google Cloud Console: enable the Google Calendar API, configure the OAuth consent screen,
    and create an OAuth client of type "Web application".
 3. On that client, add one authorized redirect URI per origin the app is served from:
@@ -380,7 +409,7 @@ supabase db push
 # Run migrations in order from supabase/migrations/
 ```
 
-There are 217 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the ContractorOS (Work.WitUS) app — read [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" before adding any.
+There are 218 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the ContractorOS (Work.WitUS) app — read [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" before adding any.
 
 ### Run Development Server
 
@@ -439,7 +468,7 @@ centenarian-os/
 ├── content/tutorials/         # 15+ tutorial course scripts
 ├── public/templates/          # CSV import templates (10+ modules)
 └── supabase/
-    └── migrations/            # 215 database migrations — see MIGRATIONS.md
+    └── migrations/            # 218 database migrations — see MIGRATIONS.md
 ```
 
 For the full module map and the cross-app shared-DB story, see **[ARCHITECTURE.md](./ARCHITECTURE.md)**.

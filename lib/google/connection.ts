@@ -93,10 +93,35 @@ export interface StoredCalendar {
   enabled: boolean;
   last_synced_at: string | null;
   last_error: string | null;
+  /** Migration 216: send this calendar's events (with a location) to RideWitUS. False before 216. */
+  share_with_ridewitus?: boolean;
+  /** Migration 216: send "Event" instead of titles to RideWitUS. False before 216. */
+  hide_titles_for_ridewitus?: boolean;
+  /** False when migration 216 is not applied yet, so the page can say the switches are not available. */
+  ridewitus_available?: boolean;
 }
 
-export const PUBLIC_CALENDAR_COLUMNS =
+/** The columns before migration 216. */
+export const PUBLIC_CALENDAR_COLUMNS_BASE =
   'id, calendar_id, summary, time_zone, color, enabled, last_synced_at, last_error';
+export const PUBLIC_CALENDAR_COLUMNS = `${PUBLIC_CALENDAR_COLUMNS_BASE}, share_with_ridewitus, hide_titles_for_ridewitus`;
+
+/** True when `error` says a migration 216 calendar column is missing. */
+function isMissingShareColumn(error: DbError | null | undefined): boolean {
+  if (!error || (error.code !== '42703' && error.code !== 'PGRST204')) return false;
+  const message = error.message ?? '';
+  return message.includes('share_with_ridewitus') || message.includes('hide_titles_for_ridewitus');
+}
+
+/** Fills the migration 216 fields on rows read without them (false = not shared). */
+function withShareDefaults(rows: StoredCalendar[], available: boolean): StoredCalendar[] {
+  return rows.map((row) => ({
+    ...row,
+    share_with_ridewitus: row.share_with_ridewitus === true,
+    hide_titles_for_ridewitus: row.hide_titles_for_ridewitus === true,
+    ridewitus_available: available,
+  }));
+}
 
 // ── Errors ──────────────────────────────────────────────────────────────────────
 
@@ -262,13 +287,15 @@ export async function resolveUserConnection(
 
 /** The calendars saved for a connection, by name. */
 export async function listStoredCalendars(db: SupabaseClient, connectionId: string): Promise<StoredCalendar[]> {
-  const { data, error } = await db
-    .from('calendar_sync_calendars')
-    .select(PUBLIC_CALENDAR_COLUMNS)
-    .eq('connection_id', connectionId)
-    .order('summary', { ascending: true });
+  const read = (columns: string) =>
+    db.from('calendar_sync_calendars').select(columns).eq('connection_id', connectionId).order('summary', { ascending: true });
+  const first = await read(PUBLIC_CALENDAR_COLUMNS);
+  if (!first.error) return withShareDefaults((first.data as unknown as StoredCalendar[] | null) ?? [], true);
+  // Before migration 216: read without the share columns.
+  if (!isMissingShareColumn(first.error)) throwDbError(first.error, 'Reading the saved calendars');
+  const { data, error } = await read(PUBLIC_CALENDAR_COLUMNS_BASE);
   if (error) throwDbError(error, 'Reading the saved calendars');
-  return (data as StoredCalendar[] | null) ?? [];
+  return withShareDefaults((data as unknown as StoredCalendar[] | null) ?? [], false);
 }
 
 // ── Writing ─────────────────────────────────────────────────────────────────────
@@ -569,6 +596,61 @@ export async function setCalendarEnabled(
     patch.sync_token = null;
     patch.last_error = null;
   }
+  const write = (columns: string) =>
+    db
+      .from('calendar_sync_calendars')
+      .update(patch)
+      .eq('connection_id', connectionId)
+      .eq('calendar_id', calendarId)
+      .select(columns)
+      .maybeSingle();
+  let result = await write(PUBLIC_CALENDAR_COLUMNS);
+  let available = true;
+  if (isMissingShareColumn(result.error)) {
+    // Before migration 216. The update is the same, so repeating it is harmless.
+    available = false;
+    result = await write(PUBLIC_CALENDAR_COLUMNS_BASE);
+  }
+  if (result.error) throwDbError(result.error, 'Updating the calendar');
+  const row = (result.data as unknown as StoredCalendar | null) ?? null;
+  return row ? withShareDefaults([row], available)[0] : null;
+}
+
+export interface CalendarSharingPatch {
+  share_with_ridewitus?: boolean;
+  hide_titles_for_ridewitus?: boolean;
+}
+
+export type SetSharingResult =
+  | { ok: true; calendar: StoredCalendar; before: { share: boolean; hideTitles: boolean } }
+  | { ok: false; code: 'calendar_not_found' | 'migration_missing' };
+
+/**
+ * Sets one calendar's RideWitUS switches (migration 216). Returns the row and the switches as
+ * they were before, so the caller knows whether sharing was switched on or off.
+ */
+export async function setCalendarSharing(
+  db: SupabaseClient,
+  connectionId: string,
+  calendarId: string,
+  sharing: CalendarSharingPatch,
+): Promise<SetSharingResult> {
+  const { data: current, error: readError } = await db
+    .from('calendar_sync_calendars')
+    .select('share_with_ridewitus, hide_titles_for_ridewitus')
+    .eq('connection_id', connectionId)
+    .eq('calendar_id', calendarId)
+    .maybeSingle();
+  if (isMissingShareColumn(readError)) return { ok: false, code: 'migration_missing' };
+  if (readError) throwDbError(readError, 'Reading the calendar');
+  if (!current) return { ok: false, code: 'calendar_not_found' };
+  const before = current as { share_with_ridewitus: boolean | null; hide_titles_for_ridewitus: boolean | null };
+
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (typeof sharing.share_with_ridewitus === 'boolean') patch.share_with_ridewitus = sharing.share_with_ridewitus;
+  if (typeof sharing.hide_titles_for_ridewitus === 'boolean') {
+    patch.hide_titles_for_ridewitus = sharing.hide_titles_for_ridewitus;
+  }
   const { data, error } = await db
     .from('calendar_sync_calendars')
     .update(patch)
@@ -576,8 +658,14 @@ export async function setCalendarEnabled(
     .eq('calendar_id', calendarId)
     .select(PUBLIC_CALENDAR_COLUMNS)
     .maybeSingle();
+  if (isMissingShareColumn(error)) return { ok: false, code: 'migration_missing' };
   if (error) throwDbError(error, 'Updating the calendar');
-  return (data as StoredCalendar | null) ?? null;
+  if (!data) return { ok: false, code: 'calendar_not_found' };
+  return {
+    ok: true,
+    calendar: withShareDefaults([data as unknown as StoredCalendar], true)[0],
+    before: { share: before.share_with_ridewitus === true, hideTitles: before.hide_titles_for_ridewitus === true },
+  };
 }
 
 /**

@@ -8,6 +8,10 @@
 // "Google Calendar: <calendar name>"; tagged events also create a transaction, meal log or
 // workout log (each account picks the finance account for #expense / #income), and the
 // "Needs a look" list shows what the sync left for the user to check. A daily sync runs as well.
+// Each switched-on calendar also has two RideWitUS switches (migration 216): "Share with
+// RideWitUS" (off by default) sends its events that have a location to RideWitUS for trip
+// suggestions, and "Hide titles" sends "Event" instead of the title. The privacy section below
+// says what is sent and what never is.
 //
 // Data: GET/DELETE /api/calendar/google, GET/PATCH /api/calendar/google/calendars,
 // POST /api/calendar/google/sync, GET /api/finance/accounts (the default-account picker),
@@ -35,6 +39,7 @@ import {
 import { formatTime, useClockFormat } from '@/lib/hooks/useClockFormat';
 import CalendarDefaultAccount, { type CalendarFinanceAccount } from '@/components/settings/CalendarDefaultAccount';
 import CalendarNeedsALook from '@/components/settings/CalendarNeedsALook';
+import CalendarRideWitUSSharing, { type SharingCalendar } from '@/components/settings/CalendarRideWitUSSharing';
 
 const PAGE_PATH = '/dashboard/settings/calendar';
 const CONNECT_URL = '/api/calendar/google/connect';
@@ -75,6 +80,11 @@ interface SyncCalendar {
   enabled: boolean;
   last_synced_at: string | null;
   last_error: string | null;
+  /** Migration 216. */
+  share_with_ridewitus?: boolean;
+  hide_titles_for_ridewitus?: boolean;
+  /** False until migration 216 is applied. */
+  ridewitus_available?: boolean;
 }
 
 interface Connection {
@@ -275,6 +285,20 @@ function AccountCard({
       });
     }
   };
+
+  const sharingSaved = (saved: SharingCalendar) =>
+    setCalendars((prev) =>
+      prev.map((c) =>
+        c.calendar_id === saved.calendar_id
+          ? {
+              ...c,
+              share_with_ridewitus: saved.share_with_ridewitus,
+              hide_titles_for_ridewitus: saved.hide_titles_for_ridewitus,
+              ridewitus_available: saved.ridewitus_available,
+            }
+          : c,
+      ),
+    );
 
   const disconnect = async (force: boolean) => {
     setDisconnecting(true);
@@ -577,6 +601,9 @@ function AccountCard({
                         </span>
                       )}
                     </label>
+                    {calendar.enabled && (
+                      <CalendarRideWitUSSharing connectionId={connection.id} calendar={calendar} onSaved={sharingSaved} />
+                    )}
                   </li>
                 );
               })}
@@ -845,6 +872,42 @@ function CalendarSettings() {
           <Wand2 className="w-4 h-4" aria-hidden="true" />
           Event builder: write titles CentenarianOS can read
         </Link>
+      </section>
+
+      {/* What RideWitUS gets, and what it never gets */}
+      <section aria-labelledby="calendar-ridewitus-heading" className="bg-white border border-gray-200 rounded-2xl p-5">
+        <h2 id="calendar-ridewitus-heading" className="font-semibold text-gray-900">
+          Sharing calendar activities with RideWitUS
+        </h2>
+        <p className="mt-1 text-sm text-gray-700">
+          RideWitUS can suggest the trips to and from your activities, so you do not have to log them from memory. It
+          never connects to Google: CentenarianOS sends it what it needs, only from calendars you share. Sharing is off
+          for every calendar until you switch it on under that calendar.
+        </p>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2 text-sm">
+          <div>
+            <h3 className="font-medium text-gray-900">What is sent</h3>
+            <ul className="mt-1 space-y-1 text-gray-700 list-disc pl-5">
+              <li>Only events that have a location, from the past 14 days and the next 30 days.</li>
+              <li>Start and end time, time zone, and whether it is all-day.</li>
+              <li>The location as you typed it in Google, and the calendar&apos;s name.</li>
+              <li>The title without its #tags, or &quot;Event&quot; when you hide titles.</li>
+              <li>Whether the event is cancelled, and the details of a #trip tag.</li>
+            </ul>
+          </div>
+          <div>
+            <h3 className="font-medium text-gray-900">What is never sent</h3>
+            <ul className="mt-1 space-y-1 text-gray-700 list-disc pl-5">
+              <li>The event description, attendees, or meeting links.</li>
+              <li>Google&apos;s event and calendar ids, or your Google account email.</li>
+              <li>Events without a location, or anything from a calendar you do not share.</li>
+            </ul>
+          </div>
+        </div>
+        <p className="mt-3 text-sm text-gray-700">
+          Switching sharing off tells RideWitUS to drop that calendar&apos;s events and the trip suggestions it made from
+          them. Trips you already confirmed in RideWitUS stay there.
+        </p>
       </section>
 
       {status && connections.length > 0 && <CalendarNeedsALook reloadKey={reviewKey} />}

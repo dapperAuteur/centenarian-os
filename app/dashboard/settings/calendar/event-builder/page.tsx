@@ -422,9 +422,9 @@ export default function CalendarEventBuilderPage() {
             aria-describedby="eb-location-help"
           />
           <p id="eb-location-help" className="text-xs text-gray-600 mt-1">
-            Goes in the event&apos;s Location field, not the title. Today it is added to the task description. Proposed,
-            not built: RideWitUS will use event locations to suggest trips to and from your activities, only for
-            calendars you choose to share with it.
+            Goes in the event&apos;s Location field, not the title. It is added to the task description, and it is what
+            RideWitUS uses: for a calendar you share with RideWitUS (Calendar Sync, off by default), events with a
+            location are sent so it can suggest trips to and from them. Events without a location are never sent.
           </p>
         </div>
 

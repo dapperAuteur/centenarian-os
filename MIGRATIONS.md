@@ -1,6 +1,6 @@
 # CentenarianOS — Migrations Gallery
 
-> **217 migrations across 14 modules**, shipped solo since project inception. Schema lives in a Supabase Postgres database **shared with a sibling product** (Work.WitUS / contractor-os), so every migration has to be additive, RLS-aware, and cross-app-safe.
+> **218 migrations across 14 modules**, shipped solo since project inception. Schema lives in a Supabase Postgres database **shared with a sibling product** (Work.WitUS / contractor-os), so every migration has to be additive, RLS-aware, and cross-app-safe.
 
 > **Decomposition note.** CentenarianOS is being decomposed toward the ecosystem's "one app,
 > one job" rule, so some modules below (Media, Academy, Travel, contractor residue) are
@@ -55,7 +55,7 @@ Highlights: `082_exercise_library.sql`, `083_enhanced_workout_logging.sql` (16 +
 
 Recurring tasks, schedule templates (work/fitness/class/custom with weekInterval), task source tracking, invoice → task sync trigger, pay-date → task sync trigger, fiscal calendar fixes, daily-log entity_type column.
 
-Highlights: `021_recurring_tasks.sql`, `102_daily_log_entity_type.sql`, `147_task_source_tracking.sql`, `148_invoice_task_sync_trigger.sql`, `151_schedule_templates.sql` (the unified work/fitness/class/custom schedule system), `153_expected_payments_view.sql`, `154_pay_date_task_sync_trigger.sql`, `156-157_fix_trigger_target_year.sql` (year-rollover hot-fix pair).
+Highlights: `021_recurring_tasks.sql`, `102_daily_log_entity_type.sql`, `147_task_source_tracking.sql`, `148_invoice_task_sync_trigger.sql`, `151_schedule_templates.sql` (the unified work/fitness/class/custom schedule system), `153_expected_payments_view.sql`, `154_pay_date_task_sync_trigger.sql`, `156-157_fix_trigger_target_year.sql` (year-rollover hot-fix pair). Google Calendar sync: `204_calendar_sync.sql`, `205_calendar_multi_account.sql`, `216_calendar_activity_feed.sql` (event times and location on synced events, per-calendar RideWitUS share and hide-title switches).
 
 ### Health Metrics + Wearables (4 migrations)
 
