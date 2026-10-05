@@ -2,6 +2,7 @@
 // Directory of all cooks who have at least one public recipe.
 
 import { createClient } from '@/lib/supabase/server';
+import { PUBLIC_PROFILES_VIEW } from '@/lib/profiles/public-profiles';
 import Link from 'next/link';
 import CookCard from '@/components/recipes/CookCard';
 import { ChefHat } from 'lucide-react';
@@ -43,7 +44,7 @@ export default async function CooksPage() {
 
   // Fetch profiles for those cooks
   const { data: profiles } = await supabase
-    .from('profiles')
+    .from(PUBLIC_PROFILES_VIEW)
     .select('id, username, display_name, bio, avatar_url, created_at, updated_at')
     .in('id', cookIds)
     .order('username', { ascending: true });

@@ -5,6 +5,7 @@
 //   3. Recipe exists but restricted → unavailable page with cook's other recipes
 
 import { createClient } from '@/lib/supabase/server';
+import { PUBLIC_PROFILES_VIEW } from '@/lib/profiles/public-profiles';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { notFound } from 'next/navigation';
 import { headers } from 'next/headers';
@@ -78,7 +79,7 @@ export default async function PublicRecipePage({ params }: Props) {
 
   // Look up profile by username
   const { data: profile } = await supabase
-    .from('profiles')
+    .from(PUBLIC_PROFILES_VIEW)
     .select('*')
     .eq('username', username)
     .maybeSingle();

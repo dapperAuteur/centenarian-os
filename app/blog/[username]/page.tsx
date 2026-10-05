@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { PUBLIC_PROFILES_VIEW } from '@/lib/profiles/public-profiles';
 import { notFound } from 'next/navigation';
 import PostCard from '@/components/blog/PostCard';
 import type { Metadata } from 'next';
@@ -10,7 +11,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params;
   const supabase = await createClient();
   const { data: profile } = await supabase
-    .from('profiles')
+    .from(PUBLIC_PROFILES_VIEW)
     .select('display_name, username, bio')
     .eq('username', username)
     .maybeSingle();
@@ -44,7 +45,7 @@ export default async function UserBlogPage({ params }: Props) {
 
   // Look up the profile by username
   const { data: profile } = await supabase
-    .from('profiles')
+    .from(PUBLIC_PROFILES_VIEW)
     .select('*')
     .eq('username', username)
     .maybeSingle();

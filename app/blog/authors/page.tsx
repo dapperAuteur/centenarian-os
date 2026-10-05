@@ -2,6 +2,7 @@
 // Directory of all users who have at least one public blog post.
 
 import { createClient } from '@/lib/supabase/server';
+import { PUBLIC_PROFILES_VIEW } from '@/lib/profiles/public-profiles';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookOpen, FileText } from 'lucide-react';
@@ -43,7 +44,7 @@ export default async function AuthorsPage() {
 
   // Fetch profiles for those authors
   const { data: profiles } = await supabase
-    .from('profiles')
+    .from(PUBLIC_PROFILES_VIEW)
     .select('id, username, display_name, bio, avatar_url')
     .in('id', authorIds)
     .order('username', { ascending: true });
