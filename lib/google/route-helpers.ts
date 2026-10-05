@@ -25,6 +25,13 @@ export function getServiceDb(): SupabaseClient {
   );
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** True for a UUID string, e.g. a connection_id from a request. */
+export function isUuid(value: unknown): value is string {
+  return typeof value === 'string' && UUID_RE.test(value);
+}
+
 /** True when TOKEN_ENCRYPTION_KEY is set and well formed, i.e. tokens can be stored. */
 export function isTokenEncryptionReady(): boolean {
   try {
@@ -70,7 +77,7 @@ export function describeCalendarError(err: unknown): CalendarErrorInfo {
       code: 'migration_missing',
       status: 503,
       message:
-        'Google Calendar sync is not set up on this site yet: database migration 204_calendar_sync.sql has not been applied.',
+        'Google Calendar sync is not set up on this site yet: database migrations 204_calendar_sync.sql and 205_calendar_multi_account.sql must both be applied.',
     };
   }
   if (err instanceof GoogleConfigError) {

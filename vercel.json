@@ -3,6 +3,10 @@
     {
       "path": "/api/admin/demo/reset",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/calendar-sync",
+      "schedule": "0 6 * * *"
     }
   ]
 }

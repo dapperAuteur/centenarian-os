@@ -54,6 +54,10 @@ export interface CalendarConnection {
   settings: CalendarConnectionSettings | null;
   last_synced_at: string | null;
   last_error: string | null;
+  /** Migration 205: when the saved authorization was last checked with Google. */
+  last_validated_at?: string | null;
+  /** Migration 205: counts from the last sync run (lib/calendar/google-sync.ts SyncSummary). */
+  last_sync_summary?: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }
@@ -69,13 +73,15 @@ export type PublicCalendarConnection = Pick<
   | 'settings'
   | 'last_synced_at'
   | 'last_error'
+  | 'last_validated_at'
+  | 'last_sync_summary'
   | 'created_at'
   | 'updated_at'
 >;
 
 /** The only calendar_connections columns a browser-facing response may select. */
 export const PUBLIC_CONNECTION_COLUMNS =
-  'id, provider, account_email, status, scopes, settings, last_synced_at, last_error, created_at, updated_at';
+  'id, provider, account_email, status, scopes, settings, last_synced_at, last_error, last_validated_at, last_sync_summary, created_at, updated_at';
 
 /** A calendar_sync_calendars row as the browser sees it (no sync token). */
 export interface StoredCalendar {
@@ -94,11 +100,11 @@ export const PUBLIC_CALENDAR_COLUMNS =
 
 // ── Errors ──────────────────────────────────────────────────────────────────────
 
-/** Migration 204_calendar_sync.sql has not been applied to this database yet. */
+/** Migration 204_calendar_sync.sql or 205_calendar_multi_account.sql has not been applied yet. */
 export class CalendarSchemaMissingError extends Error {
   constructor() {
     super(
-      `${LABEL} The calendar sync tables do not exist yet: migration 204_calendar_sync.sql has not been applied to this database.`,
+      `${LABEL} The calendar sync tables or columns do not exist yet: migrations 204_calendar_sync.sql and 205_calendar_multi_account.sql must both be applied to this database.`,
     );
     this.name = 'CalendarSchemaMissingError';
   }
@@ -120,12 +126,17 @@ interface DbError {
 }
 
 /**
- * True when the database says the table is not there.
- * 42P01 is PostgreSQL's undefined_table; PGRST205 is PostgREST's "Could not find the
- * table ... in the schema cache" (https://docs.postgrest.org/en/stable/references/errors.html).
+ * True when the database says the table or a column is not there.
+ * 42P01 is PostgreSQL's undefined_table and 42703 its undefined_column; PGRST205 is PostgREST's
+ * "Could not find the table ... in the schema cache" and PGRST204 its "Could not find the ...
+ * column" (https://docs.postgrest.org/en/stable/references/errors.html). A missing column means
+ * migration 205 (last_validated_at, last_sync_summary) is not applied yet.
  */
 export function isMissingTableError(error: DbError | null | undefined): boolean {
-  return !!error && (error.code === '42P01' || error.code === 'PGRST205');
+  return (
+    !!error &&
+    (error.code === '42P01' || error.code === 'PGRST205' || error.code === '42703' || error.code === 'PGRST204')
+  );
 }
 
 /** Throws the right error for a failed query. `context` says what was being done. */
@@ -144,11 +155,20 @@ function readSecret(stored: string): string {
 
 // ── Reading ─────────────────────────────────────────────────────────────────────
 
-/** The user's Google connection with its (encrypted) tokens, or null when there is none. */
-export async function getConnection(db: SupabaseClient, userId: string): Promise<CalendarConnection | null> {
+// Since migration 205 a user can connect several Google accounts: one calendar_connections row
+// per (user_id, provider, provider_sub). Every lookup below is scoped by user_id as well as by
+// the connection id, so one user can never reach another user's row through a guessed id.
+
+/** One of the user's Google connections, with its (encrypted) tokens, or null. */
+export async function getConnection(
+  db: SupabaseClient,
+  userId: string,
+  connectionId: string,
+): Promise<CalendarConnection | null> {
   const { data, error } = await db
     .from('calendar_connections')
     .select('*')
+    .eq('id', connectionId)
     .eq('user_id', userId)
     .eq('provider', CALENDAR_PROVIDER)
     .maybeSingle();
@@ -156,19 +176,88 @@ export async function getConnection(db: SupabaseClient, userId: string): Promise
   return (data as CalendarConnection | null) ?? null;
 }
 
-/** The same row without any token column, for responses that go to the browser. */
-export async function getPublicConnection(
+/** Any connection by id, tokens included. For the cron and the sync engine only (no user scope). */
+export async function getConnectionById(db: SupabaseClient, connectionId: string): Promise<CalendarConnection | null> {
+  const { data, error } = await db.from('calendar_connections').select('*').eq('id', connectionId).maybeSingle();
+  if (error) throwDbError(error, 'Reading the calendar connection');
+  return (data as CalendarConnection | null) ?? null;
+}
+
+/** All of the user's Google connections with their (encrypted) tokens, oldest first. */
+export async function listConnections(db: SupabaseClient, userId: string): Promise<CalendarConnection[]> {
+  const { data, error } = await db
+    .from('calendar_connections')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('provider', CALENDAR_PROVIDER)
+    .order('created_at', { ascending: true });
+  if (error) throwDbError(error, 'Reading the calendar connections');
+  return (data as CalendarConnection[] | null) ?? [];
+}
+
+/** The same rows without any token column, for responses that go to the browser. */
+export async function listPublicConnections(
   db: SupabaseClient,
   userId: string,
-): Promise<PublicCalendarConnection | null> {
+): Promise<PublicCalendarConnection[]> {
   const { data, error } = await db
     .from('calendar_connections')
     .select(PUBLIC_CONNECTION_COLUMNS)
     .eq('user_id', userId)
     .eq('provider', CALENDAR_PROVIDER)
-    .maybeSingle();
-  if (error) throwDbError(error, 'Reading the calendar connection');
-  return (data as PublicCalendarConnection | null) ?? null;
+    .order('created_at', { ascending: true });
+  if (error) throwDbError(error, 'Reading the calendar connections');
+  return (data as PublicCalendarConnection[] | null) ?? [];
+}
+
+/** Strips the token columns from a full row. */
+export function toPublicConnection(conn: CalendarConnection): PublicCalendarConnection {
+  return {
+    id: conn.id,
+    provider: conn.provider,
+    account_email: conn.account_email,
+    status: conn.status,
+    scopes: conn.scopes,
+    settings: conn.settings,
+    last_synced_at: conn.last_synced_at,
+    last_error: conn.last_error,
+    last_validated_at: conn.last_validated_at ?? null,
+    last_sync_summary: conn.last_sync_summary ?? null,
+    created_at: conn.created_at,
+    updated_at: conn.updated_at,
+  };
+}
+
+export type ResolveConnectionResult =
+  | { ok: true; connection: CalendarConnection }
+  | { ok: false; code: 'not_connected' | 'connection_id_required'; status: number; message: string };
+
+/**
+ * The connection a request means. With a `connectionId`, that connection (it must be the
+ * user's). Without one, the user's only connection; when they have several, the caller must
+ * name one.
+ */
+export async function resolveUserConnection(
+  db: SupabaseClient,
+  userId: string,
+  connectionId: string | null | undefined,
+): Promise<ResolveConnectionResult> {
+  if (connectionId) {
+    const connection = await getConnection(db, userId, connectionId);
+    if (connection) return { ok: true, connection };
+    return { ok: false, code: 'not_connected', status: 404, message: 'That Google account is not connected.' };
+  }
+  const all = await listConnections(db, userId);
+  if (all.length === 1) return { ok: true, connection: all[0] };
+  if (all.length === 0) {
+    return { ok: false, code: 'not_connected', status: 404, message: 'Google Calendar is not connected.' };
+  }
+  return {
+    ok: false,
+    code: 'connection_id_required',
+    status: 400,
+    message: 'Several Google accounts are connected: send connection_id to say which one.',
+  };
 }
 
 /** The calendars saved for a connection, by name. */
@@ -193,38 +282,68 @@ export interface SaveTokensInput {
 }
 
 /**
- * Stores a freshly granted set of tokens, encrypted, as the user's Google connection.
- * One row per user and provider: connecting again replaces the tokens and the account,
- * marks the connection active, and keeps the user's settings.
+ * Stores a freshly granted set of tokens, encrypted, for one Google account.
+ * One row per user per Google account (provider_sub, migration 205): connecting an account
+ * that is already connected replaces its tokens, marks it active and keeps its settings and
+ * calendar choices; connecting a new account adds a row. Select-then-insert/update rather than
+ * an upsert, so this does not depend on how the unique index is named.
+ * Returns the saved row and whether it was new.
  */
-export async function saveTokens(db: SupabaseClient, input: SaveTokensInput): Promise<CalendarConnection> {
+export async function saveTokens(
+  db: SupabaseClient,
+  input: SaveTokensInput,
+): Promise<{ connection: CalendarConnection; created: boolean }> {
   const { userId, tokens, accountEmail, providerSub } = input;
   if (!tokens.refreshToken) {
     throw new Error(`${LABEL} saveTokens needs a refresh token; Google did not return one.`);
   }
+
+  const { data: existing, error: readError } = await db
+    .from('calendar_connections')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('provider', CALENDAR_PROVIDER)
+    .eq('provider_sub', providerSub)
+    .maybeSingle();
+  if (readError) throwDbError(readError, 'Reading the calendar connection');
+
+  const now = new Date().toISOString();
+  const fields = {
+    account_email: accountEmail,
+    access_token_enc: encryptSecret(tokens.accessToken),
+    refresh_token_enc: encryptSecret(tokens.refreshToken),
+    token_expires_at: tokens.expiresAt,
+    scopes: tokens.scope,
+    status: 'active' as const,
+    last_error: null,
+    // A fresh grant is a validated grant.
+    last_validated_at: now,
+    updated_at: now,
+  };
+
+  if (existing?.id) {
+    const { data, error } = await db
+      .from('calendar_connections')
+      .update(fields)
+      .eq('id', existing.id as string)
+      .select('*')
+      .maybeSingle();
+    if (error) throwDbError(error, 'Saving the calendar connection');
+    if (!data) throw new Error(`${LABEL} Saving the calendar connection returned no row.`);
+    return { connection: data as CalendarConnection, created: false };
+  }
+
   const { data, error } = await db
     .from('calendar_connections')
-    .upsert(
-      {
-        user_id: userId,
-        provider: CALENDAR_PROVIDER,
-        account_email: accountEmail,
-        provider_sub: providerSub,
-        access_token_enc: encryptSecret(tokens.accessToken),
-        refresh_token_enc: encryptSecret(tokens.refreshToken),
-        token_expires_at: tokens.expiresAt,
-        scopes: tokens.scope,
-        status: 'active',
-        last_error: null,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'user_id,provider' },
-    )
+    .insert({ user_id: userId, provider: CALENDAR_PROVIDER, provider_sub: providerSub, ...fields })
     .select('*')
     .maybeSingle();
+  // 23505 unique_violation on an insert for an account that is not saved yet: the old
+  // UNIQUE (user_id, provider) from migration 204 is still there, i.e. 205 is not applied.
+  if (error?.code === '23505') throw new CalendarSchemaMissingError();
   if (error) throwDbError(error, 'Saving the calendar connection');
   if (!data) throw new Error(`${LABEL} Saving the calendar connection returned no row.`);
-  return data as CalendarConnection;
+  return { connection: data as CalendarConnection, created: true };
 }
 
 async function markNeedsReauth(db: SupabaseClient, conn: CalendarConnection, reason: string): Promise<void> {
@@ -336,35 +455,95 @@ export function tokenToRevoke(
   return stored ? readSecret(stored) : null;
 }
 
+/** How often GET /api/calendar/google may re-check one connection with Google. */
+export const VALIDATION_INTERVAL_MS = 5 * 60_000;
+
+/** True when the connection is active and was not checked within `intervalMs`. Pure. */
+export function validationDue(
+  conn: Pick<CalendarConnection, 'status' | 'last_validated_at'>,
+  now: number = Date.now(),
+  intervalMs: number = VALIDATION_INTERVAL_MS,
+): boolean {
+  if (conn.status !== 'active') return false;
+  if (!conn.last_validated_at) return true;
+  const last = Date.parse(conn.last_validated_at);
+  return Number.isNaN(last) || now - last >= intervalMs;
+}
+
+export type ValidationOutcome = 'not_due' | 'valid' | 'needs_reauth' | 'unknown';
+
 /**
- * Deletes the user's connection row, tokens included. The database then removes its
- * calendar_sync_calendars rows (ON DELETE CASCADE) and keeps calendar_sync_items with
- * connection_id set to NULL.
+ * Asks Google whether the saved authorization still works, so a grant the user removed at
+ * myaccount.google.com/permissions shows up as "Needs reconnecting" without waiting for the
+ * next sync.
+ *
+ * How: a refresh-token exchange. Google's OAuth guide lists "The user has revoked your app's
+ * access" among the reasons a refresh token stops working, and the token endpoint answers such
+ * a refresh with `invalid_grant`
+ * (https://developers.google.com/identity/protocols/oauth2#expiration and
+ * https://developers.google.com/identity/protocols/oauth2/web-server, "Refresh an access token").
+ * The refresh is the cheapest call that tests the grant itself rather than a cached access
+ * token, and the new access token is saved, so it is not wasted.
+ *
+ *   invalid_grant      -> refreshAndPersist marks the row needs_reauth -> 'needs_reauth'
+ *   success            -> 'valid'
+ *   network / 5xx / an unreadable stored token -> 'unknown'; the status is left alone (a Google
+ *                         outage must not log everyone out), the time is still recorded so the
+ *                         next check waits the interval.
+ * Runs at most once per VALIDATION_INTERVAL_MS per connection (last_validated_at, migration 205).
+ * Never throws for a Google answer; it throws only when the database write fails.
  */
-export async function deleteConnection(db: SupabaseClient, userId: string): Promise<void> {
+export async function validateConnection(
+  db: SupabaseClient,
+  conn: CalendarConnection,
+  options: GoogleClientOptions & { intervalMs?: number } = {},
+): Promise<ValidationOutcome> {
+  const now = options.now ?? Date.now();
+  if (!validationDue(conn, now, options.intervalMs)) return 'not_due';
+
+  let outcome: ValidationOutcome;
+  try {
+    await refreshAndPersist(db, conn, options);
+    outcome = 'valid';
+  } catch (err) {
+    if (err instanceof GoogleAuthError) outcome = 'needs_reauth';
+    else if (err instanceof GoogleApiError || err instanceof StoredTokenError) outcome = 'unknown';
+    else throw err;
+  }
+
+  const stamp = { last_validated_at: new Date(now).toISOString() };
+  const { error } = await db.from('calendar_connections').update(stamp).eq('id', conn.id);
+  if (error) throwDbError(error, 'Recording the authorization check');
+  Object.assign(conn, stamp);
+  return outcome;
+}
+
+/**
+ * Deletes one of the user's connections, tokens included. The database then removes its
+ * calendar_sync_calendars rows (ON DELETE CASCADE) and keeps calendar_sync_items with
+ * connection_id set to NULL. The user's other Google accounts are not touched.
+ */
+export async function deleteConnection(db: SupabaseClient, userId: string, connectionId: string): Promise<void> {
   const { error } = await db
     .from('calendar_connections')
     .delete()
+    .eq('id', connectionId)
     .eq('user_id', userId)
     .eq('provider', CALENDAR_PROVIDER);
   if (error) throwDbError(error, 'Deleting the calendar connection');
 }
 
-/** Forgets every saved calendar of a connection (used when a different Google account connects). */
-export async function clearCalendars(db: SupabaseClient, connectionId: string): Promise<void> {
-  const { error } = await db.from('calendar_sync_calendars').delete().eq('connection_id', connectionId);
-  if (error) throwDbError(error, 'Clearing the saved calendars');
-}
-
-/** Replaces the connection's settings object. Returns the row without token columns, or null when there is no connection. */
+/** Replaces one connection's settings object. Returns the row without token columns, or null when there is no such connection. */
 export async function updateSettings(
   db: SupabaseClient,
   userId: string,
+  connectionId: string,
   settings: CalendarConnectionSettings,
 ): Promise<PublicCalendarConnection | null> {
   const { data, error } = await db
     .from('calendar_connections')
     .update({ settings, updated_at: new Date().toISOString() })
+    .eq('id', connectionId)
     .eq('user_id', userId)
     .eq('provider', CALENDAR_PROVIDER)
     .select(PUBLIC_CONNECTION_COLUMNS)
