@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/fx-rates",
       "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/cron/bill-due-tasks",
+      "schedule": "0 11 * * *"
     }
   ]
 }

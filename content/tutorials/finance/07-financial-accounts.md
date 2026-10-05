@@ -113,6 +113,32 @@ The accounts management page at `/dashboard/finance/accounts` lets you:
 
 ---
 
+### Paying Down Cards and Loans
+
+Credit card and loan accounts get their own page: **Debt payoff** (`/dashboard/finance/debt`, linked from the Finance dashboard and under Life in the menu).
+
+**Your debts** — each card and loan with what you owe, its APR, the minimum payment, the next due date (marked Paid once a linked payment covers it), and interest paid this year. Import a statement PDF and the APR, minimum, due date and any **deferred-interest promotions** come from it. A promotion close to its deadline turns amber, with the monthly amount needed to clear it and the deferred interest you'd be charged if you miss it.
+
+**Interest paid** — month by month for each account, exact from imported statements, otherwise from transactions marked as interest.
+
+**Payoff calculator** — pick a debt, then either enter a monthly payment to see the payoff date and total interest, or pick a date to see the payment needed.
+
+**Debt-free plan** — one monthly budget (all minimums plus an extra amount) spread over every debt:
+- **Highest interest first (avalanche)** — the default; pays the least interest. Promo balances are still cleared a payment before their deadline.
+- **Smallest balance first (snowball)** — quick wins, usually more interest.
+- **Promo deadlines first** — every promo balance first, then highest interest.
+- **My own order** — you choose.
+
+The plan shows your debt-free date, interest saved compared with paying only minimums, a balance-over-time chart and a month-by-month schedule. Save it to check later whether your linked card and loan payments are on track.
+
+**Due dates in your planner** — each card and loan due date becomes a task under **Inbox › Inbox › Bills**, with the minimum and the statement balance that avoids interest, and an estimate of what paying early saves. It's checked off automatically when a linked payment lands. Promo deadlines get a task 30 days ahead.
+
+**Reminders** — a **Due soon** banner on the Finance page from 3 days before a payment is due, and optional emails (3 days before, 1 day before, or both).
+
+Every projection here is an estimate (interest = balance × APR ÷ 12 per month, no new charges), not financial advice.
+
+---
+
 ## Screen Recording Notes
 
 > [SCREEN: Navigate to /dashboard/finance/accounts — show the accounts page]
@@ -140,3 +166,4 @@ The accounts management page at `/dashboard/finance/accounts` lets you:
 - Delete with transactions → soft deactivate (data preserved); delete without → hard delete
 - Assign transactions to accounts to maintain accurate per-account balances
 - **Import statement** on an account opens the bank statement import with that account chosen (Lesson 06)
+- **Debt payoff** shows interest paid, a payoff calculator and a debt-free plan (avalanche by default, promo deadlines protected); due dates become planner tasks under Inbox › Bills, with a Due soon banner and optional email reminders

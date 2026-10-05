@@ -11,6 +11,7 @@ import {
   HeartPulse,
   Watch,
   TrendingUp,
+  TrendingDown,
   ChartNetwork,
   DollarSign,
   PiggyBank,
@@ -94,6 +95,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Finance', href: '/dashboard/finance', icon: DollarSign, paid: true },
       { label: 'Budgets', href: '/dashboard/finance/budgets', icon: PiggyBank, paid: true },
       { label: 'Forecast', href: '/dashboard/finance/forecast', icon: TrendingUp, paid: true },
+      { label: 'Debt Payoff', href: '/dashboard/finance/debt', icon: TrendingDown, paid: true },
       { label: 'Travel', href: '/dashboard/travel', icon: Navigation, paid: true },
       { label: 'Equipment', href: '/dashboard/equipment', icon: Package, paid: true },
       // Media moved to Stream.WitUS (decomposition Stage 1). /dashboard/media stays
