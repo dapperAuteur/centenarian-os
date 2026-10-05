@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import {
   TRAVEL_PROTECTED_FIELDS,
   routeLegReferences,
+  templateStopReferences,
   travelReferences,
   visibleVehicle,
   withVisibleVehicle,
@@ -44,6 +45,16 @@ test('routeLegReferences: every leg, named legs.<field>', () => {
   const refs = routeLegReferences([{ vehicle_id: V }, { finance_category_id: V, brand_id: V }, null]);
   assert.deepEqual(refs.map((r) => r.field), ['legs.vehicle_id', 'legs.brand_id', 'legs.finance_category_id']);
   assert.deepEqual(routeLegReferences('nope'), []);
+});
+
+test('templateStopReferences: contact, contact location and vehicle per stop', () => {
+  const refs = templateStopReferences([{ contact_id: V, location_id: V, location_name: 'x' }, { vehicle_id: V }]);
+  assert.deepEqual(refs.map((r) => [r.field, r.table, r.allowPublic === true]), [
+    ['stops.contact_id', 'user_contacts', false],
+    ['stops.location_id', 'contact_locations', false],
+    ['stops.vehicle_id', 'vehicles', true],
+  ]);
+  assert.deepEqual(templateStopReferences(undefined), []);
 });
 
 test('a travel PATCH body loses the owner and server-maintained links', () => {

@@ -27,6 +27,19 @@ export function travelReferences(body: unknown, prefix = ''): Reference[] {
   return referencesIn(body, TRAVEL_REFERENCE_FIELDS, prefix);
 }
 
+/** A trip template stop: a contact, one of its saved locations, and a vehicle. */
+const TEMPLATE_STOP_REFERENCE_FIELDS: readonly ReferenceField[] = [
+  { field: 'contact_id', table: 'user_contacts' },
+  { field: 'location_id', table: 'contact_locations' },
+  { field: 'vehicle_id', table: 'vehicles', allowPublic: true },
+];
+
+/** References for every stop of a multi-stop trip template, named stops.<field>. */
+export function templateStopReferences(stops: unknown): Reference[] {
+  if (!Array.isArray(stops)) return [];
+  return stops.flatMap((stop) => referencesIn(stop, TEMPLATE_STOP_REFERENCE_FIELDS, 'stops.'));
+}
+
 /** References for every leg of a multi-leg route. */
 export function routeLegReferences(legs: unknown): Reference[] {
   if (!Array.isArray(legs)) return [];
