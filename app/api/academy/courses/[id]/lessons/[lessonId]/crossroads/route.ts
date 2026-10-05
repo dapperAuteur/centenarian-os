@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { canReadLesson, getCourseAccess, modulePublished } from '@/lib/academy/access';
 
 function getDb() {
   return createServiceClient(
@@ -32,21 +33,22 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   if (!lesson) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  if (user) {
-    const { data: course } = await db.from('courses').select('teacher_id').eq('id', courseId).single();
-    const isOwner = user.id === course?.teacher_id || user.email === process.env.ADMIN_EMAIL;
-    if (!isOwner) {
-      const { data: enrollment } = await db
-        .from('enrollments')
-        .select('status')
-        .eq('user_id', user.id)
-        .eq('course_id', courseId)
-        .maybeSingle();
-      if (enrollment?.status !== 'active') {
-        return NextResponse.json({ error: 'Not enrolled' }, { status: 403 });
-      }
-    }
-  }
+  // The same access as the lesson itself (anonymous visitors included).
+  const access = await getCourseAccess(db, courseId, user);
+  const { data: lessonFlags } = await db
+    .from('lessons')
+    .select('module_id, is_free_preview, is_published')
+    .eq('id', lessonId)
+    .maybeSingle();
+  const readable = canReadLesson({
+    course: access.course,
+    lesson: lessonFlags,
+    modulePublished: await modulePublished(db, lessonFlags?.module_id),
+    viewer: user,
+    enrolled: access.enrolled,
+    adminEmail: process.env.ADMIN_EMAIL,
+  });
+  if (!readable) return NextResponse.json({ error: 'Not enrolled' }, { status: 403 });
 
   // Get all lessons in the course for random + linear
   const { data: allLessons } = await db
