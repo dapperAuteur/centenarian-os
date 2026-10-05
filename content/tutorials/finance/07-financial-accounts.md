@@ -86,6 +86,18 @@ Every account has a currency, and its opening balance, transactions and balance 
 
 ---
 
+### Cash on Hand
+
+Cash accounts get extra help, because cash never sends you a statement.
+
+- **Cash on hand card** (Finance dashboard) — each active cash account with its balance in its own currency (≈ home currency when foreign) and "Last counted". That line turns amber when you have never counted or the last count is over 30 days old. No cash account yet? A **Track cash on hand** button creates one named Wallet.
+- **Count** — enter what you actually have, as a total or bill by bill and coin by coin. The difference from the recorded balance becomes one entry on the account ("Unrecorded cash spending" or "Cash found", tagged `cash-count`, in the category you pick), so the balance matches. Count history lists every count; **Undo latest count** deletes the latest count and its entry. Needs migration 213.
+- **Paid cash** — amount, what it was for, optional category (learned vendor categories fill in), today's date, and your last used cash account. One tap saves it, offline too.
+- **Withdraw** — opens Transfer into that cash account.
+- **ATM withdrawals in imports** — on a checking or savings statement, rows such as "ATM WITHDRAWAL" or "RETIRO EN CAJERO" get **Cash withdrawal → into** a cash account in the same currency, so the cash becomes cash on hand instead of spending. ATM fees stay expenses.
+
+---
+
 ### The Accounts Dashboard
 
 The accounts row appears at the top of your finance dashboard (`/dashboard/finance`). Each account shows:
@@ -162,6 +174,7 @@ Every projection here is an estimate (interest = balance × APR ÷ 12 per month,
 - 5 account types: checking, savings, credit_card, loan, cash
 - Balance = Opening Balance + income - expenses (auto-calculated from transactions); on a card or loan the balance is what you owe
 - Use Transfer to move money between accounts, including card and loan payments: both balances change, and nothing counts as spending or income
+- Cash accounts: **Count** keeps the balance honest (one "Unrecorded cash spending" or "Cash found" entry), **Paid cash** records cash spending in one tap (offline too), and imported ATM withdrawals go into a cash account instead of counting as spending
 - Accounts appear as a row at the top of the finance dashboard
 - Delete with transactions → soft deactivate (data preserved); delete without → hard delete
 - Assign transactions to accounts to maintain accurate per-account balances
