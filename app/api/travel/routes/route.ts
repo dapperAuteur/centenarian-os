@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createLinkedTransaction } from '@/lib/finance/linked-transaction';
 import { CO2_PER_MILE, HUMAN_POWERED } from '@/lib/travel/constants';
+import { checkReferences, invalidReferenceMessage } from '@/lib/auth/ownership';
+import { travelReferences, routeLegReferences } from '@/lib/travel/references';
 import { getRoute } from '@/lib/geo/route';
 
 function getDb() {
@@ -42,7 +44,8 @@ export async function GET(request: NextRequest) {
     const { data: legs } = await db
       .from('trips')
       .select('route_id')
-      .in('route_id', routeIds);
+      .in('route_id', routeIds)
+      .eq('user_id', user.id);
     if (legs) {
       for (const leg of legs) {
         legCounts[leg.route_id] = (legCounts[leg.route_id] || 0) + 1;
@@ -112,6 +115,12 @@ export async function POST(request: NextRequest) {
   }
 
   const db = getDb();
+
+  // The route's brand and every leg's vehicle, job, brand and finance category
+  // must be the caller's own (a vehicle may also be a shared public-transport one).
+  const refs = await checkReferences(db, user.id, [...travelReferences(body), ...routeLegReferences(legs)]);
+  if (refs.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
+  if (!refs.ok) return NextResponse.json({ error: invalidReferenceMessage(refs.invalid) }, { status: 400 });
 
   // 1. Create the route parent
   const resolvedStatus = trip_status || 'completed';

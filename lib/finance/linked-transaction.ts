@@ -2,6 +2,10 @@
 // Server-side helper to create, update, and delete financial_transactions that are
 // auto-generated from travel module records (fuel_logs, vehicle_maintenance, trips).
 // Uses the service role client to bypass RLS — only call from API routes.
+//
+// Update and delete take the caller's user id and filter on it. The transaction
+// id comes from a stored column (trips.transaction_id and friends); a stored id
+// is not proof of ownership, so the owner filter lives here, not in each caller.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -57,13 +61,16 @@ export async function createLinkedTransaction(
 }
 
 /**
- * Updates the amount, vendor, date, and/or description of an existing linked transaction.
+ * Updates the amount, vendor, date, and/or description of an existing linked
+ * transaction. Only touches a transaction owned by `userId`.
  */
 export async function updateLinkedTransaction(
   db: SupabaseClient,
+  userId: string,
   transactionId: string,
   params: UpdateParams,
 ): Promise<void> {
+  if (!userId) throw new Error('updateLinkedTransaction: userId is required');
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (params.amount !== undefined) updates.amount = Math.abs(params.amount);
   if (params.vendor !== undefined) updates.vendor = params.vendor;
@@ -73,22 +80,27 @@ export async function updateLinkedTransaction(
   const { error } = await db
     .from('financial_transactions')
     .update(updates)
-    .eq('id', transactionId);
+    .eq('id', transactionId)
+    .eq('user_id', userId);
 
   if (error) throw new Error(`updateLinkedTransaction failed: ${error.message}`);
 }
 
 /**
- * Hard-deletes a linked financial_transaction.
+ * Hard-deletes a linked financial_transaction owned by `userId`. Someone else's
+ * transaction is left alone (no error: the record simply is not the caller's).
  */
 export async function deleteLinkedTransaction(
   db: SupabaseClient,
+  userId: string,
   transactionId: string,
 ): Promise<void> {
+  if (!userId) throw new Error('deleteLinkedTransaction: userId is required');
   const { error } = await db
     .from('financial_transactions')
     .delete()
-    .eq('id', transactionId);
+    .eq('id', transactionId)
+    .eq('user_id', userId);
 
   if (error) throw new Error(`deleteLinkedTransaction failed: ${error.message}`);
 }

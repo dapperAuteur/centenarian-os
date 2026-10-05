@@ -5,6 +5,8 @@ import {
   updateLinkedTransaction,
   deleteLinkedTransaction,
 } from '@/lib/finance/linked-transaction';
+import { checkReferences, invalidReferenceMessage, withoutFields } from '@/lib/auth/ownership';
+import { travelReferences, TRAVEL_PROTECTED_FIELDS } from '@/lib/travel/references';
 import { getRoute } from '@/lib/geo/route';
 import { isFifoEligible, allocateFifoForTrip, deallocateFifoForTrip } from '@/lib/travel/fifo';
 
@@ -137,6 +139,12 @@ export async function POST(request: NextRequest) {
   if (!mode || !date) {
     return NextResponse.json({ error: 'mode and date are required' }, { status: 400 });
   }
+
+  // Every foreign id in the body must be the caller's own (a vehicle may also be
+  // a shared public-transport vehicle).
+  const refs = await checkReferences(supabase, user.id, travelReferences(body));
+  if (refs.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
+  if (!refs.ok) return NextResponse.json({ error: invalidReferenceMessage(refs.invalid) }, { status: 400 });
 
   // Auto-calculate distance via OSRM if coordinates provided and no manual distance
   let resolvedDistance = distance_miles;
@@ -288,8 +296,18 @@ export async function PATCH(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { id, origin_lat, origin_lng, dest_lat, dest_lng, ...updates } = body;
+  const { id, origin_lat, origin_lng, dest_lat, dest_lng } = body;
+  // Never pass the owner, the generated transaction link, the route link or
+  // FIFO bookkeeping through from the browser.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the old spread was any; the trip columns are dynamic
+  const updates: Record<string, any> = withoutFields(body, [...TRAVEL_PROTECTED_FIELDS, 'origin_lat', 'origin_lng', 'dest_lat', 'dest_lng']);
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+  // Every foreign id in the body must be the caller's own (a vehicle may also be
+  // a shared public-transport vehicle).
+  const refs = await checkReferences(supabase, user.id, travelReferences(body));
+  if (refs.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
+  if (!refs.ok) return NextResponse.json({ error: invalidReferenceMessage(refs.invalid) }, { status: 400 });
 
   // Auto-calculate distance via OSRM if coordinates provided and no manual distance override
   const hasCoords = typeof origin_lat === 'number' && typeof origin_lng === 'number'
@@ -421,12 +439,12 @@ export async function PATCH(request: NextRequest) {
     if (existing.transaction_id) {
       if (!newCost || newCost <= 0) {
         try {
-          await deleteLinkedTransaction(supabase, existing.transaction_id);
+          await deleteLinkedTransaction(supabase, user.id, existing.transaction_id);
           await supabase.from('trips').update({ transaction_id: null }).eq('id', id);
         } catch { /* non-fatal */ }
       } else {
         try {
-          await updateLinkedTransaction(supabase, existing.transaction_id, {
+          await updateLinkedTransaction(supabase, user.id, existing.transaction_id, {
             amount: newCost,
             vendor: newVendor,
             date: newDate,
