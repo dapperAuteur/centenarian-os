@@ -49,7 +49,16 @@ export function sumByKind(rows: readonly StatementRow[], kind: StatementRowKind)
   return rows.reduce((total, row) => (row.kind === kind ? total + row.amountCents : total), 0);
 }
 
-export function reconcileStatement(parsed: Pick<ParsedStatement, 'rows' | 'statement'>): Reconciliation {
+/** True when an import must be confirmed because the statement doesn't add up. */
+export function needsReconciliationConfirmation(reconciliation: Pick<Reconciliation, 'ok' | 'applicable'>): boolean {
+  return reconciliation.applicable !== false && !reconciliation.ok;
+}
+
+export function reconcileStatement(
+  parsed: Pick<ParsedStatement, 'rows' | 'statement'> & Pick<Partial<ParsedStatement>, 'documentKind'>,
+): Reconciliation {
+  // A transaction list from a website has no balances to check.
+  if (parsed.documentKind === 'activity') return { ok: false, checked: false, applicable: false, differences: [] };
   const facts = parsed.statement;
   const differences: ReconciliationDifference[] = [];
 
@@ -74,5 +83,5 @@ export function reconcileStatement(parsed: Pick<ParsedStatement, 'rows' | 'state
     }
   }
 
-  return { ok: checked && differences.length === 0, checked, differences };
+  return { ok: checked && differences.length === 0, checked, applicable: true, differences };
 }

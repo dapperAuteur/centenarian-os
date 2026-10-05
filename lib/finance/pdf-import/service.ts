@@ -20,7 +20,7 @@ import { isUuid, loadOwnedAccount, readActions, type OwnedAccount, type PreviewR
 import type { CommitResult, RowAction } from '../csv-import/types.ts';
 import { MAX_PDF_BYTES, extractPdfLines } from './extract.ts';
 import { parseStatementLines } from './issuers/index.ts';
-import { reconcileStatement } from './reconcile.ts';
+import { needsReconciliationConfirmation, reconcileStatement } from './reconcile.ts';
 import { STATEMENTS_MIGRATION_MESSAGE, isStatementsTableMissing } from './statements.ts';
 import type { ParsedStatement, Reconciliation, StatementFacts } from './types.ts';
 
@@ -31,12 +31,16 @@ export const RECONCILIATION_UNCONFIRMED_MESSAGE =
 export interface StatementPreview {
   issuer: string;
   issuerLabel: string;
+  /** 'activity' for a transaction list printed from a card website (nothing to reconcile). */
+  documentKind: 'statement' | 'activity';
   confidence: ParsedStatement['confidence'];
   accountLastFour: string | null;
   period: ParsedStatement['period'];
   facts: StatementFacts;
   reconciliation: Reconciliation;
   warnings: string[];
+  /** Information that needs no action. */
+  notes: string[];
   pageCount: number;
   rowCount: number;
 }
@@ -112,12 +116,14 @@ export function toStatementPreview(read: ReadPdfStatement): StatementPreview {
   return {
     issuer: parsed.issuer,
     issuerLabel: parsed.issuerLabel,
+    documentKind: parsed.documentKind ?? 'statement',
     confidence: parsed.confidence,
     accountLastFour: parsed.accountLastFour,
     period: parsed.period,
     facts: parsed.statement,
     reconciliation,
     warnings: parsed.warnings,
+    notes: parsed.notes ?? [],
     pageCount,
     rowCount: parsed.rows.length,
   };
@@ -208,6 +214,8 @@ export interface PdfCommitResult extends CommitResult {
   statementSaved: boolean;
   /** Why it wasn't, when it wasn't. */
   statementError?: string;
+  /** True for a transaction list (not a statement): there was no summary to save. */
+  statementSkipped?: boolean;
 }
 
 /** Throws ImportError 503 "Run migration 209 first" when account_statements doesn't exist yet. */
@@ -275,10 +283,11 @@ export async function runPdfImport(db: SupabaseClient, userId: string, body: unk
   const request = parsePdfRequest(body, { requireAccount: true });
   const account = await loadOwnedAccount(db, userId, request.accountId as string);
   const read = await readPdfStatement(request.bytes);
-  if (!read.reconciliation.ok && !request.confirmUnreconciled) {
+  if (needsReconciliationConfirmation(read.reconciliation) && !request.confirmUnreconciled) {
     throw new ImportError(409, 'reconciliation_unconfirmed', RECONCILIATION_UNCONFIRMED_MESSAGE);
   }
-  if (read.parsed.period.end) await assertStatementsTable(db);
+  const isStatement = read.parsed.documentKind !== 'activity';
+  if (isStatement && read.parsed.period.end) await assertStatementsTable(db);
 
   const plan = await planImport(db, userId, account.id, read.parsed.rows);
   const result = await commitImport(db, userId, {
@@ -290,6 +299,8 @@ export async function runPdfImport(db: SupabaseClient, userId: string, body: unk
     rows: resolveActions(plan.rows, request.actions),
   });
 
+  // A transaction list printed from a website has no statement summary to keep.
+  if (!isStatement) return { ...result, statementSaved: false, statementSkipped: true };
   if (!read.parsed.period.end) {
     return { ...result, statementSaved: false, statementError: "The statement's closing date wasn't found, so its summary wasn't saved." };
   }
