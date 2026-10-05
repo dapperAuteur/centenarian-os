@@ -3,8 +3,8 @@
 // state, exchange the code for tokens, look up which Google account it is, store the
 // tokens encrypted, and redirect to the settings page.
 //
-// Every outcome is a redirect to /dashboard/settings/calendar with ?connected=google or
-// ?error=<code>; the page turns the code into a sentence. The response never renders the
+// Every outcome is a redirect to /dashboard/settings/calendar with
+// ?connected=google&connection_id=<id> or ?error=<code>; the page turns the code into a sentence. The response never renders the
 // code or the tokens: Google's guide recommends that "the server first handle the request,
 // then redirect to another URL that doesn't include the response parameters"
 // (https://developers.google.com/identity/protocols/oauth2/web-server, Step 4).
@@ -26,11 +26,10 @@ import {
   fetchUserInfo,
   getGoogleOAuthConfig,
   hasScope,
-  revokeToken,
   type GoogleTokenSet,
   type GoogleUserInfo,
 } from '@/lib/google/calendar-client';
-import { clearCalendars, getConnection, saveTokens, tokenToRevoke } from '@/lib/google/connection';
+import { saveTokens } from '@/lib/google/connection';
 import {
   CALENDAR_SETTINGS_PATH,
   describeCalendarError,
@@ -97,34 +96,17 @@ export async function GET(request: NextRequest) {
       throw err;
     }
 
-    const db = getServiceDb();
-    const existing = await getConnection(db, user.id);
-
-    // A DIFFERENT Google account than the one connected before: the saved calendars (and
-    // their sync tokens) belong to the old account, so forget them.
-    const accountChanged = Boolean(existing?.provider_sub && existing.provider_sub !== account.sub);
-    if (existing && accountChanged) await clearCalendars(db, existing.id);
-
-    await saveTokens(db, {
+    // Several Google accounts per user (migration 205): the row is matched on Google's stable
+    // account id (sub). The same account again -> its tokens are replaced and its calendar
+    // choices kept (a reconnect). A different account -> a new row next to the others.
+    const { connection } = await saveTokens(getServiceDb(), {
       userId: user.id,
       tokens,
       accountEmail: account.email,
       providerSub: account.sub,
     });
 
-    // Then release the old account's grant at Google, now that its tokens are overwritten.
-    // Only for a different account: revoking removes the whole grant for that Google
-    // account, so doing it for the same account would kill the tokens just saved.
-    if (existing && accountChanged) {
-      try {
-        const oldToken = tokenToRevoke(existing);
-        if (oldToken) await revokeToken(oldToken);
-      } catch {
-        // Best effort: the old tokens are gone from the database either way.
-      }
-    }
-
-    return done('connected=google');
+    return done(`connected=google&connection_id=${encodeURIComponent(connection.id)}`);
   } catch (err) {
     const info = describeCalendarError(err);
     if (info.code === 'internal') {

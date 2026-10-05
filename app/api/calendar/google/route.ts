@@ -1,41 +1,51 @@
 // app/api/calendar/google/route.ts
-// The signed-in user's Google Calendar connection.
+// The signed-in user's Google Calendar connections (one per Google account, migration 205).
 //
-// GET    -> { configured, connection, calendars }
-//           `connection` is null when nothing is connected. It never carries a token column.
-//           `configured` is false while the server still lacks its Google setup.
-// PATCH  -> body: any of { default_account_id, default_trip_mode, default_tag } (null clears one).
-//           Saves the defaults in connection.settings. -> { connection }
-// DELETE -> revokes the grant at Google, then deletes the connection row (tokens and saved
-//           calendars go with it). -> { ok, revoked, already_revoked, warning }
+// GET    -> { configured, connections: [{ ...connection, calendars: [...] }] }
+//           No connection object ever carries a token column. `configured` is false while the
+//           server still lacks its Google setup.
+//           Before answering, each ACTIVE connection not checked in the last 5 minutes is
+//           re-checked with Google (validateConnection: a refresh-token exchange). A grant the
+//           user removed at myaccount.google.com/permissions comes back as invalid_grant, the
+//           row is marked needs_reauth, and this response already shows it. A Google outage
+//           leaves the status alone.
+// PATCH  -> body: { connection_id?, default_account_id?, default_trip_mode?, default_tag? }
+//           (null clears a default). connection_id may be left out when only one account is
+//           connected. Saves the defaults in that connection's settings. -> { connection }
+// DELETE -> ?connection_id=<id> (optional with one account). Revokes that account's grant at
+//           Google, then deletes that one connection row (its tokens and saved calendars go
+//           with it; the user's other Google accounts stay). -> { ok, revoked, already_revoked, warning }
 //           If Google does not confirm the revocation, nothing is deleted and the answer is
-//           { error, code: 'revoke_failed', can_force: true }; DELETE ?force=1 deletes anyway.
+//           { error, code: 'revoke_failed', can_force: true }; add &force=1 to delete anyway.
 //
 // Every handler checks the session with the cookie client first, then uses the
 // service-role client, because calendar_connections is closed to browser roles.
-// Errors are JSON { error, code }; see describeCalendarError for the codes.
+// Errors are JSON { error, code }; see describeCalendarError for the codes, plus
+// not_connected (404) and connection_id_required (400).
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { TRIP_MODES } from '@/lib/capture/tokens';
-import { revokeToken } from '@/lib/google/calendar-client';
+import { isGoogleConfigured, revokeToken } from '@/lib/google/calendar-client';
 import {
   deleteConnection,
-  getConnection,
-  getPublicConnection,
+  listConnections,
   listStoredCalendars,
+  resolveUserConnection,
+  toPublicConnection,
   tokenToRevoke,
   updateSettings,
+  validateConnection,
   type CalendarConnectionSettings,
 } from '@/lib/google/connection';
 import {
   calendarErrorResponse,
   describeCalendarError,
   getServiceDb,
+  isUuid,
   missingServerSetup,
 } from '@/lib/google/route-helpers';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_TAG_LENGTH = 40;
 
 async function getUser() {
@@ -53,13 +63,29 @@ export async function GET() {
 
   try {
     const db = getServiceDb();
-    const connection = await getPublicConnection(db, user.id);
-    const calendars = connection ? await listStoredCalendars(db, connection.id) : [];
-    return NextResponse.json({
-      configured: missingServerSetup().length === 0,
-      connection,
-      calendars,
-    });
+    const rows = await listConnections(db, user.id);
+
+    // Re-check each due connection with Google, in parallel. Only possible when the OAuth
+    // client is configured (the refresh needs it). validateConnection updates the row object
+    // in place, so the response below reflects the result.
+    if (isGoogleConfigured()) {
+      await Promise.all(
+        rows.map((conn) =>
+          validateConnection(db, conn).catch((err) => {
+            // A failed bookkeeping write must not hide the page.
+            console.error('[api/calendar/google] validate:', err instanceof Error ? err.message : err);
+          }),
+        ),
+      );
+    }
+
+    const connections = await Promise.all(
+      rows.map(async (conn) => ({
+        ...toPublicConnection(conn),
+        calendars: await listStoredCalendars(db, conn.id),
+      })),
+    );
+    return NextResponse.json({ configured: missingServerSetup().length === 0, connections });
   } catch (err) {
     return calendarErrorResponse(err, 'GET');
   }
@@ -78,11 +104,14 @@ export async function PATCH(request: NextRequest) {
     return badRequest('Send a JSON object.');
   }
 
+  const connectionId = body.connection_id ?? null;
+  if (connectionId !== null && !isUuid(connectionId)) return badRequest('connection_id must be a connection id.');
+
   const changes: CalendarConnectionSettings = {};
 
   if ('default_account_id' in body) {
     const value = body.default_account_id;
-    if (value !== null && (typeof value !== 'string' || !UUID_RE.test(value))) {
+    if (value !== null && !isUuid(value)) {
       return badRequest('default_account_id must be an account id or null.');
     }
     changes.default_account_id = value;
@@ -107,10 +136,11 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const db = getServiceDb();
-    const current = await getPublicConnection(db, user.id);
-    if (!current) {
-      return NextResponse.json({ error: 'Google Calendar is not connected.', code: 'not_connected' }, { status: 404 });
+    const resolved = await resolveUserConnection(db, user.id, connectionId);
+    if (!resolved.ok) {
+      return NextResponse.json({ error: resolved.message, code: resolved.code }, { status: resolved.status });
     }
+    const current = resolved.connection;
 
     // The default account must be one of the user's own accounts.
     if (changes.default_account_id) {
@@ -124,7 +154,7 @@ export async function PATCH(request: NextRequest) {
       if (!account) return badRequest('That account was not found.');
     }
 
-    const connection = await updateSettings(db, user.id, { ...(current.settings ?? {}), ...changes });
+    const connection = await updateSettings(db, user.id, current.id, { ...(current.settings ?? {}), ...changes });
     return NextResponse.json({ connection });
   } catch (err) {
     return calendarErrorResponse(err, 'PATCH');
@@ -135,13 +165,22 @@ export async function DELETE(request: NextRequest) {
   const user = await getUser();
   if (!user) return unauthorized();
 
-  const force = request.nextUrl.searchParams.get('force') === '1';
+  const params = request.nextUrl.searchParams;
+  const force = params.get('force') === '1';
+  const connectionId = params.get('connection_id');
+  if (connectionId !== null && !isUuid(connectionId)) return badRequest('connection_id must be a connection id.');
 
   try {
     const db = getServiceDb();
-    const conn = await getConnection(db, user.id);
-    // Already gone: disconnecting twice is not an error.
-    if (!conn) return NextResponse.json({ ok: true, revoked: false, already_revoked: false, warning: null });
+    const resolved = await resolveUserConnection(db, user.id, connectionId);
+    if (!resolved.ok) {
+      // Already gone: disconnecting twice is not an error.
+      if (resolved.code === 'not_connected') {
+        return NextResponse.json({ ok: true, revoked: false, already_revoked: false, warning: null });
+      }
+      return NextResponse.json({ error: resolved.message, code: resolved.code }, { status: resolved.status });
+    }
+    const conn = resolved.connection;
 
     let revoked = false;
     let alreadyRevoked = false;
@@ -150,7 +189,8 @@ export async function DELETE(request: NextRequest) {
       const token = tokenToRevoke(conn);
       if (token) {
         // Google answering "this token is not valid any more" counts as done: there is
-        // nothing left to revoke.
+        // nothing left to revoke. Revoking removes the grant for THIS Google account only;
+        // the user's other connected accounts are separate grants.
         alreadyRevoked = (await revokeToken(token)).alreadyInvalid;
         revoked = true;
       } else {
@@ -172,7 +212,7 @@ export async function DELETE(request: NextRequest) {
         'The saved connection was deleted, but Google did not confirm that access was removed. Remove this app from your Google Account yourself at https://myaccount.google.com/permissions.';
     }
 
-    await deleteConnection(db, user.id);
+    await deleteConnection(db, user.id, conn.id);
     return NextResponse.json({ ok: true, revoked, already_revoked: alreadyRevoked, warning });
   } catch (err) {
     return calendarErrorResponse(err, 'DELETE');

@@ -17,6 +17,9 @@
 //   [cal-list]   https://developers.google.com/workspace/calendar/api/v3/reference/calendarList/list
 //   [cal-entry]  https://developers.google.com/workspace/calendar/api/v3/reference/calendarList
 //   [cal-errors] https://developers.google.com/workspace/calendar/api/guides/errors
+//   [ev-list]    https://developers.google.com/workspace/calendar/api/v3/reference/events/list
+//   [ev-res]     https://developers.google.com/workspace/calendar/api/v3/reference/events
+//   [cal-sync]   https://developers.google.com/workspace/calendar/api/guides/sync
 //
 // This file also runs under `node --test --experimental-strip-types`
 // (tests/unit/google-calendar-client.test.ts), so it uses no enums and no
@@ -207,6 +210,13 @@ export interface GoogleClientOptions {
 export interface AuthUrlOptions extends Pick<GoogleClientOptions, 'config'> {
   /** The account to preselect when reconnecting. [oauth-web] `login_hint`: "an email address or sub identifier". */
   loginHint?: string | null;
+  /**
+   * Show Google's account chooser even when the browser is signed in to one account, so the
+   * user can connect ANOTHER Google account. [oauth-web] `prompt`: "A space-delimited,
+   * case-sensitive list of prompts to present the user"; `select_account` = "Prompt the user
+   * to select an account."
+   */
+  selectAccount?: boolean;
 }
 
 /**
@@ -233,7 +243,7 @@ export function buildAuthUrl(state: string, redirectUri: string, options: AuthUr
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('scope', GOOGLE_SCOPES.join(' '));
   url.searchParams.set('access_type', 'offline');
-  url.searchParams.set('prompt', 'consent');
+  url.searchParams.set('prompt', options.selectAccount ? 'consent select_account' : 'consent');
   url.searchParams.set('include_granted_scopes', 'true');
   url.searchParams.set('state', state);
   if (options.loginHint) url.searchParams.set('login_hint', options.loginHint);
@@ -553,4 +563,137 @@ export async function listCalendars(
   }
 
   throw new GoogleApiError(200, 'too_many_pages', `more than ${CALENDAR_MAX_PAGES} pages`, context);
+}
+
+// ── Events ──────────────────────────────────────────────────────────────────────
+
+/** [ev-list] "GET https://www.googleapis.com/calendar/v3/calendars/calendarId/events". */
+export function eventsListEndpoint(calendarId: string): string {
+  return `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`;
+}
+
+/**
+ * The part of an event resource ([ev-res]) the sync reads. Anything else Google sends is
+ * ignored. In an incremental sync a deleted event may arrive with little more than `id`
+ * and `status: "cancelled"`, so every other field is optional.
+ */
+export interface GoogleEventTime {
+  /** All-day events: "The date, in the format yyyy-mm-dd, if this is an all-day event." */
+  date?: string | null;
+  /** Timed events: "a combined date-time value (formatted according to RFC3339)". */
+  dateTime?: string | null;
+  /** "The time zone in which the time is specified. (Formatted as an IANA Time Zone Database name...)" */
+  timeZone?: string | null;
+}
+
+export interface GoogleEvent {
+  id: string;
+  /** [ev-res] `etag`: "ETag of the resource." Changes whenever the event changes. */
+  etag?: string | null;
+  /** [ev-res] `status`: "confirmed", "tentative" or "cancelled". */
+  status?: string | null;
+  summary?: string | null;
+  description?: string | null;
+  location?: string | null;
+  /** [ev-res] `updated`: "Last modification time of the main event data (as a RFC3339 timestamp)." */
+  updated?: string | null;
+  start?: GoogleEventTime | null;
+  end?: GoogleEventTime | null;
+  /** Set on an instance of a recurring event (singleEvents=true expands them). */
+  recurringEventId?: string | null;
+}
+
+export interface EventsPage {
+  items: GoogleEvent[];
+  /** [ev-list] "Token used to access the next page of this result. Omitted if no further results are available". */
+  nextPageToken: string | null;
+  /**
+   * [ev-list] "Token used at a later point in time to retrieve only the entries that have
+   * changed since this result was returned. Omitted if further results are available, in
+   * which case nextPageToken is provided." So it arrives on the LAST page only.
+   */
+  nextSyncToken: string | null;
+  /** [ev-list] `timeZone`: "The time zone of the calendar." */
+  timeZone: string | null;
+}
+
+export interface ListEventsParams {
+  syncToken?: string | null;
+  timeMin?: string | null;
+  timeMax?: string | null;
+  pageToken?: string | null;
+  maxResults?: number;
+}
+
+/** True for Google's "sync token no longer valid" answer: HTTP 410 Gone ([cal-sync], [cal-errors]). */
+export function isSyncTokenGone(err: unknown): boolean {
+  return err instanceof GoogleApiError && err.status === 410;
+}
+
+/**
+ * One page of events.list.
+ *
+ * Parameters, all from [ev-list]:
+ *   singleEvents=true  "Whether to expand recurring events into instances and only return single
+ *                      one-off events and instances of recurring events". Each instance becomes
+ *                      its own task, and a moved instance is its own change.
+ *   showDeleted=true   "Whether to include deleted events (with status equals "cancelled") in the
+ *                      result." Cancelled events are how the sync learns to archive a task. With a
+ *                      syncToken, deleted events "will always be in the result set and it is not
+ *                      allowed to set showDeleted to False", so it is sent as true every time.
+ *   syncToken          Incremental sync. "There are several query parameters that cannot be
+ *                      specified together with nextSyncToken ... iCalUID, orderBy,
+ *                      privateExtendedProperty, q, sharedExtendedProperty, timeMin, timeMax,
+ *                      updatedMin." So timeMin/timeMax are sent ONLY without a sync token.
+ *                      "If the syncToken expires, the server will respond with a 410 GONE response
+ *                      code and the client should clear its storage and perform a full
+ *                      synchronization without any syncToken." (isSyncTokenGone)
+ *   maxResults         "Maximum number of events returned on one result page ... The default is
+ *                      250 events. The page size can never be larger than 2500 events."
+ *
+ * Throws GoogleApiError (status 410 for an expired sync token, 401 for an expired access token)
+ * or GoogleAuthError.
+ */
+export async function listEvents(
+  accessToken: string,
+  calendarId: string,
+  params: ListEventsParams,
+  options: Pick<GoogleClientOptions, 'fetchImpl'> = {},
+): Promise<EventsPage> {
+  const context = 'Google events list';
+  const url = new URL(eventsListEndpoint(calendarId));
+  url.searchParams.set('singleEvents', 'true');
+  url.searchParams.set('showDeleted', 'true');
+  url.searchParams.set('maxResults', String(params.maxResults ?? 250));
+  if (params.syncToken) {
+    url.searchParams.set('syncToken', params.syncToken);
+  } else {
+    if (params.timeMin) url.searchParams.set('timeMin', params.timeMin);
+    if (params.timeMax) url.searchParams.set('timeMax', params.timeMax);
+  }
+  if (params.pageToken) url.searchParams.set('pageToken', params.pageToken);
+
+  const response = await send(
+    options.fetchImpl ?? fetch,
+    url.toString(),
+    { method: 'GET', headers: { Authorization: `Bearer ${accessToken}` } },
+    context,
+  );
+  if (!response.ok) throw classifyGoogleError(response.status, response.body, context);
+
+  const record = asRecord(response.body);
+  const rawItems = Array.isArray(record?.items) ? record.items : [];
+  const items: GoogleEvent[] = [];
+  for (const raw of rawItems) {
+    const entry = asRecord(raw);
+    const id = asString(entry?.id);
+    if (!entry || !id) continue;
+    items.push({ ...(entry as Omit<GoogleEvent, 'id'>), id });
+  }
+  return {
+    items,
+    nextPageToken: asString(record?.nextPageToken),
+    nextSyncToken: asString(record?.nextSyncToken),
+    timeZone: asString(record?.timeZone),
+  };
 }
