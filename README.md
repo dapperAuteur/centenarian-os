@@ -6,7 +6,7 @@
 > [`/dashboard/weekly-review`](./app/dashboard/weekly-review)) can surface cross-domain patterns no
 > single-vertical tracker can see. That co-location is the product, not an accident of scope.
 
-> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online)), offline-first via service-worker + IndexedDB queue, **206 migrations** to date.
+> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online)), offline-first via service-worker + IndexedDB queue, **210 migrations** to date.
 
 **Actively decomposing.** Modules that a sibling WitUS app already owns are being removed under
 the ecosystem's "one app, one job" rule (see [CLAUDE.md](./CLAUDE.md)) — Media → Stream.WitUS,
@@ -31,7 +31,7 @@ flowchart LR
 
   CentOS[centenarian-os<br/>Next.js 15 · Vercel<br/>14 modules]
   Contractor[contractor-os<br/>Work.WitUS]
-  DB[(Supabase Postgres<br/>206 migrations)]:::shared
+  DB[(Supabase Postgres<br/>210 migrations)]:::shared
 
   CentOS -->|service-role + publishable| DB
   Contractor -->|service-role + publishable| DB
@@ -40,7 +40,7 @@ flowchart LR
 For dev-audience readers:
 
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** — full module map, Mermaid diagrams of the shared-DB boundary, cross-app traffic via the `unified-schedule` edge function, offline-sync layer, repo layout, and stack table.
-- **[MIGRATIONS.md](./MIGRATIONS.md)** — 206 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
+- **[MIGRATIONS.md](./MIGRATIONS.md)** — 210 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
 - **[CLAUDE.md](./CLAUDE.md)** — AI-collaborator instructions doubling as the project conventions doc (style, a11y, the Shared Database rule, branch workflow).
 - **[STYLE_GUIDE.md](./STYLE_GUIDE.md)** — git workflow, branch naming, Conventional Commits, PR rules. Every change starts on a new branch off `main`; `main` is never pushed to directly.
 - **[docs/CentenarianAcademy/](./docs/CentenarianAcademy/)** — course-authoring standards: `CourseAuthoringGuide.md` (craft), `CourseProductionPlaybook.md` (process), `CitationIntegrityGuide.md` (verify every source, never ship a fake citation), and `CourseCreationWithAI.md` (hand to your AI). Per-course recipes: `CourseAuthoringGuide NASM CPT/CES/CNC.md` and `CourseAuthoringGuide BVC.md` (Better Vice Club: audio-first, four-lens episodes; episode-per-module; rotating quizzes + FlashLearn recall loop + season-wide glossary). Courses cite only verified, peer-reviewed sources and ship a teacher evidence ledger.
@@ -106,12 +106,12 @@ No free plan. All users must subscribe to access paid modules.
 
 | Module | Description | Access |
 |--------|-------------|--------|
-| **Planner** | Roadmap, Goals, Milestones, Tasks hierarchy with day/week/month views; one-field task capture into an auto-created Inbox (works offline), searchable goal picker, Inbox filter; Google Calendar connection (read-only, choose which calendars will sync; event sync is the next phase) | Paid |
+| **Planner** | Roadmap, Goals, Milestones, Tasks hierarchy with day/week/month views; one-field task capture into an auto-created Inbox (works offline), searchable goal picker, Inbox filter; Google Calendar sync (read-only, one or more Google accounts; events on the calendars you choose become planner tasks, daily plus Sync now) | Paid |
 | **Fuel** | Nutrition tracking with NCV framework, USDA/Open Food Facts APIs, auto inventory | Paid |
 | **Engine** | Pomodoro focus sessions, doodle canvas, daily debrief, AI weekly reviews | Paid |
 | **Health Metrics** | RHR, steps, sleep, body composition; Garmin/Oura/WHOOP sync; CSV import | Paid |
 | **Workouts & Exercises** | Exercise library with categories; workout templates; Nomad Longevity OS | Paid |
-| **Financial Dashboard** | Accounts, transactions, budgets, invoices, bank statement CSV import with duplicate detection, matching and undo, CSV export, learned vendor categories ("Always categorize this vendor as...?"), transfers between your own accounts (card and loan payments included) tracked as transfers instead of spending and income | Paid |
+| **Financial Dashboard** | Accounts, transactions, budgets, invoices, bank statement CSV import with duplicate detection, matching and undo, CSV export, learned vendor categories ("Always categorize this vendor as...?"), transfers between your own accounts (card and loan payments included) tracked as transfers instead of spending and income, a Budgets page with budgets by month, rollover, and suggested budgets from your own history (average or median of the last 3, 6 or 12 months) | Paid |
 | **Travel & Vehicles** | Fuel logs with OCR, trip tracking, multi-stop routes, maintenance, IRS mileage | Paid |
 | **Equipment & Assets** | Asset tracking, valuation history, media gallery, cross-module links | Paid |
 | **Correlations & Analytics** | Cross-module data correlations, trend charts, daily/weekly aggregates | Paid |
@@ -217,11 +217,27 @@ One-way, Google -> CentenarianOS. The only Calendar scope requested is
 `https://www.googleapis.com/auth/calendar.readonly` (plus `openid email` to show which account
 is connected), so nothing is ever written to Google.
 
-**What ships today (phase 1, "connect"):** Settings -> Calendar Sync (`/dashboard/settings/calendar`)
-connects a Google account, lists its calendars, lets the user switch each one on or off, shows
-"Reconnect" when Google stops accepting the saved authorization, and disconnects (revokes the
-grant at Google, then deletes the saved tokens and calendar choices). **Events are not synced
-yet.** That is the next phase; the `calendar_sync_items` table is created now and stays empty.
+**What ships today (phases 1 and 2, "connect" + "sync"):** Settings -> Calendar Sync
+(`/dashboard/settings/calendar`) connects one or more Google accounts (for example personal and
+business; one `calendar_connections` row per Google account, matched on Google's account id), lists
+each account's calendars with its own on/off checklist, and shows per account: status, last synced
+time, the last run's counts (created / updated / archived / flagged) and errors, **Sync now**,
+Reconnect and Disconnect (revokes that account's grant at Google, then deletes its saved tokens and
+calendar choices; other accounts stay). **Sync all** syncs every account; a Vercel cron
+(`/api/cron/calendar-sync`, daily at 06:00 UTC, `CRON_SECRET` Bearer guard) syncs everyone.
+
+Loading the page re-checks each account with Google (a refresh-token exchange, at most once per 5
+minutes per account), so an account whose access was removed at
+myaccount.google.com/permissions shows "Needs reconnecting" straight away.
+
+What a sync does (`lib/calendar/google-sync.ts`): the first run of a calendar reads 30 days back to
+180 days ahead, later runs read only changes (Google sync token; a 410 Gone falls back to the full
+window). Each event becomes a planner task under a "Google Calendar: <calendar name>" milestone
+(`resolveImportMilestone`, the Inbox when the user has no roadmap); all-day events at 09:00; times in
+the event's or calendar's time zone; moved events move their task, cancelled events archive it,
+completed tasks stay completed, and a task the user deleted is not recreated. Titles go through the
+capture-token parser and the result is stored in `calendar_sync_items.parsed`, but **only tasks are
+created for now**: `#expense`, `#trip` and the other tags do not create records yet (phase 4.4).
 
 **Where the tokens live:** `calendar_connections`, encrypted with AES-256-GCM
 (`lib/crypto/tokens.ts`) before they are written. The table has Row Level Security on and no
@@ -230,8 +246,9 @@ no response to the browser includes a token column.
 
 **Setup:**
 
-1. Apply `supabase/migrations/204_calendar_sync.sql`. Until it is applied, the routes answer
-   with a JSON error (`code: "migration_missing"`) and the page says so.
+1. Apply `supabase/migrations/204_calendar_sync.sql`, then `205_calendar_multi_account.sql`
+   (several accounts per user, validation and last-run columns). Until both are applied, the routes
+   answer with a JSON error (`code: "migration_missing"`) and the page says so.
 2. In Google Cloud Console: enable the Google Calendar API, configure the OAuth consent screen,
    and create an OAuth client of type "Web application".
 3. On that client, add one authorized redirect URI per origin the app is served from:
@@ -248,13 +265,14 @@ name, email and profile
 In that state the page asks the user to Reconnect about once a week. Google describes that
 7-day limit only for the "Testing" status.
 
-**Not yet verified against a live Google OAuth client** (none existed when this was built; the
-client was written from Google's documentation and is covered by unit tests with a fake
-`fetch`). Check by hand once credentials exist: the consent screen appears and returns to the
-settings page as connected; the account email shows; the calendar list loads; a calendar toggle
-survives a reload; Disconnect removes the app from the Google Account's third-party access
-list; connecting again after that works; and an expired or revoked grant turns into "Needs
-reconnecting" rather than an error page.
+**Verification status:** connect and disconnect (phase 1) were checked by hand against the live
+OAuth client on 2026-10-04. The sync engine, several accounts, and the on-load revocation check
+were written from Google's documentation and are covered by unit tests with fakes only. Check by
+hand after applying migration 205: a second Google account connects next to the first; Sync now
+creates tasks under "Google Calendar: <name>"; a second Sync now changes nothing; moving an event
+in Google and syncing moves the task; deleting it archives the task; removing access at
+myaccount.google.com/permissions shows "Needs reconnecting" on the next page load (allow up to 5
+minutes since the last check); and the daily cron run appears as a new "Last synced" time.
 
 ### Optional: Error Monitoring (Better Stack)
 
@@ -324,7 +342,7 @@ supabase db push
 # Run migrations in order from supabase/migrations/
 ```
 
-There are 206 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the ContractorOS (Work.WitUS) app — read [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" before adding any.
+There are 210 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the ContractorOS (Work.WitUS) app — read [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" before adding any.
 
 ### Run Development Server
 
@@ -340,7 +358,7 @@ Open [http://localhost:3000](http://localhost:3000)
 npm run test:unit
 ```
 
-Runs the pure-function tests with Node's built-in test runner (`node --test --experimental-strip-types`, Node 22.6+). No database, network or extra dependencies. Covers merchant-name matching and learned vendor categories (`tests/transaction-matching.test.ts`), the stored-secret encryption helper (`tests/unit/crypto-tokens.test.ts`), and the Google Calendar client and token refresh (`tests/unit/google-calendar-client.test.ts`, with a fake `fetch`).
+Runs the pure-function tests with Node's built-in test runner (`node --test --experimental-strip-types`, Node 22.6+). No database, network or extra dependencies. Covers merchant-name matching and learned vendor categories (`tests/transaction-matching.test.ts`), the stored-secret encryption helper (`tests/unit/crypto-tokens.test.ts`), the Google Calendar client and token refresh (`tests/unit/google-calendar-client.test.ts`, with a fake `fetch`), and the Google Calendar sync helpers: event to task fields, time zones, the sync decision and the 410 fallback (`tests/unit/google-sync.test.ts`).
 
 ## Project Structure
 
@@ -383,7 +401,7 @@ centenarian-os/
 ├── content/tutorials/         # 15+ tutorial course scripts
 ├── public/templates/          # CSV import templates (10+ modules)
 └── supabase/
-    └── migrations/            # 206 database migrations — see MIGRATIONS.md
+    └── migrations/            # 210 database migrations — see MIGRATIONS.md
 ```
 
 For the full module map and the cross-app shared-DB story, see **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
@@ -392,6 +410,7 @@ For the full module map and the cross-app shared-DB story, see **[ARCHITECTURE.m
 
 - **Authentication**: Supabase Auth + Cloudflare Turnstile on signup
 - **Authorization**: Row Level Security (RLS) on all tables
+- **Profiles**: billing, plan and role columns (`subscription_status`, `stripe_*`, `role`, `invite_limit`, `products`, `selected_modules`, ...) can only be changed by server code with the service role; a trigger rejects browser-session writes (migration 206). Other users' names, avatars and bios are read from the `public_profiles` view, and the `profiles` table is readable only by its owner (migration 207). See `lib/profiles/public-profiles.ts`.
 - **Data Encryption**: TLS 1.3 in transit, AES-256 at rest
 - **Subscription gating**: Server-side and client-side access control
 - **Admin guard**: ADMIN_EMAIL env var check on all admin routes

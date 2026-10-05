@@ -321,6 +321,7 @@ const PHASES: Phase[] = [
       { done: true, text: 'AI recipe ideas from current ingredient inventory (Gemini)' },
       { done: true, text: 'Life Retrospective: AI narrative synthesis across all modules' },
       { done: true, text: 'Google Calendar .ics import with pure-TS parser (no external deps)' },
+      { done: true, text: 'Google Calendar one-way sync: several Google accounts, incremental sync tokens, daily cron + Sync now, events become planner tasks' },
       { done: true, text: 'In-app AI help assistant with RAG (retrieval-augmented generation)' },
       { done: true, text: 'Cross-module analytics dashboard with daily/weekly aggregate views' },
     ],

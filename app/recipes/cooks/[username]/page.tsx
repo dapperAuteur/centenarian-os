@@ -2,6 +2,7 @@
 // Individual cook's public recipe listing.
 
 import { createClient } from '@/lib/supabase/server';
+import { PUBLIC_PROFILES_VIEW } from '@/lib/profiles/public-profiles';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -18,7 +19,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { username } = await params;
   const supabase = await createClient();
   const { data: profile } = await supabase
-    .from('profiles')
+    .from(PUBLIC_PROFILES_VIEW)
     .select('display_name, username, bio')
     .eq('username', username)
     .maybeSingle();
@@ -52,7 +53,7 @@ export default async function CookPage({ params }: Params) {
 
   // Look up the profile by username
   const { data: profile } = await supabase
-    .from('profiles')
+    .from(PUBLIC_PROFILES_VIEW)
     .select('id, username, display_name, bio, avatar_url, created_at, updated_at')
     .eq('username', username)
     .single();

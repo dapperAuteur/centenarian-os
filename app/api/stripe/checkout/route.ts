@@ -90,10 +90,16 @@ export async function POST(request: NextRequest) {
     });
     customerId = customer.id;
 
-    await supabase
+    // Service role: stripe_customer_id is a protected column (migration 206 rejects browser-session
+    // writes), so the user's own session client can no longer set it.
+    const svc = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    const { error: customerSaveErr } = await svc
       .from('profiles')
       .update({ stripe_customer_id: customerId })
       .eq('id', user.id);
+    if (customerSaveErr) {
+      console.error('[stripe/checkout] saving stripe_customer_id failed:', customerSaveErr.message);
+    }
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';

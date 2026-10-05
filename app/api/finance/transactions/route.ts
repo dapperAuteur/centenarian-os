@@ -1,5 +1,5 @@
 // app/api/finance/transactions/route.ts
-// GET: list transactions with filters (date range, category, type). A row that is one
+// GET: list transactions with filters (date range, category or ?uncategorized=1, type). A row that is one
 //      side of a transfer comes with `transfer_partner`: the other side and its account.
 //      `?batch=<import_batch_id>` lists the rows of one statement import.
 // POST: create a new transaction (fills a missing category from the vendor's learned category)
@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
   if (to) query = query.lte('transaction_date', to);
   if (type) query = query.eq('type', type);
   if (categoryIds.length > 0) query = query.in('category_id', categoryIds);
+  else if (params.get('uncategorized') === '1') query = query.is('category_id', null);
   if (accountIds.length > 0) query = query.in('account_id', accountIds);
   if (brandIds.length > 0) query = query.in('brand_id', brandIds);
   if (sourceModule) query = query.eq('source_module', sourceModule);

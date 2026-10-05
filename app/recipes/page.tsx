@@ -2,6 +2,7 @@
 // Public recipe listing with ISR and pagination.
 
 import { createClient } from '@/lib/supabase/server';
+import { PUBLIC_PROFILES_VIEW } from '@/lib/profiles/public-profiles';
 import Link from 'next/link';
 import RecipeCard from '@/components/recipes/RecipeCard';
 import { ChefHat, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -54,7 +55,7 @@ export default async function RecipesPage({ searchParams }: PageProps) {
   const profilesMap: Record<string, ProfileSnippet> = {};
   if (userIds.length > 0) {
     const { data: profiles } = await supabase
-      .from('profiles')
+      .from(PUBLIC_PROFILES_VIEW)
       .select('id, username, display_name, avatar_url')
       .in('id', userIds);
     for (const p of profiles || []) {

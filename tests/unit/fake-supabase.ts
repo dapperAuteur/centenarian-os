@@ -28,7 +28,7 @@ export interface FakeResult {
 
 export interface FakeCall {
   table: string;
-  op: 'select' | 'insert' | 'update' | 'delete';
+  op: 'select' | 'insert' | 'update' | 'delete' | 'upsert';
   /** Rows sent (insert) or matched (the others). */
   rows: number;
   failed: boolean;
@@ -135,6 +135,8 @@ export class FakeQuery implements PromiseLike<FakeResult> {
   usedColumns: string[] = [];
   payload: Row[] = [];
   values: Row = {};
+  conflictColumns: string[] = [];
+  ignoreDuplicates = false;
   columns: string | undefined;
   returning = false;
   orderColumn: string | null = null;
@@ -158,6 +160,15 @@ export class FakeQuery implements PromiseLike<FakeResult> {
   insert(rows: Row | Row[]): this {
     this.op = 'insert';
     this.payload = Array.isArray(rows) ? rows : [rows];
+    return this;
+  }
+
+  /** Insert, or on a clash of `onConflict` columns update the row (or skip it with ignoreDuplicates). */
+  upsert(rows: Row | Row[], options: { onConflict?: string; ignoreDuplicates?: boolean } = {}): this {
+    this.op = 'upsert';
+    this.payload = Array.isArray(rows) ? rows : [rows];
+    this.conflictColumns = (options.onConflict ?? 'id').split(',').map((c) => c.trim());
+    this.ignoreDuplicates = options.ignoreDuplicates === true;
     return this;
   }
 
@@ -197,6 +208,28 @@ export class FakeQuery implements PromiseLike<FakeResult> {
   not(column: string, operator: string, value: unknown): this {
     if (operator !== 'is' || value !== null) throw new Error(`fake: not(${operator}) is not supported`);
     return this.where(column, (v) => v != null);
+  }
+
+  gt(column: string, value: string | number): this {
+    return this.where(column, (v) => (v as string | number) > value);
+  }
+
+  /**
+   * PostgREST's or(): comma-separated `column.op.value` terms, any of which
+   * may match. Supports eq, neq and is.null, which is what the app sends.
+   */
+  or(filters: string): this {
+    const terms = filters.split(',').map((term) => {
+      const [column, op, ...rest] = term.split('.');
+      const value = rest.join('.');
+      this.usedColumns.push(column);
+      if (op === 'is' && value === 'null') return (row: Row) => row[column] == null;
+      if (op === 'eq') return (row: Row) => row[column] != null && String(row[column]) === value;
+      if (op === 'neq') return (row: Row) => row[column] != null && String(row[column]) !== value;
+      throw new Error(`fake: or(${term}) is not supported`);
+    });
+    this.filters.push((row) => terms.some((test) => test(row)));
+    return this;
   }
 
   gte(column: string, value: string | number): this {
@@ -309,6 +342,23 @@ export class FakeQuery implements PromiseLike<FakeResult> {
       table.push(...fresh);
       this.db.calls.push({ table: this.table, op: 'insert', rows: fresh.length, failed: false });
       return { data: this.returning ? fresh.map((row) => this.project(row)) : null, error: null };
+    }
+
+    if (this.op === 'upsert') {
+      const keyOf = (row: Row) => this.conflictColumns.map((c) => String(row[c])).join('|');
+      let written = 0;
+      for (const sent of this.payload) {
+        const existing = table.find((row) => keyOf(row) === keyOf(sent));
+        if (existing) {
+          if (this.ignoreDuplicates) continue;
+          Object.assign(existing, sent, { updated_at: this.db.timestamp() });
+        } else {
+          table.push(this.db.withDefaults(this.table, sent));
+        }
+        written += 1;
+      }
+      this.db.calls.push({ table: this.table, op: 'upsert', rows: written, failed: false });
+      return { data: null, error: null };
     }
 
     if (this.op === 'update') {

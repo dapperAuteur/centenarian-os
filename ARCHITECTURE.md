@@ -54,7 +54,7 @@ flowchart TB
 
   subgraph Shared["Shared infrastructure"]
     direction TB
-    Supabase[(Supabase Postgres<br/>206 migrations · 14 modules)]:::shared
+    Supabase[(Supabase Postgres<br/>210 migrations · 14 modules)]:::shared
     SupaAuth[Supabase Auth<br/>publishable + secret keys]
     SupaStorage[Supabase Storage]
   end
@@ -103,6 +103,7 @@ Coordination rules — [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" is the sou
 2. **RLS policies stay app-agnostic.** Don't write a policy that assumes a single app context.
 3. **TypeScript types use optional chaining + defaults** when reading shared tables. `profile.clock_format` may not exist in the other app's type definitions even though the column does in the DB.
 4. **The service-role key bypasses RLS** and is only used in API routes. Public surfaces use the publishable key + the user's auth session.
+5. **`profiles` is owner-only; other users go through `public_profiles`.** Billing, plan and role columns are written only with the service role (a trigger rejects browser-session writes, migration 206). Pages that show another user's name, avatar or bio read the `public_profiles` view; the table itself returns only the caller's own row (migration 207). Both apps follow this.
 
 The result is a **monorepo discipline applied across two repos**: every schema change is a coordination event, even though the apps deploy independently.
 
@@ -185,7 +186,7 @@ centenarian-os/
 │   ├── csv/               # Import/export helpers
 │   └── …
 ├── supabase/
-│   ├── migrations/        # 206 SQL files (see MIGRATIONS.md)
+│   ├── migrations/        # 210 SQL files (see MIGRATIONS.md)
 │   └── functions/         # Edge functions (unified-schedule lives in contractor-os)
 ├── public/
 │   ├── sw.js              # Service worker

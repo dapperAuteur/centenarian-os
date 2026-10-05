@@ -1,5 +1,6 @@
 // app/api/recipes/route.ts
 import { createClient } from '@/lib/supabase/server';
+import { PUBLIC_PROFILES_VIEW } from '@/lib/profiles/public-profiles';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateSlug, makeUniqueSlug } from '@/lib/recipes/slug';
 import { calculateRecipeNutrition } from '@/lib/recipes/nutrition';
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
   const profilesMap: Record<string, { username: string; display_name: string | null; avatar_url: string | null }> = {};
   if (userIds.length > 0) {
     const { data: profiles } = await supabase
-      .from('profiles')
+      .from(PUBLIC_PROFILES_VIEW)
       .select('id, username, display_name, avatar_url')
       .in('id', userIds);
     for (const p of profiles || []) {

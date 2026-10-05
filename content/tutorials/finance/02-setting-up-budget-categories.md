@@ -2,7 +2,7 @@
 
 **Course:** Mastering Finance
 **Module:** Setup
-**Duration:** ~4 min
+**Duration:** ~7 min
 **Lesson type:** text / video
 **is_free_preview:** true
 **CYOA navigation:** cyoa
@@ -71,6 +71,8 @@ For business or freelance use:
 
 Click **Edit** on any category card or row. Update the name, budget amount, or color. Changes take effect immediately — existing transactions assigned to this category are not affected. The category still shows in all past charts and progress bars.
 
+The monthly budget you set here is the category's **default**: it applies to every month that doesn't have a budget of its own. To change one month without touching the others, use the Budgets page (next section).
+
 ---
 
 ### Deleting a Category
@@ -84,6 +86,31 @@ Avoid deleting categories you've actively used — the historical chart data wil
 ### Categories Without Budget Targets
 
 You can create a category with a $0 monthly budget. This means the category still groups and tracks transactions, but no progress bar or "over budget" flag will appear for it. Useful for income categories (you're not budgeting income the same way you budget expenses) or irregular expense categories like "Annual Subscriptions" where a monthly target doesn't make sense.
+
+---
+
+### The Budgets Page: Budgets From Your Own History
+
+Once you have a few months of transactions, open **Finance → Budgets** (the Budgets button on the Finance dashboard, or Budgets in the Life menu). Instead of guessing a number, you can start from what you actually spend.
+
+**Pick a month.** The arrows move to any month, past or future. Each category shows its budget for that month, what you spent, and what's left or how much you're over.
+
+**Read the suggestion.** Next to each category is a small line of your spending over recent months and a suggested budget. Choose the window (the last **3, 6, or 12** complete months) and the method (**Average** or **Median**). The default is the average of the last 6 months.
+
+- A month in the window where you spent nothing in that category counts as **$0**.
+- Months before your first transaction are **left out**, so a new account isn't pulled down by months you weren't tracking yet.
+- Transfers between your own accounts, card payments, and loan payments **never count** as spending.
+- A **refund** (income filed under a category where you mostly spend, like a store refund in Groceries) lowers that month's spending, never below $0.
+
+**"Varies a lot."** If a category swings widely from month to month (for example travel or gifts), it's flagged. The median, or a 12-month window, usually gives a steadier number for those.
+
+**Accept.** Click **Accept** on one category, or **Accept all suggestions** to use every suggestion at once.
+
+**One month or from now on.** Typing a budget and clicking **Save** sets it for that month only, so last month's budget stays what it was and your history stays honest. Tick **Changes also apply to later months (and become the default)** to carry the new amount forward.
+
+**Rollover.** Tick **Carry what's left (or overspent) into next month** on a category and its leftover is added to next month's budget; an overspend is taken off. It stays on until you turn it off.
+
+**Uncategorized.** Spending with no category has its own line. It counts toward your total, not toward any category's budget. **Categorize these** opens that month's uncategorized expenses on the Transactions page so you can sort them.
 
 ---
 
@@ -113,7 +140,19 @@ You can create a category with a $0 monthly budget. This means the category stil
 
 > [SCREEN: Click Edit on Groceries — change the budget to $450 — save — progress bar updates]
 
-> [SCREEN: End on the budget progress bars section — end lesson]
+> [SCREEN: Click Budgets — the Budgets page opens on this month]
+
+> [SCREENSHOT: Budgets page — callouts: month arrows, "Suggest from the last" window, Average / Median toggle, totals]
+
+> [SCREEN: Switch the window to 12 months, then to Median — suggestions update]
+
+> [SCREEN: Point at a category flagged "Varies a lot"]
+
+> [SCREEN: Click Accept on Groceries — budget updates; then show "Accept all suggestions"]
+
+> [SCREEN: Tick "Carry what's left" on Dining Out — move to next month — the budget includes the leftover]
+
+> [SCREEN: Click "Categorize these" on the Uncategorized line — Transactions opens filtered to that month — end lesson]
 
 ---
 
@@ -125,3 +164,6 @@ You can create a category with a $0 monthly budget. This means the category stil
 - $0 monthly budget = category still groups transactions but no progress bar target
 - Deleting a category with transactions requires reassigning those transactions — prefer renaming over deleting
 - Color matters: distinct colors make the spending pie chart readable at a glance
+- The Budgets page suggests a budget from your own history: average (default) or median of the last 3, 6, or 12 months
+- Saving a budget on the Budgets page changes that month only unless you choose to apply it to later months too
+- Rollover carries a month's leftover (or overspend) into the next month

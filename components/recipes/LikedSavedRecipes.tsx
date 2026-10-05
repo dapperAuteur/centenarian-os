@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { PUBLIC_PROFILES_VIEW } from '@/lib/profiles/public-profiles';
 import { Heart, Bookmark, ExternalLink } from 'lucide-react';
 
 interface RecipeItem {
@@ -56,7 +57,7 @@ export default function LikedSavedRecipes({ userId, mode }: Props) {
 
       // Step 3: batch-fetch profiles by those user_ids
       const { data: profiles } = authorIds.length
-        ? await supabase.from('profiles').select('id, username, display_name').in('id', authorIds)
+        ? await supabase.from(PUBLIC_PROFILES_VIEW).select('id, username, display_name').in('id', authorIds)
         : { data: [] };
 
       const profileMap: Record<string, { username: string; display_name: string | null }> = {};
