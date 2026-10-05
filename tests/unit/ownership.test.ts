@@ -20,6 +20,7 @@ import {
   isUuid,
   ownedIds,
   usableReferences,
+  withoutFields,
   type AccessRow,
   type OwnershipDb,
   type OwnershipQuery,
@@ -134,8 +135,8 @@ test('only tables with a public-read policy have a public rule', () => {
     .map(([table]) => table)
     .sort();
   assert.deepEqual(withPublicRule, [
-    'blog_posts', 'equipment', 'exercises', 'media_items', 'recipes',
-    'workout_categories', 'workout_templates',
+    'blog_posts', 'contractor_jobs', 'equipment', 'exercises', 'media_items', 'recipes',
+    'vehicles', 'workout_categories', 'workout_templates',
   ]);
 });
 
@@ -166,7 +167,7 @@ test('isUuid accepts UUIDs only', () => {
 
 const OWNER_ONLY_TABLES = [
   'financial_accounts', 'financial_transactions', 'budget_categories', 'user_brands', 'invoices',
-  'invoice_templates', 'contractor_jobs', 'scan_images', 'user_contacts', 'vehicles', 'trips',
+  'invoice_templates', 'scan_images', 'user_contacts', 'trips',
   'trip_routes', 'trip_templates', 'workout_logs', 'life_categories', 'schedule_templates',
   'exercise_categories', 'equipment_categories',
 ];
@@ -337,8 +338,8 @@ test('ownedIds: allowPublic admits public rows, and does not filter them out in 
 });
 
 test('ownedIds: allowPublic changes nothing for a table with no public rule', async () => {
-  const { db, calls } = fakeDb({ vehicles: [{ id: id(1), user_id: THEM, visibility: 'public', is_active: true }] });
-  const owned = await ownedIds(db, ME, 'vehicles', [id(1)], { allowPublic: true });
+  const { db, calls } = fakeDb({ trips: [{ id: id(1), user_id: THEM, visibility: 'public', is_active: true }] });
+  const owned = await ownedIds(db, ME, 'trips', [id(1)], { allowPublic: true });
   assert.equal(owned.ids.size, 0);
   assert.deepEqual(calls[0].filters[1], { op: 'eq', column: 'user_id', value: ME });
 });
@@ -521,4 +522,46 @@ test('usableReferences: when a lookup fails nothing is usable', async () => {
     { field: 'pay_category_id', table: 'budget_categories', id: id(3) },
   ]);
   assert.deepEqual(result, { values: { pay_account_id: null, pay_category_id: null }, failed: true });
+});
+
+// ─── vehicles: the public-transport library ─────────────────────────────────
+
+test('vehicles: own vehicle yes; a system vehicle only with allowPublic; another user\'s never', () => {
+  assert.equal(canAccessRow('vehicles', { user_id: ME, is_system: false }, ME), true);
+  assert.equal(canAccessRow('vehicles', { user_id: null, is_system: true }, ME), false);
+  assert.equal(canAccessRow('vehicles', { user_id: null, is_system: true }, ME, { allowPublic: true }), true);
+  assert.equal(canAccessRow('vehicles', { user_id: THEM, is_system: false }, ME, { allowPublic: true }), false);
+  assert.equal(canAccessRow('vehicles', { user_id: THEM, visibility: 'public', is_active: true }, ME, { allowPublic: true }), false);
+});
+
+test('checkReferences: a trip may name a system vehicle but not someone else\'s car', async () => {
+  const { db } = fakeDb({
+    vehicles: [
+      { id: id(1), user_id: null, is_system: true },
+      { id: id(2), user_id: THEM, is_system: false },
+      { id: id(3), user_id: ME, is_system: false },
+    ],
+  });
+  const system = await checkReferences(db, ME, [{ field: 'vehicle_id', table: 'vehicles', id: id(1), allowPublic: true }]);
+  const theirs = await checkReferences(db, ME, [{ field: 'vehicle_id', table: 'vehicles', id: id(2), allowPublic: true }]);
+  const mine = await checkReferences(db, ME, [{ field: 'vehicle_id', table: 'vehicles', id: id(3) }]);
+  assert.equal(system.ok, true);
+  assert.deepEqual(theirs.invalid, ['vehicle_id']);
+  assert.equal(mine.ok, true);
+});
+
+// ─── withoutFields ───────────────────────────────────────────────────────────
+
+test('withoutFields drops the named fields and keeps the rest', () => {
+  const body = { id: id(1), user_id: THEM, transaction_id: id(2), cost: 12, notes: 'x' };
+  assert.deepEqual(withoutFields(body, ['id', 'user_id', 'transaction_id']), { cost: 12, notes: 'x' });
+  assert.equal(body.user_id, THEM, 'the input is not changed');
+});
+
+test('withoutFields: non-objects give an empty object; prototype keys never pass', () => {
+  for (const bad of [null, undefined, 'x', 7, [1, 2]]) assert.deepEqual(withoutFields(bad, []), {});
+  const hostile = JSON.parse('{"__proto__": {"user_id": "x"}, "cost": 1}');
+  const out = withoutFields(hostile, []);
+  assert.deepEqual(Object.keys(out), ['cost']);
+  assert.equal(out.user_id, undefined);
 });

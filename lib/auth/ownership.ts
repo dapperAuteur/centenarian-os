@@ -21,6 +21,8 @@
 //       workout_templates (117): visibility = 'public'
 //       workout_categories (186): is_global
 //       recipes (027/032): public, or scheduled and due
+//       vehicles (129): is_system (the shared public-transport library)
+//       contractor_jobs (105): is_public
 //       blog_posts (024): public, members-only, or scheduled and due
 //   - trips and trip_routes have a visibility column (124) but NO public-read
 //     policy (they are only ever shared by token), so they are owner-only.
@@ -138,7 +140,14 @@ export const TABLE_ACCESS_RULES: Readonly<Record<string, TableAccessRule>> = {
   user_brands: OWNER_ONLY,
   invoices: OWNER_ONLY,
   invoice_templates: OWNER_ONLY,
-  contractor_jobs: OWNER_ONLY,
+  contractor_jobs: {
+    select: 'user_id, is_public',
+    ownerColumn: 'user_id',
+    ownerId: byUserId,
+    // contractor_jobs_public_read (105): is_public. Linking a record to a job
+    // stays owner-only unless a call site passes allowPublic.
+    isPublic: (row) => row.is_public === true,
+  },
   scan_images: OWNER_ONLY,
 
   // ── Contacts ──
@@ -150,7 +159,13 @@ export const TABLE_ACCESS_RULES: Readonly<Record<string, TableAccessRule>> = {
   },
 
   // ── Travel ──
-  vehicles: OWNER_ONLY,
+  vehicles: {
+    select: 'user_id, is_system',
+    ownerColumn: 'user_id',
+    ownerId: byUserId,
+    // vehicles_system_read (129): the seeded public-transport vehicles, user_id null
+    isPublic: (row) => row.is_system === true,
+  },
   trips: OWNER_ONLY,
   trip_routes: OWNER_ONLY,
   trip_templates: OWNER_ONLY,
@@ -467,4 +482,26 @@ export async function usableReferences(
     values[ref.field] = usable ? (ref.id as string) : null;
   }
   return { values, failed: check.failed };
+}
+
+// ─── Fields a request body may never set ─────────────────────────────────────
+
+/**
+ * A copy of `body` without `fields`. For PATCH handlers that pass the rest of
+ * the body to an update: the owner, server-maintained links (a trip's
+ * transaction_id, a leg's route_id) and timestamps must never come from the
+ * browser. Only own properties are copied, so nothing reaches the update via
+ * the prototype.
+ */
+export function withoutFields(
+  body: unknown,
+  fields: readonly string[],
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return out;
+  const drop = new Set(fields);
+  for (const key of Object.keys(body)) {
+    if (!drop.has(key) && key !== '__proto__') out[key] = (body as Record<string, unknown>)[key];
+  }
+  return out;
 }
