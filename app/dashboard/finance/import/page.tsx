@@ -172,6 +172,7 @@ function StatementImport() {
       accountType: preview.account.account_type,
       accounts,
       paidFromDefault: preview.paidFromAccountId ?? null,
+      cashDefault: preview.cashAccountId ?? null,
       recordMissing,
     };
   }, [preview, accounts, recordMissing]);

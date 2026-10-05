@@ -108,6 +108,8 @@ export interface ImportAccount {
   institution_name?: string | null;
   last_four?: string | null;
   is_active?: boolean | null;
+  /** financial_accounts.currency (migration 210). Missing means USD. */
+  currency?: string | null;
   /** financial_accounts.csv_import_mapping. Absent until migration 203 is applied. */
   csv_import_mapping?: unknown;
 }
@@ -653,6 +655,12 @@ export interface TransferContext {
   accounts: readonly ImportAccount[];
   /** The account payments to this card or loan were last paid from (from the preview), or null. */
   paidFromDefault: string | null;
+  /**
+   * The cash account a cash withdrawal goes into by default: the last used
+   * cash account (from the preview), or null. Used only when it is in this
+   * account's currency.
+   */
+  cashDefault?: string | null;
   /** Record the other side when the other account has no matching row. */
   recordMissing: boolean;
 }
@@ -714,7 +722,29 @@ export function effectiveTransferAccount(
       ? context.paidFromDefault
       : null;
   }
+  if (role === 'cash_withdrawal') {
+    // The last used cash account, else the only cash account in this currency.
+    if (context.cashDefault && options.some((account) => account.id === context.cashDefault)) return context.cashDefault;
+    return options.length === 1 ? options[0].id : null;
+  }
   return accountNamedIn(row.description, options)?.id ?? null;
+}
+
+function countLinks(
+  rows: readonly TransferRow[],
+  decisions: Decisions,
+  context: TransferContext,
+  wanted: (role: Exclude<TransferRole, null>) => boolean,
+): { linked: number; unassigned: number } {
+  let linked = 0;
+  let unassigned = 0;
+  for (const row of rows) {
+    const role = rowTransferRole(row, decisions[row.rowNumber], context.accountType);
+    if (!role || !wanted(role)) continue;
+    if (effectiveTransferAccount(row, decisions[row.rowNumber], context)) linked += 1;
+    else unassigned += 1;
+  }
+  return { linked, unassigned };
 }
 
 /** How many payment rows will be linked to another account, and how many could be but have no account yet. */
@@ -723,14 +753,16 @@ export function transferCounts(
   decisions: Decisions,
   context: TransferContext,
 ): { linked: number; unassigned: number } {
-  let linked = 0;
-  let unassigned = 0;
-  for (const row of rows) {
-    if (!rowTransferRole(row, decisions[row.rowNumber], context.accountType)) continue;
-    if (effectiveTransferAccount(row, decisions[row.rowNumber], context)) linked += 1;
-    else unassigned += 1;
-  }
-  return { linked, unassigned };
+  return countLinks(rows, decisions, context, (role) => role !== 'cash_withdrawal');
+}
+
+/** How many cash withdrawals will go into a cash account, and how many have no cash account chosen. */
+export function cashWithdrawalCounts(
+  rows: readonly TransferRow[],
+  decisions: Decisions,
+  context: TransferContext,
+): { linked: number; unassigned: number } {
+  return countLinks(rows, decisions, context, (role) => role === 'cash_withdrawal');
 }
 
 /**

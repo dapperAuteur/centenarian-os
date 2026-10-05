@@ -21,6 +21,7 @@ import LearnCategoryPrompt, { type LearnCategoryRequest } from '@/components/fin
 import Modal from '@/components/ui/Modal';
 import { formatMoney } from '@/lib/finance/fx/math';
 import DueSoonBanner from '@/components/finance/debt/DueSoonBanner';
+import CashOnHandCard from '@/components/finance/cash/CashOnHandCard';
 
 interface CategoryBreakdown {
   id: string;
@@ -160,8 +161,9 @@ export default function FinanceDashboardPage() {
   const [showCatForm, setShowCatForm] = useState(false);
   const [catForm, setCatForm] = useState({ name: '', monthly_budget: '', color: '#6366f1' });
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  // quiet: refresh in place (no full-page spinner), so cards keep their own state.
+  const load = useCallback(async (quiet?: boolean) => {
+    if (quiet !== true) setLoading(true);
     try {
       const [sumRes, catRes, acctRes, brandsRes, remRes, budgetRes] = await Promise.all([
         offlineFetch('/api/finance/summary?months=6'),
@@ -192,6 +194,7 @@ export default function FinanceDashboardPage() {
       setLoading(false);
     }
   }, []);
+  const reloadQuietly = useCallback(() => { void load(true); }, [load]);
 
   useEffect(() => {
     load();
@@ -502,6 +505,14 @@ export default function FinanceDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Cash on hand: balances, last count, Count / Paid cash / Withdraw (or "Track cash on hand") */}
+      <CashOnHandCard
+        categories={categories}
+        onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
+        accounts={accounts}
+        onChanged={reloadQuietly}
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

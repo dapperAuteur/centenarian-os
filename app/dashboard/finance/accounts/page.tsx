@@ -20,6 +20,7 @@ import { formatMoney } from '@/lib/finance/fx/math';
 import { currencyOptions, fetchCurrencies, rateAsOf } from '@/lib/finance/fx/client';
 import type { CurrenciesResponse, RateView } from '@/lib/finance/fx/client';
 import Modal from '@/components/ui/Modal';
+import CashAccountActions from '@/components/finance/cash/CashAccountActions';
 
 interface Account {
   id: string;
@@ -95,8 +96,9 @@ export default function AccountsPage() {
   const [currencies, setCurrencies] = useState<CurrenciesResponse | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  // quiet: refresh in place (no spinner), so an open cash dialog stays open.
+  const load = useCallback(async (quiet?: boolean) => {
+    if (quiet !== true) setLoading(true);
     try {
       const res = await offlineFetch('/api/finance/accounts');
       if (res.ok) setAccounts(await res.json());
@@ -104,6 +106,7 @@ export default function AccountsPage() {
       setLoading(false);
     }
   }, []);
+  const reloadQuietly = useCallback(() => { void load(true); }, [load]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { fetchCurrencies().then(setCurrencies); }, []);
@@ -513,6 +516,11 @@ export default function AccountsPage() {
                         {' '}into {acct.name}{acct.last_four ? ` ending in ${acct.last_four}` : ''}
                       </span>
                     </Link>
+                    {acct.account_type === 'cash' && acct.is_active && (
+                      <div className="flex flex-wrap items-center gap-x-4">
+                        <CashAccountActions accountId={acct.id} accountName={acct.name} onChanged={reloadQuietly} />
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <button

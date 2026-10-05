@@ -165,9 +165,13 @@ export function signOptionText(
  *   the account it was paid from ("Paid from...").
  * - `paid_to`: money out of a bank account whose wording says it paid a card
  *   or loan; the other side is the payment on that card or loan ("This paid...").
+ * - `cash_withdrawal`: money out of a bank account whose wording says it was
+ *   taken out as cash (ATM, branch, teller; lib/finance/cash/withdrawal.ts);
+ *   the other side is the same amount coming into a cash account
+ *   ("Cash withdrawal -> into...").
  * - null: an ordinary row.
  */
-export type TransferRole = 'paid_from' | 'paid_to' | null;
+export type TransferRole = 'paid_from' | 'paid_to' | 'cash_withdrawal' | null;
 
 export function transferRoleFor(
   row: CardTermsRow,
@@ -179,6 +183,9 @@ export function transferRoleFor(
   }
   if (type !== 'expense') return null;
   const hints = row.hints ?? [];
+  // Cash wording wins: "ATM WITHDRAWAL CAPITAL ONE" is cash from a Capital One ATM, not a card payment.
+  // A cash account's own statement has no withdrawals into cash.
+  if (hints.includes('cash_withdrawal') && accountType !== 'cash') return 'cash_withdrawal';
   return hints.includes('card_payment') || hints.includes('loan_payment') ? 'paid_to' : null;
 }
 
@@ -189,12 +196,18 @@ export interface PickerAccount {
   institution_name?: string | null;
   last_four?: string | null;
   is_active?: boolean | null;
+  /** Migration 210; missing means USD. */
+  currency?: string | null;
 }
 
+const currencyOf = (account: Pick<PickerAccount, 'currency'> | undefined): string => account?.currency || 'USD';
+
 /**
- * The accounts a row's "Paid from" or "This paid" picker offers: every other
- * active account for a payment (bank accounts first), and only cards and
- * loans for a bank payment.
+ * The accounts a row's "Paid from", "This paid" or "Cash withdrawal into"
+ * picker offers: every other active account for a payment (bank accounts
+ * first), only cards and loans for a bank payment, and only cash accounts in
+ * this account's currency for a cash withdrawal (the same amount lands on both
+ * sides; cash in another currency is Exchange money).
  */
 export function transferPickerAccounts<T extends PickerAccount>(
   role: Exclude<TransferRole, null>,
@@ -203,7 +216,23 @@ export function transferPickerAccounts<T extends PickerAccount>(
 ): T[] {
   const others = accounts.filter((account) => account.id !== thisAccountId && account.is_active !== false);
   if (role === 'paid_to') return others.filter((account) => isDebtAccountType(account.account_type));
+  if (role === 'cash_withdrawal') {
+    const currency = currencyOf(accounts.find((account) => account.id === thisAccountId));
+    return others.filter((account) => account.account_type === 'cash' && currencyOf(account) === currency);
+  }
   return [...others].sort((a, b) => Number(isDebtAccountType(a.account_type)) - Number(isDebtAccountType(b.account_type)));
+}
+
+/** Active cash accounts in another currency than this account: a withdrawal into them is Exchange money. */
+export function otherCurrencyCashAccounts<T extends PickerAccount>(accounts: readonly T[], thisAccountId: string): T[] {
+  const currency = currencyOf(accounts.find((account) => account.id === thisAccountId));
+  return accounts.filter(
+    (account) =>
+      account.id !== thisAccountId &&
+      account.is_active !== false &&
+      account.account_type === 'cash' &&
+      currencyOf(account) !== currency,
+  );
 }
 
 const words = (text: string): string[] =>

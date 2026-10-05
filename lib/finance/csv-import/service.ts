@@ -322,6 +322,13 @@ export interface PreviewResponse {
    * there is no history (or for any other kind of account).
    */
   paidFromAccountId: string | null;
+  /**
+   * For a bank account: the cash account cash withdrawals go into by default,
+   * the one that last received one from any account, else the cash account
+   * used most recently. Null when the person has no cash account (or for a
+   * card, loan or cash account).
+   */
+  cashAccountId: string | null;
 }
 
 /**
@@ -376,14 +383,63 @@ export async function suggestPaidFrom(
   }
 }
 
+/**
+ * The cash account an ATM or branch withdrawal on this account goes into by
+ * default (see PreviewResponse.cashAccountId). Remembered from history like
+ * "Paid from": the cash account on the receiving side of the latest linked
+ * transfer into cash, else the cash account with the latest transaction.
+ */
+export async function suggestCashAccount(
+  db: SupabaseClient,
+  userId: string,
+  account: Pick<OwnedAccount, 'id' | 'account_type'>,
+): Promise<string | null> {
+  if (account.account_type === 'credit_card' || account.account_type === 'loan' || account.account_type === 'cash') {
+    return null;
+  }
+  try {
+    const cash = await db
+      .from('financial_accounts')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('account_type', 'cash')
+      .eq('is_active', true);
+    const ids = ((cash.data ?? []) as { id: string }[]).map((row) => row.id);
+    if (cash.error || ids.length === 0) return null;
+    const intoCash = await db
+      .from('financial_transactions')
+      .select('account_id')
+      .eq('user_id', userId)
+      .in('account_id', ids)
+      .eq('type', 'income')
+      .not('transfer_group_id', 'is', null)
+      .order('transaction_date', { ascending: false })
+      .limit(1);
+    const received = (intoCash.data as { account_id: string | null }[] | null)?.[0]?.account_id;
+    if (!intoCash.error && received) return received;
+    const latest = await db
+      .from('financial_transactions')
+      .select('account_id')
+      .eq('user_id', userId)
+      .in('account_id', ids)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    const used = (latest.data as { account_id: string | null }[] | null)?.[0]?.account_id;
+    return !latest.error && used ? used : null;
+  } catch {
+    return null;
+  }
+}
+
 /** POST /api/finance/import/preview. Writes nothing. */
 export async function previewImport(db: SupabaseClient, userId: string, body: unknown): Promise<PreviewResponse> {
   const request = parseImportRequest(body, { requireMapping: false });
   const account = await loadOwnedAccount(db, userId, request.accountId);
   const statement = readStatement(request);
-  const [plan, paidFromAccountId] = await Promise.all([
+  const [plan, paidFromAccountId, cashAccountId] = await Promise.all([
     planImport(db, userId, account.id, statement.rows, { includePending: request.includePending }),
     suggestPaidFrom(db, userId, account),
+    suggestCashAccount(db, userId, account),
   ]);
   return {
     account,
@@ -398,6 +454,7 @@ export async function previewImport(db: SupabaseClient, userId: string, body: un
     skipped: statement.skipped,
     totals: { ...plan.totals, rejected: statement.rejected.length },
     paidFromAccountId,
+    cashAccountId,
   };
 }
 

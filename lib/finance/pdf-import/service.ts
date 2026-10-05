@@ -20,6 +20,7 @@ import {
   isUuid,
   loadOwnedAccount,
   readActions,
+  suggestCashAccount,
   suggestPaidFrom,
   type OwnedAccount,
   type PreviewResponse,
@@ -182,9 +183,10 @@ export async function previewPdfImport(db: SupabaseClient, userId: string, body:
   const request = parsePdfRequest(body, { requireAccount: true });
   const account = await loadOwnedAccount(db, userId, request.accountId as string);
   const read = await readPdfStatement(request.bytes);
-  const [plan, paidFromAccountId] = await Promise.all([
+  const [plan, paidFromAccountId, cashAccountId] = await Promise.all([
     planImport(db, userId, account.id, read.parsed.rows),
     suggestPaidFrom(db, userId, account),
+    suggestCashAccount(db, userId, account),
   ]);
   const statement = toStatementPreview(read);
   return {
@@ -214,6 +216,7 @@ export async function previewPdfImport(db: SupabaseClient, userId: string, body:
     skipped: [],
     totals: { ...plan.totals, rejected: 0 },
     paidFromAccountId,
+    cashAccountId,
     statement,
     accountMatchesStatement: accountMatches(account, read.parsed),
   };

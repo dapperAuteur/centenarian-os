@@ -9,12 +9,21 @@
 // Payment, Refund or credit, Interest, Fee) instead of expense or income,
 // and a payment gets "Paid from" so it is linked as a transfer. On a bank
 // account, money out whose wording says it paid a card or loan gets "This
-// paid". See lib/finance/csv-import/card-terms.ts.
+// paid", and an ATM or branch withdrawal gets "Cash withdrawal -> into" a
+// cash account in the same currency. See lib/finance/csv-import/card-terms.ts.
 
 import { memo } from 'react';
-import { ArrowRightLeft, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRightLeft, Banknote, Sparkles } from 'lucide-react';
 import CategorySelect, { type BudgetCategory } from '@/components/finance/CategorySelect';
-import { CARD_ROW_KINDS, cardKindLabel, isDebtAccountType, type CardRowKind } from '@/lib/finance/csv-import/card-terms';
+import {
+  CARD_ROW_KINDS,
+  cardKindLabel,
+  isDebtAccountType,
+  otherCurrencyCashAccounts,
+  type CardRowKind,
+  type TransferRole,
+} from '@/lib/finance/csv-import/card-terms';
 import { planStatusChipLabel, toneForPlanStatus } from '@/lib/finance/csv-import/status-tones';
 import type { PlannedRow, RowActionKind } from '@/lib/finance/csv-import/types';
 import {
@@ -49,6 +58,13 @@ interface ReviewRowProps {
 
 const smallLabel = 'mb-1 block text-xs font-medium text-gray-600';
 
+/** The picker's label for each kind of link. */
+function pickerLabel(role: Exclude<TransferRole, null>): string {
+  if (role === 'paid_from') return 'Paid from';
+  if (role === 'cash_withdrawal') return 'Cash withdrawal → into';
+  return 'This paid';
+}
+
 /** The picker's value for "not linked". */
 const NOT_LINKED = '';
 
@@ -82,6 +98,9 @@ function ReviewRow({
   const transferAccount = role ? effectiveTransferAccount(row, decision, transfer) : null;
   const pickerAccounts = role ? pickerAccountsFor(role, transfer) : [];
   const pickerId = `import-transfer-${number}`;
+  const cash = role === 'cash_withdrawal';
+  // Cash accounts in another currency can't take the same amount: that is Exchange money.
+  const foreignCash = cash && pickerAccounts.length === 0 ? otherCurrencyCashAccounts(transfer.accounts, transfer.accountId) : [];
 
   const directionButton = (type: 'expense' | 'income', label: string, position: string) => {
     const pressed = effective.type === type;
@@ -214,10 +233,39 @@ function ReviewRow({
                 </>
               )}
 
-              {role && (
+              {cash && pickerAccounts.length === 0 && (
+                <div className="sm:col-span-2 lg:col-span-1">
+                  <p className={smallLabel}>Cash withdrawal</p>
+                  <p className="flex items-start gap-1 text-xs text-gray-700">
+                    <Banknote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sky-700" aria-hidden="true" />
+                    <span>
+                      {foreignCash.length > 0 ? (
+                        <>
+                          Your cash {foreignCash.length === 1 ? 'account is' : 'accounts are'} in another currency. Import this
+                          row as spending, or skip it and record the cash with{' '}
+                          <Link href="/dashboard/finance/accounts" className="font-medium text-sky-700 underline underline-offset-2">
+                            Exchange money
+                          </Link>
+                          .
+                        </>
+                      ) : (
+                        <>
+                          This looks like cash taken out.{' '}
+                          <Link href="/dashboard/finance/accounts" className="font-medium text-sky-700 underline underline-offset-2">
+                            Add a cash account
+                          </Link>{' '}
+                          to track it as cash on hand instead of spending.
+                        </>
+                      )}
+                    </span>
+                  </p>
+                </div>
+              )}
+
+              {role && !(cash && pickerAccounts.length === 0) && (
                 <div className="sm:col-span-2 lg:col-span-1">
                   <label htmlFor={pickerId} className={smallLabel}>
-                    {role === 'paid_from' ? 'Paid from' : 'This paid'}
+                    {pickerLabel(role)}
                   </label>
                   <select
                     id={pickerId}
@@ -227,7 +275,11 @@ function ReviewRow({
                     className={selectInput}
                   >
                     <option value={NOT_LINKED}>
-                      {role === 'paid_from' ? 'Not linked: choose the account' : 'Not a payment to my card or loan'}
+                      {role === 'paid_from'
+                        ? 'Not linked: choose the account'
+                        : cash
+                          ? 'Not a cash withdrawal'
+                          : 'Not a payment to my card or loan'}
                     </option>
                     {pickerAccounts.map((account) => (
                       <option key={account.id} value={account.id}>
@@ -238,10 +290,14 @@ function ReviewRow({
                   <p id={`${pickerId}-hint`} className="mt-1 flex items-start gap-1 text-xs text-gray-700">
                     <ArrowRightLeft className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sky-700" aria-hidden="true" />
                     {transferAccount
-                      ? 'Linked as a transfer, so it is not counted as income or spending.'
+                      ? cash
+                        ? 'Recorded as cash coming into that account, linked as a transfer, so it is not counted as spending.'
+                        : 'Linked as a transfer, so it is not counted as income or spending.'
                       : role === 'paid_from'
                         ? 'Choose where the money came from so this payment is not counted as income.'
-                        : 'If this paid one of your cards or loans, choose it so it is not counted as spending.'}
+                        : cash
+                          ? 'Choose the cash account the money went into, so it is not counted as spending.'
+                          : 'If this paid one of your cards or loans, choose it so it is not counted as spending.'}
                   </p>
                 </div>
               )}

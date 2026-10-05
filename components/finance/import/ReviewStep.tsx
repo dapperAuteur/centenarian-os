@@ -6,7 +6,7 @@
 // the file when "Import statement" is pressed.
 
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRightLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRightLeft, Banknote, Loader2 } from 'lucide-react';
 import { cardKindSummary, importExplanation, isDebtAccountType, type CardRowKind } from '@/lib/finance/csv-import/card-terms';
 import { needsReconciliationConfirmation } from '@/lib/finance/pdf-import/reconcile';
 import type { BudgetCategory } from '@/components/finance/CategorySelect';
@@ -19,6 +19,7 @@ import {
   STATUS_LABELS,
   accountLabel,
   applyDecision,
+  cashWithdrawalCounts,
   effectiveCardKind,
   effectiveDecision,
   filterRows,
@@ -123,6 +124,8 @@ export default function ReviewStep({
 
   const debt = isDebtAccountType(transfer.accountType);
   const transfers = useMemo(() => transferCounts(rows, decisions, transfer), [rows, decisions, transfer]);
+  const cashWithdrawals = useMemo(() => cashWithdrawalCounts(rows, decisions, transfer), [rows, decisions, transfer]);
+  const cashRowCount = cashWithdrawals.linked + cashWithdrawals.unassigned;
   // Rows that will be saved, in card words: "40 charges, 3 payments, 1 refund or credit".
   const kindCounts = useMemo(() => {
     const counts: Record<CardRowKind, number> = { charge: 0, payment: 0, refund: 0, interest: 0, fee: 0 };
@@ -277,6 +280,17 @@ export default function ReviewStep({
                 </span>
               </p>
             )}
+            {cashRowCount > 0 && (
+              <p className="mt-1 flex items-start gap-1.5 text-sm text-gray-800">
+                <Banknote className="mt-0.5 h-4 w-4 shrink-0 text-sky-700" aria-hidden="true" />
+                <span>
+                  {formatCount(cashWithdrawals.linked)} cash {cashWithdrawals.linked === 1 ? 'withdrawal goes' : 'withdrawals go'} into
+                  a cash account as {cashWithdrawals.linked === 1 ? 'a transfer' : 'transfers'}.
+                  {cashWithdrawals.unassigned > 0 &&
+                    ` ${formatCount(cashWithdrawals.unassigned)} more ${cashWithdrawals.unassigned === 1 ? 'looks' : 'look'} like cash taken out with no cash account chosen, and will count as spending.`}
+                </span>
+              </p>
+            )}
             {nothingToImport && (
               <p id="import-nothing-note" className="mt-1 text-sm font-medium text-gray-900">
                 Every row is being skipped, so there is nothing to import.
@@ -306,15 +320,30 @@ export default function ReviewStep({
       )}
 
       {/* Payments: where they came from, for all of them at once */}
-      {(paymentRows.length > 0 || transfers.linked + transfers.unassigned > 0) && (
+      {(paymentRows.length > 0 || transfers.linked + transfers.unassigned > 0 || cashRowCount > 0) && (
         <section className={card} aria-labelledby="import-payments-heading">
           <h3 id="import-payments-heading" className="text-base font-semibold text-gray-900">
-            {debt ? 'Payments on this statement' : 'Payments to your cards and loans'}
+            {debt
+              ? 'Payments on this statement'
+              : cashRowCount > 0 && transfers.linked + transfers.unassigned === 0
+                ? 'Cash withdrawals'
+                : cashRowCount > 0
+                  ? 'Payments and cash withdrawals'
+                  : 'Payments to your cards and loans'}
           </h3>
           <p className="mt-1 text-sm text-gray-700">
             {debt
               ? 'A payment moves money from another of your accounts, so it is linked to that account as a transfer instead of counting as income.'
-              : 'Money out that paid one of your cards or loans is linked to it as a transfer instead of counting as spending. Choose the card or loan on each row.'}
+              : transfers.linked + transfers.unassigned > 0
+                ? 'Money out that paid one of your cards or loans is linked to it as a transfer instead of counting as spending. Choose the card or loan on each row.'
+                : ''}
+            {!debt && cashRowCount > 0 && (
+              <>
+                {transfers.linked + transfers.unassigned > 0 ? ' ' : ''}
+                Cash taken out at an ATM, a branch or a teller goes into one of your cash accounts in the same currency
+                (Cash withdrawal → into), so it is cash on hand, not spending. ATM fees on their own line stay expenses.
+              </>
+            )}
           </p>
           <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-2">
             {debt && paymentRows.length > 0 && (

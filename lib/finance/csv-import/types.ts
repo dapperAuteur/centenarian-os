@@ -57,8 +57,11 @@ export type DateOrder = 'MDY' | 'DMY' | 'YMD';
 
 export type TransactionType = 'expense' | 'income';
 
-/** What a description's wording suggests about a row. A hint, never a decision. */
-export type TransferHint = 'transfer' | 'card_payment' | 'loan_payment' | 'insurance';
+/**
+ * What a description's wording suggests about a row. A hint, never a decision.
+ * 'cash_withdrawal': cash taken out at an ATM, a branch or a teller (lib/finance/cash/withdrawal.ts).
+ */
+export type TransferHint = 'transfer' | 'card_payment' | 'loan_payment' | 'insurance' | 'cash_withdrawal';
 
 /** One data row of the file, before any mapping. */
 export interface RawRow {
