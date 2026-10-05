@@ -33,8 +33,9 @@
 //     - base = that month's budget_periods row, else the category's
 //       monthly_budget (the default), else none.
 //     - Rollover is on for a month when the latest budget_periods row at or
-//       before it has rollover = true. Then last month's leftover
-//       (budget - spent, negative when overspent) is added. The chain looks
+//       before it has rollover = true. A month with rollover on passes its
+//       leftover (budget - spent, negative when overspent) to the NEXT month.
+//       So turning it on in October first changes November. The chain looks
 //       back at most MAX_CARRY_MONTHS and never before the first transaction.
 //
 // Imports only sibling files with .ts extensions, so it runs under
@@ -249,10 +250,11 @@ export interface ResolvedBudget {
   base: number | null;
   /** Leftover (+) or overspend (-) carried in from last month. */
   carried: number;
+  /** This month's leftover carries into next month. */
   rollover: boolean;
   /**
    * period:   the month has its own budget_periods row
-   * rollover: no own row, rollover is on (base comes from the default)
+   * rollover: no own row, but last month's leftover was carried in (base is the default)
    * default:  budget_categories.monthly_budget
    * none:     no budget
    */
@@ -277,7 +279,7 @@ export function resolveBudget(input: ResolveInput): ResolvedBudget {
     const base = baseOf(m);
     let carried = 0;
     const prev = addMonths(m, -1);
-    if (depth > 0 && rolloverOn(periods, m) && (!firstMonth || prev >= firstMonth)) {
+    if (depth > 0 && rolloverOn(periods, prev) && (!firstMonth || prev >= firstMonth)) {
       const before = budgetCents(prev, depth - 1).total;
       if (before !== null) carried = before - toCents(spending?.get(prev) ?? 0);
     }
@@ -290,7 +292,7 @@ export function resolveBudget(input: ResolveInput): ResolvedBudget {
   const { total, carried } = budgetCents(input.month, MAX_CARRY_MONTHS);
   const source: BudgetSource = periods?.has(input.month)
     ? 'period'
-    : rollover
+    : carried !== 0
       ? 'rollover'
       : input.defaultBudget !== null
         ? 'default'

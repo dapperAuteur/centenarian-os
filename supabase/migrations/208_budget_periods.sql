@@ -12,9 +12,9 @@
 --   to monthly_budget when the table doesn't exist yet.
 --
 -- ROLLOVER
---   rollover = true on a month's row turns carry-over on from that month until a later row turns
---   it off (the app reads the most recent row at or before a month). The app computes the carried
---   amount; nothing is stored for it.
+--   rollover = true on a month's row passes that month's leftover (or overspend) to the next
+--   month, and stays on for later months until a later row turns it off (the app reads the most
+--   recent row at or before a month). The app computes the carried amount; nothing stores it.
 --
 -- WHO CAN READ WHAT
 --   Row Level Security is on. Owners can read and write their own rows (auth.uid() = user_id).
@@ -81,6 +81,6 @@ END $$;
 COMMENT ON TABLE public.budget_periods IS
   'Budget for one category in one month (plans/60). Months without a row use budget_categories.monthly_budget.';
 COMMENT ON COLUMN public.budget_periods.rollover IS
-  'Carry the previous month''s leftover (or overspend) into this month; stays on for later months until a later row turns it off.';
+  'Pass this month''s leftover (or overspend) to the next month; stays on for later months until a later row turns it off.';
 
 COMMIT;
