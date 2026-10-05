@@ -269,6 +269,7 @@ const PHASES: Phase[] = [
       { done: true, text: 'Valuation history: timestamped value snapshots with chart visualization' },
       { done: true, text: 'Equipment summary dashboard: total value, category breakdown' },
       { done: true, text: 'Activity links: cross-link equipment to trips, workouts, maintenance, etc.' },
+      { done: true, text: 'Depreciation for every item and vehicle (migration 214, run by hand): schedules, book value, work use, cost per use, save for replacement' },
     ],
   },
   {

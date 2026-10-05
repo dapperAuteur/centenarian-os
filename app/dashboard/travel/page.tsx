@@ -627,6 +627,9 @@ export default function TravelPage() {
                   <div className="flex gap-2 shrink-0">
                     <button onClick={() => handleEditVehicle(v)} className="text-xs text-sky-500 hover:text-sky-700 transition">edit</button>
                     {v.ownership_type === 'owned' && (
+                      <Link href={`/dashboard/travel/vehicles/${v.id}`} className="text-xs text-sky-500 hover:text-sky-700 transition">value</Link>
+                    )}
+                    {v.ownership_type === 'owned' && (
                       <button onClick={() => handleRetireVehicle(v.id)} className="text-xs text-gray-400 hover:text-gray-600 transition">retire</button>
                     )}
                     <button onClick={() => handleDeleteVehicle(v.id)} className="text-xs text-red-400 hover:text-red-600 transition">del</button>

@@ -46,7 +46,7 @@ Create these modules (chapters) in this order:
 | 04 | Linking Purchase Transactions | Connecting equipment to existing financial transactions |
 | 05 | Tracking Value Over Time | Adding valuations, the value chart, depreciation math |
 | 06 | Cross-Module Activity Links | Linking equipment to trips, workouts, tasks, and more |
-| 07 | The Equipment Summary Dashboard | Summary cards, category breakdown, ROI calculation |
+| 07 | The Equipment Summary Dashboard | Summary cards, category breakdown, ROI calculation, book value and depreciation schedules, work use and cost per use, saving for replacement |
 
 ### After Publishing
 1. Test in incognito — all lessons should load without a 403
