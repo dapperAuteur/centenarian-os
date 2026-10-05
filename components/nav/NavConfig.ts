@@ -13,6 +13,7 @@ import {
   TrendingUp,
   ChartNetwork,
   DollarSign,
+  PiggyBank,
   Navigation,
   BookOpen,
   ChefHat,
@@ -91,6 +92,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Scan', href: '/dashboard/scan', icon: ScanLine, paid: true },
       { label: 'Finance', href: '/dashboard/finance', icon: DollarSign, paid: true },
+      { label: 'Budgets', href: '/dashboard/finance/budgets', icon: PiggyBank, paid: true },
       { label: 'Forecast', href: '/dashboard/finance/forecast', icon: TrendingUp, paid: true },
       { label: 'Travel', href: '/dashboard/travel', icon: Navigation, paid: true },
       { label: 'Equipment', href: '/dashboard/equipment', icon: Package, paid: true },

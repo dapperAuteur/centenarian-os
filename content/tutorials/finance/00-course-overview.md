@@ -20,7 +20,7 @@ The Finance module is where you track income, expenses, and budgets alongside th
 | # | Lesson | What you'll learn |
 |---|--------|-------------------|
 | 01 | Welcome to Finance | Dashboard overview, what the module tracks, how it connects to the rest of the system |
-| 02 | Setting Up Budget Categories | Creating categories, assigning monthly budgets, color coding |
+| 02 | Setting Up Budget Categories | Creating categories, assigning monthly budgets, color coding, the Budgets page (suggestions from your history, budgets by month, rollover) |
 | 03 | Logging Transactions | Expense vs. income, all form fields, vendor, category assignment |
 | 04 | Reading Your Dashboard | Summary cards, monthly trend chart, spending by category, budget progress bars |
 | 05 | Transaction History | The transactions sub-page, filtering, searching, editing, deleting, and reviewing transfers between your own accounts |
@@ -51,6 +51,7 @@ Before recording:
 ## Key Takeaways
 
 - Finance tracks income, expenses, and budgets in one module
+- The Budgets page suggests budgets from your own spending history (average or median of the last 3, 6, or 12 months)
 - CYOA navigation — start with Lessons 01–03 for setup, then explore as needed
 - No bank connection: data is entered manually or imported via CSV, including a statement CSV downloaded from your bank
 - Money moving between your own accounts (transfers, card payments, loan payments) is tracked as a transfer and never counted as spending or income

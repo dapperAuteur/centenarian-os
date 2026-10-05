@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   DollarSign, TrendingUp, TrendingDown, Plus, ArrowRight,
   Upload, Download, Settings, Loader2, CreditCard, Wallet, FileText, AlertTriangle,
-  ArrowRightLeft, RefreshCw, Building2, ScanLine, X,
+  ArrowRightLeft, RefreshCw, Building2, ScanLine, X, PiggyBank,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -25,6 +25,16 @@ interface CategoryBreakdown {
   name: string;
   color: string;
   monthly_budget: number | null;
+  spent: number;
+  remaining: number | null;
+}
+
+/** The fields of GET /api/finance/budgets the Budget Progress card reads. */
+interface BudgetProgressLine {
+  id: string;
+  name: string;
+  color: string | null;
+  budget: number | null;
   spent: number;
   remaining: number | null;
 }
@@ -95,6 +105,9 @@ const ACCOUNT_TYPE_LABEL: Record<string, string> = {
 export default function FinanceDashboardPage() {
   useTrackPageView('finance', '/dashboard/finance');
   const [summary, setSummary] = useState<Summary | null>(null);
+  // This month's budgets from /api/finance/budgets (per-month budgets and rollover);
+  // null until loaded or if it fails, and then the summary's monthly_budget is used.
+  const [budgetLines, setBudgetLines] = useState<BudgetProgressLine[] | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [brands, setBrands] = useState<{ id: string; name: string; color: string }[]>([]);
@@ -142,14 +155,21 @@ export default function FinanceDashboardPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [sumRes, catRes, acctRes, brandsRes, remRes] = await Promise.all([
+      const [sumRes, catRes, acctRes, brandsRes, remRes, budgetRes] = await Promise.all([
         offlineFetch('/api/finance/summary?months=6'),
         offlineFetch('/api/finance/categories'),
         offlineFetch('/api/finance/accounts'),
         offlineFetch('/api/brands'),
         offlineFetch('/api/finance/reminders'),
+        offlineFetch('/api/finance/budgets').catch(() => null),
       ]);
       if (sumRes.ok) setSummary(await sumRes.json());
+      if (budgetRes?.ok) {
+        const report = await budgetRes.json();
+        setBudgetLines(Array.isArray(report.categories) ? report.categories : null);
+      } else {
+        setBudgetLines(null);
+      }
       if (catRes.ok) {
         const { categories: cats } = await catRes.json();
         setCategories(cats || []);
@@ -272,6 +292,11 @@ export default function FinanceDashboardPage() {
 
   const cm = summary?.currentMonth || { expenses: 0, income: 0, net: 0 };
   const pieData = (summary?.categoryBreakdown || []).filter((c) => c.spent > 0);
+  const progressLines: BudgetProgressLine[] = (budgetLines
+    ?? (summary?.categoryBreakdown || []).map((c) => ({
+      id: c.id, name: c.name, color: c.color, budget: c.monthly_budget, spent: c.spent, remaining: c.remaining,
+    })))
+    .filter((c) => c.budget !== null && c.budget > 0);
   const hasProjections = !!(summary?.projections && (summary.projections.invoiceCount.receivable > 0 || summary.projections.invoiceCount.payable > 0));
 
   return (
@@ -320,6 +345,13 @@ export default function FinanceDashboardPage() {
           >
             <CreditCard className="w-4 h-4" />
             Accounts
+          </Link>
+          <Link
+            href="/dashboard/finance/budgets"
+            className="flex items-center gap-1.5 px-3 py-2 bg-sky-50 text-sky-700 rounded-lg text-sm font-medium hover:bg-sky-100 transition"
+          >
+            <PiggyBank className="w-4 h-4" aria-hidden="true" />
+            Budgets
           </Link>
           <Link
             href="/dashboard/finance/recurring"
@@ -636,22 +668,28 @@ export default function FinanceDashboardPage() {
         </div>
       </div>
 
-      {/* Budget Progress */}
-      {(summary?.categoryBreakdown || []).some((c) => c.monthly_budget) && (
+      {/* Budget Progress: this month, from the Budgets page's data (falls back to monthly_budget) */}
+      {progressLines.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-2xl p-5">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Budget Progress</h2>
+          <div className="flex items-center justify-between mb-4 gap-2">
+            <h2 className="text-lg font-semibold text-gray-900">Budget Progress</h2>
+            <Link
+              href="/dashboard/finance/budgets"
+              className="min-h-11 flex items-center gap-1 text-sm font-medium text-sky-700 hover:text-sky-800"
+            >
+              Budgets and suggestions <ArrowRight className="w-4 h-4" aria-hidden="true" />
+            </Link>
+          </div>
           <div className="space-y-3">
-            {(summary?.categoryBreakdown || [])
-              .filter((c) => c.monthly_budget)
-              .map((cat) => {
-                const pct = cat.monthly_budget ? Math.min((cat.spent / cat.monthly_budget) * 100, 100) : 0;
+            {progressLines.map((cat) => {
+                const pct = cat.budget ? Math.min((cat.spent / cat.budget) * 100, 100) : 0;
                 const over = cat.remaining !== null && cat.remaining < 0;
                 return (
                   <div key={cat.id}>
                     <div className="flex items-center justify-between text-sm mb-1">
                       <span className="font-medium text-gray-700">{cat.name}</span>
                       <span className={`text-xs font-medium ${over ? 'text-red-600' : 'text-gray-500'}`}>
-                        ${cat.spent.toFixed(2)} / ${cat.monthly_budget?.toFixed(2)}
+                        ${cat.spent.toFixed(2)} / ${cat.budget?.toFixed(2)}
                       </span>
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -659,7 +697,7 @@ export default function FinanceDashboardPage() {
                         className="h-full rounded-full transition-all"
                         style={{
                           width: `${pct}%`,
-                          backgroundColor: over ? '#ef4444' : cat.color,
+                          backgroundColor: over ? '#ef4444' : cat.color || '#6366f1',
                         }}
                       />
                     </div>
