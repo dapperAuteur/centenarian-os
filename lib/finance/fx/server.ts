@@ -103,7 +103,8 @@ export async function backfillHomeAmounts(
   userId: string,
   options: { limit?: number; deps?: FxDeps } = {},
 ): Promise<{ updated: number; unconverted: number; error: DbErr | null }> {
-  const limit = options.limit ?? 2000;
+  // Small enough to finish inside one request; later runs continue where this one stopped.
+  const limit = options.limit ?? BACKFILL_PAGE;
   const home = await loadHomeCurrency(db, userId);
 
   const { data: accounts, error: acctError } = await db
