@@ -1,5 +1,7 @@
 // app/api/calendar/google/connect/route.ts
 // GET: send the signed-in user to Google's consent screen (read-only calendar access).
+//   ?connection_id=<id>  reconnect that Google account (preselected via login_hint)
+//   no parameter         add a Google account; Google shows its account chooser
 //
 // This is a browser navigation, not a fetch: every outcome is a redirect. A failure goes
 // back to the settings page with ?error=<code>, where the page explains it.
@@ -12,11 +14,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { signOAuthState } from '@/lib/oauth-state';
 import { buildAuthUrl, buildRedirectUri, getGoogleOAuthConfig } from '@/lib/google/calendar-client';
-import { getConnection } from '@/lib/google/connection';
+import { getConnection, listPublicConnections } from '@/lib/google/connection';
 import {
   CALENDAR_SETTINGS_PATH,
   describeCalendarError,
   getServiceDb,
+  isUuid,
   isOAuthStateReady,
   isTokenEncryptionReady,
 } from '@/lib/google/route-helpers';
@@ -39,13 +42,20 @@ export async function GET(request: NextRequest) {
     if (!isTokenEncryptionReady()) return fail('encryption_not_configured');
     if (!isOAuthStateReady()) return fail('state_secret_missing');
 
-    // Reading the row proves migration 204 is applied. When the user is reconnecting, it
-    // also gives the account to preselect.
-    const existing = await getConnection(getServiceDb(), user.id);
+    // ?connection_id=<id> means "reconnect this account": its email is passed as the login
+    // hint so Google preselects it. Without it the user is adding an account (the first, or
+    // another one), so Google shows its account chooser (prompt=select_account) instead of
+    // silently reusing whichever account the browser is signed in to.
+    // Reading the table also proves migrations 204/205 are applied before the user consents.
+    const db = getServiceDb();
+    const connectionId = request.nextUrl.searchParams.get('connection_id');
+    const reconnecting = isUuid(connectionId) ? await getConnection(db, user.id, connectionId) : null;
+    if (!reconnecting) await listPublicConnections(db, user.id);
 
     const url = buildAuthUrl(signOAuthState(user.id), buildRedirectUri(origin), {
       config,
-      loginHint: existing?.account_email ?? null,
+      loginHint: reconnecting?.account_email ?? null,
+      selectAccount: !reconnecting,
     });
     return NextResponse.redirect(url);
   } catch (err) {
