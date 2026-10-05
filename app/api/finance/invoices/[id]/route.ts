@@ -6,6 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { checkReferences, invalidReferenceMessage, usableReferences } from '@/lib/auth/ownership';
+import { invoiceReferences } from '@/lib/finance/invoice-references';
 
 function getDb() {
   return createServiceClient(
@@ -26,13 +28,20 @@ export async function GET(
   const db = getDb();
   const { data, error } = await db
     .from('invoices')
-    .select('*, invoice_items(*), budget_categories(id, name, color)')
+    .select('*, invoice_items(*), budget_categories(id, name, color, user_id)')
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  // A category_id saved before reference checks existed may be someone else's:
+  // show only the caller's own category.
+  const category = data.budget_categories as { id: string; name: string; color: string; user_id: string } | null;
+  data.budget_categories = category && category.user_id === user.id
+    ? { id: category.id, name: category.name, color: category.color }
+    : null;
 
   // Sort line items by sort_order
   if (data.invoice_items) {
@@ -46,6 +55,7 @@ export async function GET(
       .from('financial_transactions')
       .select('id, amount, transaction_date, description')
       .eq('id', data.transaction_id)
+      .eq('user_id', user.id)
       .maybeSingle();
     linked_transaction = tx;
   }
@@ -76,6 +86,11 @@ export async function PATCH(
 
   const body = await request.json();
 
+  // Every foreign id in the body must be the caller's own.
+  const refs = await checkReferences(db, user.id, invoiceReferences(body));
+  if (refs.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
+  if (!refs.ok) return NextResponse.json({ error: invalidReferenceMessage(refs.invalid) }, { status: 400 });
+
   // Handle "unmark paid" — revert paid invoice
   if (body.unmark_paid) {
     if (existing.status !== 'paid') {
@@ -84,7 +99,7 @@ export async function PATCH(
 
     // Delete the auto-created transaction
     if (existing.transaction_id) {
-      await db.from('financial_transactions').delete().eq('id', existing.transaction_id);
+      await db.from('financial_transactions').delete().eq('id', existing.transaction_id).eq('user_id', user.id);
     }
 
     const revertStatus = body.revert_to || 'sent';
@@ -132,6 +147,10 @@ export async function PATCH(
       updated_at: new Date().toISOString(),
     };
 
+    // The invoice's own ids may predate reference checks: copy only the caller's.
+    const usable = await usableReferences(db, user.id, invoiceReferences(existing));
+    if (usable.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
+
     // Auto-create a financial transaction
     const txType = existing.direction === 'receivable' ? 'income' : 'expense';
     const { data: tx, error: txError } = await db
@@ -144,9 +163,9 @@ export async function PATCH(
         vendor: existing.contact_name,
         transaction_date: paidDate,
         source: 'manual',
-        category_id: existing.category_id,
-        account_id: existing.account_id ?? body.account_id ?? null,
-        brand_id: existing.brand_id,
+        category_id: usable.values.category_id ?? null,
+        account_id: usable.values.account_id ?? body.account_id ?? null,
+        brand_id: usable.values.brand_id ?? null,
       })
       .select('id')
       .single();
@@ -247,10 +266,10 @@ export async function DELETE(
 
   // Clean up linked transaction if exists
   if (existing.transaction_id) {
-    await db.from('financial_transactions').delete().eq('id', existing.transaction_id);
+    await db.from('financial_transactions').delete().eq('id', existing.transaction_id).eq('user_id', user.id);
   }
 
-  const { error } = await db.from('invoices').delete().eq('id', id);
+  const { error } = await db.from('invoices').delete().eq('id', id).eq('user_id', user.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ ok: true });

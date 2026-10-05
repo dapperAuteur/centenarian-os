@@ -5,6 +5,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { checkReferences, invalidReferenceMessage, usableReferences } from '@/lib/auth/ownership';
+import { invoiceReferences } from '@/lib/finance/invoice-references';
 
 function getDb() {
   return createServiceClient(
@@ -57,6 +59,11 @@ export async function POST(request: NextRequest) {
     if (tErr) return NextResponse.json({ error: tErr.message }, { status: 500 });
     if (!template) return NextResponse.json({ error: 'Template not found' }, { status: 404 });
 
+    // A template saved before reference checks existed may name someone else's
+    // contact, account, brand or category: copy only the caller's own.
+    const usable = await usableReferences(db, user.id, invoiceReferences(template));
+    if (usable.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
+
     // Build invoice number from prefix if set
     let invoiceNumber = null;
     if (template.invoice_number_prefix) {
@@ -86,7 +93,7 @@ export async function POST(request: NextRequest) {
         direction: template.direction,
         status: 'draft',
         contact_name: template.contact_name ?? '',
-        contact_id: template.contact_id,
+        contact_id: usable.values.contact_id ?? null,
         subtotal: template.subtotal,
         tax_amount: template.tax_amount,
         total: template.total,
@@ -95,9 +102,9 @@ export async function POST(request: NextRequest) {
         invoice_number: invoiceNumber,
         invoice_number_prefix: template.invoice_number_prefix,
         custom_fields: customFieldValues,
-        account_id: template.account_id,
-        brand_id: template.brand_id,
-        category_id: template.category_id,
+        account_id: usable.values.account_id ?? null,
+        brand_id: usable.values.brand_id ?? null,
+        category_id: usable.values.category_id ?? null,
         notes: template.notes,
       })
       .select('id')
@@ -129,6 +136,11 @@ export async function POST(request: NextRequest) {
   if (!body.name?.trim()) {
     return NextResponse.json({ error: 'Template name is required' }, { status: 400 });
   }
+
+  // Every foreign id in the body must be the caller's own.
+  const refs = await checkReferences(db, user.id, invoiceReferences(body));
+  if (refs.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
+  if (!refs.ok) return NextResponse.json({ error: invalidReferenceMessage(refs.invalid) }, { status: 400 });
 
   const { data: newTemplate, error: createErr } = await db
     .from('invoice_templates')

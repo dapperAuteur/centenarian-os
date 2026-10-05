@@ -452,6 +452,31 @@ export async function checkReferences(
   return { ok: !failed && invalid.length === 0, invalid: failed ? [] : invalid, failed };
 }
 
+/** A body field that holds a foreign id, and the table it points into. */
+export interface ReferenceField {
+  field: string;
+  table: string;
+  allowPublic?: boolean;
+}
+
+/**
+ * The references `body` carries, for checkReferences(): one per field in
+ * `fields` that the body actually has (blank values are skipped later by
+ * checkReferences). `prefix` names nested fields in the 400 message, e.g.
+ * 'items.' for line items.
+ */
+export function referencesIn(
+  body: unknown,
+  fields: readonly ReferenceField[],
+  prefix = '',
+): Reference[] {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return [];
+  const record = body as Record<string, unknown>;
+  return fields
+    .filter(({ field }) => Object.prototype.hasOwnProperty.call(record, field))
+    .map(({ field, table, allowPublic }) => ({ field: `${prefix}${field}`, table, id: record[field], allowPublic }));
+}
+
 /** The 400 message for refused references. Names the fields only. */
 export function invalidReferenceMessage(fields: readonly string[]): string {
   return `Invalid reference: ${fields.join(', ')}`;

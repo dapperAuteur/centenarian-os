@@ -5,6 +5,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { checkReferences, invalidReferenceMessage } from '@/lib/auth/ownership';
+import { invoiceReferences } from '@/lib/finance/invoice-references';
 
 function getDb() {
   return createServiceClient(
@@ -23,7 +25,22 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const db = getDb();
+
+  // Ownership first: the line items below are replaced by template_id.
+  const { data: existing, error: existingErr } = await db
+    .from('invoice_templates')
+    .select('id')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (existingErr) return NextResponse.json({ error: existingErr.message }, { status: 500 });
+  if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
   const body = await request.json();
+  // Every foreign id in the body must be the caller's own.
+  const refs = await checkReferences(db, user.id, invoiceReferences(body));
+  if (refs.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
+  if (!refs.ok) return NextResponse.json({ error: invalidReferenceMessage(refs.invalid) }, { status: 400 });
 
   const allowed = [
     'name', 'direction', 'contact_name', 'contact_id',

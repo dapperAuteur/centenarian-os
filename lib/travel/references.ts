@@ -8,10 +8,10 @@
 //
 // Kept free of '@/' imports so node --test can load it (tests/unit/travel-references.test.ts).
 
-import type { Reference } from '../auth/ownership.ts';
+import { referencesIn, type Reference, type ReferenceField } from '../auth/ownership.ts';
 
 /** Body field → the table its id points into. */
-const TRAVEL_REFERENCE_FIELDS: ReadonlyArray<{ field: string; table: string; allowPublic?: boolean }> = [
+const TRAVEL_REFERENCE_FIELDS: readonly ReferenceField[] = [
   { field: 'vehicle_id', table: 'vehicles', allowPublic: true },
   { field: 'job_id', table: 'contractor_jobs' },
   { field: 'brand_id', table: 'user_brands' },
@@ -24,16 +24,7 @@ const TRAVEL_REFERENCE_FIELDS: ReadonlyArray<{ field: string; table: string; all
  * Fields that are absent or blank are skipped by checkReferences itself.
  */
 export function travelReferences(body: unknown, prefix = ''): Reference[] {
-  if (!body || typeof body !== 'object') return [];
-  const record = body as Record<string, unknown>;
-  return TRAVEL_REFERENCE_FIELDS
-    .filter(({ field }) => Object.prototype.hasOwnProperty.call(record, field))
-    .map(({ field, table, allowPublic }) => ({
-      field: `${prefix}${field}`,
-      table,
-      id: record[field],
-      allowPublic,
-    }));
+  return referencesIn(body, TRAVEL_REFERENCE_FIELDS, prefix);
 }
 
 /** References for every leg of a multi-leg route. */
