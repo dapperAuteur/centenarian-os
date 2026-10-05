@@ -7,7 +7,7 @@
 //
 // -> 200 { results: SyncSummary[] }   one entry per account, each with
 //        { connection_id, account_email, status: ok|partial|needs_reauth|error|skipped,
-//          counts: { created, updated, archived, flagged, unchanged },
+//          counts: { created, records, updated, archived, flagged, unchanged },
 //          calendars_synced, calendars_total, errors[], started_at, finished_at }
 //    401 not signed in · 400 invalid_request · 404 not_connected · 503 migration_missing
 //
