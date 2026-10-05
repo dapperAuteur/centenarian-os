@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { usableReferences } from '@/lib/auth/ownership';
 
 function getDb() {
   return createServiceClient(
@@ -68,6 +69,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Daily feedback limit reached' }, { status: 429 });
   }
 
+  // A workout log id is kept only when it is the caller's own log.
+  const logRef = await usableReferences(db, user.id, [{ field: 'workout_log_id', table: 'workout_logs', id: workout_log_id }]);
+  if (logRef.failed) return NextResponse.json({ error: 'Could not save feedback' }, { status: 500 });
+
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     ?? request.headers.get('x-real-ip')
     ?? null;
@@ -77,7 +82,7 @@ export async function POST(request: NextRequest) {
     .from('workout_feedback')
     .insert({
       user_id: user.id,
-      workout_log_id: workout_log_id ?? null,
+      workout_log_id: logRef.values.workout_log_id,
       activity_category,
       activity_duration: activity_duration && VALID_DURATIONS.includes(activity_duration) ? activity_duration : null,
       friction_scenario_index: friction_scenario_index ?? null,

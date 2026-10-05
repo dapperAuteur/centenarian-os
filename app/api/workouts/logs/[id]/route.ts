@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { checkOwned, ownedIds } from '@/lib/auth/ownership';
 
 function getDb() {
   return createServiceClient(
@@ -51,6 +52,13 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const db = getDb();
+
+  // Ownership first: the exercises below are replaced by log_id, and the
+  // response re-reads the log.
+  const owned = await checkOwned(db, user.id, 'workout_logs', id);
+  if (owned.failed) return NextResponse.json({ error: 'Could not save the workout' }, { status: 500 });
+  if (!owned.allowed) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
   const body = await request.json();
 
   // Update log fields
@@ -71,7 +79,20 @@ export async function PATCH(
   }
 
   // Replace exercises if provided
-  if (body.exercises) {
+  if (Array.isArray(body.exercises)) {
+    // Each exercise and piece of equipment is kept only when the caller may
+    // reference it (their own, or public), as in POST /api/workouts/logs.
+    const exerciseList: unknown[] = body.exercises;
+    const idsOf = (key: 'exercise_id' | 'equipment_id') =>
+      exerciseList.map((ex) => (ex && typeof ex === 'object' ? (ex as Record<string, unknown>)[key] : null));
+    const [exerciseRefs, equipmentRefs] = await Promise.all([
+      ownedIds(db, user.id, 'exercises', idsOf('exercise_id'), { allowPublic: true }),
+      ownedIds(db, user.id, 'equipment', idsOf('equipment_id'), { allowPublic: true }),
+    ]);
+    if (exerciseRefs.failed || equipmentRefs.failed) {
+      return NextResponse.json({ error: 'Could not save the workout' }, { status: 500 });
+    }
+
     await db.from('workout_log_exercises').delete().eq('log_id', id);
 
     if (body.exercises.length > 0) {
@@ -79,7 +100,7 @@ export async function PATCH(
       const rows = body.exercises.map((ex: any, i: number) => ({
         log_id: id,
         name: ex.name,
-        exercise_id: ex.exercise_id || null,
+        exercise_id: exerciseRefs.has(ex.exercise_id) ? ex.exercise_id : null,
         sets_completed: ex.sets_completed ?? null,
         reps_completed: ex.reps_completed ?? null,
         weight_lbs: ex.weight_lbs ? Number(ex.weight_lbs) : null,
@@ -87,7 +108,7 @@ export async function PATCH(
         rest_sec: ex.rest_sec ?? 60,
         sort_order: i,
         notes: ex.notes ?? null,
-        equipment_id: ex.equipment_id || null,
+        equipment_id: equipmentRefs.has(ex.equipment_id) ? ex.equipment_id : null,
         is_circuit: ex.is_circuit ?? false,
         is_negative: ex.is_negative ?? false,
         is_isometric: ex.is_isometric ?? false,
@@ -117,7 +138,8 @@ export async function PATCH(
     .from('workout_logs')
     .select('*, workout_log_exercises(*, exercises(video_url, media_url))')
     .eq('id', id)
-    .single();
+    .eq('user_id', user.id)
+    .maybeSingle();
 
   return NextResponse.json({ workout: data });
 }
