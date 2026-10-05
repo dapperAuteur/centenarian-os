@@ -2,8 +2,11 @@
 // GET: list transactions with filters (date range, category or ?uncategorized=1, type). A row that is one
 //      side of a transfer comes with `transfer_partner`: the other side and its account.
 //      `?batch=<import_batch_id>` lists the rows of one statement import.
-// POST: create a new transaction (fills a missing category from the vendor's learned category)
+// POST: create a new transaction (fills a missing category from the vendor's learned category).
+//      The amount is in the account's currency; a row on a foreign-currency account also gets
+//      currency, fx_rate and amount_home (rate to the home currency on the transaction date).
 // PATCH: update a transaction. One side of a transfer can't change its amount or type alone.
+//      Changing the amount, date or account recomputes the home-currency amount.
 // DELETE: delete a transaction. One side of a transfer answers 409 with the other side,
 //      unless the caller says what to do with the pair: `?pair=delete` deletes both rows,
 //      `?pair=unlink` unlinks the other row and deletes only this one.
@@ -13,7 +16,9 @@ import { createClient } from '@/lib/supabase/server';
 import { findLearnedCategory } from '@/lib/finance/learned-categories';
 import { transferEditConflict } from '@/lib/finance/transfers/pairing';
 import { isMissingColumn, missingTransferColumn } from '@/lib/finance/transfers/schema';
-import { clearTransferGroup, loadGroupRows } from '@/lib/finance/transfers/server';
+import { clearTransferGroup, getServiceDb, loadGroupRows } from '@/lib/finance/transfers/server';
+import { withOptionalFx } from '@/lib/finance/fx/totals';
+import { fxFieldsFor, loadAccountCurrency, loadHomeCurrency } from '@/lib/finance/fx/server';
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -38,31 +43,44 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(parseInt(params.get('limit') || '100') || 100, 500);
   const offset = parseInt(params.get('offset') || '0');
 
-  let query = supabase
-    .from('financial_transactions')
-    .select('*, budget_categories(id, name, color), financial_accounts(id, name, institution_name, last_four)', { count: 'exact' })
-    .eq('user_id', user.id)
-    .order('transaction_date', { ascending: false })
-    .range(offset, offset + limit - 1);
-
-  if (from) query = query.gte('transaction_date', from);
-  if (to) query = query.lte('transaction_date', to);
-  if (type) query = query.eq('type', type);
-  if (categoryIds.length > 0) query = query.in('category_id', categoryIds);
-  else if (params.get('uncategorized') === '1') query = query.is('category_id', null);
-  if (accountIds.length > 0) query = query.in('account_id', accountIds);
-  if (brandIds.length > 0) query = query.in('brand_id', brandIds);
-  if (sourceModule) query = query.eq('source_module', sourceModule);
-  if (source) query = query.eq('source', source);
-  if (disputeStatus) query = query.eq('dispute_status', disputeStatus);
   const jobId = params.get('job_id');
-  if (jobId) query = query.eq('job_id', jobId);
   // One statement import. The column arrives with migration 203.
   const batchId = params.get('batch')?.trim() || '';
-  if (batchId) query = query.eq('import_batch_id', batchId);
-  if (q) query = query.or(`description.ilike.%${q}%,vendor.ilike.%${q}%,notes.ilike.%${q}%,amount::text.ilike.%${q}%`);
 
-  const { data, error, count } = await query;
+  // The account's currency arrives with migration 210; before it, the query runs without it.
+  const buildQuery = (fxColumnsExist: boolean) => {
+    let query = supabase
+      .from('financial_transactions')
+      .select(
+        fxColumnsExist
+          ? '*, budget_categories(id, name, color), financial_accounts(id, name, institution_name, last_four, currency)'
+          : '*, budget_categories(id, name, color), financial_accounts(id, name, institution_name, last_four)',
+        { count: 'exact' },
+      )
+      .eq('user_id', user.id)
+      .order('transaction_date', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (from) query = query.gte('transaction_date', from);
+    if (to) query = query.lte('transaction_date', to);
+    if (type) query = query.eq('type', type);
+    if (categoryIds.length > 0) query = query.in('category_id', categoryIds);
+    else if (params.get('uncategorized') === '1') query = query.is('category_id', null);
+    if (accountIds.length > 0) query = query.in('account_id', accountIds);
+    if (brandIds.length > 0) query = query.in('brand_id', brandIds);
+    if (sourceModule) query = query.eq('source_module', sourceModule);
+    if (source) query = query.eq('source', source);
+    if (disputeStatus) query = query.eq('dispute_status', disputeStatus);
+    if (jobId) query = query.eq('job_id', jobId);
+    if (batchId) query = query.eq('import_batch_id', batchId);
+    if (q) query = query.or(`description.ilike.%${q}%,vendor.ilike.%${q}%,notes.ilike.%${q}%,amount::text.ilike.%${q}%`);
+    return query;
+  };
+
+  const [{ data, error, count }, homeCurrency] = await Promise.all([
+    withOptionalFx((fxColumnsExist) => buildQuery(fxColumnsExist)),
+    loadHomeCurrency(getServiceDb(), user.id),
+  ]);
 
   // The import filter can fail in two ways that are not the caller's fault and
   // must not reach the screen as a raw Postgres error. Either way no row can be
@@ -110,7 +128,21 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ transactions, total: count || 0 });
+  return NextResponse.json({ transactions, total: count || 0, home_currency: homeCurrency });
+}
+
+/**
+ * The FX columns for a row on `accountId`: {} when the account is in the home currency (or has
+ * no currency column yet, before migration 210), so nothing new is sent to the database.
+ */
+async function fxForRow(userId: string, accountId: string | null, amount: number, date: string) {
+  if (!accountId || !Number.isFinite(amount)) return {};
+  const db = getServiceDb();
+  const home = await loadHomeCurrency(db, userId);
+  const currency = await loadAccountCurrency(db, userId, accountId, home);
+  if (!currency || currency === home) return {};
+  const { fields } = await fxFieldsFor(db, userId, currency, home, amount, date);
+  return fields;
 }
 
 export async function POST(request: NextRequest) {
@@ -139,9 +171,12 @@ export async function POST(request: NextRequest) {
     resolvedCategoryId = suggested_category_id;
   }
 
+  const fx = await fxForRow(user.id, account_id || null, parseFloat(amount), transaction_date);
+
   const { data, error } = await supabase
     .from('financial_transactions')
     .insert({
+      ...fx,
       user_id: user.id,
       amount: Math.abs(parseFloat(amount)),
       type: type || 'expense',
@@ -182,6 +217,27 @@ export async function PATCH(request: NextRequest) {
     if (updates[key] !== undefined) payload[key] = updates[key];
   }
   if (payload.amount) payload.amount = Math.abs(parseFloat(String(payload.amount)));
+
+  // The home-currency amount follows the amount, the date and the account.
+  if (payload.amount !== undefined || payload.transaction_date !== undefined || payload.account_id !== undefined) {
+    const { data: before } = await supabase
+      .from('financial_transactions')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (before) {
+      const accountId = (payload.account_id !== undefined ? payload.account_id : before.account_id) as string | null;
+      const amount = Number(payload.amount ?? before.amount);
+      const date = String(payload.transaction_date ?? before.transaction_date);
+      const fx = await fxForRow(user.id, accountId || null, amount, date);
+      // `before` has amount_home only once migration 210 is applied; only then can it be cleared.
+      if (Object.keys(fx).length > 0) Object.assign(payload, fx);
+      else if ('amount_home' in before && (before.amount_home !== null || before.currency !== null)) {
+        Object.assign(payload, { currency: null, fx_rate: null, amount_home: null });
+      }
+    }
+  }
 
   // One side of a transfer must keep the amount and type that match the other
   // side. Category, notes, date and the rest are free to change.

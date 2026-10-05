@@ -261,3 +261,43 @@ export async function saveManualRate(
   });
   return { error };
 }
+
+/**
+ * Brings the latest fetched rates for `codes` up to date (the daily cron and the "Update rates
+ * now" button). Codes that already have a fetched rate from today or yesterday are skipped
+ * (Frankfurter publishes once per business day, ExchangeRate-API once a day, and its terms ask
+ * for no more than about one request an hour), so pressing the button twice costs nothing.
+ */
+export async function refreshLatest(
+  db: SupabaseClient,
+  codes: readonly string[],
+  deps: FxDeps = {},
+): Promise<{ stored: number; checked: string[]; skipped: string[]; uncovered: string[]; error: DbErr | null }> {
+  const wanted = [...new Set(codes.filter((c) => c !== PIVOT))].sort();
+  if (wanted.length === 0) return { stored: 0, checked: [], skipped: [], uncovered: [], error: null };
+  const today = deps.today ?? todayUtc();
+  const yesterday = new Date(Date.parse(`${today}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+
+  const { data, error } = await db
+    .from('exchange_rates')
+    .select('quote')
+    .is('user_id', null)
+    .eq('base', PIVOT)
+    .in('quote', wanted)
+    .gte('rate_date', yesterday);
+  if (error) return { stored: 0, checked: [], skipped: [], uncovered: [], error };
+  const fresh = new Set(((data ?? []) as { quote: string }[]).map((r) => r.quote));
+  const stale = wanted.filter((c) => !fresh.has(c));
+  const skipped = wanted.filter((c) => fresh.has(c));
+  if (stale.length === 0 || deps.allowFetch === false) {
+    return { stored: 0, checked: [], skipped, uncovered: [], error: null };
+  }
+  const res = await fetchAndStore(db, stale, 'latest', deps);
+  return {
+    stored: res.stored,
+    checked: stale,
+    skipped,
+    uncovered: stale.filter((c) => !res.covered.includes(c)),
+    error: res.error,
+  };
+}

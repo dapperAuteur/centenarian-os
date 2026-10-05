@@ -1,10 +1,16 @@
 // app/api/finance/accounts/route.ts
-// GET: list user's financial accounts (with computed balance)
-// POST: create a new account
+// GET: list user's financial accounts (with computed balance). The balance is in the account's
+//      own currency. Accounts not in the user's home currency also get `home_currency`,
+//      `balance_home` and `fx` ({ rate, rate_date, source, stale }): today's rate, cache first,
+//      fetched server-side when missing (lib/finance/fx).
+// POST: create a new account. `currency` (ISO code) defaults to the user's home currency.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { convert, normalizeCurrency } from '@/lib/finance/fx/math';
+import { getRate, isFxSchemaMissing } from '@/lib/finance/fx/rates';
+import { loadHomeCurrency } from '@/lib/finance/fx/server';
 
 function getDb() {
   return createServiceClient(
@@ -28,6 +34,9 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  const home = await loadHomeCurrency(db, user.id);
+  const today = new Date().toISOString().slice(0, 10);
+
   // Compute balance for each account: opening_balance + income - expenses
   const accountsWithBalance = await Promise.all(
     (accounts ?? []).map(async (acct) => {
@@ -46,7 +55,19 @@ export async function GET() {
         ? -(Number(acct.opening_balance) + expenses - income)
         : Number(acct.opening_balance) + income - expenses;
 
-      return { ...acct, balance };
+      // Before migration 210 there is no currency column: every account is in USD.
+      const currency: string = acct.currency ?? 'USD';
+      if (currency === home) return { ...acct, currency, balance, home_currency: home };
+
+      const { rate } = await getRate(db, user.id, currency, home, today);
+      return {
+        ...acct,
+        currency,
+        balance,
+        home_currency: home,
+        balance_home: rate ? convert(balance, rate.rate) : null,
+        fx: rate,
+      };
     })
   );
 
@@ -74,6 +95,12 @@ export async function POST(request: NextRequest) {
   if (!account_type) return NextResponse.json({ error: 'Account type is required' }, { status: 400 });
 
   const db = getDb();
+  let currency: string | null = null;
+  if (body.currency !== undefined && body.currency !== null && body.currency !== '') {
+    currency = normalizeCurrency(body.currency);
+    if (!currency) return NextResponse.json({ error: 'Currency must be a three-letter code, like USD or MXN.' }, { status: 400 });
+  }
+  if (!currency) currency = await loadHomeCurrency(db, user.id);
   const { data, error } = await db
     .from('financial_accounts')
     .insert({
@@ -101,11 +128,21 @@ export async function POST(request: NextRequest) {
       rewards_type: rewards_type ?? null,
       rewards_rate: rewards_rate ?? null,
       annual_fee: annual_fee != null ? Number(annual_fee) : null,
+      // Sent only when it isn't USD, so creating a USD account keeps working before migration 210.
+      ...(currency !== 'USD' ? { currency } : {}),
     })
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    if (isFxSchemaMissing(error)) {
+      return NextResponse.json(
+        { error: 'Accounts in other currencies need a database update (migration 210). Create it in USD for now.', code: 'fx_not_migrated' },
+        { status: 503 },
+      );
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
   const isDebt = account_type === 'credit_card' || account_type === 'loan';
   const balance = isDebt ? -Number(opening_balance) : Number(opening_balance);

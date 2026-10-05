@@ -24,7 +24,7 @@ import { resolveRate } from '../../lib/finance/fx/resolve.ts';
 import type { RateRow } from '../../lib/finance/fx/resolve.ts';
 import { fetchFrankfurter, fetchOpenErApi } from '../../lib/finance/fx/providers.ts';
 import type { FetchLike } from '../../lib/finance/fx/providers.ts';
-import { getRate, resetFetchThrottle, saveManualRate, storeFetched } from '../../lib/finance/fx/rates.ts';
+import { getRate, refreshLatest, resetFetchThrottle, saveManualRate, storeFetched } from '../../lib/finance/fx/rates.ts';
 import { backfillHomeAmounts, fxFieldsFor } from '../../lib/finance/fx/server.ts';
 import { planExchange } from '../../lib/finance/fx/exchange.ts';
 import { amountForTotals, toHomeAmounts, withOptionalFx } from '../../lib/finance/fx/totals.ts';
@@ -293,6 +293,21 @@ test('backfillHomeAmounts fills foreign-account rows only', async () => {
   assert.equal(t1.amount_home, 5);
   assert.equal(t1.currency, 'MXN');
   assert.equal(t2.amount_home, null);
+});
+
+test('refreshLatest skips codes already fetched today or yesterday', async () => {
+  const db = new FakeDb();
+  db.seed('exchange_rates', [fetched('EUR', 0.89, '2026-10-04')]);
+  const f = fakeFetch({
+    'https://api.frankfurter.dev/v1/latest': { amount: 1, base: 'USD', date: '2026-10-05', rates: { JPY: 158 } },
+    'https://open.er-api.com/': { result: 'error' },
+  });
+  const res = await refreshLatest(asDb(db), ['USD', 'EUR', 'JPY', 'XAA'], { fetchImpl: f, today: '2026-10-05' });
+  assert.deepEqual(res.skipped, ['EUR']);
+  assert.deepEqual(res.checked, ['JPY', 'XAA']);
+  assert.deepEqual(res.uncovered, ['XAA']);
+  assert.equal(res.stored, 1);
+  assert.match(f.calls[0], /symbols=JPY,XAA$/);
 });
 
 // ── exchange ────────────────────────────────────────────────────────────────
