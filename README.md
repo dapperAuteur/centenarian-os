@@ -392,6 +392,7 @@ For the full module map and the cross-app shared-DB story, see **[ARCHITECTURE.m
 
 - **Authentication**: Supabase Auth + Cloudflare Turnstile on signup
 - **Authorization**: Row Level Security (RLS) on all tables
+- **Profiles**: billing, plan and role columns (`subscription_status`, `stripe_*`, `role`, `invite_limit`, `products`, `selected_modules`, ...) can only be changed by server code with the service role; a trigger rejects browser-session writes (migration 206). Other users' names, avatars and bios are read from the `public_profiles` view, and the `profiles` table is readable only by its owner (migration 207). See `lib/profiles/public-profiles.ts`.
 - **Data Encryption**: TLS 1.3 in transit, AES-256 at rest
 - **Subscription gating**: Server-side and client-side access control
 - **Admin guard**: ADMIN_EMAIL env var check on all admin routes

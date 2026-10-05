@@ -108,6 +108,7 @@ Overview, Users (list + detail), Messages, Content moderation, Engagement analyt
 ### Security
 - **Cloudflare Turnstile** on signup page (with dev fallback)
 - **Row-Level Security** on all user tables
+- **Profiles**: billing/plan/role columns (subscription_status, stripe_*, role, invite_limit, products, selected_modules, cancel_*) are server-only; a trigger rejects anon/authenticated writes (migration 206). Other users are read via the public_profiles view (id, username, display_name, bio, avatar_url, created_at, updated_at); the profiles table is owner-only (migration 207)
 - **ADMIN_EMAIL** env var gate for admin routes
 - **Middleware** protects admin-only paths
 - **File upload limits**: 5 files max, 10MB each for AI chat
