@@ -78,6 +78,8 @@ export default function TransactionsPage() {
   //   ?batch=<import_batch_id>  lists the transactions of one import
   //   ?review=transfers         opens the "Possible transfers" panel
   const urlBatchId = searchParams.get('batch') || '';
+  // The Budgets page links here with ?uncategorized=1&from=&to= (one month's uncategorized spending).
+  const urlUncategorized = searchParams.get('uncategorized') === '1';
   const reviewTransfers = searchParams.get('review') === 'transfers';
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -90,20 +92,20 @@ export default function TransactionsPage() {
   const [showFilters, setShowFilters] = useState(false);
 
   // Filters
-  const [filterType, setFilterType] = useState<string>('');
+  const [filterType, setFilterType] = useState<string>(() => searchParams.get('type') || '');
   const [filterSource, setFilterSource] = useState<string>('');
   const [filterAccountIds, setFilterAccountIds] = useState<Set<string>>(
     urlAccountId ? new Set([urlAccountId]) : new Set()
   );
   const [filterCategoryIds, setFilterCategoryIds] = useState<Set<string>>(new Set());
   const [filterBrandIds, setFilterBrandIds] = useState<Set<string>>(new Set());
-  const [filterFrom, setFilterFrom] = useState<string>('');
-  const [filterTo, setFilterTo] = useState<string>('');
+  const [filterFrom, setFilterFrom] = useState<string>(() => searchParams.get('from') || '');
+  const [filterTo, setFilterTo] = useState<string>(() => searchParams.get('to') || '');
   const [filterSearch, setFilterSearch] = useState<string>('');
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeFilterCount = filterAccountIds.size + filterCategoryIds.size + filterBrandIds.size
-    + (filterType ? 1 : 0) + (filterSource ? 1 : 0) + (filterFrom || filterTo ? 1 : 0) + (urlBatchId ? 1 : 0);
+    + (filterType ? 1 : 0) + (filterSource ? 1 : 0) + (filterFrom || filterTo ? 1 : 0) + (urlBatchId ? 1 : 0) + (urlUncategorized ? 1 : 0);
 
   // Bulk selection
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -143,6 +145,7 @@ export default function TransactionsPage() {
     if (filterTo) params.set('to', filterTo);
     if (filterSearch) params.set('q', filterSearch);
     if (urlBatchId) params.set('batch', urlBatchId);
+    if (urlUncategorized) params.set('uncategorized', '1');
 
     try {
       const res = await offlineFetch(`/api/finance/transactions?${params}`);
@@ -155,7 +158,7 @@ export default function TransactionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, filterType, filterSource, filterAccountIds, filterCategoryIds, filterBrandIds, filterFrom, filterTo, filterSearch, urlBatchId]);
+  }, [page, filterType, filterSource, filterAccountIds, filterCategoryIds, filterBrandIds, filterFrom, filterTo, filterSearch, urlBatchId, urlUncategorized]);
 
   useEffect(() => {
     Promise.all([
@@ -167,10 +170,10 @@ export default function TransactionsPage() {
   }, []);
 
   // Clear selection whenever filters or page change
-  useEffect(() => { setSelected(new Set()); }, [page, filterType, filterSource, filterAccountIds, filterCategoryIds, filterBrandIds, filterFrom, filterTo, filterSearch, urlBatchId]);
+  useEffect(() => { setSelected(new Set()); }, [page, filterType, filterSource, filterAccountIds, filterCategoryIds, filterBrandIds, filterFrom, filterTo, filterSearch, urlBatchId, urlUncategorized]);
 
   // A different import (or none) starts from its first page.
-  useEffect(() => { setPage(0); }, [urlBatchId]);
+  useEffect(() => { setPage(0); }, [urlBatchId, urlUncategorized]);
 
   useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
 
@@ -240,10 +243,10 @@ export default function TransactionsPage() {
     setPage(0);
   };
 
-  // Drops only ?batch= from the address, keeping whatever else is there.
-  const clearBatchFilter = () => {
+  // Drops one address filter (?batch= or ?uncategorized=), keeping whatever else is there.
+  const clearUrlFilter = (name: 'batch' | 'uncategorized') => {
     const next = new URLSearchParams(searchParams.toString());
-    next.delete('batch');
+    next.delete(name);
     const query = next.toString();
     router.replace(`/dashboard/finance/transactions${query ? `?${query}` : ''}`);
   };
@@ -351,10 +354,17 @@ export default function TransactionsPage() {
             );
           })}
           {urlBatchId && (
-            <button onClick={clearBatchFilter}
+            <button onClick={() => clearUrlFilter('batch')}
               aria-label="Remove the filter: transactions from one import"
               className="flex items-center gap-1 text-xs bg-sky-50 text-sky-800 border border-sky-200 min-h-11 px-3 rounded-full hover:bg-sky-100 transition">
               From one import <X className="w-3 h-3" aria-hidden="true" />
+            </button>
+          )}
+          {urlUncategorized && (
+            <button onClick={() => clearUrlFilter('uncategorized')}
+              aria-label="Remove the filter: uncategorized only"
+              className="flex items-center gap-1 text-xs bg-sky-50 text-sky-800 border border-sky-200 min-h-11 px-3 rounded-full hover:bg-sky-100 transition">
+              Uncategorized only <X className="w-3 h-3" aria-hidden="true" />
             </button>
           )}
           {Array.from(filterCategoryIds).map((id) => {

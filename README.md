@@ -6,7 +6,7 @@
 > [`/dashboard/weekly-review`](./app/dashboard/weekly-review)) can surface cross-domain patterns no
 > single-vertical tracker can see. That co-location is the product, not an accident of scope.
 
-> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online)), offline-first via service-worker + IndexedDB queue, **209 migrations** to date.
+> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online)), offline-first via service-worker + IndexedDB queue, **210 migrations** to date.
 
 **Actively decomposing.** Modules that a sibling WitUS app already owns are being removed under
 the ecosystem's "one app, one job" rule (see [CLAUDE.md](./CLAUDE.md)) — Media → Stream.WitUS,
@@ -31,7 +31,7 @@ flowchart LR
 
   CentOS[centenarian-os<br/>Next.js 15 · Vercel<br/>14 modules]
   Contractor[contractor-os<br/>Work.WitUS]
-  DB[(Supabase Postgres<br/>209 migrations)]:::shared
+  DB[(Supabase Postgres<br/>210 migrations)]:::shared
 
   CentOS -->|service-role + publishable| DB
   Contractor -->|service-role + publishable| DB
@@ -40,7 +40,7 @@ flowchart LR
 For dev-audience readers:
 
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** — full module map, Mermaid diagrams of the shared-DB boundary, cross-app traffic via the `unified-schedule` edge function, offline-sync layer, repo layout, and stack table.
-- **[MIGRATIONS.md](./MIGRATIONS.md)** — 209 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
+- **[MIGRATIONS.md](./MIGRATIONS.md)** — 210 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
 - **[CLAUDE.md](./CLAUDE.md)** — AI-collaborator instructions doubling as the project conventions doc (style, a11y, the Shared Database rule, branch workflow).
 - **[STYLE_GUIDE.md](./STYLE_GUIDE.md)** — git workflow, branch naming, Conventional Commits, PR rules. Every change starts on a new branch off `main`; `main` is never pushed to directly.
 - **[docs/CentenarianAcademy/](./docs/CentenarianAcademy/)** — course-authoring standards: `CourseAuthoringGuide.md` (craft), `CourseProductionPlaybook.md` (process), `CitationIntegrityGuide.md` (verify every source, never ship a fake citation), and `CourseCreationWithAI.md` (hand to your AI). Per-course recipes: `CourseAuthoringGuide NASM CPT/CES/CNC.md` and `CourseAuthoringGuide BVC.md` (Better Vice Club: audio-first, four-lens episodes; episode-per-module; rotating quizzes + FlashLearn recall loop + season-wide glossary). Courses cite only verified, peer-reviewed sources and ship a teacher evidence ledger.
@@ -111,7 +111,7 @@ No free plan. All users must subscribe to access paid modules.
 | **Engine** | Pomodoro focus sessions, doodle canvas, daily debrief, AI weekly reviews | Paid |
 | **Health Metrics** | RHR, steps, sleep, body composition; Garmin/Oura/WHOOP sync; CSV import | Paid |
 | **Workouts & Exercises** | Exercise library with categories; workout templates; Nomad Longevity OS | Paid |
-| **Financial Dashboard** | Accounts, transactions, budgets, invoices, bank statement CSV import with duplicate detection, matching and undo, CSV export, learned vendor categories ("Always categorize this vendor as...?"), transfers between your own accounts (card and loan payments included) tracked as transfers instead of spending and income | Paid |
+| **Financial Dashboard** | Accounts, transactions, budgets, invoices, bank statement CSV import with duplicate detection, matching and undo, CSV export, learned vendor categories ("Always categorize this vendor as...?"), transfers between your own accounts (card and loan payments included) tracked as transfers instead of spending and income, a Budgets page with budgets by month, rollover, and suggested budgets from your own history (average or median of the last 3, 6 or 12 months) | Paid |
 | **Travel & Vehicles** | Fuel logs with OCR, trip tracking, multi-stop routes, maintenance, IRS mileage | Paid |
 | **Equipment & Assets** | Asset tracking, valuation history, media gallery, cross-module links | Paid |
 | **Correlations & Analytics** | Cross-module data correlations, trend charts, daily/weekly aggregates | Paid |
@@ -342,7 +342,7 @@ supabase db push
 # Run migrations in order from supabase/migrations/
 ```
 
-There are 209 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the ContractorOS (Work.WitUS) app — read [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" before adding any.
+There are 210 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the ContractorOS (Work.WitUS) app — read [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" before adding any.
 
 ### Run Development Server
 
@@ -401,7 +401,7 @@ centenarian-os/
 ├── content/tutorials/         # 15+ tutorial course scripts
 ├── public/templates/          # CSV import templates (10+ modules)
 └── supabase/
-    └── migrations/            # 209 database migrations — see MIGRATIONS.md
+    └── migrations/            # 210 database migrations — see MIGRATIONS.md
 ```
 
 For the full module map and the cross-app shared-DB story, see **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
