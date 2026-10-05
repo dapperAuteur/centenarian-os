@@ -293,11 +293,26 @@ export async function runPdfImport(db: SupabaseClient, userId: string, body: unk
   if (!read.parsed.period.end) {
     return { ...result, statementSaved: false, statementError: "The statement's closing date wasn't found, so its summary wasn't saved." };
   }
+  // Importing the same statement again refreshes its facts but leaves them with the import that
+  // first saved them (the one holding its transactions), so undoing that import still removes them.
+  const existing = await db
+    .from('account_statements')
+    .select('import_batch_id')
+    .eq('user_id', userId)
+    .eq('account_id', account.id)
+    .eq('period_end', read.parsed.period.end)
+    .maybeSingle();
+  const keptBatchId = (existing.data as { import_batch_id: string | null } | null)?.import_batch_id ?? null;
   const { error } = await db
     .from('account_statements')
-    .upsert(toStatementRow(read.parsed, read.reconciliation, { userId, accountId: account.id, batchId: result.batchId }), {
-      onConflict: 'user_id,account_id,period_end',
-    });
+    .upsert(
+      toStatementRow(read.parsed, read.reconciliation, {
+        userId,
+        accountId: account.id,
+        batchId: keptBatchId ?? result.batchId,
+      }),
+      { onConflict: 'user_id,account_id,period_end' },
+    );
   if (error) {
     return {
       ...result,
