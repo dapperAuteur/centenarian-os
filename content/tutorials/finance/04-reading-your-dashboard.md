@@ -74,6 +74,8 @@ One horizontal progress bar per budget category. Each bar shows:
 - **Amber** — approaching the budget (typically 80–85%+ used)
 - **Red / over-budget indicator** — budget exceeded. The bar extends past 100% and the overage amount is shown
 
+The bars show this month's budgets, including a budget set for this month only and any leftover carried in from last month (rollover). Click **Budgets and suggestions** above the bars to open the Budgets page for other months and suggested budgets (Lesson 02).
+
 At a glance, the progress bars tell you which categories have room to spend and which are at risk. Check them before making discretionary purchases — "I've already spent $380 of $400 in Dining Out this month" is useful decision-making context.
 
 ---
