@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { DEBT_NOT_READY, isMissingTable, loadDebtData, requestToday } from '@/lib/finance/debt/server';
 import { parsePlanInput } from '@/lib/finance/debt/plan-input';
 import type { PlanInput } from '@/lib/finance/debt/plan-input';
-import { baselineFor, PLAN_SELECT } from '@/lib/finance/debt/saved-plans-server';
+import { baselineFor, PLAN_SELECT } from '@/lib/finance/debt/plans-server';
 import { currentUserId, errorResponse, getServiceDb, unauthorized } from '@/lib/finance/debt/route-helpers';
 
 export async function GET() {

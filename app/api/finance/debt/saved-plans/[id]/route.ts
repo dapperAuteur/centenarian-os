@@ -14,8 +14,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DEBT_NOT_READY, isMissingTable, loadDebtData, requestToday } from '@/lib/finance/debt/server';
 import { parsePlanInput } from '@/lib/finance/debt/plan-input';
-import { baselineFor, loadPlanWithSchedule, PLAN_SELECT, settingsOf } from '@/lib/finance/debt/saved-plans-server';
-import type { DebtPlanRow } from '@/lib/finance/debt/saved-plans-server';
+import { baselineFor, loadPlanWithSchedule, PLAN_SELECT, settingsOf } from '@/lib/finance/debt/plans-server';
+import type { DebtPlanRow } from '@/lib/finance/debt/plans-server';
 import { currentUserId, errorResponse, getServiceDb, unauthorized } from '@/lib/finance/debt/route-helpers';
 
 type Ctx = { params: Promise<{ id: string }> };

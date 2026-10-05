@@ -19,6 +19,7 @@ import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import TransferModal from '@/components/finance/TransferModal';
 import LearnCategoryPrompt, { type LearnCategoryRequest } from '@/components/finance/LearnCategoryPrompt';
 import Modal from '@/components/ui/Modal';
+import DueSoonBanner from '@/components/finance/debt/DueSoonBanner';
 
 interface CategoryBreakdown {
   id: string;
@@ -354,6 +355,13 @@ export default function FinanceDashboardPage() {
             Budgets
           </Link>
           <Link
+            href="/dashboard/finance/debt"
+            className="flex items-center gap-1.5 px-3 py-2 bg-sky-50 text-sky-700 rounded-lg text-sm font-medium hover:bg-sky-100 transition"
+          >
+            <TrendingDown className="w-4 h-4" aria-hidden="true" />
+            Debt payoff
+          </Link>
+          <Link
             href="/dashboard/finance/recurring"
             className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
           >
@@ -421,6 +429,9 @@ export default function FinanceDashboardPage() {
           onPastApplied={load}
         />
       )}
+
+      {/* Card and loan payments due in the next 3 days (plans/61 section 5) */}
+      <DueSoonBanner />
 
       {/* Reminders Banner */}
       {(reminders.overdue_count > 0 || reminders.due_soon_count > 0) && (
