@@ -197,6 +197,7 @@ export const MODULES: ModuleData[] = [
       'Bank statement import from CSV or PDF, with duplicate detection and undo',
       'Accounts in any currency (travel cash), converted to your home currency with daily or your own rates',
       'Debt payoff: interest paid, payoff calculator, debt-free plan, due-date tasks',
+      'Retirement accounts and planner (estimates), life insurance policies and premiums',
       'Budget categories with spending charts',
       'Invoices with custom fields & CSV import',
     ],

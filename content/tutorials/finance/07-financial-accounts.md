@@ -139,6 +139,20 @@ Every projection here is an estimate (interest = balance × APR ÷ 12 per month,
 
 ---
 
+### Retirement Accounts and Life Insurance
+
+Retirement accounts and life insurance policies live on their own pages, separate from the five account types above.
+
+**Retirement** (`/dashboard/finance/retirement`) — add a 401(k), 403(b), 457(b), IRA (traditional, Roth, SEP, SIMPLE), HSA, brokerage account, pension, annuity or whole life cash value. Each account holds your contribution (a fixed amount per pay period or a percent of pay), the employer match rule (for example 100% up to 4% of pay, with an optional yearly cap) and, if you like, its own expected return. Click **Add balance** to type in the balance from each statement; the latest one is the account's balance.
+
+**The planner** — enter your age or birth year, retirement age, the age to plan to, your yearly spending in retirement (an amount, or a multiple of what you spend now) and your own Social Security estimate. The page projects each account to retirement in today's dollars, draws your plan beside three presets (Conservative 4%, Middle 6%, Optimistic 8% a year, with 3% inflation, all editable assumptions), compares the total with your target, and shows about how much more a month would close any gap. A small **Net worth (estimate)** line adds your accounts, retirement balances and permanent-policy cash value.
+
+**Insurance** (`/dashboard/finance/insurance`) — term, whole and universal life policies with coverage, premium and frequency, start and term-end dates, cash value and beneficiaries. Link the category or vendor the premium shows up as and the page finds the payments: paid to date, the next due date and whether it's covered. Optionally the next due date becomes a task under **Inbox › Bills**. A term policy ending within a year turns amber.
+
+Every figure on these pages is an estimate from your own numbers, not financial advice.
+
+---
+
 ## Screen Recording Notes
 
 > [SCREEN: Navigate to /dashboard/finance/accounts — show the accounts page]
@@ -167,3 +181,4 @@ Every projection here is an estimate (interest = balance × APR ÷ 12 per month,
 - Assign transactions to accounts to maintain accurate per-account balances
 - **Import statement** on an account opens the bank statement import with that account chosen (Lesson 06)
 - **Debt payoff** shows interest paid, a payoff calculator and a debt-free plan (avalanche by default, promo deadlines protected); due dates become planner tasks under Inbox › Bills, with a Due soon banner and optional email reminders
+- **Retirement** tracks retirement accounts with hand-entered balances and projects them to retirement (presets, target, gap, needed per month); **Insurance** tracks life policies, premium payments and term-end dates
