@@ -20,6 +20,7 @@ import {
   isUuid,
   ownedIds,
   usableReferences,
+  withOwnEmbeds,
   withoutFields,
   type AccessRow,
   type OwnershipDb,
@@ -548,6 +549,27 @@ test('checkReferences: a trip may name a system vehicle but not someone else\'s 
   assert.equal(system.ok, true);
   assert.deepEqual(theirs.invalid, ['vehicle_id']);
   assert.equal(mine.ok, true);
+});
+
+// ─── withOwnEmbeds ───────────────────────────────────────────────────────────
+
+test('withOwnEmbeds keeps the caller\'s own embeds without user_id and nulls the rest', () => {
+  const row = {
+    id: id(1),
+    amount: 5,
+    financial_accounts: { id: id(2), name: 'Mine', user_id: ME },
+    budget_categories: { id: id(3), name: 'Theirs', user_id: THEM },
+    user_brands: null,
+  };
+  assert.deepEqual(withOwnEmbeds(row, ['financial_accounts', 'budget_categories', 'user_brands'], ME), {
+    id: id(1),
+    amount: 5,
+    financial_accounts: { id: id(2), name: 'Mine' },
+    budget_categories: null,
+    user_brands: null,
+  });
+  assert.deepEqual(withOwnEmbeds({ a: [{ user_id: ME, x: 1 }] }, ['a'], ME), { a: { x: 1 } });
+  assert.deepEqual(withOwnEmbeds({ a: { user_id: ME } }, ['a'], ''), { a: null });
 });
 
 // ─── withoutFields ───────────────────────────────────────────────────────────

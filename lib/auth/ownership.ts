@@ -509,6 +509,34 @@ export async function usableReferences(
   return { values, failed: check.failed };
 }
 
+// ─── Embedded rows in a response ─────────────────────────────────────────────
+
+/**
+ * `row` with each embed in `keys` kept only when it belongs to `userId`, and
+ * its user_id column removed. For service-role reads that join through a
+ * stored foreign id (a recurring payment's account, an invoice's category):
+ * an id saved before reference checks existed could otherwise show another
+ * user's account or category name. Select `user_id` inside each embed.
+ */
+export function withOwnEmbeds<T extends Record<string, unknown>>(
+  row: T,
+  keys: readonly string[],
+  userId: string,
+): T {
+  const out: Record<string, unknown> = { ...row };
+  for (const key of keys) {
+    const embed = one(out[key]);
+    if (!embed || !userId || embed.user_id !== userId) {
+      out[key] = null;
+      continue;
+    }
+    const { user_id: _owner, ...rest } = embed;
+    void _owner;
+    out[key] = rest;
+  }
+  return out as T;
+}
+
 // ─── Fields a request body may never set ─────────────────────────────────────
 
 /**

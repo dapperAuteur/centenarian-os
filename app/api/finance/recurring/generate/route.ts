@@ -4,6 +4,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { ownedIds } from '@/lib/auth/ownership';
 
 function getDb() {
   return createServiceClient(
@@ -27,6 +28,16 @@ export async function POST() {
 
   if (!recurrings || recurrings.length === 0) {
     return NextResponse.json({ generated: 0 });
+  }
+
+  // A recurring payment saved before reference checks existed may name another
+  // user's account or category: copy only the caller's own onto transactions.
+  const [ownAccounts, ownCategories] = await Promise.all([
+    ownedIds(db, user.id, 'financial_accounts', recurrings.map((rp) => rp.account_id)),
+    ownedIds(db, user.id, 'budget_categories', recurrings.map((rp) => rp.category_id)),
+  ]);
+  if (ownAccounts.failed || ownCategories.failed) {
+    return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
   }
 
   const now = new Date();
@@ -65,8 +76,8 @@ export async function POST() {
         type: rp.type,
         description: rp.description,
         transaction_date: txDate,
-        account_id: rp.account_id,
-        category_id: rp.category_id,
+        account_id: ownAccounts.has(rp.account_id) ? rp.account_id : null,
+        category_id: ownCategories.has(rp.category_id) ? rp.category_id : null,
         source: 'recurring',
       });
       lastGenDate = txDate;
