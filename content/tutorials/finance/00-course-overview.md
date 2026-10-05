@@ -25,7 +25,7 @@ The Finance module is where you track income, expenses, and budgets alongside th
 | 04 | Reading Your Dashboard | Summary cards, monthly trend chart, spending by category, budget progress bars |
 | 05 | Transaction History | The transactions sub-page, filtering, searching, editing, deleting, and reviewing transfers between your own accounts |
 | 06 | Importing and Exporting | Importing a bank statement CSV into an account (columns, review, undo), CSV export for external tools |
-| 07 | Managing Financial Accounts | Checking, savings, credit card, loan, cash — creating, editing, balances; cash on hand (count, Paid cash, ATM withdrawals into cash) |
+| 07 | Managing Financial Accounts | Checking, savings, credit card, loan, cash — creating, editing, balances; cash on hand (count, Paid cash, ATM withdrawals into cash); debt payoff; retirement accounts, the retirement planner and life insurance |
 | 08 | Account Balances & Equipment Links | Per-account filtering, transfers and card or loan payments, savings goals as envelopes inside a real account, equipment transaction links, cross-module ROI |
 | 09 | Saved Contacts & Vendor Autocomplete | ContactAutocomplete, default categories, "Save?" upsert, shared contacts |
 
