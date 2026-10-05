@@ -165,7 +165,7 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
     apiEndpoint: '/api/planner/import',
     templateUrl: '/templates/tasks-import-template.csv',
     instructions:
-      'Upload planner tasks. Required: date, activity. Optional hierarchy columns (roadmap_title, goal_title + goal_category + goal_target_year, milestone_title + milestone_target_date) let you import a full Roadmap → Goal → Milestone → Task tree in one CSV. Rows with blank hierarchy columns fall back to the default "Imported Tasks" milestone. goal_category must be one of: FITNESS, CREATIVE, SKILL, OUTREACH, LIFESTYLE, MINDSET, FUEL.',
+      'Upload planner tasks. Required: date, activity. Optional hierarchy columns (roadmap_title, goal_title + goal_category + goal_target_year, milestone_title + milestone_target_date) let you import a full Roadmap → Goal → Milestone → Task tree in one CSV. A new roadmap without dates starts today and runs 10 years. Rows with blank hierarchy columns go to an "Imported Tasks" milestone in your oldest roadmap (never an Auto roadmap), or to your Inbox if you have no roadmap of your own. goal_category must be one of: FITNESS, CREATIVE, SKILL, OUTREACH, LIFESTYLE, MINDSET, FUEL.',
     columns: [
       { key: 'roadmap_title', label: 'Roadmap Title' },
       { key: 'roadmap_start_date', label: 'Roadmap Start (YYYY-MM-DD)' },
@@ -234,29 +234,6 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
     ],
     previewColumns: ['name', 'category', 'primary_muscles', 'default_sets', 'default_reps'],
   },
-  media: {
-    moduleName: 'Media',
-    apiEndpoint: '/api/media/import',
-    templateUrl: '/templates/media-import-template.csv',
-    instructions:
-      'Upload media items. Required: title, media_type (book/tv_show/movie/video/song/album/podcast/art/article/other). Genre and tags are semicolon-separated. Status defaults to want_to_consume.',
-    columns: [
-      { key: 'title', label: 'Title', required: true },
-      { key: 'creator', label: 'Creator / Author' },
-      { key: 'media_type', label: 'Media Type', required: true },
-      { key: 'status', label: 'Status' },
-      { key: 'rating', label: 'Rating (1-5)' },
-      { key: 'start_date', label: 'Start Date' },
-      { key: 'end_date', label: 'End Date' },
-      { key: 'genre', label: 'Genre (;-separated)' },
-      { key: 'tags', label: 'Tags (;-separated)' },
-      { key: 'year_released', label: 'Year Released' },
-      { key: 'source_platform', label: 'Platform' },
-      { key: 'notes', label: 'Notes' },
-      { key: 'favorite', label: 'Favorite (true/false)' },
-    ],
-    previewColumns: ['title', 'creator', 'media_type', 'status', 'rating'],
-  },
   blog: {
     moduleName: 'Blog Posts',
     apiEndpoint: '/api/blog/import',
@@ -283,6 +260,12 @@ export default function DynamicImportPage() {
   // Finance and existing health-metrics import pages already exist
   if (slug === 'finance') {
     redirect('/dashboard/finance/import');
+  }
+
+  // Media moved to Stream.WitUS and its import returns 410. Send people to the
+  // read-only Media page, where the banner offers the CSV export for Stream.
+  if (slug === 'media') {
+    redirect('/dashboard/media');
   }
 
   const config = MODULE_CONFIGS[slug];

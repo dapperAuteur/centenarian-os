@@ -221,7 +221,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How to use Smart Scan for receipts and documents',
-    content: `Go to Dashboard → Scan. Take a photo or upload an image of a receipt, fuel receipt, maintenance invoice, recipe, or medical document. The AI automatically detects the document type, extracts key data (line items, totals, dates, vendors), and lets you save the results to the appropriate module. For receipts, individual line items are tracked with price history per vendor — you can see how prices change over time. Scanned documents can be linked to contacts and financial transactions.`,
+    content: `Go to Dashboard → Scan. Take a photo or upload an image of a receipt, fuel receipt, maintenance invoice, recipe, or medical document. The AI automatically detects the document type, extracts key data (line items, totals, dates, vendors), and lets you save the results to the appropriate module. For receipts, individual line items are tracked with price history per vendor — you can see how prices change over time. Scanned documents can be linked to contacts and financial transactions. When you save a receipt as a transaction and the vendor has a learned category (you answered "Always" to the categorize prompt for that vendor), the transaction gets that category. Otherwise the AI's suggested category becomes the transaction's budget category if it matches the name of one of your categories (capitalization doesn't matter); if it matches none, it is saved as a tag.`,
   },
 
   // ─── DATA HUB ───────────────────────────────────────────────────────────────
@@ -339,7 +339,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How does offline mode work?',
-    content: `CentenarianOS pages work offline. When you load any page while connected, data is automatically cached in your browser's IndexedDB. If you lose connectivity, cached data is displayed so you can still browse your dashboard content. Changes you make while offline (creating, editing, deleting) are queued and automatically replayed when your connection returns. Text-based pages like tutorials and academy lessons are also available offline once loaded. The offline system uses the offlineFetch wrapper around standard fetch calls.`,
+    content: `Pages you've opened while online are cached in your browser, so you can still view them if you lose your connection. That includes tutorials and academy lessons. Many saves are queued while you're offline and sent automatically when you reconnect: finance (transactions, transfers, accounts, invoices, recurring payments), travel (trips, fuel, maintenance), workouts, equipment, health metrics, creating a planner task (Add Task), recurring tasks and schedules, and the actions offered after you complete a task (except Log Focus Time). Add Task, Add Transaction, recurring tasks, the task-completion actions, and saving a scanned receipt or recipe tell you when a save was only queued; the item appears once it syncs. A task queued without a goal goes to your Inbox when it syncs, and if the goal you picked was deleted in the meantime it goes to the Inbox instead of being lost. Some things still need a connection for now: editing or completing a planner task; roadmaps, goals, and milestones; Focus Engine sessions, debriefs, and pain logs; Fuel meal logs, meal prep, ingredients, and inventory; the recipe editor; and scanning a document.`,
   },
 
   // ─── WORKOUTS & NOMAD OS ──────────────────────────────────────────────────
@@ -365,7 +365,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How to use saved contacts',
-    content: `Saved contacts let you store frequently-used vendors, customers, and locations across all modules. Go to Dashboard → Contacts or use the contact autocomplete on any form that supports it (finance transactions, travel trips, planner tasks). Contacts have a type (vendor, customer, or location), optional default budget category, and notes. When you select a saved vendor on a transaction, its default category auto-fills. Contacts also support sub-locations — for example, a venue contact can have multiple addresses (main entrance, loading dock, parking lot). Import contacts in bulk via the Data Hub.`,
+    content: `Saved contacts let you store frequently-used vendors, customers, and locations across all modules. Go to Dashboard → Contacts or use the contact autocomplete on any form that supports it (finance transactions, travel trips, planner tasks). Contacts have a type (vendor, customer, or location), optional default budget category, and notes. When you select a saved vendor on a transaction, its default category auto-fills. The default category is also what "Always" sets when you answer the categorize prompt after categorizing a transaction, and it is applied automatically to that vendor's new transactions from receipt scans and CSV imports. Contacts also support sub-locations — for example, a venue contact can have multiple addresses (main entrance, loading dock, parking lot). Import contacts in bulk via the Data Hub.`,
   },
 
   // ─── COACHING GEMS ────────────────────────────────────────────────────────
@@ -412,8 +412,8 @@ export const HELP_ARTICLES: HelpArticle[] = [
 
   {
     role: 'all',
-    title: 'How to manage financial accounts and bank linking',
-    content: `Go to Dashboard → Finance → Accounts to add and manage your financial accounts: checking, savings, credit card, loan, and cash accounts. Each account tracks institution name, last four digits, interest rate, credit limit, opening balance, monthly fees, and due/statement dates. Balance is calculated as opening balance plus income minus expenses. You can link bank accounts via the Teller API for automatic transaction syncing — click Connect Bank Account, complete the OAuth flow, and transactions import automatically. Deactivated accounts preserve transaction history but hide from active views.`,
+    title: 'How to manage financial accounts',
+    content: `Go to Dashboard → Finance → Accounts to add and manage your financial accounts: checking, savings, credit card, loan, and cash accounts. Each account tracks institution name, last four digits, interest rate, credit limit, opening balance, monthly fees, and due/statement dates. Balance is calculated as opening balance plus income minus expenses. CentenarianOS does not connect to your bank, so bank transactions never arrive on their own: enter them by hand, or download a statement CSV from your bank and import it (see "How do I bring in transactions from my bank?"). Deactivated accounts preserve transaction history but hide from active views.`,
   },
 
   // ─── PLANNER DETAILS ──────────────────────────────────────────────────────
@@ -421,15 +421,20 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How to use the goal hierarchy and roadmap',
-    content: `The Planner uses a four-level hierarchy: Roadmaps → Goals → Milestones → Tasks. Start by creating a Roadmap (your big-picture vision, e.g., "Health Optimization 2026"). Add Goals under it (e.g., "Run a half marathon"). Break goals into Milestones (e.g., "Complete Couch to 5K"). Then create Tasks under milestones (e.g., "Run 2 miles today"). Tasks appear in your daily/weekly planner views. Each level shows completion progress based on child items. You can archive and restore items. The AI Weekly Review analyzes your task completion patterns.`,
+    content: `The Planner uses a four-level hierarchy: Roadmaps → Goals → Milestones → Tasks. Start by creating a Roadmap (your big-picture vision, e.g., "Health Optimization 2026"). Add Goals under it (e.g., "Run a half marathon"). Break goals into Milestones (e.g., "Complete Couch to 5K"). Then create Tasks under milestones (e.g., "Run 2 miles today"). You don't have to build the hierarchy first: a task saved without a goal goes to your Inbox, a roadmap the app creates for you. Tasks appear in your daily/weekly planner views. Each level shows completion progress based on child items. You can archive and restore items. Roadmaps the app creates on its own (Inbox, and Work.WitUS Sync for invoice and payment tasks) show an "Auto" badge on the Roadmap page and can't be permanently deleted. The AI Weekly Review analyzes your task completion patterns.`,
+  },
+  {
+    role: 'all',
+    title: 'How to add a task quickly (the Inbox)',
+    content: `Go to Dashboard → Planner and click Add Task. The cursor starts in the Activity field: type what needs doing and press Enter (or click Create Task). That's all a task needs. Date is the day you're viewing in the planner, time is the next quarter-hour, and the task goes to your Inbox unless you choose otherwise. To file it under a goal, tap the "Goal: Inbox" chip, search by roadmap, goal, or milestone name, and pick one. Description, tag, and priority are under More. The form remembers the goal, tag, and priority you used last. The first time you save a task to the Inbox, the app creates an Inbox roadmap, goal, and milestone for you; it shows an "Auto" badge on the Roadmap page. To see what's waiting to be sorted, use the Inbox (N) filter on the planner, and move a task to a goal by editing it and choosing a new milestone. Add Task also works offline: the task is queued, the planner tells you so, and it appears once you reconnect.`,
   },
 
-  // ─── TELLER BANK SYNC ─────────────────────────────────────────────────────
+  // ─── BANK TRANSACTIONS ────────────────────────────────────────────────────
 
   {
     role: 'all',
-    title: 'How does Teller bank account syncing work?',
-    content: `Teller is a bank account linking API that lets you automatically import transactions. Go to Dashboard → Finance → Accounts and click Connect Bank Account. Select your bank from the Teller enrollment flow and authorize access. Once connected, your transactions sync daily. Each synced transaction includes date, amount, description, and merchant. You can categorize synced transactions and link them to contacts. If you disconnect, historical synced transactions remain in your account. Teller supports most major US banks and credit unions.`,
+    title: 'How do I bring in transactions from my bank?',
+    content: `CentenarianOS does not connect to your bank, and nothing is imported on its own. Importing a statement CSV is the way to bring in bank transactions. Download a CSV of your account activity from your bank's website, then go to Dashboard → Finance and click Import. Upload the file, or paste the CSV text and click Parse, check the preview table, and click Import. The file needs a date column and an amount column; type, description, vendor, and category columns are optional. Dates can be YYYY-MM-DD or M/D/YYYY, a negative amount is treated as an expense when there is no type column, and one import takes up to 1,000 rows. If your bank's column names are not recognized, rename them to match the template you can download on the Import page. The import does not check for duplicates, so import each statement period once. Rows without a category get the vendor's learned category if you set one with "Always". A guided statement import is coming. Transactions that came from the earlier bank-linking feature are still in your history: their source reads "Bank import", and the Bank import option of the source filter on the Transactions page lists them.`,
   },
 
   // ─── TRAVEL MODULE ────────────────────────────────────────────────────────
@@ -464,18 +469,8 @@ export const HELP_ARTICLES: HelpArticle[] = [
 
   {
     role: 'all',
-    title: 'How to use the Media Tracker',
-    content: `Go to Dashboard → Media to track books, TV shows, movies, music, podcasts, art, articles, and more. Click Add Media to create an item with title, creator, type, status (Want to Consume, In Progress, Completed, Dropped), and an optional 1-5 star rating. Track your progress with current position and total length. For TV shows, track season and episode numbers. Add cover images, external URLs, genre tags, and release year. Use the filters at the top to view by media type or status.`,
-  },
-  {
-    role: 'all',
-    title: 'How to add notes and reviews to media items',
-    content: `On any media detail page, scroll to the Notes section. Click Add Note to create notes with different types: General, Quote, Review, Podcast Prep, Discussion Point, or Spoiler. Notes support both Markdown and Rich Text formatting. Use notes to capture your thoughts, favorite quotes, talking points for podcast episodes, or spoiler-tagged plot discussions.`,
-  },
-  {
-    role: 'all',
-    title: 'How to link media items to podcast episodes',
-    content: `If you produce a podcast, go to Dashboard → Media → Podcasts to manage episodes. Create episodes with title, episode/season numbers, air date, show notes, audio URL, and duration. Link media items to episodes from the episode detail page — click Link Media to search and attach books, movies, or shows you discussed. Each link can include discussion notes and timestamps.`,
+    title: 'Where did the Media Tracker go?',
+    content: `The Media Tracker has moved to Stream.WitUS (stream.witus.online), the WitUS app for tracking books, TV, movies, music, and podcasts. Media is no longer in the CentenarianOS menu, and your existing list is read-only here: you can still open /dashboard/media to browse your items, notes, and podcast episodes, but there are no add, edit, or delete controls. To take your list with you, open /dashboard/media, click "Export my media (CSV)", then open your media page in Stream.WitUS and choose Import CSV. Importing the same file again skips items you already have, so it is safe to retry. The file includes titles, types, status, ratings, dates, genres, tags, links, progress, season and episode numbers, favorites, visibility, and each item's notes field. Categories and entries in an item's Notes section are not included, so copy anything you need from those by hand.`,
   },
 
   // ─── SOCIAL FEATURES ──────────────────────────────────────────────────────
@@ -483,7 +478,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How to like, share, and discover public content',
-    content: `Media items and equipment can be set to Public visibility, making them browsable on the Discover page. Visit Discover to browse public media lists and equipment collections from other users. Click the heart icon to like, the share icon to share via link or social media, and the bookmark icon to save for later. Like and share counts are visible on public items. Your own likes and bookmarks are accessible from your profile.`,
+    content: `Equipment can be set to Public visibility, making it browsable on the Discover page. Visit Discover to browse public equipment collections from other users. Click the heart icon to like, the share icon to share via link or social media, and the bookmark icon to save for later. Like and share counts are visible on public items. Your own likes and bookmarks are accessible from your profile. (Public media lists moved to Stream.WitUS along with the Media Tracker.)`,
   },
 
   // ─── EQUIPMENT TRACKER ────────────────────────────────────────────────────
@@ -563,7 +558,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'Getting started with CentenarianOS',
-    content: `After signing up and choosing a plan, you land on your dashboard. Start by setting your home page in Dashboard → Settings — choose which module you want to see first. The interactive walkthrough guides you through each module on first visit. Key first steps: (1) Create a roadmap and goal in the Planner, (2) Add a financial account and a few transactions, (3) Log your first health metrics or connect a wearable, (4) Try the demo account at /demo to see how a fully populated dashboard looks. Use the Help button (bottom-right) to ask questions anytime.`,
+    content: `After signing up and choosing a plan, you land on your dashboard. Start by setting your home page in Dashboard → Settings — choose which module you want to see first. The interactive walkthrough guides you through each module on first visit. Key first steps: (1) Add your first task in the Planner by typing a title (it goes to your Inbox), then build a roadmap and goals when you're ready, (2) Add a financial account and a few transactions, (3) Log your first health metrics or connect a wearable, (4) Try the demo account at /demo to see how a fully populated dashboard looks. Use the Help button (bottom-right) to ask questions anytime.`,
   },
 
   // ─── SETTINGS & BILLING ───────────────────────────────────────────────────
@@ -647,6 +642,11 @@ export const HELP_ARTICLES: HelpArticle[] = [
   },
   {
     role: 'all',
+    title: 'Where imported planner tasks go (CSV and Google Calendar)',
+    content: `Every task belongs to a milestone, so imported tasks are filed for you. In a Tasks CSV (Data Hub → Tasks → Import), rows that name a roadmap, goal, and milestone go there, and any level that doesn't exist yet is created: a new roadmap without dates starts today and runs 10 years, a new goal needs goal_category and goal_target_year, and a new milestone needs milestone_target_date. CSV rows without those columns go to an "Imported Tasks" milestone. Google Calendar imports (Data Hub → Import .ics) go to a "Google Calendar: <calendar name>" milestone. Those milestones are created under the first active goal of your oldest roadmap (an "Imported" goal is added if that roadmap has none), and later imports reuse them. Roadmaps the app creates for you, Inbox and Work.WitUS Sync (the ones with an "Auto" badge), are never used for this. If you have no roadmap of your own yet, the tasks go to your Inbox instead; the import result says so, and the planner's Inbox (N) filter lists them for sorting into goals. The planner's Calendar filter shows tasks in "Google Calendar:" milestones, so calendar events filed in the Inbox show under Inbox until you move them. All-day calendar events are scheduled at 09:00.`,
+  },
+  {
+    role: 'all',
     title: 'How to export data to CSV',
     content: `Go to Dashboard → Data Hub and click Export on any module card. Set optional date range filters (from/to) and click Download CSV. The export includes all fields for the module. You can use exported CSVs for backup, analysis in Excel or Google Sheets, or migrating to another system.`,
   },
@@ -700,7 +700,12 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How to manage saved contacts',
-    content: `Contacts (/dashboard/contacts or via the ContactAutocomplete component) let you save vendors, customers, and locations. Each contact has a name, type, optional default category, and notes. When you type a vendor name in a finance transaction, the autocomplete suggests saved contacts. Selecting a contact with a default_category_id auto-fills the transaction category.`,
+    content: `Contacts (/dashboard/contacts or via the ContactAutocomplete component) let you save vendors, customers, and locations. Each contact has a name, type, optional default category, and notes. When you type a vendor name in a finance transaction, the autocomplete suggests saved contacts. Selecting a contact with a default_category_id auto-fills the transaction category. The same default category is the vendor's learned category, set by answering "Always" to the categorize prompt.`,
+  },
+  {
+    role: 'all',
+    title: 'How do I make a vendor always get the same category?',
+    content: `When you pick or change a transaction's category, CentenarianOS asks, right on the page: "Always categorize 'CHIPOTLE' as Dining?" with two buttons. Always makes that the vendor's learned category: new transactions from that vendor that arrive without a category get it automatically, whether you add them by hand, scan a receipt, or import a CSV. Just this once changes nothing else. After Always, you can apply the category to the vendor's past transactions; the prompt shows how many there are (and how many have no category) before anything changes, and you can update all of them or only the uncategorized ones. The prompt appears after Add Transaction, after editing a transaction's category in the transaction list, and after a bulk category change when every selected transaction is from the same vendor. It doesn't appear when the vendor already has that category. Vendor names are matched ignoring capitalization, store numbers, and punctuation, so "CHIPOTLE #1234" and "Chipotle" count as the same vendor. Expenses use your saved vendors and income uses your saved customers. The learned category is stored as the vendor contact's default category, so you can change or clear it by editing the contact. A category you choose yourself always wins over a learned one.`,
   },
   {
     role: 'all',
@@ -749,11 +754,6 @@ export const HELP_ARTICLES: HelpArticle[] = [
 
   // ─── MEDIA LIBRARY ────────────────────────────────────────────────────────
 
-  {
-    role: 'all',
-    title: 'How to use the Media Tracker',
-    content: `The Media Tracker (/dashboard/media) lets you track books, TV shows, movies, podcasts, and other media you consume. Add items with title, type, status (watching/reading/completed), rating, and notes. The tracker helps you maintain a personal media log and connect it to your broader life goals via Activity Links and Life Categories.`,
-  },
   {
     role: 'all',
     title: 'How to add podcast links',

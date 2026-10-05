@@ -2,6 +2,7 @@
 'use client';
 
 import type { ScheduleTemplate, ScheduleException } from '@/lib/types';
+import { toLocalDateString } from '@/lib/dates/local';
 
 interface ScheduleCalendarOverlayProps {
   templates: ScheduleTemplate[];
@@ -35,8 +36,8 @@ function isScheduledDay(
   const dayOfWeek = date.getDay();
   if (!template.schedule_days.includes(dayOfWeek)) return false;
 
-  if (template.start_date && date.toISOString().split('T')[0] < template.start_date) return false;
-  if (template.end_date && date.toISOString().split('T')[0] > template.end_date) return false;
+  if (template.start_date && toLocalDateString(date) < template.start_date) return false;
+  if (template.end_date && toLocalDateString(date) > template.end_date) return false;
 
   if (template.week_interval > 1) {
     const anchor = template.start_date

@@ -4,6 +4,7 @@
 // suitable for injection into a Gemini system instruction.
 
 import { SupabaseClient } from '@supabase/supabase-js';
+import { systemKindOf } from '@/lib/planner/system-roadmaps';
 
 export type DataSourceKey =
   | 'health'
@@ -401,24 +402,39 @@ async function fetchPlannerData(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _opts: Required<FetcherOptions>,
 ): Promise<string> {
+  // Neither goals nor tasks has a user_id column: ownership runs task -> milestone -> goal ->
+  // roadmap.user_id, so both queries scope through that chain. Goals have target_year, not
+  // target_date, and tasks have activity, not title. The old column names made both queries
+  // error, so the coach always saw "No active goals" and no tasks.
   const [goalRes, taskRes] = await Promise.all([
     db
       .from('goals')
-      .select('title, status, target_date, milestones(title, status)')
-      .eq('user_id', userId)
+      // roadmaps(*) rather than a column list so systemKindOf() works whether or not
+      // roadmaps.system_kind (migration 200) exists yet.
+      .select('title, status, target_year, milestones(title, status), roadmaps!inner(*)')
+      .eq('roadmaps.user_id', userId)
       .eq('status', 'active')
-      .limit(10),
+      .order('created_at', { ascending: true })
+      // Over-fetch: goals in system roadmaps are dropped below, then the list is capped at 10.
+      .limit(20),
     db
       .from('tasks')
-      .select('title, date, completed, priority, activity')
-      .eq('user_id', userId)
+      .select('date, completed, priority, activity, milestones!inner(goals!inner(roadmaps!inner(user_id)))')
+      .eq('milestones.goals.roadmaps.user_id', userId)
       .eq('status', 'active')
       .gte('date', new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0])
       .order('date', { ascending: false })
       .limit(30),
   ]);
 
-  const goals = goalRes.data ?? [];
+  // The Inbox and Work.WitUS Sync goals are containers the app creates, not goals the person
+  // set, so they are left out of the goal list. Their tasks still count below.
+  const goals = (goalRes.data ?? [])
+    .filter((g) => {
+      const roadmap = g.roadmaps as unknown as { title?: string | null; system_kind?: string | null } | null;
+      return !roadmap || systemKindOf(roadmap) === null;
+    })
+    .slice(0, 10);
   const tasks = taskRes.data ?? [];
 
   const lines = ['[PLANNER DATA]'];
@@ -428,7 +444,7 @@ async function fetchPlannerData(
     for (const g of goals) {
       const milestones = (g.milestones as { title: string; status: string }[]) ?? [];
       const completedMs = milestones.filter((m) => m.status === 'completed').length;
-      lines.push(`  ${g.title} - ${completedMs}/${milestones.length} milestones done${g.target_date ? `, target: ${g.target_date}` : ''}`);
+      lines.push(`  ${g.title} - ${completedMs}/${milestones.length} milestones done${g.target_year ? `, target: ${g.target_year}` : ''}`);
     }
   } else {
     lines.push('No active goals.');

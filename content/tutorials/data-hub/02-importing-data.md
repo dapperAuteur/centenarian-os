@@ -70,7 +70,7 @@ Follow these guidelines:
 | **Vehicles** | Max 200. Duplicate nicknames are skipped. |
 | **Equipment** | Category names are auto-created if they don't exist. `current_value` defaults to `purchase_price`. |
 | **Contacts** | Upserts by name + type — existing contacts are updated, not duplicated. Location fields create sub-locations. |
-| **Tasks** | An "Imported Tasks" milestone is auto-created if needed. Default tag: personal, priority: 2. |
+| **Tasks** | Rows without roadmap/goal/milestone columns go to an "Imported Tasks" milestone in your oldest roadmap, created if needed. If you have no roadmap of your own yet, they go to your Inbox. A new roadmap named without dates starts today and runs 10 years. Default tag: personal, priority: 2. |
 | **Workouts** | Rows with the same name + date are grouped into one workout. Each row becomes one exercise. |
 
 ---

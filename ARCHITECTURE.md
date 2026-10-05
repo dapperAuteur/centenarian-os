@@ -54,7 +54,7 @@ flowchart TB
 
   subgraph Shared["Shared infrastructure"]
     direction TB
-    Supabase[(Supabase Postgres<br/>198 migrations · 14 modules)]:::shared
+    Supabase[(Supabase Postgres<br/>203 migrations · 14 modules)]:::shared
     SupaAuth[Supabase Auth<br/>publishable + secret keys]
     SupaStorage[Supabase Storage]
   end
@@ -68,7 +68,6 @@ flowchart TB
     Stripe[Stripe Connect<br/>subscriptions · checkout]
     Gemini[Google Gemini<br/>AI coach + OCR]
     Resend[Resend<br/>transactional email]
-    Teller[Teller<br/>bank linking · mTLS]
   end
 
   CentOS -->|service-role + publishable| Supabase
@@ -79,16 +78,14 @@ flowchart TB
   CentOS --> Stripe
   CentOS --> Gemini
   CentOS --> Resend
-  CentOS --> Teller
   Coach --> Gemini
   MediaLib --> Cloudinary
   MediaLib --> Gemini
-  Finance --> Teller
   Finance --> Stripe
 
   class Life,Money,Knowledge,Cross shell
   class Planner,Health,Workouts,Equipment,Finance,Travel,Academy,Recipes,Blog,Focus,DataHub,Categories,MediaLib,Coach module
-  class Cloudinary,Stripe,Gemini,Resend,Teller external
+  class Cloudinary,Stripe,Gemini,Resend external
 ```
 
 ## The shared-database boundary
@@ -162,7 +159,6 @@ Trade-off: this wrapper isn't applied uniformly. Pages that talk Supabase-direct
 | Payments | Stripe Connect Express | Teacher payouts (LMS) + platform subscriptions. Webhook-driven sync. |
 | AI | Google Gemini | AI coach (`gemini-2.5-flash`), embeddings (`text-embedding-004` for CYOA navigation), Vision (universal OCR for receipts/recipes/fuel). |
 | Email | Resend (via Supabase native integration) | Transactional auth email + admin notifications. |
-| Bank linking | Teller | mTLS-authenticated personal-banking API. Cert + key stored as base64-encoded PEM in env vars. |
 | Bot prevention | Cloudflare Turnstile | Signup gate. |
 | Maps | Leaflet + OSRM | Interactive maps in academy lessons + travel route planning. |
 | 360° / VR | Photo Sphere Viewer | 360 video + photo lessons + virtual tours with hotspots. |
@@ -189,7 +185,7 @@ centenarian-os/
 │   ├── csv/               # Import/export helpers
 │   └── …
 ├── supabase/
-│   ├── migrations/        # 198 sequential SQL files (see MIGRATIONS.md)
+│   ├── migrations/        # 202 SQL files (see MIGRATIONS.md)
 │   └── functions/         # Edge functions (unified-schedule lives in contractor-os)
 ├── public/
 │   ├── sw.js              # Service worker

@@ -6,14 +6,23 @@
 > [`/dashboard/weekly-review`](./app/dashboard/weekly-review)) can surface cross-domain patterns no
 > single-vertical tracker can see. That co-location is the product, not an accident of scope.
 
-> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online)), offline-first via service-worker + IndexedDB queue, **198 migrations** to date.
+> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online)), offline-first via service-worker + IndexedDB queue, **203 migrations** to date.
 
 **Actively decomposing.** Modules that a sibling WitUS app already owns are being removed under
 the ecosystem's "one app, one job" rule (see [CLAUDE.md](./CLAUDE.md)) — Media → Stream.WitUS,
 Academy → Learn.WitUS, contractor residue → Work.WitUS, Travel → RideWitUS. The correlation core
 stays integrated on purpose. The staged plan and the ecosystem registry live in the untracked
 `plans/` working area (`plans/49-decomposition-staged-plan.md`, `plans/ecosystem/README.md`).
-Module lists below still describe the pre-decomposition surface.
+
+- **Stage 1, Media → [Stream.WitUS](https://stream.witus.online): in progress.** Media is out of
+  the nav, Data Hub, Discover, and the features pages; `/features/media` 308-redirects to
+  Stream.WitUS (`next.config.mjs`). `/dashboard/media` stays reachable by URL, read-only with no
+  add/edit/delete controls, and its banner's primary action is the CSV export
+  (`/api/media/export`), the file users import on Stream.WitUS's media page. Every media write route returns `410 Gone`
+  ([`lib/media/retired.ts`](./lib/media/retired.ts)). Pages and routes are removed after a grace
+  period; the tables stay until a later stage.
+
+Module lists below describe the pre-decomposition surface, minus Media.
 
 ```mermaid
 flowchart LR
@@ -22,7 +31,7 @@ flowchart LR
 
   CentOS[centenarian-os<br/>Next.js 15 · Vercel<br/>14 modules]
   Contractor[contractor-os<br/>Work.WitUS]
-  DB[(Supabase Postgres<br/>198 migrations)]:::shared
+  DB[(Supabase Postgres<br/>203 migrations)]:::shared
 
   CentOS -->|service-role + publishable| DB
   Contractor -->|service-role + publishable| DB
@@ -31,7 +40,7 @@ flowchart LR
 For dev-audience readers:
 
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** — full module map, Mermaid diagrams of the shared-DB boundary, cross-app traffic via the `unified-schedule` edge function, offline-sync layer, repo layout, and stack table.
-- **[MIGRATIONS.md](./MIGRATIONS.md)** — 198 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
+- **[MIGRATIONS.md](./MIGRATIONS.md)** — 203 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
 - **[CLAUDE.md](./CLAUDE.md)** — AI-collaborator instructions doubling as the project conventions doc (style, a11y, the Shared Database rule, branch workflow).
 - **[STYLE_GUIDE.md](./STYLE_GUIDE.md)** — git workflow, branch naming, Conventional Commits, PR rules. Every change starts on a new branch off `main`; `main` is never pushed to directly.
 - **[docs/CentenarianAcademy/](./docs/CentenarianAcademy/)** — course-authoring standards: `CourseAuthoringGuide.md` (craft), `CourseProductionPlaybook.md` (process), `CitationIntegrityGuide.md` (verify every source, never ship a fake citation), and `CourseCreationWithAI.md` (hand to your AI). Per-course recipes: `CourseAuthoringGuide NASM CPT/CES/CNC.md` and `CourseAuthoringGuide BVC.md` (Better Vice Club: audio-first, four-lens episodes; episode-per-module; rotating quizzes + FlashLearn recall loop + season-wide glossary). Courses cite only verified, peer-reviewed sources and ship a teacher evidence ledger.
@@ -78,7 +87,6 @@ this README claimed "there is no standalone Learn.WitUS app" — that is no long
 | Payments | Stripe Connect Express | Teacher payouts (LMS) + platform subscriptions. Webhook-driven sync. + CashApp (lifetime only). |
 | AI | Google Gemini | Coach (`gemini-2.5-flash`), embeddings (`text-embedding-004` for CYOA navigation), Vision (universal OCR). |
 | Email | Resend (via Supabase native integration) | Transactional auth + admin notifications. |
-| Bank linking | Teller | mTLS-authenticated personal-banking API. |
 | Bot prevention | Cloudflare Turnstile | Signup gate. |
 | Maps | Leaflet + OSRM | Academy lessons + travel route planning. |
 | 360° / VR | Photo Sphere Viewer | Lessons + virtual tours with hotspots. |
@@ -98,18 +106,17 @@ No free plan. All users must subscribe to access paid modules.
 
 | Module | Description | Access |
 |--------|-------------|--------|
-| **Planner** | Roadmap, Goals, Milestones, Tasks hierarchy with week/3-day/daily views | Paid |
+| **Planner** | Roadmap, Goals, Milestones, Tasks hierarchy with day/week/month views; one-field task capture into an auto-created Inbox (works offline), searchable goal picker, Inbox filter | Paid |
 | **Fuel** | Nutrition tracking with NCV framework, USDA/Open Food Facts APIs, auto inventory | Paid |
 | **Engine** | Pomodoro focus sessions, doodle canvas, daily debrief, AI weekly reviews | Paid |
 | **Health Metrics** | RHR, steps, sleep, body composition; Garmin/Oura/WHOOP sync; CSV import | Paid |
 | **Workouts & Exercises** | Exercise library with categories; workout templates; Nomad Longevity OS | Paid |
-| **Financial Dashboard** | Accounts, transactions, budgets, invoices, bank linking via Teller | Paid |
+| **Financial Dashboard** | Accounts, transactions, budgets, invoices, CSV import and export, learned vendor categories ("Always categorize this vendor as...?") | Paid |
 | **Travel & Vehicles** | Fuel logs with OCR, trip tracking, multi-stop routes, maintenance, IRS mileage | Paid |
 | **Equipment & Assets** | Asset tracking, valuation history, media gallery, cross-module links | Paid |
 | **Correlations & Analytics** | Cross-module data correlations, trend charts, daily/weekly aggregates | Paid |
-| **Data Hub** | CSV import/export for 12+ modules with Google Sheets templates | Paid |
+| **Data Hub** | CSV import/export for 11+ modules with Google Sheets templates | Paid |
 | **Life Categories** | Tag activities across all modules with custom life-area categories | Paid |
-| **Media Tracker** | Books, TV, movies, podcasts with notes and episode linking | Paid |
 | **Academy (LMS)** | Create/sell courses; CYOA navigation; rotating spaced-recall quizzes; FlashLearn flashcards (multiple-choice + classic); per-module key terms; maps, docs, audio, video | Free |
 | **Blog** | Rich text publishing, likes/saves, public author profiles | Free |
 | **Recipes** | Recipe sharing, URL import, cook profiles, JSON-LD scraping | Free |
@@ -265,7 +272,7 @@ supabase db push
 # Run migrations in order from supabase/migrations/
 ```
 
-There are 198 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the ContractorOS (Work.WitUS) app — read [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" before adding any.
+There are 203 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the ContractorOS (Work.WitUS) app — read [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" before adding any.
 
 ### Run Development Server
 
@@ -274,6 +281,14 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
+
+### Run Unit Tests
+
+```bash
+npm run test:unit
+```
+
+Runs the pure-function tests with Node's built-in test runner (`node --test --experimental-strip-types`, Node 22.6+). No database, network or extra dependencies. Covers merchant-name matching and learned vendor categories (`tests/transaction-matching.test.ts`) and the stored-secret encryption helper (`tests/unit/crypto-tokens.test.ts`).
 
 ## Project Structure
 
@@ -316,7 +331,7 @@ centenarian-os/
 ├── content/tutorials/         # 15+ tutorial course scripts
 ├── public/templates/          # CSV import templates (10+ modules)
 └── supabase/
-    └── migrations/            # 198 database migrations — see MIGRATIONS.md
+    └── migrations/            # 203 database migrations — see MIGRATIONS.md
 ```
 
 For the full module map and the cross-app shared-DB story, see **[ARCHITECTURE.md](./ARCHITECTURE.md)**.

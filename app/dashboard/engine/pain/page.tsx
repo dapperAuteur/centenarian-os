@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import EntryComposer from '@/components/ui/EntryComposer';
+import { todayLocal, parseLocalDate } from '@/lib/dates/local';
 
 type PainIntensity = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
@@ -40,7 +41,7 @@ export default function PainTrackingPage() {
   const [logId, setLogId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayLocal();
 
   const loadTodayLog = useCallback(async () => {
     const { data } = await supabase
@@ -125,7 +126,7 @@ export default function PainTrackingPage() {
     <div className="max-w-4xl mx-auto p-6">
       <header className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900">Body Check & Pain Log</h1>
-        <p className="text-gray-600">End-of-day assessment for {new Date(today).toLocaleDateString()}</p>
+        <p className="text-gray-600">End-of-day assessment for {parseLocalDate(today).toLocaleDateString()}</p>
       </header>
 
       <div className="bg-white rounded-2xl shadow-xl p-8">

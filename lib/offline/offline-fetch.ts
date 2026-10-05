@@ -5,6 +5,14 @@
 import { OfflineSyncManager } from './sync-manager';
 
 /**
+ * True when offlineFetch queued the mutation instead of sending it.
+ * The 202 passes `res.ok`, so check this before telling the user it saved.
+ */
+export function isQueuedResponse(res: Response): boolean {
+  return res.headers.get('X-Offline-Queued') === 'true';
+}
+
+/**
  * Offline-aware fetch wrapper.
  *
  * - GET:  online → fetch + cache | offline → return cached response

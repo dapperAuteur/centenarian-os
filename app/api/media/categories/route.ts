@@ -1,80 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { mediaRetiredResponse } from '@/lib/media/retired';
 
-const DEFAULT_CATEGORIES = [
-  { name: 'Books', color: '#3b82f6', sort_order: 0 },
-  { name: 'TV & Film', color: '#ef4444', sort_order: 1 },
-  { name: 'Music', color: '#8b5cf6', sort_order: 2 },
-  { name: 'Podcasts', color: '#f59e0b', sort_order: 3 },
-  { name: 'Art', color: '#ec4899', sort_order: 4 },
-  { name: 'Other', color: '#6b7280', sort_order: 5 },
-];
-
+// Media is read-only now that it moved to Stream.WitUS, so this GET only reads.
+// It used to seed six default categories on first access; that insert is gone, and a
+// user with no categories now gets an empty list.
 export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data: existing, error } = await supabase
+  const { data, error } = await supabase
     .from('media_categories')
     .select('*')
     .eq('user_id', user.id)
     .order('sort_order', { ascending: true });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  let data = existing;
 
-  // Seed defaults on first access
-  if (!data || data.length === 0) {
-    const rows = DEFAULT_CATEGORIES.map((c) => ({ user_id: user.id, ...c }));
-    const { data: seeded, error: seedErr } = await supabase
-      .from('media_categories')
-      .insert(rows)
-      .select();
-    if (seedErr) return NextResponse.json({ error: seedErr.message }, { status: 500 });
-    data = seeded;
-  }
-
-  return NextResponse.json({ categories: data });
+  return NextResponse.json({ categories: data || [] });
 }
 
-export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const body = await request.json();
-  const { name, icon, color } = body;
-  if (!name?.trim()) {
-    return NextResponse.json({ error: 'name is required' }, { status: 400 });
-  }
-
-  // Get max sort_order
-  const { data: existing } = await supabase
-    .from('media_categories')
-    .select('sort_order')
-    .eq('user_id', user.id)
-    .order('sort_order', { ascending: false })
-    .limit(1);
-  const nextOrder = existing?.[0] ? existing[0].sort_order + 1 : 0;
-
-  const { data, error } = await supabase
-    .from('media_categories')
-    .insert({
-      user_id: user.id,
-      name: name.trim(),
-      icon: icon || null,
-      color: color || null,
-      sort_order: nextOrder,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    if (error.code === '23505') {
-      return NextResponse.json({ error: 'Category already exists' }, { status: 409 });
-    }
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-  return NextResponse.json({ category: data }, { status: 201 });
+// Media moved to Stream.WitUS: writes are retired (410 Gone). See lib/media/retired.ts.
+export function POST() {
+  return mediaRetiredResponse();
 }

@@ -21,11 +21,13 @@ interface EditTaskModalProps {
 export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalProps) {
   const [formData, setFormData] = useState<Partial<Task>>({});
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [locationName, setLocationName] = useState('');
   const supabase = createClient();
 
   useEffect(() => {
     if (isOpen && task) {
+      setSaveError(null);
       setFormData({
         activity: task.activity,
         description: task.description,
@@ -45,16 +47,42 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
 
   const handleSave = async () => {
     setSaving(true);
-    const { error } = await supabase
-      .from('tasks')
-      .update(formData)
-      .eq('id', task.id);
+    setSaveError(null);
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update(formData)
+        .eq('id', task.id);
 
-    if (!error) {
+      if (error) {
+        console.error('Edit task error:', error);
+        setSaveError(`Couldn't save your changes: ${error.message}`);
+        return;
+      }
       onSave();
       onClose();
+    } catch (err) {
+      console.error('Edit task error:', err);
+      setSaveError("Couldn't save your changes. Check your connection and try again.");
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
+  };
+
+  // Archive/delete: keep the modal open and say why if the write fails.
+  const runTaskAction = async (action: () => PromiseLike<{ error: { message: string } | null }>, verb: string) => {
+    setSaveError(null);
+    try {
+      const { error } = await action();
+      if (error) {
+        setSaveError(`Couldn't ${verb} this task: ${error.message}`);
+        return;
+      }
+      onSave();
+      onClose();
+    } catch {
+      setSaveError(`Couldn't ${verb} this task. Check your connection and try again.`);
+    }
   };
 
   return (
@@ -223,6 +251,11 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
 
       {/* Footer */}
       <div className="bg-gray-50 border-t border-gray-200 p-6 space-y-3">
+        {saveError && (
+          <div role="alert" className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            {saveError}
+          </div>
+        )}
         <div className="flex gap-3">
           <button
             onClick={onClose}
@@ -243,9 +276,10 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
             <button
               onClick={async () => {
                 if (!confirm('Archive this task? It can be restored from the Roadmap page.')) return;
-                await supabase.from('tasks').update({ status: 'archived', archived_at: new Date().toISOString() }).eq('id', task.id);
-                onSave();
-                onClose();
+                await runTaskAction(
+                  () => supabase.from('tasks').update({ status: 'archived', archived_at: new Date().toISOString() }).eq('id', task.id),
+                  'archive',
+                );
               }}
               className="flex-1 min-h-11 flex items-center justify-center gap-2 px-4 py-2 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 text-sm font-medium transition"
             >
@@ -255,9 +289,7 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
             <button
               onClick={async () => {
                 if (!confirm('Permanently delete this task? This cannot be undone.')) return;
-                await supabase.from('tasks').delete().eq('id', task.id);
-                onSave();
-                onClose();
+                await runTaskAction(() => supabase.from('tasks').delete().eq('id', task.id), 'delete');
               }}
               className="flex-1 min-h-11 flex items-center justify-center gap-2 px-4 py-2 text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 text-sm font-medium transition"
             >

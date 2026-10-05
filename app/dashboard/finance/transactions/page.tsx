@@ -5,7 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight, Link2, X, Search, Check, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
-import { offlineFetch } from '@/lib/offline/offline-fetch';
+import LearnCategoryPrompt, { type LearnCategoryRequest } from '@/components/finance/LearnCategoryPrompt';
+import { offlineFetch, isQueuedResponse } from '@/lib/offline/offline-fetch';
+import { vendorKey } from '@/lib/finance/transaction-matching';
 
 interface Category {
   id: string;
@@ -24,7 +26,6 @@ interface Account {
   name: string;
   account_type: string;
   is_active: boolean;
-  teller_account_id: string | null;
 }
 
 interface Transaction {
@@ -102,6 +103,8 @@ export default function TransactionsPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Record<string, string>>({});
   const [linkingId, setLinkingId] = useState<string | null>(null);
+  // "Always categorize this vendor as ...?" prompt after an edit or bulk change
+  const [learnPrompt, setLearnPrompt] = useState<{ id: number; request: LearnCategoryRequest } | null>(null);
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
@@ -150,12 +153,22 @@ export default function TransactionsPage() {
   };
 
   const handleEditSave = async (id: string) => {
+    const original = transactions.find((tx) => tx.id === id);
     const res = await offlineFetch('/api/finance/transactions', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, ...editForm }),
     });
     if (res.ok) {
+      // The category was set or changed: offer to remember it for this vendor.
+      const categoryId = editForm.category_id || '';
+      const vendor = (editForm.vendor || '').trim();
+      if (!isQueuedResponse(res) && categoryId && vendor && categoryId !== (original?.category_id || '')) {
+        setLearnPrompt({
+          id: Date.now(),
+          request: { vendor, type: editForm.type === 'income' ? 'income' : 'expense', categoryId },
+        });
+      }
       setEditId(null);
       fetchTransactions();
     }
@@ -228,6 +241,18 @@ export default function TransactionsPage() {
       });
       const data = await res.json();
       if (res.ok) {
+        // Every selected row is from one vendor: offer to remember the category.
+        if (bulkCategory && !isQueuedResponse(res)) {
+          const rows = transactions.filter((tx) => selected.has(tx.id));
+          const keys = new Set(rows.map((tx) => vendorKey(tx.vendor)));
+          const types = new Set(rows.map((tx) => tx.type));
+          if (rows.length > 0 && keys.size === 1 && !keys.has('') && types.size === 1) {
+            setLearnPrompt({
+              id: Date.now(),
+              request: { vendor: (rows[0].vendor ?? '').trim(), type: rows[0].type, categoryId: bulkCategory },
+            });
+          }
+        }
         setBulkResult(`Updated ${selected.size} transaction${selected.size !== 1 ? 's' : ''}`);
         setSelected(new Set());
         setBulkCategory('');
@@ -296,7 +321,7 @@ export default function TransactionsPage() {
           {filterSource && (
             <button onClick={() => { setFilterSource(''); setPage(0); }}
               className="flex items-center gap-1 text-xs bg-teal-50 text-teal-700 border border-teal-200 px-2.5 py-1 rounded-full hover:bg-teal-100 transition">
-              {filterSource === 'bank_sync' ? 'Bank Sync' : 'Manual'} <X className="w-3 h-3" />
+              {filterSource === 'bank_sync' ? 'Bank import' : 'Manual'} <X className="w-3 h-3" />
             </button>
           )}
           {(filterFrom || filterTo) && (
@@ -338,9 +363,10 @@ export default function TransactionsPage() {
               </button>
             ))}
           </div>
-          {/* Source toggle */}
+          {/* Source toggle. 'bank_sync' is the stored value on historic rows from the
+              removed bank-linking integration; it is shown as "Bank import". */}
           <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
-            {[['', 'All Sources'], ['manual', 'Manual'], ['bank_sync', 'Bank Sync']].map(([v, label]) => (
+            {[['', 'All Sources'], ['manual', 'Manual'], ['bank_sync', 'Bank import']].map(([v, label]) => (
               <button key={v} onClick={() => { setFilterSource(v); setPage(0); }}
                 className={`px-3 py-1.5 font-medium transition ${filterSource === v ? 'bg-teal-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
                 {label}
@@ -376,7 +402,6 @@ export default function TransactionsPage() {
                         onChange={() => toggleFilterId(setFilterAccountIds, acct.id)}
                         className="w-4 h-4 rounded border-gray-300 text-fuchsia-600 cursor-pointer" />
                       <span className="text-sm text-gray-700 group-hover:text-gray-900 truncate">{acct.name}</span>
-                      {acct.teller_account_id && <span className="text-[10px] text-teal-600">Sync</span>}
                     </label>
                   ))}
                 </div>
@@ -467,6 +492,16 @@ export default function TransactionsPage() {
         </div>
       )}
 
+      {learnPrompt && (
+        <LearnCategoryPrompt
+          key={learnPrompt.id}
+          {...learnPrompt.request}
+          categoryName={categories.find((c) => c.id === learnPrompt.request.categoryId)?.name ?? 'this category'}
+          onClose={() => setLearnPrompt(null)}
+          onPastApplied={fetchTransactions}
+        />
+      )}
+
       {/* Transactions Table */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         {loading ? (
@@ -499,6 +534,18 @@ export default function TransactionsPage() {
                         className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-900"
                         placeholder="Description"
                       />
+                      <label htmlFor={`edit-category-${tx.id}`} className="sr-only">Category</label>
+                      <select
+                        id={`edit-category-${tx.id}`}
+                        value={editForm.category_id}
+                        onChange={(e) => setEditForm((p) => ({ ...p, category_id: e.target.value }))}
+                        className="w-full min-h-11 px-2 py-1 text-sm border border-gray-300 rounded text-gray-900"
+                      >
+                        <option value="">No category</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
                       <div className="flex gap-2">
                         <button onClick={() => handleEditSave(tx.id)} className="px-3 py-1 bg-fuchsia-600 text-white rounded text-xs">Save</button>
                         <button onClick={() => setEditId(null)} className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">Cancel</button>
@@ -533,11 +580,21 @@ export default function TransactionsPage() {
                         <span className={`text-sm font-semibold ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                           {tx.type === 'income' ? '+' : '-'}${Number(tx.amount).toFixed(2)}
                         </span>
-                        <button onClick={() => startEdit(tx)} className="p-1.5 hover:bg-gray-100 rounded-lg" title="Edit">
-                          <Edit3 className="w-4 h-4 text-gray-500" />
+                        <button
+                          onClick={() => startEdit(tx)}
+                          className="min-h-11 min-w-11 flex items-center justify-center hover:bg-gray-100 rounded-lg"
+                          title="Edit"
+                          aria-label={`Edit ${tx.description || tx.vendor || 'transaction'}`}
+                        >
+                          <Edit3 className="w-4 h-4 text-gray-500" aria-hidden="true" />
                         </button>
-                        <button onClick={() => handleDelete(tx.id)} className="p-1.5 hover:bg-red-50 rounded-lg" title="Delete">
-                          <Trash2 className="w-4 h-4 text-red-400" />
+                        <button
+                          onClick={() => handleDelete(tx.id)}
+                          className="min-h-11 min-w-11 flex items-center justify-center hover:bg-red-50 rounded-lg"
+                          title="Delete"
+                          aria-label={`Delete ${tx.description || tx.vendor || 'transaction'}`}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-400" aria-hidden="true" />
                         </button>
                       </div>
                     </div>
@@ -643,6 +700,7 @@ export default function TransactionsPage() {
                           <select
                             value={editForm.category_id}
                             onChange={(e) => setEditForm((p) => ({ ...p, category_id: e.target.value }))}
+                            aria-label="Category"
                             className="px-2 py-1 text-xs border border-gray-300 rounded text-gray-900"
                           >
                             <option value="">No category</option>
@@ -695,14 +753,14 @@ export default function TransactionsPage() {
                         </div>
                       ) : (
                         <div className="flex items-center justify-center gap-0.5">
-                          <button onClick={() => startEdit(tx)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 rounded-lg transition" title="Edit">
-                            <Edit3 className="w-4 h-4" />
+                          <button onClick={() => startEdit(tx)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 rounded-lg transition" title="Edit" aria-label={`Edit ${tx.description || tx.vendor || 'transaction'}`}>
+                            <Edit3 className="w-4 h-4" aria-hidden="true" />
                           </button>
-                          <button onClick={() => setLinkingId(tx.id)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:bg-sky-50 hover:text-sky-700 rounded-lg transition" title="Link activities">
-                            <Link2 className="w-4 h-4" />
+                          <button onClick={() => setLinkingId(tx.id)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:bg-sky-50 hover:text-sky-700 rounded-lg transition" title="Link activities" aria-label={`Link activities to ${tx.description || tx.vendor || 'transaction'}`}>
+                            <Link2 className="w-4 h-4" aria-hidden="true" />
                           </button>
-                          <button onClick={() => handleDelete(tx.id)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition" title="Delete">
-                            <Trash2 className="w-4 h-4" />
+                          <button onClick={() => handleDelete(tx.id)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition" title="Delete" aria-label={`Delete ${tx.description || tx.vendor || 'transaction'}`}>
+                            <Trash2 className="w-4 h-4" aria-hidden="true" />
                           </button>
                         </div>
                       )}

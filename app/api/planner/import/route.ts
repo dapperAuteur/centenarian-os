@@ -2,12 +2,16 @@
 // POST: bulk import planner tasks from parsed CSV rows.
 // Supports optional hierarchy columns (roadmap_title, goal_title, milestone_title, ...)
 // that let a single CSV create a full Roadmap → Goal → Milestone → Task tree.
-// Rows with no hierarchy columns fall back to the legacy "Imported Tasks" milestone.
+// Rows with no hierarchy columns fall back to an "Imported Tasks" milestone in the user's own
+// roadmap, or to the Inbox when they have no roadmap of their own
+// (lib/planner/import-milestone.ts).
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { MAX_IMPORT_ROWS, validateDate } from '@/lib/csv/helpers';
+import { parseLocalDate, todayLocal, toLocalDateString } from '@/lib/dates/local';
+import { resolveImportMilestone, type ImportMilestone } from '@/lib/planner/import-milestone';
 
 function getDb() {
   return createServiceClient(
@@ -18,6 +22,10 @@ function getDb() {
 
 const VALID_TAGS = new Set(['personal', 'work', 'health', 'finance', 'travel', 'errands', 'fitness']);
 const VALID_GOAL_CATEGORIES = new Set(['FITNESS', 'CREATIVE', 'SKILL', 'OUTREACH', 'LIFESTYLE', 'MINDSET', 'FUEL']);
+/** Title of the fallback milestone for rows without hierarchy columns. */
+const LEGACY_MILESTONE_TITLE = 'Imported Tasks';
+/** Span of a roadmap created without an end date. */
+const ROADMAP_DEFAULT_SPAN_YEARS = 10;
 
 type Db = ReturnType<typeof getDb>;
 
@@ -39,106 +47,6 @@ function newHierarchyCaches(): HierarchyCaches {
 
 function hasHierarchyColumns(row: Record<string, string | undefined>): boolean {
   return Boolean(row.roadmap_title?.trim() || row.goal_title?.trim() || row.milestone_title?.trim());
-}
-
-/**
- * Ensures an "Imported Tasks" milestone exists for the user.
- * Creates the full hierarchy (roadmap → goal → milestone) if needed.
- * This is the legacy fallback for rows without hierarchy columns.
- */
-async function resolveImportMilestone(db: Db, userId: string): Promise<string> {
-  // 1. Check for existing milestone named "Imported Tasks"
-  const { data: existingMilestone } = await db
-    .from('milestones')
-    .select('id, goal_id')
-    .eq('title', 'Imported Tasks')
-    .neq('status', 'archived')
-    .limit(1)
-    .maybeSingle();
-
-  if (existingMilestone) {
-    const { data: goal } = await db
-      .from('goals')
-      .select('id, roadmap_id')
-      .eq('id', existingMilestone.goal_id)
-      .maybeSingle();
-
-    if (goal) {
-      const { data: roadmap } = await db
-        .from('roadmaps')
-        .select('id')
-        .eq('id', goal.roadmap_id)
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (roadmap) return existingMilestone.id;
-    }
-  }
-
-  let roadmapId: string;
-  const { data: existingRoadmap } = await db
-    .from('roadmaps')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (existingRoadmap) {
-    roadmapId = existingRoadmap.id;
-  } else {
-    const { data: newRoadmap, error: rmErr } = await db
-      .from('roadmaps')
-      .insert({
-        user_id: userId,
-        title: 'General',
-        status: 'active',
-      })
-      .select('id')
-      .single();
-    if (rmErr || !newRoadmap) throw new Error('Failed to create roadmap');
-    roadmapId = newRoadmap.id;
-  }
-
-  let goalId: string;
-  const { data: existingGoal } = await db
-    .from('goals')
-    .select('id')
-    .eq('roadmap_id', roadmapId)
-    .eq('status', 'active')
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (existingGoal) {
-    goalId = existingGoal.id;
-  } else {
-    const { data: newGoal, error: gErr } = await db
-      .from('goals')
-      .insert({
-        roadmap_id: roadmapId,
-        title: 'Imported',
-        status: 'active',
-      })
-      .select('id')
-      .single();
-    if (gErr || !newGoal) throw new Error('Failed to create goal');
-    goalId = newGoal.id;
-  }
-
-  const { data: newMilestone, error: msErr } = await db
-    .from('milestones')
-    .insert({
-      goal_id: goalId,
-      title: 'Imported Tasks',
-      status: 'in_progress',
-    })
-    .select('id')
-    .single();
-  if (msErr || !newMilestone) throw new Error('Failed to create milestone');
-
-  return newMilestone.id;
 }
 
 async function resolveRoadmap(
@@ -166,18 +74,28 @@ async function resolveRoadmap(
     return existing.id;
   }
 
+  // roadmaps.start_date and end_date are NOT NULL with no default, and the CSV columns are
+  // optional. Leaving them out failed the insert, so a CSV that named a new roadmap without both
+  // dates imported nothing under it. Default to today and ten years after the start, the same
+  // span the planner's quick-create uses (components/planner/RoadmapItemPicker).
+  const startRaw = row.roadmap_start_date?.trim();
+  const endRaw = row.roadmap_end_date?.trim();
+  const startDate = startRaw && validateDate(startRaw) ? startRaw : todayLocal();
+  let endDate = endRaw && validateDate(endRaw) ? endRaw : '';
+  if (!endDate) {
+    const end = parseLocalDate(startDate);
+    end.setFullYear(end.getFullYear() + ROADMAP_DEFAULT_SPAN_YEARS);
+    endDate = toLocalDateString(end);
+  }
+
   const insertPayload: Record<string, unknown> = {
     user_id: userId,
     title,
     status: 'active',
+    start_date: startDate,
+    end_date: endDate,
   };
   if (row.roadmap_description?.trim()) insertPayload.description = row.roadmap_description.trim();
-  if (row.roadmap_start_date?.trim() && validateDate(row.roadmap_start_date.trim())) {
-    insertPayload.start_date = row.roadmap_start_date.trim();
-  }
-  if (row.roadmap_end_date?.trim() && validateDate(row.roadmap_end_date.trim())) {
-    insertPayload.end_date = row.roadmap_end_date.trim();
-  }
 
   const { data: created, error } = await db
     .from('roadmaps')
@@ -337,8 +255,9 @@ export async function POST(request: NextRequest) {
   const db = getDb();
   const caches = newHierarchyCaches();
 
-  // Lazy-init the legacy "Imported Tasks" milestone only if a non-hierarchy row appears.
-  let legacyMilestoneId: string | null = null;
+  // Lazy-init the fallback milestone only if a non-hierarchy row appears. It is an "Imported
+  // Tasks" milestone in the user's own roadmap, or the Inbox if they have none.
+  let legacyTarget: ImportMilestone | null = null;
 
   const payloads: Record<string, unknown>[] = [];
   const errors: string[] = [];
@@ -383,8 +302,8 @@ export async function POST(request: NextRequest) {
       if (hasHierarchyColumns(row)) {
         milestoneId = await resolveHierarchy(db, user.id, row, caches);
       } else {
-        if (!legacyMilestoneId) legacyMilestoneId = await resolveImportMilestone(db, user.id);
-        milestoneId = legacyMilestoneId;
+        if (!legacyTarget) legacyTarget = await resolveImportMilestone(db, user.id, LEGACY_MILESTONE_TITLE);
+        milestoneId = legacyTarget.milestoneId;
       }
     } catch (err) {
       errors.push(`Row ${i + 1}: ${err instanceof Error ? err.message : 'hierarchy error'}`);
@@ -427,6 +346,9 @@ export async function POST(request: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const imported = data?.length || 0;
+  const inboxNote = legacyTarget?.placement === 'inbox'
+    ? ' Rows without a roadmap, goal or milestone went to your Inbox.'
+    : '';
   return NextResponse.json({
     imported,
     skipped,
@@ -434,6 +356,6 @@ export async function POST(request: NextRequest) {
     goals_created: caches.created.goals,
     milestones_created: caches.created.milestones,
     errors: errors.length > 0 ? errors.slice(0, 10) : undefined,
-    message: `Imported ${imported} tasks${caches.created.roadmaps + caches.created.goals + caches.created.milestones > 0 ? ` (created ${caches.created.roadmaps} roadmaps, ${caches.created.goals} goals, ${caches.created.milestones} milestones)` : ''}. ${skipped > 0 ? `${skipped} skipped.` : ''}`,
+    message: `Imported ${imported} tasks${caches.created.roadmaps + caches.created.goals + caches.created.milestones > 0 ? ` (created ${caches.created.roadmaps} roadmaps, ${caches.created.goals} goals, ${caches.created.milestones} milestones)` : ''}.${inboxNote} ${skipped > 0 ? `${skipped} skipped.` : ''}`,
   });
 }

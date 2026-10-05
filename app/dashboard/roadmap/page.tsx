@@ -13,6 +13,12 @@ import { EditGoalModal } from '@/components/EditGoalModal';
 import { EditMilestoneModal } from '@/components/EditMilestoneModal';
 import { EditTaskModal } from '@/components/EditTaskModal';
 import { ArchiveModal } from '@/components/ArchiveModal';
+import { systemKindOf, SYSTEM_ROADMAP_LABEL, type SystemRoadmapKind } from '@/lib/planner/system-roadmaps';
+
+const SYSTEM_ROADMAP_HINT: Record<SystemRoadmapKind, string> = {
+  inbox: 'Created automatically for tasks saved without a goal. It can\'t be deleted.',
+  work_witus_sync: 'Created automatically for Work.WitUS invoice and payment tasks. It can\'t be deleted.',
+};
 
 export default function RoadmapPage() {
   const [roadmaps, setRoadmaps] = useState<Roadmap[]>([]);
@@ -510,6 +516,9 @@ export default function RoadmapPage() {
           {roadmaps.map((roadmap) => {
             const roadmapGoals = goals[roadmap.id] || [];
             const isExpanded = expandedRoadmaps.has(roadmap.id);
+            // System roadmaps (Inbox, Work.WitUS Sync) are rebuilt by the app, so
+            // they get an "Auto" badge and no permanent-delete control.
+            const systemKind = systemKindOf(roadmap);
 
             return (
               <div key={roadmap.id} className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -525,7 +534,18 @@ export default function RoadmapPage() {
                         <ChevronRight className="w-6 h-6 mr-2 flex-shrink-0" />
                       )}
                       <div>
-                        <h2 className="text-2xl font-bold">{roadmap.title}</h2>
+                        <h2 className="text-2xl font-bold">
+                          {roadmap.title}
+                          {systemKind && (
+                            <span
+                              className="ml-2 align-middle inline-flex items-center px-2 py-0.5 rounded-full bg-white text-sky-800 text-xs font-semibold"
+                              title={SYSTEM_ROADMAP_HINT[systemKind]}
+                            >
+                              {SYSTEM_ROADMAP_LABEL}
+                              <span className="sr-only">. {SYSTEM_ROADMAP_HINT[systemKind]}</span>
+                            </span>
+                          )}
+                        </h2>
                         <p className="text-sky-100 mt-1">{roadmap.description}</p>
                         <p className="text-sm text-sky-200 mt-2">
                           {new Date(roadmap.start_date).getFullYear()} - {new Date(roadmap.end_date).getFullYear()}
@@ -542,13 +562,15 @@ export default function RoadmapPage() {
                           >
                             <RotateCcw className="w-5 h-5 text-white" />
                           </button>
-                          <button
-                            onClick={() => handlePermanentDelete('roadmaps', roadmap.id, roadmap.archived_at!)}
-                            className="p-2 hover:bg-white/30 rounded transition"
-                            title="Delete permanently"
-                          >
-                            <Trash2 className="w-5 h-5 text-red-300" />
-                          </button>
+                          {!systemKind && (
+                            <button
+                              onClick={() => handlePermanentDelete('roadmaps', roadmap.id, roadmap.archived_at!)}
+                              className="p-2 hover:bg-white/30 rounded transition"
+                              title="Delete permanently"
+                            >
+                              <Trash2 className="w-5 h-5 text-red-300" />
+                            </button>
+                          )}
                         </>
                       ) : (
                         <>
@@ -565,29 +587,31 @@ export default function RoadmapPage() {
                           >
                             <Archive className="w-5 h-5 text-white" />
                           </button>
-                          <button
-                            onClick={async () => {
-                              if (!confirm(`Permanently delete "${roadmap.title}" and all its goals, milestones, and tasks? This cannot be undone.`)) return;
-                              // Cascade delete: tasks → milestones → goals → roadmap
-                              const { data: gs } = await supabase.from('goals').select('id').eq('roadmap_id', roadmap.id);
-                              if (gs) {
-                                for (const g of gs) {
-                                  const { data: ms } = await supabase.from('milestones').select('id').eq('goal_id', g.id);
-                                  if (ms) {
-                                    for (const m of ms) await supabase.from('tasks').delete().eq('milestone_id', m.id);
-                                    await supabase.from('milestones').delete().eq('goal_id', g.id);
+                          {!systemKind && (
+                            <button
+                              onClick={async () => {
+                                if (!confirm(`Permanently delete "${roadmap.title}" and all its goals, milestones, and tasks? This cannot be undone.`)) return;
+                                // Cascade delete: tasks → milestones → goals → roadmap
+                                const { data: gs } = await supabase.from('goals').select('id').eq('roadmap_id', roadmap.id);
+                                if (gs) {
+                                  for (const g of gs) {
+                                    const { data: ms } = await supabase.from('milestones').select('id').eq('goal_id', g.id);
+                                    if (ms) {
+                                      for (const m of ms) await supabase.from('tasks').delete().eq('milestone_id', m.id);
+                                      await supabase.from('milestones').delete().eq('goal_id', g.id);
+                                    }
                                   }
+                                  await supabase.from('goals').delete().eq('roadmap_id', roadmap.id);
                                 }
-                                await supabase.from('goals').delete().eq('roadmap_id', roadmap.id);
-                              }
-                              await supabase.from('roadmaps').delete().eq('id', roadmap.id);
-                              loadData();
-                            }}
-                            className="p-2 hover:bg-red-500/30 rounded transition"
-                            title="Delete permanently"
-                          >
-                            <Trash2 className="w-5 h-5 text-red-300" />
-                          </button>
+                                await supabase.from('roadmaps').delete().eq('id', roadmap.id);
+                                loadData();
+                              }}
+                              className="p-2 hover:bg-red-500/30 rounded transition"
+                              title="Delete permanently"
+                            >
+                              <Trash2 className="w-5 h-5 text-red-300" />
+                            </button>
+                          )}
                           <button
                             onClick={() => openGoalModal(roadmap.id)}
                             className="flex items-center px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition"

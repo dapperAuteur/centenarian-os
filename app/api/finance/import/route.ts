@@ -1,8 +1,12 @@
 // app/api/finance/import/route.ts
-// POST: bulk import financial transactions from parsed CSV rows
+// POST: bulk import financial transactions from parsed CSV rows.
+// A row's category comes from its category_name column (matched by name);
+// failing that, from the vendor's learned category.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { loadLearnedCategoryIndex } from '@/lib/finance/learned-categories';
+import { lookupLearnedCategory } from '@/lib/finance/transaction-matching';
 
 interface ImportRow {
   transaction_date: string;
@@ -39,6 +43,8 @@ export async function POST(request: NextRequest) {
     catMap.set(c.name.toLowerCase(), c.id);
   }
 
+  const learned = await loadLearnedCategoryIndex(supabase, user.id);
+
   const payloads: Record<string, unknown>[] = [];
   const errors: string[] = [];
 
@@ -60,17 +66,18 @@ export async function POST(request: NextRequest) {
 
     // Determine type from amount sign if not specified
     const type = row.type || (amount < 0 ? 'expense' : amount > 0 ? 'income' : 'expense');
+    const finalType = type === 'income' ? 'income' : 'expense';
 
-    // Match category by name
-    const categoryId = row.category_name
+    // Match category by name, else use the vendor's learned category
+    const categoryId = (row.category_name
       ? catMap.get(row.category_name.toLowerCase()) || null
-      : null;
+      : null) ?? lookupLearnedCategory(learned, row.vendor, finalType);
 
     payloads.push({
       user_id: user.id,
       transaction_date: row.transaction_date,
       amount: Math.abs(amount),
-      type: type === 'income' ? 'income' : 'expense',
+      type: finalType,
       description: row.description?.trim() || null,
       vendor: row.vendor?.trim() || null,
       category_id: categoryId,

@@ -74,6 +74,33 @@ const nextConfig = {
     ];
   },
 
+  async redirects() {
+    // Media moved to Stream.WitUS (decomposition Stage 1) and its /features entry was
+    // removed, so /features/media would 404. It was in the sitemap in both locales, so
+    // send both forms, with or without a trailing slash, to Stream permanently (308).
+    //
+    // Two sources because redirects run BEFORE middleware: the /en and /es prefixes
+    // are only stripped later by middleware.ts, so a plain '/features/media' source
+    // never sees '/es/features/media'. The `{/}?` covers the trailing slash, which
+    // skipTrailingSlashRedirect (above) no longer normalizes.
+    //
+    // Destination = STREAM_WITUS_URL in lib/media/stream-handoff.ts (this .mjs file
+    // cannot import TypeScript). The origin is listed in components/ui/SiteFooter.tsx
+    // and the WitUS product registry.
+    return [
+      {
+        source: '/features/media{/}?',
+        destination: 'https://stream.witus.online',
+        permanent: true,
+      },
+      {
+        source: '/:locale(en|es)/features/media{/}?',
+        destination: 'https://stream.witus.online',
+        permanent: true,
+      },
+    ];
+  },
+
   async rewrites() {
     // Reverse-proxy PostHog through our own origin. us.i.posthog.com is on uBlock
     // Origin, Brave Shields, and Safari's tracker list, so a meaningful share of

@@ -5,6 +5,8 @@ import { Plus, ChevronRight, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useMilestoneHierarchy } from '@/lib/hooks/useMilestoneHierarchy';
 import type { TaskTag } from '@/lib/types';
+import { toLocalDateString } from '@/lib/dates/local';
+import { systemKindOf } from '@/lib/planner/system-roadmaps';
 
 interface RoadmapItemPickerProps {
   value: string;
@@ -36,6 +38,11 @@ export default function RoadmapItemPicker({ value, onChange, required }: Roadmap
     () => milestones.filter(m => m.goal_id === selectedGoalId),
     [milestones, selectedGoalId]
   );
+
+  const isSystemRoadmapSelected = useMemo(() => {
+    const r = roadmaps.find(r => r.id === selectedRoadmapId);
+    return !!r && systemKindOf(r) !== null;
+  }, [roadmaps, selectedRoadmapId]);
 
   // Track whether we've done the initial sync from hierarchy data
   const initializedRef = useRef(false);
@@ -115,8 +122,8 @@ export default function RoadmapItemPicker({ value, onChange, required }: Roadmap
             user_id: user.id,
             title: newTitle.trim(),
             description: '',
-            start_date: today.toISOString().split('T')[0],
-            end_date: future.toISOString().split('T')[0],
+            start_date: toLocalDateString(today),
+            end_date: toLocalDateString(future),
           }])
           .select('id')
           .single();
@@ -147,7 +154,7 @@ export default function RoadmapItemPicker({ value, onChange, required }: Roadmap
             goal_id: selectedGoalId,
             title: newTitle.trim(),
             description: '',
-            target_date: targetDate.toISOString().split('T')[0],
+            target_date: toLocalDateString(targetDate),
             status: 'not_started',
           }])
           .select('id')
@@ -260,7 +267,8 @@ export default function RoadmapItemPicker({ value, onChange, required }: Roadmap
         >
           <Plus className="w-4 h-4" aria-hidden="true" />
         </button>
-        {selectedRoadmapId && (
+        {/* System roadmaps (Inbox, Work.WitUS Sync) are rebuilt by the app; no delete. */}
+        {selectedRoadmapId && !isSystemRoadmapSelected && (
           <button
             type="button"
             onClick={() => {

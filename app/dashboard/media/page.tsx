@@ -2,11 +2,10 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Star, BookOpen, Tv, Film, Music, Upload, Download, Globe, Settings } from 'lucide-react';
+import { Star, BookOpen, Tv, Film, Music, Settings } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import MediaCard, { type MediaItem } from '@/components/media/MediaCard';
-import MediaForm, { type MediaPrefill } from '@/components/media/MediaForm';
-import ImportUrlDialog from '@/components/media/ImportUrlDialog';
+import MovedToStreamBanner from '@/components/media/MovedToStreamBanner';
 import Link from 'next/link';
 
 const TYPE_FILTERS = [
@@ -42,15 +41,10 @@ export default function MediaHubPage() {
   const router = useRouter();
   const [items, setItems] = useState<MediaItem[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
-  const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
-  const [showForm, setShowForm] = useState(false);
-  const [editItem, setEditItem] = useState<MediaItem | null>(null);
-  const [showImportUrl, setShowImportUrl] = useState(false);
-  const [prefill, setPrefill] = useState<MediaPrefill | null>(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -72,10 +66,9 @@ export default function MediaHubPage() {
       if (statusFilter) params.set('status', statusFilter);
       if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
 
-      const [itemsRes, summaryRes, brandsRes] = await Promise.all([
+      const [itemsRes, summaryRes] = await Promise.all([
         offlineFetch(`/api/media?${params}`),
         offlineFetch('/api/media/summary'),
-        offlineFetch('/api/brands'),
       ]);
 
       if (itemsRes.ok) {
@@ -87,27 +80,11 @@ export default function MediaHubPage() {
         const d = await summaryRes.json();
         setSummary(d);
       }
-      if (brandsRes.ok) {
-        const d = await brandsRes.json();
-        setBrands(d || []);
-      }
     } catch { /* handled */ }
     finally { setLoading(false); }
   }, [page, typeFilter, statusFilter, debouncedSearch]);
 
   useEffect(() => { load(); }, [load]);
-
-  const handleDelete = async (itemId: string) => {
-    if (!confirm('Delete this media item?')) return;
-    const res = await offlineFetch(`/api/media/${itemId}`, { method: 'DELETE' });
-    if (res.ok) load();
-  };
-
-  const handleEdit = (mediaItem: MediaItem) => {
-    setEditItem(mediaItem);
-    setPrefill(null);
-    setShowForm(true);
-  };
 
   const totalPages = Math.ceil(total / limit);
 
@@ -125,39 +102,21 @@ export default function MediaHubPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Media Tracker</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Track what you consume, take notes for content</p>
+          <p className="text-sm text-gray-500 mt-0.5">Read-only while Media moves to Stream.WitUS</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <Link href="/dashboard/media/podcasts"
             className="px-3 py-2 text-sm font-medium border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition min-h-11 flex items-center gap-1.5">
             {'\u{1F399}'} Episodes
           </Link>
-          <Link href="/dashboard/data/import/media"
-            className="px-3 py-2 text-sm font-medium border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition min-h-11 flex items-center gap-1.5">
-            <Upload className="w-4 h-4" /> Import
-          </Link>
-          <a href="/api/media/export" target="_blank" rel="noopener noreferrer"
-            className="px-3 py-2 text-sm font-medium border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition min-h-11 flex items-center gap-1.5">
-            <Download className="w-4 h-4" /> Export
-          </a>
-          <button
-            onClick={() => setShowImportUrl(true)}
-            className="px-3 py-2 text-sm font-medium border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition min-h-11 flex items-center gap-1.5"
-          >
-            <Globe className="w-4 h-4" /> Import URL
-          </button>
           <Link href="/dashboard/media/settings"
             className="px-3 py-2 text-sm font-medium border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition min-h-11 flex items-center gap-1.5">
             <Settings className="w-4 h-4" aria-hidden="true" /> Settings
           </Link>
-          <button
-            onClick={() => { setEditItem(null); setPrefill(null); setShowForm(true); }}
-            className="px-4 py-2 text-sm font-medium text-white bg-fuchsia-600 hover:bg-fuchsia-700 rounded-xl transition flex items-center gap-1.5 min-h-11"
-          >
-            <Plus className="w-4 h-4" /> Add Media
-          </button>
         </div>
       </div>
+
+      <MovedToStreamBanner />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -224,10 +183,6 @@ export default function MediaHubPage() {
       ) : items.length === 0 ? (
         <div className="py-16 text-center">
           <p className="text-gray-400 text-sm">No media items found.</p>
-          <button onClick={() => setShowForm(true)}
-            className="mt-3 text-sm text-fuchsia-600 hover:underline">
-            Add your first item
-          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -236,8 +191,6 @@ export default function MediaHubPage() {
               key={item.id}
               item={item}
               onClick={() => router.push(`/dashboard/media/${item.id}`)}
-              onEdit={() => handleEdit(item)}
-              onDelete={() => handleDelete(item.id)}
             />
           ))}
         </div>
@@ -257,28 +210,6 @@ export default function MediaHubPage() {
           </button>
         </div>
       )}
-
-      {/* Add/Edit Form */}
-      <MediaForm
-        isOpen={showForm}
-        onClose={() => { setShowForm(false); setEditItem(null); setPrefill(null); }}
-        onSaved={load}
-        brands={brands}
-        prefill={prefill}
-        editItem={editItem}
-      />
-
-      {/* Import from URL */}
-      <ImportUrlDialog
-        isOpen={showImportUrl}
-        onClose={() => setShowImportUrl(false)}
-        onImported={(data) => {
-          setPrefill(data);
-          setEditItem(null);
-          setShowImportUrl(false);
-          setShowForm(true);
-        }}
-      />
     </div>
   );
 }

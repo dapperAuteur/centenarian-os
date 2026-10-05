@@ -16,6 +16,7 @@ import Modal from '@/components/ui/Modal';
 import MultiStopForm from '@/components/travel/MultiStopForm';
 import GoogleMapsImportModal from '@/components/travel/GoogleMapsImportModal';
 import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
+import { todayLocal, toLocalDateString } from '@/lib/dates/local';
 
 interface Summary {
   currentMonth: {
@@ -127,7 +128,7 @@ export default function TravelPage() {
   useTrackPageView('travel', '/dashboard/travel');
   const now = new Date();
   const currentMonthFrom = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-  const currentMonthTo = now.toISOString().split('T')[0];
+  const currentMonthTo = toLocalDateString(now);
   const currentMonthLabel = now.toLocaleString('en-US', { month: 'long', year: 'numeric' });
   const bikeHref = `/dashboard/travel/trips?mode=bike&from=${currentMonthFrom}&to=${currentMonthTo}`;
   const carHref = `/dashboard/travel/trips?mode=car&from=${currentMonthFrom}&to=${currentMonthTo}`;
@@ -231,7 +232,7 @@ export default function TravelPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mode: 'bike', purpose: 'commute',
-          date: new Date().toISOString().split('T')[0],
+          date: todayLocal(),
           distance_miles: settings.commute_distance_miles,
           duration_min: settings.commute_duration_min,
           calories_burned: calories,
@@ -827,7 +828,7 @@ export default function TravelPage() {
           templates={templates}
           initialRoute={{
             name: importedRoute.name,
-            date: new Date().toISOString().split('T')[0],
+            date: todayLocal(),
             notes: null,
             is_round_trip: importedRoute.isRoundTrip,
           }}

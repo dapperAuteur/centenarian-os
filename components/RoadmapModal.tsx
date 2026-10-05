@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { X } from 'lucide-react';
+import { toLocalDateString } from '@/lib/dates/local';
 
 interface RoadmapModalProps {
   isOpen: boolean;
@@ -28,10 +29,10 @@ export function RoadmapModal({ isOpen, onClose, roadmapId }: RoadmapModalProps) 
     if (isOpen && !roadmapId) {
       // Set default dates for new roadmap
       const today = new Date();
-      setStartDate(today.toISOString().split('T')[0]);
+      setStartDate(toLocalDateString(today));
       const futureDate = new Date(today);
       futureDate.setFullYear(today.getFullYear() + 10);
-      setEndDate(futureDate.toISOString().split('T')[0]);
+      setEndDate(toLocalDateString(futureDate));
     }
   }, [isOpen, roadmapId]);
 

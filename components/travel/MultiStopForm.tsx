@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Plus, Trash2, ArrowDown, ChevronDown } from 'lucide-react';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import { todayLocal } from '@/lib/dates/local';
 
 interface Vehicle {
   id: string;
@@ -247,7 +248,7 @@ function legsToStops(legs: LegData[], isRoundTrip: boolean, routeDate?: string):
 export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved, editRouteId, initialRoute, initialLegs, defaultStatus, templates }: MultiStopFormProps) {
   const isEdit = !!editRouteId;
   const [name, setName] = useState(initialRoute?.name || '');
-  const [date, setDate] = useState(initialRoute?.date || new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(initialRoute?.date || todayLocal());
   const [stops, setStops] = useState<Stop[]>(() =>
     initialLegs?.length
       ? legsToStops(initialLegs, initialRoute?.is_round_trip ?? false, initialRoute?.date)

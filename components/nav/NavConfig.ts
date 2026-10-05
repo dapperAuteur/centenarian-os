@@ -91,7 +91,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Forecast', href: '/dashboard/finance/forecast', icon: TrendingUp, paid: true },
       { label: 'Travel', href: '/dashboard/travel', icon: Navigation, paid: true },
       { label: 'Equipment', href: '/dashboard/equipment', icon: Package, paid: true },
-      { label: 'Media', href: '/dashboard/media', icon: Library, paid: true },
+      // Media moved to Stream.WitUS (decomposition Stage 1). /dashboard/media stays
+      // reachable by direct URL, read-only, so users can export their list.
       { label: 'Data Hub', href: '/dashboard/data', icon: Database, paid: true },
       { label: 'Categories', href: '/dashboard/categories', icon: Tags, paid: true },
     ],

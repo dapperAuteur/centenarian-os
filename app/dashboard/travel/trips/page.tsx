@@ -13,6 +13,7 @@ import RouteCard from '@/components/travel/RouteCard';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Modal from '@/components/ui/Modal';
 import EditTemplateModal from '@/components/travel/EditTemplateModal';
+import { todayLocal } from '@/lib/dates/local';
 
 interface Trip {
   id: string;
@@ -116,7 +117,7 @@ const VEHICLE_TYPE_TO_MODE: Record<string, string> = {
 
 const BLANK_FORM = {
   mode: 'bike',
-  date: new Date().toISOString().split('T')[0],
+  date: todayLocal(),
   end_date: '',
   origin: '',
   destination: '',
@@ -454,7 +455,7 @@ function TripsPageInner() {
       body: JSON.stringify({
         create_trip: true,
         template_id: tmpl.id,
-        trip_date: new Date().toISOString().split('T')[0],
+        trip_date: todayLocal(),
       }),
     });
     if (res.ok) load();
@@ -855,7 +856,7 @@ function TripsPageInner() {
           templates={templates}
           initialRoute={{
             name: importedRoute.name,
-            date: new Date().toISOString().split('T')[0],
+            date: todayLocal(),
             notes: null,
             is_round_trip: importedRoute.isRoundTrip,
           }}

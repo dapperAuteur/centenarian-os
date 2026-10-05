@@ -4,6 +4,8 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { GemAction, ActionType } from './gemini-parser';
 import { generateSlug, makeUniqueSlug } from '@/lib/recipes/slug';
+import { TAGS } from '@/lib/constants/tags';
+import type { TaskTag } from '@/lib/types';
 
 export interface ActionResult {
   type: ActionType;
@@ -231,26 +233,79 @@ async function createTransaction(
   };
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const PRIORITY_WORDS = new Map<string, 1 | 2 | 3>([['high', 1], ['medium', 2], ['low', 3]]);
+
+/** Map a model-supplied priority (1-3 or "high"/"medium"/"low") to the tasks.priority CHECK (1, 2, 3). */
+function toTaskPriority(value: unknown): 1 | 2 | 3 {
+  const word = typeof value === 'string' ? PRIORITY_WORDS.get(value.trim().toLowerCase()) : undefined;
+  const n = word ?? Number(value);
+  return n === 1 || n === 2 || n === 3 ? n : 2;
+}
+
+// tasks has no user_id or title. NOT NULL: milestone_id, date, time, activity, tag.
+// Ownership runs milestone -> goal -> roadmap.user_id, and this runs on the
+// service-role client, so RLS won't stop a foreign milestone_id: check it here.
 async function createTask(
   db: SupabaseClient,
   userId: string,
   data: Record<string, unknown>,
 ): Promise<ActionResult> {
-  const title = data.title as string;
-  const milestoneId = data.milestone_id as string;
-  if (!title || !milestoneId) {
-    return { type: 'CREATE_TASK', success: false, message: 'Missing title or milestone_id' };
+  // Older prompts sent `title`; the column is `activity`.
+  const rawActivity = data.activity ?? data.title;
+  const activity = typeof rawActivity === 'string' ? rawActivity.trim() : '';
+  if (!activity) {
+    return { type: 'CREATE_TASK', success: false, message: 'Missing activity (the task name)' };
   }
+
+  const milestoneId = typeof data.milestone_id === 'string' ? data.milestone_id.trim() : '';
+  if (!UUID_RE.test(milestoneId)) {
+    return {
+      type: 'CREATE_TASK',
+      success: false,
+      message: 'No valid milestone_id. A task must belong to one of your milestones; pick one in the Planner and try again.',
+    };
+  }
+
+  const { data: milestone, error: msError } = await db
+    .from('milestones')
+    .select('id, goals!inner(id, roadmaps!inner(id, user_id))')
+    .eq('id', milestoneId)
+    .eq('goals.roadmaps.user_id', userId)
+    .maybeSingle();
+  if (msError) {
+    return { type: 'CREATE_TASK', success: false, message: msError.message };
+  }
+  if (!milestone) {
+    return {
+      type: 'CREATE_TASK',
+      success: false,
+      message: 'That milestone was not found in your roadmaps. Pick one of your milestones and try again.',
+    };
+  }
+
+  const rawTag = typeof data.tag === 'string' ? data.tag.trim().toUpperCase() : '';
+  const tag: TaskTag = (TAGS as string[]).includes(rawTag) ? (rawTag as TaskTag) : 'LIFESTYLE';
+  const date = typeof data.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data.date)
+    ? data.date
+    // Server-side fallback: this is the UTC date, not the user's local date.
+    : new Date().toISOString().split('T')[0];
+  const time = typeof data.time === 'string' && /^\d{2}:\d{2}(:\d{2})?$/.test(data.time) ? data.time : '09:00';
+  const description = typeof data.description === 'string' && data.description.trim()
+    ? data.description.trim()
+    : null;
 
   const { data: task, error } = await db
     .from('tasks')
     .insert({
-      user_id: userId,
       milestone_id: milestoneId,
-      title,
-      date: (data.date as string) || new Date().toISOString().split('T')[0],
-      priority: (data.priority as string) || 'medium',
-      activity: (data.activity as string) || null,
+      date,
+      time,
+      activity,
+      description,
+      tag,
+      priority: toTaskPriority(data.priority),
+      completed: false,
       status: 'active',
     })
     .select('id')
@@ -263,7 +318,7 @@ async function createTask(
   return {
     type: 'CREATE_TASK',
     success: true,
-    message: `Task "${title}" created`,
+    message: `Task "${activity}" created for ${date} at ${time}`,
     entityId: task.id,
   };
 }

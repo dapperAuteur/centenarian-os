@@ -31,7 +31,6 @@ interface Transaction {
   notes: string | null;
   created_at: string;
   updated_at: string;
-  teller_transaction_id: string | null;
   dispute_status: string | null;
   dispute_date: string | null;
   dispute_notes: string | null;
@@ -71,7 +70,8 @@ const SOURCE_LABELS: Record<string, string> = {
   interest: 'Interest',
   recurring: 'Recurring',
   scan: 'Scan',
-  bank_sync: 'Bank Sync',
+  // Historic rows from the removed bank-linking integration. The stored value stays 'bank_sync'.
+  bank_sync: 'Bank import',
 };
 
 export default function TransactionDetailPage() {
@@ -298,7 +298,7 @@ export default function TransactionDetailPage() {
           >
             <Trash2 className="w-3.5 h-3.5" /> Delete
           </button>
-          {actionLoading && <Loader2 className="w-4 h-4 animate-spin text-gray-400 self-center" />}
+          {actionLoading && <Loader2 className="w-4 h-4 animate-spin text-gray-400 self-center" aria-label="Loading..." />}
         </div>
       </div>
 

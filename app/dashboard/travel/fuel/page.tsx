@@ -13,6 +13,7 @@ import ActivityLinker from '@/components/ui/ActivityLinker';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import CategorySelect from '@/components/finance/CategorySelect';
 import Modal from '@/components/ui/Modal';
+import { todayLocal } from '@/lib/dates/local';
 
 interface FuelLog {
   id: string;
@@ -45,7 +46,7 @@ interface FinanceCategory {
 
 const BLANK_FORM = {
   vehicle_id: '',
-  date: new Date().toISOString().split('T')[0],
+  date: todayLocal(),
   odometer_miles: '',
   miles_since_last_fill: '',
   miles_this_month: '',

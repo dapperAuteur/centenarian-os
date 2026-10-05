@@ -12,6 +12,7 @@ import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
 import CategorySelect from '@/components/finance/CategorySelect';
 import Modal from '@/components/ui/Modal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import { todayLocal } from '@/lib/dates/local';
 
 interface InvoiceTemplate {
   id: string;
@@ -96,7 +97,7 @@ export default function InvoicesPage() {
     direction: 'receivable' as 'receivable' | 'payable',
     contact_name: '',
     invoice_number: '',
-    invoice_date: new Date().toISOString().split('T')[0],
+    invoice_date: todayLocal(),
     due_date: '',
     account_id: '',
     brand_id: '',
@@ -139,7 +140,7 @@ export default function InvoicesPage() {
     return true;
   });
 
-  const overdue = invoices.filter((i) => i.status !== 'paid' && i.status !== 'cancelled' && i.due_date && i.due_date < new Date().toISOString().split('T')[0]);
+  const overdue = invoices.filter((i) => i.status !== 'paid' && i.status !== 'cancelled' && i.due_date && i.due_date < todayLocal());
   const totalReceivable = invoices.filter((i) => i.direction === 'receivable' && i.status !== 'paid' && i.status !== 'cancelled').reduce((s, i) => s + Number(i.total) - Number(i.amount_paid), 0);
   const totalPayable = invoices.filter((i) => i.direction === 'payable' && i.status !== 'paid' && i.status !== 'cancelled').reduce((s, i) => s + Number(i.total) - Number(i.amount_paid), 0);
 
@@ -171,7 +172,7 @@ export default function InvoicesPage() {
       setShowCreate(false);
       setForm({
         direction: 'receivable', contact_name: '', invoice_number: '',
-        invoice_date: new Date().toISOString().split('T')[0], due_date: '',
+        invoice_date: todayLocal(), due_date: '',
         account_id: '', brand_id: '', category_id: '', notes: '',
       });
       setLineItems([{ description: '', quantity: '1', unit_price: '' }]);
@@ -344,7 +345,7 @@ export default function InvoicesPage() {
           const badge = STATUS_BADGE[inv.status] ?? STATUS_BADGE.draft;
           const BadgeIcon = badge.Icon;
           const balanceDue = Number(inv.total) - Number(inv.amount_paid);
-          const isOverdue = inv.due_date && inv.due_date < new Date().toISOString().split('T')[0] && inv.status !== 'paid' && inv.status !== 'cancelled';
+          const isOverdue = inv.due_date && inv.due_date < todayLocal() && inv.status !== 'paid' && inv.status !== 'cancelled';
 
           return (
             <div key={inv.id} className={`bg-white border rounded-xl p-4 ${isOverdue ? 'border-red-300' : ''}`}>

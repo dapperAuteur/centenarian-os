@@ -20,7 +20,7 @@ The overlay highlights the relevant UI element by scrolling it into view and add
 Interactive tours cover:
 
 - **Planner** — roadmaps, goals, milestones, and daily task views
-- **Finance** — accounts, transactions, budgets, and bank linking
+- **Finance** — accounts, transactions, budgets, and CSV import
 - **Travel** — vehicles, trips, fuel logs, and maintenance
 - **Health Metrics** — core metrics, enrichment tier, and wearable sync
 - **Workouts & Exercises** — templates, logs, exercise library, Nomad OS

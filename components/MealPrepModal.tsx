@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { MealPrepBatch, Protocol } from '@/lib/types';
 import { X } from 'lucide-react';
+import { todayLocal } from '@/lib/dates/local';
 
 interface MealPrepModalProps {
   isOpen: boolean;
@@ -29,7 +30,7 @@ export function MealPrepModal({ isOpen, onClose, batch, protocols }: MealPrepMod
 
   useEffect(() => {
     const resetForm = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayLocal();
     setProtocolId(protocols[0]?.id || '');
     setDateMade(today);
     setDateFinished('');

@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { ArrowRightLeft, Loader2 } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import { todayLocal } from '@/lib/dates/local';
 
 interface Account {
   id: string;
@@ -28,7 +29,7 @@ export default function TransferModal({ isOpen, onClose, accounts, onSuccess }: 
   const [fromId, setFromId] = useState('');
   const [toId, setToId] = useState('');
   const [amount, setAmount] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(todayLocal());
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -39,7 +40,7 @@ export default function TransferModal({ isOpen, onClose, accounts, onSuccess }: 
     setFromId('');
     setToId('');
     setAmount('');
-    setDate(new Date().toISOString().split('T')[0]);
+    setDate(todayLocal());
     setDescription('');
     setError('');
   }

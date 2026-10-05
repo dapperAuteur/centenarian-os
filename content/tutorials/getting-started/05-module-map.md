@@ -47,8 +47,9 @@ This lesson is a reference. It lists every module in CentenarianOS, what it does
 | **Travel** | `/dashboard/travel` | Unified trip form (simple + multi-stop), public transport library (planes, trains, buses, ferries), booking details per leg (confirmations, seats, hotels), fuel logs with OCR, Garmin import, trip budgets, sharing, vehicle maintenance, bike savings. | Yes |
 | **Equipment** | `/dashboard/equipment` | Catalog gear and possessions. Categories, purchase price, current value, valuation history with charts. Link to financial transactions. Cross-module activity links. Summary dashboard with depreciation and ROI. | Yes |
 | **Categories** | `/dashboard/categories` | Life Categories — tag any item across all modules with high-level life areas (Health, Finance, Career, Fitness, etc.). Analytics dashboard with spending breakdown, activity charts, and uncategorized items view for quick batch tagging. | Yes |
-| **Media** | `/dashboard/media` | Track books, TV, movies, music, podcasts, art. Status tracking, ratings, rich notes (quotes, reviews, podcast prep). Podcast episode linking for content creators. | Yes |
 | **Data Hub** | `/dashboard/data` | Centralized import/export hub for all modules. CSV templates, Google Sheets integration, date-range exports. | Yes |
+
+> **Media moved to Stream.WitUS.** The Media Tracker is no longer part of CentenarianOS. If you tracked media here, open `/dashboard/media` (read-only), click **Export my media (CSV)**, and import that file in Stream.WitUS.
 
 ---
 
@@ -102,7 +103,6 @@ These features work across multiple modules:
 /dashboard/finance       — Financial Dashboard
 /dashboard/travel        — Travel & Vehicles
 /dashboard/equipment     — Equipment Tracker
-/dashboard/media         — Media Tracker
 /dashboard/categories    — Life Categories
 /dashboard/data          — Data Hub
 /dashboard/blog          — Blog

@@ -1,6 +1,6 @@
 # CentenarianOS — Migrations Gallery
 
-> **198 sequential migrations across 14 modules**, shipped solo since project inception. Schema lives in a Supabase Postgres database **shared with a sibling product** (Work.WitUS / contractor-os), so every migration has to be additive, RLS-aware, and cross-app-safe.
+> **203 migrations across 14 modules**, shipped solo since project inception. Schema lives in a Supabase Postgres database **shared with a sibling product** (Work.WitUS / contractor-os), so every migration has to be additive, RLS-aware, and cross-app-safe.
 
 > **Decomposition note.** CentenarianOS is being decomposed toward the ecosystem's "one app,
 > one job" rule, so some modules below (Media, Academy, Travel, contractor residue) are
@@ -9,7 +9,7 @@
 > late stage, run against a DB clone first. Do not pre-emptively drop a table because its
 > module is slated to move.
 
-This doc is the visible evidence behind that headline. The full source is under [`supabase/migrations/`](./supabase/migrations/). Counts last refreshed 2026-08-27 from a live `ls supabase/migrations/*.sql | wc -l`.
+This doc is the visible evidence behind that headline. The full source is under [`supabase/migrations/`](./supabase/migrations/). Headline count last refreshed 2026-10-03 from a live `ls supabase/migrations/*.sql | wc -l`; the per-module counts below were last curated 2026-08-27.
 
 ---
 

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import MetricUnlockModal from '@/components/metrics/MetricUnlockModal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
+import { todayLocal } from '@/lib/dates/local';
 
 interface MetricConfig {
   metric_key: string;
@@ -67,7 +68,7 @@ export default function MetricsDashboardPage() {
   const [saved, setSaved] = useState(false);
   const [unlockTarget, setUnlockTarget] = useState<MetricConfig | null>(null);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayLocal();
 
   const load = useCallback(async () => {
     setLoading(true);

@@ -30,7 +30,7 @@ The Finance module tracks two things:
 
 ### What It Doesn't Track
 
-No bank account integration. No automatic import from your bank, credit card, or Venmo. You enter transactions manually or import via CSV. This is intentional — keeping the system simple and avoiding the OAuth complexity of banking APIs — but it means Finance works best when you either log transactions regularly (daily or weekly) or do a bulk import from your bank's CSV export at the end of each month.
+No bank connection and no automatic import. CentenarianOS doesn't link to your bank, credit card, or payment apps like Venmo, and nothing imports on its own. You enter transactions manually or import a CSV. To bring in bank transactions, download a statement CSV from your bank and import it (Lesson 06); a guided statement import is coming. Finance works best when you log transactions regularly (daily or weekly) or do a bulk import from your bank's CSV export at the end of each month.
 
 ---
 
@@ -84,7 +84,7 @@ The Finance module is the dedicated ledger. Use it for your actual household and
 ## Key Takeaways
 
 - Finance tracks budget categories (monthly targets) and transactions (income + expenses)
-- No bank integration — manual entry or CSV import
+- No bank connection: transactions come in by manual entry or CSV import, including a statement CSV downloaded from your bank
 - Dashboard: summary cards (month totals), 6-month trend chart, spending by category, budget progress bars
 - Finance connects to: Engine daily debrief (quick daily notes), Planner task financials (project-level cost/revenue)
 - Works best with regular logging (daily or weekly) or a monthly bulk import from your bank's CSV export
@@ -217,7 +217,7 @@ You can create a category with a $0 monthly budget. This means the category stil
 - Deleting a category with transactions requires reassigning those transactions — prefer renaming over deleting
 - Color matters: distinct colors make the spending pie chart readable at a glance
 ",markdown,,,,,,
-Lessons,1,3,Logging Transactions,text,300,true,,"# Lesson 03: Logging Transactions
+Lessons,1,3,Logging Transactions,text,360,true,,"# Lesson 03: Logging Transactions
 
 **Course:** Mastering Finance
 **Module:** Daily Use
@@ -255,6 +255,19 @@ From the Finance dashboard, click **+ Add Transaction**. The transaction modal o
 **Vendor** (optional) — The business or person you paid or received from. ""Whole Foods"", ""Amazon"", ""Client Name"", ""Apple"". Vendor data is useful for searching your transaction history (""show me all Amazon transactions this year"") and for the spending-by-vendor breakdown in analytics.
 
 Click **Save**. The transaction is logged immediately and your dashboard stats update.
+
+---
+
+### Teaching CentenarianOS Your Vendors
+
+If you gave the transaction both a vendor and a category, a small prompt appears at the top of the dashboard after you save:
+
+> Always categorize 'Whole Foods' as Groceries? **[Always]** **[Just this once]**
+
+- **Always** makes Groceries the learned category for Whole Foods. From then on, any Whole Foods transaction that arrives without a category gets Groceries automatically, whether you add it by hand, scan a receipt, or import a CSV. You'll then be offered the chance to apply Groceries to your past Whole Foods transactions too, with the count shown before anything changes.
+- **Just this once** changes nothing else.
+
+The prompt only appears when the vendor has no learned category yet, or has a different one. If you leave Category empty for a vendor that already has a learned category, the transaction gets that category when it saves. A category you pick yourself always wins.
 
 ---
 
@@ -317,6 +330,8 @@ One vendor visit can span multiple categories — a Target run that includes gro
 
 > [SCREEN: Click Save — modal closes — dashboard stats update]
 
+> [SCREENSHOT: The ""Always categorize 'Whole Foods' as Groceries?"" prompt at the top of the dashboard — callout: ""Always teaches the vendor's category; Just this once changes nothing else""]
+
 > [SCREENSHOT: Dashboard after save — Expenses summary card shows updated total — Groceries budget progress bar has advanced]
 
 > [SCREEN: Click ""+ Add Transaction"" again — add an Income transaction: $2,400, Business Income, ""March retainer payment"", vendor ""Client Co.""]
@@ -337,6 +352,7 @@ One vendor visit can span multiple categories — a Target run that includes gro
 - Split a single vendor visit into multiple transactions if it spans multiple categories
 - Description should be recognizable at a glance weeks later — not a full receipt, not a useless vague label
 - Vendor field enables vendor-level search and spending analysis in transaction history
+- After saving a vendor + category, answer ""Always"" to have that vendor's future transactions categorized automatically, or ""Just this once"" to leave it at this one
 ",markdown,,,,,,
 Lessons,1,4,Reading Your Dashboard,text,300,true,,"# Lesson 04: Reading Your Dashboard
 
@@ -458,7 +474,7 @@ The dashboard is a diagnostic, not a report. The right response to what you see:
 - Use progress bars as pre-purchase context: ""How much is left in this category this month?""
 - Net consistently negative = address it; category consistently over budget = either raise the target or reduce spending
 ",markdown,,,,,,
-Lessons,1,5,Transaction History,text,300,true,,"# Lesson 05: Transaction History
+Lessons,1,5,Transaction History,text,360,true,,"# Lesson 05: Transaction History
 
 **Course:** Mastering Finance
 **Module:** Transaction Management
@@ -521,6 +537,8 @@ Common reasons to edit:
 - **Incomplete vendor** — you left it blank but want to add it for better analytics
 - **Amount error** — typo in the amount
 
+When you set or change the category of a transaction that has a vendor, a prompt appears above the list: ""Always categorize 'CHIPOTLE' as Dining? [Always] [Just this once]"". **Always** makes it that vendor's learned category, so its future transactions (including receipt scans and CSV imports) are categorized automatically, and then offers to apply it to the vendor's past transactions, showing how many first. **Just this once** changes nothing else.
+
 ---
 
 ### Deleting a Transaction
@@ -538,7 +556,9 @@ Don't delete transactions just because they were over-budget or you regret the e
 
 ### Bulk Reassignment
 
-If you imported data and several transactions landed in the wrong category (or are uncategorized), you can edit them one by one. For large batches, the import tool (Lesson 06) supports category assignment at import time — a more efficient approach than manual bulk editing.
+If several transactions landed in the wrong category (or are uncategorized), tick the checkbox on each row (or the header checkbox for the whole page). A bar appears where you can **Set category**, set a brand, or add a life tag, then click **Apply**.
+
+If every transaction you selected is from the same vendor, the ""Always categorize this vendor as ...?"" prompt appears after you apply, so you can make the choice stick for that vendor's future transactions.
 
 ---
 
@@ -573,6 +593,8 @@ The transaction history is your ledger for tax and financial planning purposes. 
 
 > [SCREENSHOT: Edit form — callout: ""All fields editable — category reassignment is the most common edit""]
 
+> [SCREENSHOT: The ""Always categorize ... as ...?"" prompt above the list after saving — callout: ""Always / Just this once""]
+
 > [SCREEN: Click Delete on a transaction — confirmation prompt — cancel (don't delete for demo)]
 
 > [SCREEN: Clear all filters — show the full unfiltered list]
@@ -586,11 +608,13 @@ The transaction history is your ledger for tax and financial planning purposes. 
 - Transaction history at /dashboard/finance/transactions — all transactions, most recent first
 - Filter by: date range, type (expense/income), category, vendor, description keyword — filters stack
 - Edit any transaction: fix category, amount, date, vendor, description
+- Changing a category offers ""Always"" (the vendor's future transactions get it too) or ""Just this once""
+- Select rows to bulk-set a category, brand, or life tag
 - Delete is permanent — use for duplicates and errors, not for over-budget regret
 - Vendor search is powerful: ""Amazon"" finds every Amazon transaction across all time
 - Year-end: filter to Jan 1–Dec 31, export CSV for accountant or tax purposes
 ",markdown,,,,,,
-Lessons,1,6,Importing and Exporting,text,300,true,,"# Lesson 06: Importing and Exporting
+Lessons,1,6,Importing and Exporting,text,360,true,,"# Lesson 06: Importing and Exporting
 
 **Course:** Mastering Finance
 **Module:** Data Management
@@ -644,6 +668,8 @@ This is the most time-consuming step, especially on first import. For each row (
 
 The table supports bulk category assignment: select multiple rows of the same type and assign them all to a category at once.
 
+Rows you leave without a category (or whose category name doesn't match one of yours) still get one if their vendor has a learned category, the one you set by answering ""Always"" to the categorize prompt (Lessons 03 and 09).
+
 **Step 4: Set the vendor field (optional)**
 If your bank descriptions include merchant names, the tool may parse them into the Vendor field automatically. Review and correct as needed.
 
@@ -683,9 +709,11 @@ The exported CSV includes all transaction fields: Date, Type, Amount, Category, 
 
 ### No Automatic Sync
 
-CentenarianOS Finance doesn't connect directly to bank accounts or Plaid. The import process is intentionally manual — you download from your bank, review what you're importing, and categorize with intent.
+CSV import is intentionally manual — you download from your bank, review what you're importing, and categorize with intent.
 
-This has two advantages: you review your transactions before they enter the system (catching errors or fraud), and there are no OAuth connections to banking credentials in CentenarianOS.
+This has two advantages: you review your transactions before they enter the system (catching errors or fraud), and CSV import never needs a connection to your bank.
+
+CentenarianOS has no bank connection, so importing a statement CSV is the way to bring in bank transactions. A guided statement import is coming.
 
 ---
 
@@ -723,11 +751,12 @@ This has two advantages: you review your transactions before they enter the syst
 
 - Import from any bank's CSV export: upload the file or paste raw CSV text
 - Import workflow: parse → review table → assign type + category (bulk assign supported) → import
+- Uncategorized rows from a vendor with a learned category get that category on import
 - Duplicate detection: same date + amount + description skips on re-import
 - Do monthly imports (30 days at a time) for best efficiency and freshness
 - Export uses your current filter — filter by year or category before exporting for targeted outputs
 - Export CSV is your shareable ledger: tax prep, accountant, spreadsheet analysis, backup
-- No direct bank connection — intentionally manual for security and intentional categorization
+- CSV import is intentionally manual, for review and intentional categorization; there is no bank connection, so a statement CSV is how bank transactions come in
 ",markdown,,,,,,
 Lessons,1,7,Managing Financial Accounts,text,240,true,,"# Lesson 07: Managing Financial Accounts
 
@@ -954,7 +983,7 @@ The entire chain — spending, ownership, and revenue — is traceable across mo
 - Activity links connect transactions to equipment, trips, and tasks for cross-module tracing
 - Income transactions linked to equipment contribute to ROI calculations
 ",markdown,,,,,,
-Lessons,1,9,Saved Contacts & Vendor Autocomplete,text,240,true,,"# Lesson 09: Saved Contacts & Vendor Autocomplete
+Lessons,1,9,Saved Contacts & Vendor Autocomplete,text,300,true,,"# Lesson 09: Saved Contacts & Vendor Autocomplete
 
 **Course:** Mastering Your Finances
 **Module:** Contacts
@@ -1005,6 +1034,28 @@ The save operation is an upsert — if a contact with the same name and type alr
 
 ---
 
+### Learned Categories: ""Always"" or ""Just this once""
+
+You don't have to set default categories by hand. Whenever you pick or change a transaction's category (in the Add Transaction form, when editing a row in the transaction list, or with a bulk category change on rows from one vendor), a prompt appears on the page:
+
+> Always categorize 'CHIPOTLE' as Dining? **[Always]** **[Just this once]**
+
+- **Always** saves Dining as the default category on the Chipotle contact, creating the contact if you hadn't saved it yet. That default is the vendor's **learned category**.
+- **Just this once** changes nothing else.
+
+After Always, you're offered the chance to apply Dining to Chipotle's past transactions. The prompt shows how many there are, and how many have no category, before anything changes. You can update all of them or only the uncategorized ones.
+
+A learned category is applied automatically to that vendor's new transactions that arrive without one:
+- transactions you add by hand with Category left empty
+- receipt scans (a learned category wins over the AI's guess)
+- CSV imports
+
+Vendor names are compared ignoring capitalization, store numbers, and punctuation, so ""CHIPOTLE #1234"", ""Chipotle"", and ""TST* Chipotle"" all count as the same vendor. Expenses use your saved **vendors**; income uses your saved **customers** (payers). A category you choose yourself always wins. To change or stop a learned category, edit the contact's default category.
+
+The prompt doesn't appear when the vendor already has the category you chose, so you'll only see it when there's something new to learn.
+
+---
+
 ### Managing Contacts
 
 Navigate to the contacts management area to:
@@ -1046,6 +1097,10 @@ In the Finance module, locations aren't used directly — the vendor name and ca
 
 > [SCREEN: Click Save — set default category to ""Dining"" — show the contact saved]
 
+> [SCREEN: Change a Chipotle transaction's category to Dining — the ""Always categorize 'CHIPOTLE' as Dining?"" prompt appears — click Always — the ""Apply Dining to N past transactions"" offer appears]
+
+> [SCREENSHOT: Past-transactions offer — callout: ""Count shown before anything changes; update all or only the uncategorized""]
+
 > [SCREEN: Navigate to contacts management — show the list with use counts]
 
 ---
@@ -1055,6 +1110,8 @@ In the Finance module, locations aren't used directly — the vendor name and ca
 - Saved Contacts store vendor/customer names with default budget categories
 - ContactAutocomplete: type 2+ chars → dropdown → click to auto-fill vendor + category
 - ""Save?"" prompt appears for new vendors — upserts to avoid duplicates
+- After you categorize a transaction, ""Always"" teaches the vendor's category (its default category); ""Just this once"" changes nothing else
+- Learned categories fill in manual entries left uncategorized, receipt scans, and CSV imports
 - Contacts are shared across Finance, Travel, and Planner modules
 - Contacts can have multiple locations (sub-addresses) used primarily in Travel and Planner
 ",markdown,,,,,,
