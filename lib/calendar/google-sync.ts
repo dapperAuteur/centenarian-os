@@ -28,7 +28,12 @@
 //   SAVED    calendar_sync_items (one row per event; tasks.source_type = 'google_calendar',
 //            tasks.source_id = calendar_sync_items.id), the calendar's new sync token and
 //            last_synced_at, and on the connection last_synced_at, last_error and
-//            last_sync_summary (migration 205).
+//            last_sync_summary (migration 205). Since migration 216 each written row also keeps
+//            starts_at, ends_at, all_day, time_zone and location (lib/calendar/event-times.ts);
+//            before 216 is applied those columns are skipped and nothing else changes.
+//   FEED     After the run, the rows it wrote are offered to RideWitUS as calendar.activity
+//            events (lib/ridewitus/emit-calendar-activity.ts). Only calendars the user shares
+//            send anything; a feed problem never fails the sync.
 //
 // `db` must be a SERVICE-ROLE client: calendar_connections is closed to browser roles, and
 // the cron has no user session. Every task / item query is scoped by the connection's user_id.
@@ -42,6 +47,8 @@ import { GoogleAuthError, listEvents, type GoogleClientOptions, type GoogleEvent
 import { getConnectionById, throwDbError, withAccessToken, type CalendarConnection } from '@/lib/google/connection';
 import { describeCalendarError } from '@/lib/google/route-helpers';
 import { fetchCalendarChanges } from '@/lib/calendar/fetch-changes';
+import { EVENT_TIME_COLUMN_NAMES, eventTimeColumns } from '@/lib/calendar/event-times';
+import { emitChangedItems } from '@/lib/ridewitus/emit-calendar-activity';
 import type { ParsedCapture } from '@/lib/capture/parse-tokens';
 import {
   EMPTY_RECORD_STATE,
@@ -194,6 +201,39 @@ function itemSnapshot(event: GoogleEvent, fields: EventTaskFields | null) {
   };
 }
 
+/** Whether this run can write the migration 216 columns; flips to false at the first "no such column". */
+interface EventTimeState {
+  available: boolean;
+}
+
+/**
+ * Saves when and where the event happens (migration 216) on its sync row. An event without a
+ * usable start (a cancelled event can arrive without one) keeps what was stored. Before
+ * migration 216 is applied the write is skipped for the rest of the run, without an error.
+ */
+async function saveEventTimes(
+  db: SupabaseClient,
+  itemId: string,
+  event: GoogleEvent,
+  timeZone: string | null,
+  state: EventTimeState,
+): Promise<void> {
+  if (!state.available) return;
+  const columns = eventTimeColumns(event, timeZone);
+  if (!columns) return;
+  const { error } = await db.from('calendar_sync_items').update(columns).eq('id', itemId);
+  if (!error) return;
+  const message = error.message ?? '';
+  if (
+    (error.code === '42703' || error.code === 'PGRST204') &&
+    EVENT_TIME_COLUMN_NAMES.some((name) => message.includes(name))
+  ) {
+    state.available = false;
+    return;
+  }
+  throwDbError(error, 'Saving the event time and location');
+}
+
 /** Saves a planned (or cleared) record on the sync row before the record itself is written. */
 async function persistRecord(db: SupabaseClient, itemId: string, state: RecordState, fields: EventTaskFields) {
   const { error } = await db
@@ -245,6 +285,8 @@ async function syncCalendar(
   deadline: number,
   errors: string[],
   clientOptions: GoogleClientOptions,
+  timeState: EventTimeState,
+  touched: string[],
 ): Promise<{ counts: SyncCounts; complete: boolean }> {
   const counts = emptyCounts();
   const userId = conn.user_id;
@@ -338,6 +380,8 @@ async function syncCalendar(
           })
           .eq('id', item.id);
         if (itemError) throwDbError(itemError, 'Saving the synced event');
+        await saveEventTimes(db, item.id, event, timeZone, timeState);
+        touched.push(item.id);
         counts.archived += 1;
         if (record.review) counts.flagged += 1;
         continue;
@@ -371,6 +415,8 @@ async function syncCalendar(
           })
           .eq('id', item.id);
         if (itemError) throwDbError(itemError, 'Saving the synced event');
+        await saveEventTimes(db, item.id, event, timeZone, timeState);
+        touched.push(item.id);
         counts.updated += 1;
         if (record.created) counts.records += 1;
         if (fields.parseStatus === 'flagged' || record.review) counts.flagged += 1;
@@ -461,6 +507,8 @@ async function syncCalendar(
           })
           .eq('id', itemId);
         if (itemError) throwDbError(itemError, 'Saving the synced event');
+        await saveEventTimes(db, itemId, event, timeZone, timeState);
+        touched.push(itemId);
         counts.created += 1;
         if (record.created) counts.records += 1;
         if (fields.parseStatus === 'flagged' || record.review) counts.flagged += 1;
@@ -478,6 +526,8 @@ async function syncCalendar(
           .update({ ...itemSnapshot(event, fields), ...keep, etag: event.etag ?? null, connection_id: conn.id, updated_at: now })
           .eq('id', item.id);
         if (error) throwDbError(error, 'Saving the synced event');
+        await saveEventTimes(db, item.id, event, timeZone, timeState);
+        touched.push(item.id);
       }
     } catch (err) {
       eventFailures += 1;
@@ -554,13 +604,15 @@ export async function syncConnection(
   summary.calendars_total = calendars.length;
 
   let partial = false;
+  const timeState: EventTimeState = { available: true };
+  const touched: string[] = [];
   for (const cal of calendars) {
     if (Date.now() >= deadline) {
       partial = true;
       break;
     }
     try {
-      const result = await syncCalendar(db, conn, cal, deadline, summary.errors, clientOptions);
+      const result = await syncCalendar(db, conn, cal, deadline, summary.errors, clientOptions, timeState, touched);
       summary.counts = addCounts(summary.counts, result.counts);
       summary.calendars_synced += 1;
       if (!result.complete) partial = true;
@@ -598,6 +650,13 @@ export async function syncConnection(
   if (error) {
     console.error(`${LABEL} could not save the sync result for ${conn.id}:`, error.message);
     pushError(summary.errors, 'The sync ran, but its result could not be saved.');
+  }
+
+  // The RideWitUS calendar feed: the rows this run wrote, for calendars the user shares. Never
+  // throws; a delivery problem is logged by the emitter and does not change the sync result.
+  if (touched.length > 0) {
+    const feed = await emitChangedItems(db, conn.user_id, touched);
+    if (feed.failed > 0) console.error(`${LABEL} ${feed.failed} calendar activity event(s) did not reach RideWitUS.`);
   }
   return summary;
 }
