@@ -1,0 +1,135 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//CentenarianOS//Calendar event examples//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:CentenarianOS examples
+BEGIN:VEVENT
+UID:example-expense-en-2027-01-04@centenarianos.com
+DTSTAMP:20261005T000000Z
+DTSTART:20270104T100000
+DTEND:20270104T103000
+SUMMARY:Example: Groceries Corner Market #expense $42.18
+DESCRIPTION:Example: Expense (English). An expense needs an amount. Write i
+ t with a $ sign so no other number is mistaken for it. Delete this event w
+ hen you are done testing.
+LOCATION:Corner Market
+END:VEVENT
+BEGIN:VEVENT
+UID:example-expense-es-2027-01-04@centenarianos.com
+DTSTAMP:20261005T000000Z
+DTSTART:20270104T110000
+DTEND:20270104T113000
+SUMMARY:Example: Compras Mercado Central #gasto $42.18
+DESCRIPTION:Example: Expense (Spanish). An expense needs an amount. Write i
+ t with a $ sign so no other number is mistaken for it. Delete this event w
+ hen you are done testing.
+LOCATION:Corner Market
+END:VEVENT
+BEGIN:VEVENT
+UID:example-income-en-2027-01-04@centenarianos.com
+DTSTAMP:20261005T000000Z
+DTSTART:20270104T150000
+DTEND:20270104T153000
+SUMMARY:Example: Client payment Acme Studio #income $1500.00
+DESCRIPTION:Example: Income (English). Income works like an expense: the wo
+ rds are who paid\, the $ amount is how much. Delete this event when you ar
+ e done testing.
+END:VEVENT
+BEGIN:VEVENT
+UID:example-income-es-2027-01-04@centenarianos.com
+DTSTAMP:20261005T000000Z
+DTSTART:20270104T160000
+DTEND:20270104T163000
+SUMMARY:Example: Pago de cliente Acme Studio #ingreso $1500.00
+DESCRIPTION:Example: Income (Spanish). Income works like an expense: the wo
+ rds are who paid\, the $ amount is how much. Delete this event when you ar
+ e done testing.
+END:VEVENT
+BEGIN:VEVENT
+UID:example-trip-en-2027-01-04@centenarianos.com
+DTSTAMP:20261005T000000Z
+DTSTART:20270105T073000
+DTEND:20270105T081500
+SUMMARY:Example: To the trailhead #trip 7.8mi mode:bike
+DESCRIPTION:Example: Trip (English). A trip needs a distance in mi or km (k
+ m is converted to miles). mode: is optional\; without it a word like Drive
+  or bici in the title counts. Delete this event when you are done testing.
+LOCATION:Riverside Trailhead
+END:VEVENT
+BEGIN:VEVENT
+UID:example-trip-es-2027-01-04@centenarianos.com
+DTSTAMP:20261005T000000Z
+DTSTART:20270105T083000
+DTEND:20270105T091500
+SUMMARY:Example: Al parque #viaje 12.5km mode:bici
+DESCRIPTION:Example: Trip (Spanish). A trip needs a distance in mi or km (k
+ m is converted to miles). mode: is optional\; without it a word like Drive
+  or bici in the title counts. Delete this event when you are done testing.
+LOCATION:Riverside Trailhead
+END:VEVENT
+BEGIN:VEVENT
+UID:example-meal-en-2027-01-04@centenarianos.com
+DTSTAMP:20261005T000000Z
+DTSTART:20270106T123000
+DTEND:20270106T131500
+SUMMARY:Example: Lunch Corner Cafe #meal
+DESCRIPTION:Example: Meal (English). Lunch\, Dinner\, Almuerzo\, Cena and t
+ he like set the meal. Without one\, the start time decides. Delete this ev
+ ent when you are done testing.
+LOCATION:Corner Cafe
+END:VEVENT
+BEGIN:VEVENT
+UID:example-meal-es-2027-01-04@centenarianos.com
+DTSTAMP:20261005T000000Z
+DTSTART:20270106T133000
+DTEND:20270106T141500
+SUMMARY:Example: Almuerzo Café de la Esquina #comida
+DESCRIPTION:Example: Meal (Spanish). Lunch\, Dinner\, Almuerzo\, Cena and t
+ he like set the meal. Without one\, the start time decides. Delete this ev
+ ent when you are done testing.
+LOCATION:Corner Cafe
+END:VEVENT
+BEGIN:VEVENT
+UID:example-workout-en-2027-01-04@centenarianos.com
+DTSTAMP:20261005T000000Z
+DTSTART:20270107T180000
+DTEND:20270107T184500
+SUMMARY:Example: Strength session #workout 45min
+DESCRIPTION:Example: Workout (English). A duration such as 45min or 1h is r
+ ead from the title\, not from the event length. Delete this event when you
+  are done testing.
+LOCATION:Neighborhood gym
+END:VEVENT
+BEGIN:VEVENT
+UID:example-workout-es-2027-01-04@centenarianos.com
+DTSTAMP:20261005T000000Z
+DTSTART:20270107T190000
+DTEND:20270107T194500
+SUMMARY:Example: Sesión de fuerza #entreno 45min
+DESCRIPTION:Example: Workout (Spanish). A duration such as 45min or 1h is r
+ ead from the title\, not from the event length. Delete this event when you
+  are done testing.
+LOCATION:Neighborhood gym
+END:VEVENT
+BEGIN:VEVENT
+UID:example-task-en-2027-01-04@centenarianos.com
+DTSTAMP:20261005T000000Z
+DTSTART:20270108T090000
+DTEND:20270108T093000
+SUMMARY:Example: Call the plumber #task
+DESCRIPTION:Example: Task (English). #task is optional: an event without an
+ y kind tag already becomes a planner task. Delete this event when you are 
+ done testing.
+END:VEVENT
+BEGIN:VEVENT
+UID:example-task-es-2027-01-04@centenarianos.com
+DTSTAMP:20261005T000000Z
+DTSTART:20270108T100000
+DTEND:20270108T103000
+SUMMARY:Example: Llamar al plomero #tarea
+DESCRIPTION:Example: Task (Spanish). #task is optional: an event without an
+ y kind tag already becomes a planner task. Delete this event when you are 
+ done testing.
+END:VEVENT
+END:VCALENDAR

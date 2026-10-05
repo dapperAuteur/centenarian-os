@@ -19,6 +19,8 @@ export const ALL_DAY_TIME = '09:00';
 export const DEFAULT_SYNC_TAG = 'LIFESTYLE';
 /** Longest task description the sync writes. */
 export const MAX_DESCRIPTION_LENGTH = 1000;
+/** Added to the task of a #trip event: trips are not created in CentenarianOS (travel is moving to RideWitUS). */
+export const TRIP_NOTE = "Trip details saved; they'll go to RideWitUS.";
 /** Title for an event with no summary (Google leaves summary out for untitled events). */
 export const UNTITLED_EVENT = '(No title)';
 
@@ -130,6 +132,17 @@ export function parseStatusOf(parsed: ParsedCapture): ParseStatus {
   return parsed.kind === 'task' ? 'task_only' : 'ok';
 }
 
+/** The parse status and, when flagged, the plain-words reason ("no amount found"). */
+export function parseResultOf(parsed: Pick<ParsedCapture, 'kind' | 'warnings'>): {
+  parseStatus: ParseStatus;
+  parseError: string | null;
+} {
+  const warnings = Array.isArray(parsed.warnings) ? parsed.warnings : [];
+  const parseStatus = parseStatusOf({ ...parsed, warnings } as ParsedCapture);
+  const parseError = parseStatus === 'flagged' ? warnings.map((w) => WARNING_TEXT[w] ?? w).join(', ') : null;
+  return { parseStatus, parseError };
+}
+
 export interface EventTaskFields {
   date: string;
   time: string;
@@ -146,7 +159,8 @@ export interface EventTaskFields {
  *   activity     the title without its capture tokens (parseCaptureTitle().cleanTitle); the
  *                raw title when nothing is left.
  *   description  event description (as plain text) + "Location: ..." + a note when the title
- *                had a token the parser could not complete; trimmed to 1000 characters.
+ *                had a token the parser could not complete + TRIP_NOTE for a #trip; trimmed to
+ *                1000 characters.
  *   tag          the connection's default_tag, else LIFESTYLE.
  */
 export function eventToTaskFields(
@@ -159,9 +173,7 @@ export function eventToTaskFields(
 
   const title = (event.summary ?? '').trim() || UNTITLED_EVENT;
   const parsed = parseCaptureTitle(title, { startTime: start.time });
-  const parseStatus = parseStatusOf(parsed);
-  const parseError =
-    parseStatus === 'flagged' ? parsed.warnings.map((w) => WARNING_TEXT[w] ?? w).join(', ') : null;
+  const { parseStatus, parseError } = parseResultOf(parsed);
 
   const sections: string[] = [];
   const description = event.description ? htmlToText(event.description) : '';
@@ -169,6 +181,7 @@ export function eventToTaskFields(
   const location = event.location?.trim();
   if (location) sections.push(`Location: ${location}`);
   if (parseError) sections.push(`Calendar sync: check the title (${parseError}).`);
+  if (parsed.kind === 'trip') sections.push(TRIP_NOTE);
   let text = sections.join('\n\n');
   if (text.length > MAX_DESCRIPTION_LENGTH) text = `${text.slice(0, MAX_DESCRIPTION_LENGTH - 1).trimEnd()}…`;
 
@@ -245,17 +258,20 @@ export function decideSyncAction(event: GoogleEvent, item: SyncItemState | null)
 
 export interface SyncCounts {
   created: number;
+  /** Records (transactions, meal logs, workout logs) created from tagged events. */
+  records: number;
   updated: number;
   archived: number;
   flagged: number;
   unchanged: number;
 }
 
-export const emptyCounts = (): SyncCounts => ({ created: 0, updated: 0, archived: 0, flagged: 0, unchanged: 0 });
+export const emptyCounts = (): SyncCounts => ({ created: 0, records: 0, updated: 0, archived: 0, flagged: 0, unchanged: 0 });
 
 export function addCounts(a: SyncCounts, b: SyncCounts): SyncCounts {
   return {
     created: a.created + b.created,
+    records: (a.records ?? 0) + (b.records ?? 0),
     updated: a.updated + b.updated,
     archived: a.archived + b.archived,
     flagged: a.flagged + b.flagged,

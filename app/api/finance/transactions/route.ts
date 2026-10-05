@@ -2,7 +2,8 @@
 // GET: list transactions with filters (date range, category or ?uncategorized=1, type). A row that is one
 //      side of a transfer comes with `transfer_partner`: the other side and its account.
 //      `?batch=<import_batch_id>` lists the rows of one statement import.
-// POST: create a new transaction (fills a missing category from the vendor's learned category).
+// POST: create a new transaction (fills a missing category from the vendor's learned category;
+//      account, category and brand must be the caller's own, else 400).
 //      The amount is in the account's currency; a row on a foreign-currency account also gets
 //      currency, fx_rate and amount_home (rate to the home currency on the transaction date).
 // PATCH: update a transaction. One side of a transfer can't change its amount or type alone.
@@ -13,12 +14,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { findLearnedCategory } from '@/lib/finance/learned-categories';
+import { createTransaction, fxForRow as fxForRowWith } from '@/lib/capture/create-record';
 import { transferEditConflict } from '@/lib/finance/transfers/pairing';
 import { isMissingColumn, missingTransferColumn } from '@/lib/finance/transfers/schema';
 import { clearTransferGroup, getServiceDb, loadGroupRows } from '@/lib/finance/transfers/server';
 import { withOptionalFx } from '@/lib/finance/fx/totals';
-import { fxFieldsFor, loadAccountCurrency, loadHomeCurrency } from '@/lib/finance/fx/server';
+import { loadHomeCurrency } from '@/lib/finance/fx/server';
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -131,18 +132,9 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ transactions, total: count || 0, home_currency: homeCurrency });
 }
 
-/**
- * The FX columns for a row on `accountId`: {} when the account is in the home currency (or has
- * no currency column yet, before migration 210), so nothing new is sent to the database.
- */
-async function fxForRow(userId: string, accountId: string | null, amount: number, date: string) {
-  if (!accountId || !Number.isFinite(amount)) return {};
-  const db = getServiceDb();
-  const home = await loadHomeCurrency(db, userId);
-  const currency = await loadAccountCurrency(db, userId, accountId, home);
-  if (!currency || currency === home) return {};
-  const { fields } = await fxFieldsFor(db, userId, currency, home, amount, date);
-  return fields;
+/** The FX columns for a row on `accountId` (see fxForRow in lib/capture/create-record.ts). */
+function fxForRow(userId: string, accountId: string | null, amount: number, date: string) {
+  return fxForRowWith(getServiceDb(), userId, accountId, amount, date);
 }
 
 export async function POST(request: NextRequest) {
@@ -150,51 +142,15 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  // Learned category, FX fields and reference checks live in lib/capture/create-record.ts,
+  // shared with the Google Calendar sync.
   const body = await request.json();
-  const {
-    amount, type, description, vendor, transaction_date, category_id, suggested_category_id,
-    account_id, brand_id, tags, notes,
-  } = body;
-
-  if (!amount || !transaction_date) {
-    return NextResponse.json({ error: 'Amount and date are required' }, { status: 400 });
-  }
-
-  // Category, in order: what the user picked; the vendor's learned category
-  // (set by answering "Always" to the categorize prompt); then a suggestion
-  // such as the receipt scanner's guess, so a learned category beats the AI.
-  let resolvedCategoryId: string | null = category_id || null;
-  if (!resolvedCategoryId && typeof vendor === 'string' && vendor.trim()) {
-    resolvedCategoryId = await findLearnedCategory(supabase, user.id, vendor, type || 'expense');
-  }
-  if (!resolvedCategoryId && typeof suggested_category_id === 'string' && suggested_category_id) {
-    resolvedCategoryId = suggested_category_id;
-  }
-
-  const fx = await fxForRow(user.id, account_id || null, parseFloat(amount), transaction_date);
-
-  const { data, error } = await supabase
-    .from('financial_transactions')
-    .insert({
-      ...fx,
-      user_id: user.id,
-      amount: Math.abs(parseFloat(amount)),
-      type: type || 'expense',
-      description: description?.trim() || null,
-      vendor: vendor?.trim() || null,
-      transaction_date,
-      category_id: resolvedCategoryId,
-      account_id: account_id || null,
-      brand_id: brand_id || null,
-      tags: tags || null,
-      notes: notes?.trim() || null,
-      source: 'manual',
-    })
-    .select('*, budget_categories(id, name, color)')
-    .single();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ transaction: data });
+  const result = await createTransaction(supabase, user.id, body ?? {}, {
+    fxDb: getServiceDb(),
+    select: '*, budget_categories(id, name, color)',
+  });
+  if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+  return NextResponse.json({ transaction: result.value });
 }
 
 export async function PATCH(request: NextRequest) {

@@ -16,8 +16,15 @@
 //            task deleted by user   -> not recreated
 //            `completed` is never written by the sync, so a task ticked off in the planner stays ticked.
 //   RECORDS  The title goes through parseCaptureTitle; the result is stored in
-//            calendar_sync_items.parsed / parse_status. Phase 4.2 creates TASKS ONLY: no
-//            transactions, trips, meals or workouts yet (that is phase 4.4).
+//            calendar_sync_items.parsed / parse_status. A tagged event also gets a record next
+//            to its task (phase 4.4, lib/capture/calendar-records.ts): #expense / #income -> a
+//            transaction on the connection's default account, #meal -> a meal log, #workout ->
+//            a workout log. #trip creates no trip (travel is moving to RideWitUS): the parsed
+//            trip stays on the row and the task says so. The record follows later changes only
+//            while nobody edited it; a cancelled event never deletes a transaction. Anything the
+//            sync would not do on its own flags the row (parse_status 'flagged', parse_error says
+//            why; parsed.record_review holds the record part) for the settings page's
+//            "Needs a look" list.
 //   SAVED    calendar_sync_items (one row per event; tasks.source_type = 'google_calendar',
 //            tasks.source_id = calendar_sync_items.id), the calendar's new sync token and
 //            last_synced_at, and on the connection last_synced_at, last_error and
@@ -35,12 +42,24 @@ import { GoogleAuthError, listEvents, type GoogleClientOptions, type GoogleEvent
 import { getConnectionById, throwDbError, withAccessToken, type CalendarConnection } from '@/lib/google/connection';
 import { describeCalendarError } from '@/lib/google/route-helpers';
 import { fetchCalendarChanges } from '@/lib/calendar/fetch-changes';
+import type { ParsedCapture } from '@/lib/capture/parse-tokens';
+import {
+  EMPTY_RECORD_STATE,
+  isRecordType,
+  syncEventRecord,
+  usableDefaultAccount,
+  type RecordOutcome,
+  type RecordState,
+  type RecordValues,
+} from '@/lib/capture/calendar-records';
 import {
   addCounts,
   decideSyncAction,
   emptyCounts,
   eventToTaskFields,
   type EventTaskFields,
+  parseResultOf,
+  type ParseStatus,
   type SyncCounts,
   type SyncItemState,
 } from '@/lib/calendar/event-fields';
@@ -90,6 +109,64 @@ interface CalendarRow {
 
 interface ItemRow extends SyncItemState {
   event_id: string;
+  record_type: string | null;
+  record_id: string | null;
+  parsed: StoredParsed | null;
+  parse_status: ParseStatus | null;
+  parse_error: string | null;
+}
+
+/** calendar_sync_items.parsed: the parser's output plus what the sync knows about the record. */
+type StoredParsed = Record<string, unknown> & {
+  /** The calendar-owned values last written to the record (lib/capture/calendar-records.ts). */
+  record_snapshot?: RecordValues | null;
+  /** Why the record part needs a look, or null. */
+  record_review?: string | null;
+};
+
+/** The record part of a stored row. */
+function recordStateOf(item: ItemRow | null): RecordState {
+  if (!item || !isRecordType(item.record_type) || !item.record_id) return EMPTY_RECORD_STATE;
+  return {
+    record_type: item.record_type,
+    record_id: item.record_id,
+    snapshot: item.parsed?.record_snapshot ?? null,
+  };
+}
+
+/** The parser fields of a stored row, without the record part. */
+function baseParsed(parsed: StoredParsed | null | undefined): Record<string, unknown> {
+  if (!parsed) return {};
+  const { record_snapshot: _snapshot, record_review: _review, ...rest } = parsed;
+  void _snapshot;
+  void _review;
+  return rest;
+}
+
+/**
+ * calendar_sync_items columns for a record state. `base` is the parser part of `parsed`; the
+ * parse status and error are the parser's, unless the record needs a look, which flags the row.
+ */
+function recordColumns(
+  state: RecordState,
+  review: string | null,
+  base: Record<string, unknown>,
+  parseStatus: ParseStatus | null,
+  parseError: string | null,
+) {
+  const columns: Record<string, unknown> = {
+    record_type: state.record_type,
+    record_id: state.record_id,
+    parsed: { ...base, record_snapshot: state.snapshot, record_review: review },
+  };
+  if (review) {
+    columns.parse_status = 'flagged';
+    columns.parse_error = [parseError, review].filter(Boolean).join(' ').slice(0, 1000);
+  } else if (parseStatus) {
+    columns.parse_status = parseStatus;
+    columns.parse_error = parseError;
+  }
+  return columns;
 }
 
 const DEFAULT_BUDGET_MS = 50_000;
@@ -117,6 +194,20 @@ function itemSnapshot(event: GoogleEvent, fields: EventTaskFields | null) {
   };
 }
 
+/** Saves a planned (or cleared) record on the sync row before the record itself is written. */
+async function persistRecord(db: SupabaseClient, itemId: string, state: RecordState, fields: EventTaskFields) {
+  const { error } = await db
+    .from('calendar_sync_items')
+    .update({
+      record_type: state.record_type,
+      record_id: state.record_id,
+      parsed: { ...fields.parsed, record_snapshot: state.snapshot, record_review: null },
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', itemId);
+  if (error) throwDbError(error, 'Saving the planned record');
+}
+
 /** Planner task columns the sync owns. `completed`, `tag`, `priority` and `milestone_id` are left to the user after creation. */
 function taskPatch(fields: EventTaskFields) {
   return { date: fields.date, time: fields.time, activity: fields.activity, description: fields.description };
@@ -133,7 +224,7 @@ async function loadItems(
     const chunk = eventIds.slice(i, i + LOOKUP_CHUNK);
     const { data, error } = await db
       .from('calendar_sync_items')
-      .select('id, event_id, etag, task_id, event_status')
+      .select('id, event_id, etag, task_id, event_status, record_type, record_id, parsed, parse_status, parse_error')
       .eq('user_id', userId)
       .eq('calendar_id', calendarId)
       .in('event_id', chunk);
@@ -172,6 +263,8 @@ async function syncCalendar(
 
   const timeZone = changes.timeZone ?? cal.time_zone;
   const defaultTag = conn.settings?.default_tag ?? null;
+  // Transactions go to the connection's default account, while it is still the user's.
+  const accountId = await usableDefaultAccount(db, userId, conn.settings?.default_account_id ?? null);
 
   // The same event can appear twice across pages of one run; the last copy wins.
   const events = new Map<string, GoogleEvent>();
@@ -218,12 +311,35 @@ async function syncCalendar(
           .update({ status: 'archived', archived_at: now, updated_at: now })
           .eq('id', item.task_id);
         if (error) throwDbError(error, 'Archiving the task');
+        // The record: a transaction is never deleted (flagged instead); an untouched meal or
+        // workout goes with the event.
+        const base = baseParsed(item.parsed);
+        const parsedResult =
+          typeof base.kind === 'string'
+            ? parseResultOf(base as unknown as Pick<ParsedCapture, 'kind' | 'warnings'>)
+            : { parseStatus: null, parseError: null };
+        const record = await syncEventRecord(db, {
+          userId,
+          taskId: item.task_id,
+          mode: 'cancel',
+          fields: null,
+          state: recordStateOf(item),
+          accountId,
+          persist: async () => {},
+        });
         const { error: itemError } = await db
           .from('calendar_sync_items')
-          .update({ ...itemSnapshot(event, null), etag: event.etag ?? null, connection_id: conn.id, updated_at: now })
+          .update({
+            ...itemSnapshot(event, null),
+            ...recordColumns(record, record.review, base, parsedResult.parseStatus, parsedResult.parseError),
+            etag: event.etag ?? null,
+            connection_id: conn.id,
+            updated_at: now,
+          })
           .eq('id', item.id);
         if (itemError) throwDbError(itemError, 'Saving the synced event');
         counts.archived += 1;
+        if (record.review) counts.flagged += 1;
         continue;
       }
 
@@ -235,13 +351,29 @@ async function syncCalendar(
         }
         const { error } = await db.from('tasks').update(patch).eq('id', item.task_id);
         if (error) throwDbError(error, 'Updating the task');
+        const record = await syncEventRecord(db, {
+          userId,
+          taskId: item.task_id,
+          mode: 'update',
+          fields,
+          state: recordStateOf(item),
+          accountId,
+          persist: (state) => persistRecord(db, item.id, state, fields),
+        });
         const { error: itemError } = await db
           .from('calendar_sync_items')
-          .update({ ...itemSnapshot(event, fields), etag: event.etag ?? null, connection_id: conn.id, updated_at: now })
+          .update({
+            ...itemSnapshot(event, fields),
+            ...recordColumns(record, record.review, { ...fields.parsed }, fields.parseStatus, fields.parseError),
+            etag: event.etag ?? null,
+            connection_id: conn.id,
+            updated_at: now,
+          })
           .eq('id', item.id);
         if (itemError) throwDbError(itemError, 'Saving the synced event');
         counts.updated += 1;
-        if (fields.parseStatus === 'flagged') counts.flagged += 1;
+        if (record.created) counts.records += 1;
+        if (fields.parseStatus === 'flagged' || record.review) counts.flagged += 1;
         continue;
       }
 
@@ -304,22 +436,46 @@ async function syncCalendar(
           taskId = task.id as string;
         }
 
-        // 3. Now the etag and the task link: the create is done.
+        // 3. The record a tag asks for (transaction, meal, workout), linked to the task. Its id
+        //    is saved on the row before the insert, so a resumed create reuses it.
+        const rowId = itemId;
+        const record: RecordOutcome = await syncEventRecord(db, {
+          userId,
+          taskId,
+          mode: 'create',
+          fields,
+          state: recordStateOf(item),
+          accountId,
+          persist: (state) => persistRecord(db, rowId, state, fields),
+        });
+
+        // 4. Now the etag and the task link: the create is done.
         const { error: itemError } = await db
           .from('calendar_sync_items')
-          .update({ etag: event.etag ?? null, task_id: taskId, connection_id: conn.id, updated_at: now })
+          .update({
+            ...recordColumns(record, record.review, { ...fields.parsed }, fields.parseStatus, fields.parseError),
+            etag: event.etag ?? null,
+            task_id: taskId,
+            connection_id: conn.id,
+            updated_at: now,
+          })
           .eq('id', itemId);
         if (itemError) throwDbError(itemError, 'Saving the synced event');
         counts.created += 1;
-        if (fields.parseStatus === 'flagged') counts.flagged += 1;
+        if (record.created) counts.records += 1;
+        if (fields.parseStatus === 'flagged' || record.review) counts.flagged += 1;
         continue;
       }
 
       // record_only, or an event without a usable start: refresh the stored row, touch no task.
+      // The record part of `parsed` (snapshot, review) is kept as it was.
       if (item) {
+        const keep = fields
+          ? recordColumns(recordStateOf(item), item.parsed?.record_review ?? null, { ...fields.parsed }, fields.parseStatus, fields.parseError)
+          : {};
         const { error } = await db
           .from('calendar_sync_items')
-          .update({ ...itemSnapshot(event, fields), etag: event.etag ?? null, connection_id: conn.id, updated_at: now })
+          .update({ ...itemSnapshot(event, fields), ...keep, etag: event.etag ?? null, connection_id: conn.id, updated_at: now })
           .eq('id', item.id);
         if (error) throwDbError(error, 'Saving the synced event');
       }

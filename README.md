@@ -106,7 +106,7 @@ No free plan. All users must subscribe to access paid modules.
 
 | Module | Description | Access |
 |--------|-------------|--------|
-| **Planner** | Roadmap, Goals, Milestones, Tasks hierarchy with day/week/month views; one-field task capture into an auto-created Inbox (works offline), searchable goal picker, Inbox filter; Google Calendar sync (read-only, one or more Google accounts; events on the calendars you choose become planner tasks, daily plus Sync now) | Paid |
+| **Planner** | Roadmap, Goals, Milestones, Tasks hierarchy with day/week/month views; one-field task capture into an auto-created Inbox (works offline), searchable goal picker, Inbox filter; Google Calendar sync (read-only, one or more Google accounts; events on the calendars you choose become planner tasks, daily plus Sync now); calendar event builder (build `#expense` / `#trip` / `#meal` titles, see what the parser reads, open Google's prefilled event form), example `.ics` and printable cheat sheet (English and Spanish) | Paid |
 | **Fuel** | Nutrition tracking with NCV framework, USDA/Open Food Facts APIs, auto inventory | Paid |
 | **Engine** | Pomodoro focus sessions, doodle canvas, daily debrief, AI weekly reviews | Paid |
 | **Health Metrics** | RHR, steps, sleep, body composition; Garmin/Oura/WHOOP sync; CSV import | Paid |
@@ -246,8 +246,36 @@ window). Each event becomes a planner task under a "Google Calendar: <calendar n
 (`resolveImportMilestone`, the Inbox when the user has no roadmap); all-day events at 09:00; times in
 the event's or calendar's time zone; moved events move their task, cancelled events archive it,
 completed tasks stay completed, and a task the user deleted is not recreated. Titles go through the
-capture-token parser and the result is stored in `calendar_sync_items.parsed`, but **only tasks are
-created for now**: `#expense`, `#trip` and the other tags do not create records yet (phase 4.4).
+capture-token parser and the result is stored in `calendar_sync_items.parsed`.
+
+**Records from tagged events** (`lib/capture/calendar-records.ts`, phase 4.4): a tagged event keeps
+its task (the calendar anchor) and also gets a record. `#expense` / `#income` create a transaction
+(`source = 'manual'`, tag `google-calendar`, on the account picked per Google account under
+"Account for #expense and #income", in that account's currency); `#meal` a meal log; `#workout` a
+workout log. Transactions and workouts are linked to the task in `activity_links` (meals only
+through `calendar_sync_items.record_type/record_id`, since `activity_links` has no meal type).
+`#trip` creates **no** trip: travel is moving to RideWitUS, so the parsed trip stays on the sync row
+and the task says so. A title with missing data (an `#expense` with no amount) creates only the task.
+The record id and a snapshot of what was written are saved on the sync row before the insert, so a
+retried run never doubles a record. When the event changes, the record follows only while it still
+equals that snapshot; when the event is cancelled, a transaction is **never** deleted, and a meal or
+workout is removed only if untouched. Anything the sync will not do on its own flags the row, and
+the settings page lists it under **Needs a look** (`GET/PATCH /api/calendar/google/review`) with
+links to the task and record. The create rules live in `lib/capture/create-record.ts`
+(`createTransaction`, `createMealLog`, `createWorkoutLog`), shared with
+`POST /api/finance/transactions`, `POST /api/workouts/logs` and the new `POST /api/meals`.
+
+**Writing titles the sync can read:** Calendar Sync -> Event builder
+(`/dashboard/settings/calendar/event-builder`) builds a title from simple fields, runs it through
+the real parser to show what is read and any warnings, copies it, or opens Google's prefilled
+create-event link (`calendar.google.com/calendar/render?action=TEMPLATE&text=…&dates=…&details=…&location=…&ctz=…`;
+Google does not publish a reference for this URL, so the button is labelled unofficial). It also
+downloads the examples as an `.ics` dated in the coming week, for a separate test calendar. The
+helpers live in `lib/capture/event-templates.ts`; `public/templates/calendar-event-examples.ics`
+and `public/templates/calendar-event-cheat-sheet.md` are generated from them
+(`node --experimental-strip-types scripts/generate-calendar-event-templates.ts`) and a unit test
+fails when they drift. The printable cheat sheet page is `/dashboard/settings/calendar/event-builder/cheat-sheet`.
+The ecosystem-wide title grammar is in the witus repo, `docs/calendar-event-conventions.md`.
 
 **Where the tokens live:** `calendar_connections`, encrypted with AES-256-GCM
 (`lib/crypto/tokens.ts`) before they are written. The table has Row Level Security on and no
