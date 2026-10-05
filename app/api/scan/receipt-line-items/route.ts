@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { checkReferences, invalidReferenceMessage } from '@/lib/auth/ownership';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,9 +18,17 @@ export async function POST(request: NextRequest) {
   if (!transaction_id) {
     return NextResponse.json({ error: 'transaction_id is required' }, { status: 400 });
   }
-  if (!items?.length) {
+  if (!Array.isArray(items) || !items.length) {
     return NextResponse.json({ error: 'items array is required' }, { status: 400 });
   }
+
+  // The transaction and the scan must be the caller's own.
+  const refs = await checkReferences(supabaseAdmin, user.id, [
+    { field: 'transaction_id', table: 'financial_transactions', id: transaction_id },
+    { field: 'scan_image_id', table: 'scan_images', id: scan_image_id },
+  ]);
+  if (refs.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
+  if (!refs.ok) return NextResponse.json({ error: invalidReferenceMessage(refs.invalid) }, { status: 400 });
 
   const rows = items.map((item: {
     item_name: string;

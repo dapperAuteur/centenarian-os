@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { isCourseStaff, lessonInCourse } from '@/lib/academy/access';
 
 function getDb() {
   return createServiceClient(
@@ -23,16 +24,22 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
   const db = getDb();
 
+  // The lesson must belong to the course in the URL, or a teacher of one course
+  // could moderate another course's discussions.
+  if (!(await lessonInCourse(db, courseId, lessonId))) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   const { data: post } = await db
     .from('lesson_discussions')
     .select('id, user_id, lesson_id')
     .eq('id', discussionId)
     .eq('lesson_id', lessonId)
-    .single();
+    .maybeSingle();
   if (!post) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const { data: course } = await db.from('courses').select('teacher_id').eq('id', courseId).single();
-  const isTeacher = user.id === course?.teacher_id || user.email === process.env.ADMIN_EMAIL;
+  const { data: course } = await db.from('courses').select('teacher_id, is_published').eq('id', courseId).maybeSingle();
+  const isTeacher = isCourseStaff(course, user, process.env.ADMIN_EMAIL);
   const isAuthor = user.id === post.user_id;
 
   if (!isAuthor && !isTeacher) {
@@ -57,6 +64,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     .from('lesson_discussions')
     .update(updates)
     .eq('id', discussionId)
+    .eq('lesson_id', lessonId)
     .select()
     .single();
 
@@ -73,23 +81,29 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 
   const db = getDb();
 
+  // The lesson must belong to the course in the URL, or a teacher of one course
+  // could moderate another course's discussions.
+  if (!(await lessonInCourse(db, courseId, lessonId))) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   const { data: post } = await db
     .from('lesson_discussions')
     .select('id, user_id, lesson_id')
     .eq('id', discussionId)
     .eq('lesson_id', lessonId)
-    .single();
+    .maybeSingle();
   if (!post) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const { data: course } = await db.from('courses').select('teacher_id').eq('id', courseId).single();
-  const isTeacher = user.id === course?.teacher_id || user.email === process.env.ADMIN_EMAIL;
+  const { data: course } = await db.from('courses').select('teacher_id, is_published').eq('id', courseId).maybeSingle();
+  const isTeacher = isCourseStaff(course, user, process.env.ADMIN_EMAIL);
   const isAuthor = user.id === post.user_id;
 
   if (!isAuthor && !isTeacher) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { error } = await db.from('lesson_discussions').delete().eq('id', discussionId);
+  const { error } = await db.from('lesson_discussions').delete().eq('id', discussionId).eq('lesson_id', lessonId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ ok: true });

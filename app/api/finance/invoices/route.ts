@@ -5,6 +5,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { checkReferences, invalidReferenceMessage } from '@/lib/auth/ownership';
+import { invoiceReferences } from '@/lib/finance/invoice-references';
 
 function getDb() {
   return createServiceClient(
@@ -78,6 +80,11 @@ export async function POST(request: NextRequest) {
   const total = Math.round(subtotal * 100) / 100;
 
   const db = getDb();
+  // Every foreign id in the body must be the caller's own.
+  const refs = await checkReferences(db, user.id, invoiceReferences(body));
+  if (refs.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
+  if (!refs.ok) return NextResponse.json({ error: invalidReferenceMessage(refs.invalid) }, { status: 400 });
+
   const { data: invoice, error } = await db
     .from('invoices')
     .insert({

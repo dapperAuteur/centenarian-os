@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { VEHICLE_EMBED, withVisibleVehicle } from '@/lib/travel/references';
 
 function getDb() {
   return createServiceClient(
@@ -24,7 +25,7 @@ export async function GET(
   const db = getDb();
   const { data, error } = await db
     .from('fuel_logs')
-    .select('*, vehicles(id, nickname, type)')
+    .select(`*, ${VEHICLE_EMBED}`)
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle();
@@ -38,9 +39,11 @@ export async function GET(
       .from('financial_transactions')
       .select('id, amount, transaction_date, description')
       .eq('id', data.transaction_id)
+      // A stored transaction_id is not proof of ownership: only the caller's own.
+      .eq('user_id', user.id)
       .maybeSingle();
     linked_transaction = tx;
   }
 
-  return NextResponse.json({ fuel_log: data, linked_transaction });
+  return NextResponse.json({ fuel_log: withVisibleVehicle(data, user.id), linked_transaction });
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { randomBytes } from 'crypto';
+import { checkOwned } from '@/lib/auth/ownership';
 
 function getDb() {
   return createServiceClient(
@@ -23,6 +24,12 @@ export async function POST(
   const platform = body.platform || 'link';
 
   const db = getDb();
+
+  // Only a workout the caller may see (their own, or a public one) can be
+  // shared and counted in share stats.
+  const visible = await checkOwned(db, user.id, 'workout_templates', id, { allowPublic: true });
+  if (visible.failed) return NextResponse.json({ error: 'Could not share the workout' }, { status: 500 });
+  if (!visible.allowed) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   // Ensure user has a public_alias
   const { data: profile } = await db

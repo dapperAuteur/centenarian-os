@@ -8,6 +8,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { generateLessonSlug, isValidLessonSlug } from '@/lib/academy/slug';
 import { uniqueLessonSlug } from '@/lib/academy/slug-server';
+import { canReadLesson, getCourseAccess, modulePublished } from '@/lib/academy/access';
 
 function getDb() {
   return createServiceClient(
@@ -34,22 +35,34 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   if (error || !lesson) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const { data: course } = await db.from('courses').select('teacher_id, is_sequential, price_type, price').eq('id', courseId).single();
-  const isOwner = user?.id === course?.teacher_id || user?.email === process.env.ADMIN_EMAIL;
-  const isFreeCourse = course?.price_type === 'free' || Number(course?.price) === 0;
+  // Course visibility, draft lessons and modules, enrollment, free preview and
+  // free course: one rule, in lib/academy/access.ts.
+  const access = await getCourseAccess(db, courseId, user);
+  if (!access.course) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  const isOwner = access.isStaff;
+  const enrolled = access.enrolled;
+  const { data: courseFlags } = await db.from('courses').select('is_sequential').eq('id', courseId).maybeSingle();
+  const course = { is_sequential: !!courseFlags?.is_sequential };
 
-  let enrolled = false;
-  if (user && !isOwner) {
-    const { data } = await db
-      .from('enrollments')
-      .select('status')
-      .eq('user_id', user.id)
-      .eq('course_id', courseId)
-      .maybeSingle();
-    enrolled = data?.status === 'active';
+  if (!isOwner) {
+    // A members-only course asks an anonymous visitor to sign in.
+    if (!user && access.course.is_published && access.course.visibility === 'members') {
+      return NextResponse.json({ error: 'Login required to access this lesson', locked: true, login_required: true }, { status: 403 });
+    }
+    // A draft course, lesson or module reads as missing, not as locked.
+    const modPublished = await modulePublished(db, lesson.module_id);
+    if (!access.visible || lesson.is_published === false || modPublished === false) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
   }
 
-  const canAccess = isOwner || enrolled || lesson.is_free_preview || isFreeCourse;
+  const canAccess = canReadLesson({
+    course: access.course,
+    lesson,
+    viewer: user,
+    enrolled,
+    adminEmail: process.env.ADMIN_EMAIL,
+  });
   if (!canAccess) {
     if (!user) {
       return NextResponse.json({ error: 'Login required to access this lesson', locked: true, login_required: true }, { status: 403 });

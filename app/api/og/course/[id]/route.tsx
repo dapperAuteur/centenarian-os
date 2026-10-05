@@ -4,6 +4,7 @@
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { isCourseListed } from '@/lib/academy/access';
 
 export const runtime = 'edge';
 
@@ -20,11 +21,13 @@ export async function GET(_request: NextRequest, { params }: Params) {
   const { id } = await params;
   const db = getDb();
 
-  const { data: course } = await db
+  const { data: row } = await db
     .from('courses')
-    .select('title, description, category, avg_rating, review_count, teacher_id, cover_image_url')
+    .select('title, description, category, avg_rating, review_count, teacher_id, cover_image_url, is_published, visibility, published_at')
     .eq('id', id)
     .maybeSingle();
+  // A draft or not-yet-scheduled course renders the generic card.
+  const course = row && isCourseListed(row) ? row : null;
 
   // Get teacher name
   let teacherName = 'CentenarianOS';

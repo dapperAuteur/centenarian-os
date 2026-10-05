@@ -5,6 +5,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { checkReferences, invalidReferenceMessage, usableReferences } from '@/lib/auth/ownership';
+import { templateStopReferences, travelReferences, VEHICLE_EMBED, withVisibleVehicle } from '@/lib/travel/references';
 
 const CO2_PER_MILE: Record<string, number> = {
   plane: 0.255, car: 0.170, rideshare: 0.170, bus: 0.089,
@@ -26,7 +28,7 @@ export async function GET() {
   const db = getDb();
   const { data, error } = await db
     .from('trip_templates')
-    .select('*, vehicles(nickname, type)')
+    .select(`*, ${VEHICLE_EMBED}`)
     .eq('user_id', user.id)
     .order('use_count', { ascending: false });
 
@@ -50,7 +52,7 @@ export async function GET() {
   }
 
   const templates = (data ?? []).map((t) => ({
-    ...t,
+    ...withVisibleVehicle(t, user.id),
     stops: t.is_multi_stop ? (stopsMap[t.id] || []) : undefined,
   }));
 
@@ -168,7 +170,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ route, trips, template_id: tmpl.id }, { status: 201 });
     }
 
-    // Single-leg template → create single trip
+    // Single-leg template → create single trip. A vehicle saved before
+    // reference checks existed is used only when the caller may reference it.
+    const tmplRefs = await usableReferences(db, user.id, travelReferences({ vehicle_id: tmpl.vehicle_id }));
+    if (tmplRefs.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
     const singleDist = tmpl.distance_miles ? Number(tmpl.distance_miles) : null;
     const singleRt = tmpl.is_round_trip === true;
     const singleFactor = CO2_PER_MILE[tmpl.mode] ?? 0;
@@ -183,7 +188,7 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         date: tripDate,
         mode: tmpl.mode,
-        vehicle_id: tmpl.vehicle_id,
+        vehicle_id: tmplRefs.values.vehicle_id ?? null,
         origin: tmpl.origin,
         destination: tmpl.destination,
         distance_miles: tmpl.distance_miles,
@@ -217,6 +222,13 @@ export async function POST(request: NextRequest) {
   if (!is_multi_stop && !mode) {
     return NextResponse.json({ error: 'mode is required for single-leg templates' }, { status: 400 });
   }
+
+  // The template's vehicle and brand, and each stop's contact, saved location
+  // and vehicle, must be the caller's own (a vehicle may also be a shared
+  // public-transport one).
+  const refs = await checkReferences(db, user.id, [...travelReferences(body), ...templateStopReferences(body.stops)]);
+  if (refs.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
+  if (!refs.ok) return NextResponse.json({ error: invalidReferenceMessage(refs.invalid) }, { status: 400 });
 
   const { data, error } = await db
     .from('trip_templates')

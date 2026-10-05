@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { getCourseAccess, lessonInCourse } from '@/lib/academy/access';
 
 function getDb() {
   return createServiceClient(
@@ -39,20 +40,20 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   const db = getDb();
 
-  // Verify enrollment
-  const { data: enrollment } = await db
-    .from('enrollments')
-    .select('status')
-    .eq('user_id', user.id)
-    .eq('course_id', courseId)
-    .maybeSingle();
+  // The lesson must belong to the course in the URL. Otherwise enrolling in one
+  // (free) course would let a user mark any other course's lessons complete
+  // and read its quiz explanations.
+  const lesson = await lessonInCourse<{ id: string; is_published: boolean | null }>(db, courseId, lessonId);
+  if (!lesson) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  if (enrollment?.status !== 'active') {
-    // Also allow teachers/admin to mark progress
-    const { data: course } = await db.from('courses').select('teacher_id').eq('id', courseId).single();
-    if (course?.teacher_id !== user.id && user.email !== process.env.ADMIN_EMAIL) {
-      return NextResponse.json({ error: 'Not enrolled' }, { status: 403 });
-    }
+  // Active enrollment, or the course's teacher / admin.
+  const access = await getCourseAccess(db, courseId, user);
+  if (!access.course) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (!access.isStaff && !access.enrolled) {
+    return NextResponse.json({ error: 'Not enrolled' }, { status: 403 });
+  }
+  if (!access.isStaff && lesson.is_published === false) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
   const body = await request.json();
@@ -64,7 +65,8 @@ export async function POST(request: NextRequest, { params }: Params) {
       .from('lessons')
       .select('quiz_content, lesson_type')
       .eq('id', lessonId)
-      .single();
+      .eq('course_id', courseId)
+      .maybeSingle();
 
     if (!lesson?.quiz_content || lesson.lesson_type !== 'quiz') {
       return NextResponse.json({ error: 'Not a quiz lesson' }, { status: 400 });

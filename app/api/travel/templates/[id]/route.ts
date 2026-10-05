@@ -4,6 +4,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { checkOwned, checkReferences, invalidReferenceMessage } from '@/lib/auth/ownership';
+import { templateStopReferences, travelReferences, VEHICLE_EMBED, withVisibleVehicle } from '@/lib/travel/references';
 
 function getDb() {
   return createServiceClient(
@@ -24,13 +26,14 @@ export async function GET(
   const db = getDb();
   const { data, error } = await db
     .from('trip_templates')
-    .select('*, vehicles(nickname, type)')
+    .select(`*, ${VEHICLE_EMBED}`)
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  data.vehicles = withVisibleVehicle(data, user.id).vehicles;
 
   // Fetch stops for multi-stop templates
   if (data.is_multi_stop) {
@@ -67,6 +70,18 @@ export async function PATCH(
   }
 
   const db = getDb();
+
+  // Ownership first: the stops below are replaced by template_id.
+  const owned = await checkOwned(db, user.id, 'trip_templates', id);
+  if (owned.failed) return NextResponse.json({ error: 'Could not verify the template' }, { status: 500 });
+  if (!owned.allowed) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  // The template's vehicle and brand, and each stop's contact, saved location
+  // and vehicle, must be the caller's own (a vehicle may also be a shared
+  // public-transport one).
+  const refs = await checkReferences(db, user.id, [...travelReferences(body), ...templateStopReferences(body.stops)]);
+  if (refs.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
+  if (!refs.ok) return NextResponse.json({ error: invalidReferenceMessage(refs.invalid) }, { status: 400 });
 
   // Update template fields
   if (Object.keys(updates).length > 0) {
@@ -107,12 +122,13 @@ export async function PATCH(
   // Return updated template with stops
   const { data, error: fetchErr } = await db
     .from('trip_templates')
-    .select('*, vehicles(nickname, type)')
+    .select(`*, ${VEHICLE_EMBED}`)
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (fetchErr) return NextResponse.json({ error: fetchErr.message }, { status: 500 });
+  if (data) data.vehicles = withVisibleVehicle(data, user.id).vehicles;
 
   if (data?.is_multi_stop) {
     const { data: stops } = await db

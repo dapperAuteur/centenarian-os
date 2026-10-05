@@ -8,6 +8,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { deleteLinkedTransaction, createLinkedTransaction } from '@/lib/finance/linked-transaction';
 import { CO2_PER_MILE, HUMAN_POWERED } from '@/lib/travel/constants';
+import { checkReferences, invalidReferenceMessage } from '@/lib/auth/ownership';
+import { travelReferences, routeLegReferences, VEHICLE_EMBED, withVisibleVehicle } from '@/lib/travel/references';
 
 function getDb() {
   return createServiceClient(
@@ -34,11 +36,16 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   if (!route) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const { data: legs } = await db
+  // Legs are the caller's own trips on this route. The user filter keeps out a
+  // trip someone else pointed at this route id, and the vehicle embed is only
+  // the caller's own or a shared public-transport vehicle.
+  const { data: rawLegs } = await db
     .from('trips')
-    .select('*, vehicles(id, nickname, type)')
+    .select(`*, ${VEHICLE_EMBED}`)
     .eq('route_id', id)
+    .eq('user_id', user.id)
     .order('leg_order', { ascending: true });
+  const legs = (rawLegs ?? []).map((leg) => withVisibleVehicle(leg, user.id));
 
   return NextResponse.json({ route, legs: legs ?? [] });
 }
@@ -60,6 +67,14 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const body = await request.json();
+  const legs = body.legs;
+
+  // The route's brand and every leg's vehicle, job, brand and finance category
+  // must be the caller's own (a vehicle may also be a shared public-transport one).
+  const refs = await checkReferences(db, user.id, [...travelReferences(body), ...routeLegReferences(legs)]);
+  if (refs.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
+  if (!refs.ok) return NextResponse.json({ error: invalidReferenceMessage(refs.invalid) }, { status: 400 });
+
   const allowed = ['name', 'date', 'notes', 'is_round_trip'];
   const metaUpdates = Object.fromEntries(
     Object.entries(body).filter(([k]) => allowed.includes(k)),
@@ -73,7 +88,6 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   // If legs array provided, replace all legs
-  const legs = body.legs;
   let newLegs: Record<string, unknown>[] = [];
 
   if (Array.isArray(legs) && legs.length >= 1) {
@@ -81,13 +95,14 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const { data: oldLegs } = await db
       .from('trips')
       .select('id, transaction_id')
-      .eq('route_id', id);
+      .eq('route_id', id)
+      .eq('user_id', user.id);
 
     const txIds = (oldLegs ?? []).map((l) => l.transaction_id).filter(Boolean) as string[];
     for (const txId of txIds) {
-      try { await deleteLinkedTransaction(db, txId); } catch { /* non-fatal */ }
+      try { await deleteLinkedTransaction(db, user.id, txId); } catch { /* non-fatal */ }
     }
-    await db.from('trips').delete().eq('route_id', id);
+    await db.from('trips').delete().eq('route_id', id).eq('user_id', user.id);
 
     // Create new legs
     let totalDistance = 0;
@@ -174,7 +189,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   } else {
     // No legs change — just propagate date to existing legs if date changed
     if (metaUpdates.date) {
-      await db.from('trips').update({ date: metaUpdates.date }).eq('route_id', id);
+      await db.from('trips').update({ date: metaUpdates.date }).eq('route_id', id).eq('user_id', user.id);
     }
   }
 
@@ -191,6 +206,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       .from('trips')
       .select('*')
       .eq('route_id', id)
+      .eq('user_id', user.id)
       .order('leg_order', { ascending: true });
     newLegs = currentLegs ?? [];
   }
@@ -218,7 +234,8 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   const { data: legs } = await db
     .from('trips')
     .select('id, transaction_id')
-    .eq('route_id', id);
+    .eq('route_id', id)
+    .eq('user_id', user.id);
 
   // Delete linked transactions
   const txIds = (legs ?? [])
@@ -227,12 +244,12 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 
   for (const txId of txIds) {
     try {
-      await deleteLinkedTransaction(db, txId);
+      await deleteLinkedTransaction(db, user.id, txId);
     } catch { /* non-fatal */ }
   }
 
   // Delete all legs
-  await db.from('trips').delete().eq('route_id', id);
+  await db.from('trips').delete().eq('route_id', id).eq('user_id', user.id);
 
   // Delete the route
   const { error } = await db.from('trip_routes').delete().eq('id', id);
