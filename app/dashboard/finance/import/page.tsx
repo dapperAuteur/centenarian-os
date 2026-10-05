@@ -1,16 +1,23 @@
 'use client';
 
 // app/dashboard/finance/import/page.tsx
-// Import a bank or card statement (CSV) into one account, in four steps:
-//   1 Account and file  -> AccountFileStep (the file is parsed in the browser)
-//   2 Columns           -> ColumnsStep (mapping, sign convention, date order)
-//   3 Review            -> ReviewStep (POST /api/finance/import/preview)
+// Import a bank or card statement (CSV or PDF) into one account, in four steps:
+//   1 Account and file  -> AccountFileStep (a CSV is parsed in the browser; a
+//                          PDF is read by POST /api/finance/import/pdf)
+//   2 Columns           -> ColumnsStep (mapping, sign convention, date order;
+//                          skipped for a PDF, whose layout the server knows)
+//   3 Review            -> ReviewStep (POST /api/finance/import/preview), with
+//                          the statement summary and reconciliation for a PDF
 //   4 Done              -> DoneStep (POST /api/finance/import), with Undo
 // plus the Import history list under steps 1 and 4.
 //
 // All state lives here so Back keeps what was entered. The server parses the
-// file again itself: this page only ever sends the file text, the settings,
-// and what to do with each spreadsheet row number.
+// file again itself: this page only ever sends the file (CSV text or PDF
+// base64), the settings, and what to do with each row number.
+//
+// ?from=settings: opened from the Statements box on Settings. A file chosen
+// there is handed over in memory (lib/finance/pdf-import/client.ts) and
+// loaded straight away; without one, the file input gets focus.
 
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -25,18 +32,23 @@ import ReviewStep from '@/components/finance/import/ReviewStep';
 import StepIndicator, { type ImportStep } from '@/components/finance/import/StepIndicator';
 import UndoImportDialog from '@/components/finance/import/UndoImportDialog';
 import {
+  commitPdfStatement,
   commitStatement,
   fetchTransferSuggestionCount,
   listImportBatches,
+  previewPdfStatement,
   previewStatement,
   saveAccountMapping,
   undoImportBatch,
+  type PdfStatementPayload,
   type StatementPayload,
 } from '@/components/finance/import/api';
-import { ErrorNotice, StatusNotice, type ParsedFile } from '@/components/finance/import/shared';
+import { ErrorNotice, StatusNotice, type ParsedFile, type PdfFile } from '@/components/finance/import/shared';
 import { useOnline } from '@/components/finance/import/useOnline';
 import type { ImportBatchSummary, PreviewResponse } from '@/lib/finance/csv-import/service';
 import type { CommitResult, SavedCsvMapping, UndoResult } from '@/lib/finance/csv-import/types';
+import { takePendingStatementFile } from '@/lib/finance/pdf-import/client';
+import type { PdfPreviewResponse } from '@/lib/finance/pdf-import/service';
 import {
   MIGRATION_REQUIRED_TEXT,
   NETWORK_ERROR_TEXT,
@@ -58,6 +70,9 @@ import { offlineFetch } from '@/lib/offline/offline-fetch';
 type LoadState = 'loading' | 'ready' | 'error';
 
 type SettingsOrigin = Pick<InitialSettings, 'mappingSource' | 'signSource' | 'savedIgnored'>;
+
+/** A preview, with the statement summary when the file was a PDF. */
+type Preview = PreviewResponse & Partial<Pick<PdfPreviewResponse, 'statement' | 'accountMatchesStatement'>>;
 
 const STEP_HEADINGS: Record<ImportStep, string> = {
   1: 'Choose the account and the statement',
@@ -83,7 +98,9 @@ export default function FinanceImportPage() {
 }
 
 function StatementImport() {
-  const requestedAccountId = useSearchParams().get('account') ?? '';
+  const searchParams = useSearchParams();
+  const requestedAccountId = searchParams.get('account') ?? '';
+  const fromSettings = searchParams.get('from') === 'settings';
   const online = useOnline();
 
   // What the page loads once.
@@ -101,6 +118,9 @@ function StatementImport() {
   const [accountId, setAccountId] = useState('');
   const [file, setFile] = useState<ParsedFile | null>(null);
   const [pasteText, setPasteText] = useState('');
+  const [pdfFile, setPdfFile] = useState<PdfFile | null>(null);
+  /** A file chosen on Settings, waiting to be loaded by step 1. */
+  const [handedOverFile, setHandedOverFile] = useState<File | null>(null);
   const [settings, setSettings] = useState<ImportSettings | null>(null);
   const [origin, setOrigin] = useState<SettingsOrigin | null>(null);
   /** The account and file the settings were built for: a new pair gets fresh settings. */
@@ -108,7 +128,8 @@ function StatementImport() {
   const fileVersionRef = useRef(0);
 
   // Step 3: the server's plan and the changes made to it.
-  const [preview, setPreview] = useState<PreviewResponse | null>(null);
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const [confirmUnreconciled, setConfirmUnreconciled] = useState(false);
   const [decisions, setDecisions] = useState<Decisions>({});
   const [previewBusy, setPreviewBusy] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -124,6 +145,7 @@ function StatementImport() {
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [transferCount, setTransferCount] = useState(0);
+  const [statementNotice, setStatementNotice] = useState<{ saved: boolean; error?: string } | null>(null);
 
   // Undo, from step 4 or from the history list.
   const [undoTarget, setUndoTarget] = useState<{ id: string; label: string } | null>(null);
@@ -201,6 +223,12 @@ function StatementImport() {
     void loadBatches();
   }, [loadAccounts, loadCategories, loadBatches]);
 
+  // A statement chosen on Settings, handed over in memory (never stored).
+  useEffect(() => {
+    const handed = takePendingStatementFile();
+    if (handed) setHandedOverFile(handed);
+  }, []);
+
   // Moving to another step puts focus on its heading, so a screen reader starts at the top of it.
   // Compared against the last step seen, so nothing takes focus when the page first loads.
   useEffect(() => {
@@ -218,6 +246,7 @@ function StatementImport() {
     setDecisions({});
     setPreviewError(null);
     setImportError(null);
+    setConfirmUnreconciled(false);
   }
 
   function handleAccountChange(nextAccountId: string) {
@@ -229,13 +258,32 @@ function StatementImport() {
     if (next) {
       fileVersionRef.current += 1;
       setFile({ ...next, version: fileVersionRef.current });
+      setPdfFile(null);
     } else {
       setFile(null);
     }
     discardPreview();
   }
 
+  function handlePdfRead(next: Omit<PdfFile, 'version'> | null) {
+    if (next) {
+      fileVersionRef.current += 1;
+      setPdfFile({ ...next, version: fileVersionRef.current });
+      setFile(null);
+      // The statement names its account by the last four digits: choose it when exactly one account fits.
+      if (next.matchingAccountIds.length === 1) setAccountId(next.matchingAccountIds[0]);
+    } else {
+      setPdfFile(null);
+    }
+    discardPreview();
+  }
+
   function goToColumns() {
+    // A PDF has no columns to map: its layout is known to the server.
+    if (pdfFile && account) {
+      void goToReview();
+      return;
+    }
     if (!file || !account) return;
     const key = `${account.id}:${file.version}`;
     if (settingsKeyRef.current !== key || !settings) {
@@ -284,6 +332,11 @@ function StatementImport() {
     };
   }
 
+  function buildPdfPayload(): PdfStatementPayload | null {
+    if (!pdfFile || !account) return null;
+    return { account_id: account.id, pdf_base64: pdfFile.base64, file_name: pdfFile.fileName };
+  }
+
   // ── Step 3 ──────────────────────────────────────────────────────────────
 
   async function goToReview() {
@@ -292,8 +345,9 @@ function StatementImport() {
       setStep(3);
       return;
     }
-    const payload = buildPayload();
-    if (!payload || previewBusy) return;
+    const pdfPayload = buildPdfPayload();
+    const payload = pdfPayload ? null : buildPayload();
+    if ((!payload && !pdfPayload) || previewBusy) return;
     if (!navigator.onLine) {
       setPreviewError(OFFLINE_TEXT);
       return;
@@ -302,7 +356,9 @@ function StatementImport() {
     const token = previewTokenRef.current;
     setPreviewBusy(true);
     setPreviewError(null);
-    const response = await previewStatement(payload);
+    const response: Awaited<ReturnType<typeof previewStatement>> = pdfPayload
+      ? await previewPdfStatement(pdfPayload)
+      : await previewStatement(payload as StatementPayload);
     setPreviewBusy(false);
     // The settings changed while this was on its way: its answer is for a file read differently.
     if (token !== previewTokenRef.current) return;
@@ -318,6 +374,10 @@ function StatementImport() {
   }
 
   async function runImport() {
+    if (pdfFile) {
+      await runPdfImport();
+      return;
+    }
     const payload = buildPayload();
     if (!payload || !preview || !settings || importBusy) return;
     if (!navigator.onLine) {
@@ -327,6 +387,7 @@ function StatementImport() {
 
     setImportBusy(true);
     setImportError(null);
+    setStatementNotice(null);
     const response = await commitStatement({ ...payload, actions: buildRowActions(preview.rows, decisions) });
     setImportBusy(false);
 
@@ -381,10 +442,58 @@ function StatementImport() {
     }
   }
 
+  async function runPdfImport() {
+    const payload = buildPdfPayload();
+    if (!payload || !preview || importBusy) return;
+    if (!navigator.onLine) {
+      setImportError(OFFLINE_TEXT);
+      return;
+    }
+
+    setImportBusy(true);
+    setImportError(null);
+    const response = await commitPdfStatement({
+      ...payload,
+      actions: buildRowActions(preview.rows, decisions),
+      confirm_unreconciled: confirmUnreconciled,
+    });
+    setImportBusy(false);
+
+    if (!response.ok) {
+      if (response.code === 'migration_required') setMigrationNeeded(true);
+      setImportError(
+        response.code === 'network'
+          ? `${response.message} If the import did go through, importing this file again is safe: rows that are already in the account are skipped.`
+          : response.message,
+      );
+      return;
+    }
+
+    const committed = response.data;
+    setResult(committed);
+    setResultAccountName(accountLabel(preview.account));
+    setResultTitle(payload.file_name ?? 'PDF statement');
+    setResultUndo(null);
+    setHistoryUndo(null);
+    setSettingsSaved(false);
+    setSettingsError(null);
+    setTransferCount(0);
+    setStatementNotice({ saved: committed.statementSaved, error: committed.statementError });
+    setStep(4);
+    void loadBatches(true);
+
+    const range = importedDateRange(preview.rows, decisions);
+    if (range && committed.inserted + committed.linked > 0) {
+      void fetchTransferSuggestionCount(range.from, range.to).then(setTransferCount);
+    }
+  }
+
   // ── Step 4 and undo ─────────────────────────────────────────────────────
 
   function startOver() {
     setFile(null);
+    setPdfFile(null);
+    setStatementNotice(null);
     setPasteText('');
     setSettings(null);
     setOrigin(null);
@@ -461,8 +570,8 @@ function StatementImport() {
             Import bank statement
           </h1>
           <p className="mt-0.5 text-sm text-gray-600">
-            Bring in a CSV file you downloaded from your bank or card. You check every row before anything is saved,
-            and an import can be undone.
+            Bring in a CSV or PDF statement you downloaded from your bank or card. PDFs are read inside CentenarianOS
+            and never sent anywhere else. You check every row before anything is saved, and an import can be undone.
           </p>
         </div>
       </header>
@@ -485,6 +594,19 @@ function StatementImport() {
         {STEP_HEADINGS[step]}
       </h2>
 
+      {step === 1 && pdfFile && previewError && (
+        <ErrorNotice>
+          <p>{previewError}</p>
+        </ErrorNotice>
+      )}
+
+      {step === 1 && previewBusy && (
+        <p role="status" className="flex items-center gap-2 text-sm text-gray-700">
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+          Checking the statement against your account...
+        </p>
+      )}
+
       {step === 1 && (
         <AccountFileStep
           accounts={accounts}
@@ -498,6 +620,11 @@ function StatementImport() {
           pasteText={pasteText}
           onPasteTextChange={setPasteText}
           onContinue={goToColumns}
+          pdfFile={pdfFile}
+          onPdfRead={handlePdfRead}
+          initialFile={handedOverFile}
+          onInitialFileUsed={() => setHandedOverFile(null)}
+          autoFocusFile={fromSettings}
         />
       )}
 
@@ -523,12 +650,29 @@ function StatementImport() {
           onDecisionsChange={setDecisions}
           categories={categories}
           onCategoryCreated={handleCategoryCreated}
-          onBack={() => setStep(2)}
+          onBack={() => setStep(pdfFile ? 1 : 2)}
+          backLabel={pdfFile ? 'Back to the file' : undefined}
           onImport={runImport}
           busy={importBusy}
           error={importError}
           online={online}
+          statement={preview.statement ?? null}
+          accountMatchesStatement={preview.accountMatchesStatement ?? null}
+          confirmUnreconciled={confirmUnreconciled}
+          onConfirmUnreconciledChange={setConfirmUnreconciled}
         />
+      )}
+
+      {step === 4 && result && statementNotice && !resultUndo && (
+        statementNotice.saved ? (
+          <StatusNotice tone="success">
+            <p>The statement summary, interest rates and any promotional balances were saved with this account.</p>
+          </StatusNotice>
+        ) : (
+          <StatusNotice tone="warning">
+            <p>{statementNotice.error ?? "The statement summary wasn't saved."}</p>
+          </StatusNotice>
+        )
       )}
 
       {step === 4 && result && (

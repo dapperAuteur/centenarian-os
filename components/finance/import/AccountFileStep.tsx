@@ -2,11 +2,13 @@
 
 // components/finance/import/AccountFileStep.tsx
 // Step 1 of the statement import: choose the account (required), then give
-// the statement as a file or as pasted text. The file is read and parsed in
-// the browser, so this step works without a connection and can say what it
-// found before anything is sent.
+// the statement as a file or as pasted text. A CSV is read and parsed in the
+// browser, so it works without a connection and can say what it found before
+// anything is sent. A PDF is read by CentenarianOS's own server (never by any
+// other service), which says what statement it is and which account ends in
+// the same four digits.
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Download, FileText, Loader2, X } from 'lucide-react';
 import { detectMapping, parseStatementCsv } from '@/lib/finance/csv-import/parse';
@@ -17,10 +19,13 @@ import {
   certainlyTooLarge,
   describeDetection,
   fileSizeProblem,
+  formatIsoDate,
   rowCountProblem,
   sortAccountsForPicker,
   type ImportAccount,
 } from '@/lib/finance/csv-import/ui-helpers';
+import { MAX_PDF_FILE_BYTES, PDF_TOO_LARGE_TEXT, fileToBase64, isPdfFile } from '@/lib/finance/pdf-import/client';
+import { inspectPdfStatement } from './api';
 import {
   ErrorNotice,
   StatusNotice,
@@ -32,6 +37,7 @@ import {
   selectInput,
   textLink,
   type ParsedFile,
+  type PdfFile,
 } from './shared';
 
 interface AccountFileStepProps {
@@ -47,6 +53,24 @@ interface AccountFileStepProps {
   pasteText: string;
   onPasteTextChange: (text: string) => void;
   onContinue: () => void;
+  /** A PDF statement the server read, or null. */
+  pdfFile: PdfFile | null;
+  /** A PDF that was read and recognized, or null to clear the current one. */
+  onPdfRead: (file: Omit<PdfFile, 'version'> | null) => void;
+  /** A file chosen on another page (Settings) to load as soon as this step shows. */
+  initialFile?: File | null;
+  onInitialFileUsed?: () => void;
+  /** Put focus on the file input when the step first shows. */
+  autoFocusFile?: boolean;
+}
+
+/** "Best Buy credit card (Citibank) statement, Dec 28, 2025 to Jan 27, 2026." */
+function pdfHeadline(pdf: PdfFile): string {
+  const { statement } = pdf;
+  const { start, end } = statement.period;
+  const period = start && end ? `, ${formatIsoDate(start)} to ${formatIsoDate(end)}` : end ? `, closing ${formatIsoDate(end)}` : '';
+  const what = statement.issuer === 'generic' ? 'A statement in a layout CentenarianOS does not know yet' : `${statement.issuerLabel} statement`;
+  return `${what}${period}.`;
 }
 
 export default function AccountFileStep({
@@ -61,6 +85,11 @@ export default function AccountFileStep({
   pasteText,
   onPasteTextChange,
   onContinue,
+  pdfFile,
+  onPdfRead,
+  initialFile = null,
+  onInitialFileUsed,
+  autoFocusFile = false,
 }: AccountFileStepProps) {
   const [fileError, setFileError] = useState<string | null>(null);
   const [reading, setReading] = useState(false);
@@ -70,7 +99,8 @@ export default function AccountFileStep({
 
   const sortedAccounts = sortAccountsForPicker(accounts);
   const accountMissing = attempted && !accountId;
-  const fileMissing = attempted && !file && !fileError;
+  const fileMissing = attempted && !file && !pdfFile && !fileError;
+  const initialHandledRef = useRef(false);
 
   /** Checks the text, parses it, and hands the result up. Nothing leaves the browser here. */
   function loadText(text: string, fileName: string | null) {
@@ -96,9 +126,37 @@ export default function AccountFileStep({
     onFileRead({ text, fileName, table, detected: detectMapping(table.headers, table.rows) });
   }
 
-  async function handleFileChosen(event: React.ChangeEvent<HTMLInputElement>) {
-    const chosen = event.target.files?.[0];
-    if (!chosen) return;
+  /** Sends a PDF to this app's server to be read. Nothing is saved, and it goes nowhere else. */
+  async function loadPdf(chosen: File) {
+    const refuse = (message: string) => {
+      setFileError(message);
+      onPdfRead(null);
+    };
+    if (chosen.size > MAX_PDF_FILE_BYTES) return refuse(PDF_TOO_LARGE_TEXT);
+    if (!navigator.onLine) {
+      return refuse('Reading a PDF statement needs a connection. Reconnect and choose the file again, or use a CSV, which works offline.');
+    }
+    setReading(true);
+    try {
+      const base64 = await fileToBase64(chosen);
+      const response = await inspectPdfStatement({ pdf_base64: base64, file_name: chosen.name });
+      if (!response.ok) return refuse(response.message);
+      setFileError(null);
+      onPdfRead({
+        base64,
+        fileName: chosen.name,
+        statement: response.data.statement,
+        matchingAccountIds: response.data.matchingAccountIds,
+      });
+    } catch {
+      refuse("The file couldn't be opened. Choose it again.");
+    } finally {
+      setReading(false);
+    }
+  }
+
+  async function loadChosenFile(chosen: File) {
+    if (isPdfFile(chosen)) return loadPdf(chosen);
     // Far past the limit in any encoding: don't read it into memory at all.
     if (certainlyTooLarge(chosen.size)) {
       setFileError(TOO_LARGE_TEXT);
@@ -116,6 +174,30 @@ export default function AccountFileStep({
     }
   }
 
+  async function handleFileChosen(event: React.ChangeEvent<HTMLInputElement>) {
+    const chosen = event.target.files?.[0];
+    if (!chosen) return;
+    await loadChosenFile(chosen);
+  }
+
+  // Opened from Settings without a file: land on the file input.
+  useEffect(() => {
+    if (initialHandledRef.current) return;
+    initialHandledRef.current = true;
+    if (autoFocusFile && !initialFile) fileInputRef.current?.focus();
+    // Runs once, when the step first shows.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // A file handed over from Settings is loaded as soon as it arrives, once.
+  useEffect(() => {
+    if (!initialFile) return;
+    onInitialFileUsed?.();
+    void loadChosenFile(initialFile);
+    // Keyed on the file alone: the handlers are recreated every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialFile]);
+
   function handleUsePastedText() {
     if (pasteText.trim() === '') {
       setFileError('Paste the statement text into the box first.');
@@ -130,6 +212,7 @@ export default function AccountFileStep({
     if (fileInputRef.current) fileInputRef.current.value = '';
     setFileError(null);
     onFileRead(null);
+    onPdfRead(null);
   }
 
   function handleContinue() {
@@ -138,7 +221,7 @@ export default function AccountFileStep({
       accountRef.current?.focus();
       return;
     }
-    if (!file) {
+    if (!file && !pdfFile) {
       fileInputRef.current?.focus();
       return;
     }
@@ -146,6 +229,8 @@ export default function AccountFileStep({
   }
 
   const detection = file ? describeDetection(file.detected, file.table) : null;
+  const pdfLastFour = pdfFile?.statement.accountLastFour ?? null;
+  const matchedAccounts = pdfFile ? accounts.filter((account) => pdfFile.matchingAccountIds.includes(account.id)) : [];
 
   return (
     <div className="space-y-5">
@@ -228,25 +313,29 @@ export default function AccountFileStep({
           The statement
         </h3>
         <p className="mt-1 text-sm text-gray-700">
-          Download your transactions as a CSV file from your bank or card&apos;s website, then choose that file here.
+          Download your statement from your bank or card&apos;s website as a CSV file or a PDF, then choose that file
+          here.
         </p>
 
         <div className="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-2">
           <div>
             <label htmlFor="import-file" className={fieldLabel}>
-              Statement file (CSV)
+              Statement file (CSV or PDF)
             </label>
             <input
               id="import-file"
               ref={fileInputRef}
               type="file"
-              accept=".csv,text/csv"
+              accept=".csv,text/csv,.pdf,application/pdf"
               onChange={handleFileChosen}
               aria-invalid={fileMissing || Boolean(fileError)}
               aria-describedby="import-file-messages"
               className="block w-full text-sm text-gray-700 file:mr-3 file:min-h-11 file:cursor-pointer file:rounded-lg file:border-0 file:bg-sky-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-sky-800 hover:file:bg-sky-100"
             />
-            <p className={fieldHint}>The file is read on this device first. Nothing is saved until you confirm in step 3.</p>
+            <p className={fieldHint}>
+              A CSV is read on this device first. A PDF is read by CentenarianOS itself and never sent to any other
+              service; only text PDFs work, not scans. Nothing is saved until you confirm in the review step.
+            </p>
           </div>
 
           <div>
@@ -284,8 +373,54 @@ export default function AccountFileStep({
 
           {fileMissing && (
             <ErrorNotice>
-              <p>Choose a CSV file, or paste its text and press &quot;Use pasted text&quot;.</p>
+              <p>Choose a CSV or PDF file, or paste CSV text and press &quot;Use pasted text&quot;.</p>
             </ErrorNotice>
+          )}
+
+          {pdfFile && (
+            <StatusNotice tone={pdfFile.statement.confidence === 'high' ? 'success' : 'warning'}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="flex items-center gap-2 font-medium">
+                  <FileText className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className="break-all">{pdfFile.fileName}</span>
+                </p>
+                <button
+                  type="button"
+                  onClick={handleRemoveFile}
+                  className="min-h-11 inline-flex items-center gap-1 rounded-lg px-3 text-sm font-medium underline underline-offset-2 hover:bg-white/60"
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                  Remove
+                </button>
+              </div>
+              <p>{pdfHeadline(pdfFile)}</p>
+              <ul className="list-disc space-y-0.5 pl-5">
+                <li>
+                  {pdfFile.statement.rowCount.toLocaleString('en-US')}{' '}
+                  {pdfFile.statement.rowCount === 1 ? 'transaction' : 'transactions'} found on{' '}
+                  {pdfFile.statement.pageCount} {pdfFile.statement.pageCount === 1 ? 'page' : 'pages'}.
+                </li>
+                {pdfLastFour && matchedAccounts.length === 1 && (
+                  <li>Account ending {pdfLastFour}: matched to {accountLabel(matchedAccounts[0])}.</li>
+                )}
+                {pdfLastFour && matchedAccounts.length > 1 && (
+                  <li>Account ending {pdfLastFour}: more than one of your accounts ends in those digits, so choose it above.</li>
+                )}
+                {pdfLastFour && matchedAccounts.length === 0 && (
+                  <li>Account ending {pdfLastFour}: none of your accounts ends in those digits, so choose it above.</li>
+                )}
+                {!pdfFile.statement.reconciliation.ok && (
+                  <li>
+                    {pdfFile.statement.reconciliation.checked
+                      ? "The statement's totals don't add up. The review step shows the differences."
+                      : "The statement's totals couldn't be checked. The review step says why."}
+                  </li>
+                )}
+                {pdfFile.statement.warnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+            </StatusNotice>
           )}
 
           {file && detection && (
@@ -336,7 +471,7 @@ export default function AccountFileStep({
 
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
         <button type="button" onClick={handleContinue} disabled={reading} className={primaryButton}>
-          Continue to columns
+          {pdfFile ? 'Continue to review' : 'Continue to columns'}
         </button>
       </div>
     </div>

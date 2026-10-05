@@ -6,6 +6,7 @@
 
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import type { MappingGuess, StatementCsv } from '@/lib/finance/csv-import/types';
+import type { StatementPreview } from '@/lib/finance/pdf-import/service';
 
 /** A statement that was read in the browser and is ready for the columns step. */
 export interface ParsedFile {
@@ -16,6 +17,19 @@ export interface ParsedFile {
   table: StatementCsv;
   detected: MappingGuess;
   /** Goes up each time a new file or pasted text is read, so settings are rebuilt for it. */
+  version: number;
+}
+
+/** A statement PDF that the server read and recognized, ready for the review step. */
+export interface PdfFile {
+  /** The PDF, base64, sent again at preview and commit. */
+  base64: string;
+  fileName: string;
+  /** What the server found in it. */
+  statement: StatementPreview;
+  /** The person's accounts with the statement's last four digits. */
+  matchingAccountIds: string[];
+  /** Goes up each time a new file is read. */
   version: number;
 }
 
