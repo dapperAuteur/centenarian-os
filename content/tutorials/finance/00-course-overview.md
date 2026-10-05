@@ -26,7 +26,7 @@ The Finance module is where you track income, expenses, and budgets alongside th
 | 05 | Transaction History | The transactions sub-page, filtering, searching, editing, deleting, and reviewing transfers between your own accounts |
 | 06 | Importing and Exporting | Importing a bank statement CSV into an account (columns, review, undo), CSV export for external tools |
 | 07 | Managing Financial Accounts | Checking, savings, credit card, loan, cash — creating, editing, balances |
-| 08 | Account Balances & Equipment Links | Per-account filtering, transfers and card or loan payments, equipment transaction links, cross-module ROI |
+| 08 | Account Balances & Equipment Links | Per-account filtering, transfers and card or loan payments, savings goals as envelopes inside a real account, equipment transaction links, cross-module ROI |
 | 09 | Saved Contacts & Vendor Autocomplete | ContactAutocomplete, default categories, "Save?" upsert, shared contacts |
 
 ---
@@ -52,6 +52,7 @@ Before recording:
 
 - Finance tracks income, expenses, and budgets in one module
 - The Budgets page suggests budgets from your own spending history (average or median of the last 3, 6, or 12 months)
+- Savings goals split one real account's balance across goals (envelopes), with the monthly amount needed and whether it fits your surplus
 - CYOA navigation — start with Lessons 01–03 for setup, then explore as needed
 - No bank connection: data is entered manually or imported via CSV, including a statement CSV downloaded from your bank
 - Money moving between your own accounts (transfers, card payments, loan payments) is tracked as a transfer and never counted as spending or income

@@ -58,6 +58,22 @@ Click **All** to return to the combined view.
 
 ---
 
+### Savings Goals: Envelopes Inside a Real Account
+
+Go to **Finance → Savings goals** (also **Savings** in the Life menu). A savings goal is an envelope inside one real account, usually a savings account. Several goals can share the account: its balance is split across them, and whatever no goal holds is **unallocated**. Allocating never moves money between real accounts.
+
+1. Click **New goal**. Give it a name, what it's for (equipment, house, trip, emergency fund, vehicle, education, other), a target amount, an optional target date, and the account the money sits in (shown with its institution and last four digits). "Already saved for this" puts money that is already in the account into the goal.
+2. **Add money** puts unallocated money into a goal. **Take out** returns it to unallocated (it stays in the account). **Move** shifts money between two goals in the same account.
+3. When money arrives in the account (a transfer from checking, say), it appears under **Recent deposits to allocate**. Click **Allocate** to split it across the goals.
+
+Each goal card shows saved vs. target, how much is needed each month to reach the target date, your pace over the last three months, the projected date at that pace (**On track** or **Behind** in amber), and whether the goal **fits** your monthly surplus (income minus spending, transfers left out, average or median of the last 3, 6 or 12 months; the default is the average of 6). Goals take the surplus in priority order. When a goal doesn't fit, the card says when it would be reached with what's left.
+
+If you spend from the savings account, the goals can end up holding more than the balance. The account then shows the shortfall in amber: take that much out of one or more goals so the envelopes match the real balance.
+
+On a planned trip or an equipment item, **Save for this** opens a new goal prefilled with the trip's budget or the item's price. Tick **Note milestones in my planner** on a goal to add a completed note to the planner Inbox at 25%, 50%, 75% and 100%.
+
+---
+
 ### Equipment Transaction Links
 
 The Equipment module (Life → Equipment) can link items to financial transactions. When a transaction is linked as a purchase record for a piece of equipment:
@@ -102,6 +118,10 @@ The entire chain — spending, ownership, and revenue — is traceable across mo
 
 > [SCREEN: Click "All" — return to combined view]
 
+> [SCREEN: Navigate to /dashboard/finance/savings — show one savings account with two goals, balance, in goals, unallocated]
+
+> [SCREEN: Click Allocate on a recent transfer into savings — split it across both goals]
+
 > [SCREEN: Navigate to /dashboard/equipment/[id] — show the Linked Purchase Transaction on the detail page]
 
 > [SCREENSHOT: Equipment detail — callout: "Linked transaction traces this item back to the B&H Photo purchase"]
@@ -115,6 +135,8 @@ The entire chain — spending, ownership, and revenue — is traceable across mo
 - Account balances are auto-calculated: Opening Balance + income - expenses
 - A transfer, card payment, or loan payment is two linked transactions: both balances change, and neither counts as spending or income
 - Click any account on the dashboard to filter to that account's transactions
+- Savings goals are envelopes inside a real account: its balance is split across goals, and allocating never moves real money
+- Each goal shows the monthly amount needed, your pace, a projected date, and whether it fits your monthly surplus
 - Equipment items link to transactions via the purchase transaction field
 - Activity links connect transactions to equipment, trips, and tasks for cross-module tracing
 - Income transactions linked to equipment contribute to ROI calculations
