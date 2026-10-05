@@ -54,7 +54,7 @@ flowchart TB
 
   subgraph Shared["Shared infrastructure"]
     direction TB
-    Supabase[(Supabase Postgres<br/>207 migrations · 14 modules)]:::shared
+    Supabase[(Supabase Postgres<br/>208 migrations · 14 modules)]:::shared
     SupaAuth[Supabase Auth<br/>publishable + secret keys]
     SupaStorage[Supabase Storage]
   end
@@ -185,7 +185,7 @@ centenarian-os/
 │   ├── csv/               # Import/export helpers
 │   └── …
 ├── supabase/
-│   ├── migrations/        # 207 SQL files (see MIGRATIONS.md)
+│   ├── migrations/        # 208 SQL files (see MIGRATIONS.md)
 │   └── functions/         # Edge functions (unified-schedule lives in contractor-os)
 ├── public/
 │   ├── sw.js              # Service worker
