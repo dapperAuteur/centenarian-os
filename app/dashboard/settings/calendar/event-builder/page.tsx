@@ -9,7 +9,10 @@
 // Says what the sync does (lib/calendar/google-sync.ts, lib/capture/calendar-records.ts): a planner
 // task per event, plus a transaction, meal log or workout log for a tagged title. #trip makes no
 // trip: travel is moving to RideWitUS, so the details are only saved (plan 59, phase 4.4).
-// No writes anywhere: the only request is GET /api/travel/settings for the user's distance unit.
+// No writes anywhere. Reads GET /api/travel/settings (the user's distance unit), and for the
+// account picker GET /api/calendar/google (each Google account's ticked finance accounts) and
+// GET /api/finance/accounts (their names and last four digits). The picker adds "@1234" or
+// "@nickname" to an #expense / #income title (lib/capture/calendar-accounts.ts).
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -43,6 +46,21 @@ import {
   type TitleLanguage,
 } from '@/lib/capture/event-templates';
 import { formatTime, useClockFormat } from '@/lib/hooks/useClockFormat';
+import { accountRefFor, readAccountChoice } from '@/lib/capture/calendar-accounts';
+
+interface BuilderConnection {
+  id: string;
+  account_email: string | null;
+  settings: Record<string, unknown> | null;
+}
+
+interface BuilderFinanceAccount {
+  id: string;
+  name: string;
+  institution_name?: string | null;
+  last_four?: string | null;
+  currency?: string | null;
+}
 
 const CHEAT_SHEET_URL = '/dashboard/settings/calendar/event-builder/cheat-sheet';
 const SETTINGS_URL = '/dashboard/settings/calendar';
@@ -60,8 +78,8 @@ const WHAT_LABEL: Record<CaptureKind, { label: string; placeholder: string }> = 
 };
 
 const RESULT: Record<CaptureKind, string> = {
-  expense: 'Plus an expense transaction in the account chosen in Calendar Sync, linked to the task.',
-  income: 'Plus an income transaction in the account chosen in Calendar Sync, linked to the task.',
+  expense: 'Plus an expense transaction in the account ticked in Calendar Sync (the default, or the @account), linked to the task.',
+  income: 'Plus an income transaction in the account ticked in Calendar Sync (the default, or the @account), linked to the task.',
   trip: "No trip is created: the trip details are saved and will go to RideWitUS.",
   meal: 'Plus a meal log for that date and time.',
   workout: 'Plus a workout log, linked to the task.',
@@ -137,6 +155,52 @@ export default function CalendarEventBuilderPage() {
   const [eventLength, setEventLength] = useState('30');
   const [copied, setCopied] = useState<string | null>(null);
   const [copyError, setCopyError] = useState<string | null>(null);
+  const [connections, setConnections] = useState<BuilderConnection[]>([]);
+  const [financeAccounts, setFinanceAccounts] = useState<BuilderFinanceAccount[]>([]);
+  const [connectionId, setConnectionId] = useState('');
+  const [accountRef, setAccountRef] = useState('');
+
+  // The Google accounts and their ticked finance accounts, for the account picker. Failing
+  // quietly is fine: the picker then offers only the default account.
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      fetch('/api/calendar/google', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : null)),
+      fetch('/api/finance/accounts', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : null)),
+    ])
+      .then(([google, finance]: [{ connections?: BuilderConnection[] } | null, unknown]) => {
+        if (cancelled) return;
+        const list = Array.isArray(google?.connections) ? google.connections : [];
+        setConnections(list);
+        setConnectionId((current) => current || list[0]?.id || '');
+        setFinanceAccounts(Array.isArray(finance) ? (finance as BuilderFinanceAccount[]) : []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const accountOptions = useMemo(() => {
+    const connection = connections.find((c) => c.id === connectionId);
+    if (!connection) return [];
+    const choice = readAccountChoice(connection.settings);
+    const owned = financeAccounts.map((a) => ({ id: a.id, last_four: a.last_four }));
+    return choice.allowedIds.flatMap((id) => {
+      const account = financeAccounts.find((a) => a.id.toLowerCase() === id);
+      if (!account) return [];
+      const parts = [account.name, account.institution_name, account.last_four ? `…${account.last_four}` : null];
+      return [
+        {
+          id,
+          ref: accountRefFor(id, choice, owned),
+          isDefault: choice.defaultId === id,
+          label: `${parts.filter(Boolean).join(' · ')}${account.currency ? ` (${account.currency})` : ''}`,
+        },
+      ];
+    });
+  }, [connections, connectionId, financeAccounts]);
+  const defaultOption = accountOptions.find((o) => o.isDefault);
 
   // Start the distance toggle on the user's travel setting (Travel → Settings), when there is one.
   useEffect(() => {
@@ -166,8 +230,9 @@ export default function CalendarEventBuilderPage() {
         mode: mode || undefined,
         mealType: mealType || undefined,
         durationMin: durationMin !== undefined && Number.isFinite(durationMin) ? durationMin : undefined,
+        account: accountRef || undefined,
       }),
-    [kind, lang, what, amount, distance, unit, mode, mealType, durationMin],
+    [kind, lang, what, amount, distance, unit, mode, mealType, durationMin, accountRef],
   );
   const startTime = allDay ? ALL_DAY_TIME : time;
   const parsed = useMemo(() => parseCaptureTitle(title, { startTime }), [title, startTime]);
@@ -200,6 +265,7 @@ export default function CalendarEventBuilderPage() {
     setKind(example.kind);
     setWhat(draft.what);
     setAmount(draft.amount ?? '');
+    setAccountRef(draft.account ?? '');
     setDistance(draft.distance ?? '');
     if (draft.distanceUnit) setUnit(draft.distanceUnit);
     setMode(draft.mode ?? '');
@@ -249,8 +315,8 @@ export default function CalendarEventBuilderPage() {
         </h2>
         <p className="mt-1">
           Every event on a calendar you sync becomes a planner task, named after the title without its tags. A tagged
-          title also creates a record linked to that task: #expense and #income a transaction (in the account chosen in
-          Calendar Sync), #meal a meal log, #workout a workout log. #trip events stay tasks: the trip details are saved
+          title also creates a record linked to that task: #expense and #income a transaction (in the default account
+          ticked in Calendar Sync, or the ticked account an @1234 or @nickname names), #meal a meal log, #workout a workout log. #trip events stay tasks: the trip details are saved
           and will go to RideWitUS. A title with missing details (an #expense with no amount) creates only the task and
           is flagged. A record follows later changes to its event until you edit it in CentenarianOS; cancelling an
           event never deletes a transaction.
@@ -320,6 +386,68 @@ export default function CalendarEventBuilderPage() {
               Written as $12.40 so no other number in the title is mistaken for it. The $ is only a marker; the amount is
               not converted between currencies.
             </p>
+          </div>
+        )}
+
+        {(kind === 'expense' || kind === 'income') && (
+          <div className="space-y-3">
+            {connections.length > 1 && (
+              <div>
+                <label htmlFor="eb-connection" className={labelClass}>
+                  Google account the event goes in
+                </label>
+                <select
+                  id="eb-connection"
+                  className={inputClass}
+                  value={connectionId}
+                  onChange={(e) => {
+                    setConnectionId(e.target.value);
+                    setAccountRef('');
+                  }}
+                >
+                  {connections.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.account_email ?? 'Google account'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div>
+              <label htmlFor="eb-account" className={labelClass}>
+                Account
+              </label>
+              <select
+                id="eb-account"
+                className={inputClass}
+                value={accountRef}
+                onChange={(e) => setAccountRef(e.target.value)}
+                aria-describedby="eb-account-help"
+              >
+                <option value="">
+                  {defaultOption ? `Default: ${defaultOption.label}` : 'Default account (none chosen)'}
+                </option>
+                {accountOptions.map((o) =>
+                  o.ref ? (
+                    <option key={o.id} value={o.ref}>
+                      {o.label} (@{o.ref})
+                    </option>
+                  ) : (
+                    <option key={o.id} value={`needs-${o.id}`} disabled>
+                      {o.label} (set a nickname in Calendar Sync)
+                    </option>
+                  ),
+                )}
+              </select>
+              <p id="eb-account-help" className="text-xs text-gray-600 mt-1">
+                Only the accounts ticked for this Google account in{' '}
+                <Link href={SETTINGS_URL} className="text-sky-800 underline">
+                  Calendar Sync
+                </Link>{' '}
+                are listed. Choosing one adds @ and its last four digits or nickname to the title; the default needs
+                nothing.
+              </p>
+            </div>
           </div>
         )}
 
