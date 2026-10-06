@@ -106,7 +106,7 @@ No free plan. All users must subscribe to access paid modules.
 
 | Module | Description | Access |
 |--------|-------------|--------|
-| **Planner** | Roadmap, Goals, Milestones, Tasks hierarchy with day/week/month views; one-field task capture into an auto-created Inbox (works offline), searchable goal picker, Inbox filter; Google Calendar sync (read-only, one or more Google accounts; events on the calendars you choose become planner tasks, daily plus Sync now); calendar event builder (build `#expense` / `#trip` / `#meal` titles, see what the parser reads, open Google's prefilled event form), example `.ics` and printable cheat sheet (English and Spanish) | Paid |
+| **Planner** | Roadmap, Goals, Milestones, Tasks hierarchy with day/week/month views; one-field task capture into an auto-created Inbox (works offline), searchable goal picker, Inbox filter; Google Calendar sync (read-only, one or more Google accounts; events on the calendars you choose become planner tasks, daily plus Sync now; `#expense` / `#income` titles record into the finance accounts ticked per Google account, picked with `@1234` or `@nickname`); calendar event builder (build `#expense` / `#trip` / `#meal` titles, see what the parser reads, open Google's prefilled event form), example `.ics` and printable cheat sheet (English and Spanish) | Paid |
 | **Fuel** | Nutrition tracking with NCV framework, USDA/Open Food Facts APIs, auto inventory | Paid |
 | **Engine** | Pomodoro focus sessions, doodle canvas, daily debrief, AI weekly reviews | Paid |
 | **Health Metrics** | RHR, steps, sleep, body composition; Garmin/Oura/WHOOP sync; CSV import | Paid |
@@ -250,8 +250,13 @@ capture-token parser and the result is stored in `calendar_sync_items.parsed`.
 
 **Records from tagged events** (`lib/capture/calendar-records.ts`, phase 4.4): a tagged event keeps
 its task (the calendar anchor) and also gets a record. `#expense` / `#income` create a transaction
-(`source = 'manual'`, tag `google-calendar`, on the account picked per Google account under
-"Account for #expense and #income", in that account's currency); `#meal` a meal log; `#workout` a
+(`source = 'manual'`, tag `google-calendar`, in the chosen account's currency). Each Google account
+ticks the finance accounts these may use under "Accounts for #expense and #income" and marks one
+the default (`calendar_connections.settings`: `allowed_account_ids`, `default_account_id`,
+`account_nicknames`; an older single `default_account_id` reads as that one account ticked). A
+title names another ticked account with `@` and its last four digits or nickname
+(`Lunch Chipotle #expense $12.40 @1234`, `... @visa`); an `@account` that is unticked, unknown or
+matches two ticked accounts creates no transaction and is flagged (`lib/capture/calendar-accounts.ts`); `#meal` a meal log; `#workout` a
 workout log. Transactions and workouts are linked to the task in `activity_links` (meals only
 through `calendar_sync_items.record_type/record_id`, since `activity_links` has no meal type).
 `#trip` creates **no** trip: travel is moving to RideWitUS, so the parsed trip stays on the sync row
