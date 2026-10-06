@@ -9,9 +9,16 @@
 //           user removed at myaccount.google.com/permissions comes back as invalid_grant, the
 //           row is marked needs_reauth, and this response already shows it. A Google outage
 //           leaves the status alone.
-// PATCH  -> body: { connection_id?, default_account_id?, default_trip_mode?, default_tag? }
-//           (null clears a default). connection_id may be left out when only one account is
-//           connected. Saves the defaults in that connection's settings. -> { connection }
+// PATCH  -> body: { connection_id?, allowed_account_ids?, default_account_id?, account_nicknames?,
+//           default_trip_mode?, default_tag? } (null clears a default). connection_id may be left
+//           out when only one account is connected. Saves them in that connection's settings.
+//           allowed_account_ids: the finance accounts #expense / #income events may record into
+//           (replaces the list; unticking the default clears it). default_account_id: one of
+//           them, used when a title names no "@account"; sent alone (the old client), it is
+//           ticked too. account_nicknames: { accountId: "visa" | null }, merged, unique per
+//           connection. Every account id sent must be the caller's (lib/auth/ownership.ts);
+//           stored ids of accounts deleted since are dropped. Rules: lib/capture/calendar-accounts.ts.
+//           -> { connection }
 // DELETE -> ?connection_id=<id> (optional with one account). Revokes that account's grant at
 //           Google, then deletes that one connection row (its tokens and saved calendars go
 //           with it; the user's other Google accounts stay). -> { ok, revoked, already_revoked, warning }
@@ -26,6 +33,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { TRIP_MODES } from '@/lib/capture/tokens';
+import { ownedIds } from '@/lib/auth/ownership';
+import { mergeAccountSettings, pruneAccountSettings } from '@/lib/capture/calendar-accounts';
 import { isGoogleConfigured, revokeToken } from '@/lib/google/calendar-client';
 import {
   deleteConnection,
@@ -108,13 +117,13 @@ export async function PATCH(request: NextRequest) {
   if (connectionId !== null && !isUuid(connectionId)) return badRequest('connection_id must be a connection id.');
 
   const changes: CalendarConnectionSettings = {};
-
-  if ('default_account_id' in body) {
-    const value = body.default_account_id;
-    if (value !== null && !isUuid(value)) {
-      return badRequest('default_account_id must be an account id or null.');
-    }
-    changes.default_account_id = value;
+  const accountFields = ['allowed_account_ids', 'default_account_id', 'account_nicknames'] as const;
+  const accountPatch = Object.fromEntries(accountFields.filter((key) => key in body).map((key) => [key, body[key]]));
+  const changesAccounts = Object.keys(accountPatch).length > 0;
+  if (changesAccounts) {
+    // Validates the shape before any database call; merged with the stored settings below.
+    const check = mergeAccountSettings({}, accountPatch);
+    if (!check.ok) return badRequest(check.error);
   }
   if ('default_trip_mode' in body) {
     const value = body.default_trip_mode;
@@ -130,8 +139,10 @@ export async function PATCH(request: NextRequest) {
     }
     changes.default_tag = value;
   }
-  if (Object.keys(changes).length === 0) {
-    return badRequest('Nothing to update: send default_account_id, default_trip_mode or default_tag.');
+  if (Object.keys(changes).length === 0 && !changesAccounts) {
+    return badRequest(
+      'Nothing to update: send allowed_account_ids, default_account_id, account_nicknames, default_trip_mode or default_tag.',
+    );
   }
 
   try {
@@ -142,19 +153,24 @@ export async function PATCH(request: NextRequest) {
     }
     const current = resolved.connection;
 
-    // The default account must be one of the user's own accounts.
-    if (changes.default_account_id) {
-      const { data: account, error } = await db
-        .from('financial_accounts')
-        .select('id')
-        .eq('id', changes.default_account_id)
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (error) throw new Error(`Checking the default account failed: ${error.message}`);
-      if (!account) return badRequest('That account was not found.');
+    const stored = (current.settings ?? {}) as Record<string, unknown>;
+    if (changesAccounts) {
+      const merged = mergeAccountSettings(stored, accountPatch);
+      if (!merged.ok) return badRequest(merged.error);
+      // Every account id involved must be the caller's: the ones sent are refused if not, the
+      // stored ones of accounts deleted since are dropped.
+      const all = [
+        ...merged.settings.allowed_account_ids,
+        ...(merged.settings.default_account_id ? [merged.settings.default_account_id] : []),
+        ...Object.keys(merged.settings.account_nicknames),
+      ];
+      const owned = await ownedIds(db, user.id, 'financial_accounts', all);
+      if (owned.failed) throw new Error('Checking the accounts failed.');
+      if (merged.sentIds.some((id) => !owned.has(id))) return badRequest('That account was not found.');
+      Object.assign(changes, pruneAccountSettings(merged.settings, (id) => owned.has(id)));
     }
 
-    const connection = await updateSettings(db, user.id, current.id, { ...(current.settings ?? {}), ...changes });
+    const connection = await updateSettings(db, user.id, current.id, { ...stored, ...changes });
     return NextResponse.json({ connection });
   } catch (err) {
     return calendarErrorResponse(err, 'PATCH');

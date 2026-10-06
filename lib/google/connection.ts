@@ -34,7 +34,12 @@ export type CalendarConnectionStatus = 'active' | 'needs_reauth' | 'disconnected
 
 /** The user's defaults for records made from events. Used from the sync phase on. */
 export interface CalendarConnectionSettings {
+  /** The account used when an event title names none ("@1234"); one of allowed_account_ids. */
   default_account_id?: string | null;
+  /** The finance accounts #expense / #income events may record into (lib/capture/calendar-accounts.ts). */
+  allowed_account_ids?: string[];
+  /** accountId -> nickname for "@visa" in titles. */
+  account_nicknames?: Record<string, string>;
   default_trip_mode?: string | null;
   default_tag?: string | null;
 }
