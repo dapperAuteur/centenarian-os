@@ -21,6 +21,7 @@ import { currencyOptions, fetchCurrencies, rateAsOf } from '@/lib/finance/fx/cli
 import type { CurrenciesResponse, RateView } from '@/lib/finance/fx/client';
 import Modal from '@/components/ui/Modal';
 import CashAccountActions from '@/components/finance/cash/CashAccountActions';
+import { NICKNAME_MAX_LENGTH, NICKNAME_MIGRATION } from '@/lib/finance/account-nickname';
 
 interface Account {
   id: string;
@@ -28,6 +29,8 @@ interface Account {
   account_type: 'checking' | 'savings' | 'credit_card' | 'loan' | 'cash';
   institution_name: string | null;
   last_four: string | null;
+  /** Migration 218: used in Google Calendar event titles as @nickname. Missing before it. */
+  nickname?: string | null;
   interest_rate: number | null;
   credit_limit: number | null;
   opening_balance: number;
@@ -74,12 +77,36 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 const emptyForm = {
-  name: '', account_type: 'checking', institution_name: '', last_four: '',
+  name: '', account_type: 'checking', institution_name: '', last_four: '', nickname: '',
   interest_rate: '', credit_limit: '', opening_balance: '0',
   monthly_fee: '', due_date: '', statement_date: '', notes: '',
   // '' = the user's home currency
   currency: '',
 };
+
+/** The account nickname (migration 218): used in Google Calendar event titles as @nickname. */
+function NicknameField({ id, value, ready, onChange }: { id: string; value: string; ready: boolean; onChange: (value: string) => void }) {
+  return (
+    <div>
+      <label htmlFor={id} className="text-xs font-medium text-gray-600">Nickname (optional)</label>
+      <input
+        id={id}
+        value={value}
+        maxLength={NICKNAME_MAX_LENGTH + 1}
+        disabled={!ready}
+        onChange={(e) => onChange(e.target.value)}
+        aria-describedby={`${id}-help`}
+        className="w-full sm:w-64 mt-1 px-3 py-2 min-h-11 text-sm border border-gray-200 rounded-lg disabled:bg-gray-50"
+        placeholder="visa"
+      />
+      <p id={`${id}-help`} className="mt-1 text-xs text-gray-600">
+        {ready
+          ? 'Used in calendar events as @nickname. Starts with a letter; up to 20 letters, digits, - or _.'
+          : `Used in calendar events as @nickname. Run migration ${NICKNAME_MIGRATION} first; until then calendar events name this account by its last four digits.`}
+      </p>
+    </div>
+  );
+}
 
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -113,6 +140,9 @@ export default function AccountsPage() {
 
   const homeCurrency = currencies?.home_currency ?? accounts[0]?.home_currency ?? 'USD';
   const currencyChoices = currencyOptions(currencies, homeCurrency);
+  // Before migration 218 the rows have no nickname column. With no accounts yet it can't be told;
+  // a save then answers with the migration message.
+  const nicknameReady = accounts.length === 0 || accounts.some((a) => 'nickname' in a);
   const hasForeign = accounts.some((a) => (a.currency ?? 'USD') !== (a.home_currency ?? homeCurrency));
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -133,6 +163,8 @@ export default function AccountsPage() {
         notes: form.notes || null,
         currency: form.currency || null,
       };
+      // Sent only when typed, so creating an account keeps working before migration 218.
+      if (form.nickname.trim()) body.nickname = form.nickname.trim();
       setSaveError(null);
       const res = await offlineFetch('/api/finance/accounts', {
         method: 'POST',
@@ -162,6 +194,8 @@ export default function AccountsPage() {
     // Currency is sent only when it changed: it is locked once the account has transactions.
     const original = accounts.find((a) => a.id === id);
     if (!body.currency || body.currency === (original?.currency ?? 'USD')) delete body.currency;
+    // The nickname is sent only when it changed, so editing works before migration 218.
+    if ((body.nickname ?? null) === (original?.nickname ?? null)) delete body.nickname;
     setSaveError(null);
     const res = await offlineFetch(`/api/finance/accounts/${id}`, {
       method: 'PATCH',
@@ -315,6 +349,12 @@ export default function AccountsPage() {
                         className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="1234" />
                     </div>
                   </div>
+                  <NicknameField
+                    id={`acct-nickname-${acct.id}`}
+                    value={editForm.nickname ?? ''}
+                    ready={nicknameReady}
+                    onChange={(value) => setEditForm((f) => ({ ...f, nickname: value }))}
+                  />
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="text-xs text-gray-500">Opening Balance ({editForm.currency || 'USD'})</label>
@@ -455,6 +495,7 @@ export default function AccountsPage() {
                     >
                       {acct.name}
                       {acct.last_four && <span className="text-gray-400 font-normal ml-2 text-sm">··{acct.last_four}</span>}
+                      {acct.nickname && <span className="text-gray-600 font-normal ml-2 text-sm">@{acct.nickname}</span>}
                     </Link>
                     {acct.institution_name && (
                       <p className="text-sm text-gray-500 mt-0.5">{acct.institution_name}</p>
@@ -541,7 +582,7 @@ export default function AccountsPage() {
                       </button>
                     )}
                     <button
-                      onClick={() => { setEditId(acct.id); setEditForm({ name: acct.name, account_type: acct.account_type, institution_name: acct.institution_name ?? '', last_four: acct.last_four ?? '', interest_rate: acct.interest_rate?.toString() ?? '', credit_limit: acct.credit_limit?.toString() ?? '', opening_balance: String(acct.opening_balance ?? 0), monthly_fee: acct.monthly_fee?.toString() ?? '', due_date: acct.due_date?.toString() ?? '', statement_date: acct.statement_date?.toString() ?? '', notes: acct.notes ?? '', dispute_window_days: acct.dispute_window_days?.toString() ?? '', default_return_days: acct.default_return_days?.toString() ?? '', promo_apr: acct.promo_apr?.toString() ?? '', promo_apr_expires: acct.promo_apr_expires ?? '', promo_description: acct.promo_description ?? '', bt_apr: acct.bt_apr?.toString() ?? '', bt_fee_percent: acct.bt_fee_percent?.toString() ?? '', bt_expires: acct.bt_expires ?? '', bt_description: acct.bt_description ?? '', rewards_type: acct.rewards_type ?? '', rewards_rate: acct.rewards_rate ?? '', annual_fee: acct.annual_fee?.toString() ?? '', currency: acct.currency ?? 'USD' }); }}
+                      onClick={() => { setEditId(acct.id); setEditForm({ name: acct.name, account_type: acct.account_type, institution_name: acct.institution_name ?? '', last_four: acct.last_four ?? '', nickname: acct.nickname ?? '', interest_rate: acct.interest_rate?.toString() ?? '', credit_limit: acct.credit_limit?.toString() ?? '', opening_balance: String(acct.opening_balance ?? 0), monthly_fee: acct.monthly_fee?.toString() ?? '', due_date: acct.due_date?.toString() ?? '', statement_date: acct.statement_date?.toString() ?? '', notes: acct.notes ?? '', dispute_window_days: acct.dispute_window_days?.toString() ?? '', default_return_days: acct.default_return_days?.toString() ?? '', promo_apr: acct.promo_apr?.toString() ?? '', promo_apr_expires: acct.promo_apr_expires ?? '', promo_description: acct.promo_description ?? '', bt_apr: acct.bt_apr?.toString() ?? '', bt_fee_percent: acct.bt_fee_percent?.toString() ?? '', bt_expires: acct.bt_expires ?? '', bt_description: acct.bt_description ?? '', rewards_type: acct.rewards_type ?? '', rewards_rate: acct.rewards_rate ?? '', annual_fee: acct.annual_fee?.toString() ?? '', currency: acct.currency ?? 'USD' }); }}
                       className="p-1.5 text-gray-400 hover:text-fuchsia-600 hover:bg-fuchsia-50 rounded-lg transition"
                       title="Edit"
                     >
@@ -681,6 +722,12 @@ export default function AccountsPage() {
                   className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="1234" />
               </div>
             </div>
+            <NicknameField
+              id="acct-nickname"
+              value={form.nickname}
+              ready={nicknameReady}
+              onChange={(value) => setForm((f) => ({ ...f, nickname: value }))}
+            />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label htmlFor="acct-opening-balance" className="text-xs font-medium text-gray-600">Opening Balance ({form.currency || homeCurrency})</label>

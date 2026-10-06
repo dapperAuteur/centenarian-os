@@ -25,6 +25,13 @@
 //              except on trips, where a bare "m" would be meters.
 //   mode:word  Trips only. Without it, a bare mode word ("Drive", "bici") counts.
 //   meal word  Meals only: "Dinner", "almuerzo". Without one, the start time decides.
+//   @account   Expense and income only: "@1234" (an account's last four digits) or
+//              "@visa" (a nickname set in Calendar Sync) picks the account. The parser
+//              only reads the reference (accountRef); lib/capture/calendar-accounts.ts
+//              matches it against the user's accounts. One exception keeps an older
+//              form working: "@word" right after a leading meal word is the vendor
+//              ("Dinner @Nobu"), unless it is four digits. Two different references
+//              are reported as multiple_accounts.
 // A title with no recognized tag is a task, and nothing but its #words is read.
 //
 // The import below keeps its ".ts" extension because this file also runs under
@@ -50,6 +57,7 @@ export type CaptureWarning =
   | 'missing_amount'
   | 'missing_distance'
   | 'multiple_kinds'
+  | 'multiple_accounts'
   | 'unknown_token';
 
 export interface ParsedCapture {
@@ -74,6 +82,11 @@ export interface ParsedCapture {
   mealType?: MealType;
   /** Any tagged title. */
   durationMin?: number;
+  /**
+   * Expense and income: the account reference after "@", lowercased ("1234", "visa").
+   * Undefined when the title names none, or names two different ones (multiple_accounts).
+   */
+  accountRef?: string;
   /** The unknown #words, lowercased and without the "#", each once, in title order. */
   extraTags: string[];
   /** Each warning at most once, in the order of the CaptureWarning union. */
@@ -89,6 +102,7 @@ const WARNING_ORDER: readonly CaptureWarning[] = [
   'missing_amount',
   'missing_distance',
   'multiple_kinds',
+  'multiple_accounts',
   'unknown_token',
 ];
 
@@ -106,6 +120,10 @@ const NUMBER = /^(\d{1,3}(?:[.,]\d{3})+|\d+)(?:[.,](\d+))?$/;
 
 // Four plain digits from 1900 to 2100: "Taxes 2024" names a year, not an amount.
 const YEAR_LIKE = /^(?:19\d\d|20\d\d|2100)$/;
+
+// "@1234", "@visa", "@chase-2". The word after "@" starts with a letter or digit.
+const ACCOUNT_REF = /^@([\p{L}\p{N}][\p{L}\p{N}_-]*)$/u;
+const LAST_FOUR = /^\d{4}$/;
 
 interface AmountCandidate {
   cents: number;
@@ -235,6 +253,27 @@ function takeAmount(words: string[], used: boolean[]): number | undefined {
   return amount.cents;
 }
 
+/**
+ * Takes the "@account" words of a money title and marks them used. Returns the one
+ * reference, or `multiple` when the title names two different ones. "@word" right after
+ * a leading meal word stays: it is the vendor ("Dinner @Nobu"), unless it is four digits.
+ */
+function takeAccountRef(words: string[], used: boolean[]): { ref?: string; multiple: boolean } {
+  const refs = new Set<string>();
+  for (let i = 0; i < words.length; i++) {
+    if (used[i]) continue;
+    const match = ACCOUNT_REF.exec(core(words[i]));
+    if (!match) continue;
+    const ref = match[1];
+    const vendorSlot = i === 1 && lookup(MEAL_WORDS, core(words[0])) !== undefined;
+    if (vendorSlot && !LAST_FOUR.test(ref)) continue;
+    used[i] = true;
+    refs.add(ref);
+  }
+  if (refs.size > 1) return { multiple: true };
+  return { ref: refs.values().next().value, multiple: false };
+}
+
 /** The first word of `words` found in `table`. */
 function firstWord<T>(words: string[], table: Record<string, T>): T | undefined {
   for (const word of words) {
@@ -343,6 +382,9 @@ export function parseCaptureTitle(title: string, opts?: ParseCaptureOptions): Pa
   if (minutes !== undefined) parsed.durationMin = Math.round(minutes);
 
   if (kind === 'expense' || kind === 'income') {
+    const account = takeAccountRef(rest, used);
+    if (account.multiple) warnings.add('multiple_accounts');
+    else if (account.ref) parsed.accountRef = account.ref;
     const cents = takeAmount(rest, used);
     if (cents === undefined) warnings.add('missing_amount');
     else parsed.amountCents = cents;

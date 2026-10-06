@@ -123,6 +123,7 @@ const WARNING_TEXT: Record<string, string> = {
   missing_amount: 'no amount found',
   missing_distance: 'no distance found',
   multiple_kinds: 'more than one kind tag',
+  multiple_accounts: 'more than one @account',
   unknown_token: 'unknown #tag',
 };
 

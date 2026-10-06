@@ -73,17 +73,23 @@ export function kindForDestination(accountType: string | null | undefined): Tran
  *   { institution_name: 'Navy Federal', name: 'EveryDay Checking', last_four: '1234' }
  *     -> "Navy Federal EveryDay Checking ••1234"
  *
- * The institution is left out when the name already starts with it.
+ * The institution is left out when the name already starts with it. An account nickname
+ * (migration 218, the @nickname used in calendar titles) is added when the row carries one:
+ * "... ••1234 (@visa)".
  */
 export function accountLabel(
-  account: { name?: string | null; institution_name?: string | null; last_four?: string | null } | null | undefined,
+  account:
+    | { name?: string | null; institution_name?: string | null; last_four?: string | null; nickname?: string | null }
+    | null
+    | undefined,
 ): string {
   if (!account) return 'an account that was removed';
   const name = (account.name ?? '').trim() || 'Account';
   const institution = (account.institution_name ?? '').trim();
   const lastFour = (account.last_four ?? '').trim();
   const showInstitution = institution !== '' && !name.toLowerCase().startsWith(institution.toLowerCase());
-  return [showInstitution ? institution : '', name, lastFour ? `••${lastFour}` : '']
+  const nickname = (account.nickname ?? '').trim();
+  return [showInstitution ? institution : '', name, lastFour ? `••${lastFour}` : '', nickname ? `(@${nickname})` : '']
     .filter(Boolean)
     .join(' ');
 }

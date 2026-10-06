@@ -81,6 +81,11 @@ export interface EventDraft {
   what: string;
   /** Expense and income, in the account's currency, as typed ("12.40", "12,40"). */
   amount?: string;
+  /**
+   * Expense and income: the account reference without "@" ("1234" or a nickname such as "visa").
+   * Left out: the default account chosen in Calendar Sync.
+   */
+  account?: string;
   /** Trips, as typed. */
   distance?: string;
   distanceUnit?: DistanceUnit;
@@ -119,7 +124,7 @@ export function durationText(minutes: number | undefined): string {
 /**
  * A title in the capture-token grammar. Missing data is left out (the live preview then shows
  * the parser's warning), so the builder never invents an amount or a distance.
- *   expense  "Groceries Corner Market #expense $42.18"
+ *   expense  "Groceries Corner Market #expense $42.18" (with an account: "... $42.18 @1234")
  *   income   "Client payment Acme Studio #income $1500.00"
  *   trip     "To the trailhead #trip 7.8mi mode:bike 45min"
  *   meal     "Lunch Corner Cafe #meal"
@@ -137,6 +142,8 @@ export function buildEventTitle(draft: EventDraft): string {
   if (draft.kind === 'expense' || draft.kind === 'income') {
     const amount = normalizeAmount(draft.amount);
     if (amount) parts.push(`$${amount}`);
+    const account = draft.account?.trim().replace(/^@/, '');
+    if (account) parts.push(`@${account}`);
   }
   if (draft.kind === 'trip') {
     const distance = normalizeDistance(draft.distance);
@@ -155,6 +162,7 @@ const WARNING_LINES: Record<string, string> = {
   missing_amount: 'No amount found. Add one such as $12.40.',
   missing_distance: 'No distance found. Add one such as 12mi or 20km.',
   multiple_kinds: 'More than one kind tag. Only the first one counts.',
+  multiple_accounts: 'More than one @account. Keep one, or none for the default account.',
   unknown_token: 'A #word CentenarianOS does not know. It is removed from the task name and otherwise ignored.',
 };
 
@@ -191,6 +199,7 @@ export function describeCapture(parsed: ParsedCapture, unit: DistanceUnit = 'mi'
   const lines: string[] = [`Kind: ${KIND_LABELS[parsed.kind].toLowerCase()}`];
   lines.push(`Planner task name: ${parsed.cleanTitle || '(the full title)'}`);
   if (parsed.amountCents !== undefined) lines.push(`Amount: ${(parsed.amountCents / 100).toFixed(2)}`);
+  if (parsed.accountRef) lines.push(`Account: @${parsed.accountRef} (must be ticked in Calendar Sync)`);
   if (parsed.vendor) lines.push(`${parsed.kind === 'income' ? 'From' : 'Vendor'}: ${parsed.vendor}`);
   if (parsed.distanceMiles !== undefined) lines.push(`Distance: ${formatMiles(parsed.distanceMiles, unit)}`);
   if (parsed.kind === 'trip') {
@@ -486,7 +495,7 @@ const KIND_NEEDS: Record<CaptureKind, string> = {
   task: 'nothing; a title with no tag is a task too',
 };
 
-const SHEET_WARNINGS = ['missing_amount', 'missing_distance', 'multiple_kinds', 'unknown_token'] as const;
+const SHEET_WARNINGS = ['missing_amount', 'missing_distance', 'multiple_kinds', 'multiple_accounts', 'unknown_token'] as const;
 
 /**
  * The one-page cheat sheet (public/templates/calendar-event-cheat-sheet.md), built from the same
@@ -501,8 +510,8 @@ export function buildCheatSheetMarkdown(): string {
       '(Settings > Calendar Sync), the title is read. English and Spanish words both work, whatever your language setting.',
     '',
     '**What happens when an event syncs:** every synced event becomes a planner task named after the title without its tags. ' +
-      'A tagged title also creates a record linked to that task: #expense and #income a transaction (in the account chosen ' +
-      'for that Google account in Calendar Sync, in its currency), #meal a meal log, #workout a workout log. ' +
+      'A tagged title also creates a record linked to that task: #expense and #income a transaction (in the default account ' +
+      'ticked for that Google account in Calendar Sync, or the one an `@account` names, in its currency), #meal a meal log, #workout a workout log. ' +
       "#trip events stay tasks: the trip details are saved and will go to RideWitUS. " +
       'A title with missing details (an #expense with no amount) creates only the task and is flagged under Needs a look.',
     '',
@@ -523,6 +532,7 @@ export function buildCheatSheetMarkdown(): string {
     '## Details',
     '',
     '- **Amount** (expense, income): a `$` amount wins. Without `$`, a number with cents counts; a whole number counts only when it is the only number in the title, and never one that looks like a year (1900-2100). The `$` is only a marker: the amount is not converted between currencies.',
+    '- **Account** (expense, income): `@` and the last four digits of an account ticked in Calendar Sync, or its nickname (set on Finance > Accounts): `Lunch Chipotle #expense $12.40 @1234`, `Dinner #expense $40 @visa`. Without one, the default account is used. An `@account` that is not ticked, matches nothing, or matches two ticked accounts (give one a nickname on Finance > Accounts) creates no transaction and is flagged. Right after a meal word, `@word` is still the vendor (`Dinner @Nobu`), unless it is four digits.',
     `- **Distance** (trips): a number with ${codeList(Object.keys(DISTANCE_UNITS))}. Write it attached (\`12km\`) or with a space (\`12 km\`). Kilometers are converted to miles and stored rounded to 0.1 mi.`,
     `- **Mode** (trips): \`mode:word\` with one of ${codeList(Object.keys(MODE_WORDS))}, or one of ${codeList(TRIP_MODES)}. Without \`mode:\`, one of the words in the first list anywhere in the title counts ("Drive to Tucson"); with neither, the title names no mode.`,
     `- **Meal** (meals): ${codeList(Object.keys(MEAL_WORDS))}, as a word in the title or as a tag (\`#lunch\`). Without one, the start time decides: 05:00-10:29 breakfast, 10:30-14:29 lunch, 17:00-21:29 dinner, any other time snack.`,

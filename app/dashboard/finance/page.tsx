@@ -98,6 +98,8 @@ interface Account {
   account_type: string;
   institution_name: string | null;
   last_four: string | null;
+  /** Migration 218; missing before it. */
+  nickname?: string | null;
   balance: number;
   is_active: boolean;
   /** Migration 210; missing means USD. */
@@ -886,7 +888,7 @@ export default function FinanceDashboardPage() {
                   <option value="">No account</option>
                   {accounts.filter((a) => a.is_active).map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.name}{a.last_four ? ` ··${a.last_four}` : ''}{a.currency && a.currency !== (summary?.home_currency ?? 'USD') ? ` (${a.currency})` : ''}
+                      {a.name}{a.last_four ? ` ··${a.last_four}` : ''}{a.nickname ? ` @${a.nickname}` : ''}{a.currency && a.currency !== (summary?.home_currency ?? 'USD') ? ` (${a.currency})` : ''}
                     </option>
                   ))}
                 </select>

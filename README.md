@@ -6,7 +6,7 @@
 > [`/dashboard/weekly-review`](./app/dashboard/weekly-review)) can surface cross-domain patterns no
 > single-vertical tracker can see. That co-location is the product, not an accident of scope.
 
-> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, Supabase Postgres (its own database since 2026-10; until then it was shared with [Work.WitUS](https://work.witus.online)), offline-first via service-worker + IndexedDB queue, **219 migrations** to date.
+> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, Supabase Postgres (its own database since 2026-10; until then it was shared with [Work.WitUS](https://work.witus.online)), offline-first via service-worker + IndexedDB queue, **220 migrations** to date.
 
 **Actively decomposing.** Modules that a sibling WitUS app already owns are being removed under
 the ecosystem's "one app, one job" rule (see [CLAUDE.md](./CLAUDE.md)) — Media → Stream.WitUS,
@@ -31,7 +31,7 @@ flowchart LR
 
   CentOS[centenarian-os<br/>Next.js 15 · Vercel<br/>14 modules]
   Contractor[contractor-os<br/>Work.WitUS]
-  DB[(Supabase Postgres<br/>219 migrations)]:::shared
+  DB[(Supabase Postgres<br/>220 migrations)]:::shared
 
   CentOS -->|service-role + publishable| DB
   Contractor -->|signed events: income, work schedule| CentOS
@@ -40,7 +40,7 @@ flowchart LR
 For dev-audience readers:
 
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** — full module map, how cross-app data flows now that the database is no longer shared (and what the shared-DB era looked like), offline-sync layer, repo layout, and stack table.
-- **[MIGRATIONS.md](./MIGRATIONS.md)** — 219 migrations grouped by module, the additive-only discipline (born in the shared-DB era, kept as the house rule), notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
+- **[MIGRATIONS.md](./MIGRATIONS.md)** — 220 migrations grouped by module, the additive-only discipline (born in the shared-DB era, kept as the house rule), notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
 - **[CLAUDE.md](./CLAUDE.md)** — AI-collaborator instructions doubling as the project conventions doc (style, a11y, the Database rule, branch workflow).
 - **[STYLE_GUIDE.md](./STYLE_GUIDE.md)** — git workflow, branch naming, Conventional Commits, PR rules. Every change starts on a new branch off `main`; `main` is never pushed to directly.
 - **[docs/CentenarianAcademy/](./docs/CentenarianAcademy/)** — course-authoring standards: `CourseAuthoringGuide.md` (craft), `CourseProductionPlaybook.md` (process), `CitationIntegrityGuide.md` (verify every source, never ship a fake citation), and `CourseCreationWithAI.md` (hand to your AI). Per-course recipes: `CourseAuthoringGuide NASM CPT/CES/CNC.md` and `CourseAuthoringGuide BVC.md` (Better Vice Club: audio-first, four-lens episodes; episode-per-module; rotating quizzes + FlashLearn recall loop + season-wide glossary). Courses cite only verified, peer-reviewed sources and ship a teacher evidence ledger.
@@ -106,7 +106,7 @@ No free plan. All users must subscribe to access paid modules.
 
 | Module | Description | Access |
 |--------|-------------|--------|
-| **Planner** | Roadmap, Goals, Milestones, Tasks hierarchy with day/week/month views; one-field task capture into an auto-created Inbox (works offline), searchable goal picker, Inbox filter; Google Calendar sync (read-only, one or more Google accounts; events on the calendars you choose become planner tasks, daily plus Sync now); calendar event builder (build `#expense` / `#trip` / `#meal` titles, see what the parser reads, open Google's prefilled event form), example `.ics` and printable cheat sheet (English and Spanish) | Paid |
+| **Planner** | Roadmap, Goals, Milestones, Tasks hierarchy with day/week/month views; one-field task capture into an auto-created Inbox (works offline), searchable goal picker, Inbox filter; Google Calendar sync (read-only, one or more Google accounts; events on the calendars you choose become planner tasks, daily plus Sync now; `#expense` / `#income` titles record into the finance accounts ticked per Google account, picked with `@1234` or `@nickname`); calendar event builder (build `#expense` / `#trip` / `#meal` titles, see what the parser reads, open Google's prefilled event form), example `.ics` and printable cheat sheet (English and Spanish) | Paid |
 | **Fuel** | Nutrition tracking with NCV framework, USDA/Open Food Facts APIs, auto inventory | Paid |
 | **Engine** | Pomodoro focus sessions, doodle canvas, daily debrief, AI weekly reviews | Paid |
 | **Health Metrics** | RHR, steps, sleep, body composition; Garmin/Oura/WHOOP sync; CSV import | Paid |
@@ -250,8 +250,14 @@ capture-token parser and the result is stored in `calendar_sync_items.parsed`.
 
 **Records from tagged events** (`lib/capture/calendar-records.ts`, phase 4.4): a tagged event keeps
 its task (the calendar anchor) and also gets a record. `#expense` / `#income` create a transaction
-(`source = 'manual'`, tag `google-calendar`, on the account picked per Google account under
-"Account for #expense and #income", in that account's currency); `#meal` a meal log; `#workout` a
+(`source = 'manual'`, tag `google-calendar`, in the chosen account's currency). Each Google account
+ticks the finance accounts these may use under "Accounts for #expense and #income" and marks one
+the default (`calendar_connections.settings`: `allowed_account_ids`, `default_account_id`; an older single
+`default_account_id` reads as that one account ticked). A title names another ticked account with
+`@` and its last four digits or its nickname (`financial_accounts.nickname`, migration 218, set on
+Finance → Accounts, unique per user among active accounts; before 218, last four only)
+(`Lunch Chipotle #expense $12.40 @1234`, `... @visa`); an `@account` that is unticked, unknown or
+matches two ticked accounts creates no transaction and is flagged (`lib/capture/calendar-accounts.ts`); `#meal` a meal log; `#workout` a
 workout log. Transactions and workouts are linked to the task in `activity_links` (meals only
 through `calendar_sync_items.record_type/record_id`, since `activity_links` has no meal type).
 `#trip` creates **no** trip: travel is moving to RideWitUS, so the parsed trip stays on the sync row
@@ -452,7 +458,7 @@ supabase db push
 # Run migrations in order from supabase/migrations/
 ```
 
-There are 219 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. Migrations before 2026-10 were written for a database shared with Work.WitUS, which is why they're additive-only; new ones keep that rule. Read [`CLAUDE.md`](./CLAUDE.md) §"Database" before adding any.
+There are 220 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. Migrations before 2026-10 were written for a database shared with Work.WitUS, which is why they're additive-only; new ones keep that rule. Read [`CLAUDE.md`](./CLAUDE.md) §"Database" before adding any.
 
 ### Run Development Server
 
