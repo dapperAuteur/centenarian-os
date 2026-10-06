@@ -49,13 +49,15 @@ When a change adds, alters, or removes an app feature, update the affected docs 
 
 ---
 
-## Database
+## Database (still shared with Work.WitUS — verified 2026-10-06)
 
-CentenarianOS has its own database. Work.WitUS (contractor-os) moved to a separate database in 2026-10; the two apps no longer read or write the same tables. *History: the database was shared with Work.WitUS until 2026-10, which is why older migrations and comments say "SHARED DB".*
+**Treat the database as SHARED with Work.WitUS (contractor-os).** A split was planned (CentOS plan 55, Phase 3: Work.WitUS to Neon) and believed done on 2026-10-05, but a code audit on 2026-10-06 found Work.WitUS still runs entirely on Supabase, and both apps' env point at the same Supabase project. Until BAM confirms Work.WitUS production uses a different project:
 
-- **Cross-app data flows only through signed events and APIs** — e.g. income and work-schedule events from Work.WitUS, RideWitUS feeds. Never reach into another app's database.
-- **Migrations stay additive and idempotent** as the house rule — `ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`, guarded policies (`DROP POLICY IF EXISTS` before `CREATE POLICY`). Production data and rollback safety still need it, even though no second app reads these tables. Drops and renames need an explicit plan.
-- **When querying `profiles` / `auth.users`**, don't assume every column exists in the TypeScript types — use optional chaining and defaults.
+- **Never drop or rename tables/columns**, and never tighten RLS on shared tables (`profiles`, `public_profiles`, contractor-era tables), without checking contractor-os first.
+- **Migrations must be additive and idempotent:** `ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`, guarded policies (`DROP POLICY IF EXISTS` before `CREATE POLICY`).
+- **Supabase Auth settings (email templates, SMTP sender, MFA) are per project**, so changing them for one app changes them for both.
+- **Cross-app data** prefers signed events and APIs (income and work-schedule events, RideWitUS feeds) over reading the other app's tables.
+- **When querying `profiles` / `auth.users`**, don't assume every column exists in the TypeScript types: use optional chaining and defaults.
 
 ---
 

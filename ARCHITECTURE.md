@@ -1,5 +1,7 @@
 # CentenarianOS — Architecture
 
+> **Correction (2026-10-06):** Work.WitUS still runs on this same Supabase project. The "no longer shared" wording below describes a planned split (plan 55, Phase 3), not today. See [CLAUDE.md](./CLAUDE.md) §"Database".
+
 > **One job: the longevity correlation engine over your personal data.** The breadth below exists
 > so health, habits, focus, nutrition and personal finance can share one datastore — that
 > co-location is what `/dashboard/correlations`, `/dashboard/retrospective` and

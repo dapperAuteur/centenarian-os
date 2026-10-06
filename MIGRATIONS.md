@@ -1,5 +1,7 @@
 # CentenarianOS — Migrations Gallery
 
+> **Correction (2026-10-06):** Work.WitUS still runs on this same Supabase project. The "no longer shared" wording below describes a planned split (plan 55, Phase 3), not today. See [CLAUDE.md](./CLAUDE.md) §"Database".
+
 > **220 migrations across 14 modules**, shipped solo since project inception. Schema lives in CentenarianOS's own Supabase Postgres database. Until 2026-10 that database was **shared with a sibling product** (Work.WitUS / contractor-os), which is why every migration was written additive, RLS-aware, and cross-app-safe; the additive, idempotent rule stays.
 
 > **Decomposition note.** CentenarianOS is being decomposed toward the ecosystem's "one app,
