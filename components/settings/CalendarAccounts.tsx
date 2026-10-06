@@ -2,22 +2,19 @@
 
 // components/settings/CalendarAccounts.tsx
 // Settings → Google Calendar, per connected account: which finance accounts #expense / #income
-// events may record into (checkboxes), which of them is the default (used when a title names no
-// account), and an optional nickname per account for titles ("@visa"). Without a nickname an
-// account is named by its last four digits ("@1234").
-// Saved with PATCH /api/calendar/google { connection_id, allowed_account_ids, default_account_id,
-// account_nicknames }; the rules live in lib/capture/calendar-accounts.ts. A connection saved
+// events may record into (checkboxes) and which of them is the default (used when a title names
+// no account). Each ticked account shows the "@" token that names it in a title: its nickname
+// (financial_accounts.nickname, migration 218, edited on Finance → Accounts), else its last four
+// digits.
+// Saved with PATCH /api/calendar/google { connection_id, allowed_account_ids, default_account_id };
+// the rules live in lib/capture/calendar-accounts.ts. A connection saved
 // with only the old single default reads as that one account ticked and default.
 
 import { useEffect, useId, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
-import {
-  accountRefFor,
-  normalizeNickname,
-  readAccountChoice,
-  type CalendarAccountChoice,
-} from '@/lib/capture/calendar-accounts';
+import { accountRefFor, readAccountChoice, type CalendarAccountChoice } from '@/lib/capture/calendar-accounts';
+import { nicknameSuffix } from '@/lib/finance/account-nickname';
 
 export interface CalendarFinanceAccount {
   id: string;
@@ -25,6 +22,8 @@ export interface CalendarFinanceAccount {
   account_type?: string | null;
   institution_name?: string | null;
   last_four?: string | null;
+  /** Migration 218; missing before it. */
+  nickname?: string | null;
   currency?: string | null;
   is_active?: boolean | null;
 }
@@ -52,27 +51,24 @@ function label(a: CalendarFinanceAccount): string {
   const parts = [a.name];
   if (a.institution_name) parts.push(a.institution_name);
   if (a.last_four) parts.push(`…${a.last_four}`);
-  return `${parts.join(' · ')}${a.currency ? ` (${a.currency})` : ''}`;
+  return `${parts.join(' · ')}${nicknameSuffix(a.nickname)}${a.currency ? ` (${a.currency})` : ''}`;
 }
 
 interface Patch {
   allowed_account_ids?: string[];
   default_account_id?: string | null;
-  account_nicknames?: Record<string, string | null>;
 }
 
 export default function CalendarAccounts({ connectionId, settings, accounts, accountLabel, onSaved }: Props) {
   const baseId = useId();
   const saved = useMemo(() => readAccountChoice(settings), [settings]);
   const [choice, setChoice] = useState<CalendarAccountChoice>(saved);
-  const [drafts, setDrafts] = useState<Record<string, string>>(saved.nicknames);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedNote, setSavedNote] = useState(false);
 
   useEffect(() => {
     setChoice(saved);
-    setDrafts(saved.nicknames);
   }, [saved]);
 
   const save = async (patch: Patch, next: CalendarAccountChoice) => {
@@ -90,7 +86,6 @@ export default function CalendarAccounts({ connectionId, settings, accounts, acc
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { error?: string } | null;
         setChoice(previous);
-        setDrafts(previous.nicknames);
         setError(body?.error ?? 'That change could not be saved.');
         return;
       }
@@ -98,7 +93,6 @@ export default function CalendarAccounts({ connectionId, settings, accounts, acc
       await onSaved();
     } catch {
       setChoice(previous);
-      setDrafts(previous.nicknames);
       setError('Could not reach the server, so that change was not saved.');
     } finally {
       setSaving(false);
@@ -118,20 +112,6 @@ export default function CalendarAccounts({ connectionId, settings, accounts, acc
     save({ default_account_id: id }, { ...choice, defaultId: id });
   };
 
-  const saveNickname = (id: string) => {
-    const typed = (drafts[id] ?? '').trim();
-    const current = choice.nicknames[id] ?? '';
-    if (typed.replace(/^@/, '').toLowerCase() === current) return;
-    if (typed && !normalizeNickname(typed)) {
-      setError('A nickname starts with a letter and uses up to 20 letters, digits, - or _ (for example visa).');
-      return;
-    }
-    const nicknames = { ...choice.nicknames };
-    if (typed) nicknames[id] = normalizeNickname(typed) as string;
-    else delete nicknames[id];
-    save({ account_nicknames: { [id]: typed || null } }, { ...choice, nicknames });
-  };
-
   const list = (accounts ?? []).filter((a) => a.is_active !== false || choice.allowedIds.includes(a.id.toLowerCase()));
   const groups = new Map<string, CalendarFinanceAccount[]>();
   for (const a of list) {
@@ -142,7 +122,7 @@ export default function CalendarAccounts({ connectionId, settings, accounts, acc
   const orderedTypes = [...groups.keys()].sort(
     (x, y) => (TYPE_ORDER.indexOf(x) + 1 || 99) - (TYPE_ORDER.indexOf(y) + 1 || 99) || x.localeCompare(y),
   );
-  const owned = (accounts ?? []).map((a) => ({ id: a.id, last_four: a.last_four }));
+  const owned = (accounts ?? []).map((a) => ({ id: a.id, last_four: a.last_four, nickname: a.nickname }));
   const missing =
     accounts !== null && choice.allowedIds.filter((id) => !(accounts ?? []).some((a) => a.id.toLowerCase() === id));
   const tickedCount = choice.allowedIds.length;
@@ -153,7 +133,11 @@ export default function CalendarAccounts({ connectionId, settings, accounts, acc
         <h3 className="font-medium text-gray-900">Accounts for #expense and #income</h3>
         <p className="text-sm text-gray-600 mt-0.5">
           Tick the accounts tagged money events from {accountLabel} may record into, and pick a default. A title uses
-          the default unless it names a ticked account with @ and its last four digits or nickname, for example{' '}
+          the default unless it names a ticked account with @ and its last four digits or its nickname (set on{' '}
+          <Link href="/dashboard/finance/accounts" className="text-sky-800 underline">
+            Finance → Accounts
+          </Link>
+          ), for example{' '}
           <code className="text-gray-900">Lunch Chipotle #expense $12.40 @1234</code>. The amount is read in that
           account&apos;s currency.
         </p>
@@ -184,7 +168,6 @@ export default function CalendarAccounts({ connectionId, settings, accounts, acc
               const id = a.id.toLowerCase();
               const checked = choice.allowedIds.includes(id);
               const boxId = `${baseId}-acct-${id}`;
-              const nickId = `${baseId}-nick-${id}`;
               const ref = checked ? accountRefFor(id, choice, owned) : null;
               return (
                 <li key={id} className="py-2 space-y-2">
@@ -216,36 +199,21 @@ export default function CalendarAccounts({ connectionId, settings, accounts, acc
                     )}
                   </div>
                   {checked && (
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 pl-7">
-                      <label htmlFor={nickId} className="text-sm text-gray-700 sm:shrink-0">
-                        Nickname (optional)
-                      </label>
-                      <input
-                        id={nickId}
-                        value={drafts[id] ?? ''}
-                        onChange={(e) => setDrafts((d) => ({ ...d, [id]: e.target.value }))}
-                        onBlur={() => saveNickname(id)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            saveNickname(id);
-                          }
-                        }}
-                        placeholder="visa"
-                        maxLength={21}
-                        aria-describedby={`${nickId}-help`}
-                        className="min-h-11 w-full sm:w-40 px-3 border border-gray-300 rounded-lg bg-white text-sm text-gray-900"
-                      />
-                      <p id={`${nickId}-help`} className="text-sm text-gray-600">
-                        {ref ? (
-                          <>
-                            In a title: <code className="text-gray-900">@{ref}</code>
-                          </>
-                        ) : (
-                          'Give it a nickname to name it in a title (another ticked account has the same last four, or it has none).'
-                        )}
-                      </p>
-                    </div>
+                    <p className="pl-7 text-sm text-gray-600">
+                      {ref ? (
+                        <>
+                          In a title: <code className="text-gray-900">@{ref}</code>
+                        </>
+                      ) : (
+                        <>
+                          To name it in a title, give it a nickname on{' '}
+                          <Link href="/dashboard/finance/accounts" className="text-sky-800 underline">
+                            Finance → Accounts
+                          </Link>{' '}
+                          (another ticked account has the same last four digits, or it has none).
+                        </>
+                      )}
+                    </p>
                   )}
                 </li>
               );

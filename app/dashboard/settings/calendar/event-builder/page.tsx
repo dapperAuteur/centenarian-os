@@ -11,7 +11,7 @@
 // trip: travel is moving to RideWitUS, so the details are only saved (plan 59, phase 4.4).
 // No writes anywhere. Reads GET /api/travel/settings (the user's distance unit), and for the
 // account picker GET /api/calendar/google (each Google account's ticked finance accounts) and
-// GET /api/finance/accounts (their names and last four digits). The picker adds "@1234" or
+// GET /api/finance/accounts (their names, last four digits and nicknames). The picker adds "@1234" or
 // "@nickname" to an #expense / #income title (lib/capture/calendar-accounts.ts).
 
 import { useEffect, useMemo, useState } from 'react';
@@ -59,6 +59,8 @@ interface BuilderFinanceAccount {
   name: string;
   institution_name?: string | null;
   last_four?: string | null;
+  /** Migration 218; missing before it. */
+  nickname?: string | null;
   currency?: string | null;
 }
 
@@ -185,7 +187,7 @@ export default function CalendarEventBuilderPage() {
     const connection = connections.find((c) => c.id === connectionId);
     if (!connection) return [];
     const choice = readAccountChoice(connection.settings);
-    const owned = financeAccounts.map((a) => ({ id: a.id, last_four: a.last_four }));
+    const owned = financeAccounts.map((a) => ({ id: a.id, last_four: a.last_four, nickname: a.nickname }));
     return choice.allowedIds.flatMap((id) => {
       const account = financeAccounts.find((a) => a.id.toLowerCase() === id);
       if (!account) return [];
@@ -434,7 +436,7 @@ export default function CalendarEventBuilderPage() {
                     </option>
                   ) : (
                     <option key={o.id} value={`needs-${o.id}`} disabled>
-                      {o.label} (set a nickname in Calendar Sync)
+                      {o.label} (give it a nickname on Finance → Accounts)
                     </option>
                   ),
                 )}
@@ -444,8 +446,8 @@ export default function CalendarEventBuilderPage() {
                 <Link href={SETTINGS_URL} className="text-sky-800 underline">
                   Calendar Sync
                 </Link>{' '}
-                are listed. Choosing one adds @ and its last four digits or nickname to the title; the default needs
-                nothing.
+                are listed. Choosing one adds @ and its nickname (set on Finance → Accounts) or last four digits to the
+                title; the default needs nothing.
               </p>
             </div>
           </div>

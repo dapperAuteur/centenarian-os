@@ -3,7 +3,8 @@
 // and how the sync keeps them in step with later changes to the event.
 //
 //   #expense / #income  -> a transaction (source 'manual', tag 'google-calendar'). The account is
-//                          the one an "@1234" / "@visa" in the title names among the accounts
+//                          the one an "@1234" (last four) / "@visa" (the account's nickname,
+//                          migration 218) in the title names among the accounts
 //                          ticked for the connection, else the connection's default; its
 //                          currency follows that account (lib/capture/calendar-accounts.ts).
 //                          An "@" that matches no ticked account, or more than one, creates
@@ -38,6 +39,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { checkOwned, ownedIds } from '../auth/ownership.ts';
+import { isNicknameColumnMissing } from '../finance/account-nickname.ts';
 import {
   readAccountChoice,
   resolveEventAccount,
@@ -209,14 +211,21 @@ export async function loadCalendarAccounts(
   settings: Record<string, unknown> | null | undefined,
 ): Promise<CalendarAccountContext> {
   const saved = readAccountChoice(settings);
-  const check = await ownedIds(db, userId, 'financial_accounts', [...saved.allowedIds, ...Object.keys(saved.nicknames)]);
+  const check = await ownedIds(db, userId, 'financial_accounts', saved.allowedIds);
   if (check.failed) throw new Error('Checking the calendar accounts failed.');
   const choice: CalendarAccountChoice = {
     allowedIds: saved.allowedIds.filter((id) => check.has(id)),
     defaultId: saved.defaultId && check.has(saved.defaultId) ? saved.defaultId : null,
-    nicknames: Object.fromEntries(Object.entries(saved.nicknames).filter(([id]) => check.has(id))),
   };
-  const { data, error } = await db.from('financial_accounts').select('id, last_four').eq('user_id', userId);
+  // Nicknames arrive with migration 218; before it, titles can name accounts by last four only.
+  let result: { data: unknown; error: { code?: string; message: string } | null } = await db
+    .from('financial_accounts')
+    .select('id, last_four, nickname')
+    .eq('user_id', userId);
+  if (result.error && isNicknameColumnMissing(result.error)) {
+    result = await db.from('financial_accounts').select('id, last_four').eq('user_id', userId);
+  }
+  const { data, error } = result;
   if (error) throw new Error(`Reading the finance accounts failed: ${error.message}`);
   const owned = ((data as OwnedAccount[] | null) ?? []).filter((a) => typeof a.id === 'string');
   return { choice, owned };

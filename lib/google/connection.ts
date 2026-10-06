@@ -38,8 +38,6 @@ export interface CalendarConnectionSettings {
   default_account_id?: string | null;
   /** The finance accounts #expense / #income events may record into (lib/capture/calendar-accounts.ts). */
   allowed_account_ids?: string[];
-  /** accountId -> nickname for "@visa" in titles. */
-  account_nicknames?: Record<string, string>;
   default_trip_mode?: string | null;
   default_tag?: string | null;
 }

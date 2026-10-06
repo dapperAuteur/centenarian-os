@@ -3,8 +3,10 @@
 //
 // Several finance accounts per Google Calendar connection (lib/capture/calendar-accounts.ts):
 // the "@account" title token, ticked/default resolution, the legacy single default, flags for
-// unknown, unticked and ambiguous references, the PATCH merge rules, and the ownership checks the
-// sync runs (loadCalendarAccounts) and the records that follow. No network, no database.
+// unknown, unticked and ambiguous references, the PATCH merge rules, account nicknames
+// (financial_accounts.nickname, migration 218; lib/finance/account-nickname.ts) and working
+// before that migration, and the ownership checks the sync runs (loadCalendarAccounts) and the
+// records that follow. No network, no database.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -15,7 +17,6 @@ import {
   accountRefFor,
   lastFourOf,
   mergeAccountSettings,
-  normalizeNickname,
   pruneAccountSettings,
   readAccountChoice,
   resolveEventAccount,
@@ -30,6 +31,13 @@ import {
 } from '../../lib/capture/calendar-records.ts';
 import { eventToTaskFields, type EventTaskFields } from '../../lib/calendar/event-fields.ts';
 import { buildEventTitle } from '../../lib/capture/event-templates.ts';
+import {
+  cleanNickname,
+  isNicknameColumnMissing,
+  nicknameKey,
+  nicknameTaken,
+} from '../../lib/finance/account-nickname.ts';
+import { accountLabel } from '../../lib/finance/transfers/pairing.ts';
 
 const USER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const OTHER = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
@@ -41,10 +49,12 @@ const NOT_MINE = '99999999-9999-4999-8999-999999999999';
 const TASK = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 const RECORD_ID = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 
+const SETTINGS: Record<string, unknown> = { allowed_account_ids: [CHECKING, VISA], default_account_id: CHECKING };
+
 const OWNED: OwnedAccount[] = [
-  { id: CHECKING, last_four: '1234' },
-  { id: VISA, last_four: '9876' },
-  { id: SAVINGS, last_four: '5555' },
+  { id: CHECKING, last_four: '1234', nickname: null },
+  { id: VISA, last_four: '9876', nickname: 'Visa' },
+  { id: SAVINGS, last_four: '5555', nickname: 'rainy' },
   { id: TWIN, last_four: '9876' },
 ];
 
@@ -100,31 +110,49 @@ test('parse: a bare "@" or an email-like word is not an account', () => {
 // ── Settings: legacy and new shape ──────────────────────────────────────────────
 
 test('readAccountChoice: the old single default reads as allowed = [default]', () => {
-  assert.deepEqual(readAccountChoice({ default_account_id: VISA }), {
-    allowedIds: [VISA],
-    defaultId: VISA,
-    nicknames: {},
-  });
-  assert.deepEqual(readAccountChoice(null), { allowedIds: [], defaultId: null, nicknames: {} });
+  assert.deepEqual(readAccountChoice({ default_account_id: VISA }), { allowedIds: [VISA], defaultId: VISA });
+  assert.deepEqual(readAccountChoice(null), { allowedIds: [], defaultId: null });
   assert.deepEqual(readAccountChoice({ default_account_id: null, default_tag: 'X' }).allowedIds, []);
 });
 
-test('readAccountChoice: list, default and nicknames; junk ignored; the default is always ticked', () => {
+test('readAccountChoice: list and default; junk ignored; the default is always ticked', () => {
   const choice = readAccountChoice({
     allowed_account_ids: [CHECKING, 'nope', CHECKING.toUpperCase(), VISA],
     default_account_id: SAVINGS,
-    account_nicknames: { [VISA]: 'Visa', [CHECKING]: '1234', bad: 'x' },
   });
   assert.deepEqual(choice.allowedIds, [CHECKING, VISA, SAVINGS]);
   assert.equal(choice.defaultId, SAVINGS);
-  assert.deepEqual(choice.nicknames, { [VISA]: 'visa' });
 });
 
-test('normalizeNickname and lastFourOf', () => {
-  assert.equal(normalizeNickname(' @Visa '), 'visa');
-  assert.equal(normalizeNickname('1234'), null); // would look like last four
-  assert.equal(normalizeNickname('a'.repeat(21)), null);
-  assert.equal(normalizeNickname('has space'), null);
+test('account nickname: cleaned, validated, unique among active accounts, case-insensitive', () => {
+  assert.deepEqual(cleanNickname(' @Visa '), { ok: true, value: 'Visa' });
+  assert.deepEqual(cleanNickname(''), { ok: true, value: null });
+  assert.deepEqual(cleanNickname(null), { ok: true, value: null });
+  assert.equal(cleanNickname('1234').ok, false); // would look like last four
+  assert.equal(cleanNickname('a'.repeat(21)).ok, false);
+  assert.equal(cleanNickname('has space').ok, false);
+  assert.equal(cleanNickname(12).ok, false);
+  assert.equal(nicknameKey(' @Visa'), 'visa');
+  const others = [
+    { id: VISA, nickname: 'Visa', is_active: true },
+    { id: SAVINGS, nickname: 'old', is_active: false },
+  ];
+  assert.equal(nicknameTaken('VISA', others), true);
+  assert.equal(nicknameTaken('visa', others, VISA), false, 'its own nickname');
+  assert.equal(nicknameTaken('old', others), false, 'a closed account does not block it');
+  assert.equal(isNicknameColumnMissing({ code: '42703', message: 'column financial_accounts.nickname does not exist' }), true);
+  assert.equal(isNicknameColumnMissing({ code: '42703', message: 'column x.currency does not exist' }), false);
+});
+
+test('pickers show the nickname next to the last four', () => {
+  assert.equal(
+    accountLabel({ name: 'Visa', institution_name: 'Chase', last_four: '9876', nickname: 'visa' }),
+    'Chase Visa ••9876 (@visa)',
+  );
+  assert.equal(accountLabel({ name: 'Visa', institution_name: 'Chase', last_four: '9876' }), 'Chase Visa ••9876');
+});
+
+test('lastFourOf', () => {
   assert.equal(lastFourOf({ last_four: '1234' }), '1234');
   assert.equal(lastFourOf({ last_four: '****5678' }), '5678');
   assert.equal(lastFourOf({ last_four: '12' }), null);
@@ -133,11 +161,7 @@ test('normalizeNickname and lastFourOf', () => {
 
 // ── Resolution ──────────────────────────────────────────────────────────────────
 
-const CHOICE = readAccountChoice({
-  allowed_account_ids: [CHECKING, VISA],
-  default_account_id: CHECKING,
-  account_nicknames: { [VISA]: 'visa', [SAVINGS]: 'rainy' },
-});
+const CHOICE = readAccountChoice({ allowed_account_ids: [CHECKING, VISA], default_account_id: CHECKING });
 
 test('resolve: no "@" uses the default', () => {
   assert.deepEqual(resolveEventAccount(undefined, CHOICE, OWNED), { ok: true, accountId: CHECKING });
@@ -174,8 +198,17 @@ test('resolve: two ticked accounts with the same last four are ambiguous; a nick
     ok: true,
     accountId: VISA,
   });
-  const named = readAccountChoice({ allowed_account_ids: [VISA, TWIN], account_nicknames: { [TWIN]: 'twin' } });
-  assert.deepEqual(resolveEventAccount('twin', named, OWNED), { ok: true, accountId: TWIN });
+  const named = OWNED.map((a) => (a.id === TWIN ? { ...a, nickname: 'twin' } : a));
+  assert.deepEqual(resolveEventAccount('twin', both, named), { ok: true, accountId: TWIN });
+});
+
+test('resolve: before migration 218 (no nickname column) only last four works', () => {
+  const old = OWNED.map(({ id, last_four }) => ({ id, last_four }));
+  assert.deepEqual(resolveEventAccount('9876', readAccountChoice({ allowed_account_ids: [VISA] }), old), {
+    ok: true,
+    accountId: VISA,
+  });
+  assert.equal(resolveEventAccount('visa', CHOICE, old).ok, false);
 });
 
 test('resolve: an account the user does not own never matches, even if ticked or default', () => {
@@ -188,7 +221,8 @@ test('accountRefFor: nickname first, else a unique last four, else null', () => 
   assert.equal(accountRefFor(VISA, CHOICE, OWNED), 'visa');
   assert.equal(accountRefFor(CHECKING, CHOICE, OWNED), '1234');
   const twins = readAccountChoice({ allowed_account_ids: [VISA, TWIN] });
-  assert.equal(accountRefFor(VISA, twins, OWNED), null);
+  assert.equal(accountRefFor(TWIN, twins, OWNED), null);
+  assert.equal(accountRefFor(VISA, twins, OWNED), 'visa', 'a nickname settles the clash');
   assert.equal(accountRefFor(NOT_MINE, CHOICE, OWNED), null);
 });
 
@@ -208,11 +242,7 @@ test('the event builder writes the token and the parser reads it back', () => {
 test('merge: ticking accounts and choosing a default', () => {
   const result = mergeAccountSettings({}, { allowed_account_ids: [CHECKING, VISA], default_account_id: VISA });
   assert.ok(result.ok);
-  assert.deepEqual(result.settings, {
-    allowed_account_ids: [CHECKING, VISA],
-    default_account_id: VISA,
-    account_nicknames: {},
-  });
+  assert.deepEqual(result.settings, { allowed_account_ids: [CHECKING, VISA], default_account_id: VISA });
   assert.deepEqual([...result.sentIds].sort(), [CHECKING, VISA].sort());
 });
 
@@ -241,28 +271,14 @@ test('merge: bad shapes are refused', () => {
   assert.equal(mergeAccountSettings({}, { allowed_account_ids: 'x' }).ok, false);
   assert.equal(mergeAccountSettings({}, { allowed_account_ids: ['nope'] }).ok, false);
   assert.equal(mergeAccountSettings({}, { default_account_id: 'nope' }).ok, false);
-  assert.equal(mergeAccountSettings({}, { account_nicknames: [] }).ok, false);
-  assert.equal(mergeAccountSettings({}, { account_nicknames: { nope: 'visa' } }).ok, false);
-  assert.equal(mergeAccountSettings({}, { account_nicknames: { [VISA]: '9876' } }).ok, false);
-});
-
-test('merge: nicknames are merged, removed with null, and unique per connection', () => {
-  const first = mergeAccountSettings({}, { account_nicknames: { [VISA]: 'Visa' } });
-  assert.ok(first.ok);
-  assert.deepEqual(first.settings.account_nicknames, { [VISA]: 'visa' });
-  const clash = mergeAccountSettings(first.settings, { account_nicknames: { [TWIN]: 'visa' } });
-  assert.equal(clash.ok, false);
-  const cleared = mergeAccountSettings(first.settings, { account_nicknames: { [VISA]: null } });
-  assert.ok(cleared.ok);
-  assert.deepEqual(cleared.settings.account_nicknames, {});
 });
 
 test('prune: ids the user no longer owns are dropped', () => {
   const pruned = pruneAccountSettings(
-    { allowed_account_ids: [CHECKING, NOT_MINE], default_account_id: NOT_MINE, account_nicknames: { [NOT_MINE]: 'gone' } },
+    { allowed_account_ids: [CHECKING, NOT_MINE], default_account_id: NOT_MINE },
     (id) => id !== NOT_MINE,
   );
-  assert.deepEqual(pruned, { allowed_account_ids: [CHECKING], default_account_id: null, account_nicknames: {} });
+  assert.deepEqual(pruned, { allowed_account_ids: [CHECKING], default_account_id: null });
 });
 
 // ── Server side: ownership and records ──────────────────────────────────────────
@@ -271,9 +287,9 @@ function newDb(): FakeDb {
   const db = new FakeDb();
   db.seed('financial_accounts', [
     { id: CHECKING, user_id: USER, name: 'Checking', last_four: '1234', currency: 'USD' },
-    { id: VISA, user_id: USER, name: 'Visa', last_four: '9876', currency: 'EUR' },
-    { id: SAVINGS, user_id: USER, name: 'Savings', last_four: '5555', currency: 'USD' },
-    { id: NOT_MINE, user_id: OTHER, name: 'Theirs', last_four: '4321', currency: 'USD' },
+    { id: VISA, user_id: USER, name: 'Visa', last_four: '9876', nickname: 'Visa', currency: 'EUR' },
+    { id: SAVINGS, user_id: USER, name: 'Savings', last_four: '5555', nickname: null, currency: 'USD' },
+    { id: NOT_MINE, user_id: OTHER, name: 'Theirs', last_four: '4321', nickname: 'theirs', currency: 'USD' },
   ]);
   return db;
 }
@@ -287,20 +303,29 @@ function fieldsFor(summary: string): EventTaskFields {
   return fields;
 }
 
-test("loadCalendarAccounts: another user's account is dropped from ticked, default and nicknames", async () => {
+test("loadCalendarAccounts: another user's account is dropped from ticked and default, and never matches", async () => {
   const db = newDb();
   const context = await loadCalendarAccounts(db as unknown as SupabaseClient, USER, {
     allowed_account_ids: [CHECKING, NOT_MINE],
     default_account_id: NOT_MINE,
-    account_nicknames: { [NOT_MINE]: 'theirs', [VISA]: 'visa' },
   });
   assert.deepEqual(context.choice.allowedIds, [CHECKING]);
   assert.equal(context.choice.defaultId, null);
-  assert.deepEqual(context.choice.nicknames, { [VISA]: 'visa' });
   assert.deepEqual(context.owned.map((a) => a.id).sort(), [CHECKING, VISA, SAVINGS].sort());
-  // Their last four is unknown to this user, not "unticked".
-  const result = accountForEvent(fieldsFor('Coffee #expense $4 @4321'), context);
-  assert.ok(!result.ok && result.review.startsWith('No account matches'));
+  // Their last four and nickname are unknown to this user, not "unticked".
+  for (const title of ['Coffee #expense $4 @4321', 'Coffee #expense $4 @theirs']) {
+    const result = accountForEvent(fieldsFor(title), context);
+    assert.ok(!result.ok && result.review.startsWith('No account matches'), title);
+  }
+});
+
+test('loadCalendarAccounts: before migration 218 it reads last four only and still works', async () => {
+  const db = newDb();
+  db.missingColumns.financial_accounts = ['nickname'];
+  const context = await loadCalendarAccounts(db as unknown as SupabaseClient, USER, SETTINGS);
+  assert.ok(context.owned.every((a) => !('nickname' in a)));
+  assert.deepEqual(accountForEvent(fieldsFor('Dinner #expense $40 @9876'), context), { ok: true, accountId: VISA });
+  assert.equal(accountForEvent(fieldsFor('Dinner #expense $40 @visa'), context).ok, false);
 });
 
 async function record(db: FakeDb, overrides: Partial<SyncRecordInput> & Pick<SyncRecordInput, 'mode'>) {
@@ -334,11 +359,6 @@ async function viaSettings(
   });
 }
 
-const SETTINGS = {
-  allowed_account_ids: [CHECKING, VISA],
-  default_account_id: CHECKING,
-  account_nicknames: { [VISA]: 'visa' },
-};
 
 test('records: "@visa" puts the transaction on the Visa account; no "@" on the default', async () => {
   const db = newDb();

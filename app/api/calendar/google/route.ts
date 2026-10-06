@@ -9,14 +9,14 @@
 //           user removed at myaccount.google.com/permissions comes back as invalid_grant, the
 //           row is marked needs_reauth, and this response already shows it. A Google outage
 //           leaves the status alone.
-// PATCH  -> body: { connection_id?, allowed_account_ids?, default_account_id?, account_nicknames?,
+// PATCH  -> body: { connection_id?, allowed_account_ids?, default_account_id?,
 //           default_trip_mode?, default_tag? } (null clears a default). connection_id may be left
 //           out when only one account is connected. Saves them in that connection's settings.
 //           allowed_account_ids: the finance accounts #expense / #income events may record into
 //           (replaces the list; unticking the default clears it). default_account_id: one of
 //           them, used when a title names no "@account"; sent alone (the old client), it is
-//           ticked too. account_nicknames: { accountId: "visa" | null }, merged, unique per
-//           connection. Every account id sent must be the caller's (lib/auth/ownership.ts);
+//           ticked too. (Nicknames for "@visa" live on the account itself: financial_accounts.nickname,
+//           migration 218, edited on Finance → Accounts.) Every account id sent must be the caller's (lib/auth/ownership.ts);
 //           stored ids of accounts deleted since are dropped. Rules: lib/capture/calendar-accounts.ts.
 //           -> { connection }
 // DELETE -> ?connection_id=<id> (optional with one account). Revokes that account's grant at
@@ -117,7 +117,7 @@ export async function PATCH(request: NextRequest) {
   if (connectionId !== null && !isUuid(connectionId)) return badRequest('connection_id must be a connection id.');
 
   const changes: CalendarConnectionSettings = {};
-  const accountFields = ['allowed_account_ids', 'default_account_id', 'account_nicknames'] as const;
+  const accountFields = ['allowed_account_ids', 'default_account_id'] as const;
   const accountPatch = Object.fromEntries(accountFields.filter((key) => key in body).map((key) => [key, body[key]]));
   const changesAccounts = Object.keys(accountPatch).length > 0;
   if (changesAccounts) {
@@ -141,7 +141,7 @@ export async function PATCH(request: NextRequest) {
   }
   if (Object.keys(changes).length === 0 && !changesAccounts) {
     return badRequest(
-      'Nothing to update: send allowed_account_ids, default_account_id, account_nicknames, default_trip_mode or default_tag.',
+      'Nothing to update: send allowed_account_ids, default_account_id, default_trip_mode or default_tag.',
     );
   }
 
@@ -162,7 +162,6 @@ export async function PATCH(request: NextRequest) {
       const all = [
         ...merged.settings.allowed_account_ids,
         ...(merged.settings.default_account_id ? [merged.settings.default_account_id] : []),
-        ...Object.keys(merged.settings.account_nicknames),
       ];
       const owned = await ownedIds(db, user.id, 'financial_accounts', all);
       if (owned.failed) throw new Error('Checking the accounts failed.');
