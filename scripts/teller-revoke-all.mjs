@@ -39,7 +39,7 @@
 //   TELLER_CERT + TELLER_KEY                              base64 PEM contents, or
 //   TELLER_CERT_PATH + TELLER_KEY_PATH                    file paths (these win when CERT_PATH is set)
 //
-// Tables and columns are kept (shared database, additive-only rule). Nothing is
+// Tables and columns are kept (additive-only migration rule). Nothing is
 // deleted; transactions and accounts stay as they are.
 
 import { createDecipheriv } from 'node:crypto';

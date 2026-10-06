@@ -49,15 +49,13 @@ When a change adds, alters, or removes an app feature, update the affected docs 
 
 ---
 
-## Shared Database
+## Database
 
-This app's Supabase database is shared with other apps (e.g. the Contractor/JobHub app). Keep this in mind at all times:
+CentenarianOS has its own database. Work.WitUS (contractor-os) moved to a separate database in 2026-10; the two apps no longer read or write the same tables. *History: the database was shared with Work.WitUS until 2026-10, which is why older migrations and comments say "SHARED DB".*
 
-- **Never drop or rename tables/columns** without checking if other apps depend on them
-- **Migrations must be additive** — use `ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`
-- **The `profiles` table is shared** — columns like `clock_format`, `dashboard_home`, etc. are used across apps. Adding columns is fine; removing or altering existing ones requires coordination
-- **RLS policies must stay app-agnostic** — don't write policies that assume a single app context
-- **When querying shared tables** (e.g. `profiles`, `auth.users`), don't assume all columns exist in every app's TypeScript types — use optional chaining and defaults
+- **Cross-app data flows only through signed events and APIs** — e.g. income and work-schedule events from Work.WitUS, RideWitUS feeds. Never reach into another app's database.
+- **Migrations stay additive and idempotent** as the house rule — `ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`, guarded policies (`DROP POLICY IF EXISTS` before `CREATE POLICY`). Production data and rollback safety still need it, even though no second app reads these tables. Drops and renames need an explicit plan.
+- **When querying `profiles` / `auth.users`**, don't assume every column exists in the TypeScript types — use optional chaining and defaults.
 
 ---
 
