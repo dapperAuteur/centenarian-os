@@ -6,10 +6,11 @@
 
 import { citiBestBuy } from './citi-best-buy.ts';
 import { generic } from './generic.ts';
+import { capitalOneWeb, paypalCreditWeb } from './web-activity.ts';
 import type { IssuerParser, ParsedStatement, PdfLine } from '../types.ts';
 
 /** Recognized layouts, most specific first. The generic fallback is not in this list. */
-export const ISSUERS: readonly IssuerParser[] = [citiBestBuy];
+export const ISSUERS: readonly IssuerParser[] = [citiBestBuy, capitalOneWeb, paypalCreditWeb];
 
 /** The parser for these lines: a recognized issuer, or the generic fallback. */
 export function detectIssuer(lines: readonly PdfLine[]): IssuerParser {

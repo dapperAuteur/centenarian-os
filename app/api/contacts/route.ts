@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { checkReferences, invalidReferenceMessage } from '@/lib/auth/ownership';
 
 function getDb() {
   return createServiceClient(
@@ -75,6 +76,14 @@ export async function POST(request: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data);
   }
+
+  // The default category is copied onto new transactions for this contact:
+  // it must be the caller's own.
+  const refs = await checkReferences(db, user.id, [
+    { field: 'default_category_id', table: 'budget_categories', id: default_category_id },
+  ]);
+  if (refs.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
+  if (!refs.ok) return NextResponse.json({ error: invalidReferenceMessage(refs.invalid) }, { status: 400 });
 
   const { data, error } = await db
     .from('user_contacts')

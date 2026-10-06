@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { checkReferences, invalidReferenceMessage, ownedIds } from '@/lib/auth/ownership';
 
 function getDb() {
   return createServiceClient(
@@ -51,6 +52,22 @@ export async function POST(request: NextRequest) {
   }
 
   const db = getDb();
+  // The category must be the caller's own or a global one; each exercise and
+  // piece of equipment is kept only when the caller may reference it (their
+  // own, or public), as in POST /api/workouts/logs.
+  const exerciseList: unknown[] = Array.isArray(exercises) ? exercises : [];
+  const idsOf = (key: 'exercise_id' | 'equipment_id') =>
+    exerciseList.map((ex) => (ex && typeof ex === 'object' ? (ex as Record<string, unknown>)[key] : null));
+  const [categoryRefs, exerciseRefs, equipmentRefs] = await Promise.all([
+    checkReferences(db, user.id, [{ field: 'category_id', table: 'workout_categories', id: category_id, allowPublic: true }]),
+    ownedIds(db, user.id, 'exercises', idsOf('exercise_id'), { allowPublic: true }),
+    ownedIds(db, user.id, 'equipment', idsOf('equipment_id'), { allowPublic: true }),
+  ]);
+  if (categoryRefs.failed || exerciseRefs.failed || equipmentRefs.failed) {
+    return NextResponse.json({ error: 'Could not save the workout' }, { status: 500 });
+  }
+  if (!categoryRefs.ok) return NextResponse.json({ error: invalidReferenceMessage(categoryRefs.invalid) }, { status: 400 });
+
   const { data: template, error } = await db
     .from('workout_templates')
     .insert({
@@ -68,12 +85,12 @@ export async function POST(request: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   // Insert exercises
-  if (exercises.length > 0) {
+  if (exerciseList.length > 0) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows = exercises.map((ex: any, i: number) => ({
+    const rows = exerciseList.map((ex: any, i: number) => ({
       template_id: template.id,
       name: ex.name,
-      exercise_id: ex.exercise_id || null,
+      exercise_id: exerciseRefs.has(ex.exercise_id) ? ex.exercise_id : null,
       sets: ex.sets ?? null,
       reps: ex.reps ?? null,
       weight_lbs: ex.weight_lbs ? Number(ex.weight_lbs) : null,
@@ -81,7 +98,7 @@ export async function POST(request: NextRequest) {
       rest_sec: ex.rest_sec ?? 60,
       sort_order: i,
       notes: ex.notes ?? null,
-      equipment_id: ex.equipment_id || null,
+      equipment_id: equipmentRefs.has(ex.equipment_id) ? ex.equipment_id : null,
       is_circuit: ex.is_circuit ?? false,
       is_negative: ex.is_negative ?? false,
       is_isometric: ex.is_isometric ?? false,

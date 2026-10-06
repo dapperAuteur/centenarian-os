@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { getCourseAccess } from '@/lib/academy/access';
 
 const GEMINI_MODEL = 'gemini-2.5-flash';
 
@@ -104,7 +105,14 @@ Only include courses from the list above. If no good matches, return empty array
 
 export async function GET(_req: NextRequest, { params }: Params) {
   const { id: courseId } = await params;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   const db = getDb();
+
+  // Only for a course the caller may see: drafts and other hidden courses
+  // read as missing.
+  const access = await getCourseAccess(db, courseId, user);
+  if (!access.course || !access.visible) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   // Check cache
   const { data: course } = await db
@@ -134,6 +142,12 @@ export async function GET(_req: NextRequest, { params }: Params) {
       after: (recs.after ?? []).map((r) => ({ ...r, title: courseMap.get(r.course_id)?.title ?? 'Unknown', cover_image_url: courseMap.get(r.course_id)?.cover_image_url ?? null })),
       cached: true,
     });
+  }
+
+  // Generating calls the AI model and writes to the course row: signed-in
+  // callers only. An anonymous visitor gets whatever is cached, stale or not.
+  if (!user) {
+    return NextResponse.json({ before: [], after: [], cached: false });
   }
 
   // Generate fresh

@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { checkOwned, checkReferences, invalidReferenceMessage, ownedIds } from '@/lib/auth/ownership';
 
 function getDb() {
   return createServiceClient(
@@ -22,7 +23,29 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const db = getDb();
+
+  // Ownership first: the exercises below are replaced by template_id, and the
+  // response re-reads the template.
+  const owned = await checkOwned(db, user.id, 'workout_templates', id);
+  if (owned.failed) return NextResponse.json({ error: 'Could not save the workout' }, { status: 500 });
+  if (!owned.allowed) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
   const body = await request.json();
+  // The category must be the caller's own or a global one; each exercise and
+  // piece of equipment is kept only when the caller may reference it (their
+  // own, or public), as in POST /api/workouts/logs.
+  const exerciseList: unknown[] = Array.isArray(body.exercises) ? body.exercises : [];
+  const idsOf = (key: 'exercise_id' | 'equipment_id') =>
+    exerciseList.map((ex) => (ex && typeof ex === 'object' ? (ex as Record<string, unknown>)[key] : null));
+  const [categoryRefs, exerciseRefs, equipmentRefs] = await Promise.all([
+    checkReferences(db, user.id, [{ field: 'category_id', table: 'workout_categories', id: body.category_id, allowPublic: true }]),
+    ownedIds(db, user.id, 'exercises', idsOf('exercise_id'), { allowPublic: true }),
+    ownedIds(db, user.id, 'equipment', idsOf('equipment_id'), { allowPublic: true }),
+  ]);
+  if (categoryRefs.failed || exerciseRefs.failed || equipmentRefs.failed) {
+    return NextResponse.json({ error: 'Could not save the workout' }, { status: 500 });
+  }
+  if (!categoryRefs.ok) return NextResponse.json({ error: invalidReferenceMessage(categoryRefs.invalid) }, { status: 400 });
 
   // Update template fields
   const allowed = ['name', 'description', 'category', 'category_id', 'estimated_duration_min', 'purpose', 'visibility'];
@@ -42,7 +65,7 @@ export async function PATCH(
   }
 
   // Replace exercises if provided
-  if (body.exercises) {
+  if (Array.isArray(body.exercises)) {
     await db.from('workout_template_exercises').delete().eq('template_id', id);
 
     if (body.exercises.length > 0) {
@@ -50,7 +73,7 @@ export async function PATCH(
       const rows = body.exercises.map((ex: any, i: number) => ({
         template_id: id,
         name: ex.name,
-        exercise_id: ex.exercise_id || null,
+        exercise_id: exerciseRefs.has(ex.exercise_id) ? ex.exercise_id : null,
         sets: ex.sets ?? null,
         reps: ex.reps ?? null,
         weight_lbs: ex.weight_lbs ? Number(ex.weight_lbs) : null,
@@ -58,7 +81,7 @@ export async function PATCH(
         rest_sec: ex.rest_sec ?? 60,
         sort_order: i,
         notes: ex.notes ?? null,
-        equipment_id: ex.equipment_id || null,
+        equipment_id: equipmentRefs.has(ex.equipment_id) ? ex.equipment_id : null,
         is_circuit: ex.is_circuit ?? false,
         is_negative: ex.is_negative ?? false,
         is_isometric: ex.is_isometric ?? false,
@@ -86,7 +109,8 @@ export async function PATCH(
     .from('workout_templates')
     .select('*, workout_template_exercises(*)')
     .eq('id', id)
-    .single();
+    .eq('user_id', user.id)
+    .maybeSingle();
 
   return NextResponse.json(data);
 }

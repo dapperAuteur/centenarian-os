@@ -7,7 +7,7 @@
 
 import type { UndoResult } from '@/lib/finance/csv-import/types';
 import { formatCents, formatIsoDate } from '@/lib/finance/csv-import/ui-helpers';
-import { StatusNotice } from './shared';
+import { StatusNotice, ToneIcon } from './shared';
 
 const rows = (n: number, one: string, many: string): string => `${n.toLocaleString('en-US')} ${n === 1 ? one : many}`;
 
@@ -29,6 +29,12 @@ export default function UndoSummary({ undo }: { undo: UndoResult }) {
           Unlinked {rows(undo.unlinked, 'entry', 'entries')} you had made yourself. Those entries are still in your
           transactions.
         </li>
+        {(undo.transfersUndone ?? 0) > 0 && (
+          <li>
+            Took apart {rows(undo.transfersUndone ?? 0, 'payment', 'payments')} linked as transfers. A payment the
+            import had recorded on another account was removed with it.
+          </li>
+        )}
         <li>
           Kept {rows(undo.kept.length, 'transaction', 'transactions')} because{' '}
           {undo.kept.length === 1 ? 'it was' : 'they were'} edited after the import.
@@ -36,7 +42,10 @@ export default function UndoSummary({ undo }: { undo: UndoResult }) {
       </ul>
       {undo.kept.length > 0 && (
         <>
-          <p className="mt-2 font-medium">Kept because edited:</p>
+          <p className="mt-2 flex items-center gap-1.5 font-medium">
+            <ToneIcon tone="attention" className="h-4 w-4" />
+            Needs your attention: kept because edited
+          </p>
           <ul role="list" className="space-y-0.5">
             {undo.kept.map((kept) => (
               <li key={kept.id}>

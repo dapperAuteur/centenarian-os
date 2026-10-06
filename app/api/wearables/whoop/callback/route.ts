@@ -3,7 +3,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
-import { verifyOAuthState } from '@/lib/oauth-state';
+import { verifyOAuthStateFor } from '@/lib/oauth-state';
+import { createClient } from '@/lib/supabase/server';
 
 function getDb() {
   return createServiceClient(
@@ -21,7 +22,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${appUrl}/dashboard/settings/wearables?error=missing_code`);
   }
 
-  const userId = verifyOAuthState(rawState);
+  // The state must carry a valid signature AND name the user whose session
+  // this browser holds, as the Google Calendar callback does. That ties the
+  // callback to the browser that started the flow.
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = verifyOAuthStateFor(rawState, user?.id);
   if (!userId) {
     return NextResponse.redirect(`${appUrl}/dashboard/settings/wearables?error=invalid_state`);
   }

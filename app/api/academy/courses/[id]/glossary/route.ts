@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { canReadLesson, getCourseAccess, lessonInCourse, modulePublished } from '@/lib/academy/access';
 
 function getDb() {
   return createServiceClient(
@@ -23,32 +24,25 @@ export async function GET(req: NextRequest, { params }: Params) {
   const db = getDb();
   const lessonId = req.nextUrl.searchParams.get('lesson_id');
 
-  // Mirror the lesson-detail route's free-preview / free-course access
-  // model so this side-fetch doesn't 401 on the same surface the lesson
-  // page already permits unauthenticated viewers to see.
-  if (!user) {
-    const { data: course } = await db
-      .from('courses')
-      .select('price_type, price')
-      .eq('id', courseId)
-      .maybeSingle();
-    const isFreeCourse = course?.price_type === 'free' || Number(course?.price) === 0;
-
-    let lessonIsFreePreview = false;
-    if (lessonId) {
-      const { data: lesson } = await db
-        .from('lessons')
-        .select('is_free_preview')
-        .eq('id', lessonId)
-        .eq('course_id', courseId)
-        .maybeSingle();
-      lessonIsFreePreview = !!lesson?.is_free_preview;
-    }
-
-    if (!isFreeCourse && !lessonIsFreePreview) {
-      return NextResponse.json([]);
-    }
+  // The same access as the lesson route: staff; otherwise a visible course
+  // and an active enrollment, a free course, or (for one lesson's terms) a
+  // published free-preview lesson. Anyone else gets an empty list.
+  const access = await getCourseAccess(db, courseId, user);
+  let allowed = access.isStaff || (access.visible && (access.enrolled || access.isFree));
+  if (!allowed && access.visible && lessonId) {
+    const lesson = await lessonInCourse<{ module_id: string | null; is_free_preview: boolean | null; is_published: boolean | null }>(
+      db, courseId, lessonId,
+    );
+    allowed = !!lesson && canReadLesson({
+      course: access.course,
+      lesson,
+      modulePublished: await modulePublished(db, lesson.module_id),
+      viewer: user,
+      enrolled: access.enrolled,
+      adminEmail: process.env.ADMIN_EMAIL,
+    });
   }
+  if (!allowed) return NextResponse.json([]);
 
   let query = db
     .from('course_glossary_terms')

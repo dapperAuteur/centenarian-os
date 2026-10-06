@@ -4,8 +4,9 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   DollarSign, TrendingUp, TrendingDown, Plus, ArrowRight,
   Upload, Download, Settings, Loader2, CreditCard, Wallet, FileText, AlertTriangle,
-  ArrowRightLeft, RefreshCw, Building2, ScanLine, X, PiggyBank,
+  ArrowRightLeft, RefreshCw, Building2, ScanLine, X, PiggyBank, Target,
 } from 'lucide-react';
+import { Landmark, Umbrella } from 'lucide-react';
 import Link from 'next/link';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -19,6 +20,9 @@ import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import TransferModal from '@/components/finance/TransferModal';
 import LearnCategoryPrompt, { type LearnCategoryRequest } from '@/components/finance/LearnCategoryPrompt';
 import Modal from '@/components/ui/Modal';
+import { formatMoney } from '@/lib/finance/fx/math';
+import DueSoonBanner from '@/components/finance/debt/DueSoonBanner';
+import CashOnHandCard from '@/components/finance/cash/CashOnHandCard';
 
 interface CategoryBreakdown {
   id: string;
@@ -75,6 +79,10 @@ interface Summary {
   categoryBreakdown: CategoryBreakdown[];
   monthlyTrend: MonthlyTrend[];
   projections?: Projections | null;
+  /** Multi-currency (migration 210): totals are in this currency. */
+  home_currency?: string;
+  /** Foreign-currency rows with no rate yet, left out of the totals. */
+  unconverted?: number;
 }
 
 interface Category {
@@ -92,6 +100,8 @@ interface Account {
   last_four: string | null;
   balance: number;
   is_active: boolean;
+  /** Migration 210; missing means USD. */
+  currency?: string;
 }
 
 const ACCOUNT_TYPE_LABEL: Record<string, string> = {
@@ -152,8 +162,9 @@ export default function FinanceDashboardPage() {
   const [showCatForm, setShowCatForm] = useState(false);
   const [catForm, setCatForm] = useState({ name: '', monthly_budget: '', color: '#6366f1' });
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  // quiet: refresh in place (no full-page spinner), so cards keep their own state.
+  const load = useCallback(async (quiet?: boolean) => {
+    if (quiet !== true) setLoading(true);
     try {
       const [sumRes, catRes, acctRes, brandsRes, remRes, budgetRes] = await Promise.all([
         offlineFetch('/api/finance/summary?months=6'),
@@ -184,6 +195,7 @@ export default function FinanceDashboardPage() {
       setLoading(false);
     }
   }, []);
+  const reloadQuietly = useCallback(() => { void load(true); }, [load]);
 
   useEffect(() => {
     load();
@@ -354,6 +366,34 @@ export default function FinanceDashboardPage() {
             Budgets
           </Link>
           <Link
+            href="/dashboard/finance/debt"
+            className="flex items-center gap-1.5 px-3 py-2 bg-sky-50 text-sky-700 rounded-lg text-sm font-medium hover:bg-sky-100 transition"
+          >
+            <TrendingDown className="w-4 h-4" aria-hidden="true" />
+            Debt payoff
+          </Link>
+          <Link
+            href="/dashboard/finance/savings"
+            className="flex items-center gap-1.5 px-3 py-2 bg-sky-50 text-sky-700 rounded-lg text-sm font-medium hover:bg-sky-100 transition"
+          >
+            <Target className="w-4 h-4" aria-hidden="true" />
+            Savings goals
+          </Link>
+          <Link
+            href="/dashboard/finance/retirement"
+            className="flex items-center gap-1.5 px-3 py-2 bg-sky-50 text-sky-700 rounded-lg text-sm font-medium hover:bg-sky-100 transition"
+          >
+            <Landmark className="w-4 h-4" aria-hidden="true" />
+            Retirement
+          </Link>
+          <Link
+            href="/dashboard/finance/insurance"
+            className="flex items-center gap-1.5 px-3 py-2 bg-sky-50 text-sky-700 rounded-lg text-sm font-medium hover:bg-sky-100 transition"
+          >
+            <Umbrella className="w-4 h-4" aria-hidden="true" />
+            Insurance
+          </Link>
+          <Link
             href="/dashboard/finance/recurring"
             className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
           >
@@ -422,6 +462,9 @@ export default function FinanceDashboardPage() {
         />
       )}
 
+      {/* Card and loan payments due in the next 3 days (plans/61 section 5) */}
+      <DueSoonBanner />
+
       {/* Reminders Banner */}
       {(reminders.overdue_count > 0 || reminders.due_soon_count > 0) && (
         <div className={`rounded-xl p-4 flex flex-wrap items-center justify-between gap-3 ${reminders.overdue_count > 0 ? 'bg-red-50 border border-red-200' : 'bg-amber-50 border border-amber-200'}`}>
@@ -469,13 +512,22 @@ export default function FinanceDashboardPage() {
                 </div>
                 <p className="text-sm font-semibold text-gray-800 truncate">{acct.name}</p>
                 <p className={`text-base font-bold mt-0.5 ${acct.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                  {acct.balance < 0 ? '-' : ''}${Math.abs(acct.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  {formatMoney(acct.balance, acct.currency ?? 'USD')}
+                  {(acct.currency ?? 'USD') !== 'USD' && <span className="ml-1 text-xs font-medium text-gray-500">{acct.currency}</span>}
                 </p>
               </Link>
             ))}
           </div>
         </div>
       )}
+
+      {/* Cash on hand: balances, last count, Count / Paid cash / Withdraw (or "Track cash on hand") */}
+      <CashOnHandCard
+        categories={categories}
+        onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
+        accounts={accounts}
+        onChanged={reloadQuietly}
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -484,14 +536,14 @@ export default function FinanceDashboardPage() {
             <TrendingDown className="w-4 h-4 text-red-500" />
             Expenses This Month
           </div>
-          <p className="text-2xl font-bold text-gray-900">${cm.expenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+          <p className="text-2xl font-bold text-gray-900">{formatMoney(cm.expenses, summary?.home_currency ?? 'USD')}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-2xl p-5">
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
             <TrendingUp className="w-4 h-4 text-green-500" />
             Income This Month
           </div>
-          <p className="text-2xl font-bold text-gray-900">${cm.income.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+          <p className="text-2xl font-bold text-gray-900">{formatMoney(cm.income, summary?.home_currency ?? 'USD')}</p>
         </div>
         <div className={`bg-white border rounded-2xl p-5 ${cm.net >= 0 ? 'border-green-200' : 'border-red-200'}`}>
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
@@ -503,6 +555,18 @@ export default function FinanceDashboardPage() {
           </p>
         </div>
       </div>
+      {((summary?.home_currency ?? 'USD') !== 'USD' || (summary?.unconverted ?? 0) > 0) && (
+        <p className="text-xs text-gray-600 -mt-2">
+          Totals in {summary?.home_currency ?? 'USD'}.
+          {(summary?.unconverted ?? 0) > 0 && (
+            <>
+              {' '}{summary?.unconverted} foreign-currency transaction{summary?.unconverted === 1 ? ' has' : 's have'} no exchange rate yet and
+              {summary?.unconverted === 1 ? ' is' : ' are'} left out.{' '}
+              <Link href="/dashboard/settings#my-currencies" className="underline underline-offset-2 text-sky-700">Update rates</Link>
+            </>
+          )}
+        </p>
+      )}
 
       {/* Projection Toggle Bar + Cards + Timeline */}
       {hasProjections && (
@@ -744,7 +808,9 @@ export default function FinanceDashboardPage() {
                 </select>
               </div>
               <div>
-                <label htmlFor="txn-amount" className="text-xs font-medium text-gray-600">Amount ($)</label>
+                <label htmlFor="txn-amount" className="text-xs font-medium text-gray-600">
+                  Amount ({accounts.find((a) => a.id === addForm.account_id)?.currency ?? summary?.home_currency ?? 'USD'})
+                </label>
                 <input
                   id="txn-amount"
                   type="number"
@@ -820,7 +886,7 @@ export default function FinanceDashboardPage() {
                   <option value="">No account</option>
                   {accounts.filter((a) => a.is_active).map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.name}{a.last_four ? ` ··${a.last_four}` : ''}
+                      {a.name}{a.last_four ? ` ··${a.last_four}` : ''}{a.currency && a.currency !== (summary?.home_currency ?? 'USD') ? ` (${a.currency})` : ''}
                     </option>
                   ))}
                 </select>

@@ -8,6 +8,16 @@
 // tested in tests/unit/csv-import-ui.test.ts. Relative imports end in `.ts`
 // for `node --test --experimental-strip-types`.
 
+import {
+  accountNamedIn,
+  cardKindFor,
+  isDebtAccountType,
+  transferPickerAccounts,
+  transferRoleFor,
+  typeForCardKind,
+  type CardRowKind,
+  type TransferRole,
+} from './card-terms.ts';
 import { applyMapping, parseAmount } from './parse.ts';
 import { BANK_PRESETS, GENERIC_PRESET_ID } from './presets.ts';
 import type {
@@ -16,6 +26,7 @@ import type {
   DateOrder,
   MappingGuess,
   MatchSummary,
+  NormalizedRow,
   PlanStatus,
   PlannedRow,
   RawRow,
@@ -97,6 +108,8 @@ export interface ImportAccount {
   institution_name?: string | null;
   last_four?: string | null;
   is_active?: boolean | null;
+  /** financial_accounts.currency (migration 210). Missing means USD. */
+  currency?: string | null;
   /** financial_accounts.csv_import_mapping. Absent until migration 203 is applied. */
   csv_import_mapping?: unknown;
 }
@@ -131,7 +144,7 @@ export function sortAccountsForPicker<T extends ImportAccount>(accounts: readonl
 // ── Column mapping ────────────────────────────────────────────────────────
 
 export const ALL_ROLES: readonly ColumnRole[] = [
-  'date', 'postDate', 'description', 'merchant', 'memo', 'amount',
+  'date', 'postDate', 'description', 'merchant', 'memo', 'detail', 'amount',
   'debit', 'credit', 'type', 'category', 'bankId', 'status',
 ];
 
@@ -141,6 +154,7 @@ export const ROLE_LABELS: Record<ColumnRole, string> = {
   description: 'Description',
   merchant: 'Merchant',
   memo: 'Memo',
+  detail: 'Details',
   amount: 'Amount',
   debit: 'Debit (money out)',
   credit: 'Credit (money in)',
@@ -404,6 +418,8 @@ export interface SampleRow {
   description?: string;
   /** Why the row can't be read, when `ok` is false. */
   reason?: string;
+  /** True when the layout leaves the row out on purpose (it moves no money): not an error. */
+  skipped?: boolean;
 }
 
 export interface MappingPreview {
@@ -413,9 +429,13 @@ export interface MappingPreview {
   /** Rows of the whole file that can and can't be read with these settings. */
   readable: number;
   unreadable: number;
+  /** Rows the layout leaves out because they move no money (PayPal holds, item lines). */
+  skipped: number;
   /** How the readable rows split, so a flipped sign shows at a glance. */
   expenses: number;
   income: number;
+  /** Every readable row, for the card-terms count (charges vs payments). */
+  rows: NormalizedRow[];
 }
 
 /**
@@ -428,16 +448,29 @@ export function previewMapping(
   sign: SignConvention,
   dateOrder: DateOrder,
   limit: number = SAMPLE_ROW_COUNT,
+  preset: string | null = null,
 ): MappingPreview {
-  const result = applyMapping(rows, cleanMapping(mapping, sign), sign, dateOrder);
+  const result = applyMapping(rows, cleanMapping(mapping, sign), sign, dateOrder, { preset });
   if (result.missingColumns.length > 0) {
-    return { missingColumns: result.missingColumns, sample: [], readable: 0, unreadable: 0, expenses: 0, income: 0 };
+    return {
+      missingColumns: result.missingColumns,
+      sample: [],
+      readable: 0,
+      unreadable: 0,
+      skipped: 0,
+      expenses: 0,
+      income: 0,
+      rows: [],
+    };
   }
 
   const readByRow = new Map(result.rows.map((row) => [row.rowNumber, row]));
   const reasonByRow = new Map(result.rejected.map((row) => [row.row, row.reason]));
+  const skippedByRow = new Map(result.skipped.map((row) => [row.row, row.reason]));
   const sample: SampleRow[] = rows.slice(0, limit).map((raw) => {
     const read = readByRow.get(raw.rowNumber);
+    const skippedReason = skippedByRow.get(raw.rowNumber);
+    if (skippedReason) return { rowNumber: raw.rowNumber, ok: false, skipped: true, reason: skippedReason };
     if (read) {
       return {
         rowNumber: raw.rowNumber,
@@ -457,8 +490,10 @@ export function previewMapping(
     sample,
     readable: result.rows.length,
     unreadable: result.rejected.length,
+    skipped: result.skipped.length,
     expenses,
     income: result.rows.length - expenses,
+    rows: result.rows,
   };
 }
 
@@ -497,6 +532,13 @@ export interface RowDecision {
   type?: TransactionType;
   /** A budget category id, or null for "no category". */
   categoryId?: string | null;
+  /** On a card or loan: what the row is, in card terms (sets `type` too). */
+  cardKind?: CardRowKind;
+  /**
+   * The other account of a payment ("Paid from" / "This paid"): an account
+   * id, or null for "not linked". Missing means the suggested account.
+   */
+  transferAccountId?: string | null;
 }
 
 /** Decisions by spreadsheet row number. */
@@ -545,10 +587,20 @@ export function applyDecision(
     if (patch.action !== undefined && isActionAllowed(row, patch.action)) updated.action = patch.action;
     if (patch.type !== undefined) updated.type = patch.type;
     if (patch.categoryId !== undefined) updated.categoryId = patch.categoryId;
+    if (patch.cardKind !== undefined) {
+      updated.cardKind = patch.cardKind;
+      updated.type = typeForCardKind(patch.cardKind);
+    } else if (patch.type !== undefined && current.cardKind && typeForCardKind(current.cardKind) !== patch.type) {
+      // A flipped direction no longer fits the kind picked before.
+      delete updated.cardKind;
+    }
+    if (patch.transferAccountId !== undefined) updated.transferAccountId = patch.transferAccountId;
     if (
       updated.action === current.action &&
       updated.type === current.type &&
-      updated.categoryId === current.categoryId
+      updated.categoryId === current.categoryId &&
+      updated.cardKind === current.cardKind &&
+      updated.transferAccountId === current.transferAccountId
     ) {
       continue;
     }
@@ -587,6 +639,130 @@ export interface WireRowAction {
   action?: RowActionKind;
   type?: TransactionType;
   category_id?: string | null;
+  /** The other account of a payment, linked as a transfer at commit. */
+  transfer_account_id?: string;
+  /** False: when that account has no matching row, leave the payment unlinked instead of recording it there. */
+  record_missing?: boolean;
+}
+
+// ── Payments as transfers ─────────────────────────────────────────────────
+
+/** What the review step knows about the account, for card words and "Paid from". */
+export interface TransferContext {
+  accountId: string;
+  accountType: string | null | undefined;
+  /** The person's accounts, for the pickers. */
+  accounts: readonly ImportAccount[];
+  /** The account payments to this card or loan were last paid from (from the preview), or null. */
+  paidFromDefault: string | null;
+  /**
+   * The cash account a cash withdrawal goes into by default: the last used
+   * cash account (from the preview), or null. Used only when it is in this
+   * account's currency.
+   */
+  cashDefault?: string | null;
+  /** Record the other side when the other account has no matching row. */
+  recordMissing: boolean;
+}
+
+type TransferRow = DecidableRow & Pick<PlannedRow, 'description' | 'hints' | 'kind' | 'match'>;
+
+/** What a row is in card terms, with the person's changes applied. */
+export function effectiveCardKind(row: TransferRow, decision: RowDecision | undefined): CardRowKind {
+  if (decision?.cardKind) return decision.cardKind;
+  return cardKindFor(row, decision?.type ?? row.type);
+}
+
+/**
+ * Whether a row can be linked to another account as a payment, given what
+ * the person chose: only rows that will be saved (added, or linked to an
+ * entry the person made), never one linked to a payment another import
+ * already recorded (that one is already a transfer).
+ */
+export function rowTransferRole(
+  row: TransferRow,
+  decision: RowDecision | undefined,
+  accountType: string | null | undefined,
+): TransferRole {
+  const { action, type } = effectiveDecision(row, decision);
+  if (action === 'skip') return null;
+  if (action === 'link' && row.match?.source === 'transfer') return null;
+  if (isDebtAccountType(accountType)) {
+    return type === 'income' && effectiveCardKind(row, decision) === 'payment' ? 'paid_from' : null;
+  }
+  return transferRoleFor(row, accountType, type);
+}
+
+/** The accounts a row's picker offers, for its role. */
+export function pickerAccountsFor(role: Exclude<TransferRole, null>, context: TransferContext): ImportAccount[] {
+  return transferPickerAccounts(role, context.accounts, context.accountId);
+}
+
+/**
+ * The account a payment row will be linked to: the person's choice, else the
+ * suggestion (for a card or loan, the account its payments came from last
+ * time; for a bank row, the one card or loan its wording names). Null when
+ * the row is not a payment, or nothing is chosen or suggested.
+ */
+export function effectiveTransferAccount(
+  row: TransferRow,
+  decision: RowDecision | undefined,
+  context: TransferContext,
+): string | null {
+  const role = rowTransferRole(row, decision, context.accountType);
+  if (!role) return null;
+  const options = pickerAccountsFor(role, context);
+  if (decision && decision.transferAccountId !== undefined) {
+    return decision.transferAccountId && options.some((account) => account.id === decision.transferAccountId)
+      ? decision.transferAccountId
+      : null;
+  }
+  if (role === 'paid_from') {
+    return context.paidFromDefault && options.some((account) => account.id === context.paidFromDefault)
+      ? context.paidFromDefault
+      : null;
+  }
+  if (role === 'cash_withdrawal') {
+    // The last used cash account, else the only cash account in this currency.
+    if (context.cashDefault && options.some((account) => account.id === context.cashDefault)) return context.cashDefault;
+    return options.length === 1 ? options[0].id : null;
+  }
+  return accountNamedIn(row.description, options)?.id ?? null;
+}
+
+function countLinks(
+  rows: readonly TransferRow[],
+  decisions: Decisions,
+  context: TransferContext,
+  wanted: (role: Exclude<TransferRole, null>) => boolean,
+): { linked: number; unassigned: number } {
+  let linked = 0;
+  let unassigned = 0;
+  for (const row of rows) {
+    const role = rowTransferRole(row, decisions[row.rowNumber], context.accountType);
+    if (!role || !wanted(role)) continue;
+    if (effectiveTransferAccount(row, decisions[row.rowNumber], context)) linked += 1;
+    else unassigned += 1;
+  }
+  return { linked, unassigned };
+}
+
+/** How many payment rows will be linked to another account, and how many could be but have no account yet. */
+export function transferCounts(
+  rows: readonly TransferRow[],
+  decisions: Decisions,
+  context: TransferContext,
+): { linked: number; unassigned: number } {
+  return countLinks(rows, decisions, context, (role) => role !== 'cash_withdrawal');
+}
+
+/** How many cash withdrawals will go into a cash account, and how many have no cash account chosen. */
+export function cashWithdrawalCounts(
+  rows: readonly TransferRow[],
+  decisions: Decisions,
+  context: TransferContext,
+): { linked: number; unassigned: number } {
+  return countLinks(rows, decisions, context, (role) => role === 'cash_withdrawal');
 }
 
 /**
@@ -597,14 +773,27 @@ export interface WireRowAction {
  * is the suggested one: the server suggests a category for the direction it
  * saves, which may differ from the one shown.
  */
-export function buildRowActions(rows: readonly DecidableRow[], decisions: Decisions): WireRowAction[] {
+export function buildRowActions(
+  rows: readonly (DecidableRow & Partial<Pick<PlannedRow, 'description' | 'hints' | 'kind' | 'match'>>)[],
+  decisions: Decisions,
+  transfer?: TransferContext,
+): WireRowAction[] {
   const actions: WireRowAction[] = [];
   for (const row of rows) {
     const decision = decisions[row.rowNumber];
-    if (!decision) continue;
+    // A payment carries its other account even when the person changed nothing:
+    // the suggestion is worked out here, not on the server.
+    const transferRow = { description: '', hints: [], ...row } as TransferRow;
+    const transferAccount = transfer ? effectiveTransferAccount(transferRow, decision, transfer) : null;
+    if (!decision && !transferAccount) continue;
     const effective = effectiveDecision(row, decision);
     const wire: WireRowAction = { row: row.rowNumber };
     let changed = false;
+    if (transferAccount && transfer) {
+      wire.transfer_account_id = transferAccount;
+      if (!transfer.recordMissing) wire.record_missing = false;
+      changed = true;
+    }
     if (effective.action !== row.defaultAction) {
       wire.action = effective.action;
       changed = true;
@@ -626,8 +815,8 @@ export function buildRowActions(rows: readonly DecidableRow[], decisions: Decisi
 }
 
 /** The words for an action on a given row: importing a duplicate is "Import anyway". */
-export function actionLabel(row: Pick<PlannedRow, 'status'>, action: RowActionKind): string {
-  if (action === 'link') return 'Link to my entry';
+export function actionLabel(row: Pick<PlannedRow, 'status'> & Partial<Pick<PlannedRow, 'match'>>, action: RowActionKind): string {
+  if (action === 'link') return row.match?.source === 'transfer' ? 'Link to the recorded payment' : 'Link to my entry';
   if (action === 'skip') return 'Skip';
   if (row.status === 'duplicate') return 'Import anyway';
   if (row.status === 'matches') return 'Import as a new transaction';

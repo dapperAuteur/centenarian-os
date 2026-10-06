@@ -5,6 +5,8 @@ import {
   updateLinkedTransaction,
   deleteLinkedTransaction,
 } from '@/lib/finance/linked-transaction';
+import { checkReferences, invalidReferenceMessage, withoutFields } from '@/lib/auth/ownership';
+import { travelReferences, TRAVEL_PROTECTED_FIELDS } from '@/lib/travel/references';
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -41,6 +43,12 @@ export async function POST(request: NextRequest) {
   if (!service_type || !date) {
     return NextResponse.json({ error: 'service_type and date are required' }, { status: 400 });
   }
+
+  // Every foreign id in the body must be the caller's own (a vehicle may also be
+  // a shared public-transport vehicle).
+  const refs = await checkReferences(supabase, user.id, travelReferences(body));
+  if (refs.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
+  if (!refs.ok) return NextResponse.json({ error: invalidReferenceMessage(refs.invalid) }, { status: 400 });
 
   const { data, error } = await supabase
     .from('vehicle_maintenance')
@@ -90,8 +98,15 @@ export async function PATCH(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { id, ...updates } = body;
+  const { id } = body;
+  const updates = withoutFields(body, TRAVEL_PROTECTED_FIELDS);
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+  // Every foreign id in the body must be the caller's own (a vehicle may also be
+  // a shared public-transport vehicle).
+  const refs = await checkReferences(supabase, user.id, travelReferences(body));
+  if (refs.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
+  if (!refs.ok) return NextResponse.json({ error: invalidReferenceMessage(refs.invalid) }, { status: 400 });
 
   // Fetch existing record for transaction sync
   const { data: existing } = await supabase
@@ -126,12 +141,12 @@ export async function PATCH(request: NextRequest) {
     if (existing.transaction_id) {
       if (!newCost || newCost <= 0) {
         try {
-          await deleteLinkedTransaction(supabase, existing.transaction_id);
+          await deleteLinkedTransaction(supabase, user.id, existing.transaction_id);
           await supabase.from('vehicle_maintenance').update({ transaction_id: null }).eq('id', id);
         } catch { /* non-fatal */ }
       } else {
         try {
-          await updateLinkedTransaction(supabase, existing.transaction_id, {
+          await updateLinkedTransaction(supabase, user.id, existing.transaction_id, {
             amount: newCost,
             vendor: newVendor,
             date: newDate,

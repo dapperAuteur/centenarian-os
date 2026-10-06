@@ -41,7 +41,7 @@ export const MAX_CSV_CHARS = 4_000_000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const ROLES: readonly ColumnRole[] = [
-  'date', 'postDate', 'description', 'merchant', 'memo', 'amount',
+  'date', 'postDate', 'description', 'merchant', 'memo', 'detail', 'amount',
   'debit', 'credit', 'type', 'category', 'bankId', 'status',
 ];
 const SIGNS: readonly SignConvention[] = [
@@ -148,6 +148,15 @@ export function readActions(value: unknown): RowAction[] {
       }
       action.categoryId = category as string | null;
     }
+    const transferAccount = item.transfer_account_id ?? item.transferAccountId;
+    if (transferAccount !== undefined && transferAccount !== null && transferAccount !== '') {
+      if (!isUuid(transferAccount)) {
+        throw bad('bad_actions', `Row ${action.row}: the account it was paid from or to is not valid.`);
+      }
+      action.transferAccountId = transferAccount;
+      const recordMissing = item.record_missing ?? item.recordMissing;
+      if (typeof recordMissing === 'boolean') action.recordMissing = recordMissing;
+    }
     actions.push(action);
   }
   return actions;
@@ -208,6 +217,8 @@ export interface ReadStatement {
   dateOrder: DateOrder;
   rows: NormalizedRow[];
   rejected: RejectedRow[];
+  /** Rows the layout leaves out because they move no money. */
+  skipped: RejectedRow[];
 }
 
 const fileSummary = (table: StatementCsv) => ({
@@ -226,7 +237,7 @@ const fileSummary = (table: StatementCsv) => ({
  * `missingColumns`, `file` and `detected` so the page can ask for the mapping.
  */
 export function readStatement(
-  request: Pick<ImportRequest, 'csvText' | 'mapping' | 'sign' | 'dateOrder'>,
+  request: Pick<ImportRequest, 'csvText' | 'mapping' | 'sign' | 'dateOrder'> & { preset?: string | null },
 ): ReadStatement {
   const table = parseStatementCsv(request.csvText);
   if (table.rows.length === 0) {
@@ -241,7 +252,11 @@ export function readStatement(
   const sign = request.sign ?? detected.sign;
   const dateOrder = request.dateOrder ?? detected.dateOrder;
 
-  const result = applyMapping(table.rows, mapping, sign, dateOrder);
+  // The layout's skip rules (rows that move no money) follow the preset the
+  // file was read as: the one the page sent, else the server's own guess.
+  const result = applyMapping(table.rows, mapping, sign, dateOrder, {
+    preset: request.preset ?? detected.preset,
+  });
   if (result.missingColumns.length > 0) {
     throw bad(
       'mapping_incomplete',
@@ -249,7 +264,16 @@ export function readStatement(
       { missingColumns: result.missingColumns, file: fileSummary(table), detected },
     );
   }
-  return { table, detected, mapping, sign, dateOrder, rows: result.rows, rejected: result.rejected };
+  return {
+    table,
+    detected,
+    mapping,
+    sign,
+    dateOrder,
+    rows: result.rows,
+    rejected: result.rejected,
+    skipped: result.skipped,
+  };
 }
 
 export interface OwnedAccount {
@@ -289,7 +313,122 @@ export interface PreviewResponse {
   rows: PlannedRow[];
   /** Rows the parser could not read, with the spreadsheet row number and why. */
   rejected: RejectedRow[];
+  /** Rows the layout leaves out because they move no money (PayPal holds, item lines), with why. */
+  skipped: RejectedRow[];
   totals: PlanTotals & { rejected: number };
+  /**
+   * For a card or loan: the account its payments were last paid from, read
+   * from the transfers already linked, so "Paid from" starts there. Null when
+   * there is no history (or for any other kind of account).
+   */
+  paidFromAccountId: string | null;
+  /**
+   * For a bank account: the cash account cash withdrawals go into by default,
+   * the one that last received one from any account, else the cash account
+   * used most recently. Null when the person has no cash account (or for a
+   * card, loan or cash account).
+   */
+  cashAccountId: string | null;
+}
+
+/**
+ * Where a card's or loan's payments come from, worked out from history:
+ * the account on the other side of this account's latest linked payment;
+ * failing that, the account that made the person's latest card or loan
+ * payment of any kind ("I pay every card from one checking account").
+ * Null for any other account type, with no history, or before the transfer
+ * columns exist (migrations 202 and 203).
+ */
+export async function suggestPaidFrom(
+  db: SupabaseClient,
+  userId: string,
+  account: Pick<OwnedAccount, 'id' | 'account_type'>,
+): Promise<string | null> {
+  if (account.account_type !== 'credit_card' && account.account_type !== 'loan') return null;
+  try {
+    const latest = await db
+      .from('financial_transactions')
+      .select('transfer_group_id')
+      .eq('user_id', userId)
+      .eq('account_id', account.id)
+      .eq('type', 'income')
+      .not('transfer_group_id', 'is', null)
+      .order('transaction_date', { ascending: false })
+      .limit(1);
+    const groupId = (latest.data as { transfer_group_id: string | null }[] | null)?.[0]?.transfer_group_id;
+    if (!latest.error && groupId) {
+      const partner = await db
+        .from('financial_transactions')
+        .select('account_id')
+        .eq('user_id', userId)
+        .eq('transfer_group_id', groupId)
+        .neq('account_id', account.id)
+        .limit(1);
+      const partnerAccount = (partner.data as { account_id: string | null }[] | null)?.[0]?.account_id;
+      if (!partner.error && partnerAccount) return partnerAccount;
+    }
+    const anyCard = await db
+      .from('financial_transactions')
+      .select('account_id')
+      .eq('user_id', userId)
+      .eq('type', 'expense')
+      .in('transfer_kind', ['card_payment', 'loan_payment'])
+      .neq('account_id', account.id)
+      .order('transaction_date', { ascending: false })
+      .limit(1);
+    const payer = (anyCard.data as { account_id: string | null }[] | null)?.[0]?.account_id;
+    return !anyCard.error && payer ? payer : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The cash account an ATM or branch withdrawal on this account goes into by
+ * default (see PreviewResponse.cashAccountId). Remembered from history like
+ * "Paid from": the cash account on the receiving side of the latest linked
+ * transfer into cash, else the cash account with the latest transaction.
+ */
+export async function suggestCashAccount(
+  db: SupabaseClient,
+  userId: string,
+  account: Pick<OwnedAccount, 'id' | 'account_type'>,
+): Promise<string | null> {
+  if (account.account_type === 'credit_card' || account.account_type === 'loan' || account.account_type === 'cash') {
+    return null;
+  }
+  try {
+    const cash = await db
+      .from('financial_accounts')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('account_type', 'cash')
+      .eq('is_active', true);
+    const ids = ((cash.data ?? []) as { id: string }[]).map((row) => row.id);
+    if (cash.error || ids.length === 0) return null;
+    const intoCash = await db
+      .from('financial_transactions')
+      .select('account_id')
+      .eq('user_id', userId)
+      .in('account_id', ids)
+      .eq('type', 'income')
+      .not('transfer_group_id', 'is', null)
+      .order('transaction_date', { ascending: false })
+      .limit(1);
+    const received = (intoCash.data as { account_id: string | null }[] | null)?.[0]?.account_id;
+    if (!intoCash.error && received) return received;
+    const latest = await db
+      .from('financial_transactions')
+      .select('account_id')
+      .eq('user_id', userId)
+      .in('account_id', ids)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    const used = (latest.data as { account_id: string | null }[] | null)?.[0]?.account_id;
+    return !latest.error && used ? used : null;
+  } catch {
+    return null;
+  }
 }
 
 /** POST /api/finance/import/preview. Writes nothing. */
@@ -297,9 +436,11 @@ export async function previewImport(db: SupabaseClient, userId: string, body: un
   const request = parseImportRequest(body, { requireMapping: false });
   const account = await loadOwnedAccount(db, userId, request.accountId);
   const statement = readStatement(request);
-  const plan = await planImport(db, userId, account.id, statement.rows, {
-    includePending: request.includePending,
-  });
+  const [plan, paidFromAccountId, cashAccountId] = await Promise.all([
+    planImport(db, userId, account.id, statement.rows, { includePending: request.includePending }),
+    suggestPaidFrom(db, userId, account),
+    suggestCashAccount(db, userId, account),
+  ]);
   return {
     account,
     file: fileSummary(statement.table),
@@ -310,7 +451,10 @@ export async function previewImport(db: SupabaseClient, userId: string, body: un
     detected: statement.detected,
     rows: plan.rows,
     rejected: statement.rejected,
+    skipped: statement.skipped,
     totals: { ...plan.totals, rejected: statement.rejected.length },
+    paidFromAccountId,
+    cashAccountId,
   };
 }
 
@@ -328,6 +472,7 @@ export async function runImport(db: SupabaseClient, userId: string, body: unknow
   });
   return commitImport(db, userId, {
     accountId: account.id,
+    account,
     fileName: request.fileName,
     preset: request.preset ?? statement.detected.preset,
     mapping: {

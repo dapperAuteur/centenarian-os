@@ -6,6 +6,7 @@
 import type { Metadata } from 'next';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { resolveCourseId } from '@/lib/academy/resolve-server';
+import { isCourseListed } from '@/lib/academy/access';
 
 function getDb() {
   return createServiceClient(
@@ -28,10 +29,11 @@ export async function generateMetadata(
 
   const { data: course } = await db
     .from('courses')
-    .select('title, description, teacher_id')
+    .select('title, description, teacher_id, is_published, visibility, published_at')
     .eq('id', courseId)
     .maybeSingle();
-  if (!course) return { title: 'Course · CentenarianOS Academy' };
+  // Drafts and not-yet-scheduled courses get the generic title.
+  if (!course || !isCourseListed(course)) return { title: 'Course · CentenarianOS Academy' };
 
   let teacherName = 'CentenarianOS';
   if (course.teacher_id) {

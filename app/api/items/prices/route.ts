@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { usableReferences } from '@/lib/auth/ownership';
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -68,6 +69,14 @@ export async function POST(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
+  // A vendor contact is linked only when it is the caller's own; the vendor
+  // name is kept either way.
+  const vendorRef = await usableReferences(serviceClient, user.id, [
+    { field: 'vendor_contact_id', table: 'user_contacts', id: vendor_contact_id },
+  ]);
+  if (vendorRef.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
+  const vendorContactId = vendorRef.values.vendor_contact_id;
+
   const { data, error } = await serviceClient
     .from('item_prices')
     .upsert(
@@ -78,7 +87,7 @@ export async function POST(request: NextRequest) {
         price: Math.abs(parseFloat(price)),
         unit,
         unit_price: unit_price ? Math.abs(parseFloat(unit_price)) : null,
-        vendor_contact_id: vendor_contact_id || null,
+        vendor_contact_id: vendorContactId,
         vendor_name: vendor_name || null,
         recorded_date: recorded_date || new Date().toISOString().slice(0, 10),
         source,
@@ -102,7 +111,7 @@ export async function POST(request: NextRequest) {
         price: Math.abs(parseFloat(price)),
         unit,
         unit_price: unit_price ? Math.abs(parseFloat(unit_price)) : null,
-        vendor_contact_id: vendor_contact_id || null,
+        vendor_contact_id: vendorContactId,
         vendor_name: vendor_name || null,
         recorded_date: recorded_date || new Date().toISOString().slice(0, 10),
         source,

@@ -2,6 +2,9 @@
 
 // components/finance/TransferModal.tsx
 // Modal for transferring funds between two financial accounts.
+// `defaultToId` starts the To account on one account (the cash card's Withdraw
+// button opens it into a cash account). It is read once: give the modal a
+// `key` per target so a new target starts a fresh form.
 
 import { useState } from 'react';
 import { ArrowRightLeft, Loader2 } from 'lucide-react';
@@ -18,6 +21,8 @@ interface Account {
   last_four: string | null;
   balance: number;
   is_active: boolean;
+  /** Migration 210; missing means USD. */
+  currency?: string;
 }
 
 interface TransferModalProps {
@@ -25,11 +30,13 @@ interface TransferModalProps {
   onClose: () => void;
   accounts: Account[];
   onSuccess: () => void;
+  /** The To account the form starts on. */
+  defaultToId?: string;
 }
 
-export default function TransferModal({ isOpen, onClose, accounts, onSuccess }: TransferModalProps) {
+export default function TransferModal({ isOpen, onClose, accounts, onSuccess, defaultToId }: TransferModalProps) {
   const [fromId, setFromId] = useState('');
-  const [toId, setToId] = useState('');
+  const [toId, setToId] = useState(defaultToId ?? '');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(todayLocal());
   const [description, setDescription] = useState('');
@@ -40,7 +47,7 @@ export default function TransferModal({ isOpen, onClose, accounts, onSuccess }: 
 
   function reset() {
     setFromId('');
-    setToId('');
+    setToId(defaultToId ?? '');
     setAmount('');
     setDate(todayLocal());
     setDescription('');
@@ -126,7 +133,14 @@ export default function TransferModal({ isOpen, onClose, accounts, onSuccess }: 
             className="w-full mt-1 min-h-11 px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-900"
           >
             <option value="">Select account…</option>
-            {activeAccounts.filter((a) => a.id !== fromId).map((a) => (
+            {/* Same currency only: money into another currency is an exchange (ExchangeModal). */}
+            {activeAccounts
+              .filter((a) => a.id !== fromId)
+              .filter((a) => {
+                const from = activeAccounts.find((x) => x.id === fromId);
+                return !from || (a.currency ?? 'USD') === (from.currency ?? 'USD');
+              })
+              .map((a) => (
               <option key={a.id} value={a.id}>{label(a)}</option>
             ))}
           </select>

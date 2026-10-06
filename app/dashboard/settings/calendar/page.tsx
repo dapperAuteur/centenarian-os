@@ -5,15 +5,23 @@
 // each account's calendars sync, sync now (per account or all), see when each account last
 // synced and what the run did, reconnect when Google stops accepting an authorization, and
 // disconnect an account. One-way: Google → CentenarianOS. Events become planner tasks under
-// "Google Calendar: <calendar name>"; a daily sync runs as well.
+// "Google Calendar: <calendar name>"; tagged events also create a transaction, meal log or
+// workout log (each account picks the finance account for #expense / #income), and the
+// "Needs a look" list shows what the sync left for the user to check. A daily sync runs as well.
+// Each switched-on calendar also has two RideWitUS switches (migration 216): "Share with
+// RideWitUS" (off by default) sends its events that have a location to RideWitUS for trip
+// suggestions, and "Hide titles" sends "Event" instead of the title. The privacy section below
+// says what is sent and what never is.
 //
 // Data: GET/DELETE /api/calendar/google, GET/PATCH /api/calendar/google/calendars,
-// POST /api/calendar/google/sync. GET /api/calendar/google re-checks each account with Google
+// POST /api/calendar/google/sync, GET /api/finance/accounts (the default-account picker),
+// GET/PATCH /api/calendar/google/review (Needs a look). GET /api/calendar/google re-checks each account with Google
 // (at most every 5 minutes), so an account whose access was removed at Google shows
 // "Needs reconnecting" on load. The OAuth round trip (/api/calendar/google/connect → Google →
 // /callback) comes back here with ?connected=google&connection_id=<id> or ?error=<code>.
 
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   AlertCircle,
@@ -25,9 +33,13 @@ import {
   Plus,
   RefreshCw,
   Unlink,
+  Wand2,
   X,
 } from 'lucide-react';
 import { formatTime, useClockFormat } from '@/lib/hooks/useClockFormat';
+import CalendarDefaultAccount, { type CalendarFinanceAccount } from '@/components/settings/CalendarDefaultAccount';
+import CalendarNeedsALook from '@/components/settings/CalendarNeedsALook';
+import CalendarRideWitUSSharing, { type SharingCalendar } from '@/components/settings/CalendarRideWitUSSharing';
 
 const PAGE_PATH = '/dashboard/settings/calendar';
 const CONNECT_URL = '/api/calendar/google/connect';
@@ -42,6 +54,7 @@ type ClockFormat = '12h' | '24h';
 
 interface SyncCounts {
   created: number;
+  records?: number;
   updated: number;
   archived: number;
   flagged: number;
@@ -67,6 +80,11 @@ interface SyncCalendar {
   enabled: boolean;
   last_synced_at: string | null;
   last_error: string | null;
+  /** Migration 216. */
+  share_with_ridewitus?: boolean;
+  hide_titles_for_ridewitus?: boolean;
+  /** False until migration 216 is applied. */
+  ridewitus_available?: boolean;
 }
 
 interface Connection {
@@ -76,6 +94,7 @@ interface Connection {
   last_error: string | null;
   last_synced_at: string | null;
   last_sync_summary: SyncSummary | null;
+  settings: { default_account_id?: string | null } | null;
   calendars: SyncCalendar[];
 }
 
@@ -165,6 +184,8 @@ interface AccountCardProps {
   onSync: (connectionId: string) => void;
   onReload: () => Promise<unknown>;
   onRemoved: (connectionId: string, flash: Flash) => void;
+  /** The user's finance accounts for the default-account picker; null while loading. */
+  accounts: CalendarFinanceAccount[] | null;
 }
 
 function AccountCard({
@@ -177,6 +198,7 @@ function AccountCard({
   onSync,
   onReload,
   onRemoved,
+  accounts,
 }: AccountCardProps) {
   const [calendars, setCalendars] = useState<SyncCalendar[]>(connection.calendars);
   const [refreshing, setRefreshing] = useState(false);
@@ -263,6 +285,20 @@ function AccountCard({
       });
     }
   };
+
+  const sharingSaved = (saved: SharingCalendar) =>
+    setCalendars((prev) =>
+      prev.map((c) =>
+        c.calendar_id === saved.calendar_id
+          ? {
+              ...c,
+              share_with_ridewitus: saved.share_with_ridewitus,
+              hide_titles_for_ridewitus: saved.hide_titles_for_ridewitus,
+              ridewitus_available: saved.ridewitus_available,
+            }
+          : c,
+      ),
+    );
 
   const disconnect = async (force: boolean) => {
     setDisconnecting(true);
@@ -367,8 +403,8 @@ function AccountCard({
           <p>
             <span className="font-medium">Last run {STATUS_TEXT[result.status] ?? result.status}</span>
             {result.finished_at && <> ({formatWhen(result.finished_at, clockFormat)})</>}:{' '}
-            {result.counts.created} created · {result.counts.updated} updated · {result.counts.archived} archived ·{' '}
-            {result.counts.flagged} flagged
+            {result.counts.created} created · {result.counts.records ?? 0} records · {result.counts.updated} updated ·{' '}
+            {result.counts.archived} archived · {result.counts.flagged} flagged
           </p>
           {result.errors.length > 0 && (
             <ul role="alert" className="list-disc pl-5 text-red-800 space-y-0.5">
@@ -475,6 +511,15 @@ function AccountCard({
         </div>
       )}
 
+      {/* Where tagged money events go */}
+      <CalendarDefaultAccount
+        connectionId={connection.id}
+        value={connection.settings?.default_account_id ?? null}
+        accounts={accounts}
+        accountLabel={label}
+        onSaved={onReload}
+      />
+
       {/* Calendar checklist */}
       <div className="space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -556,6 +601,9 @@ function AccountCard({
                         </span>
                       )}
                     </label>
+                    {calendar.enabled && (
+                      <CalendarRideWitUSSharing connectionId={connection.id} calendar={calendar} onSaved={sharingSaved} />
+                    )}
                   </li>
                 );
               })}
@@ -597,6 +645,25 @@ function CalendarSettings() {
   const [syncingAll, setSyncingAll] = useState(false);
   const [results, setResults] = useState<Record<string, SyncSummary>>({});
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [accounts, setAccounts] = useState<CalendarFinanceAccount[] | null>(null);
+  /** Bumped after each sync so "Needs a look" reloads. */
+  const [reviewKey, setReviewKey] = useState(0);
+
+  // Finance accounts for each connection's "Account for #expense and #income" picker.
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/finance/accounts', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((list: unknown) => {
+        if (!cancelled) setAccounts(Array.isArray(list) ? (list as CalendarFinanceAccount[]) : []);
+      })
+      .catch(() => {
+        if (!cancelled) setAccounts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const load = useCallback(async (): Promise<StatusResponse | null> => {
     setLoadError(null);
@@ -674,6 +741,7 @@ function CalendarSettings() {
         });
         // Last-synced times, per-calendar state and any needs_reauth come from the server.
         await load();
+        setReviewKey((k) => k + 1);
       } catch {
         setSyncError(OFFLINE_TEXT);
       } finally {
@@ -787,9 +855,62 @@ function CalendarSettings() {
           <li>
             Everything syncs once a day automatically. Press Sync now any time to sync straight away.
           </li>
-          <li>For now only planner tasks are created; #expense, #trip and other tags are read but not yet turned into records.</li>
+          <li>
+            Tagged events also create a record, linked to their task: #expense and #income a transaction (in the
+            account chosen below), #meal a meal log, #workout a workout log. #trip events stay tasks: the trip
+            details are saved and will go to RideWitUS.
+          </li>
+          <li>
+            A record follows later changes to its event until you edit it here. A cancelled event never deletes a
+            transaction; anything the sync leaves alone shows under &quot;Needs a look&quot;.
+          </li>
         </ul>
+        <Link
+          href="/dashboard/settings/calendar/event-builder"
+          className="mt-3 min-h-11 inline-flex items-center gap-1.5 px-4 text-sm font-medium text-sky-800 bg-white border border-sky-300 hover:bg-sky-100 rounded-lg transition"
+        >
+          <Wand2 className="w-4 h-4" aria-hidden="true" />
+          Event builder: write titles CentenarianOS can read
+        </Link>
       </section>
+
+      {/* What RideWitUS gets, and what it never gets */}
+      <section aria-labelledby="calendar-ridewitus-heading" className="bg-white border border-gray-200 rounded-2xl p-5">
+        <h2 id="calendar-ridewitus-heading" className="font-semibold text-gray-900">
+          Sharing calendar activities with RideWitUS
+        </h2>
+        <p className="mt-1 text-sm text-gray-700">
+          RideWitUS can suggest the trips to and from your activities, so you do not have to log them from memory. It
+          never connects to Google: CentenarianOS sends it what it needs, only from calendars you share. Sharing is off
+          for every calendar until you switch it on under that calendar.
+        </p>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2 text-sm">
+          <div>
+            <h3 className="font-medium text-gray-900">What is sent</h3>
+            <ul className="mt-1 space-y-1 text-gray-700 list-disc pl-5">
+              <li>Only events that have a location, from the past 14 days and the next 30 days.</li>
+              <li>Start and end time, time zone, and whether it is all-day.</li>
+              <li>The location as you typed it in Google, and the calendar&apos;s name.</li>
+              <li>The title without its #tags, or &quot;Event&quot; when you hide titles.</li>
+              <li>Whether the event is cancelled, and the details of a #trip tag.</li>
+            </ul>
+          </div>
+          <div>
+            <h3 className="font-medium text-gray-900">What is never sent</h3>
+            <ul className="mt-1 space-y-1 text-gray-700 list-disc pl-5">
+              <li>The event description, attendees, or meeting links.</li>
+              <li>Google&apos;s event and calendar ids, or your Google account email.</li>
+              <li>Events without a location, or anything from a calendar you do not share.</li>
+            </ul>
+          </div>
+        </div>
+        <p className="mt-3 text-sm text-gray-700">
+          Switching sharing off tells RideWitUS to drop that calendar&apos;s events and the trip suggestions it made from
+          them. Trips you already confirmed in RideWitUS stay there.
+        </p>
+      </section>
+
+      {status && connections.length > 0 && <CalendarNeedsALook reloadKey={reviewKey} />}
 
       {/* The connections could not be loaded (not signed in, offline, or the site is not set up) */}
       {loadError && (
@@ -833,6 +954,7 @@ function CalendarSettings() {
           onSync={runSync}
           onReload={load}
           onRemoved={onRemoved}
+          accounts={accounts}
         />
       ))}
 

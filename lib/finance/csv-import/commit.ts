@@ -20,8 +20,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { loadLearnedCategoryIndex } from '../learned-categories.ts';
 import type { LearnedCategoryIndex } from '../transaction-matching.ts';
 import { chunk } from './db.ts';
+import { fxFieldsFor, loadAccountCurrency, loadHomeCurrency, storableRate, type FxFields } from '../fx/server.ts';
+import { convert } from '../fx/math.ts';
 import { ImportError, dbFailure, isMissingSchemaError, isUniqueViolation } from './errors.ts';
 import { LINKABLE_SOURCES, allowedActions, loadCategories, suggestCategory } from './plan.ts';
+import { linkStatementTransfers, type LinkAccount, type TransferIntent } from './transfer-links.ts';
 import type {
   CommitResult,
   DecidedRow,
@@ -82,6 +85,10 @@ export function resolveActions(
     if (requested.categoryId === null || typeof requested.categoryId === 'string') {
       decided.categoryOverride = requested.categoryId;
     }
+    if (typeof requested.transferAccountId === 'string' && requested.transferAccountId) {
+      decided.transferAccountId = requested.transferAccountId;
+      decided.recordMissing = requested.recordMissing !== false;
+    }
     return decided;
   });
 }
@@ -131,6 +138,11 @@ export function toInsertPayload(
 export interface CommitInput {
   /** The account the statement belongs to. The caller has checked it is the user's. */
   accountId: string;
+  /**
+   * The account's details, needed to link payments as transfers (rows with a
+   * transferAccountId). Without it no row is linked.
+   */
+  account?: LinkAccount;
   fileName?: string | null;
   preset?: string | null;
   /** import_batches.source: 'csv_import' (the default) or 'pdf_import'. Transactions keep source 'csv_import' either way. */
@@ -163,6 +175,41 @@ const clip = (text: string | null | undefined, max: number): string | null => {
  * row the database refuses for any other reason is returned in `rejected`
  * and the rest of the import carries on.
  */
+/**
+ * For an account in another currency than the user's home currency, a function giving each
+ * row's currency, fx_rate and amount_home (lib/finance/fx). Rates are looked up once per date.
+ * Null for a home-currency account, or when the lookup fails: such rows are converted later by
+ * the daily fx-rates cron or "Update rates now".
+ */
+async function importFxConverter(
+  db: SupabaseClient,
+  userId: string,
+  accountId: string,
+): Promise<((amount: number, date: string) => Promise<Partial<FxFields>>) | null> {
+  try {
+    const home = await loadHomeCurrency(db, userId);
+    const currency = await loadAccountCurrency(db, userId, accountId, home);
+    if (!currency || currency === home) return null;
+    const rateByDate = new Map<string, number | null>();
+    return async (amount, date) => {
+      try {
+        if (!rateByDate.has(date)) {
+          const { rate } = await fxFieldsFor(db, userId, currency, home, 1, date);
+          rateByDate.set(date, rate ? rate.rate : null);
+        }
+        const rate = rateByDate.get(date) ?? null;
+        if (rate === null) return { currency, fx_rate: null, amount_home: null };
+        // Same rounding as a hand-entered transaction (fxFieldsFor).
+        return { currency, fx_rate: storableRate(rate), amount_home: convert(Math.abs(amount), rate) };
+      } catch {
+        return { currency, fx_rate: null, amount_home: null };
+      }
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function commitImport(
   db: SupabaseClient,
   userId: string,
@@ -237,9 +284,11 @@ export async function commitImport(
         .update(values)
         .eq('id', entry.id)
         .eq('user_id', userId)
-        // Only while nobody else has linked it, and only an entry a person made.
+        // Only while nobody else has linked it, and only the kind of entry the
+        // plan matched: one a person made, or a payment another import
+        // recorded on this account.
         .is('external_id', null)
-        .in('source', [...LINKABLE_SOURCES]);
+        .in('source', entry.source === 'transfer' ? ['transfer'] : [...LINKABLE_SOURCES]);
       update = entry.account_id ? update.eq('account_id', input.accountId) : update.is('account_id', null);
       const { data, error } = await update.select('id');
 
@@ -255,8 +304,13 @@ export async function commitImport(
       }
     }
 
+    const fxFor = await importFxConverter(db, userId, input.accountId);
     for (const group of chunk(toInsert, INSERT_CHUNK)) {
-      const payloads = group.map((row) => toInsertPayload(row, ids, context));
+      const payloads: Record<string, unknown>[] = [];
+      for (const row of group) {
+        const payload = toInsertPayload(row, ids, context) as Record<string, unknown>;
+        payloads.push(fxFor ? { ...payload, ...(await fxFor(row.amountCents / 100, row.date)) } : payload);
+      }
       const { error } = await db.from('financial_transactions').insert(payloads);
       if (!error) {
         inserted += group.length;
@@ -288,5 +342,32 @@ export async function commitImport(
   }
 
   rejected.sort((a, b) => a.row - b.row);
-  return { batchId, inserted, linked, duplicates, invalid: rejected.length, skipped, rejected };
+  const result: CommitResult = { batchId, inserted, linked, duplicates, invalid: rejected.length, skipped, rejected };
+
+  // Payments the person tied to another account become transfers (see transfer-links.ts).
+  const intents = transferIntents([...toLink, ...toInsert]);
+  if (intents.length > 0 && input.account) {
+    result.transfers = await linkStatementTransfers(db, userId, input.account, intents);
+  }
+  return result;
+}
+
+/** The rows that were saved (inserted or linked) and carry a transfer account, as link requests. */
+export function transferIntents(rows: readonly DecidedRow[]): TransferIntent[] {
+  const intents: TransferIntent[] = [];
+  const seen = new Set<number>();
+  for (const row of rows) {
+    if (!row.transferAccountId || !row.externalId || seen.has(row.rowNumber)) continue;
+    seen.add(row.rowNumber);
+    intents.push({
+      rowNumber: row.rowNumber,
+      externalId: row.externalId,
+      type: row.typeOverride ?? row.type,
+      amountCents: row.amountCents,
+      date: row.date,
+      otherAccountId: row.transferAccountId,
+      recordMissing: row.recordMissing !== false,
+    });
+  }
+  return intents;
 }

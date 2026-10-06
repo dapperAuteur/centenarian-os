@@ -132,11 +132,21 @@ export default function MealLoggingPage() {
       restaurant_website: isRestaurant ? restaurantWebsite : null,
     };
 
-    const { error } = await supabase
-      .from('meal_logs')
-      .insert([mealData]);
+    // Saved through POST /api/meals (lib/capture/create-record.ts), the same rules the Google
+    // Calendar sync uses. The server takes the user from the session, not from mealData.
+    let saved = false;
+    try {
+      const res = await fetch('/api/meals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mealData),
+      });
+      saved = res.ok;
+    } catch {
+      saved = false;
+    }
 
-    if (!error) {
+    if (saved) {
       // Auto-decrement inventory if protocol was used
       if (!isRestaurant && protocolId) {
         await decrementInventory(protocolId);

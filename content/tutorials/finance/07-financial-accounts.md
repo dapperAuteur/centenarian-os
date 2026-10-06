@@ -45,6 +45,7 @@ The form includes:
 |-------|------|-------|
 | **Name** | text | Required — e.g., "Chase Checking" |
 | **Account Type** | select | checking / savings / credit_card / loan / cash |
+| **Currency** | select | Starts on your home currency. Pick the local currency for cash you carry on a trip (e.g. MXN). Can change only while the account has no transactions |
 | **Institution Name** | text | Optional — bank or lender name. Shown next to the account name wherever you pick an account |
 | **Last Four** | 4 chars | Last 4 digits of account number. Tells apart two accounts with the same name, and helps the app recognize transfers: a description such as "TRANSFER TO ...5345" points at the account ending 5345 |
 | **Opening Balance** | number | Starting balance — used as the baseline for calculations |
@@ -71,6 +72,29 @@ This means you don't manually update balances — they stay accurate as long as 
 For **credit cards and loans**, the balance is what you owe: an expense (a charge) raises it and an income entry (a payment) lowers it.
 
 **Moving money between accounts.** Click **Transfer** on the accounts page or the finance dashboard, pick the From and To accounts, the amount, and the date. Two linked transactions are created: an expense on the From account and an income on the To account. Paying a credit card or a loan from a bank account is a transfer too. Transfers change both balances but are never counted as spending or income. Lesson 05 covers linking transactions that already exist, such as rows from two imported statements.
+
+---
+
+### Accounts in Other Currencies
+
+Every account has a currency, and its opening balance, transactions and balance are all in that currency. Your **home currency** (Settings → Currencies) is the one totals are reported in.
+
+- A foreign-currency account shows its balance in its own currency and, under it, the value in your home currency with the rate's date and source ("rate as of Oct 5, 2026 (ECB via Frankfurter)").
+- Each transaction on it stores the amount converted at the rate for its date. Dashboard totals, budgets, brand P&L and Life Categories add up the converted amounts, so 350 pesos counts as about $20.
+- **Exchange money** (Accounts page) records swapping currency at a booth or ATM: what you handed over, what you received, and any fee. It is a linked transfer, so it is never spending or income; the fee is its own expense; and the rate you got is saved as your own rate for that day.
+- Rates come from Frankfurter (European Central Bank reference rates, with history) and, for other currencies, ExchangeRate-API; they refresh daily and on **Update rates now**. Rates you enter on Settings → Currencies always win.
+
+---
+
+### Cash on Hand
+
+Cash accounts get extra help, because cash never sends you a statement.
+
+- **Cash on hand card** (Finance dashboard) — each active cash account with its balance in its own currency (≈ home currency when foreign) and "Last counted". That line turns amber when you have never counted or the last count is over 30 days old. No cash account yet? A **Track cash on hand** button creates one named Wallet.
+- **Count** — enter what you actually have, as a total or bill by bill and coin by coin. The difference from the recorded balance becomes one entry on the account ("Unrecorded cash spending" or "Cash found", tagged `cash-count`, in the category you pick), so the balance matches. Count history lists every count; **Undo latest count** deletes the latest count and its entry. Needs migration 213.
+- **Paid cash** — amount, what it was for, optional category (learned vendor categories fill in), today's date, and your last used cash account. One tap saves it, offline too.
+- **Withdraw** — opens Transfer into that cash account.
+- **ATM withdrawals in imports** — on a checking or savings statement, rows such as "ATM WITHDRAWAL" or "RETIRO EN CAJERO" get **Cash withdrawal → into** a cash account in the same currency, so the cash becomes cash on hand instead of spending. ATM fees stay expenses.
 
 ---
 
@@ -101,6 +125,46 @@ The accounts management page at `/dashboard/finance/accounts` lets you:
 
 ---
 
+### Paying Down Cards and Loans
+
+Credit card and loan accounts get their own page: **Debt payoff** (`/dashboard/finance/debt`, linked from the Finance dashboard and under Life in the menu).
+
+**Your debts** — each card and loan with what you owe, its APR, the minimum payment, the next due date (marked Paid once a linked payment covers it), and interest paid this year. Import a statement PDF and the APR, minimum, due date and any **deferred-interest promotions** come from it. A promotion close to its deadline turns amber, with the monthly amount needed to clear it and the deferred interest you'd be charged if you miss it.
+
+**Interest paid** — month by month for each account, exact from imported statements, otherwise from transactions marked as interest.
+
+**Payoff calculator** — pick a debt, then either enter a monthly payment to see the payoff date and total interest, or pick a date to see the payment needed.
+
+**Debt-free plan** — one monthly budget (all minimums plus an extra amount) spread over every debt:
+- **Highest interest first (avalanche)** — the default; pays the least interest. Promo balances are still cleared a payment before their deadline.
+- **Smallest balance first (snowball)** — quick wins, usually more interest.
+- **Promo deadlines first** — every promo balance first, then highest interest.
+- **My own order** — you choose.
+
+The plan shows your debt-free date, interest saved compared with paying only minimums, a balance-over-time chart and a month-by-month schedule. Save it to check later whether your linked card and loan payments are on track.
+
+**Due dates in your planner** — each card and loan due date becomes a task under **Inbox › Inbox › Bills**, with the minimum and the statement balance that avoids interest, and an estimate of what paying early saves. It's checked off automatically when a linked payment lands. Promo deadlines get a task 30 days ahead.
+
+**Reminders** — a **Due soon** banner on the Finance page from 3 days before a payment is due, and optional emails (3 days before, 1 day before, or both).
+
+Every projection here is an estimate (interest = balance × APR ÷ 12 per month, no new charges), not financial advice.
+
+---
+
+### Retirement Accounts and Life Insurance
+
+Retirement accounts and life insurance policies live on their own pages, separate from the five account types above.
+
+**Retirement** (`/dashboard/finance/retirement`) — add a 401(k), 403(b), 457(b), IRA (traditional, Roth, SEP, SIMPLE), HSA, brokerage account, pension, annuity or whole life cash value. Each account holds your contribution (a fixed amount per pay period or a percent of pay), the employer match rule (for example 100% up to 4% of pay, with an optional yearly cap) and, if you like, its own expected return. Click **Add balance** to type in the balance from each statement; the latest one is the account's balance.
+
+**The planner** — enter your age or birth year, retirement age, the age to plan to, your yearly spending in retirement (an amount, or a multiple of what you spend now) and your own Social Security estimate. The page projects each account to retirement in today's dollars, draws your plan beside three presets (Conservative 4%, Middle 6%, Optimistic 8% a year, with 3% inflation, all editable assumptions), compares the total with your target, and shows about how much more a month would close any gap. A small **Net worth (estimate)** line adds your accounts, retirement balances and permanent-policy cash value.
+
+**Insurance** (`/dashboard/finance/insurance`) — term, whole and universal life policies with coverage, premium and frequency, start and term-end dates, cash value and beneficiaries. Link the category or vendor the premium shows up as and the page finds the payments: paid to date, the next due date and whether it's covered. Optionally the next due date becomes a task under **Inbox › Bills**. A term policy ending within a year turns amber.
+
+Every figure on these pages is an estimate from your own numbers, not financial advice.
+
+---
+
 ## Screen Recording Notes
 
 > [SCREEN: Navigate to /dashboard/finance/accounts — show the accounts page]
@@ -124,7 +188,10 @@ The accounts management page at `/dashboard/finance/accounts` lets you:
 - 5 account types: checking, savings, credit_card, loan, cash
 - Balance = Opening Balance + income - expenses (auto-calculated from transactions); on a card or loan the balance is what you owe
 - Use Transfer to move money between accounts, including card and loan payments: both balances change, and nothing counts as spending or income
+- Cash accounts: **Count** keeps the balance honest (one "Unrecorded cash spending" or "Cash found" entry), **Paid cash** records cash spending in one tap (offline too), and imported ATM withdrawals go into a cash account instead of counting as spending
 - Accounts appear as a row at the top of the finance dashboard
 - Delete with transactions → soft deactivate (data preserved); delete without → hard delete
 - Assign transactions to accounts to maintain accurate per-account balances
 - **Import statement** on an account opens the bank statement import with that account chosen (Lesson 06)
+- **Debt payoff** shows interest paid, a payoff calculator and a debt-free plan (avalanche by default, promo deadlines protected); due dates become planner tasks under Inbox › Bills, with a Due soon banner and optional email reminders
+- **Retirement** tracks retirement accounts with hand-entered balances and projects them to retirement (presets, target, gap, needed per month); **Insurance** tracks life policies, premium payments and term-end dates

@@ -33,6 +33,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { loadLearnedCategoryIndex } from '../learned-categories.ts';
 import {
   MATCH_WINDOW_DAYS,
+  daysBetween,
   findBestMatch,
   lookupLearnedCategory,
   shiftDate,
@@ -56,6 +57,9 @@ export const MAX_AMOUNT_CENTS = 9_999_999_999;
 
 /** Sources whose rows a person typed or scanned, and that a statement row may be linked to. */
 export const LINKABLE_SOURCES: readonly string[] = ['manual', 'scan'];
+
+/** A payment recorded on this account and its statement row may be this many days apart. */
+export const TRANSFER_ENTRY_WINDOW_DAYS = 5;
 
 export const PENDING_REASON =
   'Still pending at the bank. Import it after it posts, or choose to include pending rows.';
@@ -90,6 +94,13 @@ export interface PlanIndex {
   byKey: ReadonlyMap<string, readonly string[]>;
   /** Unlinked manual and scanned entries, in the account or with no account. */
   candidates: readonly MatchCandidate[];
+  /**
+   * Payments another import recorded on this account (source 'transfer', no
+   * external id yet). A statement row with transfer or payment wording, the
+   * same amount and direction, within TRANSFER_ENTRY_WINDOW_DAYS, links to one
+   * instead of being added a second time.
+   */
+  transferEntries: readonly MatchCandidate[];
   learned: LearnedCategoryIndex;
   /** Lowercased budget category name -> id. */
   categoryIdByName: ReadonlyMap<string, string>;
@@ -164,6 +175,7 @@ export function buildPlanIndex(input: {
   const byExternalId = new Map<string, string>();
   const byKey = new Map<string, string[]>();
   const candidates: MatchCandidate[] = [];
+  const transferEntries: MatchCandidate[] = [];
 
   const accountRows = [...input.accountRows].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   for (const row of accountRows) {
@@ -173,6 +185,10 @@ export function buildPlanIndex(input: {
     }
     if (isLinkable(row)) {
       candidates.push(row);
+      continue;
+    }
+    if (row.source === 'transfer' && row.external_id == null) {
+      transferEntries.push(row);
       continue;
     }
     const key = existingKey(row);
@@ -195,6 +211,7 @@ export function buildPlanIndex(input: {
     byExternalId,
     byKey,
     candidates,
+    transferEntries,
     learned: input.learned ?? { vendor: new Map(), customer: new Map() },
     categoryIdByName,
   };
@@ -306,6 +323,14 @@ export function classifyRow(row: PlanInputRow, index: PlanIndex, claims: PlanCla
     });
   }
 
+  const transferEntry = findTransferEntry(row, index, claims);
+  if (transferEntry) {
+    return base('matches', 'link', {
+      match: { ...summarize(transferEntry), source: 'transfer' },
+      reason: 'The other side of a payment recorded from another statement.',
+    });
+  }
+
   const match = findBestMatch(
     {
       amount: row.amountCents / 100,
@@ -318,19 +343,54 @@ export function classifyRow(row: PlanInputRow, index: PlanIndex, claims: PlanCla
     index.candidates.filter((candidate) => candidate.type === row.type),
     claims.claimedMatches,
   );
-  if (match) {
-    const summary: MatchSummary = {
-      id: match.id,
-      transaction_date: match.transaction_date,
-      amount: toCents(match.amount) / 100,
-      vendor: match.vendor,
-      description: match.description,
-      account_id: match.account_id,
-    };
-    return base('matches', 'link', { match: summary });
-  }
+  if (match) return base('matches', 'link', { match: summarize(match) });
 
   return base('new', 'insert');
+}
+
+function summarize(entry: MatchCandidate): MatchSummary {
+  return {
+    id: entry.id,
+    transaction_date: entry.transaction_date,
+    amount: toCents(entry.amount) / 100,
+    vendor: entry.vendor,
+    description: entry.description,
+    account_id: entry.account_id,
+  };
+}
+
+/**
+ * A payment another import recorded on this account that this statement row
+ * is the real version of: same direction and cents, within
+ * TRANSFER_ENTRY_WINDOW_DAYS, and the row reads like a transfer, a payment
+ * or a cash withdrawal (a coincidental purchase of the same amount is not
+ * matched). Closest date
+ * first; each entry is matched once.
+ */
+export function findTransferEntry(
+  row: Pick<PlanInputRow, 'type' | 'amountCents' | 'date' | 'hints'> & { kind?: string },
+  index: Pick<PlanIndex, 'transferEntries'>,
+  claims: Pick<PlanClaims, 'claimedMatches'>,
+): MatchCandidate | null {
+  const paymentLike =
+    row.kind === 'payment' ||
+    row.hints.some(
+      (hint) => hint === 'transfer' || hint === 'card_payment' || hint === 'loan_payment' || hint === 'cash_withdrawal',
+    );
+  if (!paymentLike) return null;
+  let best: MatchCandidate | null = null;
+  let bestDays = Infinity;
+  for (const entry of index.transferEntries ?? []) {
+    if (claims.claimedMatches.has(entry.id) || entry.type !== row.type) continue;
+    if (toCents(entry.amount) !== row.amountCents) continue;
+    const days = daysBetween(row.date, entry.transaction_date);
+    if (days > TRANSFER_ENTRY_WINDOW_DAYS) continue;
+    if (days < bestDays) {
+      best = entry;
+      bestDays = days;
+    }
+  }
+  return best;
 }
 
 /** Records what a classified row used, so later rows can't use it again. */

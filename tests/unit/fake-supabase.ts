@@ -118,7 +118,9 @@ export class FakeDb {
 
   withDefaults(table: string, row: Row): Row {
     const stamp = this.timestamp();
-    return { id: this.newId(), created_at: stamp, updated_at: stamp, ...(COLUMN_DEFAULTS[table] ?? {}), ...row };
+    // cash_counts.counted_at defaults to NOW() (migration 213).
+    const clock = table === 'cash_counts' ? { counted_at: stamp } : {};
+    return { id: this.newId(), created_at: stamp, updated_at: stamp, ...clock, ...(COLUMN_DEFAULTS[table] ?? {}), ...row };
   }
 
   /** Requests that changed data. */
@@ -230,6 +232,20 @@ export class FakeQuery implements PromiseLike<FakeResult> {
     });
     this.filters.push((row) => terms.some((test) => test(row)));
     return this;
+  }
+
+  /** Case-insensitive LIKE: % and _ are wildcards, a backslash escapes the next character. */
+  ilike(column: string, pattern: string): this {
+    let source = '';
+    for (let i = 0; i < pattern.length; i++) {
+      const char = pattern[i];
+      if (char === '\\' && i + 1 < pattern.length) source += pattern[++i].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      else if (char === '%') source += '.*';
+      else if (char === '_') source += '.';
+      else source += char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+    const re = new RegExp(`^${source}$`, 'is');
+    return this.where(column, (v) => typeof v === 'string' && re.test(v));
   }
 
   gte(column: string, value: string | number): this {

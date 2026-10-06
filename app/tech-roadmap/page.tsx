@@ -269,6 +269,7 @@ const PHASES: Phase[] = [
       { done: true, text: 'Valuation history: timestamped value snapshots with chart visualization' },
       { done: true, text: 'Equipment summary dashboard: total value, category breakdown' },
       { done: true, text: 'Activity links: cross-link equipment to trips, workouts, maintenance, etc.' },
+      { done: true, text: 'Depreciation for every item and vehicle (migration 214, run by hand): schedules, book value, work use, cost per use, save for replacement' },
     ],
   },
   {
@@ -322,6 +323,7 @@ const PHASES: Phase[] = [
       { done: true, text: 'Life Retrospective: AI narrative synthesis across all modules' },
       { done: true, text: 'Google Calendar .ics import with pure-TS parser (no external deps)' },
       { done: true, text: 'Google Calendar one-way sync: several Google accounts, incremental sync tokens, daily cron + Sync now, events become planner tasks' },
+      { done: false, text: 'Calendar activity feed to RideWitUS: per-calendar opt-in, signed calendar.activity events for trip suggestions (built; live once migration 216, the env vars and the RideWitUS receiver are in place)' },
       { done: true, text: 'In-app AI help assistant with RAG (retrieval-augmented generation)' },
       { done: true, text: 'Cross-module analytics dashboard with daily/weekly aggregate views' },
     ],

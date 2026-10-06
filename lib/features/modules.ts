@@ -195,6 +195,10 @@ export const MODULES: ModuleData[] = [
     features: [
       'Checking, savings, credit card, loan, cash',
       'Bank statement import from CSV or PDF, with duplicate detection and undo',
+      'Accounts in any currency (travel cash), converted to your home currency with daily or your own rates',
+      'Debt payoff: interest paid, payoff calculator, debt-free plan, due-date tasks',
+      'Cash on hand: count your cash, one-tap "Paid cash" (offline too), ATM withdrawals into cash',
+      'Retirement accounts and planner (estimates), life insurance policies and premiums',
       'Budget categories with spending charts',
       'Invoices with custom fields & CSV import',
     ],
@@ -385,6 +389,8 @@ export const MODULES: ModuleData[] = [
       'Valuation history with chart visualization',
       'Link equipment to trips, workouts, finance',
       'Total asset value dashboard',
+      'Depreciation schedules and book value for every item and vehicle',
+      'Work use: work share and cost per use from linked tasks and calendar events',
     ],
     highlights: [
       {
@@ -402,6 +408,10 @@ export const MODULES: ModuleData[] = [
       {
         title: 'Cross-Module Connections',
         description: 'Link gear to workouts (which equipment did you use?), trips (what did you bring?), and maintenance records.',
+      },
+      {
+        title: 'Depreciation and Work Use',
+        description: 'Straight line, declining balance, or per-use depreciation with a salvage floor, book value, and a yearly schedule. Mark work gear, link it to planner tasks and synced calendar events, and see work share, cost per use, and the work share of this year\'s depreciation. Estimates, not tax advice.',
       },
     ],
     dashboardPath: '/dashboard/equipment',

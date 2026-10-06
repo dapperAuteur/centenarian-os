@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { hasOAuthStateSecret, signOAuthState, verifyOAuthState } from '../../lib/oauth-state.ts';
+import { hasOAuthStateSecret, signOAuthState, verifyOAuthState, verifyOAuthStateFor } from '../../lib/oauth-state.ts';
 
 const USER = '0fb0a347-2584-4baf-b742-3c167a98d088';
 
@@ -63,5 +63,20 @@ test('a tampered, malformed or expired state is rejected', () => {
     assert.equal(verifyOAuthState('not-a-state'), null);
     const old = String(Date.now() - 11 * 60 * 1000);
     assert.equal(verifyOAuthState(`${id}:${old}:${sig}`), null);
+  });
+});
+
+test('verifyOAuthStateFor: a valid state must also name the signed-in user', () => {
+  const OTHER = '9a1b2c3d-0000-4000-8000-000000000000';
+  withEnv({ SUPABASE_JWT_SECRET: 'a-secret' }, () => {
+    const state = signOAuthState(USER);
+    assert.equal(verifyOAuthStateFor(state, USER), USER);
+    assert.equal(verifyOAuthStateFor(state, OTHER), null, 'someone else\'s connect flow');
+    assert.equal(verifyOAuthStateFor(state, null), null, 'no session');
+    assert.equal(verifyOAuthStateFor('not-a-state', USER), null);
+  });
+  withEnv({}, () => {
+    // No secret: verifyOAuthState throws; the session check reports invalid instead.
+    assert.equal(verifyOAuthStateFor(`${USER}:${Date.now()}:0000000000000000`, USER), null);
   });
 });

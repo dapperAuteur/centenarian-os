@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createShortLink, updateShortLink, toSwitchySlug } from '@/lib/switchy';
 import { generateCourseSlug, isValidCourseSlug } from '@/lib/academy/slug';
 import { uniqueCourseSlug } from '@/lib/academy/slug-server';
+import { hasEnrollment, lessonOutline, type OutlineLevel } from '@/lib/academy/access';
 
 function getDb() {
   return createServiceClient(
@@ -93,7 +94,10 @@ export async function GET(_req: NextRequest, { params }: Params) {
       db.from('course_likes').select('user_id').eq('user_id', user.id).eq('course_id', id).maybeSingle(),
       db.from('course_saves').select('user_id').eq('user_id', user.id).eq('course_id', id).maybeSingle(),
     ]);
-    enrolled = enrollmentRes.data?.status === 'active';
+    // A user can hold several enrollment rows (one per attempt); maybeSingle()
+    // returns null for those, so fall back to the attempt-safe lookup.
+    enrolled = enrollmentRes.data?.status === 'active'
+      || (!!enrollmentRes.error && await hasEnrollment(db, user.id, id));
     liked = !!likeRes.data;
     saved = !!saveRes.data;
 
@@ -114,6 +118,19 @@ export async function GET(_req: NextRequest, { params }: Params) {
       }));
       /* eslint-enable @typescript-eslint/no-explicit-any */
     }
+  }
+
+  // The outline never carries lesson text or quiz answers for non-staff, and
+  // carries media URLs only for enrolled students (the offline cache uses
+  // them). Content comes from the lesson route, which checks access per lesson.
+  const outlineLevel: OutlineLevel = isOwner || isAdmin ? 'staff' : enrolled ? 'enrolled' : 'visitor';
+  if (outlineLevel !== 'staff' && Array.isArray(course.course_modules)) {
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    course.course_modules = (course.course_modules as any[]).map((mod: any) => ({
+      ...mod,
+      lessons: (mod.lessons ?? []).map((lesson: any) => lessonOutline(lesson, outlineLevel)),
+    }));
+    /* eslint-enable @typescript-eslint/no-explicit-any */
   }
 
   // Fetch prerequisites + recommendations

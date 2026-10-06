@@ -190,13 +190,21 @@ export default function ItineraryPreviewPage() {
       }
 
       // Fetch equipment links
-      const eqRes = await offlineFetch(`/api/activity-links?source_type=trip&source_id=${id}&target_type=equipment`);
+      // activity-links takes entity_type/entity_id and returns a bare array of
+      // links in both directions, each with the other end's linked_type and
+      // linked_display_name (null when that record is not the caller's).
+      const eqRes = await offlineFetch(`/api/activity-links?entity_type=trip&entity_id=${encodeURIComponent(id)}`);
       if (eqRes.ok) {
-        const eqData = await eqRes.json();
-        setEquipmentItems((eqData.links || []).map((l: { target_name?: string; relationship?: string }) => ({
-          name: l.target_name || 'Unknown',
-          relationship: l.relationship || null,
-        })));
+        const eqData: unknown = await eqRes.json();
+        const links = Array.isArray(eqData)
+          ? (eqData as { linked_type?: string; linked_display_name?: string | null; relationship?: string | null }[])
+          : [];
+        setEquipmentItems(links
+          .filter((l) => l.linked_type === 'equipment' && l.linked_display_name)
+          .map((l) => ({
+            name: l.linked_display_name as string,
+            relationship: l.relationship || null,
+          })));
       }
     } catch { /* handled */ }
     finally { setLoading(false); }

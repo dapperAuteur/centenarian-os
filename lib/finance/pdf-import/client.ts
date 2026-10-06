@@ -19,6 +19,39 @@ export function isPdfFile(file: Pick<File, 'name' | 'type'>): boolean {
   return file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
 }
 
+/** True for a spreadsheet by name: .xls or .xlsx. */
+export function isSpreadsheetFile(file: Pick<File, 'name'>): boolean {
+  return /\.xlsx?$/i.test(file.name);
+}
+
+/** True for a file the statement input accepts: CSV, text, PDF, or a spreadsheet name (checked further when read). */
+export function isStatementFile(file: Pick<File, 'name' | 'type'>): boolean {
+  return (
+    isPdfFile(file) ||
+    isSpreadsheetFile(file) ||
+    /\.(?:csv|txt|tsv)$/i.test(file.name) ||
+    file.type === 'text/csv' ||
+    file.type === 'text/plain'
+  );
+}
+
+export const SPREADSHEET_NOT_SUPPORTED_TEXT =
+  "This is an Excel workbook, which CentenarianOS can't read. Import the statement PDF for the same period instead, or open the file and save it as CSV.";
+
+/**
+ * What a spreadsheet-named file really holds. Some card sites (Best Buy)
+ * download plain tab-separated text with an ".xls" name, which reads like a
+ * CSV; a real Excel workbook starts with the OLE signature (D0 CF 11 E0) or,
+ * for .xlsx, a ZIP signature ("PK"). Anything with a zero byte in its first
+ * kilobyte is treated as binary too.
+ */
+export function sniffSpreadsheet(bytes: Uint8Array): 'text' | 'binary' {
+  const head = bytes.subarray(0, 1024);
+  if (head.length >= 4 && head[0] === 0xd0 && head[1] === 0xcf && head[2] === 0x11 && head[3] === 0xe0) return 'binary';
+  if (head.length >= 2 && head[0] === 0x50 && head[1] === 0x4b) return 'binary';
+  return head.includes(0) ? 'binary' : 'text';
+}
+
 /** The file's bytes as base64, built in chunks so a large file doesn't overflow the call stack. */
 export async function fileToBase64(file: Blob): Promise<string> {
   const bytes = new Uint8Array(await file.arrayBuffer());

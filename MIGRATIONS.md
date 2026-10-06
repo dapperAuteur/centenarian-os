@@ -1,6 +1,6 @@
 # CentenarianOS — Migrations Gallery
 
-> **211 migrations across 14 modules**, shipped solo since project inception. Schema lives in a Supabase Postgres database **shared with a sibling product** (Work.WitUS / contractor-os), so every migration has to be additive, RLS-aware, and cross-app-safe.
+> **219 migrations across 14 modules**, shipped solo since project inception. Schema lives in a Supabase Postgres database **shared with a sibling product** (Work.WitUS / contractor-os), so every migration has to be additive, RLS-aware, and cross-app-safe.
 
 > **Decomposition note.** CentenarianOS is being decomposed toward the ecosystem's "one app,
 > one job" rule, so some modules below (Media, Academy, Travel, contractor residue) are
@@ -9,7 +9,7 @@
 > late stage, run against a DB clone first. Do not pre-emptively drop a table because its
 > module is slated to move.
 
-This doc is the visible evidence behind that headline. The full source is under [`supabase/migrations/`](./supabase/migrations/). Headline count last refreshed 2026-10-04 from a live `ls supabase/migrations/*.sql | wc -l`; the per-module counts below were last curated 2026-08-27.
+This doc is the visible evidence behind that headline. The full source is under [`supabase/migrations/`](./supabase/migrations/). Headline count last refreshed 2026-10-05 from a live `ls supabase/migrations/*.sql | wc -l`; the per-module counts below were last curated 2026-08-27.
 
 ---
 
@@ -37,7 +37,7 @@ Highlights: `039_lms_schema.sql` (the foundational schema), `045_learning_paths.
 
 Multi-account ledger, custom budget categories, invoices with templates + custom fields, recurring transactions, transfers, interest calculations, FIFO fuel allocation, paycheck reconciliation, expected payments view, time-entry benefits, deductions, founders pricing, CashApp payments, fiscal calendar.
 
-Highlights: `051_financial_dashboard.sql`, `054_financial_accounts.sql`, `058_invoices.sql`, `063_transfers_interest_recurring.sql`, `079_invoice_templates.sql`, `153_paycheck_line_items.sql`, `155_fiscal_calendar.sql`, `158_fifo_fuel_allocation.sql`, `168_paycheck_reconciliation.sql`, `208_budget_periods.sql` (budgets by month, rollover).
+Highlights: `051_financial_dashboard.sql`, `054_financial_accounts.sql`, `058_invoices.sql`, `063_transfers_interest_recurring.sql`, `079_invoice_templates.sql`, `153_paycheck_line_items.sql`, `155_fiscal_calendar.sql`, `158_fifo_fuel_allocation.sql`, `168_paycheck_reconciliation.sql`, `208_budget_periods.sql` (budgets by month, rollover), `210_multi_currency.sql` (account currencies, home currency, exchange-rate cache), `211_debt_plans_bill_due.sql` (saved debt-free plans, bill due-date tasks, reminder settings), `212_savings_goals.sql` (savings goals as envelopes and their allocations), `213_cash_counts.sql` (cash counts against the recorded balance, with the adjustment each one recorded), `215_retirement_insurance.sql` (retirement accounts, balance snapshots, life insurance policies, retirement planner settings).
 
 ### Travel + Fuel (13 migrations)
 
@@ -55,7 +55,7 @@ Highlights: `082_exercise_library.sql`, `083_enhanced_workout_logging.sql` (16 +
 
 Recurring tasks, schedule templates (work/fitness/class/custom with weekInterval), task source tracking, invoice → task sync trigger, pay-date → task sync trigger, fiscal calendar fixes, daily-log entity_type column.
 
-Highlights: `021_recurring_tasks.sql`, `102_daily_log_entity_type.sql`, `147_task_source_tracking.sql`, `148_invoice_task_sync_trigger.sql`, `151_schedule_templates.sql` (the unified work/fitness/class/custom schedule system), `153_expected_payments_view.sql`, `154_pay_date_task_sync_trigger.sql`, `156-157_fix_trigger_target_year.sql` (year-rollover hot-fix pair).
+Highlights: `021_recurring_tasks.sql`, `102_daily_log_entity_type.sql`, `147_task_source_tracking.sql`, `148_invoice_task_sync_trigger.sql`, `151_schedule_templates.sql` (the unified work/fitness/class/custom schedule system), `153_expected_payments_view.sql`, `154_pay_date_task_sync_trigger.sql`, `156-157_fix_trigger_target_year.sql` (year-rollover hot-fix pair). Google Calendar sync: `204_calendar_sync.sql`, `205_calendar_multi_account.sql`, `216_calendar_activity_feed.sql` (event times and location on synced events, per-calendar RideWitUS share and hide-title switches).
 
 ### Health Metrics + Wearables (4 migrations)
 
@@ -81,9 +81,9 @@ Pomodoro sessions with tags, goals, breaks, templates, analytics, daily-log cons
 
 Highlights: `009_add_session_tags.sql` through `020_add_session_type.sql` (the foundational batch), `076_focus_session_activity_link.sql` (cross-module link), `017_agility_engine_migration.sql`.
 
-### Equipment Tracker (3 migrations)
+### Equipment Tracker (4 migrations)
 
-Equipment categories, valuations history, multi-media gallery (images/videos/audio per item).
+Equipment categories, valuations history, multi-media gallery (images/videos/audio per item). `214_asset_depreciation.sql` adds depreciation settings for equipment and vehicles in a side table, so the shared `equipment` and `vehicles` tables stay unchanged.
 
 Highlights: `069_equipment.sql`, `086_equipment_catalog.sql`, `119_equipment_media.sql`.
 
@@ -119,7 +119,7 @@ Highlights: `105_contractor_jobs.sql`, `106_contractor_rate_cards.sql`, `107_job
 
 ### Cross-cutting / utility (~30 migrations)
 
-Things that don't belong to one module: `023_profiles.sql`, `036_auto_profile_on_signup.sql` (auth shape), `037_feature_batch.sql`, `040_visibility.sql` (academy + blog visibility model), `049_shortlinks.sql`, `066_activity_links.sql` (polymorphic cross-module relations across 11 entity types), `077_life_categories.sql` (user-defined life-area tagging across 11 entity types), `084_dashboard_home_preference.sql`, `089_admin_notifications.sql`, `090_invited_users.sql` + `090_security_fixes.sql`, `100_app_logs.sql`, `101_usage_events.sql`, `108_city_guides.sql`, `110_lister_system.sql`, `111_home_address_distance.sql`, `115_multi_product_invites.sql`, `118_module_onboarding.sql`, `120_add_clock_format.sql`, `127_push_notifications.sql`, `131_public_venues.sql`, `132_invite_limits_paid_tracking.sql`, `133_feedback_app_column.sql`, `135_benefit_deductions.sql`, `136_invite_job_limit.sql`, `137_seo_tracking.sql`, `138_seo_app_column.sql`, `159_enable_rls_security_fixes.sql`, `161-164_email_campaigns + marketing_banners + referral_rewards + notification_preferences.sql`, `166_theme_preference.sql`, `167_time_entry_benefits.sql`, `170_contact_share_visible_fields.sql`, `171-174_cashapp + founders + admin_promo + cashapp_app_column + dashboard_home_per_app.sql`, `182_starter_tier.sql`.
+Things that don't belong to one module: `023_profiles.sql`, `036_auto_profile_on_signup.sql` (auth shape), `037_feature_batch.sql`, `040_visibility.sql` (academy + blog visibility model), `049_shortlinks.sql`, `066_activity_links.sql` (polymorphic cross-module relations across 11 entity types), `077_life_categories.sql` (user-defined life-area tagging across 11 entity types), `084_dashboard_home_preference.sql`, `089_admin_notifications.sql`, `090_invited_users.sql` + `090_security_fixes.sql`, `100_app_logs.sql`, `101_usage_events.sql`, `108_city_guides.sql`, `110_lister_system.sql`, `111_home_address_distance.sql`, `115_multi_product_invites.sql`, `118_module_onboarding.sql`, `120_add_clock_format.sql`, `127_push_notifications.sql`, `131_public_venues.sql`, `132_invite_limits_paid_tracking.sql`, `133_feedback_app_column.sql`, `135_benefit_deductions.sql`, `136_invite_job_limit.sql`, `137_seo_tracking.sql`, `138_seo_app_column.sql`, `159_enable_rls_security_fixes.sql`, `161-164_email_campaigns + marketing_banners + referral_rewards + notification_preferences.sql`, `166_theme_preference.sql`, `167_time_entry_benefits.sql`, `170_contact_share_visible_fields.sql`, `171-174_cashapp + founders + admin_promo + cashapp_app_column + dashboard_home_per_app.sql`, `182_starter_tier.sql`, `217_integration_outbox.sql` (outgoing signed events to sibling apps, e.g. RideWitUS envelope.balance; service-role only).
 
 ### Repair / non-sequential migrations (4)
 

@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { ArrowRightLeft, ListChecks, RotateCcw, Upload } from 'lucide-react';
 import type { CommitResult, UndoResult } from '@/lib/finance/csv-import/types';
 import UndoSummary from './UndoSummary';
-import { ErrorNotice, StatusNotice, card, dangerButton, primaryButton, secondaryButton } from './shared';
+import { StatusNotice, ToneIcon, card, dangerButton, primaryButton, secondaryButton } from './shared';
 
 interface DoneStepProps {
   result: CommitResult;
@@ -98,7 +98,10 @@ export default function DoneStep({
 
         {result.rejected.length > 0 && (
           <div className="mt-4">
-            <h4 className="text-sm font-semibold text-gray-900">Rejected rows and why</h4>
+            <h4 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+              <ToneIcon tone="attention" className="h-4 w-4" />
+              Rejected rows and why: check these against your statement
+            </h4>
             <ul id="import-result-rejected" role="list" className="mt-2 divide-y divide-gray-100 text-sm">
               {shownRejected.map((item) => (
                 <li key={`${item.row}-${item.reason}`} className="py-2 text-gray-800">
@@ -123,15 +126,50 @@ export default function DoneStep({
         )}
       </section>
 
+      {result.transfers && !undo && (
+        <StatusNotice
+          tone={result.transfers.failed.length > 0 || result.transfers.unmatched > 0 ? 'attention' : 'success'}
+        >
+          <p className="font-medium">Payments and cash withdrawals linked as transfers</p>
+          <ul className="list-disc space-y-0.5 pl-5">
+            {result.transfers.linked > 0 && (
+              <li>
+                {formatCount(result.transfers.linked)} linked to the matching{' '}
+                {result.transfers.linked === 1 ? 'row' : 'rows'} already on the other account.
+              </li>
+            )}
+            {result.transfers.recorded > 0 && (
+              <li>
+                {formatCount(result.transfers.recorded)} recorded on the other account, which had no matching row yet.
+                Importing that account&apos;s statement later links to {result.transfers.recorded === 1 ? 'it' : 'them'}{' '}
+                instead of adding {result.transfers.recorded === 1 ? 'it' : 'them'} twice.
+              </li>
+            )}
+            {result.transfers.unmatched > 0 && (
+              <li>
+                {formatCount(result.transfers.unmatched)} had no matching row on the other account and{' '}
+                {result.transfers.unmatched === 1 ? 'was' : 'were'} left unlinked, as you chose. Link{' '}
+                {result.transfers.unmatched === 1 ? 'it' : 'them'} later from Transactions.
+              </li>
+            )}
+            {result.transfers.failed.map((item) => (
+              <li key={`transfer-${item.row}`}>
+                Row {formatCount(item.row)}: {item.reason}
+              </li>
+            ))}
+          </ul>
+        </StatusNotice>
+      )}
+
       {settingsSaved && !undo && (
         <p className="text-sm text-gray-700">
           The column settings are saved for {accountName} and will be filled in next time.
         </p>
       )}
       {settingsError && (
-        <ErrorNotice>
+        <StatusNotice tone="attention">
           <p>The import worked, but the column settings could not be saved for next time: {settingsError}</p>
-        </ErrorNotice>
+        </StatusNotice>
       )}
 
       {transferCount > 0 && !undo && (

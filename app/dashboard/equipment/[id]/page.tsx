@@ -2,13 +2,15 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Package, Calendar, DollarSign, Plus, Heart, Share2, Globe, Lock } from 'lucide-react';
+import { ArrowLeft, Package, Calendar, DollarSign, Plus, Heart, Share2, Globe, Lock, Target } from 'lucide-react';
+import Link from 'next/link';
 import Image from 'next/image';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
 import ValuationChart from '@/components/equipment/ValuationChart';
 import EquipmentMediaGallery, { type MediaItem } from '@/components/equipment/EquipmentMediaGallery';
+import AssetDepreciationPanel from '@/components/equipment/AssetDepreciationPanel';
 import { todayLocal } from '@/lib/dates/local';
 
 interface EquipmentDetail {
@@ -214,6 +216,18 @@ export default function EquipmentDetailPage() {
                     Retired
                   </span>
                 )}
+                <Link
+                  href={`/dashboard/finance/savings?${new URLSearchParams({
+                    new: '1',
+                    kind: 'equipment',
+                    equipment_id: item.id,
+                    name: `Replace ${item.name}`,
+                    ...(item.purchase_price ? { target: String(item.purchase_price) } : {}),
+                  }).toString()}`}
+                  className="min-h-11 flex items-center justify-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-sky-50 text-sky-700 hover:bg-sky-100 transition"
+                >
+                  <Target className="w-3.5 h-3.5" aria-hidden="true" /> Save for this
+                </Link>
                 <button
                   onClick={toggleVisibility}
                   className={`min-h-11 min-w-11 flex items-center justify-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition ${
@@ -397,6 +411,9 @@ export default function EquipmentDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Depreciation + Work use (migration 214) */}
+      <AssetDepreciationPanel kind="equipment" id={id} name={item.name} />
 
       {/* Activity Links */}
       <div className="bg-white border border-gray-200 rounded-2xl p-5">

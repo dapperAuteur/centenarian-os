@@ -54,3 +54,22 @@ export function verifyOAuthState(state: string): string | null {
 
   return userId;
 }
+
+/**
+ * For OAuth callbacks: the state's user, only when the signature is valid AND
+ * it names the user whose session this browser holds. A valid signature alone
+ * is not enough: someone could start a connect flow on their own account and
+ * get a victim to open the callback, linking the attacker's provider account
+ * to the victim (or the reverse). Never throws: a missing secret is an
+ * invalid state.
+ */
+export function verifyOAuthStateFor(state: string, sessionUserId: string | null | undefined): string | null {
+  if (!sessionUserId) return null;
+  let stateUserId: string | null = null;
+  try {
+    stateUserId = verifyOAuthState(state);
+  } catch {
+    return null;
+  }
+  return stateUserId && stateUserId === sessionUserId ? stateUserId : null;
+}

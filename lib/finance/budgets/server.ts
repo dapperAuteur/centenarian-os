@@ -12,6 +12,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { excludingTransfers, withoutTransfers } from '../transfers/schema.ts';
 import type { DbErrorLike } from '../transfers/schema.ts';
+import { totalsRole } from '../refunds.ts';
 import { addMonths, firstDay, lastDay, monthOfDate } from './months.ts';
 import type { MonthKey } from './months.ts';
 import {
@@ -22,6 +23,8 @@ import {
   rolloverOn,
 } from './logic.ts';
 import type { BudgetMethod, BudgetReport, BudgetWindow, PeriodRow, SpendingRow } from './logic.ts';
+import { FX_TOTALS_COLUMNS, toHomeAmounts, withOptionalFx } from '../fx/totals.ts';
+import { loadHomeCurrency } from '../fx/server.ts';
 
 /** Rows per request when paging transactions (PostgREST's default max-rows). */
 export const PAGE_SIZE = 1000;
@@ -50,34 +53,63 @@ export class BudgetWriteError extends Error {
   }
 }
 
-const SPENDING_SELECT = 'id, amount, type, transaction_date, category_id, source';
+const SPENDING_SELECT = 'id, amount, type, transaction_date, category_id, source, account_id, description';
 
-/** Every non-transfer transaction of the user between two dates, all pages. */
+/** The user's credit card and loan account ids: money back on one of them is a refund, not income. */
+export async function loadDebtAccountIds(
+  db: SupabaseClient,
+  userId: string,
+): Promise<{ ids: Set<string>; error: DbErrorLike | null }> {
+  const { data, error } = await db
+    .from('financial_accounts')
+    .select('id')
+    .eq('user_id', userId)
+    .in('account_type', ['credit_card', 'loan']);
+  return { ids: new Set(((data ?? []) as { id: string }[]).map((row) => row.id)), error };
+}
+
+/**
+ * Every non-transfer transaction of the user between two dates, all pages, with `amount` in the
+ * user's home currency (lib/finance/fx/totals.ts): foreign-currency rows count their amount_home,
+ * and foreign rows with no rate yet are left out rather than counted at face value.
+ */
 export async function loadSpendingRows(
   db: SupabaseClient,
   userId: string,
   fromDate: string,
   toDate: string,
 ): Promise<{ rows: SpendingRow[]; error: DbErrorLike | null }> {
+  const home = await loadHomeCurrency(db, userId);
   const rows: SpendingRow[] = [];
+  const debt = await loadDebtAccountIds(db, userId);
+  if (debt.error) return { rows, error: debt.error };
   for (let offset = 0; ; offset += PAGE_SIZE) {
-    const res = await excludingTransfers((groupColumnExists) =>
-      withoutTransfers(
-        db
-          .from('financial_transactions')
-          .select(SPENDING_SELECT)
-          .eq('user_id', userId)
-          .gte('transaction_date', fromDate)
-          .lte('transaction_date', toDate),
-        groupColumnExists,
-      )
-        .order('transaction_date', { ascending: true })
-        .order('id', { ascending: true })
-        .range(offset, offset + PAGE_SIZE - 1),
+    // Works before migrations 202 and 210: see excludingTransfers() and withOptionalFx().
+    const res = await withOptionalFx((fxColumnsExist) =>
+      excludingTransfers((groupColumnExists) =>
+        withoutTransfers(
+          db
+            .from('financial_transactions')
+            .select(fxColumnsExist ? `${SPENDING_SELECT}, ${FX_TOTALS_COLUMNS}` : SPENDING_SELECT)
+            .eq('user_id', userId)
+            .gte('transaction_date', fromDate)
+            .lte('transaction_date', toDate),
+          groupColumnExists,
+        )
+          .order('transaction_date', { ascending: true })
+          .order('id', { ascending: true })
+          .range(offset, offset + PAGE_SIZE - 1),
+      ),
     );
     if (res.error) return { rows, error: res.error };
-    const page = (res.data ?? []) as SpendingRow[];
-    rows.push(...page);
+    const page = (res.data ?? []) as unknown as (SpendingRow & { account_id?: string | null; description?: string | null })[];
+    for (const row of toHomeAmounts(page, home).rows) {
+      // Money back on a card or loan: a refund lowers spending; an unlinked
+      // payment is a transfer and counts nowhere (lib/finance/refunds.ts).
+      const role = totalsRole(row, debt.ids);
+      if (role === 'unlinked_payment') continue;
+      rows.push(role === 'refund' ? { ...row, refund: true } : row);
+    }
     if (page.length < PAGE_SIZE) return { rows, error: null };
   }
 }

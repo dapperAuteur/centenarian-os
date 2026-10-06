@@ -33,9 +33,11 @@ export interface EquipmentItem {
 interface EquipmentCardProps {
   item: EquipmentItem;
   onClick?: () => void;
+  /** Book value today from the item's depreciation settings (migration 214), when set. */
+  bookValue?: number | null;
 }
 
-export default function EquipmentCard({ item, onClick }: EquipmentCardProps) {
+export default function EquipmentCard({ item, onClick, bookValue }: EquipmentCardProps) {
   const purchase = Number(item.purchase_price) || 0;
   const current = Number(item.current_value) || 0;
   const diff = current - purchase;
@@ -102,8 +104,13 @@ export default function EquipmentCard({ item, onClick }: EquipmentCardProps) {
                 {diffPct >= 0 ? '+' : ''}{diffPct.toFixed(0)}%
               </span>
             )}
+            {bookValue !== null && bookValue !== undefined && (
+              <span className="text-xs text-gray-500">
+                Book <span className="font-medium text-gray-700">${bookValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+              </span>
+            )}
             {item.condition && (
-              <span className="text-[10px] text-gray-400 capitalize">{item.condition}</span>
+              <span className="text-[10px] text-gray-500 capitalize">{item.condition}</span>
             )}
           </div>
         </div>

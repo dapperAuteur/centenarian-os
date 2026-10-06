@@ -21,6 +21,8 @@
 //       workout_templates (117): visibility = 'public'
 //       workout_categories (186): is_global
 //       recipes (027/032): public, or scheduled and due
+//       vehicles (129): is_system (the shared public-transport library)
+//       contractor_jobs (105): is_public
 //       blog_posts (024): public, members-only, or scheduled and due
 //   - trips and trip_routes have a visibility column (124) but NO public-read
 //     policy (they are only ever shared by token), so they are owner-only.
@@ -138,7 +140,14 @@ export const TABLE_ACCESS_RULES: Readonly<Record<string, TableAccessRule>> = {
   user_brands: OWNER_ONLY,
   invoices: OWNER_ONLY,
   invoice_templates: OWNER_ONLY,
-  contractor_jobs: OWNER_ONLY,
+  contractor_jobs: {
+    select: 'user_id, is_public',
+    ownerColumn: 'user_id',
+    ownerId: byUserId,
+    // contractor_jobs_public_read (105): is_public. Linking a record to a job
+    // stays owner-only unless a call site passes allowPublic.
+    isPublic: (row) => row.is_public === true,
+  },
   scan_images: OWNER_ONLY,
 
   // ── Contacts ──
@@ -150,7 +159,13 @@ export const TABLE_ACCESS_RULES: Readonly<Record<string, TableAccessRule>> = {
   },
 
   // ── Travel ──
-  vehicles: OWNER_ONLY,
+  vehicles: {
+    select: 'user_id, is_system',
+    ownerColumn: 'user_id',
+    ownerId: byUserId,
+    // vehicles_system_read (129): the seeded public-transport vehicles, user_id null
+    isPublic: (row) => row.is_system === true,
+  },
   trips: OWNER_ONLY,
   trip_routes: OWNER_ONLY,
   trip_templates: OWNER_ONLY,
@@ -177,6 +192,12 @@ export const TABLE_ACCESS_RULES: Readonly<Record<string, TableAccessRule>> = {
   exercise_categories: OWNER_ONLY,
   equipment: OWNER_OR_PUBLIC_ACTIVE,
   equipment_categories: OWNER_ONLY,
+
+  // ── Fuel (meals) ──
+  // meal_logs and protocols: user_id NOT NULL, policy "Users can CRUD their ..."
+  // (auth.uid() = user_id) in the base schema (20251021155203_remote_schema.sql).
+  meal_logs: OWNER_ONLY,
+  protocols: OWNER_ONLY,
 
   // ── Media, recipes, blog ──
   media_items: OWNER_OR_PUBLIC_ACTIVE,
@@ -437,6 +458,31 @@ export async function checkReferences(
   return { ok: !failed && invalid.length === 0, invalid: failed ? [] : invalid, failed };
 }
 
+/** A body field that holds a foreign id, and the table it points into. */
+export interface ReferenceField {
+  field: string;
+  table: string;
+  allowPublic?: boolean;
+}
+
+/**
+ * The references `body` carries, for checkReferences(): one per field in
+ * `fields` that the body actually has (blank values are skipped later by
+ * checkReferences). `prefix` names nested fields in the 400 message, e.g.
+ * 'items.' for line items.
+ */
+export function referencesIn(
+  body: unknown,
+  fields: readonly ReferenceField[],
+  prefix = '',
+): Reference[] {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return [];
+  const record = body as Record<string, unknown>;
+  return fields
+    .filter(({ field }) => Object.prototype.hasOwnProperty.call(record, field))
+    .map(({ field, table, allowPublic }) => ({ field: `${prefix}${field}`, table, id: record[field], allowPublic }));
+}
+
 /** The 400 message for refused references. Names the fields only. */
 export function invalidReferenceMessage(fields: readonly string[]): string {
   return `Invalid reference: ${fields.join(', ')}`;
@@ -467,4 +513,54 @@ export async function usableReferences(
     values[ref.field] = usable ? (ref.id as string) : null;
   }
   return { values, failed: check.failed };
+}
+
+// ─── Embedded rows in a response ─────────────────────────────────────────────
+
+/**
+ * `row` with each embed in `keys` kept only when it belongs to `userId`, and
+ * its user_id column removed. For service-role reads that join through a
+ * stored foreign id (a recurring payment's account, an invoice's category):
+ * an id saved before reference checks existed could otherwise show another
+ * user's account or category name. Select `user_id` inside each embed.
+ */
+export function withOwnEmbeds<T extends Record<string, unknown>>(
+  row: T,
+  keys: readonly string[],
+  userId: string,
+): T {
+  const out: Record<string, unknown> = { ...row };
+  for (const key of keys) {
+    const embed = one(out[key]);
+    if (!embed || !userId || embed.user_id !== userId) {
+      out[key] = null;
+      continue;
+    }
+    const { user_id: _owner, ...rest } = embed;
+    void _owner;
+    out[key] = rest;
+  }
+  return out as T;
+}
+
+// ─── Fields a request body may never set ─────────────────────────────────────
+
+/**
+ * A copy of `body` without `fields`. For PATCH handlers that pass the rest of
+ * the body to an update: the owner, server-maintained links (a trip's
+ * transaction_id, a leg's route_id) and timestamps must never come from the
+ * browser. Only own properties are copied, so nothing reaches the update via
+ * the prototype.
+ */
+export function withoutFields(
+  body: unknown,
+  fields: readonly string[],
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return out;
+  const drop = new Set(fields);
+  for (const key of Object.keys(body)) {
+    if (!drop.has(key) && key !== '__proto__') out[key] = (body as Record<string, unknown>)[key];
+  }
+  return out;
 }

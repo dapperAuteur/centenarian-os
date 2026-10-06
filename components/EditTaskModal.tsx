@@ -9,6 +9,7 @@ import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import ActivityLinker from '@/components/ui/ActivityLinker';
 import LifeCategoryTagger from '@/components/ui/LifeCategoryTagger';
 import RoadmapItemPicker from '@/components/planner/RoadmapItemPicker';
+import UsedEquipmentPicker from '@/components/planner/UsedEquipmentPicker';
 import { TAGS, TAG_COLORS } from '@/lib/constants/tags';
 
 interface EditTaskModalProps {
@@ -236,6 +237,11 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
             showLocations
             onLocationSelect={(locId) => setFormData({ ...formData, location_id: locId })}
           />
+        </div>
+
+        {/* Used equipment (work use + cost per use on the equipment page) */}
+        <div className="pt-4 border-t border-gray-200">
+          <UsedEquipmentPicker taskId={task.id} />
         </div>
 
         {/* Linked Activities */}

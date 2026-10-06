@@ -19,7 +19,7 @@
 // there is handed over in memory (lib/finance/pdf-import/client.ts) and
 // loaded straight away; without one, the file input gets focus.
 
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, Loader2, Upload } from 'lucide-react';
@@ -64,6 +64,7 @@ import {
   type ImportAccount,
   type ImportSettings,
   type InitialSettings,
+  type TransferContext,
 } from '@/lib/finance/csv-import/ui-helpers';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
@@ -131,6 +132,8 @@ function StatementImport() {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [confirmUnreconciled, setConfirmUnreconciled] = useState(false);
   const [decisions, setDecisions] = useState<Decisions>({});
+  /** Record a payment's other side when the other account has no matching row. */
+  const [recordMissing, setRecordMissing] = useState(true);
   const [previewBusy, setPreviewBusy] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
   /** Goes up whenever the preview is thrown away, so a late answer to an old request is ignored. */
@@ -159,6 +162,20 @@ function StatementImport() {
   const focusedStepRef = useRef<ImportStep>(1);
 
   const account = accounts.find((candidate) => candidate.id === accountId) ?? null;
+
+  // What the review step needs for card words and "Paid from". The preview's
+  // account is the one the plan was made for.
+  const transferContext = useMemo<TransferContext | null>(() => {
+    if (!preview) return null;
+    return {
+      accountId: preview.account.id,
+      accountType: preview.account.account_type,
+      accounts,
+      paidFromDefault: preview.paidFromAccountId ?? null,
+      cashDefault: preview.cashAccountId ?? null,
+      recordMissing,
+    };
+  }, [preview, accounts, recordMissing]);
 
   // ── Loading ─────────────────────────────────────────────────────────────
 
@@ -388,7 +405,10 @@ function StatementImport() {
     setImportBusy(true);
     setImportError(null);
     setStatementNotice(null);
-    const response = await commitStatement({ ...payload, actions: buildRowActions(preview.rows, decisions) });
+    const response = await commitStatement({
+      ...payload,
+      actions: buildRowActions(preview.rows, decisions, transferContext ?? undefined),
+    });
     setImportBusy(false);
 
     if (!response.ok) {
@@ -454,7 +474,7 @@ function StatementImport() {
     setImportError(null);
     const response = await commitPdfStatement({
       ...payload,
-      actions: buildRowActions(preview.rows, decisions),
+      actions: buildRowActions(preview.rows, decisions, transferContext ?? undefined),
       confirm_unreconciled: confirmUnreconciled,
     });
     setImportBusy(false);
@@ -478,7 +498,10 @@ function StatementImport() {
     setSettingsSaved(false);
     setSettingsError(null);
     setTransferCount(0);
-    setStatementNotice({ saved: committed.statementSaved, error: committed.statementError });
+    // A transaction list has no statement summary: nothing to say about saving one.
+    setStatementNotice(
+      committed.statementSkipped ? null : { saved: committed.statementSaved, error: committed.statementError },
+    );
     setStep(4);
     void loadBatches(true);
 
@@ -579,7 +602,7 @@ function StatementImport() {
       <StepIndicator current={step} />
 
       {!online && (
-        <StatusNotice tone="warning">
+        <StatusNotice tone="attention">
           <p id="import-offline-note">{OFFLINE_TEXT}</p>
         </StatusNotice>
       )}
@@ -643,8 +666,10 @@ function StatementImport() {
         />
       )}
 
-      {step === 3 && preview && (
+      {step === 3 && preview && transferContext && (
         <ReviewStep
+          transfer={transferContext}
+          onRecordMissingChange={setRecordMissing}
           preview={preview}
           decisions={decisions}
           onDecisionsChange={setDecisions}
@@ -669,7 +694,7 @@ function StatementImport() {
             <p>The statement summary, interest rates and any promotional balances were saved with this account.</p>
           </StatusNotice>
         ) : (
-          <StatusNotice tone="warning">
+          <StatusNotice tone="attention">
             <p>{statementNotice.error ?? "The statement summary wasn't saved."}</p>
           </StatusNotice>
         )

@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { canSendCourseMessage, hasEnrollment, isUuid } from '@/lib/academy/access';
 
 function getDb() {
   return createServiceClient(
@@ -23,6 +24,10 @@ export async function GET(request: NextRequest, { params }: Params) {
 
   const partnerId = request.nextUrl.searchParams.get('partner_id');
   if (!partnerId) return NextResponse.json({ error: 'partner_id required' }, { status: 400 });
+  // partner_id goes into a PostgREST or() filter: only a UUID may reach it.
+  if (!isUuid(partnerId) || !isUuid(courseId)) {
+    return NextResponse.json({ error: 'Invalid partner_id' }, { status: 400 });
+  }
 
   const db = getDb();
 
@@ -58,8 +63,11 @@ export async function POST(request: NextRequest, { params }: Params) {
   const body = await request.json();
   const { recipient_id, body: msgBody, media_url } = body;
 
-  if (!recipient_id || !msgBody?.trim()) {
+  if (!recipient_id || typeof msgBody !== 'string' || !msgBody.trim()) {
     return NextResponse.json({ error: 'recipient_id and body are required' }, { status: 400 });
+  }
+  if (!isUuid(recipient_id) || !isUuid(courseId)) {
+    return NextResponse.json({ error: 'Invalid recipient' }, { status: 400 });
   }
 
   // Verify course exists
@@ -67,24 +75,23 @@ export async function POST(request: NextRequest, { params }: Params) {
     .from('courses')
     .select('id, teacher_id')
     .eq('id', courseId)
-    .single();
+    .maybeSingle();
 
   if (!course) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
 
-  // Sender must be enrolled student or teacher of this course
+  // Messages run between the teacher and the course's students only: the
+  // teacher writes to someone enrolled in this course, an active student
+  // writes to the teacher.
   const isTeacher = course.teacher_id === user.id;
-  if (!isTeacher) {
-    const { data: enrollment } = await db
-      .from('enrollments')
-      .select('status')
-      .eq('user_id', user.id)
-      .eq('course_id', courseId)
-      .eq('status', 'active')
-      .maybeSingle();
-
-    if (!enrollment) {
-      return NextResponse.json({ error: 'You must be enrolled or the teacher to send messages' }, { status: 403 });
-    }
+  const [senderEnrolled, recipientEnrolled] = await Promise.all([
+    isTeacher ? Promise.resolve(false) : hasEnrollment(db, user.id, courseId),
+    isTeacher ? hasEnrollment(db, recipient_id, courseId, false) : Promise.resolve(false),
+  ]);
+  if (!isTeacher && !senderEnrolled) {
+    return NextResponse.json({ error: 'You must be enrolled or the teacher to send messages' }, { status: 403 });
+  }
+  if (!canSendCourseMessage({ course, senderId: user.id, recipientId: recipient_id, senderEnrolled, recipientEnrolled })) {
+    return NextResponse.json({ error: 'You can only message the teacher or students of this course' }, { status: 403 });
   }
 
   const { data: message, error } = await db

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { excludingTransfers, withoutTransfers } from '@/lib/finance/transfers/schema';
+import { amountForTotals, FX_TOTALS_COLUMNS, withOptionalFx } from '@/lib/finance/fx/totals';
+import { loadHomeCurrency } from '@/lib/finance/fx/server';
 
 function getDb() {
   return createServiceClient(
@@ -47,24 +49,33 @@ export async function GET(request: NextRequest) {
     // Only the caller's own transactions count. A tag row is not proof of
     // ownership (tags saved before /tag checked could point at anyone's
     // transaction), and this client bypasses RLS.
-    const { data: txns } = await excludingTransfers((groupColumnExists) =>
-      withoutTransfers(
-        db
-          .from('financial_transactions')
-          .select('id, amount, type')
-          .eq('user_id', user.id)
-          .in('id', uniqueIds),
-        groupColumnExists,
+    // Amounts count in the home currency (lib/finance/fx/totals.ts); works before migration 210.
+    const [{ data: txns }, homeCurrency] = await Promise.all([
+      withOptionalFx((fxColumnsExist) =>
+        excludingTransfers((groupColumnExists) =>
+          withoutTransfers(
+            db
+              .from('financial_transactions')
+              .select(fxColumnsExist ? `id, amount, type, ${FX_TOTALS_COLUMNS}` : 'id, amount, type')
+              .eq('user_id', user.id)
+              .in('id', uniqueIds),
+            groupColumnExists,
+          ),
+        ),
       ),
-    );
+      loadHomeCurrency(db, user.id),
+    ]);
 
-    const txMap = new Map((txns || []).map((t) => [t.id, t]));
+    type TxRow = { id: string; type: string; amount: number; amount_home?: number | null; currency?: string | null; financial_accounts?: { currency?: string | null } | null };
+    const txMap = new Map(((txns || []) as unknown as TxRow[]).map((t) => [t.id, t]));
     transactionAmounts = {};
 
     for (const tagged of taggedTransactionIds) {
       const tx = txMap.get(tagged.entity_id);
       if (tx) {
-        const amt = tx.type === 'expense' ? Number(tx.amount) : -Number(tx.amount);
+        // A foreign amount with no rate yet adds nothing rather than its face value.
+        const home = amountForTotals(tx, homeCurrency) ?? 0;
+        const amt = tx.type === 'expense' ? home : -home;
         transactionAmounts[tagged.category_id] = (transactionAmounts[tagged.category_id] || 0) + amt;
       }
     }

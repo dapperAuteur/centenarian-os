@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { checkOwned } from '@/lib/auth/ownership';
 
 const VALID_ENTITY_TYPES = ['media_item', 'equipment'] as const;
 type EntityType = (typeof VALID_ENTITY_TYPES)[number];
@@ -45,6 +46,12 @@ export async function POST(request: NextRequest) {
 
   const table = ENTITY_TABLE_MAP[entity_type];
   const serviceDb = getServiceDb();
+
+  // The item must be the caller's own or public and active (the table's
+  // public-read policy). A private item reads as missing.
+  const access = await checkOwned(serviceDb, user.id, table, entity_id, { allowPublic: true });
+  if (access.failed) return NextResponse.json({ error: 'Could not verify item' }, { status: 500 });
+  if (!access.allowed) return NextResponse.json({ error: 'Item not found' }, { status: 404 });
 
   // Verify the item exists
   const { data: entity } = await serviceDb

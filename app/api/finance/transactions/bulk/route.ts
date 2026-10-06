@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { checkReferences, invalidReferenceMessage, ownedIds } from '@/lib/auth/ownership';
 
 function getDb() {
   return createServiceClient(
@@ -29,6 +30,16 @@ export async function POST(request: NextRequest) {
   }
 
   const db = getDb();
+
+  // Category, brand and life category must be the caller's own.
+  const refs = await checkReferences(db, user.id, [
+    { field: 'category_id', table: 'budget_categories', id: updates?.category_id },
+    { field: 'brand_id', table: 'user_brands', id: updates?.brand_id },
+    { field: 'life_category_id', table: 'life_categories', id: life_category_id },
+  ]);
+  if (refs.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
+  if (!refs.ok) return NextResponse.json({ error: invalidReferenceMessage(refs.invalid) }, { status: 400 });
+
   let updated = 0;
   let tagged = 0;
 
@@ -52,7 +63,10 @@ export async function POST(request: NextRequest) {
 
   // Bulk life category tagging (upsert, ignore duplicates)
   if (life_category_id) {
-    const rows = ids.map((entity_id: string) => ({
+    // Tag only the caller's own transactions.
+    const owned = await ownedIds(db, user.id, 'financial_transactions', ids);
+    if (owned.failed) return NextResponse.json({ error: 'Could not verify transactions' }, { status: 500 });
+    const rows = [...owned.ids].map((entity_id: string) => ({
       user_id: user.id,
       life_category_id,
       entity_type: 'transaction',
@@ -62,7 +76,7 @@ export async function POST(request: NextRequest) {
       .from('entity_life_categories')
       .upsert(rows, { onConflict: 'user_id,entity_type,entity_id,life_category_id', ignoreDuplicates: true });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    tagged = ids.length;
+    tagged = rows.length;
   }
 
   return NextResponse.json({ updated, tagged });

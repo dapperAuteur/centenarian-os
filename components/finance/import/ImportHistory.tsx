@@ -12,7 +12,7 @@ import type { ImportBatchSummary } from '@/lib/finance/csv-import/service';
 import type { UndoResult } from '@/lib/finance/csv-import/types';
 import { accountLabel } from '@/lib/finance/csv-import/ui-helpers';
 import UndoSummary from './UndoSummary';
-import { ErrorNotice, dangerButton, secondaryButton } from './shared';
+import { ErrorNotice, StatusChip, dangerButton, secondaryButton } from './shared';
 
 interface ImportHistoryProps {
   batches: ImportBatchSummary[];
@@ -87,13 +87,9 @@ export default function ImportHistory({ batches, state, error, onRetry, onUndo, 
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="break-all font-medium text-gray-900">{title}</p>
-                      <span
-                        className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          undone ? 'bg-gray-200 text-gray-800' : 'bg-green-100 text-green-900'
-                        }`}
-                      >
+                      <StatusChip tone={undone ? 'neutral' : 'success'}>
                         {undone ? `Undone${batch.undone_at ? ` on ${formatDay(batch.undone_at)}` : ''}` : 'Imported'}
-                      </span>
+                      </StatusChip>
                     </div>
                     <p className="mt-0.5 text-sm text-gray-700">{accountLabel(batch.financial_accounts)}</p>
                     <p className="text-xs text-gray-600">
