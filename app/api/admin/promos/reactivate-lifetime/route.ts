@@ -1,7 +1,8 @@
 // app/api/admin/promos/reactivate-lifetime/route.ts
 // One-call admin action: create a CentenarianOS lifetime promo campaign + a
 // matching marketing banner pointing at /pricing. Both rows are app='centenarian'
-// so the Work.WitUS (contractor) app is unaffected (shared DB).
+// so the Work.WitUS (contractor) app is unaffected. (The `app` filter dates from the
+// shared-DB era; Work.WitUS has had its own database since 2026-10.)
 //
 // Body shape:
 //   {
