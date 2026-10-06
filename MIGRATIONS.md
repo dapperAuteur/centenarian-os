@@ -1,6 +1,6 @@
 # CentenarianOS — Migrations Gallery
 
-> **219 migrations across 14 modules**, shipped solo since project inception. Schema lives in a Supabase Postgres database **shared with a sibling product** (Work.WitUS / contractor-os), so every migration has to be additive, RLS-aware, and cross-app-safe.
+> **220 migrations across 14 modules**, shipped solo since project inception. Schema lives in a Supabase Postgres database **shared with a sibling product** (Work.WitUS / contractor-os), so every migration has to be additive, RLS-aware, and cross-app-safe.
 
 > **Decomposition note.** CentenarianOS is being decomposed toward the ecosystem's "one app,
 > one job" rule, so some modules below (Media, Academy, Travel, contractor residue) are
@@ -33,11 +33,11 @@ The biggest module. Course catalog, lessons, modules, enrollments, quizzes, assi
 
 Highlights: `039_lms_schema.sql` (the foundational schema), `045_learning_paths.sql`, `070_quiz_support.sql`, `071_audio_chapters.sql`, `074_maps_documents_podcast.sql`, `094_course_prerequisites.sql`, `175-179_lesson_360_*.sql + virtual_tours.sql + tour_progress.sql` (the 360°/VR run), `183_course_completions.sql`, `185_course_visibility_flags.sql` (admin-controlled featured + Learn-the-App grouping).
 
-### Finance (16 migrations)
+### Finance (17 migrations)
 
 Multi-account ledger, custom budget categories, invoices with templates + custom fields, recurring transactions, transfers, interest calculations, FIFO fuel allocation, paycheck reconciliation, expected payments view, time-entry benefits, deductions, founders pricing, CashApp payments, fiscal calendar.
 
-Highlights: `051_financial_dashboard.sql`, `054_financial_accounts.sql`, `058_invoices.sql`, `063_transfers_interest_recurring.sql`, `079_invoice_templates.sql`, `153_paycheck_line_items.sql`, `155_fiscal_calendar.sql`, `158_fifo_fuel_allocation.sql`, `168_paycheck_reconciliation.sql`, `208_budget_periods.sql` (budgets by month, rollover), `210_multi_currency.sql` (account currencies, home currency, exchange-rate cache), `211_debt_plans_bill_due.sql` (saved debt-free plans, bill due-date tasks, reminder settings), `212_savings_goals.sql` (savings goals as envelopes and their allocations), `213_cash_counts.sql` (cash counts against the recorded balance, with the adjustment each one recorded), `215_retirement_insurance.sql` (retirement accounts, balance snapshots, life insurance policies, retirement planner settings).
+Highlights: `051_financial_dashboard.sql`, `054_financial_accounts.sql`, `058_invoices.sql`, `063_transfers_interest_recurring.sql`, `079_invoice_templates.sql`, `153_paycheck_line_items.sql`, `155_fiscal_calendar.sql`, `158_fifo_fuel_allocation.sql`, `168_paycheck_reconciliation.sql`, `208_budget_periods.sql` (budgets by month, rollover), `210_multi_currency.sql` (account currencies, home currency, exchange-rate cache), `211_debt_plans_bill_due.sql` (saved debt-free plans, bill due-date tasks, reminder settings), `212_savings_goals.sql` (savings goals as envelopes and their allocations), `213_cash_counts.sql` (cash counts against the recorded balance, with the adjustment each one recorded), `215_retirement_insurance.sql` (retirement accounts, balance snapshots, life insurance policies, retirement planner settings). `218_financial_account_nickname.sql` adds an optional per-account nickname (unique per user among active accounts, case-insensitive) used in Google Calendar titles as @nickname.
 
 ### Travel + Fuel (13 migrations)
 

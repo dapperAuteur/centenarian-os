@@ -4,6 +4,9 @@
 //      `balance_home` and `fx` ({ rate, rate_date, source, stale }): today's rate, cache first,
 //      fetched server-side when missing (lib/finance/fx).
 // POST: create a new account. `currency` (ISO code) defaults to the user's home currency.
+//       `nickname` (migration 218, optional): used in Google Calendar titles as @nickname; trimmed,
+//       starts with a letter, up to 20 characters, unique per user among active accounts
+//       (case-insensitive). 409 nickname_taken, 503 nickname_not_migrated before 218.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -11,12 +14,49 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { convert, normalizeCurrency } from '@/lib/finance/fx/math';
 import { getRate, isFxSchemaMissing } from '@/lib/finance/fx/rates';
 import { loadHomeCurrency } from '@/lib/finance/fx/server';
+import {
+  NICKNAME_MIGRATION_MESSAGE,
+  cleanNickname,
+  isNicknameColumnMissing,
+  nicknameTaken,
+} from '@/lib/finance/account-nickname';
 
 function getDb() {
   return createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
+}
+
+/**
+ * Checks a nickname from a request body (migration 218): format, and not used by another active
+ * account of the user (case-insensitive). Returns the value to store, or a response to send.
+ */
+async function checkNickname(
+  db: ReturnType<typeof getDb>,
+  userId: string,
+  raw: unknown,
+  selfId?: string,
+): Promise<{ value: string | null } | { response: NextResponse }> {
+  const cleaned = cleanNickname(raw);
+  if (!cleaned.ok) return { response: NextResponse.json({ error: cleaned.error, code: 'invalid_nickname' }, { status: 400 }) };
+  if (cleaned.value === null) return { value: null };
+  const { data, error } = await db.from('financial_accounts').select('id, nickname, is_active').eq('user_id', userId);
+  if (error) {
+    if (isNicknameColumnMissing(error)) {
+      return { response: NextResponse.json({ error: NICKNAME_MIGRATION_MESSAGE, code: 'nickname_not_migrated' }, { status: 503 }) };
+    }
+    return { response: NextResponse.json({ error: error.message }, { status: 500 }) };
+  }
+  if (nicknameTaken(cleaned.value, data ?? [], selfId)) {
+    return {
+      response: NextResponse.json(
+        { error: `Another account already uses the nickname "${cleaned.value}".`, code: 'nickname_taken' },
+        { status: 409 },
+      ),
+    };
+  }
+  return { value: cleaned.value };
 }
 
 export async function GET() {
@@ -101,6 +141,13 @@ export async function POST(request: NextRequest) {
     if (!currency) return NextResponse.json({ error: 'Currency must be a three-letter code, like USD or MXN.' }, { status: 400 });
   }
   if (!currency) currency = await loadHomeCurrency(db, user.id);
+  // Only when sent, so creating an account keeps working before migration 218.
+  let nickname: string | null = null;
+  if (body.nickname !== undefined) {
+    const checked = await checkNickname(db, user.id, body.nickname);
+    if ('response' in checked) return checked.response;
+    nickname = checked.value;
+  }
   const { data, error } = await db
     .from('financial_accounts')
     .insert({
@@ -130,11 +177,18 @@ export async function POST(request: NextRequest) {
       annual_fee: annual_fee != null ? Number(annual_fee) : null,
       // Sent only when it isn't USD, so creating a USD account keeps working before migration 210.
       ...(currency !== 'USD' ? { currency } : {}),
+      ...(nickname ? { nickname } : {}),
     })
     .select()
     .single();
 
   if (error) {
+    if (isNicknameColumnMissing(error)) {
+      return NextResponse.json({ error: NICKNAME_MIGRATION_MESSAGE, code: 'nickname_not_migrated' }, { status: 503 });
+    }
+    if (error.code === '23505' && /nickname/i.test(error.message)) {
+      return NextResponse.json({ error: 'Another account already uses that nickname.', code: 'nickname_taken' }, { status: 409 });
+    }
     if (isFxSchemaMissing(error)) {
       return NextResponse.json(
         { error: 'Accounts in other currencies need a database update (migration 210). Create it in USD for now.', code: 'fx_not_migrated' },
