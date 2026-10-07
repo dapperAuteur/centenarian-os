@@ -118,17 +118,21 @@ export interface ImportAccount {
  * Institution, name and last four: "Navy Federal EveryDay Checking ••1234".
  * Several accounts can share a name, so the name alone is never shown. The
  * institution is left out when the name already starts with it. Same wording
- * as accountLabel in the transfer tracking code, so pickers read alike.
+ * as accountLabel in the transfer tracking code, so pickers read alike. An account nickname
+ * (migration 218, the calendar @nickname) is added when the row carries one: "... (@visa)".
  */
 export function accountLabel(
-  account: Pick<ImportAccount, 'name' | 'institution_name' | 'last_four'> | null | undefined,
+  account: (Pick<ImportAccount, 'name' | 'institution_name' | 'last_four'> & { nickname?: string | null }) | null | undefined,
 ): string {
   if (!account) return 'An account that was removed';
   const name = (account.name ?? '').trim() || 'Account';
   const institution = (account.institution_name ?? '').trim();
   const lastFour = (account.last_four ?? '').trim();
   const showInstitution = institution !== '' && !name.toLowerCase().startsWith(institution.toLowerCase());
-  return [showInstitution ? institution : '', name, lastFour ? `••${lastFour}` : ''].filter(Boolean).join(' ');
+  const nickname = (account.nickname ?? '').trim();
+  return [showInstitution ? institution : '', name, lastFour ? `••${lastFour}` : '', nickname ? `(@${nickname})` : '']
+    .filter(Boolean)
+    .join(' ');
 }
 
 /** Active accounts first, then by label. Returns a new array. */

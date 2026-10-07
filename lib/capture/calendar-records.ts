@@ -2,8 +2,13 @@
 // The records a tagged Google Calendar event creates next to its planner task (plans/59, 4.4),
 // and how the sync keeps them in step with later changes to the event.
 //
-//   #expense / #income  -> a transaction (source 'manual', tag 'google-calendar', the
-//                          connection's default account; its currency follows that account)
+//   #expense / #income  -> a transaction (source 'manual', tag 'google-calendar'). The account is
+//                          the one an "@1234" (last four) / "@visa" (the account's nickname,
+//                          migration 218) in the title names among the accounts
+//                          ticked for the connection, else the connection's default; its
+//                          currency follows that account (lib/capture/calendar-accounts.ts).
+//                          An "@" that matches no ticked account, or more than one, creates
+//                          nothing and flags the item.
 //   #meal               -> a meal log
 //   #workout            -> a workout log
 //   #trip               -> NO record: travel is moving to RideWitUS. The parsed trip stays on
@@ -33,7 +38,15 @@
 // Relative imports keep ".ts" so this file runs under node --test (tests/unit/calendar-records.test.ts).
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { checkOwned } from '../auth/ownership.ts';
+import { checkOwned, ownedIds } from '../auth/ownership.ts';
+import { isNicknameColumnMissing } from '../finance/account-nickname.ts';
+import {
+  readAccountChoice,
+  resolveEventAccount,
+  type AccountResolution,
+  type CalendarAccountChoice,
+  type OwnedAccount,
+} from './calendar-accounts.ts';
 import type { EventTaskFields } from '../calendar/event-fields.ts';
 import {
   createMealLog,
@@ -181,6 +194,50 @@ export async function usableDefaultAccount(
   return check.allowed ? accountId : null;
 }
 
+/** One connection's ticked accounts, checked against the owner, plus the user's accounts for "@" matching. */
+export interface CalendarAccountContext {
+  choice: CalendarAccountChoice;
+  owned: OwnedAccount[];
+}
+
+/**
+ * Loads what resolveEventAccount needs for one connection. Ticked and default ids the user no
+ * longer owns (an account deleted since) are dropped through ownedIds (lib/auth/ownership.ts);
+ * `owned` is every account of the user, so an "@" naming an unticked account can say so.
+ */
+export async function loadCalendarAccounts(
+  db: SupabaseClient,
+  userId: string,
+  settings: Record<string, unknown> | null | undefined,
+): Promise<CalendarAccountContext> {
+  const saved = readAccountChoice(settings);
+  const check = await ownedIds(db, userId, 'financial_accounts', saved.allowedIds);
+  if (check.failed) throw new Error('Checking the calendar accounts failed.');
+  const choice: CalendarAccountChoice = {
+    allowedIds: saved.allowedIds.filter((id) => check.has(id)),
+    defaultId: saved.defaultId && check.has(saved.defaultId) ? saved.defaultId : null,
+  };
+  // Nicknames arrive with migration 218; before it, titles can name accounts by last four only.
+  let result: { data: unknown; error: { code?: string; message: string } | null } = await db
+    .from('financial_accounts')
+    .select('id, last_four, nickname')
+    .eq('user_id', userId);
+  if (result.error && isNicknameColumnMissing(result.error)) {
+    result = await db.from('financial_accounts').select('id, last_four').eq('user_id', userId);
+  }
+  const { data, error } = result;
+  if (error) throw new Error(`Reading the finance accounts failed: ${error.message}`);
+  const owned = ((data as OwnedAccount[] | null) ?? []).filter((a) => typeof a.id === 'string');
+  return { choice, owned };
+}
+
+/** The account for one event: only money titles read "@"; other kinds get the default. */
+export function accountForEvent(fields: EventTaskFields | null, context: CalendarAccountContext): AccountResolution {
+  const parsed = fields?.parsed;
+  const ref = parsed && (parsed.kind === 'expense' || parsed.kind === 'income') ? parsed.accountRef : undefined;
+  return resolveEventAccount(ref, context.choice, context.owned);
+}
+
 // ── Keeping the record in step with the event ───────────────────────────────────
 
 /** What the sync row says about the record (calendar_sync_items.record_type / record_id / parsed.record_snapshot). */
@@ -209,8 +266,13 @@ export interface SyncRecordInput {
   fields: EventTaskFields | null;
   /** What the sync row held before this event was processed. */
   state: RecordState;
-  /** The connection's default account (already checked as the user's), for transactions. */
+  /** The account for this event's transaction (already checked as the user's): see accountForEvent. */
   accountId: string | null;
+  /**
+   * Set when the title's "@account" could not be matched to exactly one ticked account. No
+   * transaction is created or changed; the item is flagged with this text.
+   */
+  accountReview?: string | null;
   /**
    * Saves a planned record on the sync row BEFORE the record is inserted, so a retry finds it.
    * Called with the planned state, and with EMPTY_RECORD_STATE if the insert is refused.
@@ -397,9 +459,13 @@ export async function syncEventRecord(db: SupabaseClient, input: SyncRecordInput
     return outcome(EMPTY_RECORD_STATE);
   }
 
+  // An "@account" that names no single ticked account: never guess, write no transaction.
+  const accountBlocked = desired?.type === 'transaction' && input.accountReview ? input.accountReview : null;
+
   // ── No record yet (new event, a resumed create, or a tag added later) ──
   if (!storedType || !state.record_id) {
     if (!desired) return outcome(EMPTY_RECORD_STATE);
+    if (accountBlocked) return outcome(EMPTY_RECORD_STATE, `${accountBlocked} No transaction was created.`);
     return createFor(deps, input, desired, null);
   }
 
@@ -408,6 +474,7 @@ export async function syncEventRecord(db: SupabaseClient, input: SyncRecordInput
   if (!row) {
     // create: the insert never happened (the run stopped right after saving the id); do it now.
     if (input.mode === 'create' && desired && desired.type === storedType) {
+      if (accountBlocked) return outcome(EMPTY_RECORD_STATE, `${accountBlocked} No transaction was created.`);
       return createFor(deps, input, desired, state.record_id);
     }
     // update: the user deleted the record. Respect that; do not bring it back.
@@ -424,6 +491,7 @@ export async function syncEventRecord(db: SupabaseClient, input: SyncRecordInput
       `The event's title no longer describes this ${RECORD_LABEL[storedType]}, so the ${RECORD_LABEL[storedType]} was left as it is. Check it.`,
     );
   }
+  if (accountBlocked) return outcome(state, `${accountBlocked} Its transaction was left as it is.`);
   // Nothing the record holds changed (e.g. only the event's description did).
   if (sameValues(desired.values, state.snapshot)) return outcome(state);
   // The record already holds the new values (a run that updated it but stopped before saving

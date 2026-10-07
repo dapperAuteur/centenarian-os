@@ -50,6 +50,12 @@ Life Categories are a tagging layer that sits on top of every module. They let y
 
 ---
 
+### One Category Tree
+
+Life Categories are also the top level of your **one category tree**. Your Finance budget categories sit under them: Groceries under Health, Rent under Home, Gas under Travel. A transaction picks a budget category, and its life area follows automatically, so there is one set of categories instead of two. Lesson 3 shows how to organize the tree.
+
+---
+
 ### How They Work
 
 - **Any entity can be tagged** — tasks, trips, transactions, workouts, equipment, invoices, recipes, fuel logs, maintenance records, routes, and focus sessions
@@ -85,6 +91,7 @@ Life Categories appear in two places:
 
 - Life Categories are cross-module tags — they work across all 11 entity types
 - They answer questions that module-specific categories can't (e.g., "all Health spending")
+- Budget categories sit under life areas, so a transaction's life area comes from its budget category
 - 8 defaults are auto-created: Health, Finance, Career, Home, Fitness, Travel, Learning, Social
 - Items can have multiple life categories
 - Find them in entity edit modals and the Categories dashboard

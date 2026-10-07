@@ -119,7 +119,7 @@ These apply everywhere, always:
 - **Never** `git commit --no-verify`. If a hook fails, fix the underlying issue.
 - **Never** `git commit --amend` a commit that has been pushed.
 - **Never** `git reset --hard` without first confirming your working tree is expendable.
-- **Never** drop or rename tables/columns in migrations — migrations must be additive (see [CLAUDE.md § Shared Database](CLAUDE.md)).
+- **Never** drop or rename tables/columns in migrations — the database is shared with Work.WitUS, so migrations must be additive (see [CLAUDE.md § Database](CLAUDE.md)).
 
 ---
 

@@ -6,6 +6,7 @@ import { GemAction, ActionType } from './gemini-parser';
 import { generateSlug, makeUniqueSlug } from '@/lib/recipes/slug';
 import { TAGS } from '@/lib/constants/tags';
 import type { TaskTag } from '@/lib/types';
+import { syncAutoLifeAreas } from '@/lib/categories/life-areas';
 
 export interface ActionResult {
   type: ActionType;
@@ -224,6 +225,8 @@ async function createTransaction(
   if (error || !tx) {
     return { type: 'CREATE_TRANSACTION', success: false, message: error?.message || 'Insert failed' };
   }
+  // The life area follows the budget category (one category tree, migration 223).
+  if (data.category_id) await syncAutoLifeAreas(db, userId, [tx.id]);
 
   return {
     type: 'CREATE_TRANSACTION',

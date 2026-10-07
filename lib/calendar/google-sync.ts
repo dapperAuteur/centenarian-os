@@ -18,7 +18,8 @@
 //   RECORDS  The title goes through parseCaptureTitle; the result is stored in
 //            calendar_sync_items.parsed / parse_status. A tagged event also gets a record next
 //            to its task (phase 4.4, lib/capture/calendar-records.ts): #expense / #income -> a
-//            transaction on the connection's default account, #meal -> a meal log, #workout ->
+//            transaction (on the account an "@1234" / "@visa" names among the connection's ticked
+//            accounts, else its default account), #meal -> a meal log, #workout ->
 //            a workout log. #trip creates no trip (travel is moving to RideWitUS): the parsed
 //            trip stays on the row and the task says so. The record follows later changes only
 //            while nobody edited it; a cancelled event never deletes a transaction. Anything the
@@ -54,7 +55,9 @@ import {
   EMPTY_RECORD_STATE,
   isRecordType,
   syncEventRecord,
-  usableDefaultAccount,
+  accountForEvent,
+  loadCalendarAccounts,
+  type CalendarAccountContext,
   type RecordOutcome,
   type RecordState,
   type RecordValues,
@@ -174,6 +177,14 @@ function recordColumns(
     columns.parse_error = parseError;
   }
   return columns;
+}
+
+/** accountId / accountReview for syncEventRecord, from the title's "@account" (or the default). */
+function accountInput(fields: EventTaskFields, accounts: CalendarAccountContext) {
+  const resolved = accountForEvent(fields, accounts);
+  return resolved.ok
+    ? { accountId: resolved.accountId, accountReview: null }
+    : { accountId: null, accountReview: resolved.review };
 }
 
 const DEFAULT_BUDGET_MS = 50_000;
@@ -305,8 +316,9 @@ async function syncCalendar(
 
   const timeZone = changes.timeZone ?? cal.time_zone;
   const defaultTag = conn.settings?.default_tag ?? null;
-  // Transactions go to the connection's default account, while it is still the user's.
-  const accountId = await usableDefaultAccount(db, userId, conn.settings?.default_account_id ?? null);
+  // Transactions go to the account the title's "@" names among the connection's ticked
+  // accounts, else to its default. Ids the user no longer owns are dropped here.
+  const accounts = await loadCalendarAccounts(db, userId, conn.settings as Record<string, unknown> | null);
 
   // The same event can appear twice across pages of one run; the last copy wins.
   const events = new Map<string, GoogleEvent>();
@@ -366,7 +378,7 @@ async function syncCalendar(
           mode: 'cancel',
           fields: null,
           state: recordStateOf(item),
-          accountId,
+          accountId: null,
           persist: async () => {},
         });
         const { error: itemError } = await db
@@ -401,7 +413,7 @@ async function syncCalendar(
           mode: 'update',
           fields,
           state: recordStateOf(item),
-          accountId,
+          ...accountInput(fields, accounts),
           persist: (state) => persistRecord(db, item.id, state, fields),
         });
         const { error: itemError } = await db
@@ -491,7 +503,7 @@ async function syncCalendar(
           mode: 'create',
           fields,
           state: recordStateOf(item),
-          accountId,
+          ...accountInput(fields, accounts),
           persist: (state) => persistRecord(db, rowId, state, fields),
         });
 

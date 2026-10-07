@@ -1,9 +1,24 @@
+// app/api/life-categories/analytics/route.ts
+// GET ?period=<days>: per life area, how many items and how much spending in the period.
+//
+// One category tree (plans/63 E, migration 223): a transaction counts toward the life area its
+// budget category sits under, plus any life area it is tagged with, once each
+// (lib/categories/life-areas.ts rollUpLifeAreas). That is worked out here on read, so spending
+// is right even for transactions categorized before their category was placed under a life area.
+//
+// The period: transactions count by transaction date (spending in the last N days); other items
+// count by when they were tagged, as before. Transfers between the person's own accounts are
+// not spending. Amounts are in the home currency (lib/finance/fx/totals.ts).
+//   -> { analytics: [{ id, name, icon, color, entity_count, spending, entity_breakdown,
+//                      from_budget_category }] }
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { excludingTransfers, withoutTransfers } from '@/lib/finance/transfers/schema';
 import { amountForTotals, FX_TOTALS_COLUMNS, withOptionalFx } from '@/lib/finance/fx/totals';
 import { loadHomeCurrency } from '@/lib/finance/fx/server';
+import { loadLifeAreaByCategory, rollUpLifeAreas, type RollUpTransaction } from '@/lib/categories/life-areas';
 
 function getDb() {
   return createServiceClient(
@@ -11,6 +26,21 @@ function getDb() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 }
+
+/** Rows per page, and the most pages read for one period. */
+const PAGE = 1000;
+const MAX_PAGES = 20;
+const ID_CHUNK = 200;
+
+type TxRow = {
+  id: string;
+  type: string;
+  amount: number;
+  category_id: string | null;
+  amount_home?: number | null;
+  currency?: string | null;
+  financial_accounts?: { currency?: string | null } | null;
+};
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -21,84 +51,86 @@ export async function GET(request: NextRequest) {
   const since = new Date();
   since.setDate(since.getDate() - period);
   const sinceStr = since.toISOString();
+  const sinceDate = sinceStr.slice(0, 10);
 
   const db = getDb();
 
-  // Fetch life categories and all tags in parallel
-  const [catRes, tagsRes] = await Promise.all([
+  // Life areas, and tags on everything that is not a transaction (by when they were tagged).
+  const [catRes, tagsRes, lifeMap, homeCurrency] = await Promise.all([
     db.from('life_categories').select('*').eq('user_id', user.id).order('sort_order'),
-    db.from('entity_life_categories').select('*').eq('user_id', user.id).gte('created_at', sinceStr),
+    db
+      .from('entity_life_categories')
+      .select('life_category_id, entity_type, entity_id')
+      .eq('user_id', user.id)
+      .neq('entity_type', 'transaction')
+      .gte('created_at', sinceStr),
+    loadLifeAreaByCategory(db, user.id),
+    loadHomeCurrency(db, user.id),
   ]);
-
+  if (catRes.error) return NextResponse.json({ error: catRes.error.message }, { status: 500 });
   const categories = catRes.data || [];
-  const allTags = tagsRes.data || [];
 
-  // Get transaction IDs that are tagged, to compute spending per category
-  const taggedTransactionIds = allTags
-    .filter((t) => t.entity_type === 'transaction')
-    .map((t) => ({ category_id: t.life_category_id, entity_id: t.entity_id }));
-
-  let transactionAmounts: Record<string, number> = {};
-
-  if (taggedTransactionIds.length > 0) {
-    const uniqueIds = [...new Set(taggedTransactionIds.map((t) => t.entity_id))];
-    // A tagged transaction that is a transfer between the person's own
-    // accounts is not spending, so it adds nothing to a category's total.
-    // Works before migration 202 too: see excludingTransfers().
-    //
-    // Only the caller's own transactions count. A tag row is not proof of
-    // ownership (tags saved before /tag checked could point at anyone's
-    // transaction), and this client bypasses RLS.
-    // Amounts count in the home currency (lib/finance/fx/totals.ts); works before migration 210.
-    const [{ data: txns }, homeCurrency] = await Promise.all([
-      withOptionalFx((fxColumnsExist) =>
-        excludingTransfers((groupColumnExists) =>
-          withoutTransfers(
-            db
-              .from('financial_transactions')
-              .select(fxColumnsExist ? `id, amount, type, ${FX_TOTALS_COLUMNS}` : 'id, amount, type')
-              .eq('user_id', user.id)
-              .in('id', uniqueIds),
-            groupColumnExists,
-          ),
-        ),
+  // The period's transactions, transfers left out. Only the caller's own rows: this client
+  // bypasses RLS. Works before migrations 202 and 210 (see excludingTransfers, withOptionalFx).
+  const transactions: RollUpTransaction[] = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const from = page * PAGE;
+    const { data: txns, error } = await withOptionalFx((fxColumnsExist) =>
+      excludingTransfers((groupColumnExists) =>
+        withoutTransfers(
+          db
+            .from('financial_transactions')
+            .select(fxColumnsExist ? `id, amount, type, category_id, ${FX_TOTALS_COLUMNS}` : 'id, amount, type, category_id')
+            .eq('user_id', user.id)
+            .gte('transaction_date', sinceDate),
+          groupColumnExists,
+        )
+          .order('id')
+          .range(from, from + PAGE - 1),
       ),
-      loadHomeCurrency(db, user.id),
-    ]);
-
-    type TxRow = { id: string; type: string; amount: number; amount_home?: number | null; currency?: string | null; financial_accounts?: { currency?: string | null } | null };
-    const txMap = new Map(((txns || []) as unknown as TxRow[]).map((t) => [t.id, t]));
-    transactionAmounts = {};
-
-    for (const tagged of taggedTransactionIds) {
-      const tx = txMap.get(tagged.entity_id);
-      if (tx) {
-        // A foreign amount with no rate yet adds nothing rather than its face value.
-        const home = amountForTotals(tx, homeCurrency) ?? 0;
-        const amt = tx.type === 'expense' ? home : -home;
-        transactionAmounts[tagged.category_id] = (transactionAmounts[tagged.category_id] || 0) + amt;
-      }
+    );
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const rows = (txns || []) as unknown as TxRow[];
+    for (const tx of rows) {
+      // A foreign amount with no rate yet adds nothing rather than its face value.
+      transactions.push({ id: tx.id, type: tx.type, category_id: tx.category_id, amount: amountForTotals(tx, homeCurrency) ?? 0 });
     }
+    if (rows.length < PAGE) break;
   }
 
-  // Build per-category analytics
+  // Every tag on those transactions, whenever it was added.
+  const transactionTags: { life_category_id: string; entity_id: string }[] = [];
+  const ids = transactions.map((tx) => tx.id);
+  for (let i = 0; i < ids.length; i += ID_CHUNK) {
+    const { data, error } = await db
+      .from('entity_life_categories')
+      .select('life_category_id, entity_id')
+      .eq('user_id', user.id)
+      .eq('entity_type', 'transaction')
+      .in('entity_id', ids.slice(i, i + ID_CHUNK));
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    transactionTags.push(...((data || []) as { life_category_id: string; entity_id: string }[]));
+  }
+
+  const totals = rollUpLifeAreas({
+    lifeAreaIds: categories.map((cat) => cat.id as string),
+    otherTags: (tagsRes.data || []) as { life_category_id: string; entity_type: string; entity_id: string }[],
+    transactions,
+    transactionTags,
+    lifeAreaByCategory: lifeMap.map,
+  });
+
   const analytics = categories.map((cat) => {
-    const catTags = allTags.filter((t) => t.life_category_id === cat.id);
-
-    // Group by entity_type
-    const entityBreakdown: Record<string, number> = {};
-    for (const tag of catTags) {
-      entityBreakdown[tag.entity_type] = (entityBreakdown[tag.entity_type] || 0) + 1;
-    }
-
+    const t = totals.get(cat.id);
     return {
       id: cat.id,
       name: cat.name,
       icon: cat.icon,
       color: cat.color,
-      entity_count: catTags.length,
-      spending: transactionAmounts[cat.id] || 0,
-      entity_breakdown: entityBreakdown,
+      entity_count: t?.entity_count ?? 0,
+      spending: t?.spending ?? 0,
+      entity_breakdown: t?.entity_breakdown ?? {},
+      from_budget_category: t?.from_budget_category ?? 0,
     };
   });
 

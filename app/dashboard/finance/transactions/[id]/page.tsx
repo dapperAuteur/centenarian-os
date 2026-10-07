@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, Calendar, DollarSign, Tag, Copy, Trash2,
-  Loader2, ArrowDownLeft, ArrowUpRight, Building2, CreditCard, FileText,
+  Loader2, ArrowDownLeft, ArrowUpRight, Building2, CreditCard, FileText, ScanSearch,
 } from 'lucide-react';
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -16,6 +16,8 @@ import TransferSection from '@/components/finance/TransferSection';
 import DeleteTransferDialog from '@/components/finance/DeleteTransferDialog';
 import type { TransferPartnerView } from '@/components/finance/TransferBadge';
 import { accountLabel } from '@/lib/finance/transfers/pairing';
+import { reconcileHref, reconciledWarning, type ReconciledPeriodView } from '@/lib/finance/reconciliation/client';
+import CategorySelect, { type BudgetCategory } from '@/components/finance/CategorySelect';
 
 interface Transaction {
   id: string;
@@ -93,10 +95,24 @@ export default function TransactionDetailPage() {
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [linkedInvoice, setLinkedInvoice] = useState<LinkedInvoice | null>(null);
   const [transferPartner, setTransferPartner] = useState<TransferPartnerView | null>(null);
+  // Dated inside a reconciled statement period (migration 221).
+  const [reconciledPeriod, setReconciledPeriod] = useState<ReconciledPeriodView | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   // Deleting one side of a transfer asks what to do with the other side.
   const [pairDelete, setPairDelete] = useState<{ partner: TransferPartnerView | null } | null>(null);
+  // The category is picked from the one category tree; its life area follows (plans/63 E).
+  const [categories, setCategories] = useState<BudgetCategory[]>([]);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
+  const [savingCategory, setSavingCategory] = useState(false);
+  const [tagsVersion, setTagsVersion] = useState(0);
+
+  useEffect(() => {
+    offlineFetch('/api/finance/categories')
+      .then((r) => r.json())
+      .then((d) => setCategories(Array.isArray(d.categories) ? d.categories : []))
+      .catch(() => {});
+  }, []);
 
   // `quiet` reloads in place (after a link or unlink) without swapping the page for a spinner.
   const load = useCallback(async (quiet = false) => {
@@ -108,12 +124,34 @@ export default function TransactionDetailPage() {
         setTransaction(data.transaction || null);
         setLinkedInvoice(data.linked_invoice || null);
         setTransferPartner(data.transfer_partner || null);
+        setReconciledPeriod(data.reconciled_period || null);
       }
     } catch { /* handled */ }
     finally { setLoading(false); }
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  const saveCategory = async (categoryId: string) => {
+    setCategoryError(null);
+    setSavingCategory(true);
+    try {
+      const res = await offlineFetch('/api/finance/transactions', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, category_id: categoryId || null }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        setCategoryError(typeof err?.error === 'string' ? err.error : 'The category could not be saved. Please try again.');
+        return;
+      }
+      await load(true);
+      setTagsVersion((v) => v + 1);
+    } finally {
+      setSavingCategory(false);
+    }
+  };
 
   const handleDuplicate = async () => {
     setActionLoading('duplicate');
@@ -135,7 +173,8 @@ export default function TransactionDetailPage() {
       setPairDelete({ partner: transferPartner });
       return;
     }
-    if (!confirm('Delete this transaction? This cannot be undone.')) return;
+    const warning = reconciledPeriod ? `${reconciledWarning(reconciledPeriod)}\n\n` : '';
+    if (!confirm(`${warning}Delete this transaction? This cannot be undone.`)) return;
     setActionLoading('delete');
     try {
       const res = await offlineFetch(`/api/finance/transactions?id=${id}`, { method: 'DELETE' });
@@ -201,6 +240,20 @@ export default function TransactionDetailPage() {
         </div>
       </div>
 
+      {reconciledPeriod && (
+        <div role="note" className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <p>{reconciledWarning(reconciledPeriod)}</p>
+          {transaction.account_id && (
+            <Link
+              href={reconcileHref(transaction.account_id, { date: reconciledPeriod.statement_date })}
+              className="mt-1 inline-flex min-h-11 items-center font-medium text-sky-800 underline underline-offset-2"
+            >
+              Open Reconcile for this account
+            </Link>
+          )}
+        </div>
+      )}
+
       {/* Details Card */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
@@ -231,12 +284,19 @@ export default function TransactionDetailPage() {
           )}
         </div>
 
-        {transaction.budget_categories && (
-          <div className="flex items-center gap-2 text-sm">
-            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: transaction.budget_categories.color }} />
-            <span className="text-gray-600">{transaction.budget_categories.name}</span>
-          </div>
-        )}
+        <div className="max-w-md">
+          <CategorySelect
+            id="transaction-category"
+            label="Category"
+            value={transaction.category_id ?? ''}
+            onChange={saveCategory}
+            categories={categories}
+            onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
+            disabled={savingCategory}
+          />
+          <p className="mt-1 text-xs text-gray-600">Its life area follows the category (see Life areas below).</p>
+          {categoryError && <p role="alert" className="mt-1 text-xs text-red-700">{categoryError}</p>}
+        </div>
 
         {transaction.tags && transaction.tags.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
@@ -318,7 +378,14 @@ export default function TransactionDetailPage() {
       {/* Actions */}
       <div className="bg-white border border-gray-200 rounded-2xl p-4">
         <h3 className="text-sm font-medium text-gray-700 mb-3">Actions</h3>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
+          {/* Opens the Find similar panel on the Transactions page, started from this transaction. */}
+          <Link
+            href={`/dashboard/finance/transactions?similar=${transaction.id}`}
+            className="min-h-11 flex items-center justify-center gap-1.5 px-3 py-2 bg-sky-50 text-sky-800 rounded-lg text-sm font-medium hover:bg-sky-100 transition"
+          >
+            <ScanSearch className="w-3.5 h-3.5" aria-hidden="true" /> Find similar
+          </Link>
           <button
             onClick={handleDuplicate}
             disabled={!!actionLoading}
@@ -344,7 +411,7 @@ export default function TransactionDetailPage() {
 
       {/* Life Categories */}
       <div className="bg-white border border-gray-200 rounded-2xl p-5">
-        <LifeCategoryTagger entityType="transaction" entityId={transaction.id} />
+        <LifeCategoryTagger key={`${transaction.category_id ?? 'none'}-${tagsVersion}`} entityType="transaction" entityId={transaction.id} />
       </div>
 
       <DeleteTransferDialog

@@ -1,6 +1,6 @@
 # CentenarianOS — Migrations Gallery
 
-> **219 migrations across 14 modules**, shipped solo since project inception. Schema lives in a Supabase Postgres database **shared with a sibling product** (Work.WitUS / contractor-os), so every migration has to be additive, RLS-aware, and cross-app-safe.
+> **225 migrations across 14 modules**, shipped solo since project inception. Schema lives in a Supabase Postgres database **shared with a sibling product** (Work.WitUS / contractor-os), so every migration has to be additive, RLS-aware, and cross-app-safe. A split (Work.WitUS moving to its own database) is planned, not done.
 
 > **Decomposition note.** CentenarianOS is being decomposed toward the ecosystem's "one app,
 > one job" rule, so some modules below (Media, Academy, Travel, contractor residue) are
@@ -9,7 +9,7 @@
 > late stage, run against a DB clone first. Do not pre-emptively drop a table because its
 > module is slated to move.
 
-This doc is the visible evidence behind that headline. The full source is under [`supabase/migrations/`](./supabase/migrations/). Headline count last refreshed 2026-10-05 from a live `ls supabase/migrations/*.sql | wc -l`; the per-module counts below were last curated 2026-08-27.
+This doc is the visible evidence behind that headline. The full source is under [`supabase/migrations/`](./supabase/migrations/). Headline count last refreshed 2026-10-07 from a live `ls supabase/migrations/*.sql | wc -l`; the per-module counts below were last curated 2026-08-27.
 
 ---
 
@@ -17,9 +17,9 @@ This doc is the visible evidence behind that headline. The full source is under 
 
 Three constraints compound:
 
-1. **Shared database.** centenarian-os and contractor-os both read/write the same Postgres instance. Every column, every index, every trigger has to make sense in the context of both apps. Bigger surface area + tighter coordination cost = more, smaller migrations.
+1. **Shared database.** centenarian-os and contractor-os both read/write the same Postgres instance. Every column, every index, every trigger has to make sense in the context of both apps. Bigger surface area + tighter coordination cost = more, smaller migrations. A split is planned, not done; until it lands, this constraint holds.
 2. **14 product modules in one app.** Planner, finance, focus, health metrics, wearables, workouts, exercises, equipment, travel, fuel, recipes, blog, academy/LMS, AI coach, plus auxiliary subsystems (media library, smart scan, retrospective, smart scan, life categories). Each module evolves independently.
-3. **Additive-only as a rule.** [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" mandates `ADD COLUMN IF NOT EXISTS` / `CREATE TABLE IF NOT EXISTS` patterns. Drops and renames require cross-app review. The result: many small, safe migrations rather than a few sprawling ones.
+3. **Additive-only as a rule.** [`CLAUDE.md`](./CLAUDE.md) §"Database" mandates `ADD COLUMN IF NOT EXISTS` / `CREATE TABLE IF NOT EXISTS` patterns and guarded policies. Drops and renames require cross-app review. The result: many small, safe migrations rather than a few sprawling ones.
 
 ---
 
@@ -33,11 +33,11 @@ The biggest module. Course catalog, lessons, modules, enrollments, quizzes, assi
 
 Highlights: `039_lms_schema.sql` (the foundational schema), `045_learning_paths.sql`, `070_quiz_support.sql`, `071_audio_chapters.sql`, `074_maps_documents_podcast.sql`, `094_course_prerequisites.sql`, `175-179_lesson_360_*.sql + virtual_tours.sql + tour_progress.sql` (the 360°/VR run), `183_course_completions.sql`, `185_course_visibility_flags.sql` (admin-controlled featured + Learn-the-App grouping).
 
-### Finance (16 migrations)
+### Finance (20 migrations)
 
 Multi-account ledger, custom budget categories, invoices with templates + custom fields, recurring transactions, transfers, interest calculations, FIFO fuel allocation, paycheck reconciliation, expected payments view, time-entry benefits, deductions, founders pricing, CashApp payments, fiscal calendar.
 
-Highlights: `051_financial_dashboard.sql`, `054_financial_accounts.sql`, `058_invoices.sql`, `063_transfers_interest_recurring.sql`, `079_invoice_templates.sql`, `153_paycheck_line_items.sql`, `155_fiscal_calendar.sql`, `158_fifo_fuel_allocation.sql`, `168_paycheck_reconciliation.sql`, `208_budget_periods.sql` (budgets by month, rollover), `210_multi_currency.sql` (account currencies, home currency, exchange-rate cache), `211_debt_plans_bill_due.sql` (saved debt-free plans, bill due-date tasks, reminder settings), `212_savings_goals.sql` (savings goals as envelopes and their allocations), `213_cash_counts.sql` (cash counts against the recorded balance, with the adjustment each one recorded), `215_retirement_insurance.sql` (retirement accounts, balance snapshots, life insurance policies, retirement planner settings).
+Highlights: `051_financial_dashboard.sql`, `054_financial_accounts.sql`, `058_invoices.sql`, `063_transfers_interest_recurring.sql`, `079_invoice_templates.sql`, `153_paycheck_line_items.sql`, `155_fiscal_calendar.sql`, `158_fifo_fuel_allocation.sql`, `168_paycheck_reconciliation.sql`, `208_budget_periods.sql` (budgets by month, rollover), `210_multi_currency.sql` (account currencies, home currency, exchange-rate cache), `211_debt_plans_bill_due.sql` (saved debt-free plans, bill due-date tasks, reminder settings), `212_savings_goals.sql` (savings goals as envelopes and their allocations), `213_cash_counts.sql` (cash counts against the recorded balance, with the adjustment each one recorded), `215_retirement_insurance.sql` (retirement accounts, balance snapshots, life insurance policies, retirement planner settings), `218_financial_account_nickname.sql` (an optional per-account nickname, unique per user among active accounts, case-insensitive, used in Google Calendar titles as @nickname), `219_finance_review_import_drafts.sql` (statement imports saved to finish later, and the Review page's "not a transfer" answers), `220_bulk_edit_operations.sql` (undo records for bulk edits of transactions: per-row values before and after), `221_account_reconciliation.sql` (dated starting balances, Cleared ticks on transactions, statement reconciliations).
 
 ### Travel + Fuel (13 migrations)
 
@@ -75,11 +75,11 @@ Posts, view tracking, blocked-visit tracking, likes/saves, Facebook share metada
 
 Highlights: `024_blog_posts.sql`, `025_blog_events.sql`, `026_blog_blocked_visit.sql`, `035_blog_likes_saves.sql`, `043_facebook_share.sql`.
 
-### Focus / Sessions / Pomodoro / Engine (8 migrations)
+### Focus / Sessions / Pomodoro / Engine (9 migrations)
 
 Pomodoro sessions with tags, goals, breaks, templates, analytics, daily-log constraints, agility engine, leaderboard trigger fix, session_type column, focus-session activity links.
 
-Highlights: `009_add_session_tags.sql` through `020_add_session_type.sql` (the foundational batch), `076_focus_session_activity_link.sql` (cross-module link), `017_agility_engine_migration.sql`.
+Highlights: `009_add_session_tags.sql` through `020_add_session_type.sql` (the foundational batch), `076_focus_session_activity_link.sql` (cross-module link), `017_agility_engine_migration.sql`, `222_pain_entries.sql` (many pain entries per day; `daily_logs.pain_*` kept as the day's summary, with a once-only backfill of past days).
 
 ### Equipment Tracker (4 migrations)
 
@@ -119,7 +119,7 @@ Highlights: `105_contractor_jobs.sql`, `106_contractor_rate_cards.sql`, `107_job
 
 ### Cross-cutting / utility (~30 migrations)
 
-Things that don't belong to one module: `023_profiles.sql`, `036_auto_profile_on_signup.sql` (auth shape), `037_feature_batch.sql`, `040_visibility.sql` (academy + blog visibility model), `049_shortlinks.sql`, `066_activity_links.sql` (polymorphic cross-module relations across 11 entity types), `077_life_categories.sql` (user-defined life-area tagging across 11 entity types), `084_dashboard_home_preference.sql`, `089_admin_notifications.sql`, `090_invited_users.sql` + `090_security_fixes.sql`, `100_app_logs.sql`, `101_usage_events.sql`, `108_city_guides.sql`, `110_lister_system.sql`, `111_home_address_distance.sql`, `115_multi_product_invites.sql`, `118_module_onboarding.sql`, `120_add_clock_format.sql`, `127_push_notifications.sql`, `131_public_venues.sql`, `132_invite_limits_paid_tracking.sql`, `133_feedback_app_column.sql`, `135_benefit_deductions.sql`, `136_invite_job_limit.sql`, `137_seo_tracking.sql`, `138_seo_app_column.sql`, `159_enable_rls_security_fixes.sql`, `161-164_email_campaigns + marketing_banners + referral_rewards + notification_preferences.sql`, `166_theme_preference.sql`, `167_time_entry_benefits.sql`, `170_contact_share_visible_fields.sql`, `171-174_cashapp + founders + admin_promo + cashapp_app_column + dashboard_home_per_app.sql`, `182_starter_tier.sql`, `217_integration_outbox.sql` (outgoing signed events to sibling apps, e.g. RideWitUS envelope.balance; service-role only).
+Things that don't belong to one module: `023_profiles.sql`, `036_auto_profile_on_signup.sql` (auth shape), `037_feature_batch.sql`, `040_visibility.sql` (academy + blog visibility model), `049_shortlinks.sql`, `066_activity_links.sql` (polymorphic cross-module relations across 11 entity types), `077_life_categories.sql` (user-defined life-area tagging across 11 entity types), `223_one_category_tree.sql` (one category tree: budget categories under life areas via `budget_categories.life_category_id`, and `entity_life_categories.auto_source` for tags the app adds from a transaction's category), `084_dashboard_home_preference.sql`, `089_admin_notifications.sql`, `090_invited_users.sql` + `090_security_fixes.sql`, `100_app_logs.sql`, `101_usage_events.sql`, `108_city_guides.sql`, `110_lister_system.sql`, `111_home_address_distance.sql`, `115_multi_product_invites.sql`, `118_module_onboarding.sql`, `120_add_clock_format.sql`, `127_push_notifications.sql`, `131_public_venues.sql`, `132_invite_limits_paid_tracking.sql`, `133_feedback_app_column.sql`, `135_benefit_deductions.sql`, `136_invite_job_limit.sql`, `137_seo_tracking.sql`, `138_seo_app_column.sql`, `159_enable_rls_security_fixes.sql`, `161-164_email_campaigns + marketing_banners + referral_rewards + notification_preferences.sql`, `166_theme_preference.sql`, `167_time_entry_benefits.sql`, `170_contact_share_visible_fields.sql`, `171-174_cashapp + founders + admin_promo + cashapp_app_column + dashboard_home_per_app.sql`, `182_starter_tier.sql`, `217_integration_outbox.sql` (outgoing signed events to sibling apps, e.g. RideWitUS envelope.balance; service-role only).
 
 ### Repair / non-sequential migrations (4)
 
@@ -194,7 +194,7 @@ Imperfect because some migrations don't carry the module name in the filename (e
 
 ## See also
 
-- [`CLAUDE.md`](./CLAUDE.md) — project conventions, including the Shared Database rule that drives the additive-only migration discipline.
+- [`CLAUDE.md`](./CLAUDE.md) — project conventions, including the shared-database rule that drives the additive-only migration discipline.
 - [`STYLE_GUIDE.md`](./STYLE_GUIDE.md) — branch + commit + PR workflow.
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md) — the 14-module layout and the shared-DB boundary, with a Mermaid diagram.
 - [`README.md`](./README.md) — top-level project intro.

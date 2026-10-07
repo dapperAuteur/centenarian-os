@@ -175,6 +175,7 @@ const PHASES: Phase[] = [
       { done: true, text: 'Doodle canvas: full-screen drawing during focus sessions (Excalidraw)' },
       { done: true, text: 'Daily energy and focus rating system' },
       { done: true, text: 'Pain tracking and body check logging' },
+      { done: false, text: 'Pain log: several entries a day and a filterable history of every entry (built; live once migration 222 is applied)' },
       { done: true, text: 'AI-assisted weekly review generation (Gemini summarization)' },
       { done: true, text: 'Recipe ideas generated from current ingredient inventory (Gemini)' },
       { done: true, text: 'Correlation analysis: cross-module data correlation engine with trend charts' },
@@ -250,10 +251,12 @@ const PHASES: Phase[] = [
       { done: true, text: 'Bulk CSV import and full data CSV export' },
       { done: true, text: 'Saved contacts: vendor/customer directory with auto-fill' },
       { done: true, text: 'Account balance tracking: opening balance + transaction history' },
+      { done: true, text: 'Dated starting balances and monthly reconciliation to statements (migration 221, run by hand): Cleared ticks, adjustments, reconciled-period warnings, audit card' },
       { done: true, text: 'Account deactivation: soft-delete preserves transaction history' },
       { done: true, text: 'Contact locations: sub-locations per vendor/customer' },
       { done: true, text: 'Data Hub: centralized import/export for all 12+ modules with CSV templates, date-range filtering, and Google Sheets support' },
       { done: true, text: 'Invoice custom fields: define and attach arbitrary key/value fields per invoice template' },
+      { done: true, text: 'Find similar transactions and edit them in bulk (category, vendor, type, brand, life category, tags, transfer unlink), with undo (migration 220, run by hand)' },
     ],
   },
   {
@@ -296,6 +299,8 @@ const PHASES: Phase[] = [
     items: [
       { done: true, text: 'Dashboard home preference: choose which page you land on after login or clicking "Go to Dashboard"' },
       { done: true, text: 'Life Categories: user-defined life-area tags with analytics across all 11 module types' },
+      // Built on feat/one-category-tree; flip to done once it is merged and migration 223 is applied.
+      { done: false, text: 'One category tree: budget categories under life areas, one searchable category picker everywhere, and an Organize categories screen' },
       { done: true, text: 'ARIA compliance audit: aria-expanded on toggles, role="alert" on errors, accessible LoadingSpinner component' },
       { done: true, text: 'Mobile touch targets: 44x44px minimum on all close buttons, FABs, nav links, and icon buttons' },
       { done: true, text: 'SEO metadata on all public pages: recipes, coaching, demo, live, tech-roadmap, contribute' },

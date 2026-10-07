@@ -1,10 +1,14 @@
 // app/api/finance/accounts/[id]/interest/route.ts
 // POST: calculate and apply interest using Average Daily Balance (ADB)
 // Works for credit_card and loan accounts with interest_rate and statement_date set.
+// The running balance follows the one balance rule (lib/finance/balance/logic.ts): it starts at
+// the opening balance and counts only transactions after the starting-balance date, when set.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { countsInBalance } from '@/lib/finance/balance/logic';
+import { loadBalanceRows } from '@/lib/finance/balance/server';
 
 function getDb() {
   return createServiceClient(
@@ -70,20 +74,20 @@ export async function POST(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Interest already applied for this statement period' }, { status: 409 });
   }
 
-  // Fetch all transactions for this account up to the period end to build running balance
-  const { data: transactions } = await db
-    .from('financial_transactions')
-    .select('amount, type, transaction_date')
-    .eq('user_id', user.id)
-    .eq('account_id', accountId)
-    .lte('transaction_date', endStr)
-    .order('transaction_date', { ascending: true });
+  // Every transaction on this account (all pages) up to the period end, to build the running balance
+  const { rows: allRows, error: rowsError } = await loadBalanceRows(db, user.id, [accountId]);
+  if (rowsError) return NextResponse.json({ error: rowsError.message ?? 'Could not load transactions' }, { status: 500 });
+  const transactions = allRows
+    .filter((tx) => tx.transaction_date <= endStr)
+    .sort((a, b) => a.transaction_date.localeCompare(b.transaction_date));
 
   // Build running balance at period start (all transactions before periodStart)
   let balanceAtStart = Number(account.opening_balance);
-  const periodTxns: { amount: number; type: string; transaction_date: string }[] = [];
+  const periodTxns: { amount: number | string; type: string; transaction_date: string }[] = [];
 
-  for (const tx of transactions ?? []) {
+  for (const tx of transactions) {
+    // On or before the starting-balance date: already inside the opening balance.
+    if (!countsInBalance(account, tx.transaction_date)) continue;
     const amt = Number(tx.amount);
     if (tx.transaction_date < startStr) {
       // Before period — accumulate into starting balance

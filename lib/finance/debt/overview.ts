@@ -3,8 +3,9 @@
 // debts overview: balance, APR, minimum, due date, promos. Pure; the reads are in server.ts.
 //
 // RULES
-//   Balance owed  = opening_balance + expenses - income on the account: the same formula as
-//                   app/api/finance/accounts/route.ts (which shows it negated for debt accounts).
+//   Balance owed  = opening_balance + expenses - income on the account, counting only the
+//                   transactions after the starting-balance date when one is set: the one balance
+//                   rule in ../balance/logic.ts (the accounts API shows it negated for debts).
 //   APR           = the latest statement's purchase APR (a balance type with "purchase" in it and
 //                   not a promo), else the highest APR the statement lists, else the account's own
 //                   interest_rate. Null when none is known.
@@ -20,6 +21,7 @@ import {
   promoRequiredMonthly,
 } from './amortize.ts';
 import { daysBetween, isIsoDate } from './dates.ts';
+import { amountOwed } from '../balance/logic.ts';
 import type { PlanDebt } from './plan.ts';
 
 export const DEBT_ACCOUNT_TYPES = ['credit_card', 'loan'] as const;
@@ -37,6 +39,8 @@ export interface DebtAccountRow {
   credit_limit?: number | string | null;
   due_date?: number | string | null;
   opening_balance?: number | string | null;
+  /** Migration 221: the day the opening balance is as of. */
+  opening_balance_date?: string | null;
   is_active?: boolean | null;
 }
 
@@ -135,16 +139,12 @@ export function isDebtAccountType(t: string): t is 'credit_card' | 'loan' {
   return t === 'credit_card' || t === 'loan';
 }
 
-/** opening_balance + expenses - income, in dollars. Positive = owed. */
+/** opening_balance + expenses - income (after the starting-balance date), in dollars. Positive = owed. */
 export function owedFromTransactions(account: DebtAccountRow, txns: TxnRow[]): number {
-  let cents = Math.round((num(account.opening_balance) ?? 0) * 100);
-  for (const t of txns) {
-    if (t.account_id !== account.id) continue;
-    const c = Math.round(Math.abs(Number(t.amount)) * 100);
-    if (t.type === 'expense') cents += c;
-    else if (t.type === 'income') cents -= c;
-  }
-  return cents / 100;
+  return amountOwed(
+    { account_type: account.account_type, opening_balance: account.opening_balance, opening_balance_date: account.opening_balance_date },
+    txns.filter((t) => t.account_id === account.id),
+  );
 }
 
 /** A payment into a card or loan that transfer tracking linked. */

@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight, Link2, X, Search, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight, Link2, X, Search, Check, Loader2, ScanSearch } from 'lucide-react';
 import Link from 'next/link';
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
 import LearnCategoryPrompt, { type LearnCategoryRequest } from '@/components/finance/LearnCategoryPrompt';
@@ -13,6 +13,16 @@ import { accountLabel } from '@/lib/finance/transfers/pairing';
 import { offlineFetch, isQueuedResponse } from '@/lib/offline/offline-fetch';
 import { vendorKey } from '@/lib/finance/transaction-matching';
 import TxAmount from '@/components/finance/TxAmount';
+import ReconciledBadge from '@/components/finance/ReconciledBadge';
+import { reconciledAfterChange, reconciledWarning, type ReconciledPeriodView } from '@/lib/finance/reconciliation/client';
+import FindSimilarPanel, { type SimilarSeed } from '@/components/finance/FindSimilarPanel';
+import BulkEditUndo from '@/components/finance/BulkEditUndo';
+import { describeEdit } from '@/lib/finance/bulk-edit/logic';
+// One category tree (plans/63 E): every category field here is the tree picker.
+import CategorySelect from '@/components/finance/CategorySelect';
+import CategoryTreePicker from '@/components/categories/CategoryTreePicker';
+import { buildCategoryTree } from '@/lib/categories/tree';
+import { useCategoryTreeData } from '@/lib/hooks/useCategoryTree';
 
 interface Category {
   id: string;
@@ -58,6 +68,8 @@ interface Transaction {
   // doesn't have the transfer columns yet.
   transfer_group_id?: string | null;
   transfer_partner?: TransferPartnerView | null;
+  // Dated inside a reconciled statement period (migration 221); null or absent otherwise.
+  reconciled_period?: ReconciledPeriodView | null;
 }
 
 const SOURCE_MODULE_BADGE: Record<string, { label: string; className: string }> = {
@@ -85,6 +97,8 @@ export default function TransactionsPage() {
   // The Budgets page links here with ?uncategorized=1&from=&to= (one month's uncategorized spending).
   const urlUncategorized = searchParams.get('uncategorized') === '1';
   const reviewTransfers = searchParams.get('review') === 'transfers';
+  // ?similar=<id> (the transaction page's "Find similar") opens the Find similar panel for that row.
+  const urlSimilarId = searchParams.get('similar') || '';
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [homeCurrency, setHomeCurrency] = useState('USD');
@@ -120,6 +134,12 @@ export default function TransactionsPage() {
   const [bulkSaving, setBulkSaving] = useState(false);
   const [bulkResult, setBulkResult] = useState<string | null>(null);
   const [lifeCategories, setLifeCategories] = useState<{ id: string; name: string; color: string }[]>([]);
+  // Bulk edit picks a budget category (its life area follows) or a life area alone.
+  const { data: treeData } = useCategoryTreeData();
+  const bulkTree = useMemo(() => {
+    const parentById = new Map((treeData?.budgetCategories ?? []).map((c) => [c.id, c.life_category_id]));
+    return buildCategoryTree(treeData?.lifeAreas ?? lifeCategories, categories, (c) => parentById.get(c.id) ?? null);
+  }, [treeData, lifeCategories, categories]);
 
   // Edit inline
   const [editId, setEditId] = useState<string | null>(null);
@@ -135,6 +155,12 @@ export default function TransactionsPage() {
   const [transfersVersion, setTransfersVersion] = useState(0);
   // Something the server wants said about the list (the import filter can't be applied, say).
   const [listNotice, setListNotice] = useState<string | null>(null);
+  // A save or delete landed inside a reconciled period the list didn't know about.
+  const [reconcileNotice, setReconcileNotice] = useState<string | null>(null);
+  // The Find similar panel: what it starts from, and a key that remounts it for a new start.
+  const [similar, setSimilar] = useState<{ key: number; seed: SimilarSeed } | null>(null);
+  // Bumped after a bulk edit from the bar, so "Undo last bulk edit" shows it.
+  const [bulkUndoVersion, setBulkUndoVersion] = useState(0);
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
@@ -183,6 +209,32 @@ export default function TransactionsPage() {
 
   useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
 
+  // ?similar=<id>: load that transaction and open Find similar from it.
+  useEffect(() => {
+    if (!urlSimilarId) return;
+    let cancelled = false;
+    offlineFetch(`/api/finance/transactions/${urlSimilarId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.transaction) return;
+        setSimilar({ key: Date.now(), seed: { kind: 'transaction', tx: data.transaction } });
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [urlSimilarId]);
+
+  const openSimilar = (seed: SimilarSeed) => setSimilar({ key: Date.now(), seed });
+
+  const closeSimilar = () => {
+    setSimilar(null);
+    if (urlSimilarId) {
+      const next = new URLSearchParams(searchParams.toString());
+      next.delete('similar');
+      const query = next.toString();
+      router.replace(`/dashboard/finance/transactions${query ? `?${query}` : ''}`);
+    }
+  };
+
   const handleDelete = async (tx: Transaction) => {
     setActionError(null);
     // One side of a transfer: choose between deleting both sides and unlinking first.
@@ -190,9 +242,12 @@ export default function TransactionsPage() {
       setPairDelete({ id: tx.id, partner: tx.transfer_partner });
       return;
     }
-    if (!confirm('Delete this transaction?')) return;
+    setReconcileNotice(null);
+    if (!confirm(tx.reconciled_period ? `${reconciledWarning(tx.reconciled_period)}\n\nDelete it anyway?` : 'Delete this transaction?')) return;
     const res = await offlineFetch(`/api/finance/transactions?id=${tx.id}`, { method: 'DELETE' });
     if (res.ok) {
+      const done = await res.json().catch(() => null);
+      if (done?.reconciled_period && !tx.reconciled_period) setReconcileNotice(reconciledAfterChange(done.reconciled_period));
       fetchTransactions();
       setTransfersVersion((v) => v + 1);
       return;
@@ -206,6 +261,8 @@ export default function TransactionsPage() {
   const handleEditSave = async (id: string) => {
     const original = transactions.find((tx) => tx.id === id);
     setActionError(null);
+    setReconcileNotice(null);
+    if (original?.reconciled_period && !confirm(`${reconciledWarning(original.reconciled_period)}\n\nSave the change anyway?`)) return;
     const res = await offlineFetch('/api/finance/transactions', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -217,6 +274,8 @@ export default function TransactionsPage() {
       setActionError(typeof data?.error === 'string' ? data.error : 'The change could not be saved. Please try again.');
       return;
     }
+    const saved = isQueuedResponse(res) ? null : await res.clone().json().catch(() => null);
+    if (saved?.reconciled_period && !original?.reconciled_period) setReconcileNotice(reconciledAfterChange(saved.reconciled_period));
     // The category was set or changed: offer to remember it for this vendor.
     const categoryId = editForm.category_id || '';
     const vendor = (editForm.vendor || '').trim();
@@ -299,6 +358,22 @@ export default function TransactionsPage() {
       const body: Record<string, unknown> = { ids };
       if (Object.keys(updates).length > 0) body.updates = updates;
       if (bulkLifeTag) body.life_category_id = bulkLifeTag;
+      // Recorded so "Undo last bulk edit" can take it back (once migration 220 is applied).
+      body.operation = {
+        summary: describeEdit(
+          {
+            category_id: bulkCategory || undefined,
+            brand_id: bulkBrand || undefined,
+            life_add: bulkLifeTag || undefined,
+            tags_add: [], tags_remove: [], unlink_transfers: false, remember: false, remember_skip: [],
+          },
+          {
+            category: categories.find((c) => c.id === bulkCategory)?.name,
+            brand: brands.find((b) => b.id === bulkBrand)?.name,
+            lifeAdd: lifeCategories.find((l) => l.id === bulkLifeTag)?.name,
+          },
+        ),
+      };
       const res = await offlineFetch('/api/finance/transactions/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -319,6 +394,7 @@ export default function TransactionsPage() {
           }
         }
         setBulkResult(`Updated ${selected.size} transaction${selected.size !== 1 ? 's' : ''}`);
+        if (!isQueuedResponse(res)) setBulkUndoVersion((v) => v + 1);
         setSelected(new Set());
         setBulkCategory('');
         setBulkBrand('');
@@ -365,6 +441,12 @@ export default function TransactionsPage() {
               className="flex items-center gap-1 text-xs bg-sky-50 text-sky-800 border border-sky-200 min-h-11 px-3 rounded-full hover:bg-sky-100 transition">
               From one import <X className="w-3 h-3" aria-hidden="true" />
             </button>
+          )}
+          {urlBatchId && (
+            <Link href={`/dashboard/finance/import/history/${encodeURIComponent(urlBatchId)}`}
+              className="flex items-center text-xs text-sky-800 underline underline-offset-2 min-h-11 px-2">
+              Edit this import
+            </Link>
           )}
           {urlUncategorized && (
             <button onClick={() => clearUrlFilter('uncategorized')}
@@ -427,9 +509,20 @@ export default function TransactionsPage() {
               searchDebounceRef.current = setTimeout(() => { setFilterSearch(val); setPage(0); }, 300);
             }}
             placeholder="Search description, vendor, notes, amount…"
+            aria-label="Search transactions"
             className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-700"
           />
         </div>
+        {filterSearch.trim() && (
+          <button
+            type="button"
+            onClick={() => openSimilar({ kind: 'search', text: filterSearch })}
+            className="min-h-11 px-3 inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 text-sm text-sky-800 hover:bg-sky-100 transition"
+          >
+            <ScanSearch className="w-4 h-4" aria-hidden="true" />
+            Find similar and edit in bulk
+          </button>
+        )}
 
         {/* Quick filters row */}
         <div className="flex items-center gap-2 flex-wrap">
@@ -524,6 +617,23 @@ export default function TransactionsPage() {
         )}
       </div>
 
+      {similar && (
+        <FindSimilarPanel
+          key={similar.key}
+          seed={similar.seed}
+          categories={categories}
+          brands={brands}
+          lifeCategories={lifeCategories}
+          accounts={accounts}
+          homeCurrency={homeCurrency}
+          onClose={closeSimilar}
+          onChanged={() => {
+            fetchTransactions();
+            setTransfersVersion((v) => v + 1);
+          }}
+        />
+      )}
+
       {/* Possible transfers between the person's own accounts */}
       <PossibleTransfersPanel
         refreshKey={transfersVersion}
@@ -545,20 +655,33 @@ export default function TransactionsPage() {
         </p>
       )}
 
+      {reconcileNotice && (
+        <p role="status" className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          {reconcileNotice}
+        </p>
+      )}
+
       {/* Bulk action bar */}
       {selected.size > 0 && (
         <div className="bg-sky-50 border border-sky-200 rounded-xl px-4 py-3 flex items-center gap-3 flex-wrap">
           <span className="text-sm font-medium text-sky-800">{selected.size} selected</span>
           <button onClick={() => setSelected(new Set())} className="text-xs text-sky-600 hover:text-sky-800 underline">Clear</button>
           <div className="flex items-center gap-2 flex-wrap flex-1">
-            <select
-              value={bulkCategory}
-              onChange={(e) => setBulkCategory(e.target.value)}
-              className="px-2.5 py-1.5 text-sm border border-sky-200 rounded-lg bg-white text-gray-700"
-            >
-              <option value="">Set category…</option>
-              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            <CategoryTreePicker
+              id="bulk-category"
+              className="min-w-56"
+              tree={bulkTree}
+              mode="any"
+              label="Set category or life area"
+              hideLabel
+              placeholder="Set category…"
+              allowNone={false}
+              value={bulkCategory ? { kind: 'budget', id: bulkCategory } : bulkLifeTag ? { kind: 'life', id: bulkLifeTag } : null}
+              onChange={(next) => {
+                setBulkCategory(next?.kind === 'budget' ? next.id : '');
+                setBulkLifeTag(next?.kind === 'life' ? next.id : '');
+              }}
+            />
             {brands.length > 0 && (
               <select
                 value={bulkBrand}
@@ -567,16 +690,6 @@ export default function TransactionsPage() {
               >
                 <option value="">Set brand…</option>
                 {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-            )}
-            {lifeCategories.length > 0 && (
-              <select
-                value={bulkLifeTag}
-                onChange={(e) => setBulkLifeTag(e.target.value)}
-                className="px-2.5 py-1.5 text-sm border border-sky-200 rounded-lg bg-white text-gray-700"
-              >
-                <option value="">Life tag…</option>
-                {lifeCategories.map((lc) => <option key={lc.id} value={lc.id}>{lc.name}</option>)}
               </select>
             )}
             <button
@@ -590,6 +703,10 @@ export default function TransactionsPage() {
           </div>
           {bulkResult && <span className="text-xs text-sky-700 font-medium">{bulkResult}</span>}
         </div>
+      )}
+
+      {bulkUndoVersion > 0 && !similar && (
+        <BulkEditUndo refreshKey={bulkUndoVersion} showNotMigrated={false} onUndone={fetchTransactions} />
       )}
 
       {learnPrompt && (
@@ -642,18 +759,15 @@ export default function TransactionsPage() {
                         className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-900"
                         placeholder="Description"
                       />
-                      <label htmlFor={`edit-category-${tx.id}`} className="sr-only">Category</label>
-                      <select
+                      <CategorySelect
                         id={`edit-category-${tx.id}`}
+                        label="Category"
+                        hideLabel
                         value={editForm.category_id}
-                        onChange={(e) => setEditForm((p) => ({ ...p, category_id: e.target.value }))}
-                        className="w-full min-h-11 px-2 py-1 text-sm border border-gray-300 rounded text-gray-900"
-                      >
-                        <option value="">No category</option>
-                        {categories.map((c) => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                      </select>
+                        onChange={(id) => setEditForm((p) => ({ ...p, category_id: id }))}
+                        categories={categories}
+                        onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
+                      />
                       <div className="flex gap-2">
                         <button onClick={() => handleEditSave(tx.id)} className="px-3 py-1 bg-fuchsia-600 text-white rounded text-xs">Save</button>
                         <button onClick={() => setEditId(null)} className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">Cancel</button>
@@ -686,9 +800,18 @@ export default function TransactionsPage() {
                         {tx.transfer_group_id && (
                           <TransferBadge partner={tx.transfer_partner} className="mt-1" />
                         )}
+                        <ReconciledBadge period={tx.reconciled_period} className="mt-1" />
                       </div>
                       <div className="flex items-center gap-2">
                         <TxAmount tx={tx} homeCurrency={homeCurrency} className="text-sm font-semibold" />
+                        <button
+                          onClick={() => openSimilar({ kind: 'transaction', tx })}
+                          className="min-h-11 min-w-11 flex items-center justify-center hover:bg-sky-50 rounded-lg"
+                          title="Find similar"
+                          aria-label={`Find transactions similar to ${tx.description || tx.vendor || 'this one'}`}
+                        >
+                          <ScanSearch className="w-4 h-4 text-sky-700" aria-hidden="true" />
+                        </button>
                         <button
                           onClick={() => startEdit(tx)}
                           className="min-h-11 min-w-11 flex items-center justify-center hover:bg-gray-100 rounded-lg"
@@ -787,6 +910,7 @@ export default function TransactionsPage() {
                             </span>
                           )}
                           {tx.transfer_group_id && <TransferBadge partner={tx.transfer_partner} />}
+                          <ReconciledBadge period={tx.reconciled_period} />
                         </div>
                       )}
                     </td>
@@ -808,17 +932,16 @@ export default function TransactionsPage() {
                     <td className="px-4 py-3">
                       {editId === tx.id ? (
                         <div className="flex flex-col gap-1">
-                          <select
+                          <CategorySelect
+                            id={`edit-category-desktop-${tx.id}`}
+                            label="Category"
+                            hideLabel
+                            className="min-w-48"
                             value={editForm.category_id}
-                            onChange={(e) => setEditForm((p) => ({ ...p, category_id: e.target.value }))}
-                            aria-label="Category"
-                            className="px-2 py-1 text-xs border border-gray-300 rounded text-gray-900"
-                          >
-                            <option value="">No category</option>
-                            {categories.map((c) => (
-                              <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                          </select>
+                            onChange={(id) => setEditForm((p) => ({ ...p, category_id: id }))}
+                            categories={categories}
+                            onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
+                          />
                           {brands.length > 0 && (
                             <select
                               value={editForm.brand_id}
@@ -867,6 +990,9 @@ export default function TransactionsPage() {
                         <div className="flex items-center justify-center gap-0.5">
                           <button onClick={() => startEdit(tx)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 rounded-lg transition" title="Edit" aria-label={`Edit ${tx.description || tx.vendor || 'transaction'}`}>
                             <Edit3 className="w-4 h-4" aria-hidden="true" />
+                          </button>
+                          <button onClick={() => openSimilar({ kind: 'transaction', tx })} className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:bg-sky-50 hover:text-sky-700 rounded-lg transition" title="Find similar" aria-label={`Find transactions similar to ${tx.description || tx.vendor || 'this one'}`}>
+                            <ScanSearch className="w-4 h-4" aria-hidden="true" />
                           </button>
                           <button onClick={() => setLinkingId(tx.id)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:bg-sky-50 hover:text-sky-700 rounded-lg transition" title="Link activities" aria-label={`Link activities to ${tx.description || tx.vendor || 'transaction'}`}>
                             <Link2 className="w-4 h-4" aria-hidden="true" />

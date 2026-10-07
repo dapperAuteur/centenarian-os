@@ -78,7 +78,7 @@ export function previewStatement(payload: StatementPayload): Promise<ApiResult<P
 
 /** Imports the statement with the person's row choices. */
 export function commitStatement(
-  payload: StatementPayload & { actions: WireRowAction[] },
+  payload: StatementPayload & { actions: WireRowAction[]; draft_id?: string | null },
 ): Promise<ApiResult<CommitResult>> {
   return postJson('/api/finance/import', payload);
 }
@@ -102,7 +102,7 @@ export function previewPdfStatement(payload: PdfStatementPayload): Promise<ApiRe
 
 /** Imports the PDF statement with the person's row choices. */
 export function commitPdfStatement(
-  payload: PdfStatementPayload & { actions: WireRowAction[]; confirm_unreconciled: boolean },
+  payload: PdfStatementPayload & { actions: WireRowAction[]; confirm_unreconciled: boolean; draft_id?: string | null },
 ): Promise<ApiResult<PdfCommitResult>> {
   return postJson('/api/finance/import', payload);
 }

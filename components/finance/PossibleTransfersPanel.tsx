@@ -11,7 +11,11 @@
 //
 //   Link               -> POST /api/finance/transfers/link
 //   Record payment     -> POST /api/finance/transfers/pay
-//   Not a transfer     -> remembered in this browser (localStorage), nothing sent
+//   Not a transfer     -> POST /api/finance/review (dismiss): remembered on the
+//                         account, so the finance Review page and every device
+//                         agree. Before migration 219 it is kept in this browser
+//                         (localStorage) instead, and those answers are moved to
+//                         the account the first time the table is there.
 //   Link all high-confidence -> Link, once per high-confidence pair
 //
 // The panel shows nothing at all when there is nothing to review, and when
@@ -108,6 +112,48 @@ function writeDismissed(keys: string[]): void {
   }
 }
 
+interface DismissItem {
+  section: 'transfer_pair' | 'one_sided_payment';
+  transaction_id: string;
+  other_transaction_id: string | null;
+}
+
+/** A panel key ("pair:<from>:<to>", "one:<id>") as a saved answer (finance_review_dismissals). */
+function keyToItem(key: string): DismissItem | null {
+  const pair = /^pair:([0-9a-f-]{36}):([0-9a-f-]{36})$/i.exec(key);
+  if (pair) return { section: 'transfer_pair', transaction_id: pair[1], other_transaction_id: pair[2] };
+  const one = /^one:([0-9a-f-]{36})$/i.exec(key);
+  if (one) return { section: 'one_sided_payment', transaction_id: one[1], other_transaction_id: null };
+  return null;
+}
+
+/** The account's saved answers as panel keys, or null before migration 219 (or offline). */
+async function fetchSavedDismissals(): Promise<string[] | null> {
+  try {
+    const res = await fetch('/api/finance/review/dismissals', { cache: 'no-store' });
+    if (!res.ok) return null;
+    const body = await res.json().catch(() => null);
+    if (body?.available !== true || !Array.isArray(body?.keys)) return null;
+    return body.keys.filter((key: unknown): key is string => typeof key === 'string');
+  } catch {
+    return null;
+  }
+}
+
+/** POST /api/finance/review (dismiss / restore). True when it worked. */
+async function postReview(payload: Record<string, unknown>): Promise<boolean> {
+  try {
+    const res = await fetch('/api/finance/review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 function money(amount: number): string {
   return `$${Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -180,7 +226,30 @@ export default function PossibleTransfersPanel({
   /** The last destination picked for a description, offered again for rows that read the same. */
   const [remembered, setRemembered] = useState<Record<string, string>>({});
 
-  useEffect(() => { setDismissed(readDismissed()); }, []);
+  /** True once the saved-answers table (migration 219) answered: dismissals then live on the server. */
+  const [savedAnswers, setSavedAnswers] = useState(false);
+
+  // "Not a transfer" answers: the account's saved ones (GET /api/finance/review/dismissals), plus any
+  // this browser kept before migration 219, which are moved to the account once and then forgotten here.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const local = readDismissed();
+      const server = await fetchSavedDismissals();
+      if (cancelled) return;
+      if (!server) {
+        setDismissed(local);
+        return;
+      }
+      setSavedAnswers(true);
+      setDismissed([...new Set([...server, ...local])]);
+      const items = local.map(keyToItem).filter((item): item is DismissItem => item !== null);
+      if (items.length > 0 && (await postReview({ action: 'dismiss', items: items.slice(0, 2000) }))) writeDismissed([]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -252,17 +321,27 @@ export default function PossibleTransfersPanel({
 
   const markDone = (key: string) => setDone((prev) => new Set(prev).add(key));
 
-  const dismiss = (key: string) => {
+  const dismiss = async (key: string) => {
     const next = [...dismissed.filter((k) => k !== key), key];
     setDismissed(next);
-    writeDismissed(next);
-    setStatus('Marked as not a transfer. It won’t be suggested again in this browser.');
     setError(null);
+    if (savedAnswers) {
+      const item = keyToItem(key);
+      const saved = item ? await postReview({ action: 'dismiss', items: [item] }) : false;
+      if (saved) {
+        setStatus('Marked as not a transfer. It won’t be suggested again, on any device.');
+        return;
+      }
+    }
+    // Before migration 219, or when saving failed: remembered in this browser only.
+    writeDismissed([...readDismissed().filter((k) => k !== key), key]);
+    setStatus('Marked as not a transfer. It won’t be suggested again in this browser.');
   };
 
-  const restoreDismissed = () => {
+  const restoreDismissed = async () => {
     setDismissed([]);
     writeDismissed([]);
+    if (savedAnswers) await postReview({ action: 'restore', sections: ['transfer_pair', 'one_sided_payment'] });
     setStatus('Dismissed suggestions are back in the list.');
   };
 

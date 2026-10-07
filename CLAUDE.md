@@ -49,15 +49,15 @@ When a change adds, alters, or removes an app feature, update the affected docs 
 
 ---
 
-## Shared Database
+## Database (still shared with Work.WitUS — verified 2026-10-06)
 
-This app's Supabase database is shared with other apps (e.g. the Contractor/JobHub app). Keep this in mind at all times:
+**Treat the database as SHARED with Work.WitUS (contractor-os).** A split was planned (CentOS plan 55, Phase 3: Work.WitUS to Neon) and believed done on 2026-10-05, but a code audit on 2026-10-06 found Work.WitUS still runs entirely on Supabase, and both apps' env point at the same Supabase project. Until BAM confirms Work.WitUS production uses a different project:
 
-- **Never drop or rename tables/columns** without checking if other apps depend on them
-- **Migrations must be additive** — use `ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`
-- **The `profiles` table is shared** — columns like `clock_format`, `dashboard_home`, etc. are used across apps. Adding columns is fine; removing or altering existing ones requires coordination
-- **RLS policies must stay app-agnostic** — don't write policies that assume a single app context
-- **When querying shared tables** (e.g. `profiles`, `auth.users`), don't assume all columns exist in every app's TypeScript types — use optional chaining and defaults
+- **Never drop or rename tables/columns**, and never tighten RLS on shared tables (`profiles`, `public_profiles`, contractor-era tables), without checking contractor-os first.
+- **Migrations must be additive and idempotent:** `ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`, guarded policies (`DROP POLICY IF EXISTS` before `CREATE POLICY`).
+- **Supabase Auth settings (email templates, SMTP sender, MFA) are per project**, so changing them for one app changes them for both.
+- **Cross-app data** prefers signed events and APIs (income and work-schedule events, RideWitUS feeds) over reading the other app's tables.
+- **When querying `profiles` / `auth.users`**, don't assume every column exists in the TypeScript types: use optional chaining and defaults.
 
 ---
 

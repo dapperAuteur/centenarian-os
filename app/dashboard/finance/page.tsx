@@ -23,6 +23,8 @@ import Modal from '@/components/ui/Modal';
 import { formatMoney } from '@/lib/finance/fx/math';
 import DueSoonBanner from '@/components/finance/debt/DueSoonBanner';
 import CashOnHandCard from '@/components/finance/cash/CashOnHandCard';
+import ReconcileAuditCard from '@/components/finance/ReconcileAuditCard';
+import ReviewBadgeLink from '@/components/finance/review/ReviewBadgeLink';
 
 interface CategoryBreakdown {
   id: string;
@@ -98,6 +100,8 @@ interface Account {
   account_type: string;
   institution_name: string | null;
   last_four: string | null;
+  /** Migration 218; missing before it. */
+  nickname?: string | null;
   balance: number;
   is_active: boolean;
   /** Migration 210; missing means USD. */
@@ -351,6 +355,7 @@ export default function FinanceDashboardPage() {
             <Upload className="w-4 h-4" aria-hidden="true" />
             Import bank statement
           </Link>
+          <ReviewBadgeLink />
           <Link
             href="/dashboard/finance/accounts"
             className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
@@ -528,6 +533,9 @@ export default function FinanceDashboardPage() {
         accounts={accounts}
         onChanged={reloadQuietly}
       />
+
+      {/* Monthly audit: accounts not reconciled in the last 30 days (amber), each linking to Reconcile */}
+      <ReconcileAuditCard />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -886,7 +894,7 @@ export default function FinanceDashboardPage() {
                   <option value="">No account</option>
                   {accounts.filter((a) => a.is_active).map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.name}{a.last_four ? ` ··${a.last_four}` : ''}{a.currency && a.currency !== (summary?.home_currency ?? 'USD') ? ` (${a.currency})` : ''}
+                      {a.name}{a.last_four ? ` ··${a.last_four}` : ''}{a.nickname ? ` @${a.nickname}` : ''}{a.currency && a.currency !== (summary?.home_currency ?? 'USD') ? ` (${a.currency})` : ''}
                     </option>
                   ))}
                 </select>
@@ -993,6 +1001,13 @@ export default function FinanceDashboardPage() {
               </button>
             </div>
           </form>
+
+          <Link
+            href="/dashboard/categories/organize"
+            className="min-h-11 flex items-center justify-center rounded-lg border border-sky-600 text-sky-700 text-sm font-medium hover:bg-sky-50"
+          >
+            Organize categories under life areas
+          </Link>
 
           {/* Existing categories list */}
           {categories.length > 0 && (

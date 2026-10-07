@@ -3,6 +3,12 @@
 //        settings saved for the account: { mapping, sign, dateOrder, includePending?, preset? } or null)
 //        and currency (ISO code; only while the account has no transactions, because changing it
 //        would re-read every amount on the account in a different currency)
+//        and nickname (migration 218; used in Google Calendar titles as @nickname; null or "" clears
+//        it; unique per user among active accounts, case-insensitive, also checked when an account
+//        is reactivated; 409 nickname_taken, 503 nickname_not_migrated before 218)
+//        and opening_balance_date (YYYY-MM-DD or null, migration 221): the day the opening balance
+//        is as of; the balance then counts only transactions after it ("Run migration 221 first"
+//        before the migration)
 // DELETE: deactivate (soft) or hard-delete if no transactions
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -16,6 +22,14 @@ import {
 import { sanitizeSavedMapping } from '@/lib/finance/csv-import/service';
 import { normalizeCurrency } from '@/lib/finance/fx/math';
 import { isFxSchemaMissing } from '@/lib/finance/fx/rates';
+import {
+  NICKNAME_MIGRATION_MESSAGE,
+  cleanNickname,
+  isNicknameColumnMissing,
+  nicknameTaken,
+} from '@/lib/finance/account-nickname';
+import { isMissingColumn } from '@/lib/finance/transfers/schema';
+import { isDateString, RECONCILE_NOT_READY } from '@/lib/finance/reconciliation/logic';
 
 function getDb() {
   return createServiceClient(
@@ -25,6 +39,38 @@ function getDb() {
 }
 
 type Params = { params: Promise<{ id: string }> };
+
+/**
+ * Checks a nickname from a request body (migration 218): format, and not used by another active
+ * account of the user (case-insensitive). Returns the value to store, or a response to send.
+ */
+async function checkNickname(
+  db: ReturnType<typeof getDb>,
+  userId: string,
+  raw: unknown,
+  selfId?: string,
+): Promise<{ value: string | null } | { response: NextResponse }> {
+  const cleaned = cleanNickname(raw);
+  if (!cleaned.ok) return { response: NextResponse.json({ error: cleaned.error, code: 'invalid_nickname' }, { status: 400 }) };
+  if (cleaned.value === null) return { value: null };
+  const { data, error } = await db.from('financial_accounts').select('id, nickname, is_active').eq('user_id', userId);
+  if (error) {
+    if (isNicknameColumnMissing(error)) {
+      return { response: NextResponse.json({ error: NICKNAME_MIGRATION_MESSAGE, code: 'nickname_not_migrated' }, { status: 503 }) };
+    }
+    return { response: NextResponse.json({ error: error.message }, { status: 500 }) };
+  }
+  if (nicknameTaken(cleaned.value, data ?? [], selfId)) {
+    return {
+      response: NextResponse.json(
+        { error: `Another account already uses the nickname "${cleaned.value}".`, code: 'nickname_taken' },
+        { status: 409 },
+      ),
+    };
+  }
+  return { value: cleaned.value };
+}
+
 
 export async function PATCH(request: NextRequest, { params }: Params) {
   const { id } = await params;
@@ -57,8 +103,20 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     'csv_import_mapping',
     // Multi-currency (migration 210)
     'currency',
+    // Calendar @nickname (migration 218)
+    'nickname',
+    // Starting balance date (migration 221)
+    'opening_balance_date',
   ];
   const updates = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
+
+  if ('opening_balance_date' in updates) {
+    const value = updates.opening_balance_date;
+    if (value === '' || value === null) updates.opening_balance_date = null;
+    else if (!isDateString(value)) {
+      return NextResponse.json({ error: 'The starting balance date must be a date, like 2026-01-31.' }, { status: 400 });
+    }
+  }
 
   if ('currency' in updates) {
     const code = normalizeCurrency(updates.currency);
@@ -99,6 +157,19 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     }
   }
 
+  if ('nickname' in updates) {
+    const checked = await checkNickname(db, user.id, updates.nickname, id);
+    if ('response' in checked) return checked.response;
+    updates.nickname = checked.value;
+  } else if (updates.is_active === true) {
+    // Reactivating: its nickname must not have been taken meanwhile. Before 218 there is none.
+    const { data: self, error: selfError } = await db.from('financial_accounts').select('nickname').eq('id', id).maybeSingle();
+    if (!selfError && (self as { nickname?: string | null } | null)?.nickname) {
+      const checked = await checkNickname(db, user.id, (self as { nickname: string }).nickname, id);
+      if ('response' in checked) return checked.response;
+    }
+  }
+
   // { mapping, sign, dateOrder, includePending?, preset? } or null to forget it.
   // Checked here so a malformed value can't be stored and break the next import.
   if ('csv_import_mapping' in updates) {
@@ -118,6 +189,15 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     .single();
 
   if (error) {
+    if (isNicknameColumnMissing(error)) {
+      return NextResponse.json({ error: NICKNAME_MIGRATION_MESSAGE, code: 'nickname_not_migrated' }, { status: 503 });
+    }
+    if (error.code === '23505' && /nickname/i.test(error.message)) {
+      return NextResponse.json({ error: 'Another account already uses that nickname.', code: 'nickname_taken' }, { status: 409 });
+    }
+    if (isMissingColumn(error, 'opening_balance_date')) {
+      return NextResponse.json({ error: RECONCILE_NOT_READY.startingDateError, code: RECONCILE_NOT_READY.code }, { status: 503 });
+    }
     // The column arrives with migration 203: say so instead of a raw schema error.
     if (isMissingSchemaError(error)) {
       return NextResponse.json(

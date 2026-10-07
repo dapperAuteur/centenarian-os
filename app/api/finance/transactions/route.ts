@@ -7,10 +7,16 @@
 //      The amount is in the account's currency; a row on a foreign-currency account also gets
 //      currency, fx_rate and amount_home (rate to the home currency on the transaction date).
 // PATCH: update a transaction. One side of a transfer can't change its amount or type alone.
-//      Changing the amount, date or account recomputes the home-currency amount.
+//      Changing the amount, date or account recomputes the home-currency amount. Changing the
+//      category moves the automatic life-area tag with it (lib/categories/life-areas.ts).
 // DELETE: delete a transaction. One side of a transfer answers 409 with the other side,
 //      unless the caller says what to do with the pair: `?pair=delete` deletes both rows,
 //      `?pair=unlink` unlinks the other row and deletes only this one.
+// Reconciled periods (migration 221): GET marks each row with `reconciled_period`
+//      ({ statement_date, reconciliation_id } or null) when it is dated inside a reconciled
+//      statement period of its account, so the page can warn before an edit or delete. PATCH and
+//      DELETE still go through and answer `reconciled_period` for the row before or after the
+//      change, so the page can say the reconciliation may no longer match.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -20,6 +26,9 @@ import { isMissingColumn, missingTransferColumn } from '@/lib/finance/transfers/
 import { clearTransferGroup, getServiceDb, loadGroupRows } from '@/lib/finance/transfers/server';
 import { withOptionalFx } from '@/lib/finance/fx/totals';
 import { loadHomeCurrency } from '@/lib/finance/fx/server';
+import { annotateReconciled, reconciledPeriods } from '@/lib/finance/reconciliation/server';
+import { ilikeAnyColumn } from '@/lib/finance/similar/criteria';
+import { syncAutoLifeAreas } from '@/lib/categories/life-areas';
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -74,7 +83,8 @@ export async function GET(request: NextRequest) {
     if (disputeStatus) query = query.eq('dispute_status', disputeStatus);
     if (jobId) query = query.eq('job_id', jobId);
     if (batchId) query = query.eq('import_batch_id', batchId);
-    if (q) query = query.or(`description.ilike.%${q}%,vendor.ilike.%${q}%,notes.ilike.%${q}%,amount::text.ilike.%${q}%`);
+    // Quoted and escaped: a comma, parenthesis, % or _ in the search is matched as typed.
+    if (q) query = query.or(ilikeAnyColumn(['description', 'vendor', 'notes', 'amount::text'], q));
     return query;
   };
 
@@ -129,6 +139,9 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // The reconciled-period warning. Answers null on every row before migration 221.
+  await annotateReconciled(supabase, user.id, transactions);
+
   return NextResponse.json({ transactions, total: count || 0, home_currency: homeCurrency });
 }
 
@@ -173,6 +186,16 @@ export async function PATCH(request: NextRequest) {
     if (updates[key] !== undefined) payload[key] = updates[key];
   }
   if (payload.amount) payload.amount = Math.abs(parseFloat(String(payload.amount)));
+  // "No category" (and no account / brand) arrives as ''; the uuid columns need null.
+  for (const key of ['category_id', 'account_id', 'brand_id']) if (payload[key] === '') payload[key] = null;
+
+  // Where the row sits before the change, for the reconciled-period flag in the answer.
+  const { data: placeBefore } = await supabase
+    .from('financial_transactions')
+    .select('account_id, transaction_date')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .maybeSingle();
 
   // The home-currency amount follows the amount, the date and the account.
   if (payload.amount !== undefined || payload.transaction_date !== undefined || payload.account_id !== undefined) {
@@ -228,7 +251,11 @@ export async function PATCH(request: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ transaction: data });
+  // A new category brings its life area along (and drops the automatic one from the old category).
+  if (payload.category_id !== undefined) await syncAutoLifeAreas(supabase, user.id, [id]);
+  // Inside a reconciled period before or after the change: the page says the reconciliation may not match now.
+  const flags = await reconciledPeriods(supabase, user.id, [placeBefore ?? {}, data ?? {}]);
+  return NextResponse.json({ transaction: data, reconciled_period: flags.find(Boolean) ?? null });
 }
 
 export async function DELETE(request: NextRequest) {
@@ -251,10 +278,12 @@ export async function DELETE(request: NextRequest) {
   const pairMode = request.nextUrl.searchParams.get('pair');
   const { data: target, error: targetError } = await supabase
     .from('financial_transactions')
-    .select('id, transfer_group_id')
+    .select('id, account_id, transaction_date, transfer_group_id')
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle();
+  // Inside a reconciled period: still deleted, and the answer says so.
+  const [deletedPeriod] = await reconciledPeriods(supabase, user.id, [target ?? {}]);
   if (targetError && !missingTransferColumn(targetError)) {
     return NextResponse.json({ error: targetError.message }, { status: 500 });
   }
@@ -276,7 +305,12 @@ export async function DELETE(request: NextRequest) {
           .eq('user_id', user.id)
           .eq('transfer_group_id', groupId);
         if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-        return NextResponse.json({ ok: true, deleted: [id, ...partners.map((row) => row.id)] });
+        const partnerPeriods = await reconciledPeriods(supabase, user.id, partners);
+        return NextResponse.json({
+          ok: true,
+          deleted: [id, ...partners.map((row) => row.id)],
+          reconciled_period: deletedPeriod ?? partnerPeriods.find(Boolean) ?? null,
+        });
       }
 
       if (pairMode !== 'unlink') {
@@ -313,5 +347,5 @@ export async function DELETE(request: NextRequest) {
     .eq('user_id', user.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true, deleted: [id] });
+  return NextResponse.json({ ok: true, deleted: [id], reconciled_period: deletedPeriod ?? null });
 }

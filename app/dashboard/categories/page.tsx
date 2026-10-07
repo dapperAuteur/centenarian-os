@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import {
   Tags, Plus, Trash2, Pencil, ChevronDown, ChevronRight, Settings,
-  Check, X, Loader2,
+  Check, X, Loader2, FolderTree,
 } from 'lucide-react';
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
@@ -199,12 +200,22 @@ export default function CategoriesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Tags className="w-6 h-6" />
-            Life Categories
+            <Tags className="w-6 h-6" aria-hidden="true" />
+            Categories
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Tag activities across all modules to track how you spend time and money</p>
+          <p className="text-sm text-gray-600 mt-1">
+            One set of categories: life areas on top, budget categories under them. Transactions get their life area
+            from their budget category; tag anything else with a life area directly.
+          </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
+          <Link
+            href="/dashboard/categories/organize"
+            className="min-h-11 flex items-center gap-1.5 px-3 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700 transition"
+          >
+            <FolderTree className="w-4 h-4" aria-hidden="true" />
+            Organize categories
+          </Link>
           <div className="flex bg-gray-100 rounded-lg p-0.5">
             {[7, 30, 90].map((d) => (
               <button
@@ -335,7 +346,8 @@ export default function CategoriesPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Spending Pie */}
         <div className="bg-white border border-gray-200 rounded-2xl p-5">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Spending by Category</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-1">Spending by Life Area</h2>
+          <p className="text-xs text-gray-600 mb-3">Transactions count through their budget category&apos;s life area and any life area they&apos;re tagged with.</p>
           {pieData.length > 0 ? (
             <div className="h-[250px]">
               <ResponsiveContainer width="100%" height="100%">

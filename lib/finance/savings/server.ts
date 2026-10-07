@@ -77,7 +77,8 @@ export const GOAL_SELECT =
   'id, name, kind, target_amount, target_date, funding_account_id, starting_amount, priority, status, ' +
   'linked_trip_id, linked_equipment_id, milestone_tasks, notes, created_at';
 const ALLOCATION_SELECT = 'id, goal_id, amount, allocated_on, transaction_id, note, created_at';
-const ACCOUNT_SELECT = 'id, name, account_type, institution_name, last_four, opening_balance, is_active';
+// '*' so opening_balance_date (migration 221) comes along once it exists, and nothing breaks before.
+const ACCOUNT_SELECT = '*';
 const TX_SELECT = 'id, account_id, type, amount, transaction_date, description, vendor, source, transfer_group_id';
 const TX_SELECT_NO_GROUP = 'id, account_id, type, amount, transaction_date, description, vendor, source';
 
@@ -105,6 +106,8 @@ export interface AccountRecord {
   institution_name: string | null;
   last_four: string | null;
   opening_balance: number | string | null;
+  /** Migration 221: the day the opening balance is as of. */
+  opening_balance_date?: string | null;
   is_active: boolean | null;
 }
 

@@ -30,7 +30,7 @@ import { MAX_PDF_BYTES, extractPdfLines } from './extract.ts';
 import { parseStatementLines } from './issuers/index.ts';
 import { needsReconciliationConfirmation, reconcileStatement } from './reconcile.ts';
 import { STATEMENTS_MIGRATION_MESSAGE, isStatementsTableMissing } from './statements.ts';
-import type { ParsedStatement, Reconciliation, StatementFacts } from './types.ts';
+import type { ParsedStatement, Reconciliation, StatementFacts, StatementRow } from './types.ts';
 
 export const RECONCILIATION_UNCONFIRMED_MESSAGE =
   "This statement doesn't add up, so it wasn't imported. Check the differences shown, then tick \"Import anyway\" if you still want to import it.";
@@ -180,6 +180,19 @@ function accountMatches(account: OwnedAccount, parsed: ParsedStatement): boolean
 
 /** POST /api/finance/import/preview with a PDF. Writes nothing. */
 export async function previewPdfImport(db: SupabaseClient, userId: string, body: unknown): Promise<PdfPreviewResponse> {
+  return (await previewPdfImportDetailed(db, userId, body)).preview;
+}
+
+/**
+ * previewPdfImport, plus what it was made from: the checked request (the PDF
+ * bytes are only in memory) and the statement's rows before the plan marked
+ * anything. Saving a review for later keeps the rows and the summary, never the PDF.
+ */
+export async function previewPdfImportDetailed(
+  db: SupabaseClient,
+  userId: string,
+  body: unknown,
+): Promise<{ preview: PdfPreviewResponse; request: PdfRequest; rows: StatementRow[] }> {
   const request = parsePdfRequest(body, { requireAccount: true });
   const account = await loadOwnedAccount(db, userId, request.accountId as string);
   const read = await readPdfStatement(request.bytes);
@@ -189,7 +202,7 @@ export async function previewPdfImport(db: SupabaseClient, userId: string, body:
     suggestCashAccount(db, userId, account),
   ]);
   const statement = toStatementPreview(read);
-  return {
+  const preview: PdfPreviewResponse = {
     account,
     file: {
       headers: [],
@@ -220,6 +233,7 @@ export async function previewPdfImport(db: SupabaseClient, userId: string, body:
     statement,
     accountMatchesStatement: accountMatches(account, read.parsed),
   };
+  return { preview, request, rows: read.parsed.rows };
 }
 
 export { STATEMENTS_MIGRATION_MESSAGE };
@@ -246,8 +260,8 @@ const dollars = (cents: number | null | undefined): number | null =>
 
 /** The account_statements row for a parsed statement (money in dollars). */
 export function toStatementRow(
-  parsed: ParsedStatement,
-  reconciliation: Reconciliation,
+  parsed: Pick<ParsedStatement, 'issuer' | 'period' | 'statement'>,
+  reconciliation: Pick<Reconciliation, 'ok'>,
   ids: { userId: string; accountId: string; batchId: string | null },
 ): Record<string, unknown> {
   const facts = parsed.statement;
@@ -315,9 +329,25 @@ export async function runPdfImport(db: SupabaseClient, userId: string, body: unk
     rows: resolveActions(plan.rows, request.actions),
   });
 
+  return saveStatementSummary(db, userId, account.id, read.parsed, read.reconciliation, result);
+}
+
+/**
+ * Saves a statement's summary after its rows were committed (account_statements, migration 209)
+ * and returns the commit result with what happened to it. Shared by the PDF import and by
+ * finishing a saved PDF import (lib/finance/import-drafts), which keeps the summary but never the PDF.
+ */
+export async function saveStatementSummary(
+  db: SupabaseClient,
+  userId: string,
+  accountId: string,
+  parsed: Pick<ParsedStatement, 'issuer' | 'period' | 'statement' | 'documentKind'>,
+  reconciliation: Pick<Reconciliation, 'ok'>,
+  result: CommitResult,
+): Promise<PdfCommitResult> {
   // A transaction list printed from a website has no statement summary to keep.
-  if (!isStatement) return { ...result, statementSaved: false, statementSkipped: true };
-  if (!read.parsed.period.end) {
+  if (parsed.documentKind === 'activity') return { ...result, statementSaved: false, statementSkipped: true };
+  if (!parsed.period.end) {
     return { ...result, statementSaved: false, statementError: "The statement's closing date wasn't found, so its summary wasn't saved." };
   }
   // Importing the same statement again refreshes its facts but leaves them with the import that
@@ -326,16 +356,16 @@ export async function runPdfImport(db: SupabaseClient, userId: string, body: unk
     .from('account_statements')
     .select('import_batch_id')
     .eq('user_id', userId)
-    .eq('account_id', account.id)
-    .eq('period_end', read.parsed.period.end)
+    .eq('account_id', accountId)
+    .eq('period_end', parsed.period.end)
     .maybeSingle();
   const keptBatchId = (existing.data as { import_batch_id: string | null } | null)?.import_batch_id ?? null;
   const { error } = await db
     .from('account_statements')
     .upsert(
-      toStatementRow(read.parsed, read.reconciliation, {
+      toStatementRow(parsed, reconciliation, {
         userId,
-        accountId: account.id,
+        accountId,
         batchId: keptBatchId ?? result.batchId,
       }),
       { onConflict: 'user_id,account_id,period_end' },

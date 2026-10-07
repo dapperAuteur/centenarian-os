@@ -1,8 +1,16 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { Tags, X, Plus, ChevronDown } from 'lucide-react';
+// components/ui/LifeCategoryTagger.tsx
+// The life areas (life categories, the top level of the one category tree) an item is tagged
+// with, and a picker to add more. For a transaction, the life area that comes from its budget
+// category is shown as "from <category>" and can't be removed here: change the category to
+// change it (plans/63 E, migration 223). Tags a person added can always be removed.
+
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { Tags, X, Plus } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import CategoryTreePicker from '@/components/categories/CategoryTreePicker';
+import { buildCategoryTree } from '@/lib/categories/tree';
 
 type EntityType =
   | 'task' | 'trip' | 'route' | 'transaction' | 'recipe'
@@ -22,6 +30,12 @@ interface EntityTag {
   name: string;
   icon: string;
   color: string;
+  /** Added by the app from the transaction's budget category (follows the category). */
+  auto?: boolean;
+  /** Counted from the budget category, no tag row yet. */
+  derived?: boolean;
+  /** The budget category the life area comes from. */
+  from_category?: string;
 }
 
 interface LifeCategoryTaggerProps {
@@ -42,8 +56,6 @@ export default function LifeCategoryTagger({
   const [allCategories, setAllCategories] = useState<LifeCategory[]>(externalCategories || []);
   const [tags, setTags] = useState<EntityTag[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const loadTags = useCallback(async () => {
     if (!entityId) return;
@@ -78,17 +90,6 @@ export default function LifeCategoryTagger({
     if (externalCategories) setAllCategories(externalCategories);
   }, [externalCategories]);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setShowDropdown(false);
-      }
-    }
-    if (showDropdown) document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [showDropdown]);
-
   async function handleTag(categoryId: string) {
     const cat = allCategories.find((c) => c.id === categoryId);
     if (!cat) return;
@@ -102,7 +103,6 @@ export default function LifeCategoryTagger({
       color: cat.color,
     };
     setTags((prev) => [...prev, optimisticTag]);
-    setShowDropdown(false);
 
     const res = await offlineFetch('/api/life-categories/tag', {
       method: 'POST',
@@ -143,52 +143,70 @@ export default function LifeCategoryTagger({
 
   const taggedIds = new Set(tags.map((t) => t.life_category_id));
   const available = allCategories.filter((c) => !taggedIds.has(c.id));
+  // The same tree picker as everywhere else, showing only life areas.
+  const tree = useMemo(() => buildCategoryTree(allCategories, []), [allCategories]);
+  const exclude = useMemo(() => new Set(tags.map((t) => `life:${t.life_category_id}`)), [tags]);
+
+  const picker = (compactTrigger: boolean) => (
+    <CategoryTreePicker
+      tree={tree}
+      value={null}
+      onChange={(selection) => {
+        if (selection?.kind === 'life') handleTag(selection.id);
+      }}
+      mode="life"
+      allowNone={false}
+      exclude={exclude}
+      label="Add a life area"
+      hideLabel
+      variant="button"
+      align={compactTrigger ? 'left' : 'right'}
+      buttonLabel={
+        compactTrigger ? (
+          <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+        ) : (
+          <>
+            <Plus className="w-3 h-3" aria-hidden="true" /> Tag
+          </>
+        )
+      }
+    />
+  );
+
+  const autoNote = (tag: EntityTag) =>
+    tag.from_category ? `from ${tag.from_category}` : 'from its category';
 
   if (loading) {
-    return <div className="h-6 w-20 bg-gray-100 rounded animate-pulse" />;
+    return <div className="h-6 w-20 bg-gray-100 rounded animate-pulse" role="status" aria-label="Loading..." />;
   }
 
   // Compact mode: small dots + plus button
   if (compact) {
     return (
-      <div className="flex items-center gap-1 relative" ref={dropdownRef}>
-        {tags.map((tag) => (
-          <button
-            key={tag.id}
-            type="button"
-            onClick={() => handleUntag(tag)}
-            title={`${tag.name} (click to remove)`}
-            className="w-4 h-4 rounded-full border border-white shadow-sm hover:scale-125 transition"
-            style={{ backgroundColor: tag.color }}
-          />
-        ))}
-        {available.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setShowDropdown((p) => !p)}
-            className="w-5 h-5 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:border-gray-500 hover:text-gray-600 transition"
-          >
-            <Plus className="w-3 h-3" />
-          </button>
+      <div className="flex items-center gap-1 relative">
+        {tags.map((tag) =>
+          tag.auto ? (
+            <span
+              key={tag.id}
+              title={`${tag.name} (${autoNote(tag)})`}
+              className="w-4 h-4 rounded-full border border-white shadow-sm ring-1 ring-gray-300"
+              style={{ backgroundColor: tag.color }}
+            >
+              <span className="sr-only">{`${tag.name}, ${autoNote(tag)}`}</span>
+            </span>
+          ) : (
+            <button
+              key={tag.id}
+              type="button"
+              onClick={() => handleUntag(tag)}
+              title={`${tag.name} (click to remove)`}
+              aria-label={`Remove life area ${tag.name}`}
+              className="w-4 h-4 rounded-full border border-white shadow-sm hover:scale-125 transition"
+              style={{ backgroundColor: tag.color }}
+            />
+          ),
         )}
-        {showDropdown && (
-          <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-1.5 min-w-36">
-            {available.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => handleTag(cat.id)}
-                className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-gray-700 rounded hover:bg-gray-50 text-left transition"
-              >
-                <span
-                  className="w-3 h-3 rounded-full shrink-0"
-                  style={{ backgroundColor: cat.color }}
-                />
-                {cat.name}
-              </button>
-            ))}
-          </div>
-        )}
+        {available.length > 0 && picker(true)}
       </div>
     );
   }
@@ -198,40 +216,10 @@ export default function LifeCategoryTagger({
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
-          <Tags className="w-3.5 h-3.5" />
-          Life Categories
+          <Tags className="w-3.5 h-3.5" aria-hidden="true" />
+          Life areas
         </h4>
-        {available.length > 0 && (
-          <div className="relative" ref={dropdownRef}>
-            <button
-              type="button"
-              onClick={() => setShowDropdown((p) => !p)}
-              className="text-xs text-fuchsia-600 hover:text-fuchsia-700 font-medium flex items-center gap-1"
-            >
-              <Plus className="w-3 h-3" />
-              Tag
-              <ChevronDown className={`w-3 h-3 transition ${showDropdown ? 'rotate-180' : ''}`} />
-            </button>
-            {showDropdown && (
-              <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-1.5 min-w-40">
-                {available.map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => handleTag(cat.id)}
-                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-gray-700 rounded hover:bg-gray-50 text-left transition"
-                  >
-                    <span
-                      className="w-3 h-3 rounded-full shrink-0"
-                      style={{ backgroundColor: cat.color }}
-                    />
-                    {cat.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        {available.length > 0 && picker(false)}
       </div>
 
       {tags.length > 0 ? (
@@ -249,20 +237,28 @@ export default function LifeCategoryTagger({
               <span
                 className="w-2 h-2 rounded-full shrink-0"
                 style={{ backgroundColor: tag.color }}
+                aria-hidden="true"
               />
               <span className="font-medium">{tag.name}</span>
-              <button
-                type="button"
-                onClick={() => handleUntag(tag)}
-                className="ml-0.5 opacity-60 hover:opacity-100 transition"
-              >
-                <X className="w-3 h-3" />
-              </button>
+              {tag.auto ? (
+                <span className="text-gray-600" title="Change the transaction's category to change this life area">
+                  · {autoNote(tag)}
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleUntag(tag)}
+                  aria-label={`Remove life area ${tag.name}`}
+                  className="ml-0.5 min-h-11 min-w-11 -my-3 -mr-2 flex items-center justify-center opacity-60 hover:opacity-100 transition"
+                >
+                  <X className="w-3 h-3" aria-hidden="true" />
+                </button>
+              )}
             </span>
           ))}
         </div>
       ) : (
-        <p className="text-xs text-gray-400">No life categories assigned.</p>
+        <p className="text-xs text-gray-500">No life areas yet.</p>
       )}
     </div>
   );

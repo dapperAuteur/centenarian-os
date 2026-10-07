@@ -3,7 +3,8 @@
 // components/finance/import/ImportHistory.tsx
 // Every statement import the person has run, newest first, each with its
 // counts and an Undo. Shown under step 1 (to undo an earlier import without
-// running a new one) and under step 4.
+// running a new one) and under step 4. Open leads to the import's own page in
+// Import history (/dashboard/finance/import/history/[id]) to edit its rows.
 
 import Link from 'next/link';
 import { Loader2, RotateCcw } from 'lucide-react';
@@ -12,7 +13,7 @@ import type { ImportBatchSummary } from '@/lib/finance/csv-import/service';
 import type { UndoResult } from '@/lib/finance/csv-import/types';
 import { accountLabel } from '@/lib/finance/csv-import/ui-helpers';
 import UndoSummary from './UndoSummary';
-import { ErrorNotice, StatusChip, dangerButton, secondaryButton } from './shared';
+import { ErrorNotice, StatusChip, dangerButton, secondaryButton, textLink } from './shared';
 
 interface ImportHistoryProps {
   batches: ImportBatchSummary[];
@@ -23,6 +24,9 @@ interface ImportHistoryProps {
   /** The outcome of the last undo started from this list, shown above it. */
   undo: UndoResult | null;
   online: boolean;
+  /** The link to the Import history page. Off on that page itself. */
+  showAllLink?: boolean;
+  title?: string;
 }
 
 const formatCount = (n: number): string => (Number(n) || 0).toLocaleString('en-US');
@@ -40,14 +44,31 @@ export function batchTitle(batch: Pick<ImportBatchSummary, 'file_name'>): string
   return batch.file_name?.trim() || 'Pasted text';
 }
 
-export default function ImportHistory({ batches, state, error, onRetry, onUndo, undo, online }: ImportHistoryProps) {
+export default function ImportHistory({
+  batches,
+  state,
+  error,
+  onRetry,
+  onUndo,
+  undo,
+  online,
+  showAllLink = true,
+  title = 'Import history',
+}: ImportHistoryProps) {
   const clockFormat = useClockFormat();
 
   return (
     <section aria-labelledby="import-history-heading" className="space-y-3">
-      <h2 id="import-history-heading" className="text-lg font-semibold text-gray-900">
-        Import history
-      </h2>
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <h2 id="import-history-heading" className="text-lg font-semibold text-gray-900">
+          {title}
+        </h2>
+        {showAllLink && (
+          <Link href="/dashboard/finance/import/history" className={textLink}>
+            See every import, and edit one
+          </Link>
+        )}
+      </div>
 
       {undo && <UndoSummary undo={undo} />}
 
@@ -105,6 +126,13 @@ export default function ImportHistory({ batches, state, error, onRetry, onUndo, 
 
                   {!undone && (
                     <div className="flex flex-col gap-2 sm:shrink-0 sm:flex-row">
+                      <Link
+                        href={`/dashboard/finance/import/history/${encodeURIComponent(batch.id)}`}
+                        className={secondaryButton}
+                        aria-label={`Open and edit the import of ${title} from ${day}`}
+                      >
+                        Open
+                      </Link>
                       <Link
                         href={`/dashboard/finance/transactions?batch=${encodeURIComponent(batch.id)}`}
                         className={secondaryButton}

@@ -433,6 +433,19 @@ export async function suggestCashAccount(
 
 /** POST /api/finance/import/preview. Writes nothing. */
 export async function previewImport(db: SupabaseClient, userId: string, body: unknown): Promise<PreviewResponse> {
+  return (await previewImportDetailed(db, userId, body)).preview;
+}
+
+/**
+ * previewImport, plus what the preview was made from: the checked request and
+ * the rows as the parser normalized them, before the plan marked anything.
+ * Saving a review for later (lib/finance/import-drafts) keeps those rows.
+ */
+export async function previewImportDetailed(
+  db: SupabaseClient,
+  userId: string,
+  body: unknown,
+): Promise<{ preview: PreviewResponse; request: ImportRequest; rows: NormalizedRow[] }> {
   const request = parseImportRequest(body, { requireMapping: false });
   const account = await loadOwnedAccount(db, userId, request.accountId);
   const statement = readStatement(request);
@@ -441,7 +454,7 @@ export async function previewImport(db: SupabaseClient, userId: string, body: un
     suggestPaidFrom(db, userId, account),
     suggestCashAccount(db, userId, account),
   ]);
-  return {
+  const preview: PreviewResponse = {
     account,
     file: fileSummary(statement.table),
     mapping: statement.mapping,
@@ -456,6 +469,7 @@ export async function previewImport(db: SupabaseClient, userId: string, body: un
     paidFromAccountId,
     cashAccountId,
   };
+  return { preview, request, rows: statement.rows };
 }
 
 /**

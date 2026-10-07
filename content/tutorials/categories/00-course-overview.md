@@ -14,7 +14,7 @@
 |--------|---|-------|------|----------|------|
 | Getting Started | 1 | What Are Life Categories? | text | ~4 min | yes |
 | Getting Started | 2 | Tagging Items with Life Categories | text | ~4 min | yes |
-| The Dashboard | 3 | The Categories Dashboard | text | ~5 min | yes |
+| The Dashboard | 3 | The Categories Dashboard (and Organize Categories) | text | ~8 min | yes |
 | The Dashboard | 4 | Finding & Tagging Uncategorized Items | text | ~5 min | yes |
 | The Dashboard | 5 | Analytics & Insights | text | ~4 min | yes |
 
@@ -27,6 +27,7 @@
 - How to manage your life categories (create, rename, recolor, delete)
 - How to use the uncategorized items view to find and tag items after bulk imports
 - How to read the spending breakdown and activity charts on the categories dashboard
+- How budget categories sit under life areas in one category tree, and how to organize them
 
 ---
 
@@ -37,3 +38,5 @@
 - The Categories dashboard at `/dashboard/categories` shows analytics, charts, and uncategorized items
 - Use the uncategorized items view to quickly tag items you missed — especially after bulk imports
 - 8 default categories are auto-created: Health, Finance, Career, Home, Fitness, Travel, Learning, Social
+- One set of categories: budget categories sit under life areas, and a transaction's life area comes from its budget category
+- Organize categories at `/dashboard/categories/organize`

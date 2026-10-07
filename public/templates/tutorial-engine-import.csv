@@ -147,6 +147,12 @@ The timer begins. The UI shows:
 - A pause button
 - A stop/end button
 
+Below the timer, you'll see tools for capturing ideas mid-session:
+- **Scratchpad** — a text area for quick notes (auto-saved locally, transferable to blog drafts or recipes)
+- **Voice Notes** — record audio notes without leaving the session
+- **Doodle Canvas** — open a full-screen drawing surface to sketch diagrams, wireframes, or ideas (see Lesson 10)
+- **Photos** — attach photos from your camera or gallery
+
 Work on whatever you set out to work on. The timer runs in the background — you don't need to keep the tab focused.
 
 If you get interrupted, click **Pause**. The timer freezes. Click **Resume** when you're ready to continue. The session logs actual focused time (paused time is excluded from the total).
@@ -616,11 +622,11 @@ The debrief takes under 2 minutes. If it's taking longer than that, you're overt
 - Energy averages for the week appear in the AI weekly review
 - Qualitative wins and challenges are stored in history — useful for reading week-over-week narratives
 ",markdown,,,,,,
-Lessons,1,6,Pain & Body Check,text,300,true,,"# Lesson 06: Pain & Body Check
+Lessons,1,6,Pain & Body Check,text,360,true,,"# Lesson 06: Pain & Body Check
 
 **Course:** Mastering the Engine
 **Module:** Daily Tracking
-**Duration:** ~4 min
+**Duration:** ~5 min
 **Lesson type:** text / video
 **is_free_preview:** true
 **CYOA navigation:** cyoa
@@ -629,7 +635,7 @@ Lessons,1,6,Pain & Body Check,text,300,true,,"# Lesson 06: Pain & Body Check
 
 ## Narrator Script
 
-Longevity isn't just about what you can do — it's about avoiding the injuries and accumulated damage that limit what you can do in the future. The Pain Log is where you track body signals: discomfort, soreness, acute pain, chronic patterns. Done consistently, it becomes one of the most useful datasets in the system.
+Longevity isn't just about what you can do — it's about avoiding the injuries and accumulated damage that limit what you can do in the future. The Pain Log is where you track body signals: discomfort, soreness, acute pain, numbness, chronic patterns. Done consistently, it becomes one of the most useful datasets in the system.
 
 ---
 
@@ -637,75 +643,92 @@ Longevity isn't just about what you can do — it's about avoiding the injuries 
 
 Most people ignore minor pain until it becomes a real injury. By that point, there was usually a warning period — a few weeks of minor signals that got dismissed. The Pain Log is where those signals go.
 
-A single pain entry is just data. Ten entries over three weeks showing the same pattern — left knee, moderate intensity, after running — is actionable information. You can see it, name it, and address it before it becomes a forced rest.
+A single pain entry is just data. Ten entries over three weeks showing the same pattern — right knee, moderate intensity, after stairs — is actionable information. You can see it, name it, and address it before it becomes a forced rest.
 
-The pain data also feeds into the weekly review. If your energy was consistently low and your pain levels were elevated, Gemini can note the correlation and suggest recovery as the priority for the coming week.
+Pain also changes during a day. A back that is a 2 in the morning and a 6 after three hours at a desk tells you something a single end-of-day number hides. That is why you can log as many entries a day as you need.
 
 ---
 
 ### Logging a Pain Entry
 
-From the Engine dashboard, navigate to **Pain Log** or click **+ Log Pain** if visible.
-
-The pain entry form has:
+From the Engine dashboard, open **Pain Tracking**. Every time you press **Add entry**, a new entry is saved. Earlier entries are never overwritten.
 
 ---
 
 ### Pain Form Fields
 
-**Date** — The calendar date this pain occurred or was first noticed. Defaults to today.
+**When** — The time you felt it. It starts at the current time and keeps up with the clock. Change it to log something from earlier in the day (or yesterday); press **Now** to go back to the current time.
 
-**Intensity** — A 1–10 scale.
-- 1–2: Mild, barely noticeable. Slight soreness or stiffness.
-- 3–4: Moderate. Present but not limiting activity.
-- 5–6: Significant. Affects your range of motion or performance.
-- 7–8: Severe. Difficult to train through. Likely modifying activities.
-- 9–10: Extreme. Can't perform normal activities. See a professional.
+**Physical discomfort (1–10)** — How strong it is.
+- 1: No discomfort.
+- 2–3: Mild. Slight soreness or stiffness.
+- 4–7: Moderate to significant. Affects range of motion or performance.
+- 8–10: Severe to acute. Hard to train through; see a professional if it stays.
 
-**Body location** — Where is the pain? Twelve options cover the major areas:
-- Head / Neck
-- Left shoulder / Right shoulder
-- Left elbow / Right elbow
-- Left wrist / Right wrist
-- Lower back / Upper back
-- Left hip / Right hip
-- Left knee / Right knee
-- Left ankle / Right ankle
-- Left foot / Right foot
-- Abdomen / Core
-- Chest
-- Other
+**Affected locations** — Where it is. Pick every one that applies:
+- Right Hip Flexor / Left Hip Flexor
+- Right Glute / Left Glute
+- SI Joint
+- Lower Back (L5/S1)
+- Mid Back (Thoracic)
+- Neck
+- Left Shoulder / Right Shoulder
+- Left Hamstring
+- Right Knee
+- Left Hand / Right Hand
+- Left Foot / Right Foot
 
-**Sensation type** — What does it feel like? Five options:
-- **Sharp** — acute, localized, stabbing sensation
-- **Dull** — diffuse, aching, low-grade discomfort
-- **Burning** — heat, friction, nerve sensation
-- **Throbbing** — pulsing, pressure, often inflammation
-- **Stiffness** — reduced range of motion, tension without acute pain
+Pick both sides when both hands or both feet are affected.
 
-**Activity that triggered it** (optional) — What were you doing when you noticed it? ""Running"", ""heavy squat session"", ""seated at desk all day"", ""woke up with it."" This field is the most useful for pattern recognition.
+**Sensation type** — What it feels like:
+- **Tightness** — tension, reduced range of motion
+- **Pinching** — a sharp, catching feeling at one point
+- **Dull Ache** — diffuse, low-grade discomfort
+- **Sharp Stab** — acute, localized, stabbing
+- **Burning** — heat, friction, nerve-like
+- **Numbness** — reduced feeling, tingling, ""pins and needles""
 
-**Notes** (optional) — Any additional context: how long it's been present, whether it's getting better or worse, what helps.
+**Aggravating activities** (optional, one per line) — What you were doing: ""Long drive"", ""Sitting with tablet (90 min)"", ""Stairs"". This field is the most useful for pattern recognition.
+
+**Notes** (optional) — Any other context: how long it has been there, whether it is getting better or worse, what helps.
+
+Photos, voice notes, links and life categories on the form belong to the whole day, not to one entry.
 
 ---
 
-### Multiple Locations
+### Today's Entries
 
-You can log multiple pain entries per day — one per location. If your left knee and lower back are both bothering you, log two entries with the same date. Each entry is tracked independently so trends by location are accurate.
+Below the form, today's entries are listed newest first, with the day's highest intensity. Use the pencil to change an entry in place, or the bin to delete it.
+
+If you are offline, the entry is still saved on your device. It shows **Waiting to sync** and is sent when you reconnect.
 
 ---
 
 ### Viewing Pain History
 
-From the Pain Log section, you can view your entries sorted by date. Filter by body location to see the history of a specific area — for example, all left knee entries over the past three months.
+Press **Pain history** (or open Engine → History → Pain Tracking). Every entry is listed newest first, grouped by day, and each day shows its highest intensity.
 
-The history view shows intensity over time as a simple chart per location. Upward trends are warning signs. Downward trends mean whatever you're doing is working.
+Filter by:
+- **From / To** — a date range
+- **Intensity from / to** — for example only 6 and above
+- **Location** — one location, or both sides of a pair, such as ""Hand (left or right)""
+- **Search notes** — words in your notes
+
+The list keeps loading as you scroll, so you can go back as far as you have data. Edit or delete any entry right there. The chart at the top shows each day's highest intensity.
+
+---
+
+### How Your Day Is Summarized
+
+Correlations and the AI weekly review read one pain summary per day: the day's highest intensity, every location, sensation and activity you logged that day, and all of the day's notes. It updates every time you add, edit or delete an entry.
+
+Pain you logged before several entries a day were possible appears as one entry per day marked ""From the daily log"", with ""Time not recorded"".
 
 ---
 
 ### When to Log
 
-Log pain the same day it appears, not days later. Intensity ratings especially lose accuracy with time — what you remember as a 6 might have been a 4 at the time.
+Log pain when you notice it, not days later. Intensity ratings especially lose accuracy with time — what you remember as a 6 might have been a 4 at the time.
 
 It doesn't need to be every minor ache. Use it when:
 - Pain is noticeable enough to affect your workout, focus, or daily movement
@@ -716,44 +739,42 @@ It doesn't need to be every minor ache. Use it when:
 
 ## Screen Recording Notes
 
-> [SCREEN: Navigate to /dashboard/engine — show the Pain Log section or click through to the Pain Log page]
+> [SCREEN: Navigate to /dashboard/engine — click the Pain Tracking card]
 
-> [SCREEN: Click ""+ Log Pain"" — pain entry form opens]
+> [SCREENSHOT: Pain form — callouts: When (with Now), Physical discomfort 1–10, Affected locations, Sensation type, Aggravating activities, Notes, Add entry]
 
-> [SCREENSHOT: Pain entry form — callouts: Date, Intensity (1–10), Body location (12 options grid), Sensation type (5 options), Activity trigger, Notes]
+> [SCREEN: Leave When at the current time]
 
-> [SCREEN: Set Date to today]
+> [SCREEN: Set intensity to 3, click ""Lower Back (L5/S1)"", click ""Tightness"", type ""Long drive"" in activities]
 
-> [SCREEN: Set Intensity to 4]
+> [SCREEN: Click Add entry — the entry appears under Today's entries]
 
-> [SCREEN: Click ""Left knee"" in the body location grid]
+> [SCREEN: Change When to two hours earlier, set intensity to 2, click ""Left Hand"" and ""Right Hand"", click ""Numbness"", type ""Tingling fingers on waking"" in notes, click Add entry]
 
-> [SCREEN: Click ""Dull"" sensation type]
+> [SCREENSHOT: Today's entries — two entries, newest first, ""Highest 3/10"" badge — callout: ""Log as often as you notice pain""]
 
-> [SCREEN: Type ""Running — 5-mile tempo run"" in the activity trigger field]
+> [SCREEN: Click the pencil on one entry, change the intensity, click Save changes]
 
-> [SCREEN: Type ""Outer knee. Started at mile 3. Eased after stretching."" in notes]
+> [SCREEN: Click Pain history]
 
-> [SCREEN: Click Save — entry appears in pain log list]
+> [SCREENSHOT: Pain history — entries grouped by day with the day's highest intensity, filters above, chart at the top]
 
-> [SCREENSHOT: Pain log list entry — callouts: Date, Intensity badge, Location, Sensation type, Activity trigger shown]
+> [SCREEN: Choose Location ""Hand (left or right)"" — the list narrows to hand entries]
 
-> [SCREEN: Click on the pain log entry or navigate to history view — show a list of past entries]
+> [SCREEN: Scroll down — more entries load]
 
-> [SCREENSHOT: Pain history for left knee — small intensity chart over time — callout: ""Track patterns by location over time""]
-
-> [SCREEN: End on the history view — end lesson]
+> [SCREEN: End on the filtered history view — end lesson]
 
 ---
 
 ## Key Takeaways
 
-- Pain Log captures: date, intensity (1–10), body location (12 zones), sensation (5 types), trigger activity, notes
-- Log the same day — intensity ratings lose accuracy with time
-- Multiple entries per day are fine — one per location
-- Filter history by body location to see trends for a specific area
-- Pain data feeds into the AI weekly review: repeated high-intensity entries trigger recovery recommendations
-- Use it for noticeable pain, recurring discomfort, or when you need a record to share with a professional
+- Every save adds a new entry: log pain as many times a day as you notice it
+- The time starts at now and can be changed for something felt earlier
+- Locations include hands and feet (left and right); sensations include Numbness
+- Today's entries sit under the form with edit and delete; logging works offline
+- Pain History lists every entry grouped by day, with date, intensity, location and notes filters and no 200-day limit
+- Correlations and the AI weekly review use each day's highest intensity and everything logged that day
 ",markdown,,,,,,
 Lessons,1,7,Session History,text,360,true,,"# Lesson 07: Session History
 

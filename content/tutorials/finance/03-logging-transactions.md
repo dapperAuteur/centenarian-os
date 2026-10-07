@@ -29,7 +29,7 @@ From the Finance dashboard, click **+ Add Transaction**. The transaction modal o
 
 **Date** — The date this transaction occurred. Defaults to today. Click to change — you can log past transactions at any time.
 
-**Category** — Which budget category does this belong to? Select from the categories you've created. If no category fits, select "Uncategorized" — you can always reassign later.
+**Category** — Which budget category does this belong to? The category picker lists your life areas with their budget categories under them; type to search, or choose **Add "…"** to create a new category under a life area. The transaction's life area follows from the category you pick. If no category fits, leave it as **No category** — you can always reassign later.
 
 **Description** — A short note describing what this transaction was. Be specific enough that you'll recognize it later: "Whole Foods weekly shop", "Client invoice — March retainer", "Netflix annual subscription". Not so specific that you include the full receipt line-by-line — one line per transaction event is the right granularity.
 

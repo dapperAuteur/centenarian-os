@@ -119,7 +119,7 @@ export const MODULES: ModuleData[] = [
       'Pomodoro focus sessions linked to tasks',
       'Doodle canvas — sketch ideas mid-session',
       'Daily energy/focus ratings',
-      'Body check & pain tracking',
+      'Body check & pain log: several entries a day, searchable history',
       'Weekly AI-powered reviews',
     ],
     highlights: [
@@ -195,9 +195,12 @@ export const MODULES: ModuleData[] = [
     features: [
       'Checking, savings, credit card, loan, cash',
       'Bank statement import from CSV or PDF, with duplicate detection and undo',
+      'Find similar transactions and edit them in bulk (category, vendor, type, tags, transfers), with undo',
+      'Finish an import later, edit a past import, and one Review page for transfers, payments and uncategorized items',
       'Accounts in any currency (travel cash), converted to your home currency with daily or your own rates',
       'Debt payoff: interest paid, payoff calculator, debt-free plan, due-date tasks',
       'Cash on hand: count your cash, one-tap "Paid cash" (offline too), ATM withdrawals into cash',
+      'Reconcile accounts to statements monthly, with dated starting balances',
       'Retirement accounts and planner (estimates), life insurance policies and premiums',
       'Budget categories with spending charts',
       'Invoices with custom fields & CSV import',
@@ -205,7 +208,7 @@ export const MODULES: ModuleData[] = [
     highlights: [
       {
         title: 'Multi-Account Tracking',
-        description: 'Add checking, savings, credit card, loan, and cash accounts. Each tracks its balance from an opening balance plus all transactions.',
+        description: 'Add checking, savings, credit card, loan, and cash accounts. Each tracks its balance from a starting balance (optionally as of a date) plus the transactions after it, and reconciles to each monthly statement.',
       },
       {
         title: 'Budget Categories & Charts',
@@ -647,14 +650,15 @@ export const MODULES: ModuleData[] = [
     slug: 'categories',
     name: 'Life Categories',
     tagline: 'Tag your life by what matters most',
-    description: 'User-defined life-area tags that work across every module. Tag expenses, tasks, workouts, and more with Health, Career, Finance, or any custom category.',
+    description: 'One category tree: life areas like Health, Career and Home on top, your budget categories under them. Transactions get their life area from their budget category; tag tasks, workouts, trips and more with a life area directly.',
     color: 'border-purple-500',
     iconColor: 'text-purple-600',
     checkColor: 'text-purple-600',
     bgGradient: 'from-purple-600 to-purple-800',
     Icon: Tag,
     features: [
-      'User-defined tags (Health, Career, Finance, etc.)',
+      'User-defined life areas (Health, Career, Finance, etc.)',
+      'Budget categories sit under life areas: one set of categories',
       'Works across all 11 module types',
       'Spending & activity analytics by category',
       'Batch tagging from the dashboard',
@@ -671,6 +675,10 @@ export const MODULES: ModuleData[] = [
       {
         title: 'Analytics Dashboard',
         description: 'See spending by life category (pie chart), activity counts by category (bar chart), and find uncategorized items that need tagging.',
+      },
+      {
+        title: 'One Category Tree',
+        description: 'Budget categories sit under life areas, so picking Groceries also counts toward Health. One searchable picker everywhere, and an Organize screen with suggestions you confirm, drag and drop, and merge.',
       },
       {
         title: 'Batch Tagging',

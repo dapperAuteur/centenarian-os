@@ -6,7 +6,8 @@
 // synced and what the run did, reconnect when Google stops accepting an authorization, and
 // disconnect an account. One-way: Google → CentenarianOS. Events become planner tasks under
 // "Google Calendar: <calendar name>"; tagged events also create a transaction, meal log or
-// workout log (each account picks the finance account for #expense / #income), and the
+// workout log (each account ticks the finance accounts #expense / #income may use and picks a
+// default; a title names another ticked one with "@1234" or "@nickname"), and the
 // "Needs a look" list shows what the sync left for the user to check. A daily sync runs as well.
 // Each switched-on calendar also has two RideWitUS switches (migration 216): "Share with
 // RideWitUS" (off by default) sends its events that have a location to RideWitUS for trip
@@ -14,7 +15,7 @@
 // says what is sent and what never is.
 //
 // Data: GET/DELETE /api/calendar/google, GET/PATCH /api/calendar/google/calendars,
-// POST /api/calendar/google/sync, GET /api/finance/accounts (the default-account picker),
+// POST /api/calendar/google/sync, GET /api/finance/accounts (the account checkboxes),
 // GET/PATCH /api/calendar/google/review (Needs a look). GET /api/calendar/google re-checks each account with Google
 // (at most every 5 minutes), so an account whose access was removed at Google shows
 // "Needs reconnecting" on load. The OAuth round trip (/api/calendar/google/connect → Google →
@@ -37,7 +38,7 @@ import {
   X,
 } from 'lucide-react';
 import { formatTime, useClockFormat } from '@/lib/hooks/useClockFormat';
-import CalendarDefaultAccount, { type CalendarFinanceAccount } from '@/components/settings/CalendarDefaultAccount';
+import CalendarAccounts, { type CalendarFinanceAccount } from '@/components/settings/CalendarAccounts';
 import CalendarNeedsALook from '@/components/settings/CalendarNeedsALook';
 import CalendarRideWitUSSharing, { type SharingCalendar } from '@/components/settings/CalendarRideWitUSSharing';
 
@@ -94,7 +95,7 @@ interface Connection {
   last_error: string | null;
   last_synced_at: string | null;
   last_sync_summary: SyncSummary | null;
-  settings: { default_account_id?: string | null } | null;
+  settings: Record<string, unknown> | null;
   calendars: SyncCalendar[];
 }
 
@@ -184,7 +185,7 @@ interface AccountCardProps {
   onSync: (connectionId: string) => void;
   onReload: () => Promise<unknown>;
   onRemoved: (connectionId: string, flash: Flash) => void;
-  /** The user's finance accounts for the default-account picker; null while loading. */
+  /** The user's finance accounts for the account checkboxes; null while loading. */
   accounts: CalendarFinanceAccount[] | null;
 }
 
@@ -512,9 +513,9 @@ function AccountCard({
       )}
 
       {/* Where tagged money events go */}
-      <CalendarDefaultAccount
+      <CalendarAccounts
         connectionId={connection.id}
-        value={connection.settings?.default_account_id ?? null}
+        settings={connection.settings}
         accounts={accounts}
         accountLabel={label}
         onSaved={onReload}
@@ -649,7 +650,7 @@ function CalendarSettings() {
   /** Bumped after each sync so "Needs a look" reloads. */
   const [reviewKey, setReviewKey] = useState(0);
 
-  // Finance accounts for each connection's "Account for #expense and #income" picker.
+  // Finance accounts for each connection's "Accounts for #expense and #income" checkboxes.
   useEffect(() => {
     let cancelled = false;
     fetch('/api/finance/accounts', { cache: 'no-store' })
@@ -857,7 +858,7 @@ function CalendarSettings() {
           </li>
           <li>
             Tagged events also create a record, linked to their task: #expense and #income a transaction (in the
-            account chosen below), #meal a meal log, #workout a workout log. #trip events stay tasks: the trip
+            default account ticked below, or the ticked account an @1234 or @nickname in the title names), #meal a meal log, #workout a workout log. #trip events stay tasks: the trip
             details are saved and will go to RideWitUS.
           </li>
           <li>

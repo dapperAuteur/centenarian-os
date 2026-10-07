@@ -7,7 +7,7 @@
 > carved out (see the decomposition plan in the untracked `plans/` area); the correlation core
 > stays integrated on purpose.
 
-> A solo-built personal operating system. Next.js 15 App Router on Vercel, Supabase Postgres + Auth, **shared database with a sibling product** ([Work.WitUS / contractor-os](https://github.com/dapperAuteur/contractor-os)), offline-first via service-worker + IndexedDB queue, AI coach via Gemini, OCR via Gemini Vision, payments via Stripe Connect, transactional email via Resend.
+> A solo-built personal operating system. Next.js 15 App Router on Vercel, Supabase Postgres + Auth, **one database shared with a sibling product** ([Work.WitUS / contractor-os](https://github.com/dapperAuteur/contractor-os); a split is planned, not done), offline-first via service-worker + IndexedDB queue, AI coach via Gemini, OCR via Gemini Vision, payments via Stripe Connect, transactional email via Resend.
 
 ## The 14-module layout
 
@@ -52,9 +52,9 @@ flowchart TB
     end
   end
 
-  subgraph Shared["Shared infrastructure"]
+  subgraph Shared["Shared infrastructure (one Supabase project)"]
     direction TB
-    Supabase[(Supabase Postgres<br/>219 migrations · 14 modules)]:::shared
+    Supabase[(Supabase Postgres<br/>225 migrations · 14 modules)]:::shared
     SupaAuth[Supabase Auth<br/>publishable + secret keys]
     SupaStorage[Supabase Storage]
   end
@@ -72,6 +72,7 @@ flowchart TB
 
   CentOS -->|service-role + publishable| Supabase
   Sibling -->|service-role + publishable| Supabase
+  Sibling -->|signed events: income, work schedule| CentOS
   CentOS --> SupaAuth
   Sibling --> SupaAuth
   CentOS --> Cloudinary
@@ -90,48 +91,35 @@ flowchart TB
 
 ## The shared-database boundary
 
-The most architecturally interesting part of the system: **one Supabase Postgres instance backs two distinct products.**
+The most architecturally interesting part of the system: **one Supabase project backs two distinct products.**
 
-- **centenarian-os** — this repo. Personal OS for tracking life across 14 modules.
-- **contractor-os** — sibling repo. Work portal for union/freelance contractors (jobs, rate cards, union document RAG).
+- **centenarian-os**: this repo. Personal OS for tracking life across 14 modules.
+- **contractor-os**: sibling repo (Work.WitUS). Work portal for union/freelance contractors (jobs, rate cards, union document RAG).
 
-Both apps speak to the same Postgres via the same Supabase client library. Some tables are app-private (`recipes`, `blog_posts`, `job_replacement_requests`); others are explicitly shared (`profiles`, `auth.users`, `tasks`, `invoices`, `contact_*`, `notification_preferences`).
+Both apps speak to the same Postgres via the same Supabase client library, and both sign users in through the same Supabase Auth. Some tables are app-private (`recipes`, `blog_posts`, `job_replacement_requests`); others are used by both (`profiles`, `auth.users`, `tasks`, `invoices`, `contact_*`, `notification_preferences`). Supabase Auth settings (email templates, SMTP sender, MFA) are set per project, so changing them for one app changes them for both.
 
-Coordination rules — [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" is the source of truth:
+Coordination rules: [`CLAUDE.md`](./CLAUDE.md) §"Database" is the source of truth.
 
-1. **Migrations are additive only.** `ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`. No drops, no renames without cross-app review.
+1. **Migrations are additive and idempotent.** `ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`, guarded policies. No drops, no renames, and no RLS tightening on shared tables without checking contractor-os.
 2. **RLS policies stay app-agnostic.** Don't write a policy that assumes a single app context.
 3. **TypeScript types use optional chaining + defaults** when reading shared tables. `profile.clock_format` may not exist in the other app's type definitions even though the column does in the DB.
 4. **The service-role key bypasses RLS** and is only used in API routes. Public surfaces use the publishable key + the user's auth session.
-5. **`profiles` is owner-only; other users go through `public_profiles`.** Billing, plan and role columns are written only with the service role (a trigger rejects browser-session writes, migration 206). Pages that show another user's name, avatar or bio read the `public_profiles` view; the table itself returns only the caller's own row (migration 207). Both apps follow this.
+5. **`profiles` is owner-only; other users go through `public_profiles`.** Billing, plan and role columns are written only with the service role (a trigger rejects browser-session writes, migration 206). Pages that show another user's name, avatar or bio read the `public_profiles` view; the table itself returns only the caller's own row (migration 207). Because the project is shared, these rules apply to Work.WitUS too.
 
-The result is a **monorepo discipline applied across two repos**: every schema change is a coordination event, even though the apps deploy independently.
+Every schema change is a coordination event, even though the apps deploy independently. That is why the migrations are additive-only and many files carry "SHARED DB" comments.
 
-### Cross-app traffic flow
+### Cross-app traffic today
 
-```mermaid
-sequenceDiagram
-  participant CentOS as centenarian-os
-  participant DB as Supabase Postgres
-  participant Contractor as contractor-os
-  participant EdgeFn as Supabase Edge Function<br/>(unified-schedule)
+The apps are being decoupled ahead of a split, so cross-app data increasingly moves through signed events and APIs instead of shared tables:
 
-  Note over CentOS,Contractor: Both apps deploy independently to Vercel.<br/>Both authenticate against the same Supabase project.
+- **Work.WitUS → CentOS:** HMAC-signed income events ([`app/api/events/income`](./app/api/events/income/route.ts)) and work-schedule events ([`app/api/events/work-schedule`](./app/api/events/work-schedule/route.ts)) fill CentOS's own projections (`income_events`, `work_schedule_events`), which feed the finance forecast and the planner. While a projection is empty, CentOS falls back to reading the contractor tables directly ([`lib/finance/income-source.ts`](./lib/finance/income-source.ts), [`lib/planner/work-schedule-source.ts`](./lib/planner/work-schedule-source.ts)).
+- **Planner tasks from invoices and pay dates:** the database triggers that used to write these across the app boundary (`trg_invoice_due_to_task`, `trg_pay_date_to_task`) were dropped in migration 198 (2026-09). [`lib/planner/sync-tasks.ts`](./lib/planner/sync-tasks.ts) now creates the tasks from the signed income events.
+- **Still direct:** contractor-os's `unified-schedule` Supabase Edge Function reads `tasks`, `contractor_jobs`, `invoices` and `expected_payments` from the shared tables, and Work.WitUS reads shared tables such as `profiles` throughout.
+- **RideWitUS:** a separate app; it talks to CentOS only through signed requests: read-only feeds and the calendar activity feed (see the README's RideWitUS section).
 
-  CentOS->>DB: service-role write to invoices
-  DB-->>DB: trigger trg_invoice_due_to_task<br/>creates planner task row
-  Contractor->>DB: insert contractor_jobs row<br/>(read by centenarian-os planner)
+### The planned split (not done)
 
-  CentOS->>EdgeFn: GET /functions/v1/unified-schedule
-  EdgeFn->>DB: read tasks + jobs + invoice-due items<br/>across both apps' tables
-  DB-->>EdgeFn: merged feed
-  EdgeFn-->>CentOS: unified day view
-
-  Contractor->>EdgeFn: same endpoint, different user context
-  EdgeFn-->>Contractor: same merged feed, RLS-filtered
-```
-
-The `unified-schedule` edge function is the canonical example of "this only works because the database is shared." Each app reads the merged feed; neither app needs to know about the other's HTTP API.
+The plan is for Work.WitUS to move to its own database (Neon; CentOS plan 55, Phase 3, in the untracked `plans/` area). That move has not happened: Work.WitUS still runs entirely on Supabase against this same project, and neither app's runtime code connects to the planned database (only the Phase 3 tooling in [`supabase/neon/`](./supabase/neon/) and `scripts/phase3-*` is written for it). Until the split lands and is confirmed, treat the database as shared and follow the rules above.
 
 ## Offline-first sync layer
 
@@ -151,7 +139,7 @@ Trade-off: this wrapper isn't applied uniformly. Pages that talk Supabase-direct
 |---|---|---|
 | Framework | Next.js 15 App Router | Server Components by default, route handlers for the API surface. |
 | Hosting | Vercel | Fluid Compute for the Node.js routes, native Next.js deployment, Marketplace integrations for Supabase + Resend. |
-| Database | Supabase Postgres | Single-vendor managed Postgres + Auth + Storage + Edge Functions; RLS is the security model. Shared with contractor-os. |
+| Database | Supabase Postgres | Single-vendor managed Postgres + Auth + Storage + Edge Functions; RLS is the security model. Shared with contractor-os (Work.WitUS); a split is planned, not done. |
 | Auth | Supabase Auth via `@supabase/ssr` | Cookie-based session, browser + SSR access via the same package. Migrated to publishable + secret key system in plans 39 + 43. |
 | Styling | Tailwind v4 | Utility-first; design tokens via Tailwind theme. WCAG 2.1 AA contrast enforced via global CSS overrides ([`app/globals.css`](./app/globals.css)). |
 | Type system | TypeScript strict | No `any` escape hatches in app code. |
@@ -186,7 +174,7 @@ centenarian-os/
 │   ├── csv/               # Import/export helpers
 │   └── …
 ├── supabase/
-│   ├── migrations/        # 215 SQL files (see MIGRATIONS.md)
+│   ├── migrations/        # 225 SQL files (see MIGRATIONS.md)
 │   └── functions/         # Edge functions (unified-schedule lives in contractor-os)
 ├── public/
 │   ├── sw.js              # Service worker
@@ -204,7 +192,7 @@ centenarian-os/
 ## Where to dig deeper
 
 - **Migrations** → [`MIGRATIONS.md`](./MIGRATIONS.md) for the full breakdown, or [`supabase/migrations/`](./supabase/migrations/) for the source.
-- **Shared-DB rule** → [`CLAUDE.md`](./CLAUDE.md) §"Shared Database".
+- **Shared-DB rule** → [`CLAUDE.md`](./CLAUDE.md) §"Database".
 - **Branch + commit + PR workflow** → [`STYLE_GUIDE.md`](./STYLE_GUIDE.md).
 - **Style + a11y conventions** → [`CLAUDE.md`](./CLAUDE.md) §"Theme & Colors", §"Mobile-First & Touch Targets", §"ARIA & Accessibility".
 - **Offline sync** → [`lib/offline/`](./lib/offline/) and [`public/sw.js`](./public/sw.js).

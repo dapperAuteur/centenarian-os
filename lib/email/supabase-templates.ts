@@ -1,6 +1,9 @@
 // lib/email/supabase-templates.ts
 // HTML email templates for Supabase Auth email configuration.
 // Copy the HTML from each export and paste into Supabase Dashboard → Authentication → Email Templates.
+// SHARED PROJECT: CentOS and Work.WitUS use one Supabase project, and Auth templates and SMTP are per
+// project, so these replace Work.WitUS's login emails too. Coordinate with contractor-os (task 18 /
+// feat/mailgun-email) before pasting.
 // Variables: {{ .ConfirmationURL }}, {{ .Token }}, {{ .SiteURL }}
 
 const HEADER = `
