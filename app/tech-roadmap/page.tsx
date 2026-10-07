@@ -254,6 +254,7 @@ const PHASES: Phase[] = [
       { done: true, text: 'Contact locations: sub-locations per vendor/customer' },
       { done: true, text: 'Data Hub: centralized import/export for all 12+ modules with CSV templates, date-range filtering, and Google Sheets support' },
       { done: true, text: 'Invoice custom fields: define and attach arbitrary key/value fields per invoice template' },
+      { done: true, text: 'Find similar transactions and edit them in bulk (category, vendor, type, brand, life category, tags, transfer unlink), with undo (migration 220, run by hand)' },
     ],
   },
   {
