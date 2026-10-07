@@ -6,7 +6,7 @@
 > [`/dashboard/weekly-review`](./app/dashboard/weekly-review)) can surface cross-domain patterns no
 > single-vertical tracker can see. That co-location is the product, not an accident of scope.
 
-> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online)), offline-first via service-worker + IndexedDB queue, **219 migrations** to date.
+> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online)), offline-first via service-worker + IndexedDB queue, **220 migrations** to date.
 
 **Actively decomposing.** Modules that a sibling WitUS app already owns are being removed under
 the ecosystem's "one app, one job" rule (see [CLAUDE.md](./CLAUDE.md)) — Media → Stream.WitUS,
@@ -31,7 +31,7 @@ flowchart LR
 
   CentOS[centenarian-os<br/>Next.js 15 · Vercel<br/>14 modules]
   Contractor[contractor-os<br/>Work.WitUS]
-  DB[(Supabase Postgres<br/>219 migrations)]:::shared
+  DB[(Supabase Postgres<br/>220 migrations)]:::shared
 
   CentOS -->|service-role + publishable| DB
   Contractor -->|service-role + publishable| DB
@@ -40,7 +40,7 @@ flowchart LR
 For dev-audience readers:
 
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** — full module map, Mermaid diagrams of the shared-DB boundary, cross-app traffic via the `unified-schedule` edge function, offline-sync layer, repo layout, and stack table.
-- **[MIGRATIONS.md](./MIGRATIONS.md)** — 219 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
+- **[MIGRATIONS.md](./MIGRATIONS.md)** — 220 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
 - **[CLAUDE.md](./CLAUDE.md)** — AI-collaborator instructions doubling as the project conventions doc (style, a11y, the Shared Database rule, branch workflow).
 - **[STYLE_GUIDE.md](./STYLE_GUIDE.md)** — git workflow, branch naming, Conventional Commits, PR rules. Every change starts on a new branch off `main`; `main` is never pushed to directly.
 - **[docs/CentenarianAcademy/](./docs/CentenarianAcademy/)** — course-authoring standards: `CourseAuthoringGuide.md` (craft), `CourseProductionPlaybook.md` (process), `CitationIntegrityGuide.md` (verify every source, never ship a fake citation), and `CourseCreationWithAI.md` (hand to your AI). Per-course recipes: `CourseAuthoringGuide NASM CPT/CES/CNC.md` and `CourseAuthoringGuide BVC.md` (Better Vice Club: audio-first, four-lens episodes; episode-per-module; rotating quizzes + FlashLearn recall loop + season-wide glossary). Courses cite only verified, peer-reviewed sources and ship a teacher evidence ledger.
@@ -116,7 +116,7 @@ No free plan. All users must subscribe to access paid modules.
 | **Equipment & Assets** | Asset tracking, valuation history, media gallery, cross-module links, depreciation for every item and vehicle (straight line, declining balance or units of use; expected life in years and/or uses or miles; salvage value; book value, yearly schedule and chart; estimates, not tax advice), work use (link items to planner tasks and synced calendar events with "Used equipment"; vehicles count work miles from trips; uses, work share, cost per use, and work-share depreciation for the year), a total book value summary, and "Save for replacement" into a savings goal | Paid |
 | **Correlations & Analytics** | Cross-module data correlations, trend charts, daily/weekly aggregates | Paid |
 | **Data Hub** | CSV import/export for 11+ modules with Google Sheets templates | Paid |
-| **Life Categories** | Tag activities across all modules with custom life-area categories | Paid |
+| **Life Categories** | One category tree: life areas (Health, Home, Travel...) on top and budget categories under them, so a transaction's life area comes from its budget category; one searchable picker everywhere a category is chosen; an Organize categories screen (suggestions by name you confirm, drag or pick a life area, create, rename, merge, delete); tag tasks, trips, workouts and other items with a life area directly; spending and activity by life area | Paid |
 | **Academy (LMS)** | Create/sell courses; CYOA navigation; rotating spaced-recall quizzes; FlashLearn flashcards (multiple-choice + classic); per-module key terms; maps, docs, audio, video | Free |
 | **Blog** | Rich text publishing, likes/saves, public author profiles | Free |
 | **Recipes** | Recipe sharing, URL import, cook profiles, JSON-LD scraping | Free |
@@ -213,6 +213,18 @@ server-side only and cached in `exchange_rates`. Apply `supabase/migrations/210_
 a Vercel cron (`/api/cron/fx-rates`, daily at 17:00 UTC, `CRON_SECRET` Bearer guard) refreshes the
 latest rates for every currency in use and fills missing home-currency amounts. Users set their
 home currency and their own rates on Settings → Currencies.
+
+### One category tree (migration 223)
+
+Apply `supabase/migrations/223_one_category_tree.sql` by hand. It adds `budget_categories.life_category_id`
+(a budget category's life area, same user only, `ON DELETE SET NULL`) and
+`entity_life_categories.auto_source` (`'budget_category'` marks a tag the app added from a transaction's
+category; NULL means a person added it, and the app never removes those). It does not guess any mapping:
+the Organize categories screen (`/dashboard/categories/organize`) lists unplaced budget categories with
+suggestions the person confirms. Until it is applied, both lists work as before and the new parts say
+"Run migration 223 first". Additive only; Work.WitUS reads and writes both tables unchanged. Code:
+`lib/categories/*`, `components/categories/CategoryTreePicker.tsx`, `GET /api/categories/tree`,
+`POST /api/categories/merge`.
 
 ### Optional: Google Calendar (one-way sync)
 
@@ -452,7 +464,7 @@ supabase db push
 # Run migrations in order from supabase/migrations/
 ```
 
-There are 219 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the ContractorOS (Work.WitUS) app — read [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" before adding any.
+There are 220 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the ContractorOS (Work.WitUS) app — read [`CLAUDE.md`](./CLAUDE.md) §"Shared Database" before adding any.
 
 ### Run Development Server
 
@@ -469,6 +481,10 @@ npm run test:unit
 ```
 
 Runs the pure-function tests with Node's built-in test runner (`node --test --experimental-strip-types`, Node 22.6+). No database, network or extra dependencies. Covers merchant-name matching and learned vendor categories (`tests/transaction-matching.test.ts`), the stored-secret encryption helper (`tests/unit/crypto-tokens.test.ts`), the Google Calendar client and token refresh (`tests/unit/google-calendar-client.test.ts`, with a fake `fetch`), and the Google Calendar sync helpers: event to task fields, time zones, the sync decision and the 410 fallback (`tests/unit/google-sync.test.ts`), and the RideWitUS integration: signing, identity lookup, vendor scoping, the envelope.balance emitter, outbox delivery and resync (`tests/unit/witus-signing.test.ts`, `ridewitus-vendors.test.ts`, `ridewitus-envelope.test.ts`, with a fake `fetch`).
+
+It also covers the one category tree (`tests/unit/category-tree.test.ts`): the tree and picker search,
+suggestions by name, ownership of a budget category's life area, the automatic life area of a
+transaction (never removing a tag a person added), budgets unchanged, the analytics roll-up and merging.
 
 ## Project Structure
 
@@ -511,7 +527,7 @@ centenarian-os/
 ├── content/tutorials/         # 15+ tutorial course scripts
 ├── public/templates/          # CSV import templates (10+ modules)
 └── supabase/
-    └── migrations/            # 218 database migrations — see MIGRATIONS.md
+    └── migrations/            # 220 database migrations — see MIGRATIONS.md
 ```
 
 For the full module map and the cross-app shared-DB story, see **[ARCHITECTURE.md](./ARCHITECTURE.md)**.

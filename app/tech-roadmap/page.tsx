@@ -296,6 +296,8 @@ const PHASES: Phase[] = [
     items: [
       { done: true, text: 'Dashboard home preference: choose which page you land on after login or clicking "Go to Dashboard"' },
       { done: true, text: 'Life Categories: user-defined life-area tags with analytics across all 11 module types' },
+      // Built on feat/one-category-tree; flip to done once it is merged and migration 223 is applied.
+      { done: false, text: 'One category tree: budget categories under life areas, one searchable category picker everywhere, and an Organize categories screen' },
       { done: true, text: 'ARIA compliance audit: aria-expanded on toggles, role="alert" on errors, accessible LoadingSpinner component' },
       { done: true, text: 'Mobile touch targets: 44x44px minimum on all close buttons, FABs, nav links, and icon buttons' },
       { done: true, text: 'SEO metadata on all public pages: recipes, coaching, demo, live, tech-roadmap, contribute' },
