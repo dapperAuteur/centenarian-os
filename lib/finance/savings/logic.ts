@@ -20,8 +20,9 @@
 //       may not take more than the goal holds, and a deposit can't be split
 //       into more than its amount (minus what was already allocated from it).
 //
-//   Balance (same formula as app/api/finance/accounts/route.ts)
-//     opening_balance + income - expenses on the account (asset accounts).
+//   Balance: the one balance rule in ../balance/logic.ts (re-exported here),
+//     opening_balance + income - expenses on the account (asset accounts),
+//     counting only transactions after the starting-balance date when set.
 //
 //   Monthly needed
 //     - Months left = whole calendar months from today to the target date,
@@ -58,6 +59,12 @@
 // `node --test --experimental-strip-types` (tests/unit/savings.test.ts).
 
 import { countsTowardTotals } from '../transfers/schema.ts';
+import { accountBalance, isDebtAccount } from '../balance/logic.ts';
+import type { BalanceAccount, BalanceRow } from '../balance/logic.ts';
+
+// The balance rule lives in ../balance/logic.ts; these names stay importable from here.
+export { accountBalance, isDebtAccount };
+export type { BalanceAccount, BalanceRow };
 import { addMonths, monthOfDate, monthRange } from '../budgets/months.ts';
 import type { MonthKey } from '../budgets/months.ts';
 import { average, median } from '../budgets/logic.ts';
@@ -121,36 +128,10 @@ export interface AllocationRow {
   created_at?: string | null;
 }
 
-export interface BalanceRow {
-  type: string;
-  amount: number | string;
-}
-
-export interface BalanceAccount {
-  account_type: string;
-  opening_balance: number | string | null;
-}
-
 // ── Money helpers ───────────────────────────────────────────────────────────
 
 export const toCents = (value: number | string | null | undefined): number => Math.round(Number(value ?? 0) * 100);
 export const fromCents = (cents: number): number => cents / 100;
-
-export function isDebtAccount(accountType: string | null | undefined): boolean {
-  return accountType === 'credit_card' || accountType === 'loan';
-}
-
-/** The account's balance, the same formula as the accounts API. */
-export function accountBalance(account: BalanceAccount, rows: BalanceRow[]): number {
-  let income = 0;
-  let expenses = 0;
-  for (const row of rows) {
-    if (row.type === 'income') income += toCents(row.amount);
-    else if (row.type === 'expense') expenses += toCents(row.amount);
-  }
-  const opening = toCents(account.opening_balance);
-  return fromCents(isDebtAccount(account.account_type) ? -(opening + expenses - income) : opening + income - expenses);
-}
 
 // ── Saved so far and envelopes ──────────────────────────────────────────────
 

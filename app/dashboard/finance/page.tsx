@@ -23,6 +23,7 @@ import Modal from '@/components/ui/Modal';
 import { formatMoney } from '@/lib/finance/fx/math';
 import DueSoonBanner from '@/components/finance/debt/DueSoonBanner';
 import CashOnHandCard from '@/components/finance/cash/CashOnHandCard';
+import ReconcileAuditCard from '@/components/finance/ReconcileAuditCard';
 
 interface CategoryBreakdown {
   id: string;
@@ -530,6 +531,9 @@ export default function FinanceDashboardPage() {
         accounts={accounts}
         onChanged={reloadQuietly}
       />
+
+      {/* Monthly audit: accounts not reconciled in the last 30 days (amber), each linking to Reconcile */}
+      <ReconcileAuditCard />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

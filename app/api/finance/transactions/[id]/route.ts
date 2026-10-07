@@ -1,12 +1,15 @@
 // app/api/finance/transactions/[id]/route.ts
 // GET: fetch single transaction with full details. When it is one side of a
 //      transfer, `transfer_partner` is the other side with its account label.
+//      `reconciled_period` ({ statement_date, reconciliation_id } or null, migration 221) says
+//      the row is dated inside a reconciled statement period of its account.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { loadGroupRows } from '@/lib/finance/transfers/server';
 import { withOwnEmbeds } from '@/lib/auth/ownership';
+import { reconciledPeriods } from '@/lib/finance/reconciliation/server';
 
 function getDb() {
   return createServiceClient(
@@ -56,5 +59,7 @@ export async function GET(
   // Embeds follow client-set ids: show only the caller's own category, account and brand.
   const transaction = withOwnEmbeds(data, ['budget_categories', 'financial_accounts', 'user_brands'], user.id);
 
-  return NextResponse.json({ transaction, linked_invoice, transfer_partner });
+  const [reconciled_period] = await reconciledPeriods(db, user.id, [data]);
+
+  return NextResponse.json({ transaction, linked_invoice, transfer_partner, reconciled_period });
 }

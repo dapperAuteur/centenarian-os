@@ -6,6 +6,9 @@
 //        and nickname (migration 218; used in Google Calendar titles as @nickname; null or "" clears
 //        it; unique per user among active accounts, case-insensitive, also checked when an account
 //        is reactivated; 409 nickname_taken, 503 nickname_not_migrated before 218)
+//        and opening_balance_date (YYYY-MM-DD or null, migration 221): the day the opening balance
+//        is as of; the balance then counts only transactions after it ("Run migration 221 first"
+//        before the migration)
 // DELETE: deactivate (soft) or hard-delete if no transactions
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -25,6 +28,8 @@ import {
   isNicknameColumnMissing,
   nicknameTaken,
 } from '@/lib/finance/account-nickname';
+import { isMissingColumn } from '@/lib/finance/transfers/schema';
+import { isDateString, RECONCILE_NOT_READY } from '@/lib/finance/reconciliation/logic';
 
 function getDb() {
   return createServiceClient(
@@ -100,8 +105,18 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     'currency',
     // Calendar @nickname (migration 218)
     'nickname',
+    // Starting balance date (migration 221)
+    'opening_balance_date',
   ];
   const updates = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
+
+  if ('opening_balance_date' in updates) {
+    const value = updates.opening_balance_date;
+    if (value === '' || value === null) updates.opening_balance_date = null;
+    else if (!isDateString(value)) {
+      return NextResponse.json({ error: 'The starting balance date must be a date, like 2026-01-31.' }, { status: 400 });
+    }
+  }
 
   if ('currency' in updates) {
     const code = normalizeCurrency(updates.currency);
@@ -179,6 +194,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     }
     if (error.code === '23505' && /nickname/i.test(error.message)) {
       return NextResponse.json({ error: 'Another account already uses that nickname.', code: 'nickname_taken' }, { status: 409 });
+    }
+    if (isMissingColumn(error, 'opening_balance_date')) {
+      return NextResponse.json({ error: RECONCILE_NOT_READY.startingDateError, code: RECONCILE_NOT_READY.code }, { status: 503 });
     }
     // The column arrives with migration 203: say so instead of a raw schema error.
     if (isMissingSchemaError(error)) {

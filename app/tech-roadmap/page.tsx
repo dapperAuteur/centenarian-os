@@ -251,6 +251,7 @@ const PHASES: Phase[] = [
       { done: true, text: 'Bulk CSV import and full data CSV export' },
       { done: true, text: 'Saved contacts: vendor/customer directory with auto-fill' },
       { done: true, text: 'Account balance tracking: opening balance + transaction history' },
+      { done: true, text: 'Dated starting balances and monthly reconciliation to statements (migration 221, run by hand): Cleared ticks, adjustments, reconciled-period warnings, audit card' },
       { done: true, text: 'Account deactivation: soft-delete preserves transaction history' },
       { done: true, text: 'Contact locations: sub-locations per vendor/customer' },
       { done: true, text: 'Data Hub: centralized import/export for all 12+ modules with CSV templates, date-range filtering, and Google Sheets support' },
