@@ -20,6 +20,7 @@ import { isMissingColumn, missingTransferColumn } from '@/lib/finance/transfers/
 import { clearTransferGroup, getServiceDb, loadGroupRows } from '@/lib/finance/transfers/server';
 import { withOptionalFx } from '@/lib/finance/fx/totals';
 import { loadHomeCurrency } from '@/lib/finance/fx/server';
+import { ilikeAnyColumn } from '@/lib/finance/similar/criteria';
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -74,7 +75,8 @@ export async function GET(request: NextRequest) {
     if (disputeStatus) query = query.eq('dispute_status', disputeStatus);
     if (jobId) query = query.eq('job_id', jobId);
     if (batchId) query = query.eq('import_batch_id', batchId);
-    if (q) query = query.or(`description.ilike.%${q}%,vendor.ilike.%${q}%,notes.ilike.%${q}%,amount::text.ilike.%${q}%`);
+    // Quoted and escaped: a comma, parenthesis, % or _ in the search is matched as typed.
+    if (q) query = query.or(ilikeAnyColumn(['description', 'vendor', 'notes', 'amount::text'], q));
     return query;
   };
 
