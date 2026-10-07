@@ -7,7 +7,8 @@
 //      The amount is in the account's currency; a row on a foreign-currency account also gets
 //      currency, fx_rate and amount_home (rate to the home currency on the transaction date).
 // PATCH: update a transaction. One side of a transfer can't change its amount or type alone.
-//      Changing the amount, date or account recomputes the home-currency amount.
+//      Changing the amount, date or account recomputes the home-currency amount. Changing the
+//      category moves the automatic life-area tag with it (lib/categories/life-areas.ts).
 // DELETE: delete a transaction. One side of a transfer answers 409 with the other side,
 //      unless the caller says what to do with the pair: `?pair=delete` deletes both rows,
 //      `?pair=unlink` unlinks the other row and deletes only this one.
@@ -20,6 +21,7 @@ import { isMissingColumn, missingTransferColumn } from '@/lib/finance/transfers/
 import { clearTransferGroup, getServiceDb, loadGroupRows } from '@/lib/finance/transfers/server';
 import { withOptionalFx } from '@/lib/finance/fx/totals';
 import { loadHomeCurrency } from '@/lib/finance/fx/server';
+import { syncAutoLifeAreas } from '@/lib/categories/life-areas';
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -228,6 +230,8 @@ export async function PATCH(request: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  // A new category brings its life area along (and drops the automatic one from the old category).
+  if (payload.category_id !== undefined) await syncAutoLifeAreas(supabase, user.id, [id]);
   return NextResponse.json({ transaction: data });
 }
 

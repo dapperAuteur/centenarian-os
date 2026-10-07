@@ -1,11 +1,13 @@
 // app/api/finance/transactions/bulk/route.ts
 // POST: Apply bulk updates to multiple transactions at once.
 // Supports: category_id, brand_id (via updates{}), life_category_id (tags all IDs).
+// A new category_id also moves each row's automatic life-area tag (lib/categories/life-areas.ts).
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { checkReferences, invalidReferenceMessage, ownedIds } from '@/lib/auth/ownership';
+import { markTagsManual, syncAutoLifeAreas } from '@/lib/categories/life-areas';
 
 function getDb() {
   return createServiceClient(
@@ -58,6 +60,8 @@ export async function POST(request: NextRequest) {
         .eq('user_id', user.id);
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
       updated = ids.length;
+      // The life area follows the new category (one category tree, migration 223).
+      if (payload.category_id !== undefined) await syncAutoLifeAreas(db, user.id, ids);
     }
   }
 
@@ -76,6 +80,8 @@ export async function POST(request: NextRequest) {
       .from('entity_life_categories')
       .upsert(rows, { onConflict: 'user_id,entity_type,entity_id,life_category_id', ignoreDuplicates: true });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    // Tagged by hand: an automatic tag already there for this life area becomes the person's own.
+    await markTagsManual(db, user.id, life_category_id, 'transaction', [...owned.ids]);
     tagged = rows.length;
   }
 
