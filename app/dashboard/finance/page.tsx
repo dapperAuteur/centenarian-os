@@ -24,6 +24,7 @@ import { formatMoney } from '@/lib/finance/fx/math';
 import DueSoonBanner from '@/components/finance/debt/DueSoonBanner';
 import CashOnHandCard from '@/components/finance/cash/CashOnHandCard';
 import ReconcileAuditCard from '@/components/finance/ReconcileAuditCard';
+import ReviewBadgeLink from '@/components/finance/review/ReviewBadgeLink';
 
 interface CategoryBreakdown {
   id: string;
@@ -354,6 +355,7 @@ export default function FinanceDashboardPage() {
             <Upload className="w-4 h-4" aria-hidden="true" />
             Import bank statement
           </Link>
+          <ReviewBadgeLink />
           <Link
             href="/dashboard/finance/accounts"
             className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
