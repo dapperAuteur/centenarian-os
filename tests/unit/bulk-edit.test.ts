@@ -370,6 +370,19 @@ test('undo puts back category, vendor, brand and tags, comparing values, not upd
   assert.equal(again.status, 409);
 });
 
+test('undo leaves the type alone on a row linked into a transfer since the edit', async () => {
+  const db = freshDb();
+  const row = tx(db);
+  const result = await applyBulkEdit(db, ME, { ids: [row.id], updates: { type: 'income' }, operation: {} });
+  assert.equal(get(db, row.id).type, 'income');
+  // Linked as the income side of a transfer afterwards: going back to expense would break the pair.
+  get(db, row.id).transfer_group_id = 'group-9';
+  const undo = await undoAll(db, result.body.operation_id);
+  assert.equal(undo.restored, 0);
+  assert.equal(undo.skipped.changed, 1);
+  assert.equal(get(db, row.id).type, 'income');
+});
+
 test('undo is refused for someone else’s operation', async () => {
   const db = freshDb();
   const mine = tx(db);

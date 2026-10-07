@@ -301,7 +301,13 @@ export function planUndo(rows: readonly OperationRow[], current: ReadonlyMap<str
   const verdict = new Map<string, 'ok' | SkipReason>();
   for (const row of rows) {
     const now = current.get(row.entity_id);
-    verdict.set(row.id, !now ? 'missing' : unchangedSince(row, now) ? 'ok' : 'changed');
+    let result: 'ok' | SkipReason = !now ? 'missing' : unchangedSince(row, now) ? 'ok' : 'changed';
+    // A row linked into a transfer since the edit keeps its type: changing it
+    // would break the pair. (A row this undo links back is not in that case.)
+    if (result === 'ok' && 'type' in (row.old_values ?? {}) && !row.group_key && now?.values.transfer_group_id) {
+      result = 'changed';
+    }
+    verdict.set(row.id, result);
   }
 
   // A transfer comes back whole or not at all.

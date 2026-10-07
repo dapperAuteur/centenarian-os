@@ -656,7 +656,7 @@ export async function undoOperation(db: BulkDb, userId: string, operationId: unk
   }
 
   // 2. The other fields, one guarded update per distinct (values, guard).
-  const byValues = new Map<string, { values: FieldValues; guard: FieldValues; items: RestoreItem[] }>();
+  const byValues = new Map<string, { values: FieldValues; guard: FieldValues; notInTransfer: boolean; items: RestoreItem[] }>();
   for (const item of plan.restore) {
     if (item.groupKey && pairFailed.has(item.groupKey)) continue;
     const values = pick(item.values, TRANSFER_FIELDS, false);
@@ -665,18 +665,22 @@ export async function undoOperation(db: BulkDb, userId: string, operationId: unk
       continue;
     }
     const guard = pick(item.guard, TRANSFER_FIELDS, false);
-    const key = JSON.stringify([values, guard]);
-    const group = byValues.get(key) ?? { values, guard, items: [] };
+    // The type goes back only on a row that is not one side of a transfer now
+    // (a row this undo just linked back is: its type belongs to that pair).
+    const notInTransfer = 'type' in values && !item.groupKey && loaded.cols.group;
+    const key = JSON.stringify([values, guard, notInTransfer]);
+    const group = byValues.get(key) ?? { values, guard, notInTransfer, items: [] };
     group.items.push(item);
     byValues.set(key, group);
   }
-  for (const { values, guard, items } of byValues.values()) {
+  for (const { values, guard, notInTransfer, items } of byValues.values()) {
     for (const chunk of chunks(items, ID_CHUNK)) {
-      const query = db
+      let query = db
         .from('financial_transactions')
         .update(values)
         .eq('user_id', userId)
         .in('id', chunk.map((item) => item.entityId));
+      if (notInTransfer) query = query.is('transfer_group_id', null);
       const { data, error } = await applyGuard(query, guard).select('id');
       const written = new Set(((data ?? []) as { id: string }[]).map((row) => row.id));
       for (const item of chunk) {
