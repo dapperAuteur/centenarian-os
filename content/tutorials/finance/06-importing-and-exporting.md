@@ -2,7 +2,7 @@
 
 **Course:** Mastering Finance
 **Module:** Data Management
-**Duration:** ~7 min
+**Duration:** ~9 min
 **Lesson type:** text / video
 **is_free_preview:** true
 **CYOA navigation:** cyoa
@@ -148,6 +148,8 @@ A statement with more than 200 rows is shown 200 at a time, with **Previous 200*
 
 When it looks right, click **Import statement**.
 
+**You don't have to finish now.** Your review is saved as you go: each choice is saved a moment after you make it, and again when you leave the page. A line above the rows says **Your choices are saved**. See "Finishing an Import Later" below.
+
 ---
 
 ### Card and Loan Statements
@@ -200,7 +202,51 @@ From here you can:
 - **View these transactions**, which opens the Transactions page
 - **Import another file**, which starts again with the same account chosen
 
-Under the result, **Import history** lists every import you have run: the date, the account, the file name, the counts, and whether it was undone. The same list is on step 1, so you can come back later and undo an import without running a new one.
+Under the result, **Import history** lists every import you have run: the date, the account, the file name, the counts, and whether it was undone. The same list is on step 1, so you can come back later and undo an import without running a new one. **Open** on an import lets you change its rows (see "Changing a Past Import" below).
+
+---
+
+### Finishing an Import Later
+
+Years of statements take more than one sitting. Once you reach step 3, the review is saved with your account as you work:
+
+- **Unfinished imports** at the top of step 1 lists every review you started and didn't finish: the file name, the account, the number of rows, and when it was saved. The finance **Review** page lists them too.
+- **Resume import** picks it up where you left off. Every row is checked again against your transactions as they are now, so a row that was imported some other way since then shows as **Already imported**, and the page says how many rows changed.
+- **Discard this import** (on step 3) or **Discard** (in the list) throws the review away. Nothing is imported.
+- Choose the same file for the same account again, and the page offers to resume the saved review instead. Starting over replaces it.
+
+**What is kept:** only the rows read from the file (date, amount, direction, description) and your choices, plus a PDF statement's summary numbers. The file itself, CSV or PDF, is never stored. A saved import is kept for 30 days after you last worked on it, then deleted; importing it or discarding it deletes it right away.
+
+---
+
+### Changing a Past Import
+
+**Import history** (the **Import history and editing** link at the top of the import page) lists every import. Click **Open** on one to see its rows in statement order, 100 at a time:
+
+- Change a row's **Vendor**, **Type**, or **Category**, then click **Save changes**
+- **Link as a transfer** shows transactions on your other accounts with the same amount within 5 days; click **Link** on the right one. **Unlink** takes a transfer apart (a payment the import recorded on the other account goes with it)
+- **Delete row** removes a row the import added. An entry you made yourself that the import only linked is marked **Your entry, linked by this import** and is never deleted here
+- Tick rows (or **Select all on this page**) to set one category, type, or vendor on all of them, or to delete them
+- **Re-run transfer matching** checks this import's rows for transfers again. Use it after importing the other account's statement: clear pairs are linked, and the rest wait on the Review page
+- **Undo this import** works as described below
+
+A row you change counts as edited, so a later Undo keeps it.
+
+---
+
+### The Review Page
+
+**Finance → Review** (the amber number next to it counts what is waiting) gathers everything that needs a decision, worked out from your saved data:
+
+| Section | What it lists | What you can do |
+|---------|---------------|-----------------|
+| **Unfinished imports** | Reviews you started and didn't finish | Resume import, Discard |
+| **Possible transfers** | The same amount leaving one account and reaching another within 5 days | Link, Not a transfer |
+| **Card and loan payments with no other side** | A card or loan payment with no **Paid from**, or a bank payment to a card or loan with no **Paid to** | Choose the account and Link, Not a payment |
+| **Imported rows that match an entry you made** | A statement row and a transaction you typed or scanned that look like the same purchase | Same purchase (keeps your entry, removes the imported copy), Not the same |
+| **Uncategorized** | Spending and income with no budget category | Set a category on one row or many |
+
+Each section shows its count, pages 25 at a time, and has **Select all on this page** with actions for the selected items. "Not a transfer", "Not a payment", and "Not the same" are saved with your account, so they aren't suggested again on any device. Choose a date range at the top to check older history.
 
 ---
 
@@ -321,6 +367,12 @@ Statement import needs a connection. If you are offline, the page says so, and t
 
 > [SCREEN: Import. The result says how many payments were linked to a matching withdrawal and how many were recorded on the paying account]
 
+> [SCREEN: Start a review, change two categories, then leave the page. Come back to Import bank statement: Unfinished imports lists it. Click Resume import; the choices are still there]
+
+> [SCREEN: Open Import history and editing, click Open on an import. Change a row's category and click Save changes. Tick three rows and set a category on all of them. Click Re-run transfer matching]
+
+> [SCREEN: Navigate to Finance → Review. Callouts: the counts, Possible transfers with Link and Not a transfer, Uncategorized with Set category]
+
 > [SCREEN: Navigate to /dashboard/finance, click Export. The CSV downloads]
 
 > [SCREEN: End on the Finance dashboard]
@@ -344,6 +396,9 @@ Statement import needs a connection. If you are offline, the page says so, and t
 - Green means done, amber means check this, red means it failed, blue is information
 - Set categories per row or for several selected rows at once. Learned vendor categories are filled in for you
 - Step 4: see what was imported, linked, skipped, and rejected. Every import can be undone, from the result or from Import history
+- The review is saved as you go: Resume import (step 1 or the Review page) picks it up later, checked again against current data. Only the rows and your choices are kept, never the file, for 30 days
+- Import history: open a past import to change its rows' vendor, type, category, and transfer links, delete rows it added, or re-run transfer matching
+- Finance → Review gathers possible transfers, unlinked payments, imported rows that match your entries, uncategorized transactions, and unfinished imports in one place
 - Undo keeps any imported transaction you edited afterwards, and keeps your own entries
 - Importing the same file again is safe: rows already in the account are skipped
 - Export on the Finance dashboard downloads all transactions as a CSV
