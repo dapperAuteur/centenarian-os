@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight, Link2, X, Search, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight, Link2, X, Search, Check, Loader2, ScanSearch } from 'lucide-react';
 import Link from 'next/link';
 import ActivityLinkModal from '@/components/ui/ActivityLinkModal';
 import LearnCategoryPrompt, { type LearnCategoryRequest } from '@/components/finance/LearnCategoryPrompt';
@@ -13,6 +13,9 @@ import { accountLabel } from '@/lib/finance/transfers/pairing';
 import { offlineFetch, isQueuedResponse } from '@/lib/offline/offline-fetch';
 import { vendorKey } from '@/lib/finance/transaction-matching';
 import TxAmount from '@/components/finance/TxAmount';
+import FindSimilarPanel, { type SimilarSeed } from '@/components/finance/FindSimilarPanel';
+import BulkEditUndo from '@/components/finance/BulkEditUndo';
+import { describeEdit } from '@/lib/finance/bulk-edit/logic';
 
 interface Category {
   id: string;
@@ -85,6 +88,8 @@ export default function TransactionsPage() {
   // The Budgets page links here with ?uncategorized=1&from=&to= (one month's uncategorized spending).
   const urlUncategorized = searchParams.get('uncategorized') === '1';
   const reviewTransfers = searchParams.get('review') === 'transfers';
+  // ?similar=<id> (the transaction page's "Find similar") opens the Find similar panel for that row.
+  const urlSimilarId = searchParams.get('similar') || '';
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [homeCurrency, setHomeCurrency] = useState('USD');
@@ -135,6 +140,10 @@ export default function TransactionsPage() {
   const [transfersVersion, setTransfersVersion] = useState(0);
   // Something the server wants said about the list (the import filter can't be applied, say).
   const [listNotice, setListNotice] = useState<string | null>(null);
+  // The Find similar panel: what it starts from, and a key that remounts it for a new start.
+  const [similar, setSimilar] = useState<{ key: number; seed: SimilarSeed } | null>(null);
+  // Bumped after a bulk edit from the bar, so "Undo last bulk edit" shows it.
+  const [bulkUndoVersion, setBulkUndoVersion] = useState(0);
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
@@ -182,6 +191,32 @@ export default function TransactionsPage() {
   useEffect(() => { setPage(0); }, [urlBatchId, urlUncategorized]);
 
   useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
+
+  // ?similar=<id>: load that transaction and open Find similar from it.
+  useEffect(() => {
+    if (!urlSimilarId) return;
+    let cancelled = false;
+    offlineFetch(`/api/finance/transactions/${urlSimilarId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.transaction) return;
+        setSimilar({ key: Date.now(), seed: { kind: 'transaction', tx: data.transaction } });
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [urlSimilarId]);
+
+  const openSimilar = (seed: SimilarSeed) => setSimilar({ key: Date.now(), seed });
+
+  const closeSimilar = () => {
+    setSimilar(null);
+    if (urlSimilarId) {
+      const next = new URLSearchParams(searchParams.toString());
+      next.delete('similar');
+      const query = next.toString();
+      router.replace(`/dashboard/finance/transactions${query ? `?${query}` : ''}`);
+    }
+  };
 
   const handleDelete = async (tx: Transaction) => {
     setActionError(null);
@@ -299,6 +334,22 @@ export default function TransactionsPage() {
       const body: Record<string, unknown> = { ids };
       if (Object.keys(updates).length > 0) body.updates = updates;
       if (bulkLifeTag) body.life_category_id = bulkLifeTag;
+      // Recorded so "Undo last bulk edit" can take it back (once migration 220 is applied).
+      body.operation = {
+        summary: describeEdit(
+          {
+            category_id: bulkCategory || undefined,
+            brand_id: bulkBrand || undefined,
+            life_add: bulkLifeTag || undefined,
+            tags_add: [], tags_remove: [], unlink_transfers: false, remember: false, remember_skip: [],
+          },
+          {
+            category: categories.find((c) => c.id === bulkCategory)?.name,
+            brand: brands.find((b) => b.id === bulkBrand)?.name,
+            lifeAdd: lifeCategories.find((l) => l.id === bulkLifeTag)?.name,
+          },
+        ),
+      };
       const res = await offlineFetch('/api/finance/transactions/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -319,6 +370,7 @@ export default function TransactionsPage() {
           }
         }
         setBulkResult(`Updated ${selected.size} transaction${selected.size !== 1 ? 's' : ''}`);
+        if (!isQueuedResponse(res)) setBulkUndoVersion((v) => v + 1);
         setSelected(new Set());
         setBulkCategory('');
         setBulkBrand('');
@@ -427,9 +479,20 @@ export default function TransactionsPage() {
               searchDebounceRef.current = setTimeout(() => { setFilterSearch(val); setPage(0); }, 300);
             }}
             placeholder="Search description, vendor, notes, amount…"
+            aria-label="Search transactions"
             className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-700"
           />
         </div>
+        {filterSearch.trim() && (
+          <button
+            type="button"
+            onClick={() => openSimilar({ kind: 'search', text: filterSearch })}
+            className="min-h-11 px-3 inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 text-sm text-sky-800 hover:bg-sky-100 transition"
+          >
+            <ScanSearch className="w-4 h-4" aria-hidden="true" />
+            Find similar and edit in bulk
+          </button>
+        )}
 
         {/* Quick filters row */}
         <div className="flex items-center gap-2 flex-wrap">
@@ -524,6 +587,23 @@ export default function TransactionsPage() {
         )}
       </div>
 
+      {similar && (
+        <FindSimilarPanel
+          key={similar.key}
+          seed={similar.seed}
+          categories={categories}
+          brands={brands}
+          lifeCategories={lifeCategories}
+          accounts={accounts}
+          homeCurrency={homeCurrency}
+          onClose={closeSimilar}
+          onChanged={() => {
+            fetchTransactions();
+            setTransfersVersion((v) => v + 1);
+          }}
+        />
+      )}
+
       {/* Possible transfers between the person's own accounts */}
       <PossibleTransfersPanel
         refreshKey={transfersVersion}
@@ -590,6 +670,10 @@ export default function TransactionsPage() {
           </div>
           {bulkResult && <span className="text-xs text-sky-700 font-medium">{bulkResult}</span>}
         </div>
+      )}
+
+      {bulkUndoVersion > 0 && !similar && (
+        <BulkEditUndo refreshKey={bulkUndoVersion} showNotMigrated={false} onUndone={fetchTransactions} />
       )}
 
       {learnPrompt && (
@@ -689,6 +773,14 @@ export default function TransactionsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <TxAmount tx={tx} homeCurrency={homeCurrency} className="text-sm font-semibold" />
+                        <button
+                          onClick={() => openSimilar({ kind: 'transaction', tx })}
+                          className="min-h-11 min-w-11 flex items-center justify-center hover:bg-sky-50 rounded-lg"
+                          title="Find similar"
+                          aria-label={`Find transactions similar to ${tx.description || tx.vendor || 'this one'}`}
+                        >
+                          <ScanSearch className="w-4 h-4 text-sky-700" aria-hidden="true" />
+                        </button>
                         <button
                           onClick={() => startEdit(tx)}
                           className="min-h-11 min-w-11 flex items-center justify-center hover:bg-gray-100 rounded-lg"
@@ -867,6 +959,9 @@ export default function TransactionsPage() {
                         <div className="flex items-center justify-center gap-0.5">
                           <button onClick={() => startEdit(tx)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 rounded-lg transition" title="Edit" aria-label={`Edit ${tx.description || tx.vendor || 'transaction'}`}>
                             <Edit3 className="w-4 h-4" aria-hidden="true" />
+                          </button>
+                          <button onClick={() => openSimilar({ kind: 'transaction', tx })} className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:bg-sky-50 hover:text-sky-700 rounded-lg transition" title="Find similar" aria-label={`Find transactions similar to ${tx.description || tx.vendor || 'this one'}`}>
+                            <ScanSearch className="w-4 h-4" aria-hidden="true" />
                           </button>
                           <button onClick={() => setLinkingId(tx.id)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:bg-sky-50 hover:text-sky-700 rounded-lg transition" title="Link activities" aria-label={`Link activities to ${tx.description || tx.vendor || 'transaction'}`}>
                             <Link2 className="w-4 h-4" aria-hidden="true" />

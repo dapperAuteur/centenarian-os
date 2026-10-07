@@ -341,6 +341,23 @@ export function planUndo(rows: readonly OperationRow[], current: ReadonlyMap<str
   return plan;
 }
 
+/** The request fields (all but ids, operation and remember_skip) that ask for `spec`. */
+export function bodyFromSpec(spec: BulkEditSpec): Record<string, unknown> {
+  const updates: Record<string, unknown> = {};
+  for (const field of ['category_id', 'brand_id', 'vendor', 'type'] as const) {
+    if (spec[field] !== undefined) updates[field] = spec[field];
+  }
+  const body: Record<string, unknown> = {};
+  if (Object.keys(updates).length > 0) body.updates = updates;
+  if (spec.life_add) body.life_category_id = spec.life_add;
+  if (spec.life_remove) body.remove_life_category_id = spec.life_remove;
+  if (spec.tags_add.length > 0) body.tags_add = spec.tags_add;
+  if (spec.tags_remove.length > 0) body.tags_remove = spec.tags_remove;
+  if (spec.unlink_transfers) body.transfer = 'unlink';
+  if (spec.remember) body.remember = true;
+  return body;
+}
+
 // ─── Words for people ────────────────────────────────────────────────────────
 
 /** Names the page knows, for describing an edit. */

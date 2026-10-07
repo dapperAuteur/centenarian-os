@@ -15,6 +15,7 @@ import assert from 'node:assert/strict';
 import {
   KEEP_OPERATIONS,
   UNDO_CHUNK,
+  bodyFromSpec,
   describeEdit,
   nextTags,
   parseBulkBody,
@@ -178,6 +179,23 @@ test('planRowChange writes only fields that change, and never the type of a tran
 
   const tags = planRowChange(snapshot({ tags: ['Lunch'] }), spec({ tags_add: ['lunch'] }));
   assert.deepEqual(tags.values, {});
+});
+
+test('bodyFromSpec is what parseBulkBody reads back', () => {
+  const original = spec({
+    category_id: null,
+    brand_id: BRAND,
+    vendor: 'Chipotle',
+    type: 'income',
+    life_add: HEALTH,
+    tags_add: ['lunch'],
+    tags_remove: ['old'],
+    unlink_transfers: true,
+    remember: true,
+  });
+  const parsed = parseBulkBody({ ids: ['a'], ...bodyFromSpec(original) });
+  assert.ok(parsed.ok);
+  assert.deepEqual(parsed.spec, original);
 });
 
 test('describeEdit names each change', () => {
