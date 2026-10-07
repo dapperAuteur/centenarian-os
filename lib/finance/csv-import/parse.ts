@@ -484,10 +484,12 @@ const GENERIC_ALIASES: readonly (readonly [ColumnRole, readonly string[]])[] = [
   ['debit', ['debit']],
   ['credit', ['credit']],
   ['description', ['description', 'transaction description', 'payee', 'name', 'memo']],
-  ['merchant', ['merchant', 'vendor']],
+  // "Payee" is also a description alias above; when a file has both Payee and
+  // Description, Description wins there and Payee becomes the vendor here.
+  ['merchant', ['merchant', 'vendor', 'payee']],
   ['type', ['type']],
   ['category', ['category']],
-  ['bankId', ['transaction id', 'reference']],
+  ['bankId', ['transaction id', 'reference', 'txnid', 'txn id']],
   ['status', ['status']],
   ['postDate', ['post date', 'posting date', 'posted date', 'clearing date']],
   ['memo', ['memo']],
@@ -870,7 +872,9 @@ export function applyMapping(
     if (!date) issues.push(dateIssue(dateText, dateOrder));
 
     const detail = cleanDetail(cell('detail'));
-    const baseDescription = cell('description') || cell('memo') || detail;
+    // A row with an empty description still has a name when the file has a
+    // payee/merchant column (e.g. a spreadsheet with both Payee and Description).
+    const baseDescription = cell('description') || cell('merchant') || cell('memo') || detail;
     const description =
       detail && baseDescription !== detail && !baseDescription.toLowerCase().includes(detail.toLowerCase())
         ? `${baseDescription} - ${detail}`
