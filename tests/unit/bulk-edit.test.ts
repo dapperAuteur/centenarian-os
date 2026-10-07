@@ -411,6 +411,30 @@ test('life categories are added and removed, and undo reverses both', async () =
   assert.deepEqual(db.rows('entity_life_categories').map((r) => r.entity_id), [tagged.id]);
 });
 
+test('one category tree: a category change brings its life area, undo takes it back, and a hand tag stays', async () => {
+  const db = freshDb();
+  // Dining sits under the Health life area (migration 223).
+  db.rows('budget_categories').find((row) => row.id === DINING)!.life_category_id = HEALTH;
+  const row = tx(db);
+  const autoTags = () => db.rows('entity_life_categories').filter((tag) => tag.entity_id === row.id);
+
+  const edit = await applyBulkEdit(db, ME, { ids: [row.id], updates: { category_id: DINING }, operation: {} });
+  assert.equal(edit.status, 200, JSON.stringify(edit.body));
+  assert.deepEqual(autoTags().map((tag) => [tag.life_category_id, tag.auto_source]), [[HEALTH, 'budget_category']]);
+
+  // Undo puts the category back, and the automatic life area goes with it.
+  await undoAll(db, edit.body.operation_id);
+  assert.equal(get(db, row.id).category_id, null);
+  assert.deepEqual(autoTags(), []);
+
+  // Category again, then Health added by hand: the tag becomes the person's own and stays on a later change.
+  await applyBulkEdit(db, ME, { ids: [row.id], updates: { category_id: DINING }, operation: {} });
+  await applyBulkEdit(db, ME, { ids: [row.id], life_category_id: HEALTH, operation: {} });
+  assert.deepEqual(autoTags().map((tag) => [tag.life_category_id, tag.auto_source ?? null]), [[HEALTH, null]]);
+  await applyBulkEdit(db, ME, { ids: [row.id], updates: { category_id: GROCERIES }, operation: {} });
+  assert.deepEqual(autoTags().map((tag) => tag.life_category_id), [HEALTH]);
+});
+
 test('one operation across batches is undone in chunks, every row once', async () => {
   const db = freshDb();
   const rows = Array.from({ length: UNDO_CHUNK + 50 }, () => tx(db));
