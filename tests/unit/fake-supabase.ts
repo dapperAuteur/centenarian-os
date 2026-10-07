@@ -24,6 +24,8 @@ export interface FakeError {
 export interface FakeResult {
   data: unknown;
   error: FakeError | null;
+  /** select(columns, { count: 'exact' }): every matching row, before range/limit. */
+  count?: number | null;
 }
 
 export interface FakeCall {
@@ -153,9 +155,15 @@ export class FakeQuery implements PromiseLike<FakeResult> {
     this.table = table;
   }
 
-  select(columns?: string): this {
+  /** Set by select(columns, { count: 'exact', head? }). */
+  counting = false;
+  headOnly = false;
+
+  select(columns?: string, options: { count?: string; head?: boolean } = {}): this {
     if (this.op !== 'select') this.returning = true;
     this.columns = columns;
+    this.counting = options.count === 'exact';
+    this.headOnly = options.head === true;
     return this;
   }
 
@@ -411,11 +419,14 @@ export class FakeQuery implements PromiseLike<FakeResult> {
         return x < y ? -direction : x > y ? direction : 0;
       });
     }
+    const total = found.length;
     const start = this.from ?? 0;
     const asked = this.to !== null ? this.to - start + 1 : this.max ?? this.db.maxRows;
     found = found.slice(start, start + Math.min(asked, this.db.maxRows));
     this.db.calls.push({ table: this.table, op: 'select', rows: found.length, failed: false });
     const data = found.map((row) => this.project(row));
-    return { data: this.one ? data[0] ?? null : data, error: null };
+    const count = this.counting ? total : null;
+    if (this.headOnly) return { data: null, error: null, count };
+    return { data: this.one ? data[0] ?? null : data, error: null, count };
   }
 }

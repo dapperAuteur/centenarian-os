@@ -71,9 +71,10 @@ CREATE TABLE IF NOT EXISTS public.import_drafts (
   skipped       JSONB NOT NULL DEFAULT '[]'::jsonb,
   -- The person's choices by spreadsheet row number (the review step's Decisions).
   decisions     JSONB NOT NULL DEFAULT '{}'::jsonb,
-  -- { recordMissing, confirmUnreconciled, statuses } where statuses is each row's status when saved.
+  -- Choices for the whole review: { recordMissing, confirmUnreconciled }.
   options       JSONB NOT NULL DEFAULT '{}'::jsonb,
-  -- What the review step shows about the file: headers, warnings, row count.
+  -- { file, statuses }: what the review step shows about the file (headers, warnings, row count),
+  -- and each row's status when saved, so resuming can say how many rows changed since.
   file_summary  JSONB,
   -- PDF only: the statement summary (issuer, period, totals, APRs, promotions). Never the file.
   statement     JSONB,
