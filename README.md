@@ -6,7 +6,7 @@
 > [`/dashboard/weekly-review`](./app/dashboard/weekly-review)) can surface cross-domain patterns no
 > single-vertical tracker can see. That co-location is the product, not an accident of scope.
 
-> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online); a split is planned, not done), offline-first via service-worker + IndexedDB queue, **220 migrations** to date.
+> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online); a split is planned, not done), offline-first via service-worker + IndexedDB queue, **221 migrations** to date.
 
 **Actively decomposing.** Modules that a sibling WitUS app already owns are being removed under
 the ecosystem's "one app, one job" rule (see [CLAUDE.md](./CLAUDE.md)) — Media → Stream.WitUS,
@@ -31,7 +31,7 @@ flowchart LR
 
   CentOS[centenarian-os<br/>Next.js 15 · Vercel<br/>14 modules]
   Contractor[contractor-os<br/>Work.WitUS]
-  DB[(Supabase Postgres<br/>220 migrations)]:::shared
+  DB[(Supabase Postgres<br/>221 migrations)]:::shared
 
   CentOS -->|service-role + publishable| DB
   Contractor -->|service-role + publishable| DB
@@ -41,7 +41,7 @@ flowchart LR
 For dev-audience readers:
 
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** — full module map, the shared-DB boundary, how cross-app data is moving to signed events ahead of a planned split, offline-sync layer, repo layout, and stack table.
-- **[MIGRATIONS.md](./MIGRATIONS.md)** — 220 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
+- **[MIGRATIONS.md](./MIGRATIONS.md)** — 221 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
 - **[CLAUDE.md](./CLAUDE.md)** — AI-collaborator instructions doubling as the project conventions doc (style, a11y, the shared-database rule, branch workflow).
 - **[STYLE_GUIDE.md](./STYLE_GUIDE.md)** — git workflow, branch naming, Conventional Commits, PR rules. Every change starts on a new branch off `main`; `main` is never pushed to directly.
 - **[docs/CentenarianAcademy/](./docs/CentenarianAcademy/)** — course-authoring standards: `CourseAuthoringGuide.md` (craft), `CourseProductionPlaybook.md` (process), `CitationIntegrityGuide.md` (verify every source, never ship a fake citation), and `CourseCreationWithAI.md` (hand to your AI). Per-course recipes: `CourseAuthoringGuide NASM CPT/CES/CNC.md` and `CourseAuthoringGuide BVC.md` (Better Vice Club: audio-first, four-lens episodes; episode-per-module; rotating quizzes + FlashLearn recall loop + season-wide glossary). Courses cite only verified, peer-reviewed sources and ship a teacher evidence ledger.
@@ -109,7 +109,7 @@ No free plan. All users must subscribe to access paid modules.
 |--------|-------------|--------|
 | **Planner** | Roadmap, Goals, Milestones, Tasks hierarchy with day/week/month views; one-field task capture into an auto-created Inbox (works offline), searchable goal picker, Inbox filter; Google Calendar sync (read-only, one or more Google accounts; events on the calendars you choose become planner tasks, daily plus Sync now; `#expense` / `#income` titles record into the finance accounts ticked per Google account, picked with `@1234` or `@nickname`); calendar event builder (build `#expense` / `#trip` / `#meal` titles, see what the parser reads, open Google's prefilled event form), example `.ics` and printable cheat sheet (English and Spanish) | Paid |
 | **Fuel** | Nutrition tracking with NCV framework, USDA/Open Food Facts APIs, auto inventory | Paid |
-| **Engine** | Pomodoro focus sessions, doodle canvas, daily debrief, AI weekly reviews | Paid |
+| **Engine** | Pomodoro focus sessions, doodle canvas, daily debrief, pain log (a new entry each time pain is noticed, editable time, works offline; history of every entry grouped by day with date, intensity, location and notes filters; the day's highest feeds correlations and AI reviews), AI weekly reviews | Paid |
 | **Health Metrics** | RHR, steps, sleep, body composition; Garmin/Oura/WHOOP sync; CSV import | Paid |
 | **Workouts & Exercises** | Exercise library with categories; workout templates; Nomad Longevity OS | Paid |
 | **Financial Dashboard** | Accounts, transactions, budgets, invoices, bank statement import from CSV or PDF (PDFs read in-process, never sent to a third party; Best Buy / Citibank statements parsed with summary, APRs, promotional balances and a reconciliation check; Capital One, Discover and PayPal Credit website activity printouts; other issuers by a generic fallback; CSV layouts verified against Citi, PayPal, Arizona Federal CU, Navy Federal and Best Buy downloads; also from the Statements box on Settings; card and loan statements in card terms, with payments linked as transfers to the account they were paid from and refunds counted as negative spending; one status color scale with icons) with duplicate detection, matching and undo, CSV export, learned vendor categories ("Always categorize this vendor as...?"), transfers between your own accounts (card and loan payments included) tracked as transfers instead of spending and income, a Budgets page with budgets by month, rollover, and suggested budgets from your own history (average or median of the last 3, 6 or 12 months), multi-currency accounts (cash in any currency for travel, a home currency for totals, Exchange money as a transfer with the fee as its own expense, daily rates from Frankfurter/ECB with ExchangeRate-API as fallback, your own rates always win), a Debt payoff page (interest paid per card/loan by month and year, payoff calculator, debt-free plan with avalanche (default, deferred-interest promo deadlines protected) / snowball / promo-first / custom order, card and loan due dates as planner tasks under Inbox › Bills, a Due soon banner and optional email reminders), savings goals as envelopes inside a real account (allocate, move, and split deposits across goals; monthly amount needed; whether each goal fits your monthly surplus; "Save for this" from a planned trip or equipment item), cash on hand (a dashboard card per cash account with balance and last count, "Count my cash" by total or bills and coins that records the difference as one adjustment with history and undo, one-tap "Paid cash" that works offline, Withdraw into cash, and ATM or branch withdrawals on imported bank statements recorded into a cash account instead of as spending), a Retirement page (401(k), 403(b), 457(b), IRAs, HSA, brokerage, pension, annuity accounts with hand-entered balance snapshots, contribution and employer-match rules; a planner projecting to retirement age in today's dollars with conservative / middle / optimistic presets as editable assumptions, a target from yearly spending × years or a withdrawal-rate rule of thumb, a hand-entered Social Security offset, the gap and the monthly amount needed; a net worth estimate; all labeled estimates, not advice), and an Insurance page (term / whole / universal life policies, coverage and cash value totals, premium payments matched from transactions with paid to date and next due, optional premium due-date tasks under Inbox › Bills, term-end warnings) | Paid |
@@ -214,6 +214,23 @@ server-side only and cached in `exchange_rates`. Apply `supabase/migrations/210_
 a Vercel cron (`/api/cron/fx-rates`, daily at 17:00 UTC, `CRON_SECRET` Bearer guard) refreshes the
 latest rates for every currency in use and fills missing home-currency amounts. Users set their
 home currency and their own rates on Settings → Currencies.
+
+### Pain log: apply migration 222
+
+The pain form (`/dashboard/engine/pain`) adds a new entry on every save, so pain can be logged as
+often as it is noticed; the history page (`/dashboard/engine/history/pain`) lists every entry,
+newest first, grouped by day. Entries live in `pain_entries` (migration 222, apply by hand).
+`daily_logs.pain_*` stays as each day's summary, recomputed after every add, edit or delete by
+`lib/pain/server.ts` `recomputeDaySummary`: the highest intensity, every location, sensation and
+activity in the order first logged, and every entry's notes oldest first separated by a blank
+line. The correlation engine, `daily_aggregates`, AI weekly review and Coaching Gems keep reading
+`daily_logs` unchanged.
+
+Migration 222 copies each existing `daily_logs` day with pain data into one entry, once
+(`source = 'daily_log'`, skipped when that day already has an entry). `daily_logs` never stored a
+time of day, so those entries get 12:00 UTC and the app shows them as "Time not recorded". Until
+the migration is applied, the form keeps the old one-entry-per-day behavior and says "Run
+migration 222 first".
 
 ### Optional: Google Calendar (one-way sync)
 
@@ -459,7 +476,7 @@ supabase db push
 # Run migrations in order from supabase/migrations/
 ```
 
-There are 220 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the Work.WitUS (contractor-os) app, so migrations are additive-only. Read [`CLAUDE.md`](./CLAUDE.md) §"Database" before adding any.
+There are 221 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the Work.WitUS (contractor-os) app, so migrations are additive-only. Read [`CLAUDE.md`](./CLAUDE.md) §"Database" before adding any.
 
 ### Run Development Server
 
@@ -475,7 +492,7 @@ Open [http://localhost:3000](http://localhost:3000)
 npm run test:unit
 ```
 
-Runs the pure-function tests with Node's built-in test runner (`node --test --experimental-strip-types`, Node 22.6+). No database, network or extra dependencies. Covers merchant-name matching and learned vendor categories (`tests/transaction-matching.test.ts`), the stored-secret encryption helper (`tests/unit/crypto-tokens.test.ts`), the Google Calendar client and token refresh (`tests/unit/google-calendar-client.test.ts`, with a fake `fetch`), and the Google Calendar sync helpers: event to task fields, time zones, the sync decision and the 410 fallback (`tests/unit/google-sync.test.ts`), and the RideWitUS integration: signing, identity lookup, vendor scoping, the envelope.balance emitter, outbox delivery and resync (`tests/unit/witus-signing.test.ts`, `ridewitus-vendors.test.ts`, `ridewitus-envelope.test.ts`, with a fake `fetch`).
+Runs the pure-function tests with Node's built-in test runner (`node --test --experimental-strip-types`, Node 22.6+). No database, network or extra dependencies. Covers merchant-name matching and learned vendor categories (`tests/transaction-matching.test.ts`), the stored-secret encryption helper (`tests/unit/crypto-tokens.test.ts`), the Google Calendar client and token refresh (`tests/unit/google-calendar-client.test.ts`, with a fake `fetch`), and the Google Calendar sync helpers: event to task fields, time zones, the sync decision and the 410 fallback (`tests/unit/google-sync.test.ts`), the RideWitUS integration: signing, identity lookup, vendor scoping, the envelope.balance emitter, outbox delivery and resync (`tests/unit/witus-signing.test.ts`, `ridewitus-vendors.test.ts`, `ridewitus-envelope.test.ts`, with a fake `fetch`), and pain entries: several a day, the daily summary rules, the migration 222 backfill, ownership and the history filters (`tests/unit/pain-entries.test.ts`, with an in-memory database fake).
 
 ## Project Structure
 

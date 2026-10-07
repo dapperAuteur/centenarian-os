@@ -26,7 +26,7 @@ This course covers every feature in the Engine — from running your first focus
 | 03 | Pomodoro Mode | Work/break cycles, customizing intervals, auto-start |
 | 04 | Session Templates | Quick-start templates for recurring session types |
 | 05 | The Daily Debrief | Energy rating, wins, challenges, financial snapshot |
-| 06 | Pain & Body Check | Logging pain intensity, locations, sensations, and context |
+| 06 | Pain & Body Check | Logging pain as often as you notice it (intensity, locations, sensations, context) and reviewing every entry by day |
 | 07 | Session History | Viewing, editing, duplicating, and deleting past sessions |
 | 08 | Engine Analytics | Four tabs: Overview, Trends, Pomodoro, Performance |
 | 09 | Focus Goals | Daily and weekly minute targets, goal progress, settings |

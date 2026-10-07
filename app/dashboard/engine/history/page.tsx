@@ -104,7 +104,7 @@ export default function EngineHistoryHub() {
       href: '/dashboard/engine/history/pain',
       stats: [
         { label: 'Days > 3 (month)', value: String(stats.painDaysAbove3) },
-        { label: 'Avg intensity', value: stats.avgPainIntensity != null ? `${stats.avgPainIntensity}/10` : '—' },
+        { label: 'Avg daily high', value: stats.avgPainIntensity != null ? `${stats.avgPainIntensity}/10` : '—' },
       ],
       color: 'text-red-600',
       bg: 'bg-red-50 border-red-200',
