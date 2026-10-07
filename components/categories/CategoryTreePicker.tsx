@@ -10,11 +10,15 @@
 //                  budget meaning).
 //   mode 'any'     either (bulk edit: a category, or just a life-area tag).
 //
-// Keyboard: the button opens a panel whose search box is an ARIA 1.2 combobox; Up/Down/Home/End
-// move through the options, Enter picks, Escape closes and returns focus to the button. Every
-// option and control is at least 44px tall. "Add “…”" creates a category from the search text.
+// Keyboard: the button opens a panel whose search box is an ARIA 1.2 combobox; Up/Down move
+// through the options (Home/End stay with the text box), Enter picks, Escape closes and returns
+// focus to the button. Every option and control is at least 44px tall. "Add “…”" creates a
+// category from the search text.
+//
+// The panel is position: fixed, placed from the button's rectangle (below it, or above when
+// there is more room there), so a table or card with overflow: hidden never clips it.
 
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Check, ChevronDown, Loader2, Plus, Search, X } from 'lucide-react';
 import {
   hasExactName,
@@ -110,6 +114,7 @@ export default function CategoryTreePicker({
   const [creating, setCreating] = useState<{ name: string; lifeAreaId: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [panelStyle, setPanelStyle] = useState<CSSProperties | null>(null);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -187,6 +192,39 @@ export default function CategoryTreePicker({
     };
   }, [open]);
 
+  // Where the fixed panel goes: under the button, or above it when the space below is short.
+  const placePanel = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    const gutter = 16;
+    const viewportWidth = window.innerWidth;
+    const width = Math.min(Math.max(rect.width, viewportWidth < 640 ? 256 : 288), viewportWidth - gutter * 2);
+    let left = align === 'right' ? rect.right - width : rect.left;
+    left = Math.max(gutter, Math.min(left, viewportWidth - width - gutter));
+    const below = window.innerHeight - rect.bottom - gutter;
+    const above = rect.top - gutter;
+    const openUp = below < 280 && above > below;
+    const maxHeight = Math.max(Math.min(openUp ? above : below, 448), 160);
+    setPanelStyle(
+      openUp
+        ? { position: 'fixed', left, width, bottom: window.innerHeight - rect.top + 4, maxHeight }
+        : { position: 'fixed', left, width, top: rect.bottom + 4, maxHeight },
+    );
+  }, [align]);
+
+  // Follow the button while the page scrolls or resizes.
+  useEffect(() => {
+    if (!open) return;
+    placePanel();
+    window.addEventListener('resize', placePanel);
+    window.addEventListener('scroll', placePanel, true);
+    return () => {
+      window.removeEventListener('resize', placePanel);
+      window.removeEventListener('scroll', placePanel, true);
+    };
+  }, [open, placePanel]);
+
   function openPanel() {
     if (disabled) return;
     setQuery('');
@@ -258,14 +296,6 @@ export default function CategoryTreePicker({
       case 'ArrowUp':
         event.preventDefault();
         setActive((i) => Math.max(Math.min(i, options.length - 1) - 1, 0));
-        break;
-      case 'Home':
-        event.preventDefault();
-        setActive(0);
-        break;
-      case 'End':
-        event.preventDefault();
-        setActive(options.length - 1);
         break;
       case 'Enter':
         event.preventDefault();
@@ -376,9 +406,8 @@ export default function CategoryTreePicker({
 
       {open && (
         <div
-          className={`absolute z-50 mt-1 w-full min-w-[16rem] sm:min-w-[18rem] max-w-[calc(100vw-2rem)] bg-white border border-gray-200 rounded-xl shadow-lg ${
-            align === 'right' ? 'right-0' : 'left-0'
-          }`}
+          style={panelStyle ?? { position: 'fixed', visibility: 'hidden' }}
+          className="z-50 flex flex-col overflow-hidden bg-white border border-gray-200 rounded-xl shadow-lg"
         >
           {creating ? (
             // Not a <form>: this picker often sits inside the caller's form, and forms can't nest.
@@ -468,7 +497,7 @@ export default function CategoryTreePicker({
               <p className="sr-only" role="status" aria-live="polite">
                 {resultCount === 1 ? '1 result' : `${resultCount} results`}
               </p>
-              <div id={listboxId} role="listbox" aria-label={label} className="max-h-[50vh] sm:max-h-80 overflow-y-auto py-1">
+              <div id={listboxId} role="listbox" aria-label={label} className="flex-1 min-h-0 overflow-y-auto py-1">
                 {options.length === 0 && <p className="px-3 py-3 text-sm text-gray-500">Nothing matches.</p>}
                 {none && renderOption(none, 0)}
                 {sections.map((section) => {

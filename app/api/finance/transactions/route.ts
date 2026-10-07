@@ -175,6 +175,8 @@ export async function PATCH(request: NextRequest) {
     if (updates[key] !== undefined) payload[key] = updates[key];
   }
   if (payload.amount) payload.amount = Math.abs(parseFloat(String(payload.amount)));
+  // "No category" (and no account / brand) arrives as ''; the uuid columns need null.
+  for (const key of ['category_id', 'account_id', 'brand_id']) if (payload[key] === '') payload[key] = null;
 
   // The home-currency amount follows the amount, the date and the account.
   if (payload.amount !== undefined || payload.transaction_date !== undefined || payload.account_id !== undefined) {
