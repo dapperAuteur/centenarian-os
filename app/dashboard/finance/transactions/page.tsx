@@ -13,6 +13,8 @@ import { accountLabel } from '@/lib/finance/transfers/pairing';
 import { offlineFetch, isQueuedResponse } from '@/lib/offline/offline-fetch';
 import { vendorKey } from '@/lib/finance/transaction-matching';
 import TxAmount from '@/components/finance/TxAmount';
+import ReconciledBadge from '@/components/finance/ReconciledBadge';
+import { reconciledAfterChange, reconciledWarning, type ReconciledPeriodView } from '@/lib/finance/reconciliation/client';
 
 interface Category {
   id: string;
@@ -58,6 +60,8 @@ interface Transaction {
   // doesn't have the transfer columns yet.
   transfer_group_id?: string | null;
   transfer_partner?: TransferPartnerView | null;
+  // Dated inside a reconciled statement period (migration 221); null or absent otherwise.
+  reconciled_period?: ReconciledPeriodView | null;
 }
 
 const SOURCE_MODULE_BADGE: Record<string, { label: string; className: string }> = {
@@ -135,6 +139,8 @@ export default function TransactionsPage() {
   const [transfersVersion, setTransfersVersion] = useState(0);
   // Something the server wants said about the list (the import filter can't be applied, say).
   const [listNotice, setListNotice] = useState<string | null>(null);
+  // A save or delete landed inside a reconciled period the list didn't know about.
+  const [reconcileNotice, setReconcileNotice] = useState<string | null>(null);
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
@@ -190,9 +196,12 @@ export default function TransactionsPage() {
       setPairDelete({ id: tx.id, partner: tx.transfer_partner });
       return;
     }
-    if (!confirm('Delete this transaction?')) return;
+    setReconcileNotice(null);
+    if (!confirm(tx.reconciled_period ? `${reconciledWarning(tx.reconciled_period)}\n\nDelete it anyway?` : 'Delete this transaction?')) return;
     const res = await offlineFetch(`/api/finance/transactions?id=${tx.id}`, { method: 'DELETE' });
     if (res.ok) {
+      const done = await res.json().catch(() => null);
+      if (done?.reconciled_period && !tx.reconciled_period) setReconcileNotice(reconciledAfterChange(done.reconciled_period));
       fetchTransactions();
       setTransfersVersion((v) => v + 1);
       return;
@@ -206,6 +215,8 @@ export default function TransactionsPage() {
   const handleEditSave = async (id: string) => {
     const original = transactions.find((tx) => tx.id === id);
     setActionError(null);
+    setReconcileNotice(null);
+    if (original?.reconciled_period && !confirm(`${reconciledWarning(original.reconciled_period)}\n\nSave the change anyway?`)) return;
     const res = await offlineFetch('/api/finance/transactions', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -217,6 +228,8 @@ export default function TransactionsPage() {
       setActionError(typeof data?.error === 'string' ? data.error : 'The change could not be saved. Please try again.');
       return;
     }
+    const saved = isQueuedResponse(res) ? null : await res.clone().json().catch(() => null);
+    if (saved?.reconciled_period && !original?.reconciled_period) setReconcileNotice(reconciledAfterChange(saved.reconciled_period));
     // The category was set or changed: offer to remember it for this vendor.
     const categoryId = editForm.category_id || '';
     const vendor = (editForm.vendor || '').trim();
@@ -545,6 +558,12 @@ export default function TransactionsPage() {
         </p>
       )}
 
+      {reconcileNotice && (
+        <p role="status" className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          {reconcileNotice}
+        </p>
+      )}
+
       {/* Bulk action bar */}
       {selected.size > 0 && (
         <div className="bg-sky-50 border border-sky-200 rounded-xl px-4 py-3 flex items-center gap-3 flex-wrap">
@@ -686,6 +705,7 @@ export default function TransactionsPage() {
                         {tx.transfer_group_id && (
                           <TransferBadge partner={tx.transfer_partner} className="mt-1" />
                         )}
+                        <ReconciledBadge period={tx.reconciled_period} className="mt-1" />
                       </div>
                       <div className="flex items-center gap-2">
                         <TxAmount tx={tx} homeCurrency={homeCurrency} className="text-sm font-semibold" />
@@ -787,6 +807,7 @@ export default function TransactionsPage() {
                             </span>
                           )}
                           {tx.transfer_group_id && <TransferBadge partner={tx.transfer_partner} />}
+                          <ReconciledBadge period={tx.reconciled_period} />
                         </div>
                       )}
                     </td>

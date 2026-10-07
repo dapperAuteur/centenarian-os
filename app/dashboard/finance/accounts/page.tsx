@@ -4,12 +4,15 @@
 // Financial accounts management: add, edit, deactivate bank/card/loan/cash accounts.
 // Each account has a currency (migration 210). Balances show in the account's currency; accounts
 // in another currency also show the home-currency value with the rate's date and source.
+// Starting balance: an amount and, optionally, the day it is as of (migration 221); the balance
+// then counts only transactions after that day. Each non-cash account links to its Reconcile page
+// and says how recently it was reconciled.
 
 import { useEffect, useState, useCallback } from 'react';
 import {
   ArrowLeft, Plus, Pencil, Trash2, Loader2, CreditCard,
   Building2, Check, X, ArrowRightLeft, Percent,
-  ChevronDown, ChevronUp, Upload, Banknote,
+  ChevronDown, ChevronUp, Upload, Banknote, Scale,
 } from 'lucide-react';
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -21,6 +24,9 @@ import { currencyOptions, fetchCurrencies, rateAsOf } from '@/lib/finance/fx/cli
 import type { CurrenciesResponse, RateView } from '@/lib/finance/fx/client';
 import Modal from '@/components/ui/Modal';
 import CashAccountActions from '@/components/finance/cash/CashAccountActions';
+import { formatDay, reconcileHref } from '@/lib/finance/reconciliation/client';
+import { auditState } from '@/lib/finance/reconciliation/logic';
+import { todayLocal } from '@/lib/dates/local';
 
 interface Account {
   id: string;
@@ -31,6 +37,10 @@ interface Account {
   interest_rate: number | null;
   credit_limit: number | null;
   opening_balance: number;
+  // Migration 221: the day the opening balance is as of (null = every transaction counts).
+  opening_balance_date?: string | null;
+  // Latest reconciliation, or null (none yet, or before migration 221).
+  reconciliation?: { reconciled_through: string | null; latest: { statement_date: string; status: string; difference: number } | null } | null;
   monthly_fee: number | null;
   due_date: number | null;
   statement_date: number | null;
@@ -75,11 +85,43 @@ const TYPE_COLORS: Record<string, string> = {
 
 const emptyForm = {
   name: '', account_type: 'checking', institution_name: '', last_four: '',
-  interest_rate: '', credit_limit: '', opening_balance: '0',
+  interest_rate: '', credit_limit: '', opening_balance: '0', opening_balance_date: '',
   monthly_fee: '', due_date: '', statement_date: '', notes: '',
   // '' = the user's home currency
   currency: '',
 };
+
+/** "Reconcile" and how recently the account was reconciled (amber when never or over 30 days ago). */
+function ReconcileLine({
+  accountId,
+  accountName,
+  lastFour,
+  reconciliation,
+}: {
+  accountId: string;
+  accountName: string;
+  lastFour: string | null;
+  reconciliation: Account['reconciliation'];
+}) {
+  const through = reconciliation?.reconciled_through ?? null;
+  const audit = auditState(through, todayLocal());
+  return (
+    <div className="flex flex-wrap items-center gap-x-3">
+      <Link
+        href={reconcileHref(accountId)}
+        className="inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-sky-700 underline underline-offset-2 hover:text-sky-900"
+      >
+        <Scale className="w-4 h-4" aria-hidden="true" />
+        Reconcile
+        <span className="sr-only"> {accountName}{lastFour ? ` ending in ${lastFour}` : ''}</span>
+      </Link>
+      <span className={`text-xs ${audit.state === 'fresh' ? 'text-gray-600' : 'text-amber-800'}`}>
+        {through ? `Reconciled through ${formatDay(through)}` : 'Not reconciled yet'}
+        {reconciliation?.latest?.status === 'open' ? ' · a statement is left open' : ''}
+      </span>
+    </div>
+  );
+}
 
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -125,6 +167,8 @@ export default function AccountsPage() {
         institution_name: form.institution_name || null,
         last_four: form.last_four || null,
         opening_balance: Number(form.opening_balance) || 0,
+        // Only sent when set, so adding an account keeps working before migration 221.
+        ...(form.opening_balance_date ? { opening_balance_date: form.opening_balance_date } : {}),
         interest_rate: form.interest_rate ? Number(form.interest_rate) : null,
         credit_limit: form.credit_limit ? Number(form.credit_limit) : null,
         monthly_fee: form.monthly_fee ? Number(form.monthly_fee) : null,
@@ -162,6 +206,8 @@ export default function AccountsPage() {
     // Currency is sent only when it changed: it is locked once the account has transactions.
     const original = accounts.find((a) => a.id === id);
     if (!body.currency || body.currency === (original?.currency ?? 'USD')) delete body.currency;
+    // The starting balance date too, so other edits keep working before migration 221.
+    if ((body.opening_balance_date ?? null) === (original?.opening_balance_date ?? null)) delete body.opening_balance_date;
     setSaveError(null);
     const res = await offlineFetch(`/api/finance/accounts/${id}`, {
       method: 'PATCH',
@@ -317,9 +363,17 @@ export default function AccountsPage() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="text-xs text-gray-500">Opening Balance ({editForm.currency || 'USD'})</label>
-                      <input type="number" step="0.01" value={editForm.opening_balance ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, opening_balance: e.target.value }))}
+                      <label htmlFor={`edit-opening-${acct.id}`} className="text-xs text-gray-500">
+                        Starting balance ({editForm.currency || 'USD'}){editForm.account_type === 'credit_card' || editForm.account_type === 'loan' ? ', owed' : ''}
+                      </label>
+                      <input id={`edit-opening-${acct.id}`} type="number" step="0.01" value={editForm.opening_balance ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, opening_balance: e.target.value }))}
                         className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+                    </div>
+                    <div>
+                      <label htmlFor={`edit-opening-date-${acct.id}`} className="text-xs text-gray-500">Starting balance as of</label>
+                      <input id={`edit-opening-date-${acct.id}`} type="date" value={editForm.opening_balance_date ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, opening_balance_date: e.target.value }))}
+                        className="w-full mt-1 min-h-11 px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+                      <p className="mt-1 text-xs text-gray-500">Only transactions after this day count. Empty: all of them.</p>
                     </div>
                     <div>
                       <label className="text-xs text-gray-500">Interest Rate (%)</label>
@@ -521,6 +575,12 @@ export default function AccountsPage() {
                         <CashAccountActions accountId={acct.id} accountName={acct.name} onChanged={reloadQuietly} />
                       </div>
                     )}
+                    {acct.opening_balance_date && (
+                      <p className="text-xs text-gray-600">Starting balance as of {formatDay(acct.opening_balance_date)}</p>
+                    )}
+                    {acct.account_type !== 'cash' && (
+                      <ReconcileLine accountId={acct.id} accountName={acct.name} lastFour={acct.last_four} reconciliation={acct.reconciliation ?? null} />
+                    )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <button
@@ -541,7 +601,7 @@ export default function AccountsPage() {
                       </button>
                     )}
                     <button
-                      onClick={() => { setEditId(acct.id); setEditForm({ name: acct.name, account_type: acct.account_type, institution_name: acct.institution_name ?? '', last_four: acct.last_four ?? '', interest_rate: acct.interest_rate?.toString() ?? '', credit_limit: acct.credit_limit?.toString() ?? '', opening_balance: String(acct.opening_balance ?? 0), monthly_fee: acct.monthly_fee?.toString() ?? '', due_date: acct.due_date?.toString() ?? '', statement_date: acct.statement_date?.toString() ?? '', notes: acct.notes ?? '', dispute_window_days: acct.dispute_window_days?.toString() ?? '', default_return_days: acct.default_return_days?.toString() ?? '', promo_apr: acct.promo_apr?.toString() ?? '', promo_apr_expires: acct.promo_apr_expires ?? '', promo_description: acct.promo_description ?? '', bt_apr: acct.bt_apr?.toString() ?? '', bt_fee_percent: acct.bt_fee_percent?.toString() ?? '', bt_expires: acct.bt_expires ?? '', bt_description: acct.bt_description ?? '', rewards_type: acct.rewards_type ?? '', rewards_rate: acct.rewards_rate ?? '', annual_fee: acct.annual_fee?.toString() ?? '', currency: acct.currency ?? 'USD' }); }}
+                      onClick={() => { setEditId(acct.id); setEditForm({ name: acct.name, account_type: acct.account_type, institution_name: acct.institution_name ?? '', last_four: acct.last_four ?? '', interest_rate: acct.interest_rate?.toString() ?? '', credit_limit: acct.credit_limit?.toString() ?? '', opening_balance: String(acct.opening_balance ?? 0), opening_balance_date: acct.opening_balance_date ?? '', monthly_fee: acct.monthly_fee?.toString() ?? '', due_date: acct.due_date?.toString() ?? '', statement_date: acct.statement_date?.toString() ?? '', notes: acct.notes ?? '', dispute_window_days: acct.dispute_window_days?.toString() ?? '', default_return_days: acct.default_return_days?.toString() ?? '', promo_apr: acct.promo_apr?.toString() ?? '', promo_apr_expires: acct.promo_apr_expires ?? '', promo_description: acct.promo_description ?? '', bt_apr: acct.bt_apr?.toString() ?? '', bt_fee_percent: acct.bt_fee_percent?.toString() ?? '', bt_expires: acct.bt_expires ?? '', bt_description: acct.bt_description ?? '', rewards_type: acct.rewards_type ?? '', rewards_rate: acct.rewards_rate ?? '', annual_fee: acct.annual_fee?.toString() ?? '', currency: acct.currency ?? 'USD' }); }}
                       className="p-1.5 text-gray-400 hover:text-fuchsia-600 hover:bg-fuchsia-50 rounded-lg transition"
                       title="Edit"
                     >
@@ -683,15 +743,27 @@ export default function AccountsPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label htmlFor="acct-opening-balance" className="text-xs font-medium text-gray-600">Opening Balance ({form.currency || homeCurrency})</label>
+                <label htmlFor="acct-opening-balance" className="text-xs font-medium text-gray-600">
+                  Starting balance ({form.currency || homeCurrency}){form.account_type === 'credit_card' || form.account_type === 'loan' ? ', owed' : ''}
+                </label>
                 <input id="acct-opening-balance" type="number" step="0.01" value={form.opening_balance} onChange={(e) => setForm((f) => ({ ...f, opening_balance: e.target.value }))}
                   className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="0.00" />
               </div>
               <div>
-                <label htmlFor="acct-interest-rate" className="text-xs font-medium text-gray-600">Interest Rate (%)</label>
-                <input id="acct-interest-rate" type="number" step="0.01" min="0" value={form.interest_rate} onChange={(e) => setForm((f) => ({ ...f, interest_rate: e.target.value }))}
-                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 24.99" />
+                <label htmlFor="acct-opening-date" className="text-xs font-medium text-gray-600">As of (optional)</label>
+                <input id="acct-opening-date" type="date" value={form.opening_balance_date} onChange={(e) => setForm((f) => ({ ...f, opening_balance_date: e.target.value }))}
+                  className="w-full mt-1 min-h-11 px-3 py-2 text-sm border border-gray-200 rounded-lg" />
               </div>
+            </div>
+            <p className="text-xs text-gray-500 -mt-2">
+              Importing statements? Use the balance on your first imported statement&apos;s start date: its beginning balance,
+              as of the day before the period starts. Only transactions after that day count toward the balance.
+              Leave the date empty to count every transaction.
+            </p>
+            <div>
+              <label htmlFor="acct-interest-rate" className="text-xs font-medium text-gray-600">Interest Rate (%)</label>
+              <input id="acct-interest-rate" type="number" step="0.01" min="0" value={form.interest_rate} onChange={(e) => setForm((f) => ({ ...f, interest_rate: e.target.value }))}
+                className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="e.g. 24.99" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>

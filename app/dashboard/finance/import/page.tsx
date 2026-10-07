@@ -67,6 +67,7 @@ import {
   type TransferContext,
 } from '@/lib/finance/csv-import/ui-helpers';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import { reconcileHref } from '@/lib/finance/reconciliation/client';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -148,7 +149,8 @@ function StatementImport() {
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [transferCount, setTransferCount] = useState(0);
-  const [statementNotice, setStatementNotice] = useState<{ saved: boolean; error?: string } | null>(null);
+  // reconcile: the Reconcile page for this statement's closing date and printed balance (plans/63 C5).
+  const [statementNotice, setStatementNotice] = useState<{ saved: boolean; error?: string; reconcile?: string } | null>(null);
 
   // Undo, from step 4 or from the history list.
   const [undoTarget, setUndoTarget] = useState<{ id: string; label: string } | null>(null);
@@ -499,8 +501,18 @@ function StatementImport() {
     setSettingsError(null);
     setTransferCount(0);
     // A transaction list has no statement summary: nothing to say about saving one.
+    const closing = preview.statement?.period.end ?? null;
     setStatementNotice(
-      committed.statementSkipped ? null : { saved: committed.statementSaved, error: committed.statementError },
+      committed.statementSkipped
+        ? null
+        : {
+            saved: committed.statementSaved,
+            error: committed.statementError,
+            reconcile:
+              committed.statementSaved && closing && preview.statement?.facts.newBalance != null
+                ? reconcileHref(preview.account.id, { statement: closing })
+                : undefined,
+          },
     );
     setStep(4);
     void loadBatches(true);
@@ -692,6 +704,14 @@ function StatementImport() {
         statementNotice.saved ? (
           <StatusNotice tone="success">
             <p>The statement summary, interest rates and any promotional balances were saved with this account.</p>
+            {statementNotice.reconcile && (
+              <Link
+                href={statementNotice.reconcile}
+                className="mt-1 inline-flex min-h-11 items-center font-medium text-sky-800 underline underline-offset-2"
+              >
+                Reconcile to this statement&apos;s balance
+              </Link>
+            )}
           </StatusNotice>
         ) : (
           <StatusNotice tone="attention">

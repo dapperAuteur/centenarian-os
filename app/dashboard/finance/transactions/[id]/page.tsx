@@ -16,6 +16,7 @@ import TransferSection from '@/components/finance/TransferSection';
 import DeleteTransferDialog from '@/components/finance/DeleteTransferDialog';
 import type { TransferPartnerView } from '@/components/finance/TransferBadge';
 import { accountLabel } from '@/lib/finance/transfers/pairing';
+import { reconcileHref, reconciledWarning, type ReconciledPeriodView } from '@/lib/finance/reconciliation/client';
 
 interface Transaction {
   id: string;
@@ -93,6 +94,8 @@ export default function TransactionDetailPage() {
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [linkedInvoice, setLinkedInvoice] = useState<LinkedInvoice | null>(null);
   const [transferPartner, setTransferPartner] = useState<TransferPartnerView | null>(null);
+  // Dated inside a reconciled statement period (migration 221).
+  const [reconciledPeriod, setReconciledPeriod] = useState<ReconciledPeriodView | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   // Deleting one side of a transfer asks what to do with the other side.
@@ -108,6 +111,7 @@ export default function TransactionDetailPage() {
         setTransaction(data.transaction || null);
         setLinkedInvoice(data.linked_invoice || null);
         setTransferPartner(data.transfer_partner || null);
+        setReconciledPeriod(data.reconciled_period || null);
       }
     } catch { /* handled */ }
     finally { setLoading(false); }
@@ -135,7 +139,8 @@ export default function TransactionDetailPage() {
       setPairDelete({ partner: transferPartner });
       return;
     }
-    if (!confirm('Delete this transaction? This cannot be undone.')) return;
+    const warning = reconciledPeriod ? `${reconciledWarning(reconciledPeriod)}\n\n` : '';
+    if (!confirm(`${warning}Delete this transaction? This cannot be undone.`)) return;
     setActionLoading('delete');
     try {
       const res = await offlineFetch(`/api/finance/transactions?id=${id}`, { method: 'DELETE' });
@@ -200,6 +205,20 @@ export default function TransactionDetailPage() {
           </div>
         </div>
       </div>
+
+      {reconciledPeriod && (
+        <div role="note" className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <p>{reconciledWarning(reconciledPeriod)}</p>
+          {transaction.account_id && (
+            <Link
+              href={reconcileHref(transaction.account_id, { date: reconciledPeriod.statement_date })}
+              className="mt-1 inline-flex min-h-11 items-center font-medium text-sky-800 underline underline-offset-2"
+            >
+              Open Reconcile for this account
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Details Card */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-4">
