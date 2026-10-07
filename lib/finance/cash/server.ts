@@ -20,8 +20,8 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isMissingTable } from '../budgets/server.ts';
-import { accountBalance, fromCents, toCents } from '../savings/logic.ts';
-import { isMissingColumn } from '../transfers/schema.ts';
+import { fromCents } from '../savings/logic.ts';
+import { loadBalanceRows, signedBalancesCents } from '../balance/server.ts';
 import type { DbErrorLike } from '../transfers/schema.ts';
 import {
   CASH_COUNT_TAG,
@@ -44,7 +44,6 @@ export const CASH_NOT_READY = {
 
 const PAGE_SIZE = 1000;
 
-const ACCOUNT_SELECT = 'id, name, account_type, institution_name, last_four, opening_balance, is_active';
 export const COUNT_SELECT =
   'id, account_id, counted_amount, recorded_balance, difference, currency, denominations, ' +
   'adjustment_transaction_id, category_id, note, counted_on, counted_at';
@@ -56,6 +55,8 @@ export interface CashAccountRow {
   institution_name: string | null;
   last_four: string | null;
   opening_balance: number | string | null;
+  /** Migration 221: the day the opening balance is as of; null before it. */
+  opening_balance_date: string | null;
   is_active: boolean;
   /** Migration 210; USD before it. */
   currency: string;
@@ -111,62 +112,44 @@ function toCountRow(row: Record<string, unknown>): CashCountRow {
 
 // ── Reads ─────────────────────────────────────────────────────────────────
 
-/** The user's cash accounts (active only unless asked), oldest first. Works before migration 210. */
+/**
+ * The user's cash accounts (active only unless asked), oldest first. Selects '*', so it works
+ * before migration 210 (no currency: USD) and 221 (no opening_balance_date: every transaction counts).
+ */
 export async function loadCashAccounts(
   db: SupabaseClient,
   userId: string,
   options: { includeInactive?: boolean; ids?: readonly string[] } = {},
 ): Promise<{ accounts: CashAccountRow[]; error: DbErrorLike | null }> {
-  const run = (withCurrency: boolean) => {
-    let query = db
-      .from('financial_accounts')
-      .select(withCurrency ? `${ACCOUNT_SELECT}, currency` : ACCOUNT_SELECT)
-      .eq('user_id', userId)
-      .eq('account_type', 'cash');
-    if (!options.includeInactive) query = query.eq('is_active', true);
-    if (options.ids) query = query.in('id', [...options.ids]);
-    return query.order('created_at', { ascending: true });
-  };
-  let res = await run(true);
-  if (res.error && isMissingColumn(res.error, 'currency')) res = await run(false);
+  let query = db.from('financial_accounts').select('*').eq('user_id', userId).eq('account_type', 'cash');
+  if (!options.includeInactive) query = query.eq('is_active', true);
+  if (options.ids) query = query.in('id', [...options.ids]);
+  const res = await query.order('created_at', { ascending: true });
   if (res.error) return { accounts: [], error: res.error };
-  const accounts = ((res.data ?? []) as unknown as Record<string, unknown>[]).map((row) => ({
-    ...(row as unknown as CashAccountRow),
+  const accounts = ((res.data ?? []) as unknown as Record<string, unknown>[]).map((row): CashAccountRow => ({
+    id: String(row.id),
+    name: String(row.name ?? ''),
+    account_type: String(row.account_type ?? 'cash'),
+    institution_name: (row.institution_name as string | null) ?? null,
+    last_four: (row.last_four as string | null) ?? null,
+    opening_balance: (row.opening_balance as number | string | null) ?? 0,
+    opening_balance_date: typeof row.opening_balance_date === 'string' ? row.opening_balance_date : null,
+    is_active: row.is_active !== false,
     currency: typeof row.currency === 'string' && row.currency ? row.currency : 'USD',
   }));
   return { accounts, error: null };
 }
 
-/** Recorded balance of each account, in cents (every page of its transactions). */
+/** Recorded balance of each account, in cents (every page of its transactions; lib/finance/balance). */
 export async function loadBalancesCents(
   db: SupabaseClient,
   userId: string,
-  accounts: readonly Pick<CashAccountRow, 'id' | 'account_type' | 'opening_balance'>[],
+  accounts: readonly Pick<CashAccountRow, 'id' | 'account_type' | 'opening_balance' | 'opening_balance_date'>[],
 ): Promise<{ balances: Map<string, number>; error: DbErrorLike | null }> {
-  const balances = new Map<string, number>();
-  if (accounts.length === 0) return { balances, error: null };
-  const rowsByAccount = new Map<string, { type: string; amount: number | string }[]>();
-  for (let offset = 0; ; offset += PAGE_SIZE) {
-    const res = await db
-      .from('financial_transactions')
-      .select('id, account_id, type, amount')
-      .eq('user_id', userId)
-      .in('account_id', accounts.map((a) => a.id))
-      .order('id', { ascending: true })
-      .range(offset, offset + PAGE_SIZE - 1);
-    if (res.error) return { balances, error: res.error };
-    const page = (res.data ?? []) as { account_id: string; type: string; amount: number | string }[];
-    for (const row of page) {
-      const list = rowsByAccount.get(row.account_id) ?? [];
-      list.push(row);
-      rowsByAccount.set(row.account_id, list);
-    }
-    if (page.length < PAGE_SIZE) break;
-  }
-  for (const account of accounts) {
-    balances.set(account.id, toCents(accountBalance(account, rowsByAccount.get(account.id) ?? [])));
-  }
-  return { balances, error: null };
+  if (accounts.length === 0) return { balances: new Map(), error: null };
+  const { rows, error } = await loadBalanceRows(db, userId, accounts.map((a) => a.id));
+  if (error) return { balances: new Map(), error };
+  return { balances: signedBalancesCents(accounts, rows), error: null };
 }
 
 /** True once migration 213 is applied (cash_counts answers a query). */

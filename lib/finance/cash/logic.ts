@@ -4,7 +4,8 @@
 // request. Pure: no React, no network. The database side is ./server.ts.
 //
 // A count compares what the person actually has with the account's recorded
-// balance (opening balance + income - expenses, the accounts API formula).
+// balance (the one balance rule, lib/finance/balance/logic.ts: opening balance
+// + income - expenses after the starting-balance date).
 // The difference is recorded as ONE adjustment on the cash account, so the
 // balance matches what was counted:
 //   counted < recorded -> an expense "Unrecorded cash spending"
