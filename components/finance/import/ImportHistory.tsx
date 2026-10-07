@@ -24,6 +24,9 @@ interface ImportHistoryProps {
   /** The outcome of the last undo started from this list, shown above it. */
   undo: UndoResult | null;
   online: boolean;
+  /** The link to the Import history page. Off on that page itself. */
+  showAllLink?: boolean;
+  title?: string;
 }
 
 const formatCount = (n: number): string => (Number(n) || 0).toLocaleString('en-US');
@@ -41,18 +44,30 @@ export function batchTitle(batch: Pick<ImportBatchSummary, 'file_name'>): string
   return batch.file_name?.trim() || 'Pasted text';
 }
 
-export default function ImportHistory({ batches, state, error, onRetry, onUndo, undo, online }: ImportHistoryProps) {
+export default function ImportHistory({
+  batches,
+  state,
+  error,
+  onRetry,
+  onUndo,
+  undo,
+  online,
+  showAllLink = true,
+  title = 'Import history',
+}: ImportHistoryProps) {
   const clockFormat = useClockFormat();
 
   return (
     <section aria-labelledby="import-history-heading" className="space-y-3">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <h2 id="import-history-heading" className="text-lg font-semibold text-gray-900">
-          Import history
+          {title}
         </h2>
-        <Link href="/dashboard/finance/import/history" className={textLink}>
-          See every import, and edit one
-        </Link>
+        {showAllLink && (
+          <Link href="/dashboard/finance/import/history" className={textLink}>
+            See every import, and edit one
+          </Link>
+        )}
       </div>
 
       {undo && <UndoSummary undo={undo} />}

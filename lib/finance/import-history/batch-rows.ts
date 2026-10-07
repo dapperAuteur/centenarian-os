@@ -84,7 +84,13 @@ export interface BatchRow {
   source: string | null;
   transfer_group_id: string | null;
   /** The other side of its transfer, when it is one. */
-  transfer_partner: { id: string; account_label: string; transaction_date: string } | null;
+  transfer_partner: {
+    id: string;
+    account_label: string;
+    transaction_date: string;
+    /** 'transfer' when the transfer feature recorded it: it exists only for this link. */
+    source: string | null;
+  } | null;
   /** True when the row changed after the import (Undo keeps it). */
   edited: boolean;
 }
@@ -138,16 +144,16 @@ export async function listBatchRows(
 
   // The other side of each transfer, with its account's label.
   const groups = [...new Set(stored.map((row) => row.transfer_group_id).filter((id): id is string => Boolean(id)))];
-  const partners = new Map<string, { id: string; account_id: string | null; transaction_date: string; transfer_group_id: string }[]>();
+  const partners = new Map<string, { id: string; account_id: string | null; transaction_date: string; transfer_group_id: string; source: string | null }[]>();
   const partnerAccounts = new Map<string, { name: string; institution_name: string | null; last_four: string | null }>();
   for (const group of chunk(groups, ID_CHUNK)) {
     const found = await db
       .from('financial_transactions')
-      .select('id, account_id, transaction_date, transfer_group_id')
+      .select('id, account_id, transaction_date, transfer_group_id, source')
       .eq('user_id', userId)
       .in('transfer_group_id', group);
     if (found.error) break; // Only the "Transfer with ..." label is lost.
-    for (const row of (found.data ?? []) as { id: string; account_id: string | null; transaction_date: string; transfer_group_id: string }[]) {
+    for (const row of (found.data ?? []) as { id: string; account_id: string | null; transaction_date: string; transfer_group_id: string; source: string | null }[]) {
       const list = partners.get(row.transfer_group_id) ?? [];
       list.push(row);
       partners.set(row.transfer_group_id, list);
@@ -185,6 +191,7 @@ export async function listBatchRows(
             id: partner.id,
             account_label: partner.account_id ? accountLabel(partnerAccounts.get(partner.account_id) ?? null) : 'No account',
             transaction_date: partner.transaction_date,
+            source: partner.source ?? null,
           }
         : null,
       edited: wasEdited(row),
