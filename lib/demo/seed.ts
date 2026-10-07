@@ -2,6 +2,7 @@
 // Shared demo data seed functions — used by demo/reset (cron) and admin invite seeding.
 
 import { SupabaseClient } from '@supabase/supabase-js';
+import { recomputeDaySummary } from '@/lib/pain/server';
 
 export function daysAgo(n: number): string {
   const d = new Date();
@@ -44,6 +45,7 @@ export const CLEAR_ORDER = [
   'workout_templates',
   'workout_feedback',
   'weekly_reviews',
+  'pain_entries',
   'daily_logs',
   'exercises',
   'exercise_categories',
@@ -1027,6 +1029,8 @@ export async function seedVisitor(supabase: SupabaseClient, userId: string): Pro
   const { error: dlErr } = await supabase.from('daily_logs').insert(dailyLogRows);
   if (dlErr) throw new Error(`Visitor daily logs: ${dlErr.message}`);
 
+  await seedVisitorPain(supabase, userId);
+
   // ── Weekly Reviews (4 weeks — pre-written, cross-module) ──
   const { error: wrErr } = await supabase.from('weekly_reviews').insert([
     {
@@ -1267,5 +1271,43 @@ export async function seedVisitor(supabase: SupabaseClient, userId: string): Pro
   ].filter(Boolean);
   if (vLinkRows.length > 0) {
     await supabase.from('activity_links').insert(vLinkRows);
+  }
+}
+
+// ─── PAIN ENTRIES (visitor) ────────────────────────────────────────────────
+// Several entries on some days, as the pain form now allows (migration 222). Each day's
+// daily_logs.pain_* summary is recomputed the way the app does it. Skipped before the
+// migration is applied.
+
+const VISITOR_PAIN = [
+  { day: 1, hour: 8, intensity: 3, locations: ['Lower Back (L5/S1)'], sensations: ['Tightness'], activities: ['Long drive'], notes: 'Stiff after the drive.' },
+  { day: 1, hour: 18, intensity: 5, locations: ['Lower Back (L5/S1)', 'Right Hip Flexor'], sensations: ['Dull Ache'], activities: ['Sitting at desk (3 h)'], notes: 'Worse by the evening.' },
+  { day: 3, hour: 7, intensity: 2, locations: ['Left Hand', 'Right Hand'], sensations: ['Numbness'], activities: ['Typing'], notes: 'Tingling fingers on waking.' },
+  { day: 4, hour: 12, intensity: 4, locations: ['Left Shoulder'], sensations: ['Pinching'], activities: ['TRX pulls'], notes: null },
+  { day: 6, hour: 9, intensity: 2, locations: ['Right Foot'], sensations: ['Numbness'], activities: ['Running'], notes: null },
+  { day: 6, hour: 15, intensity: 6, locations: ['Right Knee'], sensations: ['Sharp Stab'], activities: ['Stairs'], notes: 'Sharp on the stairs.' },
+  { day: 6, hour: 21, intensity: 3, locations: ['Right Knee'], sensations: ['Dull Ache'], activities: [], notes: 'Eased after icing.' },
+  { day: 9, hour: 10, intensity: 2, locations: ['Neck'], sensations: ['Tightness'], activities: ['Phone use'], notes: null },
+];
+
+async function seedVisitorPain(supabase: SupabaseClient, userId: string): Promise<void> {
+  const rows = VISITOR_PAIN.map((p) => ({
+    user_id: userId,
+    occurred_at: `${daysAgo(p.day)}T${String(p.hour).padStart(2, '0')}:00:00.000Z`,
+    local_date: daysAgo(p.day),
+    intensity: p.intensity,
+    locations: p.locations,
+    sensations: p.sensations,
+    activities: p.activities,
+    notes: p.notes,
+    source: 'app',
+  }));
+  const { error } = await supabase.from('pain_entries').insert(rows);
+  if (error) {
+    if (error.message.includes('Could not find the table') || error.message.includes('does not exist')) return;
+    throw new Error(`Visitor pain entries: ${error.message}`);
+  }
+  for (const date of [...new Set(rows.map((r) => r.local_date))]) {
+    await recomputeDaySummary(supabase, userId, date);
   }
 }
