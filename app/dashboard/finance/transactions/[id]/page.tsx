@@ -16,6 +16,7 @@ import TransferSection from '@/components/finance/TransferSection';
 import DeleteTransferDialog from '@/components/finance/DeleteTransferDialog';
 import type { TransferPartnerView } from '@/components/finance/TransferBadge';
 import { accountLabel } from '@/lib/finance/transfers/pairing';
+import CategorySelect, { type BudgetCategory } from '@/components/finance/CategorySelect';
 
 interface Transaction {
   id: string;
@@ -97,6 +98,18 @@ export default function TransactionDetailPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   // Deleting one side of a transfer asks what to do with the other side.
   const [pairDelete, setPairDelete] = useState<{ partner: TransferPartnerView | null } | null>(null);
+  // The category is picked from the one category tree; its life area follows (plans/63 E).
+  const [categories, setCategories] = useState<BudgetCategory[]>([]);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
+  const [savingCategory, setSavingCategory] = useState(false);
+  const [tagsVersion, setTagsVersion] = useState(0);
+
+  useEffect(() => {
+    offlineFetch('/api/finance/categories')
+      .then((r) => r.json())
+      .then((d) => setCategories(Array.isArray(d.categories) ? d.categories : []))
+      .catch(() => {});
+  }, []);
 
   // `quiet` reloads in place (after a link or unlink) without swapping the page for a spinner.
   const load = useCallback(async (quiet = false) => {
@@ -114,6 +127,27 @@ export default function TransactionDetailPage() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  const saveCategory = async (categoryId: string) => {
+    setCategoryError(null);
+    setSavingCategory(true);
+    try {
+      const res = await offlineFetch('/api/finance/transactions', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, category_id: categoryId || null }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        setCategoryError(typeof err?.error === 'string' ? err.error : 'The category could not be saved. Please try again.');
+        return;
+      }
+      await load(true);
+      setTagsVersion((v) => v + 1);
+    } finally {
+      setSavingCategory(false);
+    }
+  };
 
   const handleDuplicate = async () => {
     setActionLoading('duplicate');
@@ -231,12 +265,19 @@ export default function TransactionDetailPage() {
           )}
         </div>
 
-        {transaction.budget_categories && (
-          <div className="flex items-center gap-2 text-sm">
-            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: transaction.budget_categories.color }} />
-            <span className="text-gray-600">{transaction.budget_categories.name}</span>
-          </div>
-        )}
+        <div className="max-w-md">
+          <CategorySelect
+            id="transaction-category"
+            label="Category"
+            value={transaction.category_id ?? ''}
+            onChange={saveCategory}
+            categories={categories}
+            onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
+            disabled={savingCategory}
+          />
+          <p className="mt-1 text-xs text-gray-600">Its life area follows the category (see Life areas below).</p>
+          {categoryError && <p role="alert" className="mt-1 text-xs text-red-700">{categoryError}</p>}
+        </div>
 
         {transaction.tags && transaction.tags.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
@@ -344,7 +385,7 @@ export default function TransactionDetailPage() {
 
       {/* Life Categories */}
       <div className="bg-white border border-gray-200 rounded-2xl p-5">
-        <LifeCategoryTagger entityType="transaction" entityId={transaction.id} />
+        <LifeCategoryTagger key={`${transaction.category_id ?? 'none'}-${tagsVersion}`} entityType="transaction" entityId={transaction.id} />
       </div>
 
       <DeleteTransferDialog

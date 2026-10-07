@@ -300,3 +300,38 @@ function hasKeyword(name: string, keyword: string): boolean {
   const pattern = keyword.length >= 5 ? `(^|[^a-z0-9])${word}` : `(^|[^a-z0-9])${word}(e?s)?($|[^a-z0-9])`;
   return new RegExp(pattern).test(name);
 }
+
+// ── Grouping lists by life area ────────────────────────────────────────────────
+
+export interface LifeAreaGroup<T> {
+  /** null for budget categories with no life area. */
+  lifeArea: LifeAreaRow | null;
+  items: T[];
+}
+
+/**
+ * Splits a list keyed by budget category id (budget lines, spending rows...) into one group per
+ * life area, in the tree's order, with "no life area" last. Items keep their order inside a
+ * group, and empty groups are left out. Items whose id is not in the tree count as unassigned.
+ */
+export function groupByLifeArea<T extends { id: string }>(items: readonly T[], tree: CategoryTree): LifeAreaGroup<T>[] {
+  const byArea = new Map<string, T[]>();
+  const loose: T[] = [];
+  for (const item of items) {
+    const parent = tree.parentOf.get(item.id) ?? null;
+    if (!parent) {
+      loose.push(item);
+      continue;
+    }
+    const list = byArea.get(parent.id) ?? [];
+    list.push(item);
+    byArea.set(parent.id, list);
+  }
+  const groups: LifeAreaGroup<T>[] = [];
+  for (const area of tree.lifeAreas) {
+    const list = byArea.get(area.id);
+    if (list?.length) groups.push({ lifeArea: area, items: list });
+  }
+  if (loose.length > 0) groups.push({ lifeArea: null, items: loose });
+  return groups;
+}
