@@ -366,6 +366,12 @@ export default function TransactionsPage() {
               From one import <X className="w-3 h-3" aria-hidden="true" />
             </button>
           )}
+          {urlBatchId && (
+            <Link href={`/dashboard/finance/import/history/${encodeURIComponent(urlBatchId)}`}
+              className="flex items-center text-xs text-sky-800 underline underline-offset-2 min-h-11 px-2">
+              Edit this import
+            </Link>
+          )}
           {urlUncategorized && (
             <button onClick={() => clearUrlFilter('uncategorized')}
               aria-label="Remove the filter: uncategorized only"
