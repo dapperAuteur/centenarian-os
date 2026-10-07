@@ -175,6 +175,7 @@ const PHASES: Phase[] = [
       { done: true, text: 'Doodle canvas: full-screen drawing during focus sessions (Excalidraw)' },
       { done: true, text: 'Daily energy and focus rating system' },
       { done: true, text: 'Pain tracking and body check logging' },
+      { done: false, text: 'Pain log: several entries a day and a filterable history of every entry (built; live once migration 222 is applied)' },
       { done: true, text: 'AI-assisted weekly review generation (Gemini summarization)' },
       { done: true, text: 'Recipe ideas generated from current ingredient inventory (Gemini)' },
       { done: true, text: 'Correlation analysis: cross-module data correlation engine with trend charts' },

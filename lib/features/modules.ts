@@ -119,7 +119,7 @@ export const MODULES: ModuleData[] = [
       'Pomodoro focus sessions linked to tasks',
       'Doodle canvas — sketch ideas mid-session',
       'Daily energy/focus ratings',
-      'Body check & pain tracking',
+      'Body check & pain log: several entries a day, searchable history',
       'Weekly AI-powered reviews',
     ],
     highlights: [

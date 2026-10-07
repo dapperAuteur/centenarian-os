@@ -1,6 +1,6 @@
 # CentenarianOS — Migrations Gallery
 
-> **219 migrations across 14 modules**, shipped solo since project inception. Schema lives in a Supabase Postgres database **shared with a sibling product** (Work.WitUS / contractor-os), so every migration has to be additive, RLS-aware, and cross-app-safe.
+> **220 migrations across 14 modules**, shipped solo since project inception. Schema lives in a Supabase Postgres database **shared with a sibling product** (Work.WitUS / contractor-os), so every migration has to be additive, RLS-aware, and cross-app-safe.
 
 > **Decomposition note.** CentenarianOS is being decomposed toward the ecosystem's "one app,
 > one job" rule, so some modules below (Media, Academy, Travel, contractor residue) are
@@ -9,7 +9,7 @@
 > late stage, run against a DB clone first. Do not pre-emptively drop a table because its
 > module is slated to move.
 
-This doc is the visible evidence behind that headline. The full source is under [`supabase/migrations/`](./supabase/migrations/). Headline count last refreshed 2026-10-05 from a live `ls supabase/migrations/*.sql | wc -l`; the per-module counts below were last curated 2026-08-27.
+This doc is the visible evidence behind that headline. The full source is under [`supabase/migrations/`](./supabase/migrations/). Headline count last refreshed 2026-10-07 from a live `ls supabase/migrations/*.sql | wc -l`; the per-module counts below were last curated 2026-08-27.
 
 ---
 
@@ -79,7 +79,7 @@ Highlights: `024_blog_posts.sql`, `025_blog_events.sql`, `026_blog_blocked_visit
 
 Pomodoro sessions with tags, goals, breaks, templates, analytics, daily-log constraints, agility engine, leaderboard trigger fix, session_type column, focus-session activity links.
 
-Highlights: `009_add_session_tags.sql` through `020_add_session_type.sql` (the foundational batch), `076_focus_session_activity_link.sql` (cross-module link), `017_agility_engine_migration.sql`.
+Highlights: `009_add_session_tags.sql` through `020_add_session_type.sql` (the foundational batch), `076_focus_session_activity_link.sql` (cross-module link), `017_agility_engine_migration.sql`, `222_pain_entries.sql` (many pain entries per day; `daily_logs.pain_*` kept as the day's summary, with a once-only backfill of past days).
 
 ### Equipment Tracker (4 migrations)
 
