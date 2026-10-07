@@ -18,11 +18,20 @@
 // ?from=settings: opened from the Statements box on Settings. A file chosen
 // there is handed over in memory (lib/finance/pdf-import/client.ts) and
 // loaded straight away; without one, the file input gets focus.
+//
+// Saved imports (migration 219): the preview is made by
+// POST /api/finance/import/drafts, which also saves the server's reading of
+// the rows as a draft (never the file). The review step's choices are saved
+// as they change (debounced) and when the page is left, so the import can be
+// finished later: "Unfinished imports" on step 1 (and on the Review page)
+// resumes one, as does ?draft=<id>. A resumed import has no file in memory, so
+// it is finished by POST /api/finance/import/drafts/[id]/commit; a fresh one is
+// committed with its file as before, plus draft_id so the draft is deleted.
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft, Loader2, Upload } from 'lucide-react';
+import { ArrowLeft, ClipboardCheck, History, Loader2, Upload } from 'lucide-react';
 import type { BudgetCategory } from '@/components/finance/CategorySelect';
 import AccountFileStep from '@/components/finance/import/AccountFileStep';
 import ColumnsStep from '@/components/finance/import/ColumnsStep';
@@ -36,14 +45,32 @@ import {
   commitStatement,
   fetchTransferSuggestionCount,
   listImportBatches,
-  previewPdfStatement,
-  previewStatement,
   saveAccountMapping,
   undoImportBatch,
   type PdfStatementPayload,
   type StatementPayload,
 } from '@/components/finance/import/api';
-import { ErrorNotice, StatusNotice, type ParsedFile, type PdfFile } from '@/components/finance/import/shared';
+import {
+  commitDraft,
+  discardDraft,
+  listDrafts,
+  previewAndSaveDraft,
+  resumeDraft,
+  saveDraftChoices,
+  saveDraftChoicesOnLeave,
+  type DraftChoices,
+} from '@/components/finance/import/drafts-api';
+import ImportDraftsList, { draftTitle } from '@/components/finance/import/ImportDraftsList';
+import {
+  ErrorNotice,
+  StatusNotice,
+  dangerButton,
+  secondaryButton,
+  textLink,
+  type ParsedFile,
+  type PdfFile,
+} from '@/components/finance/import/shared';
+import type { DraftMapping, DraftSummary } from '@/lib/finance/import-drafts/drafts';
 import { useOnline } from '@/components/finance/import/useOnline';
 import type { ImportBatchSummary, PreviewResponse } from '@/lib/finance/csv-import/service';
 import type { CommitResult, SavedCsvMapping, UndoResult } from '@/lib/finance/csv-import/types';
@@ -75,6 +102,21 @@ type SettingsOrigin = Pick<InitialSettings, 'mappingSource' | 'signSource' | 'sa
 /** A preview, with the statement summary when the file was a PDF. */
 type Preview = PreviewResponse & Partial<Pick<PdfPreviewResponse, 'statement' | 'accountMatchesStatement'>>;
 
+/** A saved import picked up again: there is no file in memory, only the server's saved rows. */
+interface ResumedImport {
+  source: 'csv' | 'pdf';
+  fileName: string | null;
+  mapping: DraftMapping;
+  /** Rows whose status changed since the review was saved. */
+  changedSinceSave: number;
+  savedAt: string;
+}
+
+/** The autosave's state, said in words next to the review. */
+type SaveState = 'idle' | 'saving' | 'saved' | 'error';
+
+const AUTOSAVE_DELAY_MS = 1200;
+
 const STEP_HEADINGS: Record<ImportStep, string> = {
   1: 'Choose the account and the statement',
   2: 'Check the columns',
@@ -102,6 +144,8 @@ function StatementImport() {
   const searchParams = useSearchParams();
   const requestedAccountId = searchParams.get('account') ?? '';
   const fromSettings = searchParams.get('from') === 'settings';
+  /** ?draft=<id>: resume that saved import as soon as the page loads (the Review page links here). */
+  const requestedDraftId = searchParams.get('draft') ?? '';
   const online = useOnline();
 
   // What the page loads once.
@@ -149,6 +193,23 @@ function StatementImport() {
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [transferCount, setTransferCount] = useState(0);
   const [statementNotice, setStatementNotice] = useState<{ saved: boolean; error?: string } | null>(null);
+
+  // Saved imports (migration 219).
+  const [drafts, setDrafts] = useState<DraftSummary[]>([]);
+  /** Why reviews can't be saved for later right now (migration 219 missing, a file too large), or null. */
+  const [draftNotice, setDraftNotice] = useState<string | null>(null);
+  /** The draft this review is saved in, or null when it isn't saved. */
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [resumed, setResumed] = useState<ResumedImport | null>(null);
+  const [saveState, setSaveState] = useState<SaveState>('idle');
+  const [draftBusyId, setDraftBusyId] = useState<string | null>(null);
+  const [draftError, setDraftError] = useState<string | null>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  /** The choices as last saved, so an unchanged review isn't saved again. */
+  const lastSavedRef = useRef('');
+  /** What the page-leave handler saves: always the latest draft and choices. */
+  const pendingSaveRef = useRef<{ id: string; choices: DraftChoices } | null>(null);
+  const resumedDraftParamRef = useRef(false);
 
   // Undo, from step 4 or from the history list.
   const [undoTarget, setUndoTarget] = useState<{ id: string; label: string } | null>(null);
@@ -234,11 +295,23 @@ function StatementImport() {
     setBatchesState('error');
   }, []);
 
+  const loadDrafts = useCallback(async () => {
+    const response = await listDrafts();
+    if (response.ok) {
+      setDrafts(Array.isArray(response.data?.drafts) ? response.data.drafts : []);
+      return;
+    }
+    // Before migration 219 there is nothing saved to list; the review says so when it matters.
+    setDrafts([]);
+    if (response.code === 'review_migration_required') setDraftNotice(response.message);
+  }, []);
+
   useEffect(() => {
     void loadAccounts();
     void loadCategories();
     void loadBatches();
-  }, [loadAccounts, loadCategories, loadBatches]);
+    void loadDrafts();
+  }, [loadAccounts, loadCategories, loadBatches, loadDrafts]);
 
   // A statement chosen on Settings, handed over in memory (never stored).
   useEffect(() => {
@@ -266,12 +339,27 @@ function StatementImport() {
     setConfirmUnreconciled(false);
   }
 
+  /**
+   * A different account or file is a different import: the next preview is
+   * saved as a new draft, and the one this page had stays in Unfinished imports.
+   */
+  function detachDraft() {
+    setDraftId(null);
+    setResumed(null);
+    setSaveState('idle');
+    setConfirmDiscard(false);
+    pendingSaveRef.current = null;
+    lastSavedRef.current = '';
+  }
+
   function handleAccountChange(nextAccountId: string) {
     setAccountId(nextAccountId);
     discardPreview();
+    detachDraft();
   }
 
   function handleFileRead(next: Omit<ParsedFile, 'version'> | null) {
+    detachDraft();
     if (next) {
       fileVersionRef.current += 1;
       setFile({ ...next, version: fileVersionRef.current });
@@ -283,6 +371,7 @@ function StatementImport() {
   }
 
   function handlePdfRead(next: Omit<PdfFile, 'version'> | null) {
+    detachDraft();
     if (next) {
       fileVersionRef.current += 1;
       setPdfFile({ ...next, version: fileVersionRef.current });
@@ -373,9 +462,13 @@ function StatementImport() {
     const token = previewTokenRef.current;
     setPreviewBusy(true);
     setPreviewError(null);
-    const response: Awaited<ReturnType<typeof previewStatement>> = pdfPayload
-      ? await previewPdfStatement(pdfPayload)
-      : await previewStatement(payload as StatementPayload);
+    // The preview also saves the server's reading of the rows as a draft (never the file), so the
+    // review can be finished later. With draftId, the draft this page already has is replaced.
+    const response = await previewAndSaveDraft({
+      ...(pdfPayload ?? (payload as StatementPayload)),
+      draft_id: draftId,
+      remember: settings?.remember === true,
+    });
     setPreviewBusy(false);
     // The settings changed while this was on its way: its answer is for a file read differently.
     if (token !== previewTokenRef.current) return;
@@ -385,12 +478,190 @@ function StatementImport() {
       setPreviewError(response.message);
       return;
     }
-    setPreview(response.data);
+    const { draft, draftError: notSaved, ...plan } = response.data;
+    setPreview(plan);
     setDecisions({});
+    setDraftId(draft?.id ?? null);
+    setDraftNotice(notSaved?.message ?? null);
+    setSaveState(draft ? 'saved' : 'idle');
+    lastSavedRef.current = draft
+      ? JSON.stringify({ decisions: {}, options: { recordMissing, confirmUnreconciled: false } })
+      : '';
+    setStep(3);
+    if (draft) void loadDrafts();
+  }
+
+  // ── Saved imports: autosave, resume, discard ────────────────────────────
+
+  const choices = useMemo<DraftChoices>(
+    () => ({ decisions, options: { recordMissing, confirmUnreconciled } }),
+    [decisions, recordMissing, confirmUnreconciled],
+  );
+
+  // What the page-leave handler would save: the latest choices of the current draft.
+  useEffect(() => {
+    pendingSaveRef.current = step === 3 && draftId ? { id: draftId, choices } : null;
+  }, [step, draftId, choices]);
+
+  const saveChoicesNow = useCallback(async (id: string, next: DraftChoices) => {
+    const serialized = JSON.stringify(next);
+    if (serialized === lastSavedRef.current) return;
+    setSaveState('saving');
+    const response = await saveDraftChoices(id, next);
+    if (response.ok) {
+      lastSavedRef.current = serialized;
+      setSaveState('saved');
+      return;
+    }
+    if (response.status === 404) {
+      // Imported, discarded or expired elsewhere: this review is no longer saved.
+      setDraftId(null);
+      setDraftNotice('This review is no longer saved for later: it was imported, discarded or kept past 30 days. You can still finish it now.');
+      setSaveState('idle');
+      return;
+    }
+    setSaveState('error');
+  }, []);
+
+  // Autosave: shortly after the last change on the review step.
+  useEffect(() => {
+    if (step !== 3 || !draftId) return;
+    if (JSON.stringify(choices) === lastSavedRef.current) return;
+    const timer = window.setTimeout(() => void saveChoicesNow(draftId, choices), AUTOSAVE_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [step, draftId, choices, saveChoicesNow]);
+
+  // Leaving the page (closing the tab, switching apps, navigating away) saves what isn't saved yet.
+  useEffect(() => {
+    const flush = () => {
+      const pending = pendingSaveRef.current;
+      if (!pending || JSON.stringify(pending.choices) === lastSavedRef.current) return;
+      lastSavedRef.current = JSON.stringify(pending.choices);
+      saveDraftChoicesOnLeave(pending.id, pending.choices);
+    };
+    const onHidden = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', onHidden);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onHidden);
+      // Navigating to another page of the app unmounts this one.
+      flush();
+    };
+  }, []);
+
+  /** Saves now (leaving the review step by Back), without waiting for the autosave. */
+  function flushChoices() {
+    const pending = pendingSaveRef.current;
+    if (pending) void saveChoicesNow(pending.id, pending.choices);
+  }
+
+  async function resumeFromDraft(id: string) {
+    if (draftBusyId) return;
+    if (!navigator.onLine) {
+      setDraftError(OFFLINE_TEXT);
+      return;
+    }
+    setDraftBusyId(id);
+    setDraftError(null);
+    const response = await resumeDraft(id);
+    setDraftBusyId(null);
+    if (!response.ok) {
+      setDraftError(response.message);
+      if (response.status === 404) void loadDrafts();
+      return;
+    }
+    const { preview: plan, draft, changedSinceSave } = response.data;
+    // A saved import has no file in memory: only the server's saved rows.
+    previewTokenRef.current += 1;
+    setFile(null);
+    setPdfFile(null);
+    setPasteText('');
+    setSettings(null);
+    setOrigin(null);
+    settingsKeyRef.current = '';
+    setResult(null);
+    setResultUndo(null);
+    setHistoryUndo(null);
+    setPreviewError(null);
+    setImportError(null);
+    setStatementNotice(null);
+    setAccountId(plan.account.id);
+    setPreview(plan);
+    setDecisions(draft.decisions as Decisions);
+    setRecordMissing(draft.options.recordMissing);
+    setConfirmUnreconciled(draft.options.confirmUnreconciled);
+    setDraftId(draft.id);
+    setDraftNotice(null);
+    setConfirmDiscard(false);
+    setResumed({
+      source: draft.source,
+      fileName: draft.file_name,
+      mapping: draft.mapping,
+      changedSinceSave,
+      savedAt: draft.updated_at,
+    });
+    lastSavedRef.current = JSON.stringify({ decisions: draft.decisions, options: draft.options });
+    setSaveState('saved');
     setStep(3);
   }
 
+  // ?draft=<id>, once.
+  useEffect(() => {
+    if (!requestedDraftId || resumedDraftParamRef.current) return;
+    resumedDraftParamRef.current = true;
+    void resumeFromDraft(requestedDraftId);
+    // resumeFromDraft only reads state through setters and refs here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedDraftId]);
+
+  async function discardFromList(draft: DraftSummary) {
+    setDraftBusyId(draft.id);
+    setDraftError(null);
+    const response = await discardDraft(draft.id);
+    setDraftBusyId(null);
+    if (!response.ok) {
+      setDraftError(response.message);
+      return;
+    }
+    if (draft.id === draftId) detachDraft();
+    void loadDrafts();
+  }
+
+  /** "Discard this import" on the review step: deletes the saved review and starts again. */
+  async function discardCurrent() {
+    if (draftId) {
+      setDraftBusyId(draftId);
+      const response = await discardDraft(draftId);
+      setDraftBusyId(null);
+      if (!response.ok && response.status !== 404) {
+        setDraftError(response.message);
+        return;
+      }
+    }
+    startOver();
+    void loadDrafts();
+  }
+
+  /** Back from a resumed import: there is no file to go back to, so return to the start. The review stays saved. */
+  function leaveResumed() {
+    flushChoices();
+    previewTokenRef.current += 1;
+    setPreview(null);
+    setDecisions({});
+    setConfirmUnreconciled(false);
+    detachDraft();
+    setStep(1);
+    void loadDrafts();
+  }
+
   async function runImport() {
+    if (resumed) {
+      await runDraftImport();
+      return;
+    }
     if (pdfFile) {
       await runPdfImport();
       return;
@@ -408,6 +679,7 @@ function StatementImport() {
     const response = await commitStatement({
       ...payload,
       actions: buildRowActions(preview.rows, decisions, transferContext ?? undefined),
+      draft_id: draftId,
     });
     setImportBusy(false);
 
@@ -432,6 +704,9 @@ function StatementImport() {
     setTransferCount(0);
     setStep(4);
     void loadBatches(true);
+    // The server deleted the saved review with the import.
+    detachDraft();
+    void loadDrafts();
 
     if (settings.remember) {
       const saved: SavedCsvMapping = {
@@ -476,6 +751,7 @@ function StatementImport() {
       ...payload,
       actions: buildRowActions(preview.rows, decisions, transferContext ?? undefined),
       confirm_unreconciled: confirmUnreconciled,
+      draft_id: draftId,
     });
     setImportBusy(false);
 
@@ -504,6 +780,84 @@ function StatementImport() {
     );
     setStep(4);
     void loadBatches(true);
+    // The server deleted the saved review with the import.
+    detachDraft();
+    void loadDrafts();
+
+    const range = importedDateRange(preview.rows, decisions);
+    if (range && committed.inserted + committed.linked > 0) {
+      void fetchTransferSuggestionCount(range.from, range.to).then(setTransferCount);
+    }
+  }
+
+  /** Finishes a resumed import from its saved rows: there is no file in memory to send. */
+  async function runDraftImport() {
+    if (!resumed || !draftId || !preview || importBusy) return;
+    if (!navigator.onLine) {
+      setImportError(OFFLINE_TEXT);
+      return;
+    }
+    const finishing = resumed;
+    setImportBusy(true);
+    setImportError(null);
+    setStatementNotice(null);
+    const response = await commitDraft(draftId, {
+      actions: buildRowActions(preview.rows, decisions, transferContext ?? undefined),
+      confirm_unreconciled: confirmUnreconciled,
+    });
+    setImportBusy(false);
+
+    if (!response.ok) {
+      if (response.code === 'migration_required') setMigrationNeeded(true);
+      setImportError(
+        response.code === 'network'
+          ? `${response.message} If the import did go through, it is listed in Import history and this saved import is gone from Unfinished imports.`
+          : response.message,
+      );
+      return;
+    }
+
+    const committed = response.data;
+    setResult(committed);
+    setResultAccountName(accountLabel(preview.account));
+    setResultTitle(finishing.fileName ?? (finishing.source === 'pdf' ? 'PDF statement' : 'Pasted text'));
+    setResultUndo(null);
+    setHistoryUndo(null);
+    setSettingsSaved(false);
+    setSettingsError(null);
+    setTransferCount(0);
+    if (finishing.source === 'pdf' && 'statementSaved' in committed) {
+      setStatementNotice(
+        committed.statementSkipped ? null : { saved: committed.statementSaved, error: committed.statementError },
+      );
+    }
+    setStep(4);
+    void loadBatches(true);
+    detachDraft();
+    void loadDrafts();
+
+    // "Remember these settings for this account", ticked before the review was saved.
+    const mapping = finishing.mapping;
+    if (finishing.source === 'csv' && mapping.remember && mapping.sign && mapping.dateOrder) {
+      const saved: SavedCsvMapping = {
+        mapping: mapping.mapping ?? {},
+        sign: mapping.sign,
+        dateOrder: mapping.dateOrder,
+        includePending: mapping.includePending === true,
+        ...(mapping.preset ? { preset: mapping.preset } : {}),
+      };
+      const targetAccountId = preview.account.id;
+      void saveAccountMapping(targetAccountId, saved).then((savedResponse) => {
+        if (!savedResponse.ok) {
+          setSettingsError(savedResponse.message);
+          return;
+        }
+        setSettingsSaved(true);
+        setAccounts((current) =>
+          current.map((candidate) => (candidate.id === targetAccountId ? { ...candidate, csv_import_mapping: saved } : candidate)),
+        );
+      });
+    }
 
     const range = importedDateRange(preview.rows, decisions);
     if (range && committed.inserted + committed.linked > 0) {
@@ -522,6 +876,7 @@ function StatementImport() {
     setOrigin(null);
     settingsKeyRef.current = '';
     discardPreview();
+    detachDraft();
     setResult(null);
     setResultUndo(null);
     setHistoryUndo(null);
@@ -577,6 +932,25 @@ function StatementImport() {
 
   // ── Render ──────────────────────────────────────────────────────────────
 
+  // The file chosen in step 1 already has a saved review for this account: offer to resume it.
+  const chosenFileName = (file?.fileName ?? pdfFile?.fileName ?? '').trim();
+  const matchingDraft =
+    step === 1 && !draftId && accountId && chosenFileName
+      ? (drafts.find(
+          (draft) =>
+            draft.account_id === accountId &&
+            draft.source === (pdfFile ? 'pdf' : 'csv') &&
+            (draft.file_name ?? '').trim() === chosenFileName,
+        ) ?? null)
+      : null;
+
+  const saveStateText: Record<SaveState, string> = {
+    idle: '',
+    saving: 'Saving your choices...',
+    saved: 'Your choices are saved. You can leave and finish this import later.',
+    error: "Your latest choices couldn't be saved. They will be tried again with your next change.",
+  };
+
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:py-10">
       <header className="flex items-start gap-2">
@@ -596,6 +970,16 @@ function StatementImport() {
             Bring in a CSV or PDF statement you downloaded from your bank or card. PDFs are read inside CentenarianOS
             and never sent anywhere else. You check every row before anything is saved, and an import can be undone.
           </p>
+          <nav aria-label="Imports" className="mt-1 flex flex-col gap-x-5 sm:flex-row">
+            <Link href="/dashboard/finance/import/history" className={textLink}>
+              <History className="h-4 w-4" aria-hidden="true" />
+              Import history and editing
+            </Link>
+            <Link href="/dashboard/finance/review" className={textLink}>
+              <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
+              Review page
+            </Link>
+          </nav>
         </div>
       </header>
 
@@ -628,6 +1012,46 @@ function StatementImport() {
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
           Checking the statement against your account...
         </p>
+      )}
+
+      {draftError && step !== 3 && (
+        <ErrorNotice>
+          <p>{draftError}</p>
+        </ErrorNotice>
+      )}
+
+      {step === 1 && draftBusyId && (
+        <p role="status" className="flex items-center gap-2 text-sm text-gray-700">
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+          Checking your saved import against your transactions as they are now...
+        </p>
+      )}
+
+      {step === 1 && (
+        <ImportDraftsList
+          drafts={drafts}
+          onResume={(draft) => void resumeFromDraft(draft.id)}
+          onDiscard={(draft) => void discardFromList(draft)}
+          busyId={draftBusyId}
+          online={online}
+        />
+      )}
+
+      {matchingDraft && (
+        <StatusNotice tone="attention">
+          <p>
+            You started reviewing {draftTitle(matchingDraft)} for this account already, and your choices are saved.
+            Resume that review, or continue to start again (the saved review is then replaced).
+          </p>
+          <button
+            type="button"
+            onClick={() => void resumeFromDraft(matchingDraft.id)}
+            disabled={!online || draftBusyId !== null}
+            className={`${secondaryButton} mt-2`}
+          >
+            Resume the saved review
+          </button>
+        </StatusNotice>
       )}
 
       {step === 1 && (
@@ -666,6 +1090,71 @@ function StatementImport() {
         />
       )}
 
+      {step === 3 && preview && resumed && (
+        <StatusNotice tone="info">
+          <p>
+            Resumed your saved review of {resumed.fileName ?? (resumed.source === 'pdf' ? 'a PDF statement' : 'pasted text')}.
+            Every row was checked again against your transactions as they are now.
+            {resumed.changedSinceSave > 0
+              ? ` ${resumed.changedSinceSave.toLocaleString('en-US')} ${resumed.changedSinceSave === 1 ? 'row has' : 'rows have'} a different status than when you saved, for example a row that was imported another way since.`
+              : ' Nothing changed since you saved.'}
+          </p>
+        </StatusNotice>
+      )}
+
+      {step === 3 && preview && draftError && (
+        <ErrorNotice>
+          <p>{draftError}</p>
+        </ErrorNotice>
+      )}
+
+      {step === 3 && preview && draftNotice && !draftId && (
+        <StatusNotice tone="attention">
+          <p>{draftNotice}</p>
+        </StatusNotice>
+      )}
+
+      {step === 3 && preview && draftId && (
+        <div className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Not a live region: a "Saving..." on every change would talk over the review. A failure is announced. */}
+          {saveState === 'error' ? (
+            <p role="alert" className="text-sm font-medium text-red-800">
+              {saveStateText.error}
+            </p>
+          ) : (
+            <p className="flex items-center gap-2 text-sm text-gray-700">
+              {saveState === 'saving' && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+              {saveStateText[saveState] || 'This review is saved as you go.'}
+            </p>
+          )}
+          {confirmDiscard ? (
+            <div role="group" aria-label="Discard this import?" className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <p className="text-sm text-gray-800">Discard it? Nothing is imported and your choices are lost.</p>
+              <button
+                type="button"
+                onClick={() => void discardCurrent()}
+                disabled={draftBusyId !== null || importBusy}
+                className={dangerButton}
+              >
+                Discard
+              </button>
+              <button type="button" onClick={() => setConfirmDiscard(false)} className={secondaryButton}>
+                Keep it
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmDiscard(true)}
+              disabled={importBusy || !online}
+              className={secondaryButton}
+            >
+              Discard this import
+            </button>
+          )}
+        </div>
+      )}
+
       {step === 3 && preview && transferContext && (
         <ReviewStep
           transfer={transferContext}
@@ -675,8 +1164,15 @@ function StatementImport() {
           onDecisionsChange={setDecisions}
           categories={categories}
           onCategoryCreated={handleCategoryCreated}
-          onBack={() => setStep(pdfFile ? 1 : 2)}
-          backLabel={pdfFile ? 'Back to the file' : undefined}
+          onBack={() => {
+            if (resumed) {
+              leaveResumed();
+              return;
+            }
+            flushChoices();
+            setStep(pdfFile ? 1 : 2);
+          }}
+          backLabel={resumed ? 'Back to the start (stays saved)' : pdfFile ? 'Back to the file' : undefined}
           onImport={runImport}
           busy={importBusy}
           error={importError}

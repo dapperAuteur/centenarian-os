@@ -19,6 +19,10 @@
 //     ("Run migration 209 first" until it is applied, checked before writing).
 //    -> the result of 1, plus { statementSaved, statementError? }
 //
+// 1c. Either form may carry `draft_id`: the saved review of this file
+//     (POST /api/finance/import/drafts, migration 219). It is deleted once the
+//     import succeeds -> `draftDeleted`. A failed import keeps it.
+//
 // 2. Template import (the current Import page): { rows: [...] } already parsed
 //    in the browser. No account, no duplicate check, no batch.
 //    -> { imported, skipped, errors? }
@@ -37,6 +41,7 @@ import {
   unauthorizedResponse,
 } from '@/lib/finance/csv-import/respond';
 import { runImport } from '@/lib/finance/csv-import/service';
+import { discardDraftQuietly } from '@/lib/finance/import-drafts/drafts';
 import { isPdfBody, runPdfImport } from '@/lib/finance/pdf-import/service';
 
 // pdfjs reads PDFs with Node APIs.
@@ -53,7 +58,8 @@ export async function POST(request: NextRequest) {
   if (isPdfBody(body)) {
     try {
       const result = await runPdfImport(supabase, user.id, body);
-      return NextResponse.json({ ...result, imported: result.inserted + result.linked });
+      const draftDeleted = await discardDraftQuietly(supabase, user.id, fields.draft_id);
+      return NextResponse.json({ ...result, imported: result.inserted + result.linked, draftDeleted });
     } catch (error) {
       return importErrorResponse(error);
     }
@@ -63,7 +69,8 @@ export async function POST(request: NextRequest) {
   if (fields.csv_text !== undefined || fields.csvText !== undefined) {
     try {
       const result = await runImport(supabase, user.id, body);
-      return NextResponse.json({ ...result, imported: result.inserted + result.linked });
+      const draftDeleted = await discardDraftQuietly(supabase, user.id, fields.draft_id);
+      return NextResponse.json({ ...result, imported: result.inserted + result.linked, draftDeleted });
     } catch (error) {
       return importErrorResponse(error);
     }
