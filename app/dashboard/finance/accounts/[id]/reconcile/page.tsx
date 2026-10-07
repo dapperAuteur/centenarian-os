@@ -119,12 +119,17 @@ export default function ReconcileAccountPage() {
       try {
         const first = await fetchView({ statement: urlStatement || undefined, date: urlDate || undefined, balance: urlBalance || undefined });
         if (cancelled) return;
+        // A date in the address uses its own balance, or the imported statement closing that day;
+        // otherwise the suggested (latest or ?statement=) statement gives both.
+        const sameDay = urlDate ? first.statements.find((s) => s.period_end === urlDate && s.new_balance !== null) ?? null : null;
         const startDateValue = urlDate || first.suggested?.statement_date || '';
-        const startBalanceValue = urlBalance || (first.suggested ? String(first.suggested.statement_balance) : '');
+        const startBalanceValue = urlDate
+          ? urlBalance || (sameDay ? String(Number(sameDay.new_balance)) : '')
+          : first.suggested ? String(first.suggested.statement_balance) : '';
         setDate(startDateValue);
         setBalance(startBalanceValue);
-        setStatementId(!urlDate && first.suggested ? first.suggested.statement_id : null);
-        if (!first.check && startDateValue && startBalanceValue) {
+        setStatementId(urlDate ? (urlBalance ? null : sameDay?.id ?? null) : first.suggested?.statement_id ?? null);
+        if (startDateValue && startBalanceValue && (!first.check || first.check.statement_balance === null)) {
           const compared = await fetchView({ date: startDateValue, balance: startBalanceValue, statement: urlStatement || undefined });
           if (!cancelled) applyCheck(compared);
         } else {
@@ -253,7 +258,11 @@ export default function ReconcileAccountPage() {
       const res = await fetch(`/api/finance/accounts/${account.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ opening_balance: amount, opening_balance_date: startDate || null }),
+        body: JSON.stringify({
+          opening_balance: amount,
+          // Sent only when it changed, so saving just the amount works before migration 221.
+          ...(startDate !== (account.opening_balance_date ?? '') ? { opening_balance_date: startDate || null } : {}),
+        }),
       });
       const body = await readJson(res);
       if (!res.ok) {
@@ -329,7 +338,11 @@ export default function ReconcileAccountPage() {
       : differenceCents > 0 ? 'an income' : 'an expense'
     : '';
   const newOpening = differenceCents ? (cents(Number(account.opening_balance ?? 0)) + differenceCents) / 100 : null;
-  const canFinish = !!check && view.ready && !check.before_start && check.statement_balance !== null && (differenceCents === 0 || choice !== '');
+  // The inputs changed since Compare: finishing would save the old comparison, so compare again first.
+  const inputsChanged =
+    !!check && (date !== check.statement_date || balance.trim() === '' || cents(Number(balance.replace(/[,$\s]/g, ''))) !== cents(check.statement_balance ?? 0));
+  const canFinish =
+    !!check && view.ready && !inputsChanged && !check.before_start && check.statement_balance !== null && (differenceCents === 0 || choice !== '');
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
@@ -629,6 +642,12 @@ export default function ReconcileAccountPage() {
             <label htmlFor="reconcile-note" className="text-xs font-medium text-gray-700">Note (optional)</label>
             <input id="reconcile-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} className={input} />
           </div>
+
+          {inputsChanged && (
+            <p role="status" className="mt-3 text-sm text-amber-900">
+              The closing date or balance changed. Click Compare to check the new numbers before finishing.
+            </p>
+          )}
 
           {finishError && (
             <p role="alert" className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{finishError}</p>
