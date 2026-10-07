@@ -649,14 +649,15 @@ export const MODULES: ModuleData[] = [
     slug: 'categories',
     name: 'Life Categories',
     tagline: 'Tag your life by what matters most',
-    description: 'User-defined life-area tags that work across every module. Tag expenses, tasks, workouts, and more with Health, Career, Finance, or any custom category.',
+    description: 'One category tree: life areas like Health, Career and Home on top, your budget categories under them. Transactions get their life area from their budget category; tag tasks, workouts, trips and more with a life area directly.',
     color: 'border-purple-500',
     iconColor: 'text-purple-600',
     checkColor: 'text-purple-600',
     bgGradient: 'from-purple-600 to-purple-800',
     Icon: Tag,
     features: [
-      'User-defined tags (Health, Career, Finance, etc.)',
+      'User-defined life areas (Health, Career, Finance, etc.)',
+      'Budget categories sit under life areas: one set of categories',
       'Works across all 11 module types',
       'Spending & activity analytics by category',
       'Batch tagging from the dashboard',
@@ -673,6 +674,10 @@ export const MODULES: ModuleData[] = [
       {
         title: 'Analytics Dashboard',
         description: 'See spending by life category (pie chart), activity counts by category (bar chart), and find uncategorized items that need tagging.',
+      },
+      {
+        title: 'One Category Tree',
+        description: 'Budget categories sit under life areas, so picking Groceries also counts toward Health. One searchable picker everywhere, and an Organize screen with suggestions you confirm, drag and drop, and merge.',
       },
       {
         title: 'Batch Tagging',

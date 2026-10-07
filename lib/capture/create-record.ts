@@ -7,7 +7,9 @@
 //   createTransaction  POST /api/finance/transactions: the vendor's learned category fills a
 //                      missing category, a row on a foreign-currency account gets currency /
 //                      fx_rate / amount_home (migration 210), and every referenced id (account,
-//                      category, brand) must be the user's own (lib/auth/ownership.ts).
+//                      category, brand) must be the user's own (lib/auth/ownership.ts). A row
+//                      with a category gets the category's life area as an automatic tag
+//                      (migration 223, lib/categories/life-areas.ts).
 //   createMealLog      POST /api/meals (meals used to be a browser-side insert only).
 //   createWorkoutLog   POST /api/workouts/logs: template, exercise and equipment ids are kept
 //                      only when the user may reference them; anything else is saved as "no link".
@@ -26,6 +28,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { checkOwned, checkReferences, invalidReferenceMessage, ownedIds } from '../auth/ownership.ts';
 import { findLearnedCategory } from '../finance/learned-categories.ts';
 import { fxFieldsFor, loadAccountCurrency, loadHomeCurrency } from '../finance/fx/server.ts';
+import { syncAutoLifeAreas } from '../categories/life-areas.ts';
 
 /** Success, or an HTTP status and a message the route can answer with. */
 export type CreateResult<T> = { ok: true; value: T } | { ok: false; status: 400 | 500; error: string };
@@ -148,6 +151,9 @@ export async function createTransaction(
 
   if (error) return fail(500, error.message);
   if (!data) return fail(500, 'Saving the transaction returned no row.');
+  // The life area follows the budget category (one category tree, lib/categories/life-areas.ts).
+  const savedId = (data as { id?: unknown }).id;
+  if (resolvedCategoryId && typeof savedId === 'string') await syncAutoLifeAreas(db, userId, [savedId]);
   return { ok: true, value: data as unknown as Record<string, unknown> };
 }
 

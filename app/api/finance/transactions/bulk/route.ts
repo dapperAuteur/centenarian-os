@@ -14,6 +14,8 @@
 // every reference must be the caller's own (else 400, nothing written). The type never changes on
 // one side of a transfer (type_skipped). Rules: lib/finance/bulk-edit/logic.ts; writes:
 // lib/finance/bulk-edit/server.ts. Undo: ./undo/route.ts (migration 220).
+// A new category_id also moves each row's automatic life-area tag, and a life category added by
+// hand makes an automatic tag for it the person's own (lib/categories/life-areas.ts, migration 223).
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';

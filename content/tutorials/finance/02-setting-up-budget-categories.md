@@ -41,6 +41,14 @@ Click **Save**. The new category appears in your budget progress bars and is ava
 
 ---
 
+### Placing Each Category Under a Life Area
+
+Budget categories sit under life areas (Health, Home, Travel, Career...) in one category tree. A transaction's life area comes from its budget category, so Groceries under Health means every grocery purchase also counts toward Health on the Categories dashboard, with nothing extra to tag.
+
+Open **Organize categories** (the link in the category window on the Finance dashboard, on Budgets, or **Dashboard > Life > Categories > Organize categories**). New categories wait under **Needs a life area**, each with a suggestion from its name (Groceries → Health, Gas → Travel) that you confirm with one click, or pick another life area or drag the category onto one. When you add a category from the category picker, it asks which life area it belongs under. Budgets stay on the budget categories; on the Budgets page they're shown grouped under their life areas.
+
+---
+
 ### How Many Categories to Create
 
 More categories = more granular data but more work per transaction. Fewer categories = easier logging but less insight.
@@ -167,3 +175,4 @@ Once you have a few months of transactions, open **Finance → Budgets** (the Bu
 - The Budgets page suggests a budget from your own history: average (default) or median of the last 3, 6, or 12 months
 - Saving a budget on the Budgets page changes that month only unless you choose to apply it to later months too
 - Rollover carries a month's leftover (or overspend) into the next month
+- Each budget category sits under a life area (Organize categories); a transaction's life area follows its category

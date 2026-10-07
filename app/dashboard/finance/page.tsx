@@ -1000,6 +1000,13 @@ export default function FinanceDashboardPage() {
             </div>
           </form>
 
+          <Link
+            href="/dashboard/categories/organize"
+            className="min-h-11 flex items-center justify-center rounded-lg border border-sky-600 text-sky-700 text-sm font-medium hover:bg-sky-50"
+          >
+            Organize categories under life areas
+          </Link>
+
           {/* Existing categories list */}
           {categories.length > 0 && (
             <div className="border-t pt-3 space-y-2">

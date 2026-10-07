@@ -38,6 +38,7 @@ import {
 } from '@/lib/finance/csv-import/respond';
 import { runImport } from '@/lib/finance/csv-import/service';
 import { isPdfBody, runPdfImport } from '@/lib/finance/pdf-import/service';
+import { syncAutoLifeAreas, syncAutoLifeAreasForBatch } from '@/lib/categories/life-areas';
 
 // pdfjs reads PDFs with Node APIs.
 export const runtime = 'nodejs';
@@ -53,6 +54,8 @@ export async function POST(request: NextRequest) {
   if (isPdfBody(body)) {
     try {
       const result = await runPdfImport(supabase, user.id, body);
+      // Categorized rows get their category's life area (one category tree, migration 223).
+      await syncAutoLifeAreasForBatch(supabase, user.id, result.batchId);
       return NextResponse.json({ ...result, imported: result.inserted + result.linked });
     } catch (error) {
       return importErrorResponse(error);
@@ -63,6 +66,7 @@ export async function POST(request: NextRequest) {
   if (fields.csv_text !== undefined || fields.csvText !== undefined) {
     try {
       const result = await runImport(supabase, user.id, body);
+      await syncAutoLifeAreasForBatch(supabase, user.id, result.batchId);
       return NextResponse.json({ ...result, imported: result.inserted + result.linked });
     } catch (error) {
       return importErrorResponse(error);
@@ -116,6 +120,7 @@ async function importTemplateRows(
     .insert(payloads.map((payload) => ({ ...payload, user_id: userId, source: 'csv_import' })))
     .select('id');
   if (error) return fail(500, `The transactions could not be saved: ${error.message}`);
+  await syncAutoLifeAreas(supabase, userId, (data ?? []).map((row) => row.id as string));
 
   return NextResponse.json({
     imported: data?.length || 0,

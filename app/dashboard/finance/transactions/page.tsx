@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Trash2, Edit3, Filter, ChevronLeft, ChevronRight, Link2, X, Search, Check, Loader2, ScanSearch } from 'lucide-react';
 import Link from 'next/link';
@@ -18,6 +18,11 @@ import { reconciledAfterChange, reconciledWarning, type ReconciledPeriodView } f
 import FindSimilarPanel, { type SimilarSeed } from '@/components/finance/FindSimilarPanel';
 import BulkEditUndo from '@/components/finance/BulkEditUndo';
 import { describeEdit } from '@/lib/finance/bulk-edit/logic';
+// One category tree (plans/63 E): every category field here is the tree picker.
+import CategorySelect from '@/components/finance/CategorySelect';
+import CategoryTreePicker from '@/components/categories/CategoryTreePicker';
+import { buildCategoryTree } from '@/lib/categories/tree';
+import { useCategoryTreeData } from '@/lib/hooks/useCategoryTree';
 
 interface Category {
   id: string;
@@ -129,6 +134,12 @@ export default function TransactionsPage() {
   const [bulkSaving, setBulkSaving] = useState(false);
   const [bulkResult, setBulkResult] = useState<string | null>(null);
   const [lifeCategories, setLifeCategories] = useState<{ id: string; name: string; color: string }[]>([]);
+  // Bulk edit picks a budget category (its life area follows) or a life area alone.
+  const { data: treeData } = useCategoryTreeData();
+  const bulkTree = useMemo(() => {
+    const parentById = new Map((treeData?.budgetCategories ?? []).map((c) => [c.id, c.life_category_id]));
+    return buildCategoryTree(treeData?.lifeAreas ?? lifeCategories, categories, (c) => parentById.get(c.id) ?? null);
+  }, [treeData, lifeCategories, categories]);
 
   // Edit inline
   const [editId, setEditId] = useState<string | null>(null);
@@ -650,14 +661,21 @@ export default function TransactionsPage() {
           <span className="text-sm font-medium text-sky-800">{selected.size} selected</span>
           <button onClick={() => setSelected(new Set())} className="text-xs text-sky-600 hover:text-sky-800 underline">Clear</button>
           <div className="flex items-center gap-2 flex-wrap flex-1">
-            <select
-              value={bulkCategory}
-              onChange={(e) => setBulkCategory(e.target.value)}
-              className="px-2.5 py-1.5 text-sm border border-sky-200 rounded-lg bg-white text-gray-700"
-            >
-              <option value="">Set category…</option>
-              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            <CategoryTreePicker
+              id="bulk-category"
+              className="min-w-56"
+              tree={bulkTree}
+              mode="any"
+              label="Set category or life area"
+              hideLabel
+              placeholder="Set category…"
+              allowNone={false}
+              value={bulkCategory ? { kind: 'budget', id: bulkCategory } : bulkLifeTag ? { kind: 'life', id: bulkLifeTag } : null}
+              onChange={(next) => {
+                setBulkCategory(next?.kind === 'budget' ? next.id : '');
+                setBulkLifeTag(next?.kind === 'life' ? next.id : '');
+              }}
+            />
             {brands.length > 0 && (
               <select
                 value={bulkBrand}
@@ -666,16 +684,6 @@ export default function TransactionsPage() {
               >
                 <option value="">Set brand…</option>
                 {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-            )}
-            {lifeCategories.length > 0 && (
-              <select
-                value={bulkLifeTag}
-                onChange={(e) => setBulkLifeTag(e.target.value)}
-                className="px-2.5 py-1.5 text-sm border border-sky-200 rounded-lg bg-white text-gray-700"
-              >
-                <option value="">Life tag…</option>
-                {lifeCategories.map((lc) => <option key={lc.id} value={lc.id}>{lc.name}</option>)}
               </select>
             )}
             <button
@@ -745,18 +753,15 @@ export default function TransactionsPage() {
                         className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-900"
                         placeholder="Description"
                       />
-                      <label htmlFor={`edit-category-${tx.id}`} className="sr-only">Category</label>
-                      <select
+                      <CategorySelect
                         id={`edit-category-${tx.id}`}
+                        label="Category"
+                        hideLabel
                         value={editForm.category_id}
-                        onChange={(e) => setEditForm((p) => ({ ...p, category_id: e.target.value }))}
-                        className="w-full min-h-11 px-2 py-1 text-sm border border-gray-300 rounded text-gray-900"
-                      >
-                        <option value="">No category</option>
-                        {categories.map((c) => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                      </select>
+                        onChange={(id) => setEditForm((p) => ({ ...p, category_id: id }))}
+                        categories={categories}
+                        onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
+                      />
                       <div className="flex gap-2">
                         <button onClick={() => handleEditSave(tx.id)} className="px-3 py-1 bg-fuchsia-600 text-white rounded text-xs">Save</button>
                         <button onClick={() => setEditId(null)} className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">Cancel</button>
@@ -921,17 +926,16 @@ export default function TransactionsPage() {
                     <td className="px-4 py-3">
                       {editId === tx.id ? (
                         <div className="flex flex-col gap-1">
-                          <select
+                          <CategorySelect
+                            id={`edit-category-desktop-${tx.id}`}
+                            label="Category"
+                            hideLabel
+                            className="min-w-48"
                             value={editForm.category_id}
-                            onChange={(e) => setEditForm((p) => ({ ...p, category_id: e.target.value }))}
-                            aria-label="Category"
-                            className="px-2 py-1 text-xs border border-gray-300 rounded text-gray-900"
-                          >
-                            <option value="">No category</option>
-                            {categories.map((c) => (
-                              <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                          </select>
+                            onChange={(id) => setEditForm((p) => ({ ...p, category_id: id }))}
+                            categories={categories}
+                            onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
+                          />
                           {brands.length > 0 && (
                             <select
                               value={editForm.brand_id}

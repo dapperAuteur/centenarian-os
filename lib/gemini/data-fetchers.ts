@@ -6,6 +6,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { systemKindOf } from '@/lib/planner/system-roadmaps';
 import { excludingTransfers, withoutTransfers } from '@/lib/finance/transfers/schema';
+import { loadLifeAreaByCategory } from '@/lib/categories/life-areas';
 
 export type DataSourceKey =
   | 'health'
@@ -194,9 +195,17 @@ async function fetchFinanceData(
   const categories = catRes.data ?? [];
   const catMap = new Map(categories.map((c) => [c.id, c.name]));
 
+  // One category tree (migration 223): each budget category's life area. Empty before it.
+  const [{ map: lifeAreaByCategory }, lifeRes] = await Promise.all([
+    loadLifeAreaByCategory(db, userId),
+    db.from('life_categories').select('id, name').eq('user_id', userId),
+  ]);
+  const lifeNames = new Map(((lifeRes.data ?? []) as { id: string; name: string }[]).map((l) => [l.id, l.name]));
+
   let totalExpenses = 0;
   let totalIncome = 0;
   const byCat: Record<string, number> = {};
+  const byLifeArea: Record<string, number> = {};
 
   for (const tx of txs) {
     const amt = parseFloat(tx.amount);
@@ -204,6 +213,9 @@ async function fetchFinanceData(
       totalExpenses += amt;
       const catName = catMap.get(tx.category_id) || 'Uncategorized';
       byCat[catName] = (byCat[catName] || 0) + amt;
+      const lifeId = tx.category_id ? lifeAreaByCategory.get(tx.category_id) : undefined;
+      const lifeName = (lifeId && lifeNames.get(lifeId)) || 'No life area';
+      byLifeArea[lifeName] = (byLifeArea[lifeName] || 0) + amt;
     } else {
       totalIncome += amt;
     }
@@ -225,6 +237,15 @@ async function fetchFinanceData(
       const budget = categories.find((c) => c.name === name)?.monthly_budget;
       const budgetStr = budget ? ` (budget: $${parseFloat(budget).toFixed(0)})` : '';
       lines.push(`  ${name}: $${amt.toFixed(2)}${budgetStr}`);
+    }
+  }
+
+  // Spending by life area (budget categories sit under life areas). Only once something is placed.
+  if (lifeAreaByCategory.size > 0) {
+    const sortedAreas = Object.entries(byLifeArea).sort(([, a], [, b]) => b - a).slice(0, 8);
+    if (sortedAreas.length) {
+      lines.push('Spending by life area:');
+      for (const [name, amt] of sortedAreas) lines.push(`  ${name}: $${amt.toFixed(2)}`);
     }
   }
 

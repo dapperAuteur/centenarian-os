@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { loadLifeAreaByCategory } from '@/lib/categories/life-areas';
 
 function getDb() {
   return createServiceClient(
@@ -26,7 +27,7 @@ const MODULE_CONFIG: Record<string, { table: string; label: string; fields: stri
   transaction: {
     table: 'financial_transactions',
     label: 'Finance',
-    fields: 'id, vendor, description, amount, type, transaction_date',
+    fields: 'id, vendor, description, amount, type, transaction_date, category_id',
     dateFn: (r) => r.transaction_date as string,
     nameFn: (r) => {
       const sign = r.type === 'expense' ? '-' : '+';
@@ -146,6 +147,9 @@ export async function GET(request: NextRequest) {
     .eq('user_id', user.id);
 
   const taggedSet = new Set((tagged || []).map((t) => `${t.entity_type}:${t.entity_id}`));
+  // One category tree (migration 223): a transaction whose budget category sits under a life
+  // area has that life area, tag or not.
+  const { map: lifeAreaByCategory } = await loadLifeAreaByCategory(db, user.id);
 
   // 2. Query each module in parallel
   const entries = Object.entries(MODULE_CONFIG);
@@ -169,6 +173,7 @@ export async function GET(request: NextRequest) {
 
       const uncategorized = rows
         .filter((row) => !taggedSet.has(`${entityType}:${row.id}`))
+        .filter((row) => !(entityType === 'transaction' && row.category_id && lifeAreaByCategory.has(row.category_id)))
         .map((row) => ({
           id: row.id as string,
           display_name: config.nameFn(row as Record<string, unknown>),

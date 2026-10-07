@@ -11,7 +11,7 @@ CentenarianOS is a comprehensive longevity-focused life-management platform. It 
 ### Tech Stack
 - **Framework**: Next.js 15 App Router (TypeScript, app/ directory structure)
 - **Styling**: Tailwind CSS v4 (utility-first, dark theme with fuchsia accents)
-- **Database**: Supabase (PostgreSQL + Row-Level Security), 223 migrations. One Supabase project is shared with Work.WitUS (contractor-os), data and auth both, so Supabase Auth settings (email templates, SMTP sender, MFA) apply to both apps; a split (Work.WitUS to its own database, plan 55 Phase 3) is planned, not done
+- **Database**: Supabase (PostgreSQL + Row-Level Security), 224 migrations. One Supabase project is shared with Work.WitUS (contractor-os), data and auth both, so Supabase Auth settings (email templates, SMTP sender, MFA) apply to both apps; a split (Work.WitUS to its own database, plan 55 Phase 3) is planned, not done
 - **Auth**: Supabase Auth (email/password, magic link)
 - **Payments**: Stripe (checkout sessions, webhooks, subscription management, Stripe Connect for teacher payouts)
 - **AI**: Google Gemini 2.5 Flash (chat, coaching, embeddings, vision/OCR)
@@ -48,7 +48,7 @@ CentenarianOS is a comprehensive longevity-focused life-management platform. It 
 
 8. **Coaching Gems** — Custom AI personas with configurable data source access (11 types: health, finance, travel, workouts, recipes, planner, academy, daily logs, focus, meals, correlations). File uploads (CSV, images, PDFs). Knowledge base documents. Action execution (create recipes, log workouts, create transactions/tasks/gems, import transactions). Auto-flashcard extraction. Session persistence.
 
-9. **Life Categories** — Polymorphic tagging system. User-defined life areas (Health, Finance, Career, etc.) with icons and colors. Tags apply across all modules via entity_life_categories junction table. Analytics dashboard with spending pie chart and activity bar chart. Batch tagging for uncategorized items.
+9. **Life Categories** — Polymorphic tagging system. User-defined life areas (Health, Finance, Career, etc.) with icons and colors. Tags apply across all modules via entity_life_categories junction table. Analytics dashboard with spending pie chart and activity bar chart. Batch tagging for uncategorized items. **One category tree** (plans/63 E, migration 223, lib/categories/*): life areas are the top level and budget categories sit under them via budget_categories.life_category_id (nullable, ON DELETE SET NULL, same-user trigger, checked with lib/auth/ownership.ts; no backfill). A transaction's life area = its budget category's parent: computed on read in /api/life-categories/analytics (rollUpLifeAreas: category life area + tags, once each, transactions by transaction_date) and /uncategorized, and also written on save as an entity_life_categories tag with auto_source='budget_category' (createTransaction, transactions PATCH, bulk, statement/template import, AI create action; syncAutoLifeAreas). Only auto tags are ever removed (when the category changes); auto_source NULL = added by a person or by Work.WitUS, never removed; tagging by hand promotes an auto tag (markTagsManual). One picker: components/categories/CategoryTreePicker.tsx (combobox; modes budget/life/any; search; inline Add under a life area); components/finance/CategorySelect.tsx is built on it with unchanged props (Finance forms, importer review, recurring, invoices, cash, fuel, maintenance). Organize categories at /dashboard/categories/organize (Needs a life area bucket with suggestLifeArea suggestions the person confirms, drag or pick, create/rename/merge/delete). APIs: GET /api/categories/tree, POST /api/categories/merge (budget: repoints transactions, invoices, invoice_templates, recurring_payments, user_contacts.default_category_id, cash_counts, insurance_policies, schedule_template_finance, then deletes; life: moves budget categories and tags), /api/finance/categories POST/PATCH take life_category_id (409 'Run migration 223 first' before it). Budgets page groups lines by life area; budget math is unchanged.
 
 10. **Data Hub** — Centralized CSV import/export for all modules (finance, health metrics, trips, fuel, maintenance, vehicles, equipment, contacts, tasks, workouts). Template downloads. GenericImportPage component for consistent UX. Google Sheets paste support.
 
@@ -102,7 +102,7 @@ Overview, Users (list + detail), Messages, Content moderation, Engagement analyt
 - **Invited users**: Admin can grant trial or lifetime access without payment, with optional module restrictions
 
 ### Database Architecture
-- **223 migrations** in supabase/migrations/ (000 through 222, plus a few unnumbered drafts)
+- **224 migrations** in supabase/migrations/ (000 through 223, plus a few unnumbered drafts)
 - **Key tables**: profiles, financial_accounts, financial_transactions, budget_categories, vehicles, trips, trip_routes, trip_shares, fuel_logs, vehicle_maintenance, equipment, equipment_categories, equipment_valuations, equipment_media, asset_depreciation, exercises, exercise_categories, workout_logs, workout_templates, courses, lessons, modules (academy), course_prerequisites, prerequisite_override_requests, gem_personas, language_coach_sessions, life_categories, entity_life_categories, activity_links, daily_logs, pain_entries, user_contacts, contact_locations, witus_identities, integration_outbox, scan_images, receipt_line_items, item_prices, institutions, institution_offers, invited_users, teller_enrollments (deprecated 2026-10, unused), admin_chats, admin_chat_messages, app_logs, usage_events, page_views, media_categories, media_items, media_notes, podcast_episodes, media_episode_links, social_likes, social_shares, social_bookmarks
 - **Patterns**: Soft-delete via is_active flags, .maybeSingle() for optional rows, service role for admin ops, fire-and-forget logging
 - **RLS**: Enabled on all user-facing tables. Service role key bypasses RLS for admin/webhook routes.
@@ -135,7 +135,7 @@ Getting Started, Planner, Finance, Travel, Fuel, Engine, Health Metrics, Workout
 
 ### Project Stats
 - ~450+ TypeScript files
-- 223 database migrations
+- 224 database migrations
 - 22+ user-facing modules (including social layer and trip sharing; the media tracker moved to Stream.WitUS)
 - 20 admin management pages
 - 12 AI-powered features

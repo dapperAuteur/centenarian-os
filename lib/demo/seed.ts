@@ -104,6 +104,33 @@ export async function clearUserData(supabase: SupabaseClient, userId: string): P
 // ─── TUTORIAL ACCOUNT ──────────────────────────────────────────────────────
 // Clean, intentional data — good for screen recordings and tutorial videos.
 
+/**
+ * One category tree (migration 223): puts demo budget categories under life areas, by name.
+ * Before that migration the column doesn't exist; the first refused update stops it quietly and
+ * the demo shows the two lists side by side as before.
+ */
+async function placeDemoCategories(
+  supabase: SupabaseClient,
+  userId: string,
+  pairs: [budgetName: string, lifeAreaName: string][],
+): Promise<void> {
+  const [{ data: budgets }, { data: areas }] = await Promise.all([
+    supabase.from('budget_categories').select('id, name').eq('user_id', userId),
+    supabase.from('life_categories').select('id, name').eq('user_id', userId),
+  ]);
+  for (const [budgetName, lifeName] of pairs) {
+    const budget = budgets?.find((b) => b.name === budgetName);
+    const area = areas?.find((a) => a.name === lifeName);
+    if (!budget || !area) continue;
+    const { error } = await supabase
+      .from('budget_categories')
+      .update({ life_category_id: area.id })
+      .eq('id', budget.id)
+      .eq('user_id', userId);
+    if (error) return;
+  }
+}
+
 export async function seedTutorial(supabase: SupabaseClient, userId: string): Promise<void> {
   // Accounts
   const { data: accts, error: acctErr } = await supabase
@@ -314,6 +341,12 @@ export async function seedTutorial(supabase: SupabaseClient, userId: string): Pr
     { user_id: userId, name: 'Relationships', icon: 'users', color: '#f59e0b', sort_order: 4 },
   ]);
   if (lcErr) throw new Error(`Tutorial life categories: ${lcErr.message}`);
+  // One category tree: Gas and Utilities stay in "Needs a life area" to show the Organize screen.
+  await placeDemoCategories(supabase, userId, [
+    ['Groceries', 'Health'],
+    ['Healthcare', 'Health'],
+    ['Dining Out', 'Relationships'],
+  ]);
 
   // Focus Sessions (3 sessions)
   // focus_sessions.duration is stored in seconds (the timer and analytics all read seconds)
@@ -922,6 +955,15 @@ export async function seedVisitor(supabase: SupabaseClient, userId: string): Pro
     ])
     .select('id, name');
   if (lcErr) throw new Error(`Visitor life categories: ${lcErr.message}`);
+  // One category tree: Gas stays in "Needs a life area", where the Organize screen suggests Travel.
+  await placeDemoCategories(supabase, userId, [
+    ['Groceries', 'Health'],
+    ['Healthcare', 'Health'],
+    ['Dining Out', 'Relationships'],
+    ['Utilities', 'Finance'],
+    ['Entertainment', 'Creativity'],
+    ['Business', 'Career'],
+  ]);
 
   // Tag some existing entities with life categories
   const lcId = (name: string) => lcData?.find(c => c.name === name)?.id;

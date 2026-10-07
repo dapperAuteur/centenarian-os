@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getEntityRule } from '@/lib/activity-links/ownership';
 import { checkOwned } from '@/lib/auth/ownership';
+import { markTagsManual } from '@/lib/categories/life-areas';
 
 const VALID_TYPES = new Set([
   'task','trip','route','transaction','recipe',
@@ -57,6 +58,9 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     if (error.code === '23505') {
+      // Tagging by hand a life area the app had added from the budget category makes the tag the
+      // person's own, so a later category change never removes it (migration 223).
+      await markTagsManual(supabase, user.id, life_category_id, entity_type, [entity_id]);
       return NextResponse.json({ error: 'Already tagged' }, { status: 409 });
     }
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -12,6 +12,11 @@
 // Undo needs migration 220 (bulk_edit_operations, bulk_edit_operation_rows).
 // Without it a bulk edit still works; the answer says undo is not available.
 //
+// One category tree (migration 223): a category change, and an undo that puts
+// one back, moves each row's automatic life-area tag (syncAutoLifeAreas); a
+// life category added by hand makes an automatic tag for it the person's own
+// (markTagsManual). Both never throw and are no-ops before migration 223.
+//
 // No '@/' imports: runs under node --test (tests/unit/bulk-edit.test.ts).
 
 import { checkReferences, invalidReferenceMessage, isUuid } from '../../auth/ownership.ts';
@@ -34,6 +39,7 @@ import {
   type TxSnapshot,
 } from './logic.ts';
 import { rememberVendorCategory } from './remember.ts';
+import { markTagsManual, syncAutoLifeAreas } from '../../categories/life-areas.ts';
 
 /** The client this file needs (see OwnershipDb for why `from` returns any). */
 export interface BulkDb {
@@ -429,6 +435,8 @@ export async function applyBulkEdit(db: BulkDb, userId: string, input: unknown):
       }
     }
   }
+  // The life area follows the new category (one category tree, migration 223). Never fails the edit.
+  if (spec.category_id !== undefined && ownedIds.length > 0) await syncAutoLifeAreas(db, userId, ownedIds);
 
   // 3. Life categories.
   let lifeAdded = 0;
@@ -438,6 +446,8 @@ export async function applyBulkEdit(db: BulkDb, userId: string, input: unknown):
     const adding = ownedIds.filter((id) => !lifeNow.get(id)?.has(spec.life_add!));
     const error = await addLifeTags(db, userId, spec.life_add, adding);
     if (error) return fail(error.message ?? 'Could not add the life category');
+    // Tagged by hand: an automatic tag already there for this life area becomes the person's own.
+    await markTagsManual(db, userId, spec.life_add, 'transaction', ownedIds);
     lifeAdded = adding.length;
     for (const id of adding) {
       const entry = recordFor(id);
@@ -701,6 +711,11 @@ export async function undoOperation(db: BulkDb, userId: string, operationId: unk
   }
   for (const [lifeId, ids] of lifeAdd) await addLifeTags(db, userId, lifeId, ids);
   for (const [lifeId, ids] of lifeRemove) await removeLifeTags(db, userId, lifeId, ids);
+  // A category put back brings its life area back too (one category tree, migration 223).
+  const categoryRestored = plan.restore
+    .filter((item) => restored.has(item.operationRowId) && 'category_id' in item.values)
+    .map((item) => item.entityId);
+  if (categoryRestored.length > 0) await syncAutoLifeAreas(db, userId, categoryRestored);
 
   // 4. Mark the rows, then the operation once nothing is left.
   const restoredIds = [...restored];
