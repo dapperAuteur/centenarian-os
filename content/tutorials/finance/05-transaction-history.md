@@ -2,7 +2,7 @@
 
 **Course:** Mastering Finance
 **Module:** Transaction Management
-**Duration:** ~4 min
+**Duration:** ~6 min
 **Lesson type:** text / video
 **is_free_preview:** true
 **CYOA navigation:** cyoa
@@ -114,6 +114,46 @@ If several transactions landed in the wrong category (or are uncategorized), tic
 
 If every transaction you selected is from the same vendor, the "Always categorize this vendor as ...?" prompt appears after you apply, so you can make the choice stick for that vendor's future transactions.
 
+The bar works on the rows of one page. To fix every transaction like one you are looking at, across all your history, use Find similar.
+
+---
+
+### Find Similar and Bulk Edit
+
+Imported statements bring the same merchant in many spellings: "SQ *BLUE BOTTLE 0042", "Blue Bottle", "BLUE BOTTLE COFFEE #12". **Find similar** gathers them so you can fix them in one step.
+
+**Opening it.** Click the **Find similar** button (a magnifier) on any row, or **Find similar** in the Actions card of a transaction's page. After typing a search, **Find similar and edit in bulk** starts from your search words instead.
+
+**Choosing what must match.** The panel lists the details other transactions can share. Tick the ones that must match; the count updates as you tick:
+
+- **Same vendor** — ignores case, punctuation, store numbers and card-processor tags like "SQ *", so "CHIPOTLE #1234" and "Chipotle" match, but "Chipotle Grill" does not
+- **Similar description** — every word you type appears in the description or the vendor
+- **Same amount** — within the give-or-take you set (0 means to the cent)
+- **Same account**, **Same category** (or Uncategorized), **Same type**, and a **Date range**
+
+Starting from a transaction ticks its vendor and its type. The search runs across all your transactions, not just the page you are on.
+
+**Picking the rows.** Every match starts selected. Untick any you want to leave out, or use **Select all** and **Select none**. Transfer sides are marked.
+
+**Changing them.** Under "Change the selected transactions", set any of: category, a new vendor name, type, brand, a life category to add or remove, tags to add or remove, or **Unlink the selected transfers**. Anything left on "Leave as is" stays. Click **Apply**. Big selections are saved 200 at a time with a progress bar.
+
+Two rules protect your books:
+
+- The type never changes on one side of a transfer, because the two sides must stay an expense and an income. Unlink them in the same edit to change their type.
+- Unlinking always takes a transfer apart on both sides, even if you selected only one side.
+
+**Remember for future imports.** Once you pick a category, tick this to save it as a learned rule for the selected vendors, so new and imported transactions from them are categorized automatically.
+
+---
+
+### Undoing a Bulk Edit
+
+After a bulk edit, **Undo last bulk edit** shows what changed, how many transactions, and when. Click it to put them back.
+
+Undo only puts back a transaction that still has exactly what the edit gave it. If you edited one by hand afterwards, it stays as you left it, and the result tells you how many. An unlinked transfer is linked again only when both sides can be. The last 10 bulk edits are kept, so you can undo more than one, newest first.
+
+Undo needs database update 220. Until it is applied, bulk edits still work, but the panel says "Run migration 220 first" and they can't be undone.
+
 ---
 
 ### Year-End Review
@@ -159,6 +199,14 @@ The transaction history is your ledger for tax and financial planning purposes. 
 
 > [SCREEN: Click a linked transaction — show the Transfer card with the other side and the Unlink button]
 
+> [SCREEN: Click the Find similar button on a "SQ *BLUE BOTTLE" row — the panel opens with Same vendor and Same type ticked and a live count]
+
+> [SCREENSHOT: Find similar panel — callouts: the ticked details, the live count, the selected matches, Select all / Select none]
+
+> [SCREEN: Untick one match, set Category to Dining, type "Blue Bottle Coffee" in Rename vendor to, tick Remember for future imports, click Apply — show the progress bar and the result]
+
+> [SCREEN: Click Undo last bulk edit — the transactions go back — read the result line]
+
 > [SCREEN: Click Delete on a transaction — confirmation prompt — cancel (don't delete for demo)]
 
 > [SCREEN: Click Delete on a linked transaction — show the "Delete both sides" and "Unlink and delete only this one" choices — cancel]
@@ -176,6 +224,10 @@ The transaction history is your ledger for tax and financial planning purposes. 
 - Edit any transaction: fix category, amount, date, vendor, description
 - Changing a category offers "Always" (the vendor's future transactions get it too) or "Just this once"
 - Select rows to bulk-set a category, brand, or life tag
+- Find similar gathers every transaction sharing a vendor, words, amount, account, category, type or dates, and edits them all at once: category, vendor name, type, brand, life category, tags, transfer unlink
+- Bulk edits never change the type of one side of a transfer, and unlinking always unlinks both sides
+- "Remember for future imports" turns the new category into a learned rule for those vendors
+- Undo last bulk edit puts back only transactions nobody changed since (needs migration 220)
 - Transfers between your own accounts, card payments, and loan payments are linked pairs; they are not counted as spending or income
 - The Possible transfers panel suggests pairs; you decide with Link or Not a transfer, and only high-confidence pairs can be linked in bulk
 - Deleting one side of a transfer asks whether to delete both sides or unlink first

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, Calendar, DollarSign, Tag, Copy, Trash2,
-  Loader2, ArrowDownLeft, ArrowUpRight, Building2, CreditCard, FileText,
+  Loader2, ArrowDownLeft, ArrowUpRight, Building2, CreditCard, FileText, ScanSearch,
 } from 'lucide-react';
 import Link from 'next/link';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -337,7 +337,14 @@ export default function TransactionDetailPage() {
       {/* Actions */}
       <div className="bg-white border border-gray-200 rounded-2xl p-4">
         <h3 className="text-sm font-medium text-gray-700 mb-3">Actions</h3>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
+          {/* Opens the Find similar panel on the Transactions page, started from this transaction. */}
+          <Link
+            href={`/dashboard/finance/transactions?similar=${transaction.id}`}
+            className="min-h-11 flex items-center justify-center gap-1.5 px-3 py-2 bg-sky-50 text-sky-800 rounded-lg text-sm font-medium hover:bg-sky-100 transition"
+          >
+            <ScanSearch className="w-3.5 h-3.5" aria-hidden="true" /> Find similar
+          </Link>
           <button
             onClick={handleDuplicate}
             disabled={!!actionLoading}

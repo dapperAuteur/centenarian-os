@@ -208,7 +208,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
             <p className="text-sm sm:text-base text-center sm:text-left">
               <span className="font-semibold">Built in public.</span>
-              <span className="text-gray-300"> 7 months · 14 modules · 187 migrations · 1 founder · Postgres shared with a sibling app.</span>
+              <span className="text-gray-300"> 7 months · 14 modules · 223 migrations · 1 founder · Postgres shared with a sibling app.</span>
             </p>
             <span className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-fuchsia-300 group-hover:text-fuchsia-200 transition shrink-0">
               See how it&apos;s built
