@@ -198,6 +198,7 @@ export const MODULES: ModuleData[] = [
       'Accounts in any currency (travel cash), converted to your home currency with daily or your own rates',
       'Debt payoff: interest paid, payoff calculator, debt-free plan, due-date tasks',
       'Cash on hand: count your cash, one-tap "Paid cash" (offline too), ATM withdrawals into cash',
+      'Reconcile accounts to statements monthly, with dated starting balances',
       'Retirement accounts and planner (estimates), life insurance policies and premiums',
       'Budget categories with spending charts',
       'Invoices with custom fields & CSV import',
@@ -205,7 +206,7 @@ export const MODULES: ModuleData[] = [
     highlights: [
       {
         title: 'Multi-Account Tracking',
-        description: 'Add checking, savings, credit card, loan, and cash accounts. Each tracks its balance from an opening balance plus all transactions.',
+        description: 'Add checking, savings, credit card, loan, and cash accounts. Each tracks its balance from a starting balance (optionally as of a date) plus the transactions after it, and reconciles to each monthly statement.',
       },
       {
         title: 'Budget Categories & Charts',

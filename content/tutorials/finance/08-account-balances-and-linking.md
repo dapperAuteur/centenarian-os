@@ -21,8 +21,11 @@ Each account's balance is live — it updates every time you add, edit, or delet
 
 The balance calculation:
 ```
-Balance = Opening Balance + SUM(income) - SUM(expenses)
+Balance = Starting Balance + SUM(income) - SUM(expenses)
+          (only transactions after the starting balance's "as of" date, when set)
 ```
+
+Lesson 07 covers setting the starting balance and reconciling each statement.
 
 For **checking/savings/cash**: a positive balance means money available.
 
@@ -132,7 +135,7 @@ The entire chain — spending, ownership, and revenue — is traceable across mo
 
 ## Key Takeaways
 
-- Account balances are auto-calculated: Opening Balance + income - expenses
+- Account balances are auto-calculated: Starting Balance + income - expenses (after its "as of" date, when set)
 - A transfer, card payment, or loan payment is two linked transactions: both balances change, and neither counts as spending or income
 - Click any account on the dashboard to filter to that account's transactions
 - Savings goals are envelopes inside a real account: its balance is split across goals, and allocating never moves real money

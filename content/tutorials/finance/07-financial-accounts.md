@@ -48,7 +48,8 @@ The form includes:
 | **Currency** | select | Starts on your home currency. Pick the local currency for cash you carry on a trip (e.g. MXN). Can change only while the account has no transactions |
 | **Institution Name** | text | Optional — bank or lender name. Shown next to the account name wherever you pick an account |
 | **Last Four** | 4 chars | Last 4 digits of account number. Tells apart two accounts with the same name, and helps the app recognize transfers: a description such as "TRANSFER TO ...5345" points at the account ending 5345 |
-| **Opening Balance** | number | Starting balance — used as the baseline for calculations |
+| **Starting Balance** | number | The baseline for the balance. On a credit card or loan, what you owed |
+| **As of** | date | Optional — the day the starting balance is as of (end of that day). Only transactions after it count. Empty: every transaction counts |
 | **Interest Rate** | number | Optional — APR for savings/loans, APY for credit cards |
 | **Credit Limit** | number | Optional — only relevant for credit cards |
 | **Monthly Fee** | number | Optional — recurring account fee |
@@ -62,10 +63,11 @@ The form includes:
 Account balances are calculated, not stored directly:
 
 ```
-Balance = Opening Balance + SUM(income transactions) - SUM(expense transactions)
+Balance = Starting Balance + SUM(income) - SUM(expenses)
+          (only transactions dated after the "as of" date, when there is one)
 ```
 
-Every transaction assigned to the account affects the balance. Income adds. Expenses subtract. The opening balance provides the starting point.
+Every transaction assigned to the account affects the balance. Income adds. Expenses subtract. The starting balance provides the starting point. When it has an **as of** date, older transactions stay in your history but no longer change the balance, so an account can start part-way through its history.
 
 This means you don't manually update balances — they stay accurate as long as your transactions are assigned to the right accounts.
 
@@ -95,6 +97,23 @@ Cash accounts get extra help, because cash never sends you a statement.
 - **Paid cash** — amount, what it was for, optional category (learned vendor categories fill in), today's date, and your last used cash account. One tap saves it, offline too.
 - **Withdraw** — opens Transfer into that cash account.
 - **ATM withdrawals in imports** — on a checking or savings statement, rows such as "ATM WITHDRAWAL" or "RETIRO EN CAJERO" get **Cash withdrawal → into** a cash account in the same currency, so the cash becomes cash on hand instead of spending. ATM fees stay expenses.
+
+---
+
+### Starting Balance and Reconciling
+
+Banks and card companies send a statement every month. Reconciling checks your records against it, so the balance here is the real one. Every non-cash account has a **Reconcile** link and a "Reconciled through" line (amber when never reconciled or more than 30 days ago).
+
+**Set the starting balance first.** Importing years of statements, or starting mid-history? Use the balance on your first imported statement's start date: its beginning balance, as of the day before the period starts. The Reconcile page's **Use my first imported statement** fills both in from the earliest PDF statement. On a card or loan, enter what you owed.
+
+**Reconcile each statement:**
+
+1. Enter the statement's closing date and ending balance (on a card or loan, the new balance: what you owe). A PDF import fills these in, and right after one the import page offers **Reconcile to this statement's balance**.
+2. **Compare** shows the balance your records give for that date, the difference, and the period's transactions.
+3. Tick **Cleared** on each transaction that appears on the statement.
+4. **Finish.** No difference: the statement is reconciled. A difference: look for a missing, doubled or mis-dated transaction first, then choose **Add an adjustment** (one "Reconciliation adjustment" transaction, tagged `reconcile-adjustment`), **Change the starting balance** (only before any earlier statement is reconciled), or **Leave it open**.
+
+Transactions inside a reconciled period show a **Reconciled** badge, and editing or deleting one asks first. **Unreconcile** opens a statement again. The Finance dashboard's **Reconcile your accounts** card lists the accounts due this month. Needs migration 221.
 
 ---
 
@@ -171,9 +190,9 @@ Every figure on these pages is an estimate from your own numbers, not financial 
 
 > [SCREEN: Click "+ Add Account" — show the form]
 
-> [SCREENSHOT: Account form — callouts: Name, Type dropdown, Institution, Last Four, Opening Balance, Interest Rate, Credit Limit]
+> [SCREENSHOT: Account form — callouts: Name, Type dropdown, Institution, Last Four, Starting Balance, As of, Interest Rate, Credit Limit]
 
-> [SCREEN: Fill in: Name "Chase Checking", Type "Checking", Institution "JPMorgan Chase", Last Four "4567", Opening Balance 2500]
+> [SCREEN: Fill in: Name "Chase Checking", Type "Checking", Institution "JPMorgan Chase", Last Four "4567", Starting Balance 2500, As of the day before the first statement's period]
 
 > [SCREEN: Save — show the account appear in the list]
 
@@ -181,12 +200,15 @@ Every figure on these pages is an estimate from your own numbers, not financial 
 
 > [SCREEN: Click the account — show the dashboard filter to that account's transactions]
 
+> [SCREEN: Accounts page — click Reconcile on the checking account, enter the statement's closing date and ending balance, Compare, tick Cleared, Finish]
+
 ---
 
 ## Key Takeaways
 
 - 5 account types: checking, savings, credit_card, loan, cash
-- Balance = Opening Balance + income - expenses (auto-calculated from transactions); on a card or loan the balance is what you owe
+- Balance = Starting Balance + income - expenses (auto-calculated from transactions after the starting balance's "as of" date, when set); on a card or loan the balance is what you owe
+- **Reconcile** each account monthly against its statement: compare, tick Cleared, finish (adjustment, change the starting balance, or leave open); the dashboard card lists accounts not reconciled in 30 days
 - Use Transfer to move money between accounts, including card and loan payments: both balances change, and nothing counts as spending or income
 - Cash accounts: **Count** keeps the balance honest (one "Unrecorded cash spending" or "Cash found" entry), **Paid cash** records cash spending in one tap (offline too), and imported ATM withdrawals go into a cash account instead of counting as spending
 - Accounts appear as a row at the top of the finance dashboard
