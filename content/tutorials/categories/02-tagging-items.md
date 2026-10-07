@@ -46,6 +46,10 @@ The tag is saved immediately. No need to click a separate save button.
 
 Each tag chip shows a small **X** button on the right side. Click it to remove the tag. Like adding, removal is instant.
 
+### Transactions: The Life Area From the Category
+
+A transaction gets its life area from its budget category. On a transaction's page that life area shows as a chip such as **Health · from Groceries**, without an X: change the transaction's category to change it. You can still add other life areas by hand, and the app never removes a tag you added.
+
 ---
 
 ### Multiple Tags
