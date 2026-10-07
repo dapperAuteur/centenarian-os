@@ -1,276 +1,249 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+// app/dashboard/engine/pain/page.tsx
+// Body Check & Pain Log. Every save adds a new entry (time defaults to now and can be
+// changed), so pain can be logged as often as it is noticed. Today's entries are listed
+// below the form with Edit and Delete. Saving works offline: the entry is queued and sent
+// when the connection returns. Each day's daily_logs.pain_* summary (what the correlation
+// engine and AI reports read) is recomputed by the API after every change.
+//
+// Before migration 222 the API keeps the old one-entry-per-day behavior; the page then
+// pre-fills today's entry, as it used to, and shows "Run migration 222 first".
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { History } from 'lucide-react';
 import EntryComposer from '@/components/ui/EntryComposer';
+import PainEntryFields from '@/components/pain/PainEntryFields';
+import PainEntryItem from '@/components/pain/PainEntryItem';
 import { todayLocal, parseLocalDate } from '@/lib/dates/local';
+import { formatTime, useClockFormat } from '@/lib/hooks/useClockFormat';
+import { useSyncContext } from '@/lib/contexts/SyncContext';
+import { intensityBadgeClass } from '@/lib/pain/options';
+import type { PainEntry } from '@/lib/pain/logic';
+import {
+  createPainEntry,
+  emptyForm,
+  fetchEntries,
+  formFromEntry,
+  newEntryId,
+  pendingEntry,
+  toTimeInput,
+  type DayState,
+  type PainFormState,
+} from '@/lib/pain/client';
 
-type PainIntensity = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
-
-const BODY_LOCATIONS = [
-  'Right Hip Flexor',
-  'Left Hip Flexor',
-  'Right Glute',
-  'Left Glute',
-  'SI Joint',
-  'Lower Back (L5/S1)',
-  'Mid Back (Thoracic)',
-  'Neck',
-  'Left Shoulder',
-  'Right Shoulder',
-  'Left Hamstring',
-  'Right Knee',
-];
-
-const SENSATIONS = ['Tightness', 'Pinching', 'Dull Ache', 'Sharp Stab', 'Burning'];
+function newestFirst(a: PainEntry, b: PainEntry): number {
+  return Date.parse(b.occurred_at) - Date.parse(a.occurred_at);
+}
 
 export default function PainTrackingPage() {
-  const [painData, setPainData] = useState<{
-    intensity: PainIntensity;
-    locations: string[];
-    sensations: string[];
-    activities: string;
-    notes: string;
-  }>({
-    intensity: 1,
-    locations: [],
-    sensations: [],
-    activities: '',
-    notes: '',
-  });
-  const [logId, setLogId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const clockFormat = useClockFormat();
   const today = todayLocal();
 
-  const loadTodayLog = useCallback(async () => {
-    const { data } = await supabase
-      .from('daily_logs')
-      .select('*')
-      .eq('date', today)
-      .maybeSingle();
+  const [form, setForm] = useState<PainFormState>(() => emptyForm());
+  // Until the person changes the time, it follows the clock.
+  const [timeTouched, setTimeTouched] = useState(false);
+  const [entries, setEntries] = useState<PainEntry[]>([]);
+  const [pending, setPending] = useState<PainEntry[]>([]);
+  const [dailyLogId, setDailyLogId] = useState<string | null>(null);
+  const [ready, setReady] = useState(true);
+  const [notice, setNotice] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [message, setMessage] = useState('');
 
-    if (data) {
-      setLogId(data.id);
-      if (data.pain_intensity) {
-        setPainData({
-          intensity: data.pain_intensity,
-          locations: data.pain_locations || [],
-          sensations: data.pain_sensations || [],
-          activities: (data.pain_activities || []).join('\n'),
-          notes: data.pain_notes || '',
-        });
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    try {
+      const res = await fetchEntries({ date: today, limit: 200 });
+      setReady(res.ready);
+      setNotice(res.notice ?? '');
+      setDailyLogId(res.days[today]?.daily_log_id ?? null);
+      if (res.ready) {
+        setEntries([...res.entries].sort(newestFirst));
+      } else {
+        // The old behavior: one record per day, shown in the form to change.
+        setEntries([]);
+        const existing = res.entries[0];
+        if (existing) setForm({ ...formFromEntry(existing), time: toTimeInput(new Date()) });
       }
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Could not load today\'s entries.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }, [supabase, today]);
+  }, [today]);
 
   useEffect(() => {
-    loadTodayLog();
-  }, [loadTodayLog]);
+    load();
+  }, [load]);
+
+  // Entries saved offline: once the queue has been sent, show them from the server.
+  const { justSynced } = useSyncContext();
+  const hasPending = pending.length > 0;
+  useEffect(() => {
+    if (!justSynced || !hasPending) return;
+    setPending([]);
+    load();
+  }, [justSynced, hasPending, load]);
+
+  useEffect(() => {
+    if (timeTouched) return;
+    const timer = setInterval(() => setForm((f) => ({ ...f, time: toTimeInput(new Date()) })), 30_000);
+    return () => clearInterval(timer);
+  }, [timeTouched]);
+
+  const handleChange = (next: PainFormState) => {
+    if (next.time !== form.time) setTimeTouched(true);
+    setForm(next);
+  };
+
+  const resetTimeToNow = () => {
+    setTimeTouched(false);
+    setForm((f) => ({ ...f, time: toTimeInput(new Date()) }));
+  };
+
+  const applyDay = (day: DayState | null) => {
+    if (day && day.date === today && day.daily_log_id) setDailyLogId(day.daily_log_id);
+  };
 
   const handleSave = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    setMessage('');
+    const submitted = timeTouched ? form : { ...form, time: toTimeInput(new Date()) };
+    const id = newEntryId();
+    const result = await createPainEntry(submitted, id);
 
-    const activitiesArray = painData.activities.split('\n').map(a => a.trim()).filter(a => a);
+    if (result.queued) {
+      const queued = pendingEntry(id, submitted);
+      if (queued.local_date === today) setPending((p) => [queued, ...p]);
+      setMessage('Saved offline. The entry is sent when you reconnect.');
+      setForm(emptyForm());
+      setTimeTouched(false);
+      return;
+    }
 
-    const { data, error } = await supabase
-      .from('daily_logs')
-      .upsert({
-        user_id: user.id,
-        date: today,
-        pain_intensity: painData.intensity,
-        pain_locations: painData.locations.length > 0 ? painData.locations : null,
-        pain_sensations: painData.sensations.length > 0 ? painData.sensations : null,
-        pain_activities: activitiesArray.length > 0 ? activitiesArray : null,
-        pain_notes: painData.notes || null,
-      }, { onConflict: 'user_id,date' })
-      .select('id')
-      .maybeSingle();
-
-    if (error) throw new Error(error.message);
-
-    if (data?.id) setLogId(data.id);
+    applyDay(result.day);
+    if (!result.ready) {
+      setReady(false);
+      setNotice(result.notice ?? '');
+      setMessage('Saved as today\'s pain log.');
+      return;
+    }
+    setReady(true);
+    const saved = result.entry;
+    if (saved && saved.local_date === today) {
+      setEntries((list) => [saved, ...list.filter((e) => e.id !== saved.id)].sort(newestFirst));
+      setMessage(`Entry saved for ${formatTime(saved.occurred_at, clockFormat)}.`);
+    } else if (saved) {
+      setMessage(`Entry saved to ${parseLocalDate(saved.local_date).toLocaleDateString()}.`);
+    }
+    setForm(emptyForm());
+    setTimeTouched(false);
   };
 
-  const toggleLocation = (location: string) => {
-    setPainData(prev => ({
-      ...prev,
-      locations: prev.locations.includes(location)
-        ? prev.locations.filter(l => l !== location)
-        : [...prev.locations, location],
-    }));
-  };
-
-  const toggleSensation = (sensation: string) => {
-    setPainData(prev => ({
-      ...prev,
-      sensations: prev.sensations.includes(sensation)
-        ? prev.sensations.filter(s => s !== sensation)
-        : [...prev.sensations, sensation],
-    }));
-  };
-
-  const isHighPain = painData.intensity >= 4;
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
-      </div>
+  const onUpdated = (entry: PainEntry, days: DayState[] | null) => {
+    setEntries((list) =>
+      list
+        .map((e) => (e.id === entry.id ? entry : e))
+        .filter((e) => e.local_date === today)
+        .sort(newestFirst),
     );
-  }
+    days?.forEach(applyDay);
+  };
+
+  const onDeleted = (id: string, day: DayState | null) => {
+    setEntries((list) => list.filter((e) => e.id !== id));
+    applyDay(day);
+  };
+
+  const shown = useMemo(() => [...pending, ...entries].sort(newestFirst), [pending, entries]);
+  const highest = shown.length > 0 ? Math.max(...shown.map((e) => e.intensity)) : null;
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <header className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900">Body Check & Pain Log</h1>
-        <p className="text-gray-600">End-of-day assessment for {parseLocalDate(today).toLocaleDateString()}</p>
+    <div className="max-w-4xl mx-auto px-4 py-6 sm:p-6">
+      <header className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        <div>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Body Check & Pain Log</h1>
+          <p className="text-gray-600">
+            {parseLocalDate(today).toLocaleDateString()} · Log pain each time you notice it. Every save adds a new entry.
+          </p>
+        </div>
+        <Link
+          href="/dashboard/engine/history/pain"
+          className="min-h-11 inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-sky-700 bg-white border border-sky-200 rounded-lg hover:bg-sky-50 transition"
+        >
+          <History className="w-4 h-4" aria-hidden="true" /> Pain history
+        </Link>
       </header>
 
-      <div className="bg-white rounded-2xl shadow-xl p-8">
+      {!ready && notice && (
+        <div role="status" className="mb-6 p-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 text-sm">
+          {notice}
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl shadow-xl p-5 sm:p-8">
         <EntryComposer
           entityType="daily_log"
-          entityId={logId}
+          entityId={dailyLogId}
           features={{ audio: true, photos: true, activityLinks: true, lifeCategories: true }}
           onSave={handleSave}
-          saveLabel="Log Body Check"
+          saveLabel={ready ? 'Add entry' : 'Log Body Check'}
         >
-          <div className="space-y-8">
-            {/* Intensity Rating */}
-            <div>
-              <div className="flex items-center mb-3">
-                <h2 className="text-xl font-bold text-gray-900">Overall Physical Discomfort (1-10)</h2>
-                <span className="ml-3 text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-red-100 text-red-600">
-                  Critical KPI
-                </span>
-              </div>
-              <div className="flex gap-2">
-                {[...Array(10)].map((_, i) => {
-                  const intensity = (i + 1) as PainIntensity;
-                  const isSelected = painData.intensity === intensity;
-
-                  let colorClass = 'bg-lime-200 hover:bg-lime-300 text-lime-800';
-                  if (intensity >= 4 && intensity <= 7) colorClass = 'bg-amber-200 hover:bg-amber-300 text-amber-800';
-                  if (intensity >= 8) colorClass = 'bg-red-200 hover:bg-red-300 text-red-800';
-
-                  if (isSelected) {
-                    colorClass = colorClass
-                      .replace('-200', '-500')
-                      .replace('hover:bg', 'bg')
-                      .replace('-300', '-600')
-                      .replace('text', 'text-white font-bold');
-                  }
-
-                  return (
-                    <button
-                      key={intensity}
-                      type="button"
-                      onClick={() => setPainData({ ...painData, intensity })}
-                      className={`flex-1 py-3 rounded-lg transition text-sm ${colorClass} ${
-                        isSelected ? 'scale-110 shadow-md' : ''
-                      }`}
-                    >
-                      {intensity}
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-gray-500 mt-2 text-center">
-                1 = No discomfort; 10 = Acute, debilitating pain
-              </p>
-            </div>
-
-            {/* Conditional Fields (show if pain > 1) */}
-            {painData.intensity > 1 && (
-              <div className="space-y-8 p-6 border-2 border-fuchsia-100 rounded-xl bg-fuchsia-50/30">
-                {/* Locations */}
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-3">Affected Locations</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {BODY_LOCATIONS.map(location => {
-                      const isSelected = painData.locations.includes(location);
-                      return (
-                        <button
-                          key={location}
-                          type="button"
-                          onClick={() => toggleLocation(location)}
-                          className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition ${
-                            isSelected
-                              ? 'bg-fuchsia-600 text-white border-fuchsia-600 shadow-lg'
-                              : 'bg-white text-gray-700 border-gray-300 hover:border-fuchsia-400'
-                          }`}
-                        >
-                          {location}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Sensations */}
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-3">Sensation Type</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {SENSATIONS.map(sensation => {
-                      const isSelected = painData.sensations.includes(sensation);
-                      return (
-                        <button
-                          key={sensation}
-                          type="button"
-                          onClick={() => toggleSensation(sensation)}
-                          className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition ${
-                            isSelected
-                              ? 'bg-sky-600 text-white border-sky-600 shadow-md'
-                              : 'bg-white text-gray-700 border-gray-300 hover:border-sky-400'
-                          }`}
-                        >
-                          {sensation}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Activities */}
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-2">Aggravating Activities</h2>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    List activities (one per line):
-                  </label>
-                  <textarea
-                    value={painData.activities}
-                    onChange={(e) => setPainData({ ...painData, activities: e.target.value })}
-                    rows={4}
-                    placeholder={'Morning workout (TRX Pulls)\nSitting with tablet (90 min)\nLong drive'}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-500 form-input"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Strategic Notes */}
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Strategic Notes</h2>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Context for analysis:
-              </label>
-              <textarea
-                value={painData.notes}
-                onChange={(e) => setPainData({ ...painData, notes: e.target.value })}
-                rows={3}
-                placeholder={
-                  isHighPain
-                    ? "Pain started after 90 mins sitting. Confirms need to eliminate 'tablet in bed' habit."
-                    : 'Optional notes on physical state or recovery quality.'
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-500 form-input"
-              />
-            </div>
-          </div>
+          <PainEntryFields value={form} onChange={handleChange} idPrefix="pain-new" onUseNow={resetTimeToNow} />
+          <p className="mt-4 text-xs text-gray-600">
+            Photos, voice notes, links and life categories below belong to the day, not to one entry.
+          </p>
         </EntryComposer>
+        {message && (
+          <p role="status" className="mt-4 text-sm text-gray-800">
+            {message}
+          </p>
+        )}
       </div>
+
+      {ready && (
+        <section className="mt-8" aria-labelledby="pain-today-heading">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <h2 id="pain-today-heading" className="text-xl font-bold text-gray-900">
+              Today&apos;s entries
+            </h2>
+            {highest != null && (
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${intensityBadgeClass(highest)}`}>
+                Highest {highest}/10
+              </span>
+            )}
+            {shown.length > 0 && <span className="text-sm text-gray-600">{shown.length} logged</span>}
+          </div>
+
+          {loading ? (
+            <p role="status" className="text-sm text-gray-600">
+              Loading today&apos;s entries...
+            </p>
+          ) : loadError ? (
+            <p role="alert" className="text-sm text-red-700">
+              {loadError}
+            </p>
+          ) : shown.length === 0 ? (
+            <p className="text-sm text-gray-600">Nothing logged yet today.</p>
+          ) : (
+            <ul className="space-y-2">
+              {shown.map((entry) => (
+                <PainEntryItem
+                  key={entry.id}
+                  entry={entry}
+                  clockFormat={clockFormat}
+                  pending={pending.some((p) => p.id === entry.id)}
+                  onUpdated={onUpdated}
+                  onDeleted={onDeleted}
+                />
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
     </div>
   );
 }
