@@ -237,7 +237,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How to tag activities with Life Categories',
-    content: `Life Categories let you tag any activity across all modules with life-area labels like Health, Finance, Career, Relationships, etc. Go to Dashboard → Categories to manage your categories, view analytics (spending by category, activity distribution), and find uncategorized items for batch tagging. You can also tag items directly from the Activity Linker modal when editing tasks, workouts, transactions, or any other entity. Each category has a custom icon and color. Default categories are auto-created on first use.`,
+    content: `Life Categories (life areas) let you tag any activity across all modules with labels like Health, Finance, Career, Relationships, etc. They are the top level of one category tree: your budget categories sit under them, so a transaction gets its life area from its budget category without a second step (see "One set of categories: life areas and budget categories"). Go to Dashboard → Categories to view analytics (spending by life area, activity distribution) and find uncategorized items for batch tagging, and to Organize categories to place budget categories under life areas. You can also tag items directly from the Activity Linker modal when editing tasks, workouts, transactions, or any other entity. Each category has a custom icon and color. Default life areas are auto-created on first use.`,
   },
 
   // ─── EQUIPMENT TRACKER ─────────────────────────────────────────────────────
@@ -666,7 +666,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How to tag items with Life Categories',
-    content: `Life Categories let you tag any item across all modules with life areas like Health, Finance, Career, Relationships, etc. Go to Dashboard → Categories to view the analytics dashboard with spending breakdowns and activity charts. To tag an item, look for the tag chips on any detail page or edit modal — click to add/remove categories. Use batch tagging on the Categories dashboard to tag uncategorized items. Create custom categories with your own icons and colors from the Categories settings.`,
+    content: `Life Categories let you tag any item across all modules with life areas like Health, Finance, Career, Relationships, etc. Go to Dashboard → Categories to view the analytics dashboard with spending breakdowns and activity charts. To tag an item, look for the Life areas section on any detail page or edit modal: + Tag opens the category picker showing your life areas; click × on a chip to remove it. A transaction's life area comes from its budget category and shows as "Health · from Groceries"; change the category to change it. Use batch tagging on the Categories dashboard to tag uncategorized items. Create, rename, merge and recolor life areas on Organize categories (/dashboard/categories/organize).`,
   },
 
   // ─── BLOG & RECIPE SEARCH ─────────────────────────────────────────────────
@@ -771,17 +771,17 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'What are Life Categories?',
-    content: `Life Categories are user-defined tags (Health, Finance, Career, etc.) that you can apply to any item across all modules — tasks, trips, transactions, workouts, recipes, and more. They help you see how your time and energy are distributed across life areas. Eight default categories are auto-seeded, and you can create your own with custom icons and colors.`,
+    content: `Life Categories are user-defined life areas (Health, Finance, Career, etc.) that you can apply to any item across all modules — tasks, trips, transactions, workouts, recipes, and more. They help you see how your time and energy are distributed across life areas. They are also the top level of your one category tree: each budget category sits under a life area, and a transaction takes its life area from its budget category. Eight default life areas are auto-seeded, and you can create your own with custom icons and colors.`,
   },
   {
     role: 'all',
     title: 'How to tag items with Life Categories',
-    content: `Look for the Life Category chips on any item detail page or edit modal. Click a category chip to tag or untag an item. The LifeCategoryTagger component shows existing tags and a dropdown to add more. You can also batch-tag items from the Categories dashboard (/dashboard/categories) by viewing uncategorized items.`,
+    content: `Look for the Life areas section on any item detail page or edit modal. It shows the item's life areas as chips; + Tag opens the same category picker used everywhere, showing life areas only, and × removes a tag you added. On a transaction, the life area that comes from its budget category is marked "from <category>" and has no ×: change the category to change it. You can also batch-tag items from the Categories dashboard (/dashboard/categories) by viewing uncategorized items.`,
   },
   {
     role: 'all',
     title: 'Life Categories analytics dashboard',
-    content: `Visit /dashboard/categories to see summary cards for each category, a spending pie chart broken down by category, and an activity bar chart showing how many items are in each life area. The uncategorized items view lets you quickly tag items that haven't been assigned to any category yet.`,
+    content: `Visit /dashboard/categories to see summary cards for each life area, a Spending by Life Area pie chart, and an activity bar chart showing how many items are in each life area. A transaction counts toward the life area its budget category sits under plus any life area it is tagged with, once each, and transactions count by their date within the 7, 30 or 90 days you choose; other items count by when they were tagged. Transfers between your own accounts never count as spending. The uncategorized items view lets you quickly tag items that haven't been assigned to any life area yet; a transaction whose budget category sits under a life area is already categorized.`,
   },
 
   // ─── DATA HUB ──────────────────────────────────────────────────────────────
@@ -940,5 +940,33 @@ export const HELP_ARTICLES: HelpArticle[] = [
     role: 'all',
     title: 'How to add podcast links',
     content: `Podcast episodes can store multi-platform links (Spotify, Apple Podcasts, YouTube, etc.) in a JSONB field. When viewing a podcast entry, click the platform icons to open the episode on that service. Teachers can also add podcast links to course lessons for supplementary listening.`,
+  },
+
+  // ─── ONE CATEGORY TREE (migration 223) ─────────────────────────────────────
+
+  {
+    role: 'all',
+    title: 'One set of categories: life areas and budget categories',
+    content: `CentenarianOS has one category tree. Life areas (your life categories, such as Health, Home, Travel, Career) are the top level, and budget categories (Groceries, Rent, Gas...) sit under them, so Groceries can live under Health. Budgets stay on the budget categories. A transaction gets its life area from its budget category automatically: pick Groceries and it counts toward Health too, with no second tag to add. Tasks, trips, workouts and other items that have no budget meaning are still tagged with a life area directly. Every place you choose a category (adding or editing a transaction, the bulk bar, the statement import review, budgets, recurring payments, invoices, cash) uses the same picker, which lists life areas with their budget categories under them. Budget categories that are not placed yet appear under "No life area" until you organize them on Organize categories (/dashboard/categories/organize). This needs a database update (migration 223); until it is applied the two lists work as before and the Organize screen says "Run migration 223 first".`,
+  },
+  {
+    role: 'all',
+    title: 'How to organize categories (put budget categories under life areas)',
+    content: `Go to Dashboard → Categories and click Organize categories (or the link in the Finance dashboard's category window or on Budgets). At the top, "Needs a life area" lists budget categories that have no life area yet. For each one: click "Use Health" (a suggestion from the category's name, such as Groceries → Health or Gas → Travel), pick a life area from its list, or drag it onto a life area card. Nothing is placed until you choose; "Use all suggestions" accepts every suggestion at once. Each life area card lists its budget categories; drag one to another card or change its list to move it, and its transactions move with it (their life area follows). Add a budget category under a life area with the box at the bottom of its card, and add a new life area at the bottom of the page. The pencil button on a budget category or life area lets you rename, merge or delete it.`,
+  },
+  {
+    role: 'all',
+    title: 'How a transaction gets its life area',
+    content: `A transaction's life area is the life area its budget category sits under. If Groceries is under Health, every Groceries transaction counts toward Health on the Categories dashboard, including transactions categorized before you placed Groceries there. When you save a transaction with a category (by hand, in bulk, from a statement import, a receipt scan, the calendar or the AI coach), the app also adds that life area as a tag marked "from Groceries", so it shows on the transaction. If you change the category, that automatic tag moves to the new category's life area. Tags you added yourself are never removed by the app: a transaction can still have extra life areas, such as Travel on a grocery run during a trip. Tagging a life area by hand that the app had already added makes it yours, so it stays even if the category changes later. A transaction counts once per life area, never twice for the same one.`,
+  },
+  {
+    role: 'all',
+    title: 'Using the category picker',
+    content: `The category picker shows life areas as headings with their budget categories under them, and "No life area" for budget categories not placed yet. Click it (or press the down arrow) and type to search: typing a life area's name shows all of its budget categories, typing part of a category's name shows the matches under their life area, and accents and capitals don't matter. Use the up and down arrows to move, Enter to pick, Escape to close. If nothing matches, "Add “…”" creates a new budget category and asks which life area it goes under. On the Transactions bulk bar the picker also offers each life area on its own ("life area only"), which tags the selected transactions with that life area without changing their budget category. On tasks, trips, workouts and other items it lists life areas only.`,
+  },
+  {
+    role: 'all',
+    title: 'How to merge or delete categories',
+    content: `On Organize categories, click the pencil next to a budget category or life area. Merge into moves everything to the other one and then deletes the first. Merging budget categories moves its transactions, recurring payments, invoices and invoice templates, vendors' default (learned) categories, cash counts, insurance premiums and schedule pay settings; the category you keep keeps its own budgets by month, and the merged category's month-by-month budgets are dropped. Merging life areas moves its budget categories and every tag to the other life area. Delete removes the category without moving anything: a deleted budget category's transactions become uncategorized (and lose the life area that came from it), and a deleted life area's budget categories go back to "Needs a life area" and its tags are removed. Merge instead of delete when you want to keep the history together.`,
   },
 ];
