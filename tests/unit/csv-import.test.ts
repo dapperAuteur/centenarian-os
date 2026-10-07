@@ -1257,3 +1257,32 @@ test('assignExternalIds: a bank ID wins, and the input rows are left alone', () 
   assert.equal('externalId' in rows[0], false);
   assert.equal(identified[0].rowNumber, 2);
 });
+
+// A hand-kept spreadsheet with both Payee and Description columns, where some
+// rows leave Description empty (synthetic rows, shaped like a categorized export).
+test('detectMapping + applyMapping: Payee becomes the vendor and fills an empty description', () => {
+  const file = [
+    'Date,Account,Payee,Amount,Category,Description,TxnID',
+    '2021-05-16,Card,"Example Eats, Inc.",-14.93,Food Takeout,,ABC123',
+    '2021-05-17,Card,Sample Rides,-16.99,Travel,,DEF456',
+    '2021-05-19,Card,Example Software,-99.00,Tools,Annual plan,GHI789',
+  ].join('\n');
+  const { guess, result } = importWithGuess(file);
+  assert.equal(guess.mapping.description, 'description');
+  assert.equal(guess.mapping.merchant, 'payee');
+  assert.equal(guess.mapping.bankId, 'txnid');
+  assert.deepEqual(result.rejected, []);
+  assert.deepEqual(result.rows.map((r) => [r.description, r.vendor]), [
+    ['Example Eats, Inc.', 'Example Eats, Inc.'],
+    ['Sample Rides', 'Sample Rides'],
+    ['Annual plan', 'Example Software'],
+  ]);
+});
+
+test('detectMapping: a file with Payee but no Description still uses Payee as the description', () => {
+  const file = ['Date,Payee,Amount', '2021-05-16,Example Eats,-14.93'].join('\n');
+  const { guess, result } = importWithGuess(file);
+  assert.equal(guess.mapping.description, 'payee');
+  assert.equal(guess.mapping.merchant, undefined);
+  assert.equal(result.rows[0].description, 'Example Eats');
+});
