@@ -1,6 +1,6 @@
 # CentenarianOS Style Guide
 
-This guide covers **git workflow and collaboration rules**. For code style (Tailwind, a11y, mobile-first, database rules, etc.), see [CLAUDE.md](CLAUDE.md).
+This guide covers **git workflow and collaboration rules**. For code style (Tailwind, a11y, mobile-first, shared-DB rules, etc.), see [CLAUDE.md](CLAUDE.md).
 
 Read CLAUDE.md first, then this file, before starting any task.
 
@@ -119,7 +119,7 @@ These apply everywhere, always:
 - **Never** `git commit --no-verify`. If a hook fails, fix the underlying issue.
 - **Never** `git commit --amend` a commit that has been pushed.
 - **Never** `git reset --hard` without first confirming your working tree is expendable.
-- **Never** drop or rename tables/columns in migrations — migrations must be additive (see [CLAUDE.md § Database](CLAUDE.md)).
+- **Never** drop or rename tables/columns in migrations — the database is shared with Work.WitUS, so migrations must be additive (see [CLAUDE.md § Database](CLAUDE.md)).
 
 ---
 

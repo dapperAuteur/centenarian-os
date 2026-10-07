@@ -1,8 +1,6 @@
 # CentenarianOS — Migrations Gallery
 
-> **Correction (2026-10-06):** Work.WitUS still runs on this same Supabase project. The "no longer shared" wording below describes a planned split (plan 55, Phase 3), not today. See [CLAUDE.md](./CLAUDE.md) §"Database".
-
-> **220 migrations across 14 modules**, shipped solo since project inception. Schema lives in CentenarianOS's own Supabase Postgres database. Until 2026-10 that database was **shared with a sibling product** (Work.WitUS / contractor-os), which is why every migration was written additive, RLS-aware, and cross-app-safe; the additive, idempotent rule stays.
+> **220 migrations across 14 modules**, shipped solo since project inception. Schema lives in a Supabase Postgres database **shared with a sibling product** (Work.WitUS / contractor-os), so every migration has to be additive, RLS-aware, and cross-app-safe. A split (Work.WitUS moving to its own database) is planned, not done.
 
 > **Decomposition note.** CentenarianOS is being decomposed toward the ecosystem's "one app,
 > one job" rule, so some modules below (Media, Academy, Travel, contractor residue) are
@@ -17,11 +15,11 @@ This doc is the visible evidence behind that headline. The full source is under 
 
 ## Why so many
 
-Three constraints compounded:
+Three constraints compound:
 
-1. **Shared database (until 2026-10).** centenarian-os and contractor-os both read/wrote the same Postgres instance, so every column, index and trigger had to make sense in the context of both apps. Bigger surface area + tighter coordination cost = more, smaller migrations. Work.WitUS now has its own database; migrations before 2026-10 (and the "SHARED DB" comments in them) reflect that era.
+1. **Shared database.** centenarian-os and contractor-os both read/write the same Postgres instance. Every column, every index, every trigger has to make sense in the context of both apps. Bigger surface area + tighter coordination cost = more, smaller migrations. A split is planned, not done; until it lands, this constraint holds.
 2. **14 product modules in one app.** Planner, finance, focus, health metrics, wearables, workouts, exercises, equipment, travel, fuel, recipes, blog, academy/LMS, AI coach, plus auxiliary subsystems (media library, smart scan, retrospective, smart scan, life categories). Each module evolves independently.
-3. **Additive-only as a rule.** [`CLAUDE.md`](./CLAUDE.md) §"Database" mandates `ADD COLUMN IF NOT EXISTS` / `CREATE TABLE IF NOT EXISTS` patterns and guarded policies. Drops and renames need an explicit plan (cross-app review in the shared-DB era). The result: many small, safe migrations rather than a few sprawling ones.
+3. **Additive-only as a rule.** [`CLAUDE.md`](./CLAUDE.md) §"Database" mandates `ADD COLUMN IF NOT EXISTS` / `CREATE TABLE IF NOT EXISTS` patterns and guarded policies. Drops and renames require cross-app review. The result: many small, safe migrations rather than a few sprawling ones.
 
 ---
 
@@ -196,7 +194,7 @@ Imperfect because some migrations don't carry the module name in the filename (e
 
 ## See also
 
-- [`CLAUDE.md`](./CLAUDE.md) — project conventions, including the Database rule that drives the additive-only migration discipline.
+- [`CLAUDE.md`](./CLAUDE.md) — project conventions, including the shared-database rule that drives the additive-only migration discipline.
 - [`STYLE_GUIDE.md`](./STYLE_GUIDE.md) — branch + commit + PR workflow.
-- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — the 14-module layout and the database boundary (formerly shared).
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — the 14-module layout and the shared-DB boundary, with a Mermaid diagram.
 - [`README.md`](./README.md) — top-level project intro.

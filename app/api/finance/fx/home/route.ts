@@ -5,8 +5,7 @@
 //        request; "Update rates now" continues where this stops).
 //        -> { home_currency, converted, unconverted }
 //
-// home_currency is a nullable profiles column added by migration 210 (profiles was shared with
-// Work.WitUS until the 2026-10 database split),
+// profiles is shared with Work.WitUS; home_currency is a nullable column added by migration 210
 // and is not one of migration 206's protected columns. Written with the service client, scoped to
 // the signed-in user's own row.
 

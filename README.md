@@ -1,14 +1,12 @@
 # CentenarianOS
 
-> **Correction (2026-10-06):** Work.WitUS still runs on this same Supabase project. The "no longer shared" wording below describes a planned split (plan 55, Phase 3), not today. See [CLAUDE.md](./CLAUDE.md) §"Database".
-
 > **One job: the longevity correlation engine over your personal data.** Health, habits, focus,
 > nutrition and personal finance are co-located in one datastore so the synthesis surfaces
 > ([`/dashboard/correlations`](./app/dashboard/correlations), [`/dashboard/retrospective`](./app/dashboard/retrospective),
 > [`/dashboard/weekly-review`](./app/dashboard/weekly-review)) can surface cross-domain patterns no
 > single-vertical tracker can see. That co-location is the product, not an accident of scope.
 
-> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, Supabase Postgres (its own database since 2026-10; until then it was shared with [Work.WitUS](https://work.witus.online)), offline-first via service-worker + IndexedDB queue, **220 migrations** to date.
+> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online); a split is planned, not done), offline-first via service-worker + IndexedDB queue, **220 migrations** to date.
 
 **Actively decomposing.** Modules that a sibling WitUS app already owns are being removed under
 the ecosystem's "one app, one job" rule (see [CLAUDE.md](./CLAUDE.md)) — Media → Stream.WitUS,
@@ -36,20 +34,21 @@ flowchart LR
   DB[(Supabase Postgres<br/>220 migrations)]:::shared
 
   CentOS -->|service-role + publishable| DB
+  Contractor -->|service-role + publishable| DB
   Contractor -->|signed events: income, work schedule| CentOS
 ```
 
 For dev-audience readers:
 
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** — full module map, how cross-app data flows now that the database is no longer shared (and what the shared-DB era looked like), offline-sync layer, repo layout, and stack table.
-- **[MIGRATIONS.md](./MIGRATIONS.md)** — 220 migrations grouped by module, the additive-only discipline (born in the shared-DB era, kept as the house rule), notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
-- **[CLAUDE.md](./CLAUDE.md)** — AI-collaborator instructions doubling as the project conventions doc (style, a11y, the Database rule, branch workflow).
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** — full module map, the shared-DB boundary, how cross-app data is moving to signed events ahead of a planned split, offline-sync layer, repo layout, and stack table.
+- **[MIGRATIONS.md](./MIGRATIONS.md)** — 220 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
+- **[CLAUDE.md](./CLAUDE.md)** — AI-collaborator instructions doubling as the project conventions doc (style, a11y, the shared-database rule, branch workflow).
 - **[STYLE_GUIDE.md](./STYLE_GUIDE.md)** — git workflow, branch naming, Conventional Commits, PR rules. Every change starts on a new branch off `main`; `main` is never pushed to directly.
 - **[docs/CentenarianAcademy/](./docs/CentenarianAcademy/)** — course-authoring standards: `CourseAuthoringGuide.md` (craft), `CourseProductionPlaybook.md` (process), `CitationIntegrityGuide.md` (verify every source, never ship a fake citation), and `CourseCreationWithAI.md` (hand to your AI). Per-course recipes: `CourseAuthoringGuide NASM CPT/CES/CNC.md` and `CourseAuthoringGuide BVC.md` (Better Vice Club: audio-first, four-lens episodes; episode-per-module; rotating quizzes + FlashLearn recall loop + season-wide glossary). Courses cite only verified, peer-reviewed sources and ship a teacher evidence ledger.
 
 What makes the architecture interesting (and the marketing pitch hard):
 
-1. **Two apps, once one database.** Until 2026-10 this repo and contractor-os (Work.WitUS) shared one Supabase project, with cross-app triggers (e.g., `trg_invoice_due_to_task`) materializing planner rows from contractor writes. The database is now split: Work.WitUS has its own, and cross-app data flows only through signed events and APIs (income and work-schedule events from Work.WitUS, RideWitUS feeds). Migrations stay additive and idempotent as the house rule.
+1. **Shared database, two apps.** This repo and contractor-os (Work.WitUS) use the same Supabase project, data and auth both, so migrations are additive-only across the boundary. Cross-app data is moving to signed events and APIs ahead of a planned split: Work.WitUS sends signed income and work-schedule events, RideWitUS uses signed feeds, and the old cross-app triggers (e.g., `trg_invoice_due_to_task`, dropped in migration 198) were replaced by app-side sync. The split itself, Work.WitUS moving to its own database, is planned, not done.
 2. **14 product modules.** Planner · Finance · Focus · Health Metrics · Wearables · Workouts · Exercises · Equipment · Travel · Fuel · Recipes · Blog · Academy/LMS · AI Coach. Plus auxiliary cross-cutting systems (Data Hub, Life Categories, Activity Links, Media Library, Smart Scan).
 3. **Offline-first with a real sync queue.** [`lib/offline/sync-manager.ts`](./lib/offline/sync-manager.ts) wraps `fetch()` with a URL-keyed IndexedDB cache for GETs and a queued mutation log for POST/PATCH/DELETE that replays on reconnect. 5-state UI indicator. Service worker stale-while-revalidate.
 4. **Multi-decade horizon.** The schema breadth is justified by the use case: a personal OS that wants to be useful for 50+ years has to model planning, money, body, learning, attention, and everything that links them, rather than picking one vertical.
@@ -65,7 +64,7 @@ B4C LLC / AwesomeWebStore.com  ← legal entity
     │   └── Academy (LMS)      ← module inside CentenarianOS today; migrating to Learn.WitUS
     ├── Learn.WitUS.Online     ← separate app, live multi-tenant LMS (BVC tenant)
     ├── Stream.WitUS.Online    ← separate app, cross-media tracker
-    └── Work.WitUS.Online      ← separate app, contractor operations (own database since 2026-10; talks to CentOS via signed events)
+    └── Work.WitUS.Online      ← separate app, contractor operations (shares CentOS's database today; a split is planned)
 ```
 
 The Academy is still a module of CentenarianOS, but it is **no longer the ecosystem's LMS
@@ -80,7 +79,7 @@ this README claimed "there is no standalone Learn.WitUS app" — that is no long
 |---|---|---|
 | Framework | Next.js 15 App Router | Server Components by default, route handlers for the API surface (365 route handlers). |
 | Hosting | Vercel | Fluid Compute for Node.js routes. |
-| Database | Supabase Postgres | RLS as the security model. CentOS's own database (shared with contractor-os until 2026-10). |
+| Database | Supabase Postgres | RLS as the security model. **Shared with contractor-os** (a split is planned, not done). |
 | Auth | `@supabase/ssr` | Cookie-based; browser + SSR via the same client. New publishable + secret key system. |
 | Styling | Tailwind v4 | WCAG 2.1 AA contrast enforced via global CSS overrides ([`app/globals.css`](./app/globals.css)). |
 | Type system | TypeScript strict | No `any` escape hatches in app code. |
@@ -460,7 +459,7 @@ supabase db push
 # Run migrations in order from supabase/migrations/
 ```
 
-There are 220 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. Migrations before 2026-10 were written for a database shared with Work.WitUS, which is why they're additive-only; new ones keep that rule. Read [`CLAUDE.md`](./CLAUDE.md) §"Database" before adding any.
+There are 220 migrations (see [`MIGRATIONS.md`](./MIGRATIONS.md) for the gallery). Run them in numeric order. The database is shared with the Work.WitUS (contractor-os) app, so migrations are additive-only. Read [`CLAUDE.md`](./CLAUDE.md) §"Database" before adding any.
 
 ### Run Development Server
 
@@ -522,7 +521,7 @@ centenarian-os/
     └── migrations/            # 218 database migrations — see MIGRATIONS.md
 ```
 
-For the full module map and the cross-app data story (and the shared-DB history), see **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
+For the full module map and the cross-app shared-DB story, see **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
 
 ## Security
 
