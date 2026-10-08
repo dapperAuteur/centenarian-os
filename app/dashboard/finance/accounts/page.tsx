@@ -2,8 +2,9 @@
 
 // app/dashboard/finance/accounts/page.tsx
 // Financial accounts management: add, edit, deactivate bank/card/loan/cash accounts.
-// Each account has a currency (migration 210). Balances show in the account's currency; accounts
-// in another currency also show the home-currency value with the rate's date and source.
+// Each account has a currency (migration 210). Balances, credit limits and fees show in the
+// account's currency; accounts in another currency also show the home-currency value with the
+// rate's date and source.
 // Starting balance: an amount and, optionally, the day it is as of (migration 221); the balance
 // then counts only transactions after that day. Each non-cash account links to its Reconcile page
 // and says how recently it was reconciled.
@@ -572,7 +573,7 @@ export default function AccountsPage() {
                       {acct.credit_limit != null && (
                         <div>
                           <span className="text-gray-400 text-xs">Credit Limit</span>
-                          <p className="text-gray-700">${Number(acct.credit_limit).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                          <p className="text-gray-700">{formatMoney(Number(acct.credit_limit), acct.currency ?? 'USD')}</p>
                         </div>
                       )}
                       {acct.interest_rate != null && (
@@ -584,7 +585,7 @@ export default function AccountsPage() {
                       {acct.monthly_fee != null && (
                         <div>
                           <span className="text-gray-400 text-xs">Monthly Fee</span>
-                          <p className="text-gray-700">${Number(acct.monthly_fee).toFixed(2)}</p>
+                          <p className="text-gray-700">{formatMoney(Number(acct.monthly_fee), acct.currency ?? 'USD')}</p>
                         </div>
                       )}
                       {acct.due_date != null && (
