@@ -277,6 +277,37 @@ in it, since the file numbers change between Garmin exports), `scripts/import-ga
 `scripts/import-apple-health.mjs` (also run with `--experimental-strip-types`; Apple steps: the largest
 device total per day, not every device added together).
 
+### Importing a Garmin export
+
+Garmin's full account export (the ZIP you request from your Garmin account, or its unzipped folder) is
+JSON, not the CSVs the in-app importers read. `scripts/garmin-export-to-centos.mjs` converts it on your
+machine. It reads local files only: no network, no database, no env vars.
+
+```bash
+node scripts/garmin-export-to-centos.mjs <export-dir | export.zip> [--out <dir>] [--since YYYY-MM-DD] [--exercises] [--with-notes]
+```
+
+It writes into `<export-dir>/centos-import` (or `--out`). Each importer has a check step that writes
+nothing, and importing a file twice adds nothing.
+
+| File | Import it at | What it holds |
+| --- | --- | --- |
+| `health-metrics-NN-of-MM_<from>_<to>.csv` | Settings > Wearables > Garmin > Import CSV (`/dashboard/metrics/import?source=garmin`), one file at a time | One row per local day: steps, that day's resting HR (not Garmin's 7-day average), active calories, intensity minutes, all-day stress, Body Battery high (as recovery), sleep hours (deep + light + REM), sleep score, sleep SpO2 and weight (the last-edited weigh-in of the day). At most 365 days per file, the import's cap. |
+| `trips-garmin-activities.csv` | Travel > Import Data > Garmin Activities CSV (`/dashboard/travel/import`) | Rides, walks, runs and hikes, with Garmin Connect's Activities.csv headers. Keyed by local start time, so activities already imported are skipped. |
+| `workouts.csv` | Data Hub > Import > Workouts (`/dashboard/data/import/workouts`) | Every other activity type (strength, HIIT, yoga, ...). The import merges rows with the same name and date into one workout, so a name used twice on one day gets its start time: `Strength (07:05)`. |
+| `summary.txt` | - | Counts, date ranges, what was skipped and why, and these steps. |
+
+Units it converts (checked against a real export and Garmin Connect's CSV for the same activities):
+activity durations are milliseconds, distance and elevation centimetres, activity `calories / 4.19` is
+kcal, weight is grams. A blank cell means not measured, never 0, so it can't erase a stored value.
+`--since` keeps only dates on or after that day (a newer export on top of one already imported).
+`--exercises` adds Garmin's exercise sets as exercise rows and splits the workouts file at workout
+boundaries (1,000-row cap). `--with-notes` writes logged water and blood-pressure readings into the
+notes column, since CentenarianOS has no column for either. Not converted (no column or importer): VO2
+max, fitness age, training status and load, respiration, floors, BMI, GPS tracks; HRV is not in the
+export. Keep the export and the output out of git (`docs/` and `files/` are ignored). Tests:
+`tests/unit/garmin-export-converter.test.ts`.
+
 ### Optional: Google Calendar (one-way sync)
 
 ```env

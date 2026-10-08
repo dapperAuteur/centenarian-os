@@ -98,6 +98,8 @@ After you click **Import**, a green message repeats the counts for what was save
 
 **Maximum import size:** 365 rows per import. For larger historical datasets, run multiple imports.
 
+**A full Garmin account export:** the ZIP you request from your Garmin account holds years of data as JSON, not a CSV. The `scripts/garmin-export-to-centos.mjs` script in the CentenarianOS repository turns it into Garmin files of at most 365 days each for this page (steps, resting HR, sleep, stress, Body Battery, weight and more, one row per day), plus a Garmin Activities CSV for the Travel import and a Workouts CSV for the Data Hub.
+
 InBody works a little differently: its scans are matched by their measurement time, so importing the same InBody export again adds only new scans, and the latest scan of each day becomes that day's InBody body-composition row.
 
 ---
