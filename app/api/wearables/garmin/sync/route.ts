@@ -1,9 +1,24 @@
 // app/api/wearables/garmin/sync/route.ts
-// POST: sync Garmin data for the authenticated user
+// POST: sync Garmin data for the authenticated user.
+//
+// Garmin is marked "Coming Soon" in Settings and needs Garmin developer
+// credentials, so this route is not reachable from the app today. It is kept
+// correct so it works the day the connection is switched on:
+//   - rows are written with source 'garmin' (the same row a Garmin CSV import
+//     uses), keyed on Garmin's calendarDate, through importDailyMetrics:
+//     a value Garmin sends wins, a field it leaves out is never erased, and a
+//     day already stored is never added twice;
+//   - a failed write marks the connection 'error' with sync_error, instead of
+//     reporting a sync that wrote nothing (the old upsert targeted a key that
+//     migration 080 removed, and its error was never read);
+//   - each sync asks only for what changed: from the last sync minus 2 days,
+//     never more than 30 days back.
 
 import { NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { importDailyMetrics } from '@/lib/fitness-import/daily-metrics';
+import { garminDays, splitRange, syncWindowStart } from '@/lib/fitness-import/wearable-days';
 
 function getDb() {
   return createServiceClient(
@@ -11,6 +26,11 @@ function getDb() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 }
+
+// FALLBACK, not verified: the longest upload-time range one Garmin Health API
+// pull request accepts. Taken as 24 hours; check Garmin's Health API reference
+// before enabling the connection. Shorter ranges only cost extra requests.
+const GARMIN_MAX_RANGE_SECONDS = 86_400;
 
 async function garminFetch(token: string, endpoint: string, params?: Record<string, string>) {
   const url = new URL(`https://apis.garmin.com/wellness-api/rest/${endpoint}`);
@@ -32,7 +52,7 @@ export async function POST() {
   const db = getDb();
   const { data: conn } = await db
     .from('wearable_connections')
-    .select('access_token')
+    .select('access_token, last_synced_at')
     .eq('user_id', user.id)
     .eq('provider', 'garmin')
     .maybeSingle();
@@ -47,61 +67,43 @@ export async function POST() {
     .eq('provider', 'garmin');
 
   try {
-    const since = new Date();
-    since.setDate(since.getDate() - 30);
-    // Garmin uses epoch seconds for date ranges
-    const startTimeInSeconds = Math.floor(since.getTime() / 1000);
-    const endTimeInSeconds = Math.floor(Date.now() / 1000);
-    const params = {
-      uploadStartTimeInSeconds: String(startTimeInSeconds),
-      uploadEndTimeInSeconds: String(endTimeInSeconds),
-    };
+    const now = new Date();
+    const startSeconds = Math.floor(syncWindowStart(conn.last_synced_at, now).getTime() / 1000);
+    const endSeconds = Math.floor(now.getTime() / 1000);
 
-    const [dailies, sleeps] = await Promise.all([
-      garminFetch(conn.access_token, 'dailies', params),
-      garminFetch(conn.access_token, 'sleeps', params),
-    ]);
-
-    const dayMap = new Map<string, Record<string, unknown>>();
-    const getDay = (epochSeconds: number) => {
-      const date = new Date(epochSeconds * 1000).toISOString().split('T')[0];
-      if (!dayMap.has(date)) dayMap.set(date, { user_id: user.id, logged_date: date });
-      return dayMap.get(date)!;
-    };
-
-    for (const daily of dailies ?? []) {
-      const d = getDay(daily.startTimeInSeconds || daily.calendarDate);
-      if (daily.steps != null) d.steps = daily.steps;
-      if (daily.activeKilocalories != null) d.active_calories = daily.activeKilocalories;
-      if (daily.highlyActiveSeconds != null) d.activity_min = Math.round(daily.highlyActiveSeconds / 60);
-      if (daily.restingHeartRateInBeatsPerMinute != null) d.resting_hr = daily.restingHeartRateInBeatsPerMinute;
-      if (daily.stressQualifier) d.stress_score = daily.averageStressLevel || null;
+    const dailies: unknown[] = [];
+    const sleeps: unknown[] = [];
+    for (const [from, to] of splitRange(startSeconds, endSeconds, GARMIN_MAX_RANGE_SECONDS)) {
+      const params = { uploadStartTimeInSeconds: String(from), uploadEndTimeInSeconds: String(to) };
+      const [d, s] = await Promise.all([
+        garminFetch(conn.access_token, 'dailies', params),
+        garminFetch(conn.access_token, 'sleeps', params),
+      ]);
+      if (Array.isArray(d)) dailies.push(...d);
+      if (Array.isArray(s)) sleeps.push(...s);
     }
 
-    for (const sleep of sleeps ?? []) {
-      const d = getDay(sleep.startTimeInSeconds);
-      if (sleep.durationInSeconds != null) {
-        d.sleep_hours = Math.round((sleep.durationInSeconds / 3600) * 10) / 10;
-      }
-      if (sleep.overallSleepScore?.value != null) d.sleep_score = sleep.overallSleepScore.value;
-    }
+    const result = await importDailyMetrics(db, {
+      userId: user.id,
+      source: 'garmin',
+      rows: garminDays(dailies, sleeps),
+      mode: 'replace',
+    });
 
-    const payloads = [...dayMap.values()].filter((d) => Object.keys(d).length > 2);
-
-    if (payloads.length > 0) {
-      await db.from('user_health_metrics')
-        .upsert(payloads, { onConflict: 'user_id,logged_date' });
-    }
-
-    await db.from('wearable_connections')
-      .update({ sync_status: 'idle', last_synced_at: new Date().toISOString() })
+    const { error: statusError } = await db.from('wearable_connections')
+      .update({ sync_status: 'idle', sync_error: null, last_synced_at: now.toISOString() })
       .eq('user_id', user.id)
       .eq('provider', 'garmin');
+    if (statusError) throw new Error(`Could not record the sync: ${statusError.message}`);
 
-    return NextResponse.json({ synced: payloads.length });
+    const { counts } = result;
+    return NextResponse.json({
+      synced: counts.inserted + counts.filled + counts.replaced,
+      ...counts,
+    });
   } catch (err) {
     await db.from('wearable_connections')
-      .update({ sync_status: 'error', sync_error: String(err) })
+      .update({ sync_status: 'error', sync_error: err instanceof Error ? err.message : String(err) })
       .eq('user_id', user.id)
       .eq('provider', 'garmin');
     return NextResponse.json({ error: 'Sync failed' }, { status: 500 });

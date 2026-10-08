@@ -1,9 +1,18 @@
 // app/api/wearables/oura/sync/route.ts
-// POST: sync Oura data for the authenticated user
+// POST: sync Oura data for the authenticated user.
+//
+// Oura has no card on the Wearables settings page, so nothing in the app
+// calls this route today. Its write path matches the Garmin sync: source
+// 'oura', the provider's own day, importDailyMetrics (a value Oura sends
+// wins, a field it leaves out is never erased, no day is added twice), a
+// failed write marks the connection 'error', and each sync reaches back to the
+// last sync minus 2 days (30 days at most).
 
 import { NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { importDailyMetrics } from '@/lib/fitness-import/daily-metrics';
+import { ouraDays, syncWindowStart } from '@/lib/fitness-import/wearable-days';
 
 function getDb() {
   return createServiceClient(
@@ -30,7 +39,7 @@ export async function POST() {
   const db = getDb();
   const { data: conn } = await db
     .from('wearable_connections')
-    .select('access_token')
+    .select('access_token, last_synced_at')
     .eq('user_id', user.id)
     .eq('provider', 'oura')
     .maybeSingle();
@@ -45,10 +54,10 @@ export async function POST() {
     .eq('provider', 'oura');
 
   try {
-    const since = new Date();
-    since.setDate(since.getDate() - 30);
-    const startDate = since.toISOString().split('T')[0];
-    const endDate = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    // Oura takes whole days: start on the window's day, end today.
+    const startDate = syncWindowStart(conn.last_synced_at, now).toISOString().split('T')[0];
+    const endDate = now.toISOString().split('T')[0];
     const params = { start_date: startDate, end_date: endDate };
 
     const [sleepData, activityData, readinessData] = await Promise.all([
@@ -57,55 +66,24 @@ export async function POST() {
       ouraFetch(conn.access_token, 'daily_readiness', params),
     ]);
 
-    // Build per-day map
-    const dayMap = new Map<string, Record<string, unknown>>();
-    const getDay = (date: string) => {
-      if (!dayMap.has(date)) dayMap.set(date, { user_id: user.id, logged_date: date });
-      return dayMap.get(date)!;
-    };
+    const result = await importDailyMetrics(db, {
+      userId: user.id,
+      source: 'oura',
+      rows: ouraDays(sleepData, activityData, readinessData),
+      mode: 'replace',
+    });
 
-    for (const s of sleepData.data ?? []) {
-      const d = getDay(s.day);
-      if (s.contributors?.total_sleep) d.sleep_score = s.score;
-      if (s.contributors?.deep_sleep != null) {
-        // total_sleep_duration is in seconds
-        d.sleep_hours = Math.round((s.total_sleep_duration || 0) / 3600 * 10) / 10;
-      }
-    }
-
-    for (const a of activityData.data ?? []) {
-      const d = getDay(a.day);
-      d.steps = a.steps;
-      d.active_calories = a.active_calories;
-      if (a.equivalent_walking_distance) {
-        d.activity_min = Math.round((a.high_activity_time || 0) / 60);
-      }
-    }
-
-    for (const r of readinessData.data ?? []) {
-      const d = getDay(r.day);
-      d.recovery_score = r.score;
-      if (r.temperature_deviation != null) {
-        // Readiness data may include resting HR
-      }
-    }
-
-    const payloads = [...dayMap.values()].filter((d) => Object.keys(d).length > 2);
-
-    if (payloads.length > 0) {
-      await db.from('user_health_metrics')
-        .upsert(payloads, { onConflict: 'user_id,logged_date' });
-    }
-
-    await db.from('wearable_connections')
-      .update({ sync_status: 'idle', last_synced_at: new Date().toISOString() })
+    const { error: statusError } = await db.from('wearable_connections')
+      .update({ sync_status: 'idle', sync_error: null, last_synced_at: now.toISOString() })
       .eq('user_id', user.id)
       .eq('provider', 'oura');
+    if (statusError) throw new Error(`Could not record the sync: ${statusError.message}`);
 
-    return NextResponse.json({ synced: payloads.length });
+    const { counts } = result;
+    return NextResponse.json({ synced: counts.inserted + counts.filled + counts.replaced, ...counts });
   } catch (err) {
     await db.from('wearable_connections')
-      .update({ sync_status: 'error', sync_error: String(err) })
+      .update({ sync_status: 'error', sync_error: err instanceof Error ? err.message : String(err) })
       .eq('user_id', user.id)
       .eq('provider', 'oura');
     return NextResponse.json({ error: 'Sync failed' }, { status: 500 });
