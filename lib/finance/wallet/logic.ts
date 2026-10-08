@@ -34,7 +34,9 @@
 //     - used = sum of max(0, owed) over the ones with a known limit (an overpaid card never offsets
 //       another card's balance); limit_total = sum of those limits; % used = used / limit_total;
 //       available = limit_total - used.
-//     - A card with no known limit is listed and left out of the %.
+//     - A card with no known limit is listed and left out of the %. A card with a limit in a currency
+//       with no rate yet is left out too, and counted apart (no_rate_count), so the card never says
+//       "no limit" about a card that has one.
 //     - Amber at CREDIT_WARN_PERCENT (30%) or more, overall or on one card: a common rule of thumb,
 //       not a rule. Over the limit is amber too. (Per-account thresholds come with plans/66 W2.)
 //
@@ -291,6 +293,8 @@ export interface CreditSection {
   /** Cards with no known limit: their owed (home) is not in the %. */
   no_limit_count: number;
   no_limit_owed: number;
+  /** Cards and lines with a limit whose currency has no rate yet: left out of the %. */
+  no_rate_count: number;
 }
 
 export interface PayoffSummary {
@@ -516,8 +520,12 @@ export function creditSection(input: WalletInput, unconverted: UnconvertedItem[]
   let limitCents = 0;
   let noLimitCount = 0;
   let noLimitCents = 0;
+  let noRateCount = 0;
   for (const line of lines) {
-    if (line.owed_home === null) continue;
+    if (line.owed_home === null) {
+      if (line.limit !== null) noRateCount += 1;
+      continue;
+    }
     if (line.limit_home === null) {
       noLimitCount += 1;
       noLimitCents += Math.max(0, cents(line.owed_home));
@@ -537,6 +545,7 @@ export function creditSection(input: WalletInput, unconverted: UnconvertedItem[]
     lines,
     no_limit_count: noLimitCount,
     no_limit_owed: noLimitCents / 100,
+    no_rate_count: noRateCount,
   };
 }
 

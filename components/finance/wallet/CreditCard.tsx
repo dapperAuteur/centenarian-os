@@ -30,8 +30,21 @@ export default function CreditCard({ credit, home }: { credit: CreditSection; ho
                 {credit.available >= 0 ? `${money(credit.available, home)} available.` : `${money(-credit.available, home)} over your limits.`}
               </p>
             </>
+          ) : credit.no_rate_count > 0 ? (
+            <p className="text-sm text-gray-600">
+              No exchange rate to {home} yet for {credit.no_rate_count === 1 ? 'the card that has a limit' : 'the cards that have limits'}, so the
+              overall % is left out. Each card&apos;s own % is below.{' '}
+              <ActionLink href="/dashboard/settings#my-currencies">Update rates</ActionLink>
+            </p>
           ) : (
             <p className="text-sm text-gray-600">None of your cards has a limit yet, so there is no % used.</p>
+          )}
+          {credit.percent !== null && credit.no_rate_count > 0 && (
+            <p className="text-xs text-gray-600">
+              {credit.no_rate_count === 1 ? '1 card with a limit has' : `${credit.no_rate_count} cards with limits have`} no exchange rate to {home}{' '}
+              yet, so {credit.no_rate_count === 1 ? "it isn't" : "they aren't"} in the overall %.{' '}
+              <ActionLink href="/dashboard/settings#my-currencies">Update rates</ActionLink>
+            </p>
           )}
 
           <ul role="list" className="divide-y divide-gray-100 text-sm">

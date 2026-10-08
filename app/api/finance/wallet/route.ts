@@ -8,7 +8,7 @@
 //                days_since_count, needs_count }], needs_count, counts_ready },
 //      bank:   { total, checking, savings, set_aside, accounts: [...] },
 //      credit: { threshold, used, limit_total, available, percent, warn, lines: [...],
-//                no_limit_count, no_limit_owed },
+//                no_limit_count, no_limit_owed, no_rate_count },
 //      loans:  { owed, minimums, no_payment_count, limit_on_account: [{ id, name }],
 //                loans: [{ ..., starting_amount, starting_date,
 //                owed, as_of, apr, minimum, minimum_source ('statement' | 'last_payment' | null),

@@ -270,6 +270,21 @@ test('a foreign card: owed and limit convert at the same rate, so the % is exact
   );
   assert.equal(w.cash.total, 0);
   assert.equal(w.net_worth.debts, 166.65);
+  assert.equal(w.credit.no_rate_count, 1);
+  assert.equal(w.credit.no_limit_count, 0);
+});
+
+test('credit: cards that have limits but no rate are told apart from cards with no limit', () => {
+  // A EUR card with a 1,000 limit and 900 owed, and no EUR rate: its own line still shows 90%.
+  const w = buildWallet(input({ accounts: [acct({ id: 'eur', account_type: 'credit_card', currency: 'EUR', balance: -900, credit_limit: 1000 })] }));
+  assert.equal(w.credit.percent, null);
+  assert.equal(w.credit.no_rate_count, 1);
+  assert.equal(w.credit.no_limit_count, 0);
+  assert.equal(w.credit.lines[0].percent, 90);
+  assert.equal(w.credit.lines[0].warn, true);
+  // A card with no limit at all is the other case.
+  const none = buildWallet(input({ accounts: [acct({ id: 'c', account_type: 'credit_card', balance: -50 })] }));
+  assert.deepEqual([none.credit.percent, none.credit.no_rate_count, none.credit.no_limit_count], [null, 0, 1]);
 });
 
 test('loans: starting amount and date vs owed now, and the payoff at the minimum', () => {
