@@ -1,6 +1,6 @@
 # CentenarianOS — Migrations Gallery
 
-> **225 migrations across 14 modules**, shipped solo since project inception. Schema lives in a Supabase Postgres database **shared with a sibling product** (Work.WitUS / contractor-os), so every migration has to be additive, RLS-aware, and cross-app-safe. A split (Work.WitUS moving to its own database) is planned, not done.
+> **226 migrations across 14 modules**, shipped solo since project inception. Schema lives in a Supabase Postgres database **shared with a sibling product** (Work.WitUS / contractor-os), so every migration has to be additive, RLS-aware, and cross-app-safe. A split (Work.WitUS moving to its own database) is planned, not done.
 
 > **Decomposition note.** CentenarianOS is being decomposed toward the ecosystem's "one app,
 > one job" rule, so some modules below (Media, Academy, Travel, contractor residue) are
@@ -9,7 +9,7 @@
 > late stage, run against a DB clone first. Do not pre-emptively drop a table because its
 > module is slated to move.
 
-This doc is the visible evidence behind that headline. The full source is under [`supabase/migrations/`](./supabase/migrations/). Headline count last refreshed 2026-10-07 from a live `ls supabase/migrations/*.sql | wc -l`; the per-module counts below were last curated 2026-08-27.
+This doc is the visible evidence behind that headline. The full source is under [`supabase/migrations/`](./supabase/migrations/). Headline count last refreshed 2026-10-08 from a live `ls supabase/migrations/*.sql | wc -l`; the per-module counts below were last curated 2026-08-27.
 
 ---
 
@@ -57,11 +57,11 @@ Recurring tasks, schedule templates (work/fitness/class/custom with weekInterval
 
 Highlights: `021_recurring_tasks.sql`, `102_daily_log_entity_type.sql`, `147_task_source_tracking.sql`, `148_invoice_task_sync_trigger.sql`, `151_schedule_templates.sql` (the unified work/fitness/class/custom schedule system), `153_expected_payments_view.sql`, `154_pay_date_task_sync_trigger.sql`, `156-157_fix_trigger_target_year.sql` (year-rollover hot-fix pair). Google Calendar sync: `204_calendar_sync.sql`, `205_calendar_multi_account.sql`, `216_calendar_activity_feed.sql` (event times and location on synced events, per-calendar RideWitUS share and hide-title switches).
 
-### Health Metrics + Wearables (4 migrations)
+### Health Metrics + Wearables (5 migrations)
 
-3-tier health metric model (core / enrichment / body composition), wearable OAuth (Oura, WHOOP, Garmin), CSV imports (Apple Health, Google Health, InBody, Hume Health), per-source attribution, InBody body composition scans.
+3-tier health metric model (core / enrichment / body composition), wearable OAuth (Oura, WHOOP, Garmin), CSV imports (Apple Health, Google Health, InBody, Hume Health), per-source attribution, InBody body composition scans, a stable identity for device-imported trips and workouts.
 
-Highlights: `044_health_metrics.sql`, `050_wearables.sql`, `080_health_metrics_source.sql`, `145_inbody_scans.sql`.
+Highlights: `044_health_metrics.sql`, `050_wearables.sql`, `080_health_metrics_source.sql` (one row per user, day and source), `145_inbody_scans.sql`, `224_fitness_import_identity.sql` (nullable `external_id` on `trips` and `workout_logs` with non-partial unique indexes on `(user_id, external_id)`: Garmin activities keyed on their local start time can never be imported twice, while NULL rows from Work.WitUS and hand logging never collide).
 
 ### Recipes (6 migrations)
 

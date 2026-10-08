@@ -2,10 +2,17 @@
 // POST: Import raw InBody device CSV rows.
 // Stores all 43 columns in inbody_scans, then syncs 4 core fields to
 // user_health_metrics (source='inbody') so existing dashboards see the data.
+//
+// Duplicates (lib/fitness-import/inbody.ts): a scan is identified by its
+// measured_at; a file that lists one twice is merged first, blank cells never
+// erase stored values, and the health-metrics copy follows each day's latest
+// stored scan, with its write errors checked.
 
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { FitnessImportError } from '@/lib/fitness-import/db';
+import { importInBodyScans, type ScanRow } from '@/lib/fitness-import/inbody';
 
 function getDb() {
   return createServiceClient(
@@ -112,7 +119,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Maximum 1000 rows per import' }, { status: 400 });
   }
 
-  const scanPayloads: Record<string, unknown>[] = [];
+  const scanPayloads: ScanRow[] = [];
   const errors: string[] = [];
 
   for (let i = 0; i < rows.length; i++) {
@@ -129,7 +136,7 @@ export async function POST(request: NextRequest) {
       continue;
     }
 
-    const payload: Record<string, unknown> = {
+    const payload: ScanRow = {
       user_id: user.id,
       measured_at: parsed.measured_at,
       logged_date: parsed.logged_date,
@@ -164,53 +171,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No valid rows', details: errors }, { status: 400 });
   }
 
-  const db = getDb();
-
-  // 1. Upsert into inbody_scans
-  const { data: scanData, error: scanError } = await db
-    .from('inbody_scans')
-    .upsert(scanPayloads, { onConflict: 'user_id,measured_at' })
-    .select('logged_date, weight_lbs, body_fat_pct, skeletal_muscle_mass_lbs, bmi, measured_at');
-
-  if (scanError) {
-    return NextResponse.json({ error: scanError.message }, { status: 500 });
-  }
-
-  // 2. Sync core fields to user_health_metrics (source='inbody').
-  //    For days with multiple scans, use the latest measured_at.
-  const latestByDate = new Map<string, typeof scanData[0]>();
-  for (const scan of (scanData ?? [])) {
-    const existing = latestByDate.get(scan.logged_date);
-    if (!existing || scan.measured_at > existing.measured_at) {
-      latestByDate.set(scan.logged_date, scan);
+  try {
+    const result = await importInBodyScans(getDb(), user.id, scanPayloads);
+    const hm = result.healthMetrics.counts;
+    return NextResponse.json({
+      imported: result.scans,
+      updated_health_metrics: hm.inserted + hm.filled + hm.replaced,
+      repeated_in_file: result.repeatedInFile,
+      skipped: rows.length - scanPayloads.length,
+      message: `${result.scans} ${result.scans === 1 ? 'scan' : 'scans'} saved${result.repeatedInFile > 0 ? ` (${result.repeatedInFile} listed twice in the file, merged)` : ''} · daily metrics: ${hm.inserted} new, ${hm.replaced + hm.filled} updated, ${hm.unchanged} unchanged.`,
+      errors: errors.length > 0 ? errors.slice(0, 10) : undefined,
+    });
+  } catch (error) {
+    if (error instanceof FitnessImportError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
     }
+    throw error;
   }
-
-  const metricPayloads = Array.from(latestByDate.values())
-    .filter((s) => s.weight_lbs || s.body_fat_pct || s.skeletal_muscle_mass_lbs || s.bmi)
-    .map((s) => ({
-      user_id: user.id,
-      logged_date: s.logged_date,
-      source: 'inbody',
-      ...(s.weight_lbs != null && { weight_lbs: s.weight_lbs }),
-      ...(s.body_fat_pct != null && { body_fat_pct: s.body_fat_pct }),
-      ...(s.skeletal_muscle_mass_lbs != null && { muscle_mass_lbs: s.skeletal_muscle_mass_lbs }),
-      ...(s.bmi != null && { bmi: s.bmi }),
-    }));
-
-  let updatedHealthMetrics = 0;
-  if (metricPayloads.length > 0) {
-    const { data: hmData } = await db
-      .from('user_health_metrics')
-      .upsert(metricPayloads, { onConflict: 'user_id,logged_date,source' })
-      .select('logged_date');
-    updatedHealthMetrics = hmData?.length ?? 0;
-  }
-
-  return NextResponse.json({
-    imported: scanData?.length ?? 0,
-    updated_health_metrics: updatedHealthMetrics,
-    skipped: rows.length - scanPayloads.length,
-    errors: errors.length > 0 ? errors.slice(0, 10) : undefined,
-  });
 }

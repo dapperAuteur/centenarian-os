@@ -73,7 +73,7 @@ Access settings from the user menu (top right avatar):
 
 **Billing** (`/dashboard/billing`) — your current plan, renewal date, and a link to the Stripe Customer Portal for managing payment methods, canceling, or upgrading.
 
-**Wearables** (`/dashboard/settings/wearables`) — connect Oura, WHOOP, or Garmin via OAuth. Import CSV data from Apple Health, Google Health, InBody, or Hume Health.
+**Wearables** (`/dashboard/settings/wearables`) — import CSV data from Garmin, Apple Health, Google Health, InBody, or Hume Health. Direct Garmin sync is coming soon.
 
 ---
 
@@ -112,5 +112,5 @@ Access settings from the user menu (top right avatar):
 - Top bar: module title + user menu (Settings, Billing, Log Out) + offline indicator
 - Module pattern: Hub page → Sub-pages → Detail pages → Forms (modals)
 - Billing at /dashboard/billing — plan management via Stripe portal
-- Wearables at /dashboard/settings/wearables — OAuth + CSV imports
+- Wearables at /dashboard/settings/wearables — CSV imports (Garmin sync coming soon)
 - Direct URLs and browser navigation work everywhere — bookmarkable

@@ -1,9 +1,34 @@
 // app/api/wearables/whoop/sync/route.ts
-// POST: sync Whoop data for the authenticated user
+// POST: sync WHOOP data for the authenticated user.
+//
+// WHOOP has no card on the Wearables settings page, so nothing in the app
+// calls this route today. Its write path matches the Garmin sync: source
+// 'whoop', the provider's own day, importDailyMetrics (a value WHOOP sends
+// wins, a field it leaves out is never erased, no day is added twice), a
+// failed write marks the connection 'error', and each sync reaches back to the
+// last sync minus 2 days (30 days at most).
+//
+// Steps and active calories are added up from the day's workouts and written
+// in replace mode, so every day written must be complete: the fetch starts a
+// whole day early (wholeDaySyncWindow), every page is read (readAllWhoopPages,
+// WHOOP sends at most 25 records a page), and only days the fetch covers
+// completely are written (daysFrom). The paging parameters (limit up to 25,
+// nextToken in, next_token out, newest first) are from WHOOP's API reference
+// at developer.whoop.com/api, checked 2026-10-08; it documents the v2 paths,
+// and this route still calls v1. Check both before switching WHOOP on.
 
 import { NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { importDailyMetrics } from '@/lib/fitness-import/daily-metrics';
+import {
+  WHOOP_PAGE_LIMIT,
+  daysFrom,
+  readAllWhoopPages,
+  syncWindowStart,
+  wholeDaySyncWindow,
+  whoopDays,
+} from '@/lib/fitness-import/wearable-days';
 
 function getDb() {
   return createServiceClient(
@@ -32,7 +57,7 @@ export async function POST() {
   const db = getDb();
   const { data: conn } = await db
     .from('wearable_connections')
-    .select('access_token')
+    .select('access_token, last_synced_at')
     .eq('user_id', user.id)
     .eq('provider', 'whoop')
     .maybeSingle();
@@ -47,68 +72,36 @@ export async function POST() {
     .eq('provider', 'whoop');
 
   try {
-    const since = new Date();
-    since.setDate(since.getDate() - 30);
-    const startDate = since.toISOString();
-    const endDate = new Date().toISOString();
-    const params = { start: startDate, end: endDate };
+    const now = new Date();
+    const { fetchFrom, firstDay } = wholeDaySyncWindow(syncWindowStart(conn.last_synced_at, now));
+    const params = { start: fetchFrom.toISOString(), end: now.toISOString(), limit: String(WHOOP_PAGE_LIMIT) };
+    const readAll = (endpoint: string) =>
+      readAllWhoopPages((nextToken) => whoopFetch(conn.access_token, endpoint, nextToken ? { ...params, nextToken } : params));
 
     const [recoveryData, sleepData, workoutData] = await Promise.all([
-      whoopFetch(conn.access_token, 'recovery', params),
-      whoopFetch(conn.access_token, 'activity/sleep', params),
-      whoopFetch(conn.access_token, 'activity/workout', params),
+      readAll('recovery'),
+      readAll('activity/sleep'),
+      readAll('activity/workout'),
     ]);
 
-    // Build per-day map
-    const dayMap = new Map<string, Record<string, unknown>>();
-    const getDay = (dateStr: string) => {
-      const date = dateStr.split('T')[0];
-      if (!dayMap.has(date)) dayMap.set(date, { user_id: user.id, logged_date: date });
-      return dayMap.get(date)!;
-    };
+    const result = await importDailyMetrics(db, {
+      userId: user.id,
+      source: 'whoop',
+      rows: daysFrom(whoopDays(recoveryData, sleepData, workoutData), firstDay),
+      mode: 'replace',
+    });
 
-    for (const r of recoveryData.records ?? []) {
-      const d = getDay(r.created_at || r.updated_at);
-      if (r.score?.recovery_score != null) d.recovery_score = Math.round(r.score.recovery_score);
-      if (r.score?.resting_heart_rate != null) d.resting_hr = Math.round(r.score.resting_heart_rate);
-      if (r.score?.hrv_rmssd_milli != null) d.hrv_ms = Math.round(r.score.hrv_rmssd_milli);
-      if (r.score?.spo2_percentage != null) d.spo2_pct = r.score.spo2_percentage;
-    }
-
-    for (const s of sleepData.records ?? []) {
-      const d = getDay(s.start || s.created_at);
-      if (s.score?.sleep_performance_percentage != null) d.sleep_score = Math.round(s.score.sleep_performance_percentage);
-      if (s.score?.stage_summary?.total_in_bed_time_milli != null) {
-        d.sleep_hours = Math.round((s.score.stage_summary.total_in_bed_time_milli / 3600000) * 10) / 10;
-      }
-    }
-
-    for (const w of workoutData.records ?? []) {
-      const d = getDay(w.start || w.created_at);
-      if (w.score?.kilojoule != null) {
-        d.active_calories = Math.round(w.score.kilojoule * 0.239006); // kJ to kcal
-      }
-      if (w.score?.distance_meter != null) {
-        d.steps = (d.steps as number || 0) + Math.round(w.score.distance_meter / 0.762); // rough step estimate
-      }
-    }
-
-    const payloads = [...dayMap.values()].filter((d) => Object.keys(d).length > 2);
-
-    if (payloads.length > 0) {
-      await db.from('user_health_metrics')
-        .upsert(payloads, { onConflict: 'user_id,logged_date' });
-    }
-
-    await db.from('wearable_connections')
-      .update({ sync_status: 'idle', last_synced_at: new Date().toISOString() })
+    const { error: statusError } = await db.from('wearable_connections')
+      .update({ sync_status: 'idle', sync_error: null, last_synced_at: now.toISOString() })
       .eq('user_id', user.id)
       .eq('provider', 'whoop');
+    if (statusError) throw new Error(`Could not record the sync: ${statusError.message}`);
 
-    return NextResponse.json({ synced: payloads.length });
+    const { counts } = result;
+    return NextResponse.json({ synced: counts.inserted + counts.filled + counts.replaced, ...counts });
   } catch (err) {
     await db.from('wearable_connections')
-      .update({ sync_status: 'error', sync_error: String(err) })
+      .update({ sync_status: 'error', sync_error: err instanceof Error ? err.message : String(err) })
       .eq('user_id', user.id)
       .eq('provider', 'whoop');
     return NextResponse.json({ error: 'Sync failed' }, { status: 500 });

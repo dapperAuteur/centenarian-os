@@ -429,8 +429,14 @@ export const HELP_ARTICLES: HelpArticle[] = [
 
   {
     role: 'all',
-    title: 'How to connect wearables and sync health data',
-    content: `CentenarianOS integrates with three wearable platforms via OAuth: Oura (ring), WHOOP (strap), and Garmin (watch). Go to Dashboard → Settings → Wearable Connections and click Connect next to your device. Complete the OAuth flow to authorize data sharing. Once connected, your daily metrics (resting heart rate, HRV, sleep duration, sleep score, steps, activity calories, respiratory rate) sync automatically each day. You can also import health data via CSV from Apple Health, Google Health, InBody, and Hume Health using the Data Hub import.`,
+    title: 'How to bring in wearable and health data',
+    content: `Go to Dashboard → Health Metrics → Import (or Dashboard → Settings → Wearables, which links to the same import). Choose the source (Garmin, Apple Health, Oura, WHOOP, Google Health, InBody, Hume Health, a generic CSV, or Manual Entry), upload or paste the CSV, then click Check rows. Nothing is saved yet: you see how many days are new, how many are already imported, how many will gain values in fields that are blank today, and how many have different values (those keep what you already have). Import turns on after the check. Tick "Replace existing values" only when the file should win; a blank cell never erases anything. Each source keeps its own row per day, so Garmin, Apple Health and your own entries are never added together, and a date listed twice in one file is merged into one day. Direct Garmin sync is coming soon and shows as Coming Soon in Settings; Oura and WHOOP connections are not offered yet, so use their CSV exports. Garmin activities (rides, runs, walks, hikes) are imported as trips from Travel → Import (see "What happens if I import the same fitness data twice?").`,
+  },
+
+  {
+    role: 'all',
+    title: 'What happens if I import the same fitness data twice?',
+    content: `Nothing is added twice, and every fitness import shows what it will do before it saves. Daily health metrics (Health Metrics → Import, or Data Hub → Health Metrics): one row per day per source; a day you already have is skipped when nothing changed, gains values only in its blank fields, and keeps your stored values when the file differs, unless you tick "Replace existing values". Garmin activities (Travel → Import → Garmin Activities CSV): click Check file first. An activity is recognised by its start time, so one you already imported is skipped even if you renamed it in Garmin Connect or changed the trip's date since; an activity listed twice in the file counts once; and one that looks like a trip you logged yourself (same type, distance within 5% or at least 0.1 mile, or time within 5 minutes, with a round trip counted both ways and a multi-stop trip's legs added up; a trip logged that day with no distance or time; or a close one dated a day before or after, which a template logged late in the evening can carry) is listed as a possible match and skipped unless you tick "Import possible matches too". Workouts (Data Hub → Workouts): a workout already logged under the same name on the same day is skipped; tick "Import anyway" for a real second session, like a morning and an evening walk. InBody scans: a scan is recognised by its measurement time, so re-importing the same export adds only the new scans, and a blank cell never erases a stored value. Duplicates made before these checks existed are not deleted automatically; they can be listed with a read-only report and cleaned up after review.`,
   },
 
   // ─── LIFE RETROSPECTIVE ───────────────────────────────────────────────────
@@ -786,7 +792,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'Getting started with CentenarianOS',
-    content: `After signing up and choosing a plan, you land on your dashboard. Start by setting your home page in Dashboard → Settings — choose which module you want to see first. The interactive walkthrough guides you through each module on first visit. Key first steps: (1) Add your first task in the Planner by typing a title (it goes to your Inbox), then build a roadmap and goals when you're ready, (2) Add a financial account and a few transactions, (3) Log your first health metrics or connect a wearable, (4) Try the demo account at /demo to see how a fully populated dashboard looks. Use the Help button (bottom-right) to ask questions anytime.`,
+    content: `After signing up and choosing a plan, you land on your dashboard. Start by setting your home page in Dashboard → Settings — choose which module you want to see first. The interactive walkthrough guides you through each module on first visit. Key first steps: (1) Add your first task in the Planner by typing a title (it goes to your Inbox), then build a roadmap and goals when you're ready, (2) Add a financial account and a few transactions, (3) Log your first health metrics or import a wearable's CSV export, (4) Try the demo account at /demo to see how a fully populated dashboard looks. Use the Help button (bottom-right) to ask questions anytime.`,
   },
 
   // ─── SETTINGS & BILLING ───────────────────────────────────────────────────
@@ -794,7 +800,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How to manage settings and billing',
-    content: `Go to Dashboard → Settings to configure your preferences: home page, clock format (12h/24h), fiscal year start, social sharing visibility, and scan auto-save. Set up multi-factor authentication (MFA) for account security. Go to Dashboard → Billing to manage your subscription — view your current plan, see payment history, or cancel. Lifetime members never see recurring charges. Connect wearables (Garmin, Oura, WHOOP) from Dashboard → Settings → Wearables for automatic health data sync.`,
+    content: `Go to Dashboard → Settings to configure your preferences: home page, clock format (12h/24h), fiscal year start, social sharing visibility, and scan auto-save. Set up multi-factor authentication (MFA) for account security. Go to Dashboard → Billing to manage your subscription — view your current plan, see payment history, or cancel. Lifetime members never see recurring charges. Dashboard → Settings → Wearables lists the health data sources and their CSV templates: import Garmin, Apple Health, Google Health, InBody and Hume Health exports from there. Direct Garmin sync is marked Coming Soon.`,
   },
 
   // ─── LINK TRACKING & MARKETING ──────────────────────────────────────────────
@@ -866,7 +872,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     role: 'all',
     title: 'How to import data via CSV',
-    content: `Go to Dashboard → Data Hub and click Import on the module card you want. Download the CSV template to see the expected columns and example data. Fill in your data, then choose the CSV file, or switch to the Google Sheets tab and paste the link of a sheet that is published to the web. The importer validates rows and shows a preview before committing. Finance works differently: its Import button opens the bank statement import, where you choose an account, confirm the columns, and review every row before anything is saved (see "How to import a bank statement (CSV)"). Bulk imports do NOT auto-create linked finance transactions.`,
+    content: `Go to Dashboard → Data Hub and click Import on the module card you want. Download the CSV template to see the expected columns and example data. Fill in your data, then choose the CSV file, or switch to the Google Sheets tab and paste the link of a sheet that is published to the web. The importer validates rows and shows a preview before committing. Health Metrics and Workouts add a Check rows step that shows what is new and what is already there before Import turns on (see "What happens if I import the same fitness data twice?"). Finance works differently: its Import button opens the bank statement import, where you choose an account, confirm the columns, and review every row before anything is saved (see "How to import a bank statement (CSV)"). Bulk imports do NOT auto-create linked finance transactions.`,
   },
   {
     role: 'all',

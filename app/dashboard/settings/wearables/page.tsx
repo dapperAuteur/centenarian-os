@@ -181,9 +181,17 @@ export default function WearableSettingsPage() {
                     provider.comingSoon ? (
                       <>
                         <span className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg">
-                          <Clock className="w-4 h-4" />
+                          <Clock className="w-4 h-4" aria-hidden="true" />
                           Coming Soon
                         </span>
+                        {/* Until direct sync is live, the provider's CSV export goes through the import page. */}
+                        <Link
+                          href={`/dashboard/metrics/import?source=${provider.key}`}
+                          className="flex items-center gap-1.5 px-4 py-2 min-h-11 text-sm font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-lg transition"
+                        >
+                          <Upload className="w-4 h-4" aria-hidden="true" />
+                          Import CSV
+                        </Link>
                         {provider.templateUrl && (
                           <a
                             href={provider.templateUrl}

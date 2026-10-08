@@ -231,7 +231,7 @@ export const MODULES: ModuleData[] = [
     slug: 'health-metrics',
     name: 'Health Metrics',
     tagline: 'Your complete daily health picture',
-    description: 'Daily vitals logging and wearable integration. Track resting heart rate, steps, sleep, activity, and body composition — manually or via device sync.',
+    description: 'Daily vitals logging and wearable data import. Track resting heart rate, steps, sleep, activity, and body composition — manually or from your device exports.',
     color: 'border-rose-500',
     iconColor: 'text-rose-600',
     checkColor: 'text-rose-600',
@@ -239,9 +239,9 @@ export const MODULES: ModuleData[] = [
     Icon: Heart,
     features: [
       'RHR, steps, sleep, activity minutes',
-      'Garmin, Oura Ring & WHOOP sync',
+      'CSV import from Garmin, Apple Health, Oura, WHOOP, InBody & more',
       'Body composition tracking',
-      'CSV import (Apple Health, InBody)',
+      'Re-imports never duplicate a day',
     ],
     highlights: [
       {
@@ -249,8 +249,8 @@ export const MODULES: ModuleData[] = [
         description: 'Core metrics (RHR, steps, sleep, activity) are always available. Enrichment metrics unlock per-metric for deeper tracking. Body composition data is separate and private.',
       },
       {
-        title: 'Wearable Auto-Sync',
-        description: 'Connect Garmin, Oura Ring, or WHOOP via OAuth. Daily metrics sync automatically in the background — no manual entry needed.',
+        title: 'Wearable Data, No Duplicates',
+        description: 'Import your Garmin, Apple Health, Oura, WHOOP, InBody and Hume Health exports. Each source keeps one row per day, a re-import only adds what is new, and you see what will change before anything is saved. Direct Garmin sync is coming soon.',
       },
       {
         title: 'Trend Visualization',

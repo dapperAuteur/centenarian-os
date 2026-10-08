@@ -39,7 +39,7 @@ Your dashboard sidebar organizes every module into five groups:
 **Health** — your body and performance data.
 - Fuel — ingredient library, meal logging, NCV (Nutrient Cost Value) framework
 - Metrics — resting heart rate, steps, sleep, activity minutes, body composition
-- Wearables — Oura, WHOOP, Garmin OAuth sync + CSV imports (Apple Health, Google Health, InBody, Hume)
+- Wearables — CSV imports (Garmin, Apple Health, Oura, WHOOP, Google Health, InBody, Hume) that never duplicate a day; Garmin sync coming soon
 - Workouts — exercise tracking
 - Correlations — cross-metric analysis
 - Analytics — trends and insights
@@ -451,7 +451,7 @@ Access settings from the user menu (top right avatar):
 
 **Billing** (`/dashboard/billing`) — your current plan, renewal date, and a link to the Stripe Customer Portal for managing payment methods, canceling, or upgrading.
 
-**Wearables** (`/dashboard/settings/wearables`) — connect Oura, WHOOP, or Garmin via OAuth. Import CSV data from Apple Health, Google Health, InBody, or Hume Health.
+**Wearables** (`/dashboard/settings/wearables`) — import CSV data from Garmin, Apple Health, Google Health, InBody, or Hume Health. Direct Garmin sync is coming soon.
 
 ---
 
@@ -490,7 +490,7 @@ Access settings from the user menu (top right avatar):
 - Top bar: module title + user menu (Settings, Billing, Log Out) + offline indicator
 - Module pattern: Hub page → Sub-pages → Detail pages → Forms (modals)
 - Billing at /dashboard/billing — plan management via Stripe portal
-- Wearables at /dashboard/settings/wearables — OAuth + CSV imports
+- Wearables at /dashboard/settings/wearables — CSV imports (Garmin sync coming soon)
 - Direct URLs and browser navigation work everywhere — bookmarkable
 ",markdown,,,,,,
 Platform Tour,2,5,The Module Map — What Lives Where,text,480,true,,"# Lesson 05: The Module Map — What Lives Where
@@ -527,7 +527,7 @@ This lesson is a reference. It lists every module in CentenarianOS, what it does
 |--------|------|-------------|-------|
 | **Fuel** | `/dashboard/fuel` | Ingredient library with NCV (Nutrient Cost Value) framework. Meal logging, cost tracking, USDA and Open Food Facts API integration. Auto inventory management. | Yes |
 | **Metrics** | `/dashboard/metrics` | Daily health log — resting heart rate, steps, sleep hours, activity minutes. 3-tier system: Core, Enrichment (per-metric unlock), Body Composition (locked, requires disclaimer). | Yes |
-| **Wearables** | `/dashboard/settings/wearables` | OAuth connections: Oura, WHOOP, Garmin (auto-sync daily). CSV imports: Apple Health, Google Health, InBody, Hume Health. | Yes |
+| **Wearables** | `/dashboard/settings/wearables` | Garmin (direct sync coming soon; CSV import today). CSV imports: Apple Health, Google Health, InBody, Hume Health; Oura and WHOOP from the import page. Re-imports never duplicate a day. | Yes |
 | **Workouts** | `/dashboard/workouts` | Exercise tracking and logging. | Yes |
 | **Correlations** | `/dashboard/correlations` | Cross-metric analysis — find relationships between nutrition, sleep, focus, and other tracked data. | Yes |
 | **Analytics** | `/dashboard/analytics` | Trends and insights across all health and performance data. | Yes |
@@ -651,7 +651,7 @@ If this lesson is rendered with the MapViewer, use this `map_content` JSON to sh
     { ""lat"": 47.6262, ""lng"": -122.3421, ""title"": ""Operate: Roadmap"", ""description"": ""Goal hierarchy: Roadmap → Goal → Milestone → Task"" },
     { ""lat"": 37.7749, ""lng"": -122.4194, ""title"": ""Health: Fuel"", ""description"": ""Nutrition tracking with NCV framework"" },
     { ""lat"": 37.7649, ""lng"": -122.4094, ""title"": ""Health: Metrics"", ""description"": ""RHR, steps, sleep, activity minutes"" },
-    { ""lat"": 37.7849, ""lng"": -122.4294, ""title"": ""Health: Wearables"", ""description"": ""Oura, WHOOP, Garmin sync"" },
+    { ""lat"": 37.7849, ""lng"": -122.4294, ""title"": ""Health: Wearables"", ""description"": ""Garmin, Apple Health, InBody and more by CSV"" },
     { ""lat"": 33.4484, ""lng"": -112.0740, ""title"": ""Life: Finance"", ""description"": ""Accounts, transactions, budgets, brands"" },
     { ""lat"": 33.4384, ""lng"": -112.0640, ""title"": ""Life: Travel"", ""description"": ""Vehicles, fuel, trips, maintenance"" },
     { ""lat"": 33.4584, ""lng"": -112.0840, ""title"": ""Life: Equipment"", ""description"": ""Gear catalog, valuations, activity links"" },
