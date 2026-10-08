@@ -150,13 +150,16 @@ export function parseGarminActivitiesCsv(text: string): ParsedGarminCsv {
   }
   const header = splitCsvLine(lines[firstLine]);
   const column = (name: string) => header.findIndex((h) => h.toLowerCase() === name.toLowerCase());
+  // Garmin Connect's own export calls the duration column "Time"; some
+  // exports and older templates call it "Total Time". Read whichever is there.
+  const totalTime = column('Total Time');
   const idx = {
     type: column('Activity Type'),
     date: column('Date'),
     title: column('Title'),
     distance: column('Distance'),
     calories: column('Calories'),
-    time: column('Total Time'),
+    time: totalTime !== -1 ? totalTime : column('Time'),
     avgHR: column('Avg HR'),
     steps: column('Steps'),
   };
