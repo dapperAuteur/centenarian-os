@@ -6,7 +6,7 @@
 //
 // Usage:
 //   node scripts/garmin-export-to-centos.mjs <export-dir | export.zip> [--out <dir>] [--since YYYY-MM-DD]
-//                                            [--exercises] [--with-notes]
+//                                            [--exercises] [--with-notes] [--keep-short]
 //
 //   <export-dir>   the unzipped export (the folder that holds DI_CONNECT), DI_CONNECT itself, or the ZIP
 //                  (unzipped into a temporary folder with the system `unzip`, then removed).
@@ -16,10 +16,12 @@
 //   --since <day>  only days and activities on or after this local date (for a newer export on top
 //                  of one already imported).
 //   --exercises    also write each workout's exercise sets (Garmin's summarizedExerciseSets) as
-//                  exercise rows. The files then split at workout boundaries (1,000-row cap).
+//                  exercise rows. The files still split at workout boundaries (1,000-row cap).
 //   --with-notes   put Garmin's logged water intake and blood-pressure readings into the health
 //                  file's notes column ("Water 1.2 L; BP 118/76 pulse 60"). CentenarianOS has no
 //                  column for either, so they are text only.
+//   --keep-short   keep activities shorter than 30 seconds (left out by default: they are
+//                  accidental starts, and a trip would be stored with 0 minutes).
 //
 // What it writes, and where each file goes:
 //   health-metrics-NN-of-MM_<from>_<to>.csv  -> Metrics > Import, source Garmin
@@ -29,7 +31,13 @@
 //   trips-garmin-activities.csv  -> Travel > Import (Garmin Activities CSV). Rides, walks, runs and
 //       hikes, with Garmin Connect's Activities.csv headers. No row cap.
 //   workouts[-NN-of-MM].csv  -> Data Hub > Import > Workouts. Every other activity type
-//       (strength, HIIT, yoga, ...). At most 1,000 rows per file.
+//       (strength, HIIT, yoga, ...). At most 200 workouts and 1,000 rows per file: the import saves
+//       one workout at a time in a single request, so a smaller file finishes well inside the
+//       request time limit.
+//   check-weights-old-script.csv  only when it has rows: the days where the old one-time script
+//       (scripts/import-garmin-hume.mjs, which dated weigh-ins by their GMT time read as this
+//       computer's local time) stored a different weight, or a weight on a day this file has none.
+//       A re-import keeps a stored value, so these are the days to look at by hand.
 //   summary.txt  counts, date ranges, what was skipped and why, and the import steps.
 //
 // Units, checked against a real export (2026-10-07) and Garmin Connect's own CSV for the same
@@ -43,7 +51,8 @@
 //   - resting_hr = currentDayRestingHeartRate (that day's RHR). Not restingHeartRate, which is
 //     Garmin's 7-day average, and not the sleep average HR the old script used.
 //   - sleep_hours = deep + light + REM, rounded to 0.1 h like the old script and the sync.
-//   - weight = the weigh-in with the highest `version` on each local day, like the old script.
+//   - weight = the latest weigh-in of each local day by the time it was taken (weight.timestampGMT;
+//     the highest `version`, its last edit, breaks a tie). The old script kept the highest version.
 //   - stress_score = the all-day TOTAL average (negative values mean "not enough data" and are left
 //     out). recovery_score = Body Battery HIGHEST, an interpretation of "recovery".
 //   - A blank cell means "not measured": it never erases a stored value. A 0 is written only for
@@ -66,6 +75,14 @@ import { pathToFileURL } from 'node:url';
 export const HEALTH_MAX_ROWS = 365;
 /** POST /api/workouts/logs/import (MAX_IMPORT_ROWS in lib/csv/helpers.ts). */
 export const WORKOUT_MAX_ROWS = 1000;
+/**
+ * Workouts per file. The import inserts one workout (and its exercises) at a time in one request
+ * with no maxDuration of its own, so a file of all 735 workouts of a real export risks the request
+ * time limit. A file that does time out can be run again: workouts already logged are skipped.
+ */
+export const WORKOUT_MAX_PER_FILE = 200;
+/** Activities shorter than this are accidental starts (a trip would be stored with 0 minutes). */
+export const MIN_ACTIVITY_MS = 30000;
 
 /** Health CSV header: the snake_case names the metrics import page maps for source Garmin. */
 export const HEALTH_COLUMNS = [
@@ -202,12 +219,11 @@ export function chunkRows(rows, max) {
 }
 
 /**
- * Splits rows into chunks of at most `max` without cutting a group (consecutive rows sharing
- * `groupKey`) in two: the workouts importer would see the second half as "already logged" and drop it.
+ * Splits rows into chunks of at most `max` rows and `maxGroups` groups without cutting a group
+ * (consecutive rows sharing `groupKey`) in two: the workouts importer would see the second half as
+ * "already logged" and drop it.
  */
-export function chunkByGroup(rows, max, groupKey) {
-  // Aim for even files (2,004 rows -> 3 x ~668, not 1,000 + 1,000 + 4); never above max.
-  const target = Math.ceil(rows.length / Math.max(1, Math.ceil(rows.length / max)));
+export function chunkByGroup(rows, max, groupKey, maxGroups = Infinity) {
   const groups = [];
   for (const row of rows) {
     const key = groupKey(row);
@@ -215,15 +231,23 @@ export function chunkByGroup(rows, max, groupKey) {
     if (last && last.key === key) last.rows.push(row);
     else groups.push({ key, rows: [row] });
   }
+  // Aim for even files (2,004 rows -> 3 x ~668, not 1,000 + 1,000 + 4); never above either cap.
+  const files = Math.max(1, Math.ceil(rows.length / max), Math.ceil(groups.length / maxGroups));
+  const targetRows = Math.ceil(rows.length / files);
+  const targetGroups = Math.ceil(groups.length / files);
   const chunks = [];
   let current = [];
+  let currentGroups = 0;
   for (const group of groups) {
     if (group.rows.length > max) throw new Error(`One workout has ${group.rows.length} rows, more than the ${max}-row cap.`);
-    if (current.length > 0 && (current.length + group.rows.length > max || current.length >= target)) {
+    const full = current.length + group.rows.length > max || current.length >= targetRows || currentGroups >= targetGroups;
+    if (current.length > 0 && full) {
       chunks.push(current);
       current = [];
+      currentGroups = 0;
     }
     current.push(...group.rows);
+    currentGroups += 1;
   }
   if (current.length > 0) chunks.push(current);
   return chunks;
@@ -294,9 +318,19 @@ export function gramsToLbs(grams) {
   return round(grams / GRAMS_PER_POUND, 2);
 }
 
+/** A weigh-in's `weight.timestampGMT` ("2025-01-02T03:30:00.0", GMT without a zone) -> epoch ms, or null. */
+export function weighInTimeMs(rec) {
+  const raw = rec?.weight?.timestampGMT;
+  if (isNum(raw)) return raw;
+  if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw)) return null;
+  const ms = Date.parse(/(Z|[+-]\d{2}:?\d{2})$/.test(raw) ? raw : `${raw}Z`);
+  return Number.isNaN(ms) ? null : ms;
+}
+
 /**
- * Weigh-ins (*_userBioMetrics.json records with a `weight`) -> one weight per local day: the entry
- * with the highest `version` (its last edit). The day is metaData.calendarDate, Garmin's local time.
+ * Weigh-ins (*_userBioMetrics.json records with a `weight`) -> one weight per local day: the
+ * latest weigh-in by the time it was taken; the highest `version` (its last edit) breaks a tie.
+ * The day is metaData.calendarDate, Garmin's local time.
  */
 export function pickDailyWeights(records, skipped = [], since = null) {
   const byDate = new Map();
@@ -311,13 +345,68 @@ export function pickDailyWeights(records, skipped = [], since = null) {
     }
     if (since && date < since) continue;
     weighIns += 1;
+    const time = weighInTimeMs(rec) ?? -Infinity;
     const version = isNum(rec.version) ? rec.version : -Infinity;
     const current = byDate.get(date);
-    if (!current || version >= current.version) byDate.set(date, { version, grams: rec.weight.weight });
+    if (!current || time > current.time || (time === current.time && version >= current.version)) {
+      byDate.set(date, { time, version, grams: rec.weight.weight });
+    }
   }
   const weights = new Map([...byDate].map(([date, w]) => [date, gramsToLbs(w.grams)]));
   return { weights, weighIns };
 }
+
+/**
+ * The day the old one-time script (scripts/import-garmin-hume.mjs) gave a weigh-in:
+ * `new Date(timestampGMT).toISOString()`. The stamp has no zone, so JavaScript reads it as the
+ * computer's local time, and the date drifts from Garmin's local day (on a US Eastern computer,
+ * an afternoon weigh-in lands on the next day). Without a stamp it used metaData.calendarDate.
+ */
+export function oldScriptWeighInDate(rec) {
+  const raw = rec?.weight?.timestampGMT ?? rec?.metaData?.calendarDate;
+  if (raw === undefined || raw === null) return null;
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+}
+
+/**
+ * The last day the old script can have written: it reads the export folder
+ * docs/garmin-data/body/garmin-data-2026-02-24 (BASE in scripts/import-garmin-hume.mjs).
+ */
+export const OLD_SCRIPT_LAST_DATE = '2026-02-24';
+
+/** The old script's weight per day: its date rule, then the highest `version`, rounded as it did. */
+export function oldScriptDailyWeights(records, { dateOf = oldScriptWeighInDate, since = null, until = OLD_SCRIPT_LAST_DATE } = {}) {
+  const byDate = new Map();
+  for (const rec of records) {
+    if (!rec || rec.weight?.weight == null) continue;
+    const date = dateOf(rec);
+    if (!date || (since && date < since) || (until && date > until)) continue;
+    const current = byDate.get(date);
+    if (!current || rec.version > current.version) byDate.set(date, rec);
+  }
+  return new Map([...byDate].map(([date, rec]) => [date, Math.round((rec.weight.weight / GRAMS_PER_POUND) * 100) / 100]));
+}
+
+/**
+ * Days where the old script's weight and this file's differ: a different weight (Check rows lists
+ * it under "Different values"), or an old weight on a day this file has none (a re-import never
+ * touches it, so it stays unless deleted by hand). Sorted by date.
+ */
+export function weightCheckRows(fileWeights, oldWeights) {
+  const rows = [];
+  for (const [date, old] of oldWeights) {
+    const mine = fileWeights.get(date);
+    if (mine === undefined) {
+      rows.push({ date, old_script_weight_lbs: old, this_file_weight_lbs: '', check: 'old weight on a day with no weigh-in in Garmin local time' });
+    } else if (Math.abs(mine - old) >= 0.005) {
+      rows.push({ date, old_script_weight_lbs: old, this_file_weight_lbs: mine, check: 'different weight (listed under Different values)' });
+    }
+  }
+  return rows.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export const WEIGHT_CHECK_COLUMNS = ['date', 'old_script_weight_lbs', 'this_file_weight_lbs', 'check'];
 
 /** Garmin hydration logs -> net logged intake (mL) per day, from GARMIN_GCM entries only. */
 export function dailyWaterIntake(entries) {
@@ -363,7 +452,10 @@ export function dailyBloodPressure(records, skipped = []) {
  * local day, sorted by date. Each column comes from exactly one source, so the merge never has to
  * choose between two values.
  */
-export function buildHealthRows({ uds = [], sleep = [], bio = [], hydration = [], bloodPressure = [] }, { since = null, withNotes = false } = {}) {
+export function buildHealthRows(
+  { uds = [], sleep = [], bio = [], hydration = [], bloodPressure = [] },
+  { since = null, withNotes = false, oldScriptDate = oldScriptWeighInDate } = {},
+) {
   const skipped = [];
   const days = new Map();
   const day = (date) => {
@@ -430,7 +522,8 @@ export function buildHealthRows({ uds = [], sleep = [], bio = [], hydration = []
 
   const { weights, weighIns } = pickDailyWeights(bio, skipped, since);
   for (const [date, lbs] of weights) day(date).weight_lbs = lbs;
-  if (weighIns > weights.size) addSkip(skipped, 'extra weigh-ins on a day that has more than one (the latest edit is kept)', weighIns - weights.size);
+  if (weighIns > weights.size) addSkip(skipped, 'extra weigh-ins on a day that has more than one (the latest weigh-in is kept)', weighIns - weights.size);
+  const weightCheck = weightCheckRows(weights, oldScriptDailyWeights(bio, { dateOf: oldScriptDate, since }));
 
   let waterDays = 0;
   let bpDays = 0;
@@ -464,6 +557,7 @@ export function buildHealthRows({ uds = [], sleep = [], bio = [], hydration = []
   return {
     rows,
     skipped,
+    weightCheck,
     stats: { udsDays, sleepDays, weighIns, weightDays: weights.size, waterDays, bpDays, fieldDays },
   };
 }
@@ -488,9 +582,10 @@ export function activitiesFromExport(raw) {
 
 /**
  * Sorts activities by local start, drops repeats of one start second (Garmin can list one recording
- * under two activity ids), applies --since, and splits them into trip and workout types.
+ * under two activity ids), applies --since, leaves out activities shorter than 30 seconds (unless
+ * keepShort), and splits them into trip and workout types.
  */
-export function prepareActivities(activities, { since = null } = {}) {
+export function prepareActivities(activities, { since = null, keepShort = false } = {}) {
   const skipped = [];
   const withStart = [];
   for (const act of activities) {
@@ -517,9 +612,24 @@ export function prepareActivities(activities, { since = null } = {}) {
     kept = kept.filter((item) => item.date >= since);
     addSkip(skipped, `activities before --since ${since}`, before - kept.length);
   }
+  if (!keepShort) {
+    const short = (item) => isNum(item.act.duration) && item.act.duration < MIN_ACTIVITY_MS;
+    for (const item of kept.filter(short)) {
+      const kind = TRIP_TYPE_LABELS[item.act.activityType] ? 'trip' : 'workout';
+      addSkip(skipped, `${kind} activities shorter than 30 seconds (accidental starts; --keep-short keeps them)`, 1, item.date);
+    }
+    kept = kept.filter((item) => !short(item));
+  }
   const trips = kept.filter((item) => TRIP_TYPE_LABELS[item.act.activityType]);
   const workouts = kept.filter((item) => !TRIP_TYPE_LABELS[item.act.activityType]);
   return { trips, workouts, skipped };
+}
+
+/** Centimetres -> miles to 2 decimals; blank when not positive or when it rounds to 0.00 (stored as 0). */
+export function milesText(cm) {
+  if (!positive(cm)) return '';
+  const miles = (cm / CM_PER_MILE).toFixed(2);
+  return miles === '0.00' ? '' : miles;
 }
 
 /** One trip-type activity -> a row in Garmin Connect's Activities.csv shape. */
@@ -530,7 +640,7 @@ export function tripRow({ act, start }) {
     'Date': start,
     'Favorite': act.favorite ? 'true' : 'false',
     'Title': (act.name ?? '').trim() || TRIP_TYPE_LABELS[act.activityType],
-    'Distance': positive(act.distance) ? (act.distance / CM_PER_MILE).toFixed(2) : '',
+    'Distance': milesText(act.distance),
     'Calories': exportCaloriesToKcal(act.calories) ?? '',
     'Time': duration,
     'Total Time': duration,
@@ -593,10 +703,13 @@ export function buildWorkoutRows(items, { exercises = false } = {}) {
     if (positive(act.duration) && minutes === 0) addSkip(skipped, 'workouts shorter than 30 seconds (duration left blank)');
     const feel = isNum(act.workoutFeel) && act.workoutFeel >= 0 && act.workoutFeel <= 100 ? Math.round(act.workoutFeel / 25) + 1 : '';
     const notes = [`Garmin ${workoutTypeLabel(act.activityType)}`, `Start ${start.slice(11, 16)}`];
-    if (positive(act.distance)) notes.push(`${(act.distance / CM_PER_MILE).toFixed(2)} mi`);
+    const miles = milesText(act.distance);
+    if (miles) notes.push(`${miles} mi`);
     if (positive(act.avgHr)) notes.push(`Avg HR ${Math.round(act.avgHr)} bpm`);
     const kcal = exportCaloriesToKcal(act.calories);
     if (kcal) notes.push(`${kcal} kcal`);
+    // Garmin stores perceived exertion as 10-100 (RPE 1-10). The workout row has no RPE column.
+    if (isNum(act.workoutRpe) && act.workoutRpe >= 10 && act.workoutRpe <= 100) notes.push(`RPE ${Math.round(act.workoutRpe / 10)}/10`);
     rows.push({
       date,
       name,
@@ -634,9 +747,12 @@ export function buildWorkoutRows(items, { exercises = false } = {}) {
 // ---------------------------------------------------------------------------------------------
 
 /** Every data list the converter reads, already parsed -> the output files and a summary object. */
-export function convertExport(data, { since = null, exercises = false, withNotes = false } = {}) {
-  const health = buildHealthRows(data, { since, withNotes });
-  const prepared = prepareActivities(data.activities ?? [], { since });
+export function convertExport(
+  data,
+  { since = null, exercises = false, withNotes = false, keepShort = false, oldScriptDate = oldScriptWeighInDate } = {},
+) {
+  const health = buildHealthRows(data, { since, withNotes, oldScriptDate });
+  const prepared = prepareActivities(data.activities ?? [], { since, keepShort });
   const tripRows = buildTripRows(prepared.trips);
   const workouts = buildWorkoutRows(prepared.workouts, { exercises });
 
@@ -661,7 +777,7 @@ export function convertExport(data, { since = null, exercises = false, withNotes
       range: dateRange(prepared.trips.map((t) => t.date)),
     });
   }
-  const workoutChunks = chunkByGroup(workouts.rows, WORKOUT_MAX_ROWS, workoutKey);
+  const workoutChunks = chunkByGroup(workouts.rows, WORKOUT_MAX_ROWS, workoutKey, WORKOUT_MAX_PER_FILE);
   workoutChunks.forEach((rows, i) => {
     const base = exercises ? 'workouts-with-exercises' : 'workouts';
     files.push({
@@ -672,10 +788,20 @@ export function convertExport(data, { since = null, exercises = false, withNotes
       range: dateRange(rows.map((r) => r.date)),
     });
   });
+  if (health.weightCheck.length > 0) {
+    files.push({
+      kind: 'check',
+      name: 'check-weights-old-script.csv',
+      columns: WEIGHT_CHECK_COLUMNS,
+      rows: health.weightCheck,
+      range: dateRange(health.weightCheck.map((r) => r.date)),
+    });
+  }
 
+  const hasEffort = (t) => (isNum(t.act.workoutRpe) && t.act.workoutRpe > 0) || isNum(t.act.workoutFeel);
   const summary = {
     since,
-    options: { exercises, withNotes },
+    options: { exercises, withNotes, keepShort },
     health: {
       days: health.rows.length,
       range: dateRange(health.rows.map((r) => r.logged_date)),
@@ -688,6 +814,8 @@ export function convertExport(data, { since = null, exercises = false, withNotes
       byType: countBy(prepared.trips, (t) => TRIP_TYPE_LABELS[t.act.activityType]),
       noDistance: tripRows.filter((r) => r.Distance === '').length,
       noDuration: tripRows.filter((r) => r['Total Time'] === '').length,
+      underOneMinute: tripRows.filter((r) => r['Total Time'] !== '' && r['Total Time'] < '00:01:00').length,
+      withEffort: prepared.trips.filter(hasEffort).length,
     },
     workouts: {
       workouts: workouts.stats.workouts,
@@ -696,7 +824,15 @@ export function convertExport(data, { since = null, exercises = false, withNotes
       renamed: workouts.stats.renamed,
       range: dateRange(prepared.workouts.map((w) => w.date)),
       byType: countBy(prepared.workouts, (w) => w.act.activityType || 'unknown'),
+      withRpe: prepared.workouts.filter((w) => isNum(w.act.workoutRpe) && w.act.workoutRpe >= 10).length,
+      perFile: WORKOUT_MAX_PER_FILE,
       skipped: workouts.skipped,
+    },
+    weightCheck: {
+      days: health.weightCheck.length,
+      different: health.weightCheck.filter((r) => r.this_file_weight_lbs !== '').length,
+      onlyOld: health.weightCheck.filter((r) => r.this_file_weight_lbs === '').length,
+      until: OLD_SCRIPT_LAST_DATE,
     },
     activitiesSkipped: prepared.skipped,
     files: files.map((f) => ({ name: f.name, kind: f.kind, rows: f.rows.length, range: f.range })),
@@ -772,7 +908,7 @@ export function readExport(diConnect) {
 // Output
 // ---------------------------------------------------------------------------------------------
 
-const OWN_OUTPUT = /^(health-metrics-.*\.csv|trips-.*\.csv|workouts.*\.csv|summary\.txt)$/;
+const OWN_OUTPUT = /^(health-metrics-.*\.csv|trips-.*\.csv|workouts.*\.csv|check-weights-old-script\.csv|summary\.txt)$/;
 
 const fmtRange = (range) => (range ? `${range.from} to ${range.to}` : 'none');
 const fmtCounts = (obj) => Object.entries(obj).map(([k, v]) => `${k} ${v}`).join(', ');
@@ -784,6 +920,7 @@ export function summaryText(summary, { fileCounts = null, exportPath = '' } = {}
   L.push('Garmin export -> CentenarianOS import files');
   L.push(`Made by scripts/garmin-export-to-centos.mjs${exportPath ? ` from ${exportPath}` : ''}`);
   if (s.since) L.push(`Only dates on or after ${s.since} (--since).`);
+  if (s.options.keepShort) L.push('Activities shorter than 30 seconds are kept (--keep-short).');
   if (fileCounts) L.push(`Export files read: ${fmtCounts(fileCounts)}`);
   L.push('');
   L.push('FILES');
@@ -793,17 +930,37 @@ export function summaryText(summary, { fileCounts = null, exportPath = '' } = {}
   L.push(`  From: daily summaries ${s.health.udsDays} days, sleep ${s.health.sleepDays} nights, weight ${s.health.weightDays} days (${s.health.weighIns} weigh-ins)` +
     (s.options.withNotes ? `, notes: water ${s.health.waterDays} days, blood pressure ${s.health.bpDays} days` : ''));
   L.push(`  Days with a value per column: ${fmtCounts(s.health.fieldDays)}`);
+  L.push('  activity_min = moderate + vigorous intensity minutes, each minute counted once (the old script\'s');
+  L.push('  rule). Garmin\'s own "intensity minutes" count a vigorous minute twice, so its figure is higher.');
+  L.push('  spo2_pct = the sleep Pulse Ox average only (the old script\'s rule). Garmin\'s all-day average is');
+  L.push('  left out: it runs about 1 point apart, and mixing the two would make the trend jump.');
   L.push('  hrv_ms: not in a Garmin account export, so the column is left out.');
   L.push('');
   L.push(`TRIPS: ${s.trips.rows} activities, ${fmtRange(s.trips.range)}`);
   L.push(`  By type: ${fmtCounts(s.trips.byType)}`);
-  L.push(`  No distance (indoor or no GPS): ${s.trips.noDistance}; no duration: ${s.trips.noDuration}`);
+  L.push(`  No distance (indoor, no GPS, or under 0.005 mi): ${s.trips.noDistance}; no duration: ${s.trips.noDuration}; under 1 minute: ${s.trips.underOneMinute}`);
+  if (s.trips.withEffort > 0) L.push(`  ${s.trips.withEffort} trips have a Garmin RPE or feel rating; the Travel import has no column for it.`);
   L.push('');
   L.push(`WORKOUTS: ${s.workouts.workouts} workouts in ${s.workouts.rows} rows, ${fmtRange(s.workouts.range)}`);
+  L.push(`  At most ${s.workouts.perFile} workouts per file (the import saves them one at a time in one request).`);
   L.push(`  By Garmin type: ${fmtCounts(s.workouts.byType)}`);
   L.push(`  Renamed with their start time (a name used twice on one day): ${s.workouts.renamed}`);
-  if (s.options.exercises) L.push(`  Exercise rows: ${s.workouts.exerciseRows}`);
+  if (s.workouts.withRpe > 0) L.push(`  Garmin RPE written into notes ("RPE 4/10"): ${s.workouts.withRpe}`);
+  if (s.options.exercises) {
+    L.push(`  Exercise rows: ${s.workouts.exerciseRows}. Rest time is not in the export; the import fills its default`);
+    L.push('  of 60 seconds. A few sets Garmin detected across a whole session run over 30 minutes.');
+  }
   L.push('');
+  if (s.weightCheck.days > 0) {
+    L.push(`WEIGHT DAYS TO CHECK BY HAND: ${s.weightCheck.days} (check-weights-old-script.csv, up to ${s.weightCheck.until})`);
+    L.push('  The old one-time script (scripts/import-garmin-hume.mjs) dated each weigh-in by its GMT time read');
+    L.push('  as this computer\'s local time and kept the last-edited weigh-in. This file uses Garmin\'s local');
+    L.push(`  day and the last weigh-in taken. On ${s.weightCheck.different} days it would have stored a different weight (Check`);
+    L.push('  rows lists them under "Different values"; Replace existing values uses this file\'s). On');
+    L.push(`  ${s.weightCheck.onlyOld} days it put a weight where Garmin has none that local day: a re-import never touches`);
+    L.push('  those, so delete them by hand if you see them. Only matters if that script was ever run.');
+    L.push('');
+  }
   L.push('SKIPPED');
   const skips = [...s.health.skipped, ...s.activitiesSkipped, ...s.workouts.skipped];
   if (skips.length === 0) L.push('  nothing');
@@ -812,22 +969,25 @@ export function summaryText(summary, { fileCounts = null, exportPath = '' } = {}
   L.push('NOT IN ANY FILE (no CentenarianOS column or importer): VO2 max, fitness age, training status and');
   L.push('load, HRV (not in the export), respiration, floors, distance per day, min/max HR, Body Battery');
   L.push('detail, sleep stages, hydration and blood pressure (unless --with-notes), BMI (the metrics page');
-  L.push('does not send it), body fat and muscle (not in a Garmin export), GPS tracks and FIT files, gear,');
-  L.push('planned workouts, personal records, golf.');
+  L.push('does not send it), body fat and muscle (not in a Garmin export), RPE and feel on trips, GPS tracks');
+  L.push('and FIT files, gear, planned workouts, personal records, golf scorecards.');
   L.push('');
   L.push('HOW TO IMPORT (each importer has a check step that writes nothing; re-running a file is safe)');
-  L.push('  1. Health: Settings > Wearables > Garmin > Import CSV (/dashboard/metrics/import?source=garmin).');
-  L.push('     Upload one health-metrics file at a time (365 days each), click Check rows, then Import.');
-  L.push('     New days are added and blank fields filled; a stored value that differs is kept and listed');
-  L.push('     under "Different values" unless Replace existing values is ticked (the file then wins on');
-  L.push('     every differing field; a blank cell never erases anything). The old one-time script stored');
-  L.push('     the sleep average HR as resting_hr, so expect resting_hr differences on the days it loaded.');
-  L.push('  2. Trips: Travel > Import, Garmin Activities CSV: trips-garmin-activities.csv. Check file, then');
-  L.push('     Import. Activities already imported (same start time) are skipped.');
-  L.push('  3. Workouts: Data Hub > Import > Workouts. Check rows, then Import, one file at a time. If the');
-  L.push('     old scripts/import-garmin-workouts.mjs ever wrote these, run');
-  L.push('     scripts/report-fitness-duplicates.mjs (read-only) first: the CSV import matches by name and');
-  L.push('     date only, and cannot see rows that script wrote under a different day or name.');
+  L.push('  Import only once the Garmin duplicate fixes and migration 224 are live. See HOW-TO-IMPORT.md if');
+  L.push('  it is next to this file.');
+  L.push('  1. Health: /dashboard/metrics/import?source=garmin (Metrics > Import, source Garmin). One');
+  L.push('     health-metrics file at a time: Check rows, then Import. New days are added and blank fields');
+  L.push('     filled; a stored value that differs is kept and listed under "Different values" unless');
+  L.push('     Replace existing values is ticked (the file then wins on every differing field; a blank cell');
+  L.push('     never erases anything). The old one-time script stored the sleep average HR (or Garmin\'s');
+  L.push('     7-day average) as resting_hr, so expect resting_hr differences on the days it loaded.');
+  L.push('  2. Trips: /dashboard/travel/import, Garmin Activities CSV: trips-garmin-activities.csv. Check');
+  L.push('     file, then Import. Activities already imported (same start time) are skipped.');
+  L.push('  3. Workouts: /dashboard/data/import/workouts. One file at a time: Check rows, then Import.');
+  L.push('     Use these files OR scripts/import-garmin-workouts.mjs for an export, never both: the CSV');
+  L.push('     import matches a workout by name and date only, and a renamed one ("Strength (07:05)") does');
+  L.push('     not match a row that script wrote. If that script ever ran, run the read-only');
+  L.push('     scripts/report-fitness-duplicates.mjs first.');
   return `${L.join('\n')}\n`;
 }
 
@@ -843,10 +1003,10 @@ export function writeOutputs(outDir, files, summaryTextValue) {
 // CLI
 // ---------------------------------------------------------------------------------------------
 
-const USAGE = `Usage: node scripts/garmin-export-to-centos.mjs <export-dir | export.zip> [--out <dir>] [--since YYYY-MM-DD] [--exercises] [--with-notes]`;
+const USAGE = `Usage: node scripts/garmin-export-to-centos.mjs <export-dir | export.zip> [--out <dir>] [--since YYYY-MM-DD] [--exercises] [--with-notes] [--keep-short]`;
 
 export function parseArgs(argv) {
-  const opts = { input: null, out: null, since: null, exercises: false, withNotes: false, help: false };
+  const opts = { input: null, out: null, since: null, exercises: false, withNotes: false, keepShort: false, help: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--help' || a === '-h') opts.help = true;
@@ -854,6 +1014,7 @@ export function parseArgs(argv) {
     else if (a === '--since') opts.since = argv[++i] ?? null;
     else if (a === '--exercises') opts.exercises = true;
     else if (a === '--with-notes') opts.withNotes = true;
+    else if (a === '--keep-short') opts.keepShort = true;
     else if (a.startsWith('--')) throw new Error(`Unknown option ${a}\n${USAGE}`);
     else if (!opts.input) opts.input = a;
     else throw new Error(`Unexpected argument ${a}\n${USAGE}`);
@@ -893,7 +1054,12 @@ function main() {
     const diConnect = findDiConnect(root);
     if (!diConnect) throw new Error(`No DI_CONNECT folder found in ${input}. Point at the unzipped Garmin export.`);
     const { data, fileCounts } = readExport(diConnect);
-    const { files, summary } = convertExport(data, { since: opts.since, exercises: opts.exercises, withNotes: opts.withNotes });
+    const { files, summary } = convertExport(data, {
+      since: opts.since,
+      exercises: opts.exercises,
+      withNotes: opts.withNotes,
+      keepShort: opts.keepShort,
+    });
     const outDir = resolve(opts.out ?? (tempDir ? join(dirname(input), `${basename(input, '.zip')}-centos-import`) : join(input, 'centos-import')));
     const text = summaryText(summary, { fileCounts, exportPath: input });
     writeOutputs(outDir, files, text);

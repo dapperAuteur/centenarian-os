@@ -284,7 +284,7 @@ JSON, not the CSVs the in-app importers read. `scripts/garmin-export-to-centos.m
 machine. It reads local files only: no network, no database, no env vars.
 
 ```bash
-node scripts/garmin-export-to-centos.mjs <export-dir | export.zip> [--out <dir>] [--since YYYY-MM-DD] [--exercises] [--with-notes]
+node scripts/garmin-export-to-centos.mjs <export-dir | export.zip> [--out <dir>] [--since YYYY-MM-DD] [--exercises] [--with-notes] [--keep-short]
 ```
 
 It writes into `<export-dir>/centos-import` (or `--out`). Each importer has a check step that writes
@@ -292,15 +292,18 @@ nothing, and importing a file twice adds nothing.
 
 | File | Import it at | What it holds |
 | --- | --- | --- |
-| `health-metrics-NN-of-MM_<from>_<to>.csv` | Settings > Wearables > Garmin > Import CSV (`/dashboard/metrics/import?source=garmin`), one file at a time | One row per local day: steps, that day's resting HR (not Garmin's 7-day average), active calories, intensity minutes, all-day stress, Body Battery high (as recovery), sleep hours (deep + light + REM), sleep score, sleep SpO2 and weight (the last-edited weigh-in of the day). At most 365 days per file, the import's cap. |
+| `health-metrics-NN-of-MM_<from>_<to>.csv` | Settings > Wearables > Garmin > Import CSV (`/dashboard/metrics/import?source=garmin`), one file at a time | One row per local day: steps, that day's resting HR (not Garmin's 7-day average), active calories, intensity minutes, all-day stress, Body Battery high (as recovery), sleep hours (deep + light + REM), sleep score, sleep SpO2 and weight (the last weigh-in taken that day). At most 365 days per file, the import's cap. |
 | `trips-garmin-activities.csv` | Travel > Import Data > Garmin Activities CSV (`/dashboard/travel/import`) | Rides, walks, runs and hikes, with Garmin Connect's Activities.csv headers. Keyed by local start time, so activities already imported are skipped. |
-| `workouts.csv` | Data Hub > Import > Workouts (`/dashboard/data/import/workouts`) | Every other activity type (strength, HIIT, yoga, ...). The import merges rows with the same name and date into one workout, so a name used twice on one day gets its start time: `Strength (07:05)`. |
+| `workouts[-NN-of-MM].csv` | Data Hub > Import > Workouts (`/dashboard/data/import/workouts`), one file at a time | Every other activity type (strength, HIIT, yoga, ...), with Garmin's RPE in the notes. The import merges rows with the same name and date into one workout, so a name used twice on one day gets its start time: `Strength (07:05)`. At most 200 workouts per file, since the import saves them one at a time in one request. Use these files or `scripts/import-garmin-workouts.mjs` for an export, not both: a renamed workout does not match a row that script wrote. |
+| `check-weights-old-script.csv` | - (read it, don't import it) | Only when there are any: the days where the old `scripts/import-garmin-hume.mjs` stored a different weight, or a weight on a day Garmin has none (it dated weigh-ins by their GMT time read as local time). A re-import keeps stored values, so these are the days to check by hand. |
 | `summary.txt` | - | Counts, date ranges, what was skipped and why, and these steps. |
 
 Units it converts (checked against a real export and Garmin Connect's CSV for the same activities):
 activity durations are milliseconds, distance and elevation centimetres, activity `calories / 4.19` is
 kcal, weight is grams. A blank cell means not measured, never 0, so it can't erase a stored value.
-`--since` keeps only dates on or after that day (a newer export on top of one already imported).
+Activities shorter than 30 seconds are left out (accidental starts; a trip would be stored with 0
+minutes); `--keep-short` keeps them. `--since` keeps only dates on or after that day (a newer export on
+top of one already imported).
 `--exercises` adds Garmin's exercise sets as exercise rows and splits the workouts file at workout
 boundaries (1,000-row cap). `--with-notes` writes logged water and blood-pressure readings into the
 notes column, since CentenarianOS has no column for either. Not converted (no column or importer): VO2

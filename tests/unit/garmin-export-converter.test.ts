@@ -14,8 +14,11 @@ import { join } from 'node:path';
 import {
   HEALTH_COLUMNS,
   HEALTH_MAX_ROWS,
+  OLD_SCRIPT_LAST_DATE,
   TRIP_COLUMNS,
+  WEIGHT_CHECK_COLUMNS,
   WORKOUT_COLUMNS,
+  WORKOUT_MAX_PER_FILE,
   WORKOUT_MAX_ROWS,
   buildHealthRows,
   buildTripRows,
@@ -29,6 +32,9 @@ import {
   formatDuration,
   gramsToLbs,
   localStartFromWallClockMs,
+  milesText,
+  oldScriptDailyWeights,
+  oldScriptWeighInDate,
   parseArgs,
   pickDailyWeights,
   prepareActivities,
@@ -38,6 +44,8 @@ import {
   titleCase,
   toCsv,
   udsMetrics,
+  weighInTimeMs,
+  weightCheckRows,
   writeOutputs,
 } from '../../scripts/garmin-export-to-centos.mjs';
 import { parseGarminActivitiesCsv, splitCsvLine } from '../../lib/fitness-import/garmin-trips.ts';
@@ -81,9 +89,12 @@ function night(date: string, extra: Record<string, unknown> = {}) {
   };
 }
 
-function weighIn(localStamp: string, grams: number, version: number) {
-  return { version, metaData: { calendarDate: localStamp }, weight: { weight: grams, sourceType: 'MANUAL', timestampGMT: '2025-01-02T03:30:00.0' } };
+function weighIn(localStamp: string, grams: number, version: number, gmtStamp = '2025-01-02T03:30:00.0') {
+  return { version, metaData: { calendarDate: localStamp }, weight: { weight: grams, sourceType: 'MANUAL', timestampGMT: gmtStamp } };
 }
+
+/** The old script's day for a weigh-in, fixed for tests (the real rule depends on the computer's time zone). */
+const gmtDate = (rec: { weight?: { timestampGMT?: string } }) => rec.weight?.timestampGMT?.slice(0, 10) ?? null;
 
 function activity(type: string, start: number, extra: Record<string, unknown> = {}) {
   return {
@@ -177,7 +188,45 @@ test('sleepMetrics: deep + light + REM to 0.1 h, score 0 is blank, sleep SpO2, n
   assert.deepEqual(sleepMetrics(night('2025-01-01', { deepSleepSeconds: 0, lightSleepSeconds: 0, remSleepSeconds: 0, sleepScores: { overallScore: 0 } })), { spo2_pct: 95.46 });
 });
 
-test('pickDailyWeights: local calendar day, latest version wins, grams to pounds', () => {
+test('pickDailyWeights: the latest weigh-in taken wins, not the last edited', () => {
+  const { weights } = pickDailyWeights([
+    weighIn('2025-01-01T07:00:00.0', 88000, 900, '2025-01-01T12:00:00.0'), // edited later, weighed earlier
+    weighIn('2025-01-01T18:00:00.0', 88450, 100, '2025-01-01T23:00:00.0'), // weighed last
+  ]);
+  assert.equal(weights.get('2025-01-01'), 195);
+  assert.equal(weighInTimeMs({ weight: { timestampGMT: '2025-01-01T23:00:00.0' } }), Date.UTC(2025, 0, 1, 23));
+  assert.equal(weighInTimeMs({ weight: { timestampGMT: 'nope' } }), null);
+});
+
+test('old-script weight days: its date rule, its version rule, and only the days it could have written', () => {
+  // A stamp with a zone gives the same answer on every computer.
+  assert.equal(oldScriptWeighInDate({ weight: { timestampGMT: '2025-01-02T23:30:00.0Z' } }), '2025-01-02');
+  // Without one, JavaScript reads it as local time: exactly what the old script did.
+  const local = '2025-01-02T23:30:00.0';
+  assert.equal(oldScriptWeighInDate({ weight: { timestampGMT: local } }), new Date(local).toISOString().slice(0, 10));
+  assert.equal(oldScriptWeighInDate({ weight: {} }), null);
+
+  const records = [
+    weighIn('2025-01-01T18:00:00.0', 88000, 1, '2025-01-02T00:30:00.0'), // GMT day is the next day
+    weighIn('2025-01-03T07:00:00.0', 88450, 5, '2025-01-03T12:00:00.0'),
+    weighIn('2025-01-03T08:00:00.0', 90000, 9, '2025-01-03T08:00:00.0'), // edited last, weighed first
+    weighIn('2026-03-01T07:00:00.0', 88000, 1, '2026-03-01T12:00:00.0'), // after the old script's export
+  ];
+  const old = oldScriptDailyWeights(records, { dateOf: gmtDate });
+  assert.deepEqual([...old.keys()], ['2025-01-02', '2025-01-03']);
+  assert.ok(OLD_SCRIPT_LAST_DATE < '2026-03-01');
+  const { weights } = pickDailyWeights(records);
+  const rows = weightCheckRows(weights, old);
+  assert.deepEqual(rows.map((r) => [r.date, r.this_file_weight_lbs === '' ? 'only old' : 'different']), [
+    ['2025-01-02', 'only old'],
+    ['2025-01-03', 'different'],
+  ]);
+  assert.deepEqual(Object.keys(rows[0]), WEIGHT_CHECK_COLUMNS);
+  // The same weight on the same day is not listed.
+  assert.deepEqual(weightCheckRows(new Map([['2025-01-05', 195]]), new Map([['2025-01-05', 195]])), []);
+});
+
+test('pickDailyWeights: local calendar day, latest version wins on a tie, grams to pounds', () => {
   const skipped: { reason: string; count: number }[] = [];
   const { weights, weighIns } = pickDailyWeights([
     weighIn('2025-01-01T21:30:00.0', 90000, 5), // GMT stamp is the next day: the local day counts
@@ -321,6 +370,37 @@ test('trips CSV reads back through the Travel importer parser with the right uni
   assert.equal(parsed.activities[5].purpose, 'leisure');
 });
 
+test('activities under 30 seconds are left out by default and counted per kind; --keep-short keeps them', () => {
+  const acts = [
+    activity('running', wall(2025, 3, 1, 7, 0), { duration: 9000, distance: 3000 }),
+    activity('cycling', wall(2025, 3, 1, 8, 0), { duration: 29999 }),
+    activity('walking', wall(2025, 3, 1, 9, 0), { duration: 30000 }), // exactly 30 s stays
+    activity('hiit', wall(2025, 3, 2, 7, 0), { duration: 5000 }),
+    activity('yoga', wall(2025, 3, 2, 8, 0), { duration: undefined }), // no duration: kept, blank
+  ];
+  const { trips, workouts, skipped } = prepareActivities(acts);
+  assert.deepEqual(trips.map((t) => t.act.activityType), ['walking']);
+  assert.deepEqual(workouts.map((w) => w.act.activityType), ['yoga']);
+  const tripSkip = skipped.find((s) => s.reason.startsWith('trip activities shorter than 30 seconds'));
+  assert.equal(tripSkip?.count, 2);
+  assert.deepEqual(tripSkip?.examples, ['2025-03-01', '2025-03-01']);
+  assert.equal(skipped.find((s) => s.reason.startsWith('workout activities shorter than 30 seconds'))?.count, 1);
+
+  const kept = prepareActivities(acts, { keepShort: true });
+  assert.equal(kept.trips.length + kept.workouts.length, 5);
+  assert.equal(kept.skipped.length, 0);
+});
+
+test('a distance that rounds to 0.00 mi is written blank, never as a stored 0', () => {
+  assert.equal(milesText(160934.4), '1.00');
+  assert.equal(milesText(1000), '0.01'); // 0.0062 mi
+  assert.equal(milesText(500), ''); // 0.003 mi
+  assert.equal(milesText(0), '');
+  const { trips } = prepareActivities([activity('walking', wall(2025, 3, 1, 7, 0), { distance: 500 })]);
+  const parsed = parseGarminActivitiesCsv(toCsv(TRIP_COLUMNS, buildTripRows(trips)));
+  assert.equal(parsed.activities[0].distance_miles, null);
+});
+
 // ---------------------------------------------------------------------------------------------
 // Activities: workouts
 // ---------------------------------------------------------------------------------------------
@@ -331,8 +411,8 @@ test('workouts: a name reused on one day gets its start time, so the importer ke
     activity('strength_training', wall(2025, 3, 1, 18, 30), { name: 'strength ' }),
     activity('strength_training', wall(2025, 3, 2, 6, 5), { name: 'Strength' }),
     activity('hiit', wall(2025, 3, 2, 7, 0), { name: '', duration: 20000 }),
-    activity('golf', wall(2025, 3, 3, 9, 0), { name: 'Golf, nine holes', calories: 0 }),
-  ]);
+    activity('golf', wall(2025, 3, 3, 9, 0), { name: 'Golf, nine holes', calories: 0, workoutRpe: 40 }),
+  ], { keepShort: true });
   const { rows, stats, skipped } = buildWorkoutRows(workouts);
   assert.deepEqual(rows.map((r) => r.name), ['Strength (06:05)', 'strength (18:30)', 'Strength', 'HIIT', 'Golf, nine holes']);
   assert.equal(stats.renamed, 2);
@@ -342,6 +422,8 @@ test('workouts: a name reused on one day gets its start time, so the importer ke
   assert.equal(rows[0].overall_feeling, 4);
   assert.equal(rows[3].duration_min, ''); // 20 s rounds to 0 minutes: blank, never 0
   assert.equal(rows[4].purpose, '');
+  assert.match(String(rows[4].notes), /\| RPE 4\/10$/);
+  assert.ok(!String(rows[0].notes).includes('RPE'));
   for (const r of rows) assert.ok(!String(r.notes).includes(','));
   assert.equal(skipped.find((s) => s.reason.startsWith('workouts shorter than 30 seconds'))?.count, 1);
 
@@ -395,6 +477,13 @@ test('chunkByGroup never cuts a workout in two and stays under the cap', () => {
   assert.throws(() => chunkByGroup(rows.slice(0, 8), 3, () => 'one'));
 });
 
+test('chunkByGroup also caps the number of workouts per file, evenly', () => {
+  const rows = Array.from({ length: 735 }, (_, i) => ({ name: `W${i}`, date: '2025-01-01' }));
+  const chunks = chunkByGroup(rows, WORKOUT_MAX_ROWS, (r: { name: string }) => r.name, WORKOUT_MAX_PER_FILE);
+  assert.deepEqual(chunks.map((c) => c.length), [184, 184, 184, 183]);
+  assert.equal(chunkByGroup(rows.slice(0, 10), WORKOUT_MAX_ROWS, (r: { name: string }) => r.name).length, 1);
+});
+
 // ---------------------------------------------------------------------------------------------
 // Whole export
 // ---------------------------------------------------------------------------------------------
@@ -426,6 +515,24 @@ test('convertExport: workout files split under the 1,000-row cap at workout boun
   for (const f of wk) assert.ok(f.rows.length <= WORKOUT_MAX_ROWS && f.rows.length % 4 === 0);
 });
 
+test('convertExport: at most 200 workouts per file, and the weight check file only when needed', () => {
+  const acts = [];
+  for (let i = 0; i < 450; i++) acts.push(activity('yoga', wall(2024, 1, 1, 6, 0) + i * 86400000, { name: 'Yoga' }));
+  const { files, summary } = convertExport({ activities: acts }, { oldScriptDate: gmtDate });
+  const wk = files.filter((f: { kind: string }) => f.kind === 'workouts');
+  assert.deepEqual(wk.map((f: { rows: unknown[] }) => f.rows.length), [150, 150, 150]);
+  assert.equal(wk[0].name, 'workouts-01-of-03.csv');
+  assert.equal(files.some((f: { kind: string }) => f.kind === 'check'), false);
+  assert.doesNotMatch(summaryText(summary), /WEIGHT DAYS TO CHECK/);
+
+  const withShift = convertExport({ bio: [weighIn('2025-01-01T18:00:00.0', 88000, 1, '2025-01-02T00:30:00.0')] }, { oldScriptDate: gmtDate });
+  const check = withShift.files.find((f: { kind: string }) => f.kind === 'check');
+  assert.equal(check?.name, 'check-weights-old-script.csv');
+  assert.equal(check?.rows.length, 1);
+  assert.equal(withShift.summary.weightCheck.onlyOld, 1);
+  assert.match(summaryText(withShift.summary), /WEIGHT DAYS TO CHECK BY HAND: 1 \(check-weights-old-script\.csv/);
+});
+
 test('reads an export folder by file pattern and writes the files, replacing only its own output', () => {
   const root = mkdtempSync(join(tmpdir(), 'garmin-conv-test-'));
   try {
@@ -450,7 +557,7 @@ test('reads an export folder by file pattern and writes the files, replacing onl
     mkdirSync(out);
     writeFileSync(join(out, 'health-metrics-09-of-09_old.csv'), 'stale');
     writeFileSync(join(out, 'keep-me.txt'), 'mine');
-    const { files, summary } = convertExport(data);
+    const { files, summary } = convertExport(data, { oldScriptDate: gmtDate });
     writeOutputs(out, files, summaryText(summary, { fileCounts }));
     assert.deepEqual(readdirSync(out).sort(), [
       'health-metrics-01-of-01_2025-01-01_to_2025-01-02.csv',
@@ -472,8 +579,9 @@ test('reads an export folder by file pattern and writes the files, replacing onl
 
 test('parseArgs: input, --out, --since date check, flags', () => {
   assert.deepEqual(parseArgs(['exp', '--out', 'o', '--since', '2026-02-25', '--exercises', '--with-notes']), {
-    input: 'exp', out: 'o', since: '2026-02-25', exercises: true, withNotes: true, help: false,
+    input: 'exp', out: 'o', since: '2026-02-25', exercises: true, withNotes: true, keepShort: false, help: false,
   });
+  assert.equal(parseArgs(['exp', '--keep-short']).keepShort, true);
   assert.throws(() => parseArgs([]));
   assert.throws(() => parseArgs(['exp', '--since', '2026-02-30']));
   assert.throws(() => parseArgs(['exp', '--bogus']));
