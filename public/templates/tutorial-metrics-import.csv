@@ -480,7 +480,7 @@ What matters is the trend over 4–12 weeks. The metrics page and analytics show
 - Track trends over 4–12 weeks — daily fluctuations (1–3 lbs) are normal noise
 - Muscle mass maintenance is a longevity priority — it's the most important of the four metrics
 ",markdown,,,,,,
-Lessons,1,5,Importing Health Data,text,300,true,,"# Lesson 05: Importing Health Data
+Lessons,1,5,Importing Health Data,text,420,true,,"# Lesson 05: Importing Health Data
 
 **Course:** Mastering Health Metrics
 **Module:** Data Import
@@ -635,7 +635,7 @@ Navigate back to `/dashboard/metrics` after importing. Rows imported as **Manual
 - Re-importing the same file adds nothing, and a date listed twice in one file is merged
 - Each source keeps its own row per day; Manual Entry feeds the summary and main charts, device sources show in Compare Sources
 ",markdown,,,,,,
-Lessons,1,6,Connecting Wearables,text,360,true,,"# Lesson 06: Connecting Wearables
+Lessons,1,6,Connecting Wearables,text,240,true,,"# Lesson 06: Connecting Wearables
 
 **Course:** Mastering Health Metrics
 **Module:** Integrations

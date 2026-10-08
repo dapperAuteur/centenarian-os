@@ -133,7 +133,7 @@ When you complete checkout on `/pricing` and Stripe redirects you back to `/dash
 - Lifetime: lime ""Lifetime Member"" badge, no manage button, shirt promo code card with Copy button
 - After Stripe checkout redirect: page confirms payment automatically then shows success banner
 ",markdown,,,,,,
-Lessons,1,2,Wearable Connections,text,300,true,,"# Lesson 02: Wearable Connections
+Lessons,1,2,Wearable Connections,text,240,true,,"# Lesson 02: Wearable Connections
 
 **Course:** Settings & Billing
 **Module:** Settings
