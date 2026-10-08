@@ -1,8 +1,8 @@
 // app/dashboard/finance/insurance/page.tsx
 // Life insurance: policies with coverage, premium, paid to date (premium payments matched from
 // transactions by category or vendor and amount), next due date and whether it is covered, cash
-// value for permanent policies, and term-end warnings in amber. Totals: coverage, cash value,
-// yearly premiums. Opening the page also brings premium due-date planner tasks up to date for
+// value for permanent policies, and term-end warnings in amber. Totals: coverage per group (life,
+// property, liability, other; never added across groups), cash value, yearly premiums. Opening the page also brings premium due-date planner tasks up to date for
 // policies that ask for them (Inbox › Bills).
 //
 // Data: GET/POST /api/finance/insurance, PATCH/DELETE /api/finance/insurance/[id],
@@ -15,7 +15,7 @@ import { AlertTriangle, ArrowLeft, Check, Loader2, Pencil, Plus, Trash2 } from '
 import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { todayLocal } from '@/lib/dates/local';
-import { POLICY_KIND_LABEL, PREMIUM_FREQUENCY_LABEL } from '@/lib/finance/insurance/logic';
+import { POLICY_GROUP_LABEL, POLICY_GROUPS, POLICY_KIND_LABEL, PREMIUM_FREQUENCY_LABEL } from '@/lib/finance/insurance/logic';
 import type { PolicyKind, PremiumFrequency } from '@/lib/finance/insurance/logic';
 import type { InsuranceOverview, PolicyView } from '@/lib/finance/insurance/server';
 import PolicyForm from '@/components/finance/insurance/PolicyForm';
@@ -118,10 +118,13 @@ export default function InsurancePage() {
         <>
           <section aria-label="Totals" className="bg-white border border-gray-200 rounded-2xl p-5">
             <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div>
-                <dt className="text-xs text-gray-500">Total coverage</dt>
-                <dd className="text-xl font-bold text-gray-900">{moneyIn(data.totals.coverage, cur, true)}</dd>
-              </div>
+              {/* Coverage per group: a death benefit and a liability limit are never added together. */}
+              {POLICY_GROUPS.filter((g) => g === 'life' || data.totals.counts[g] > 0).map((g) => (
+                <div key={g}>
+                  <dt className="text-xs text-gray-500">{POLICY_GROUP_LABEL[g]} coverage</dt>
+                  <dd className="text-xl font-bold text-gray-900">{moneyIn(data.totals.coverage[g], cur, true)}</dd>
+                </div>
+              ))}
               <div>
                 <dt className="text-xs text-gray-500">Premiums per year</dt>
                 <dd className="text-xl font-bold text-gray-900">{moneyIn(data.totals.yearly_premiums, cur)}</dd>

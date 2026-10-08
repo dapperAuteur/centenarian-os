@@ -27,6 +27,7 @@ import {
   addMonthsClamped,
   dueAround,
   isPremiumPayment,
+  policyGroup,
   policyTotals,
   premiumStatus,
   termStatus,
@@ -289,5 +290,27 @@ test('term status and totals', () => {
     policy({ id: 'p2', kind: 'whole_life', coverage_amount: 100000, premium_amount: 1200, premium_frequency: 'annual', cash_value: 8000 }),
     policy({ id: 'p3', is_active: false, coverage_amount: 999999 }),
   ]);
-  assert.deepEqual(totals, { coverage: 600000, cash_value: 8000, yearly_premiums: 1710, active: 2 });
+  assert.deepEqual(totals, {
+    coverage: { life: 600000, property: 0, liability: 0, other: 0 },
+    counts: { life: 2, property: 0, liability: 0, other: 0 },
+    cash_value: 8000,
+    yearly_premiums: 1710,
+    active: 2,
+  });
+});
+
+test('policy totals: coverage is summed per group, never across groups', () => {
+  const totals = policyTotals([
+    policy({ id: 'l1', coverage_amount: 500000 }),
+    policy({ id: 'o1', kind: 'other', coverage_amount: 20000 }),
+    // Kinds from plans/66 W2 already land in their own groups.
+    policy({ id: 'h1', kind: 'homeowners', coverage_amount: 300000 }),
+    policy({ id: 'u1', kind: 'umbrella', coverage_amount: 1000000 }),
+    policy({ id: 'x1', kind: 'something_new', coverage_amount: 5 }),
+  ]);
+  assert.deepEqual(totals.coverage, { life: 500000, property: 300000, liability: 1000000, other: 20005 });
+  assert.deepEqual(totals.counts, { life: 1, property: 1, liability: 1, other: 2 });
+  assert.equal(policyGroup('whole_life'), 'life');
+  assert.equal(policyGroup('general_liability'), 'liability');
+  assert.equal(policyGroup('other'), 'other');
 });
