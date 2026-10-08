@@ -9,9 +9,14 @@
 //   duplicate_in_file  the file lists the same start time twice (Garmin can
 //                      upload one recording twice); only the first counts.
 //   possible_match     a trip that did not come from Garmin (manual, template,
-//                      CSV) on the same date and mode, with distance within
-//                      max(0.1 mi, 5%) or duration within 5 minutes. Skipped by
-//                      default, imported only when the person says so.
+//                      CSV) with the same mode that looks like the same outing
+//                      (activity-keys.ts findLoggedTripMatch): distance within
+//                      max(0.1 mi, 5%) or duration within 5 minutes, comparing
+//                      a round trip both ways and a multi-stop route's legs
+//                      added up; a same-day trip saved with no distance or
+//                      time; or a close one a day either side (a template
+//                      logged with the UTC date). Skipped by default, imported
+//                      only when the person says so.
 //   new                everything else.
 // Rows that can't be read are `invalid`; activity types that aren't travel
 // (strength, yoga, ...) are `unsupported`. Each is counted on its own.
@@ -29,14 +34,17 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+  findLoggedTripMatch,
   garminStartKey,
-  isPossibleSameTrip,
   legacyGarminId,
   localDateOf,
+  loggedTripCandidates,
   normalizeLocalStart,
+  shiftDate,
   storedStartKey,
 } from './activity-keys.ts';
-import { FitnessImportError, chunk, dbErrorOf, isMissingColumn, isUniqueViolation, readAllRows } from './db.ts';
+import type { MatchBasis } from './activity-keys.ts';
+import { FitnessImportError, chunk, dbErrorOf, fitnessDbFailure, isMissingColumn, isUniqueViolation, readAllRows } from './db.ts';
 import type { PageResult } from './db.ts';
 
 /** Activity types imported as trips (the rest are fitness, not travel). */
@@ -202,20 +210,35 @@ export interface ExistingTrip {
   source: string | null;
   garmin_activity_id: string | null;
   external_id?: string | null;
+  /** One-way distance and time stored; the trip is twice that. */
+  is_round_trip?: boolean | null;
+  /** A leg of a multi-stop route. */
+  route_id?: string | null;
+  leg_order?: number | null;
 }
 
 export type ActivityStatus = 'new' | 'already_imported' | 'duplicate_in_file' | 'possible_match';
 
 export interface PlannedActivity extends GarminActivity {
   status: ActivityStatus;
-  /** The existing trip a possible match points at. */
+  /** The existing trip a possible match points at (a route's first leg for a route total). */
   matchTripId: string | null;
+  /** How it matched: as logged, a round trip both ways, a route's legs added up, or no distance or time to compare. */
+  matchReason: MatchBasis | null;
+  /** The matched trip's date (a day off when a template was logged with the UTC date). */
+  matchDate: string | null;
+}
+
+export interface PlanContext {
+  /** Ids of the routes saved as round trips (trip_routes.is_round_trip). */
+  roundTripRouteIds?: ReadonlySet<string>;
 }
 
 /** Sorts the file's activities against the trips already stored. Pure. */
 export function planGarminActivities(
   activities: readonly GarminActivity[],
   existing: readonly ExistingTrip[],
+  context: PlanContext = {},
 ): PlannedActivity[] {
   const imported = new Set<string>();
   const others: ExistingTrip[] = [];
@@ -224,14 +247,16 @@ export function planGarminActivities(
     if (key) imported.add(key);
     else if (trip.source !== 'garmin_import') others.push(trip);
   }
+  const candidates = loggedTripCandidates(others, context.roundTripRouteIds);
+  const none = { matchTripId: null, matchReason: null, matchDate: null };
   const seen = new Set<string>();
-  return activities.map((activity) => {
-    if (imported.has(activity.key)) return { ...activity, status: 'already_imported', matchTripId: null };
-    if (seen.has(activity.key)) return { ...activity, status: 'duplicate_in_file', matchTripId: null };
+  return activities.map((activity): PlannedActivity => {
+    if (imported.has(activity.key)) return { ...activity, status: 'already_imported', ...none };
+    if (seen.has(activity.key)) return { ...activity, status: 'duplicate_in_file', ...none };
     seen.add(activity.key);
-    const match = others.find((trip) => isPossibleSameTrip(activity, trip));
-    if (match) return { ...activity, status: 'possible_match', matchTripId: match.id };
-    return { ...activity, status: 'new', matchTripId: null };
+    const match = findLoggedTripMatch(activity, candidates);
+    if (match) return { ...activity, status: 'possible_match', matchTripId: match.tripId, matchReason: match.basis, matchDate: match.date };
+    return { ...activity, status: 'new', ...none };
   });
 }
 
@@ -294,7 +319,11 @@ export interface GarminImportOptions {
 /** Rows per insert request. */
 export const TRIP_INSERT_CHUNK = 100;
 
-const TRIP_COLUMNS = 'id, date, mode, distance_miles, duration_min, source, garmin_activity_id';
+// is_round_trip (064) and route_id / leg_order (065) are long-standing columns.
+const TRIP_COLUMNS = 'id, date, mode, distance_miles, duration_min, source, garmin_activity_id, is_round_trip, route_id, leg_order';
+
+/** Ids per `in` filter when reading routes. */
+const ROUTE_ID_CHUNK = 100;
 
 async function loadTripsInRange(
   db: SupabaseClient,
@@ -319,6 +348,27 @@ async function loadTripsInRange(
     if (!isMissingColumn(dbErrorOf(error), 'external_id')) throw error;
     return { trips: await read(TRIP_COLUMNS), hasExternalId: false };
   }
+}
+
+/**
+ * The routes among `routeIds` saved as round trips. A template round trip
+ * logged before return legs were saved has legs one way only, so its legs
+ * are also compared doubled.
+ */
+async function loadRoundTripRoutes(db: SupabaseClient, userId: string, routeIds: readonly string[]): Promise<Set<string>> {
+  const roundTrips = new Set<string>();
+  for (const ids of chunk([...new Set(routeIds)], ROUTE_ID_CHUNK)) {
+    const { data, error } = await db
+      .from('trip_routes')
+      .select('id, is_round_trip')
+      .eq('user_id', userId)
+      .in('id', ids);
+    if (error) throw fitnessDbFailure(error, 'read your multi-stop routes');
+    for (const route of (data ?? []) as { id: string; is_round_trip: boolean | null }[]) {
+      if (route.is_round_trip === true) roundTrips.add(route.id);
+    }
+  }
+  return roundTrips;
 }
 
 /** "3 new · 12 already imported · 1 listed twice in the file · 2 possible matches (skipped) · 1 unreadable row · 8 not travel". */
@@ -359,9 +409,15 @@ export async function importGarminActivities(db: SupabaseClient, options: Garmin
     return { dryRun, counts, needsMigration: false, activities: [], invalid: parsed.invalid, errors: [] };
   }
 
+  // A day either side: a template trip logged with the UTC date can sit one
+  // day off the activity's local date.
   const dates = parsed.activities.map((a) => a.date).sort();
-  const { trips, hasExternalId } = await loadTripsInRange(db, options.userId, dates[0], dates[dates.length - 1]);
-  const planned = planGarminActivities(parsed.activities, trips);
+  const { trips, hasExternalId } = await loadTripsInRange(db, options.userId, shiftDate(dates[0], -1), shiftDate(dates[dates.length - 1], 1));
+  const routeIds = trips
+    .filter((trip) => trip.route_id && trip.source !== 'garmin_import' && !storedStartKey(trip))
+    .map((trip) => trip.route_id as string);
+  const roundTripRouteIds = routeIds.length > 0 ? await loadRoundTripRoutes(db, options.userId, routeIds) : new Set<string>();
+  const planned = planGarminActivities(parsed.activities, trips, { roundTripRouteIds });
 
   const toWrite: PlannedActivity[] = [];
   for (const activity of planned) {

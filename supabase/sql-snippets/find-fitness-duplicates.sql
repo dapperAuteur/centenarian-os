@@ -53,35 +53,90 @@ HAVING count(*) > 1
 ORDER BY local_start;
 
 -- ─── 4. Garmin trips that look like a trip logged another way ─────────────────────────
--- Same person, date and mode, and distance within max(0.1 mi, 5%) or duration within 5 min.
--- Both may be right (two outings); review each pair.
+-- The import's rule (lib/fitness-import/activity-keys.ts), as pairs. Same person and mode, and
+-- distance within max(0.1 mi, 5%) or duration within 5 min, comparing the other trip:
+--   as_logged    as stored;
+--   round_trip   both ways (a round trip stores the one-way distance and time);
+--   route_total  a multi-stop route's legs added up per day and mode, and doubled when the
+--                route is a round trip (template routes logged before return legs were saved
+--                have legs one way only).
+-- Also: no_values = a same-day trip saved with no distance or time; and any of the above dated
+-- a day before or after (a template logged with the server's UTC date).
+-- The script keeps only the closest tier per Garmin trip (same day first); this lists every
+-- pair with its tier. Both may be right (two outings); review each pair.
+WITH others AS (
+  SELECT t.id, t.user_id, t.date, t.mode, t.source, t.distance_miles, t.duration_min,
+         t.is_round_trip, t.route_id, t.leg_order
+  FROM public.trips t
+  WHERE t.source IS DISTINCT FROM 'garmin_import'
+    AND t.garmin_activity_id IS NULL
+),
+route_legs AS (
+  SELECT o.user_id, o.route_id, o.date, o.mode,
+         (array_agg(o.id ORDER BY o.leg_order))[1]     AS first_leg_id,
+         (array_agg(o.source ORDER BY o.leg_order))[1] AS source,
+         count(*)                                      AS legs,
+         sum(o.distance_miles)                         AS distance_miles,
+         sum(o.duration_min)                           AS duration_min
+  FROM others o
+  WHERE o.route_id IS NOT NULL
+  GROUP BY o.user_id, o.route_id, o.date, o.mode
+),
+candidates AS (
+  SELECT o.user_id, o.date, o.mode, o.id AS other_trip_id, o.source AS other_source,
+         o.distance_miles, o.duration_min::numeric AS duration_min, 'as_logged' AS basis
+  FROM others o
+  WHERE o.distance_miles IS NOT NULL OR o.duration_min IS NOT NULL
+  UNION ALL
+  SELECT o.user_id, o.date, o.mode, o.id, o.source,
+         o.distance_miles * 2, o.duration_min::numeric * 2, 'round_trip'
+  FROM others o
+  WHERE o.is_round_trip
+    AND (o.distance_miles IS NOT NULL OR o.duration_min IS NOT NULL)
+  UNION ALL
+  SELECT l.user_id, l.date, l.mode, l.first_leg_id, l.source,
+         l.distance_miles * k.factor, l.duration_min::numeric * k.factor, 'route_total'
+  FROM route_legs l
+  JOIN public.trip_routes r ON r.id = l.route_id
+  CROSS JOIN (VALUES (1), (2)) AS k(factor)
+  WHERE (l.distance_miles IS NOT NULL OR l.duration_min IS NOT NULL)
+    AND ((k.factor = 1 AND l.legs > 1) OR (k.factor = 2 AND r.is_round_trip))
+  UNION ALL
+  SELECT o.user_id, o.date, o.mode, o.id, o.source, NULL, NULL, 'no_values'
+  FROM others o
+  WHERE o.distance_miles IS NULL AND o.duration_min IS NULL
+)
 SELECT g.user_id,
        g.date,
        g.mode,
        g.id              AS garmin_trip_id,
-       o.id              AS other_trip_id,
-       o.source          AS other_source,
+       c.other_trip_id,
+       c.other_source,
+       c.date            AS other_date,
+       c.basis,
+       CASE WHEN c.date = g.date THEN 'same day' ELSE 'a day apart' END AS tier,
        g.distance_miles  AS garmin_miles,
-       o.distance_miles  AS other_miles,
+       c.distance_miles  AS other_miles,
        g.duration_min    AS garmin_min,
-       o.duration_min    AS other_min
+       c.duration_min    AS other_min
 FROM public.trips g
-JOIN public.trips o
-  ON o.user_id = g.user_id
- AND o.date = g.date
- AND o.mode = g.mode
- AND o.id <> g.id
- AND o.source <> 'garmin_import'
- AND o.garmin_activity_id IS NULL
-WHERE g.source = 'garmin_import'
-  AND (
-        (g.distance_miles IS NOT NULL AND o.distance_miles IS NOT NULL
-         AND abs(g.distance_miles - o.distance_miles)
-             <= greatest(0.1, 0.05 * greatest(abs(g.distance_miles), abs(o.distance_miles))))
-     OR (g.duration_min IS NOT NULL AND o.duration_min IS NOT NULL
-         AND abs(g.duration_min - o.duration_min) <= 5)
-      )
-ORDER BY g.date, g.mode;
+JOIN candidates c
+  ON c.user_id = g.user_id
+ AND c.mode = g.mode
+ AND (
+       (c.basis = 'no_values' AND c.date = g.date)
+    OR (c.basis <> 'no_values'
+        AND abs(c.date - g.date) <= 1
+        AND (
+              (g.distance_miles IS NOT NULL AND c.distance_miles IS NOT NULL
+               AND abs(g.distance_miles - c.distance_miles)
+                   <= greatest(0.1, 0.05 * greatest(abs(g.distance_miles), abs(c.distance_miles))))
+           OR (g.duration_min IS NOT NULL AND c.duration_min IS NOT NULL
+               AND abs(g.duration_min - c.duration_min) <= 5)
+            ))
+     )
+WHERE g.source = 'garmin_import' OR g.garmin_activity_id IS NOT NULL
+ORDER BY g.date, g.mode, g.id, tier DESC, c.basis;
 
 -- ─── 5. Workout logs with the same name on the same day ───────────────────────────────
 -- same_start = true: one recording imported twice (certain duplicate).

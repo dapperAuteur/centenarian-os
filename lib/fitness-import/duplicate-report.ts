@@ -5,7 +5,8 @@
 // groups rows it is given. Nothing here deletes or changes anything; clean-up
 // belongs on a screen where each merge or delete is confirmed.
 
-import { isPossibleSameTrip, storedStartKey } from './activity-keys.ts';
+import { loggedTripCandidates, loggedTripMatches, storedStartKey } from './activity-keys.ts';
+import type { MatchBasis } from './activity-keys.ts';
 import { DAILY_METRIC_FIELDS, normalizeField } from './daily-metrics.ts';
 import { workoutIdentity } from './workouts.ts';
 
@@ -19,6 +20,9 @@ export interface ReportTrip {
   source: string | null;
   garmin_activity_id: string | null;
   external_id?: string | null;
+  is_round_trip?: boolean | null;
+  route_id?: string | null;
+  leg_order?: number | null;
   created_at?: string | null;
 }
 
@@ -92,21 +96,41 @@ export interface TripPair {
   garmin_trip_id: string;
   other_trip_id: string;
   other_source: string | null;
+  /** The other trip's date (a day off when a template was logged with the UTC date). */
+  other_date: string;
+  /** How it was compared: as logged, a round trip both ways, a route's legs added up, or nothing to compare. */
+  basis: MatchBasis;
 }
 
-/** Garmin trips that look like a trip logged another way (same rule as the import). */
-export function garminVsOtherTrips(trips: readonly ReportTrip[]): TripPair[] {
+/**
+ * Garmin trips that look like a trip logged another way: the import's rule
+ * (activity-keys.ts loggedTripMatches), with round trips compared both ways,
+ * multi-stop routes added up, same-day trips with no distance or time, and a
+ * day either side. `roundTripRouteIds` = trip_routes rows with is_round_trip.
+ */
+export function garminVsOtherTrips(trips: readonly ReportTrip[], roundTripRouteIds: ReadonlySet<string> = new Set()): TripPair[] {
   const garmin = trips.filter((trip) => trip.source === 'garmin_import' || storedStartKey(trip) !== null);
-  const others = groupBy(
+  const othersByUser = groupBy(
     trips.filter((trip) => trip.source !== 'garmin_import' && storedStartKey(trip) === null),
-    (trip) => `${trip.user_id}|${trip.date}|${trip.mode}`,
+    (trip) => trip.user_id,
   );
+  const candidatesByUser = new Map(
+    [...othersByUser].map(([userId, others]) => [userId, loggedTripCandidates(others, roundTripRouteIds)]),
+  );
+  const sourceOf = new Map(trips.map((trip) => [trip.id, trip.source]));
   const pairs: TripPair[] = [];
   for (const g of garmin) {
-    for (const o of others.get(`${g.user_id}|${g.date}|${g.mode}`) ?? []) {
-      if (isPossibleSameTrip(g, o)) {
-        pairs.push({ user_id: g.user_id, date: g.date, mode: g.mode, garmin_trip_id: g.id, other_trip_id: o.id, other_source: o.source });
-      }
+    for (const match of loggedTripMatches(g, candidatesByUser.get(g.user_id) ?? [])) {
+      pairs.push({
+        user_id: g.user_id,
+        date: g.date,
+        mode: g.mode,
+        garmin_trip_id: g.id,
+        other_trip_id: match.tripId,
+        other_source: sourceOf.get(match.tripId) ?? null,
+        other_date: match.date,
+        basis: match.basis,
+      });
     }
   }
   return pairs.sort((a, b) => a.date.localeCompare(b.date));
