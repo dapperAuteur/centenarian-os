@@ -8,8 +8,9 @@
 //
 // Data: GET /api/brands/[id]/summary, GET /api/brands/[id]/pl. Rules: lib/finance/brands/logic.ts.
 
-import { use, useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { ArrowLeft, Download, Loader2, Pencil } from 'lucide-react';
 import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
@@ -22,8 +23,8 @@ import { ActionLink, WalletCard, money, signedMoney } from '@/components/finance
 import { exportPlPdf } from '@/components/finance/brands/plExport';
 import type { PlData } from '@/components/finance/brands/plExport';
 
-export default function BusinessPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function BusinessPage() {
+  const { id } = useParams<{ id: string }>();
   useTrackPageView('finance', '/dashboard/finance/brands/[id]');
   const [today] = useState(() => todayLocal());
   const [data, setData] = useState<BrandPage | null>(null);
