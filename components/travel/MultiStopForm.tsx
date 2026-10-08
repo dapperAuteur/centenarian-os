@@ -5,7 +5,7 @@ import { Plus, Trash2, ArrowDown, ChevronDown } from 'lucide-react';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { todayLocal } from '@/lib/dates/local';
-import { formatTemplateTotals, normalizeTripPurpose, templateSummary } from '@/lib/travel/template-stops';
+import { formatTemplateTotals, normalizeTripPurpose, singleLegRoundTrip, templateSummary } from '@/lib/travel/template-stops';
 
 interface Vehicle {
   id: string;
@@ -273,7 +273,8 @@ export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved,
   const applyTemplate = (tmpl: TripTemplate) => {
     if (tmpl.name) setName(tmpl.name);
     setNotes(tmpl.notes || '');
-    setIsRoundTrip(tmpl.is_round_trip ?? false);
+    // A one-leg loop (Home to Home) is never a round trip, whatever its flag says.
+    setIsRoundTrip(tmpl.is_multi_stop ? (tmpl.is_round_trip ?? false) : singleLegRoundTrip(tmpl));
     setBrandId(tmpl.brand_id || '');
 
     if (tmpl.is_multi_stop && tmpl.stops?.length) {

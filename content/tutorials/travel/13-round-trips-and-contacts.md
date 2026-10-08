@@ -27,7 +27,7 @@ If you came back a different way, edit the route afterwards and change the retur
 
 This is useful for commutes, errands, and any trip where you return to the starting point. Save it as a template (Lesson 12) and the return leg's miles and minutes are saved with it.
 
-Some trips have one leg with a round trip flag instead: trips logged from a single-leg round-trip template, and older trips logged before Add Trip added return legs. The trip list shows their distance and time doubled, and Edit Trip shows "Round trip (distance counted both ways)".
+Some trips have one leg with a round trip flag instead: trips logged from a single-leg round-trip template, and older trips logged before Add Trip added return legs. The trip list shows their distance and time doubled, and Edit Trip shows "Round trip (distance counted both ways)". A template that ends where it starts (a loop) never logs a flagged trip, so its miles are not doubled.
 
 ---
 

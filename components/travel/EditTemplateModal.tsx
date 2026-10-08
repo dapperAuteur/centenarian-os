@@ -8,6 +8,7 @@ import {
   TRIP_PURPOSES,
   formatTemplateTotals,
   normalizeTripPurpose,
+  singleLegRoundTrip,
   templateStopsToLegs,
   templateSummary,
 } from '@/lib/travel/template-stops';
@@ -96,6 +97,9 @@ export default function EditTemplateModal({ template, vehicles, brands, onClose,
   const [error, setError] = useState('');
 
   const isMultiStop = template.is_multi_stop;
+  // A one-leg loop (origin is the destination) is the whole trip: Quick log
+  // never doubles it, Round trip or not (singleLegRoundTrip()).
+  const showLoopHint = !isMultiStop && isRoundTrip && !singleLegRoundTrip({ is_round_trip: true, origin, destination });
 
   // Multi-stop state
   const [stops, setStops] = useState<StopForm[]>(() => {
@@ -366,6 +370,7 @@ export default function EditTemplateModal({ template, vehicles, brands, onClose,
               className="rounded border-gray-300 text-sky-600 focus:ring-sky-500"
               checked={isRoundTrip}
               onChange={(e) => setIsRoundTrip(e.target.checked)}
+              aria-describedby={showLoopHint ? 'tmpl-rt-loop' : undefined}
             />
             <label htmlFor="tmpl-rt" className="text-sm text-gray-700">Round trip</label>
           </div>
@@ -379,6 +384,12 @@ export default function EditTemplateModal({ template, vehicles, brands, onClose,
             </select>
           </div>
         </div>
+
+        {showLoopHint && (
+          <p id="tmpl-rt-loop" className="text-xs text-gray-600 -mt-2">
+            This trip ends where it starts, so Quick log records it once, not doubled.
+          </p>
+        )}
 
         {/* Category / Tax / Brand */}
         <div className="grid grid-cols-3 gap-3">

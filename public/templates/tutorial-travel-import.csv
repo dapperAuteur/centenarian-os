@@ -1638,6 +1638,8 @@ There are three ways to use a template:
 
 A multi-stop template logs a route with one trip per leg, and the route shows the totals. A single-leg template logs one trip. If a template is marked as a round trip but its stops don't end where they started, Quick log adds a return leg using the outbound distance, time, and cost added together, the same rule Add Trip uses.
 
+A single-leg template that ends where it starts (a loop, such as a bike ride from home and back) is the whole trip, so Quick log records its miles and minutes once even if Round trip is ticked.
+
 Quick log uses each leg's saved vehicle while it is still one of yours or a public transport vehicle. It doesn't create a finance transaction for a leg's cost, but Add Trip does. To record the expense too, use **Load from template** and save through Add Trip.
 
 ---
@@ -1769,7 +1771,7 @@ If you came back a different way, edit the route afterwards and change the retur
 
 This is useful for commutes, errands, and any trip where you return to the starting point. Save it as a template (Lesson 12) and the return leg's miles and minutes are saved with it.
 
-Some trips have one leg with a round trip flag instead: trips logged from a single-leg round-trip template, and older trips logged before Add Trip added return legs. The trip list shows their distance and time doubled, and Edit Trip shows ""Round trip (distance counted both ways)"".
+Some trips have one leg with a round trip flag instead: trips logged from a single-leg round-trip template, and older trips logged before Add Trip added return legs. The trip list shows their distance and time doubled, and Edit Trip shows ""Round trip (distance counted both ways)"". A template that ends where it starts (a loop) never logs a flagged trip, so its miles are not doubled.
 
 ---
 

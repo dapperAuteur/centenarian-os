@@ -122,6 +122,19 @@ export function legsToTemplateStops(legs: readonly TemplateLegInput[], templateI
 }
 
 /**
+ * Whether a single-leg template logs as a round trip (its distance and time
+ * counted twice). A leg that already ends where it starts (a loop, Home to
+ * Home) is the whole trip, so it never does: not when it is saved, and not
+ * when it is read, which covers loops saved with the flag before
+ * templateRoundTripFlag() existed and Edit Template's Round trip box.
+ * Used by the writer, single-leg Quick log and the template card.
+ */
+export function singleLegRoundTrip(tmpl: { is_round_trip?: unknown; origin?: unknown; destination?: unknown }): boolean {
+  if (tmpl.is_round_trip !== true) return false;
+  return !(textOrNull(tmpl.origin) !== null && sameLocation(tmpl.origin, tmpl.destination));
+}
+
+/**
  * The is_round_trip flag for a template saved from a route of `legs`. The Add
  * Trip form adds the return leg itself, so a multi-leg template keeps the flag
  * as given. A single leg that already ends where it starts (a loop) is the
@@ -130,8 +143,7 @@ export function legsToTemplateStops(legs: readonly TemplateLegInput[], templateI
 export function templateRoundTripFlag(isRoundTrip: unknown, legs: readonly TemplateLegInput[]): boolean {
   if (isRoundTrip !== true) return false;
   if (legs.length !== 1) return true;
-  const leg = legs[0];
-  return !(textOrNull(leg.origin) !== null && sameLocation(leg.origin, leg.destination));
+  return singleLegRoundTrip({ is_round_trip: true, origin: legs[0].origin, destination: legs[0].destination });
 }
 
 /** A trip_template_stops row as read back. */
@@ -269,7 +281,8 @@ export interface TemplateSummary {
 /**
  * Totals and shape for a template card. Multi-stop: the sum of the legs Quick
  * log would create (return leg included). Single leg: the saved values, doubled
- * for a round trip, as the trip list shows a round-trip trip.
+ * for a round trip, as the trip list shows a round-trip trip (never for a loop;
+ * see singleLegRoundTrip()).
  */
 export function templateSummary(tmpl: TemplateForSummary): TemplateSummary {
   if (tmpl.is_multi_stop) {
@@ -288,11 +301,12 @@ export function templateSummary(tmpl: TemplateForSummary): TemplateSummary {
       duration_min: sumOrNull(legs.map((l) => l.duration_min)),
     };
   }
-  const factor = tmpl.is_round_trip ? 2 : 1;
+  const roundTrip = singleLegRoundTrip(tmpl);
+  const factor = roundTrip ? 2 : 1;
   const dist = toNumberOrNull(tmpl.distance_miles);
   const dur = toMinutesOrNull(tmpl.duration_min);
   return {
-    kind: tmpl.is_round_trip ? 'round_trip' : 'single',
+    kind: roundTrip ? 'round_trip' : 'single',
     stopCount: 2,
     from: textOrNull(tmpl.origin),
     to: textOrNull(tmpl.destination),

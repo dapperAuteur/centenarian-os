@@ -12,6 +12,7 @@ import {
   formatTemplateTotals,
   legsToTemplateStops,
   normalizeTripPurpose,
+  singleLegRoundTrip,
   templateRoundTripFlag,
   templateStopsToLegs,
   templateSummary,
@@ -190,6 +191,26 @@ test('templateRoundTripFlag: a one-leg loop is not flagged, so Quick log does no
   assert.equal(templateRoundTripFlag(false, ROUND_TRIP), false);
   assert.equal(templateRoundTripFlag(undefined, ONE_LEG), false);
   assert.equal(templateRoundTripFlag(true, [{ origin: null, destination: null }]), true);
+});
+
+test('singleLegRoundTrip: a loop saved or edited with Round trip ticked is read as one trip', () => {
+  // "Saturday bike loop" saved before templateRoundTripFlag(): Home -> Home, 10 mi, flag set.
+  assert.equal(singleLegRoundTrip({ is_round_trip: true, origin: 'Home', destination: 'Home' }), false);
+  assert.equal(singleLegRoundTrip({ is_round_trip: true, origin: ' home', destination: 'HOME ' }), false);
+  // A one-way template flagged as a round trip still doubles, like a round-trip trip.
+  assert.equal(singleLegRoundTrip({ is_round_trip: true, origin: 'Home', destination: 'Office' }), true);
+  // No origin: nothing says it is a loop, so the flag is kept (as the writer does).
+  assert.equal(singleLegRoundTrip({ is_round_trip: true, origin: null, destination: null }), true);
+  assert.equal(singleLegRoundTrip({ is_round_trip: false, origin: 'Home', destination: 'Office' }), false);
+  assert.equal(singleLegRoundTrip({ is_round_trip: null, origin: 'Home', destination: 'Office' }), false);
+});
+
+test('templateSummary: an old single-leg loop flagged round trip shows its own miles, not double', () => {
+  const s = templateSummary({
+    is_multi_stop: false, is_round_trip: true, origin: 'Home', destination: 'Home', mode: 'bike', distance_miles: 10, duration_min: 40,
+  });
+  assert.deepEqual(s, { kind: 'single', stopCount: 2, from: 'Home', to: 'Home', distance_miles: 10, duration_min: 40 });
+  assert.equal(formatTemplateTotals(s), '10.0 mi · 40 min');
 });
 
 // ─── Purpose ─────────────────────────────────────────────────────────────────

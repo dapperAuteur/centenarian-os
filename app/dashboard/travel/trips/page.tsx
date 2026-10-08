@@ -694,7 +694,7 @@ function TripsPageInner() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-medium text-gray-900 truncate">{tmpl.name}</span>
-                      {(summary.kind === 'round_trip' || tmpl.is_round_trip) && (
+                      {(summary.kind === 'round_trip' || (tmpl.is_multi_stop && tmpl.is_round_trip)) && (
                         <span className="text-xs bg-sky-50 text-sky-700 px-1 py-0.5 rounded font-medium shrink-0">Round trip</span>
                       )}
                       {summary.kind === 'multi' && (

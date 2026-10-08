@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { checkReferences, invalidReferenceMessage, usableReferences } from '@/lib/auth/ownership';
 import { templateStopReferences, travelReferences, VEHICLE_EMBED, withVisibleVehicle } from '@/lib/travel/references';
-import { normalizeTripPurpose, templateStopsToLegs } from '@/lib/travel/template-stops';
+import { normalizeTripPurpose, singleLegRoundTrip, templateStopsToLegs } from '@/lib/travel/template-stops';
 
 const CO2_PER_MILE: Record<string, number> = {
   plane: 0.255, car: 0.170, rideshare: 0.170, bus: 0.089,
@@ -193,7 +193,9 @@ export async function POST(request: NextRequest) {
     const tmplRefs = await usableReferences(db, user.id, travelReferences({ vehicle_id: tmpl.vehicle_id }));
     if (tmplRefs.failed) return NextResponse.json({ error: 'Could not verify references' }, { status: 500 });
     const singleDist = tmpl.distance_miles ? Number(tmpl.distance_miles) : null;
-    const singleRt = tmpl.is_round_trip === true;
+    // A loop (origin is the destination) is the whole trip, so it is never
+    // doubled, even when it was saved or edited with Round trip ticked.
+    const singleRt = singleLegRoundTrip(tmpl);
     const singleFactor = CO2_PER_MILE[tmpl.mode] ?? 0;
     const singleEffective = singleRt && singleDist ? singleDist * 2 : singleDist;
     const singleCo2 = singleEffective && singleEffective > 0
