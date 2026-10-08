@@ -10,13 +10,17 @@
 // Totals are in the user's home currency (`home_currency`; lib/finance/fx/totals.ts); rows keep
 // their own amount and currency. Foreign rows with no rate yet are left out of the totals and
 // counted in `unconverted`.
+//
+// Rows are read 1000 at a time until the last page (lib/finance/brands/server.ts), so a business
+// with more than 1000 transactions in the range is no longer cut short.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { countsTowardTotals } from '@/lib/finance/transfers/schema';
 import { getServiceDb } from '@/lib/finance/transfers/server';
-import { amountForTotals, withOptionalFx } from '@/lib/finance/fx/totals';
+import { amountForTotals } from '@/lib/finance/fx/totals';
 import { loadHomeCurrency } from '@/lib/finance/fx/server';
+import { loadBrandTransactions } from '@/lib/finance/brands/server';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -40,24 +44,12 @@ export async function GET(request: NextRequest, { params }: Params) {
   const from = searchParams.get('from');
   const to = searchParams.get('to');
 
-  // The account's currency arrives with migration 210; before it, the query runs without it.
-  const buildQuery = (fxColumnsExist: boolean) => {
-    let query = supabase
-      .from('financial_transactions')
-      .select(fxColumnsExist ? '*, financial_accounts(currency)' : '*')
-      .eq('user_id', user.id)
-      .eq('brand_id', id)
-      .order('transaction_date', { ascending: false });
-    if (from) query = query.gte('transaction_date', from);
-    if (to) query = query.lte('transaction_date', to);
-    return query;
-  };
-
-  const [{ data: transactions, error }, homeCurrency] = await Promise.all([
-    withOptionalFx((fxColumnsExist) => buildQuery(fxColumnsExist)),
+  // Every page of the business's rows; the account's currency comes along once migration 210 is in.
+  const [{ rows: transactions, error }, homeCurrency] = await Promise.all([
+    loadBrandTransactions(supabase, user.id, { brandId: id, from, to }),
     loadHomeCurrency(getServiceDb(), user.id),
   ]);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: error.message ?? 'Could not load transactions.' }, { status: 500 });
 
   // `select('*')` returns transfer_group_id only once migration 202 has added
   // it, and countsTowardTotals() reads a missing value as "not a transfer",
