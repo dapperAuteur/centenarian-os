@@ -2,14 +2,19 @@
 
 // app/dashboard/finance/brands/page.tsx
 // Brand management: list, add, edit, toggle active/inactive, delete
-// Per-brand P&L with date range filter and PDF export
+// Per-brand P&L with date range filter and PDF export. Totals are in the home currency; each
+// transaction shows its own currency. Each brand opens its business page
+// (/dashboard/finance/brands/[id]: cash flow by month, quarter and year).
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Plus, Pencil, Trash2, BarChart2, Download } from 'lucide-react';
+import { ChevronLeft, Plus, Pencil, Trash2, BarChart2, Download, ChevronRight } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import Modal from '@/components/ui/Modal';
 import { todayLocal } from '@/lib/dates/local';
+import { formatMoney } from '@/lib/finance/fx/math';
+import { exportPlPdf, plRowCurrency } from '@/components/finance/brands/plExport';
+import type { PlData } from '@/components/finance/brands/plExport';
 
 interface Brand {
   id: string;
@@ -24,22 +29,7 @@ interface Brand {
   created_at: string;
 }
 
-interface Transaction {
-  id: string;
-  transaction_date: string;
-  description: string | null;
-  vendor: string | null;
-  amount: number;
-  type: 'income' | 'expense';
-}
-
-interface PLData {
-  brand: Brand;
-  income: number;
-  expenses: number;
-  net: number;
-  transactions: Transaction[];
-}
+type PLData = PlData & { brand: Brand };
 
 const BLANK_FORM = {
   name: '',
@@ -51,9 +41,6 @@ const BLANK_FORM = {
   description: '',
 };
 
-function fmtMoney(n: number) {
-  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
-}
 
 const PRESET_COLORS = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#14b8a6'];
 
@@ -172,63 +159,15 @@ export default function BrandsPage() {
     }
   }, []);
 
+  const plHome = plData?.home_currency ?? 'USD';
+
   const handlePLFilter = () => {
     if (plBrand) loadPL(plBrand.id, plFrom, plTo);
   };
 
   const handleExportPDF = async () => {
     if (!plData) return;
-    const { default: jsPDF } = await import('jspdf');
-    const doc = new jsPDF();
-    const { brand, income, expenses, net, transactions } = plData;
-
-    let y = 20;
-    doc.setFontSize(18);
-    doc.text(brand.name, 14, y);
-    y += 8;
-
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    if (brand.dba_name) { doc.text(`DBA: ${brand.dba_name}`, 14, y); y += 6; }
-    if (brand.ein) { doc.text(`EIN: ${brand.ein}`, 14, y); y += 6; }
-    if (brand.address) { doc.text(`Address: ${brand.address}`, 14, y); y += 6; }
-    doc.text(`Period: ${plFrom} to ${plTo}`, 14, y); y += 10;
-
-    // Summary
-    doc.setTextColor(0);
-    doc.setFontSize(12);
-    doc.text('Summary', 14, y); y += 7;
-    doc.setFontSize(10);
-    doc.text(`Income:    ${fmtMoney(income)}`, 14, y); y += 6;
-    doc.text(`Expenses:  ${fmtMoney(expenses)}`, 14, y); y += 6;
-    doc.text(`Net:       ${fmtMoney(net)}`, 14, y); y += 12;
-
-    // Transactions table header
-    doc.setFontSize(12);
-    doc.text('Transactions', 14, y); y += 7;
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Date', 14, y);
-    doc.text('Description', 44, y);
-    doc.text('Vendor', 110, y);
-    doc.text('Type', 155, y);
-    doc.text('Amount', 175, y);
-    y += 5;
-    doc.setFont('helvetica', 'normal');
-
-    for (const tx of transactions) {
-      if (y > 270) { doc.addPage(); y = 20; }
-      const desc = (tx.description ?? '').substring(0, 35);
-      const vendor = (tx.vendor ?? '').substring(0, 25);
-      doc.text(tx.transaction_date, 14, y);
-      doc.text(desc, 44, y);
-      doc.text(vendor, 110, y);
-      doc.text(tx.type, 155, y);
-      doc.text(fmtMoney(tx.amount), 175, y);
-      y += 5;
-    }
-
-    doc.save(`${brand.name.replace(/\s+/g, '_')}_PL_${plFrom}_${plTo}.pdf`);
+    await exportPlPdf(plData, plFrom, plTo);
   };
 
   return (
@@ -292,12 +231,21 @@ export default function BrandsPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0 ml-4">
+                <Link
+                  href={`/dashboard/finance/brands/${b.id}`}
+                  className="min-h-11 flex items-center gap-1 px-2 text-sm font-medium text-sky-700 rounded-lg hover:bg-sky-50 transition"
+                  aria-label={`Open ${b.name}: cash flow, invoices and expected income`}
+                >
+                  Open
+                  <ChevronRight className="w-4 h-4" aria-hidden="true" />
+                </Link>
                 <button
                   onClick={() => openPL(b)}
                   title="View P&L"
+                  aria-label={`View the P&L for ${b.name}`}
                   className="p-1.5 text-gray-400 hover:text-indigo-600 transition"
                 >
-                  <BarChart2 className="w-4 h-4" />
+                  <BarChart2 className="w-4 h-4" aria-hidden="true" />
                 </button>
                 <button
                   onClick={() => handleToggleActive(b)}
@@ -495,17 +443,23 @@ export default function BrandsPage() {
                   <div className="grid grid-cols-3 gap-4">
                     <div className="bg-green-50 border border-green-100 rounded-xl p-4 text-center">
                       <p className="text-xs text-green-600 font-medium mb-1">Income</p>
-                      <p className="text-lg font-bold text-green-700">{fmtMoney(plData.income)}</p>
+                      <p className="text-lg font-bold text-green-700">{formatMoney(plData.income, plHome)}</p>
                     </div>
                     <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-center">
                       <p className="text-xs text-red-500 font-medium mb-1">Expenses</p>
-                      <p className="text-lg font-bold text-red-600">{fmtMoney(plData.expenses)}</p>
+                      <p className="text-lg font-bold text-red-600">{formatMoney(plData.expenses, plHome)}</p>
                     </div>
                     <div className={`border rounded-xl p-4 text-center ${plData.net >= 0 ? 'bg-indigo-50 border-indigo-100' : 'bg-orange-50 border-orange-100'}`}>
                       <p className={`text-xs font-medium mb-1 ${plData.net >= 0 ? 'text-indigo-600' : 'text-orange-500'}`}>Net</p>
-                      <p className={`text-lg font-bold ${plData.net >= 0 ? 'text-indigo-700' : 'text-orange-600'}`}>{fmtMoney(plData.net)}</p>
+                      <p className={`text-lg font-bold ${plData.net >= 0 ? 'text-indigo-700' : 'text-orange-600'}`}>{formatMoney(plData.net, plHome)}</p>
                     </div>
                   </div>
+
+                  <p className="text-xs text-gray-600">
+                    Totals in {plHome}.
+                    {(plData.unconverted ?? 0) > 0 && ` ${plData.unconverted} row${plData.unconverted === 1 ? '' : 's'} in another currency with no exchange rate yet ${plData.unconverted === 1 ? 'is' : 'are'} left out.`}
+                    {(plData.transfers_excluded ?? 0) > 0 && ` ${plData.transfers_excluded} transfer${plData.transfers_excluded === 1 ? '' : 's'} between your own accounts not counted.`}
+                  </p>
 
                   {/* Transaction list */}
                   {plData.transactions.length === 0 ? (
@@ -534,7 +488,7 @@ export default function BrandsPage() {
                                 </span>
                               </td>
                               <td className={`px-4 py-2.5 text-right font-medium ${tx.type === 'income' ? 'text-green-700' : 'text-red-600'}`}>
-                                {tx.type === 'expense' ? '-' : ''}{fmtMoney(tx.amount)}
+                                {tx.type === 'expense' ? '-' : ''}{formatMoney(Number(tx.amount), plRowCurrency(tx, plHome))}
                               </td>
                             </tr>
                           ))}
