@@ -93,6 +93,10 @@ test('buildDebtSummary: the Debt page uses the statement limit when the account 
   const none = buildDebtSummary(card, [], [], '2026-10-05');
   assert.equal(none.creditLimit, null);
   assert.equal(none.creditLimitSource, null);
+  // The limit is in the account's currency, which the Debt page shows with it; USD before migration 210.
+  assert.equal(d.currency, 'USD');
+  assert.equal(buildDebtSummary({ ...card, currency: 'MXN', credit_limit: 50000 }, [], [], '2026-10-05').currency, 'MXN');
+  assert.equal(buildDebtSummary({ ...card, currency: 'not-a-code' }, [], [], '2026-10-05').currency, 'USD');
 });
 
 // ── Wallet formulas ──────────────────────────────────────────────────────────

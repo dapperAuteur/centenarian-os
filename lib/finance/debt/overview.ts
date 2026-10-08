@@ -14,6 +14,7 @@
 //   Promos        = the latest statement's promos with a balance and an expiry date.
 //   Credit limit  = the account's credit_limit, else the latest statement's that prints one
 //                   (credit-limit.ts creditLimitFor, shared with the Wallet).
+//   Currency      = the account's currency (migration 210), else USD. The limit is in it.
 //   Linked payment = an income row on the card or loan that transfer tracking linked
 //                   (transfer_kind 'card_payment' / 'loan_payment', or any transfer_group_id).
 //                   latestLinkedPayment() = the latest day's linked payments, added up.
@@ -25,6 +26,7 @@ import {
 } from './amortize.ts';
 import { daysBetween, isIsoDate } from './dates.ts';
 import { amountOwed } from '../balance/logic.ts';
+import { isCurrencyCode } from '../fx/math.ts';
 import { creditLimitFor } from './credit-limit.ts';
 import type { CreditLimitSource } from './credit-limit.ts';
 import type { PlanDebt } from './plan.ts';
@@ -46,6 +48,8 @@ export interface DebtAccountRow {
   opening_balance?: number | string | null;
   /** Migration 221: the day the opening balance is as of. */
   opening_balance_date?: string | null;
+  /** Migration 210: the account's currency. */
+  currency?: string | null;
   is_active?: boolean | null;
 }
 
@@ -114,6 +118,8 @@ export interface DebtSummary {
   type: 'credit_card' | 'loan';
   institution: string | null;
   lastFour: string | null;
+  /** The account's currency (USD before migration 210); the balance and limit are in it. */
+  currency: string;
   balance: number;
   creditLimit: number | null;
   /** Where creditLimit came from: the account, or its latest statement (null when unknown). */
@@ -275,6 +281,7 @@ export function buildDebtSummary(
     type: account.account_type === 'loan' ? 'loan' : 'credit_card',
     institution: account.institution_name ?? null,
     lastFour: account.last_four ?? null,
+    currency: isCurrencyCode(account.currency) ? account.currency : 'USD',
     balance,
     creditLimit: limit.limit,
     creditLimitSource: limit.source,
