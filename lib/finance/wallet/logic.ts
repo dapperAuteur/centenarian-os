@@ -43,8 +43,10 @@
 //       (max($25, 1% + a month's interest)): an installment loan has a fixed payment, and that
 //       formula would put most loans' payoff years too late.
 //     - Payoff at that payment: month by month at APR / 12 (lib/finance/debt/amortize.ts
-//       payoffSchedule), first payment a month from today. A payment that never covers the
-//       interest "never pays off".
+//       payoffSchedule), first payment a month from today. A payment that doesn't cover the first
+//       month's interest "never pays off"; one that covers it but needs more than 600 payments
+//       (MAX_MONTHS) "takes more than 50 years". The two are told apart: a low payment on a big
+//       mortgage, or any payment on a loan with no APR, is slow, not hopeless.
 //     - A custom payment: the same schedule at that amount, the new payoff date, and the interest
 //       saved against the minimum (comparePayoff).
 //
@@ -73,7 +75,7 @@
 import { convert } from '../fx/math.ts';
 import { countFreshness } from '../cash/logic.ts';
 import type { CountFreshness } from '../cash/logic.ts';
-import { payoffSchedule } from '../debt/amortize.ts';
+import { MAX_MONTHS, monthlyInterestCents, payoffSchedule, toCents } from '../debt/amortize.ts';
 import type { CreditLimitSource } from '../debt/credit-limit.ts';
 import { POLICY_GROUPS, policyGroup } from '../insurance/logic.ts';
 import type { PolicyGroup } from '../insurance/logic.ts';
@@ -275,9 +277,16 @@ export interface CreditSection {
 export interface PayoffSummary {
   months: number | null;
   payoff_date: string | null;
+  /** Interest until payoff; not meaningful (and not shown) when there is no payoff date. */
   total_interest: number;
+  /** The payment doesn't cover the first month's interest, so the balance never goes down. */
   never_pays_off: boolean;
+  /** The payment covers the interest, but paying off takes more than MAX_MONTHS payments (50 years). */
+  over_max: boolean;
 }
+
+/** How long a schedule is computed: payoffs past it read "more than 50 years". */
+export const PAYOFF_MAX_YEARS = MAX_MONTHS / 12;
 
 export interface LoanView {
   id: string;
@@ -511,17 +520,27 @@ export function creditSection(input: WalletInput, unconverted: UnconvertedItem[]
 
 /** Pay `payment` a month from today on: how long and what it costs (no schedule rows). */
 export function payoffSummary(balance: number, apr: number | null, payment: number, today: string): PayoffSummary {
-  const r = payoffSchedule(Math.max(0, balance), apr, payment, today);
-  return { months: r.months, payoff_date: r.payoffDate, total_interest: r.totalInterest, never_pays_off: r.neverPaysOff };
+  const owed = Math.max(0, balance);
+  const r = payoffSchedule(owed, apr, payment, today);
+  // payoffSchedule reports both "doesn't cover the interest" and "hit the 600-month cap" as
+  // neverPaysOff; only the first is never.
+  const coversInterest = toCents(payment) > monthlyInterestCents(toCents(owed), apr);
+  return {
+    months: r.months,
+    payoff_date: r.payoffDate,
+    total_interest: r.totalInterest,
+    never_pays_off: r.neverPaysOff && !coversInterest,
+    over_max: r.neverPaysOff && coversInterest,
+  };
 }
 
 export interface PayoffComparison {
   /** Null when the loan has no known monthly payment to compare with. */
   minimum: PayoffSummary | null;
   custom: PayoffSummary;
-  /** Interest at the minimum - interest at the custom amount; null when either never pays off or there is no minimum. */
+  /** Interest at the minimum - interest at the custom amount; null when either has no payoff date or there is no minimum. */
   interest_saved: number | null;
-  /** Months sooner (negative = later); null when either never pays off. */
+  /** Months sooner (negative = later); null when either has no payoff date. */
   months_saved: number | null;
 }
 
@@ -529,7 +548,8 @@ export interface PayoffComparison {
 export function comparePayoff(balance: number, apr: number | null, minimum: number | null, custom: number, today: string): PayoffComparison {
   const atMinimum = minimum !== null && minimum > 0 ? payoffSummary(balance, apr, minimum, today) : null;
   const atCustom = payoffSummary(balance, apr, custom, today);
-  const comparable = atMinimum !== null && !atMinimum.never_pays_off && !atCustom.never_pays_off;
+  const paysOff = (p: PayoffSummary) => !p.never_pays_off && !p.over_max;
+  const comparable = atMinimum !== null && paysOff(atMinimum) && paysOff(atCustom);
   return {
     minimum: atMinimum,
     custom: atCustom,

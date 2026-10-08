@@ -9,14 +9,21 @@
 
 import { useId, useMemo, useState } from 'react';
 import { Landmark } from 'lucide-react';
-import { comparePayoff } from '@/lib/finance/wallet/logic';
-import type { LoanView, LoansSection as LoansData } from '@/lib/finance/wallet/logic';
+import { PAYOFF_MAX_YEARS, comparePayoff } from '@/lib/finance/wallet/logic';
+import type { LoanView, LoansSection as LoansData, PayoffSummary } from '@/lib/finance/wallet/logic';
 import { formatDate } from '@/components/finance/retirement/format';
 import { ActionLink, Attention, MoneyWithHome, WalletCard, money } from './parts';
 
 function months(n: number | null): string {
   if (n === null) return '';
   return `${n} ${n === 1 ? 'month' : 'months'}`;
+}
+
+/** Why a payment gives no payoff date: it never covers the interest, or it takes over 50 years. */
+function noPayoffText(p: PayoffSummary): string | null {
+  if (p.never_pays_off) return "Never pays off at this amount: it doesn't cover the monthly interest";
+  if (p.over_max) return `Takes more than ${PAYOFF_MAX_YEARS} years at this amount`;
+  return null;
 }
 
 export default function LoansSection({ loans, home, today }: { loans: LoansData; home: string; today: string }) {
@@ -133,9 +140,8 @@ function LoanRow({ loan, home, today }: { loan: LoanView; home: string; today: s
                 <span className="block text-xs text-gray-600">
                   {loan.owed <= 0
                     ? 'Paid off'
-                    : loan.at_minimum.never_pays_off
-                      ? 'Never pays off at this amount'
-                      : `Paid off ${formatDate(loan.at_minimum.payoff_date)} (${months(loan.at_minimum.months)}), about ${money(loan.at_minimum.total_interest, c)} interest`}
+                    : (noPayoffText(loan.at_minimum) ??
+                      `Paid off ${formatDate(loan.at_minimum.payoff_date)} (${months(loan.at_minimum.months)}), about ${money(loan.at_minimum.total_interest, c)} interest`)}
                 </span>
               </>
             )}
@@ -170,6 +176,10 @@ function LoanRow({ loan, home, today }: { loan: LoanView; home: string; today: s
               <span className="text-gray-600">Enter an amount to see a new payoff date.</span>
             ) : result && result.custom.never_pays_off ? (
               <span className="text-amber-800">{money(amount, c)} a month doesn&apos;t cover the monthly interest, so the loan would never be paid off.</span>
+            ) : result && result.custom.over_max ? (
+              <span className="text-amber-800">
+                At {money(amount, c)} a month it would take more than {PAYOFF_MAX_YEARS} years to pay off.
+              </span>
             ) : result ? (
               <>
                 At {money(amount, c)} a month: paid off <strong>{formatDate(result.custom.payoff_date)}</strong> ({months(result.custom.months)}), about{' '}
@@ -182,6 +192,9 @@ function LoanRow({ loan, home, today }: { loan: LoanView; home: string; today: s
                   </span>
                 )}
                 {result.minimum?.never_pays_off && <span className="block">The monthly payment alone would never pay it off.</span>}
+                {result.minimum?.over_max && (
+                  <span className="block">The monthly payment alone would take more than {PAYOFF_MAX_YEARS} years.</span>
+                )}
               </>
             ) : null}
           </div>

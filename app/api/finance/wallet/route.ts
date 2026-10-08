@@ -12,7 +12,7 @@
 //      loans:  { owed, minimums, no_payment_count, loans: [{ ..., starting_amount, starting_date,
 //                owed, as_of, apr, minimum, minimum_source ('statement' | 'last_payment' | null),
 //                minimum_date, at_minimum: { months, payoff_date, total_interest,
-//                never_pays_off } | null }] },
+//                never_pays_off, over_max } | null }] },
 //      assets: { total, your_value_total, book_value_total, top, no_value, ... },
 //      retirement: { ready, funds, years_left, retirement_age, age_assumed, gap, on_track, ... } | null,
 //      insurance: { ready, coverage, counts, other_currency },

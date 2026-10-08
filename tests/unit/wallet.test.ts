@@ -356,6 +356,28 @@ test('comparePayoff: a custom payment shows the new payoff date and the interest
   assert.equal(alone.interest_saved, null);
 });
 
+test("payoff: 'doesn't cover the interest' is told apart from 'takes more than 50 years'", () => {
+  // $40 on $9,000 at 6% is under the $45 monthly interest: it never pays off.
+  const never = comparePayoff(9000, 6, 300, 40, TODAY).custom;
+  assert.equal(never.never_pays_off, true);
+  assert.equal(never.over_max, false);
+  // $2,200 on $400,000 at 6.5% covers the $2,166.67 interest but needs more than 600 payments.
+  const mortgage = comparePayoff(400000, 6.5, 2200, 3000, TODAY);
+  assert.equal(mortgage.minimum?.never_pays_off, false);
+  assert.equal(mortgage.minimum?.over_max, true);
+  assert.equal(mortgage.minimum?.payoff_date, null);
+  assert.equal(mortgage.custom.over_max, false);
+  assert.equal(mortgage.custom.months, 238);
+  assert.equal(mortgage.interest_saved, null);
+  // No APR: every payment covers the (zero) interest; $400 on $300,000 is 750 payments, so over 50 years.
+  const noApr = comparePayoff(300000, null, 400, 400, TODAY);
+  assert.equal(noApr.custom.never_pays_off, false);
+  assert.equal(noApr.custom.over_max, true);
+  // Paying the whole balance off is never either.
+  const done = comparePayoff(0, 6, 300, 300, TODAY).custom;
+  assert.deepEqual([done.months, done.never_pays_off, done.over_max], [0, false, false]);
+});
+
 test('assets: owned equipment and your own vehicles, your value then book value then price', () => {
   const w = buildWallet(
     input({
