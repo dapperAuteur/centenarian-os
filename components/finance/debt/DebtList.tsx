@@ -1,8 +1,8 @@
 'use client';
 
 // components/finance/debt/DebtList.tsx
-// Every card and loan: balance, APR, minimum, next due date, promo deadlines (amber when close),
-// interest paid this year.
+// Every card and loan: balance, APR, minimum, next due date, credit limit and % used (the account's
+// limit, else the latest statement's), promo deadlines (amber when close), interest paid this year.
 
 import { AlertTriangle, CheckCircle2, CreditCard, Landmark } from 'lucide-react';
 import { money, shortDate } from '@/lib/finance/debt/due';
@@ -81,6 +81,14 @@ export default function DebtList({ debts, today }: { debts: DebtRow[]; today: st
                 <dd className="font-medium text-gray-900">{money(d.interestYtd)}</dd>
               </div>
             </dl>
+
+            {d.creditLimit !== null && (
+              <p className="text-xs text-gray-600">
+                Credit limit {money(d.creditLimit)}
+                {d.creditLimit > 0 && <> · {Math.round((Math.max(0, d.balance) / d.creditLimit) * 100)}% used</>}
+                {d.creditLimitSource === 'statement' && <> · from the latest statement (add it to the account to keep it)</>}
+              </p>
+            )}
 
             {d.latestStatement && (
               <p className="text-xs text-gray-500">

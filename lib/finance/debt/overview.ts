@@ -12,6 +12,8 @@
 //   Minimum       = the latest statement's minimum_payment, else an estimate
 //                   (amortize.ts estimatedMinimumPayment), marked as one.
 //   Promos        = the latest statement's promos with a balance and an expiry date.
+//   Credit limit  = the account's credit_limit, else the latest statement's that prints one
+//                   (credit-limit.ts creditLimitFor, shared with the Wallet).
 //   Linked payment = an income row on the card or loan that transfer tracking linked
 //                   (transfer_kind 'card_payment' / 'loan_payment', or any transfer_group_id).
 
@@ -22,6 +24,8 @@ import {
 } from './amortize.ts';
 import { daysBetween, isIsoDate } from './dates.ts';
 import { amountOwed } from '../balance/logic.ts';
+import { creditLimitFor } from './credit-limit.ts';
+import type { CreditLimitSource } from './credit-limit.ts';
 import type { PlanDebt } from './plan.ts';
 
 export const DEBT_ACCOUNT_TYPES = ['credit_card', 'loan'] as const;
@@ -72,6 +76,8 @@ export interface StatementRow {
   interest_charged: number | string | null;
   aprs: StatementApr[] | null;
   promos: StatementPromo[] | null;
+  /** Migration 209: the limit the statement prints; optional so older callers still type-check. */
+  credit_limit?: number | string | null;
 }
 
 export interface TxnRow {
@@ -109,6 +115,8 @@ export interface DebtSummary {
   lastFour: string | null;
   balance: number;
   creditLimit: number | null;
+  /** Where creditLimit came from: the account, or its latest statement (null when unknown). */
+  creditLimitSource: CreditLimitSource | null;
   apr: number | null;
   aprSource: 'statement' | 'account' | null;
   aprs: { balanceType: string; apr: number; balance: number | null }[];
@@ -229,6 +237,7 @@ export function buildDebtSummary(
   const minimumEstimated = !(statementMin !== null && statementMin > 0);
   const accountDay = num(account.due_date);
   const statementDay = latest?.due_date && isIsoDate(latest.due_date) ? Number(latest.due_date.slice(8, 10)) : null;
+  const limit = creditLimitFor(account, own);
 
   return {
     id: account.id,
@@ -237,7 +246,8 @@ export function buildDebtSummary(
     institution: account.institution_name ?? null,
     lastFour: account.last_four ?? null,
     balance,
-    creditLimit: num(account.credit_limit),
+    creditLimit: limit.limit,
+    creditLimitSource: limit.source,
     apr,
     aprSource: source,
     aprs: (latest?.aprs ?? [])

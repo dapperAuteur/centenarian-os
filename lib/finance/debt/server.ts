@@ -55,7 +55,7 @@ export interface DebtData {
 
 const ACCOUNT_SELECT = '*';
 const STATEMENT_SELECT =
-  'id, account_id, period_start, period_end, new_balance, minimum_payment, due_date, interest_charged, aprs, promos';
+  'id, account_id, period_start, period_end, new_balance, minimum_payment, due_date, interest_charged, aprs, promos, credit_limit';
 const TXN_SELECT = 'id, account_id, amount, type, transaction_date, source, transfer_group_id, transfer_kind';
 const TXN_SELECT_NO_KIND = 'id, account_id, amount, type, transaction_date, source, transfer_group_id';
 
