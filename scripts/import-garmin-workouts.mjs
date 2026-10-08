@@ -17,17 +17,26 @@
 //     match and is skipped unless --include-possible-matches;
 //   - existing rows are read page by page (the old check stopped at the 1000-row cap).
 //
-// Units in the export (checked against one): duration in milliseconds, distance and elevation in
-// centimetres. The old version read them as seconds and metres, so its duration_min and the
-// distance in its notes were too large; scripts/report-fitness-duplicates.mjs lists those rows.
-// The `calories` unit was not confirmed and is kept as exported.
+// Every *_summarizedActivities.json file in --dir is read. The numbers in those file names change
+// between exports (0/1001/2002/3003 in one, 1/301/.../3601 in the 2026-10-07 one), and the old
+// fixed list found none of the newer export's files.
+//
+// Units in the export (checked against the 2026-10-07 export): duration in milliseconds, distance
+// and elevation in centimetres. The old version read them as seconds and metres, so its
+// duration_min and the distance in its notes were too large; scripts/report-fitness-duplicates.mjs
+// lists those rows. The `calories` unit was not confirmed and is kept as exported. The rules live
+// in lib/fitness-import/garmin-export.ts (tested in tests/unit/fitness-dedupe.test.ts).
 
 import { createClient } from '@supabase/supabase-js';
-import { readFileSync } from 'fs';
+import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
-import { garminStartKey, localStartFromWallClockMs } from '../lib/fitness-import/activity-keys.ts';
 import { chunk, readAllRows } from '../lib/fitness-import/db.ts';
-import { workoutIdentity } from '../lib/fitness-import/workouts.ts';
+import {
+  activitiesFromExport,
+  exportWorkoutRow,
+  planExportWorkouts,
+  summarizedActivityFiles,
+} from '../lib/fitness-import/garmin-export.ts';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -48,61 +57,32 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
 
 const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
+/** Every activity in every *_summarizedActivities.json file of the folder (the file numbers vary by export). */
 function parseActivities(fitnessDir) {
+  let names;
+  try {
+    names = readdirSync(fitnessDir);
+  } catch (err) {
+    console.error(`Cannot read ${fitnessDir}: ${err.message}. Pass --dir <DI_CONNECT/DI-Connect-Fitness folder of your export>.`);
+    process.exit(1);
+  }
+  const files = summarizedActivityFiles(names);
+  if (files.length === 0) {
+    console.error(`No *_summarizedActivities.json files in ${fitnessDir}. Pass --dir <DI_CONNECT/DI-Connect-Fitness folder of your export>.`);
+    process.exit(1);
+  }
   const activities = [];
-  const offsets = [0, 1001, 2002, 3003];
-
-  for (const offset of offsets) {
-    const path = join(fitnessDir, `fitness@awews.com_${offset}_summarizedActivities.json`);
+  for (const file of files) {
     try {
-      const raw = JSON.parse(readFileSync(path, 'utf8'));
-      for (const item of raw) {
-        if (item.summarizedActivitiesExport) {
-          activities.push(...item.summarizedActivitiesExport);
-        } else if (item.activityId) {
-          activities.push(item);
-        }
-      }
+      const found = activitiesFromExport(JSON.parse(readFileSync(join(fitnessDir, file), 'utf8')));
+      activities.push(...found);
+      console.log(`  ${file}: ${found.length} activities`);
     } catch (err) {
-      console.log(`  Skipped ${offset}: ${err.message}`);
+      console.error(`  Could not read ${file}: ${err.message}`);
+      process.exitCode = 1;
     }
   }
-
   return activities;
-}
-
-/** The local start of an export activity, "YYYY-MM-DD HH:MM:SS". */
-function localStart(act) {
-  if (typeof act.startTimeLocal === 'number') return localStartFromWallClockMs(act.startTimeLocal);
-  return null;
-}
-
-function buildPayload(userId, act) {
-  const start = localStart(act);
-  const key = garminStartKey(start);
-  if (!key || !act.name || typeof act.beginTimestamp !== 'number') return null;
-
-  const durationMs = typeof act.duration === 'number' && act.duration > 0 ? act.duration : null;
-  const noteParts = [];
-  if (act.activityType) noteParts.push(`Type: ${act.activityType}`);
-  if (act.distance > 0) noteParts.push(`Distance: ${Math.round((act.distance / 160934.4) * 100) / 100} mi`);
-  if (act.avgHr > 0) noteParts.push(`Avg HR: ${Math.round(act.avgHr)} bpm`);
-  if (act.maxHr > 0) noteParts.push(`Max HR: ${Math.round(act.maxHr)} bpm`);
-  if (act.calories > 0) noteParts.push(`Calories: ${Math.round(act.calories)}`);
-  if (act.elevationGain > 0) noteParts.push(`Elevation: +${Math.round((act.elevationGain / 100) * 3.28084)} ft`);
-  if (act.locationName) noteParts.push(`Location: ${act.locationName}`);
-  if (act.activityId) noteParts.push(`Garmin activity ${act.activityId}`);
-
-  return {
-    user_id: userId,
-    name: act.name,
-    date: start.slice(0, 10),
-    started_at: new Date(act.beginTimestamp).toISOString(),
-    finished_at: durationMs ? new Date(act.beginTimestamp + durationMs).toISOString() : null,
-    duration_min: durationMs ? Math.round(durationMs / 60000) : null,
-    notes: noteParts.join(' | ') || null,
-    external_id: key,
-  };
 }
 
 async function main() {
@@ -126,23 +106,21 @@ async function main() {
   const activities = parseActivities(FITNESS_DIR);
   console.log(`  Found ${activities.length} activities\n`);
 
-  const payloads = [];
-  const seen = new Set();
-  let repeatedInExport = 0;
+  const rows = [];
   let unreadable = 0;
   for (const act of activities) {
-    const payload = buildPayload(userId, act);
-    if (!payload) { unreadable++; continue; }
-    if (seen.has(payload.external_id)) { repeatedInExport++; continue; }
-    seen.add(payload.external_id);
-    payloads.push(payload);
+    const row = exportWorkoutRow(userId, act);
+    if (row) rows.push(row);
+    else unreadable++;
   }
-  payloads.sort((a, b) => a.external_id.localeCompare(b.external_id));
-  console.log(`Prepared ${payloads.length} workout logs (${repeatedInExport} listed twice in the export, ${unreadable} unreadable)`);
-  if (payloads.length === 0) return;
+  if (rows.length === 0) {
+    console.log(`Nothing to import (${unreadable} unreadable activities).`);
+    return;
+  }
 
-  const from = payloads[0].date;
-  const to = payloads[payloads.length - 1].date;
+  const dates = rows.map((row) => row.date).sort();
+  const from = dates[0];
+  const to = dates[dates.length - 1];
   console.log(`Date range: ${from} → ${to}`);
 
   // Existing logs in the range (a day wider: rows from the old version carry the UTC date), every page.
@@ -156,27 +134,9 @@ async function main() {
       .order('id', { ascending: true })
       .range(start, end),
   );
-  const knownKeys = new Set(existing.map((row) => row.external_id).filter(Boolean));
-  const knownStarts = new Set(existing.map((row) => (row.started_at ? Date.parse(row.started_at) : NaN)).filter((t) => !Number.isNaN(t)));
-  // Checked after the two above, so an old row of this script never counts as hand-logged.
-  const handLogged = new Set(existing.filter((row) => !row.external_id).map((row) => workoutIdentity(row.name, row.date)));
 
-  const counts = { new: 0, already: 0, possible: 0 };
-  const toInsert = [];
-  for (const payload of payloads) {
-    if (knownKeys.has(payload.external_id) || knownStarts.has(Date.parse(payload.started_at))) {
-      counts.already++;
-      continue;
-    }
-    if (handLogged.has(workoutIdentity(payload.name, payload.date))) {
-      counts.possible++;
-      if (!INCLUDE_POSSIBLE_MATCHES) continue;
-    } else {
-      counts.new++;
-    }
-    toInsert.push(payload);
-  }
-  console.log(`  ${counts.new} new · ${counts.already} already imported · ${counts.possible} possible matches with workouts you logged${INCLUDE_POSSIBLE_MATCHES ? ' (imported anyway)' : ' (skipped)'}`);
+  const { toInsert, counts } = planExportWorkouts(rows, existing, INCLUDE_POSSIBLE_MATCHES);
+  console.log(`  ${counts.new} new · ${counts.already} already imported · ${counts.repeated_in_export} listed twice in the export · ${unreadable} unreadable · ${counts.possible} possible matches with workouts you logged${INCLUDE_POSSIBLE_MATCHES ? ' (imported anyway)' : ' (skipped)'}`);
 
   if (DRY_RUN || toInsert.length === 0) {
     console.log(DRY_RUN ? '\nDry run: nothing written.' : '\nNothing new to import.');

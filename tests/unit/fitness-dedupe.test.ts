@@ -1,7 +1,8 @@
 // tests/unit/fitness-dedupe.test.ts
 // Unit tests for the fitness import dedupe (lib/fitness-import/): daily health
 // metrics (CSV, Data Hub, InBody copy, wearable syncs), Garmin activities to
-// trips, workout logs, the Garmin start-time key, and the sync day keys and
+// trips, workout logs, the Garmin start-time key, the Garmin account export
+// and Apple Health steps used by the scripts, and the sync day keys and
 // windows.
 // Run: npm run test:unit
 //
@@ -65,6 +66,14 @@ import {
   sameStartTrips,
   type ReportTrip,
 } from '../../lib/fitness-import/duplicate-report.ts';
+import {
+  activitiesFromExport,
+  exportWorkoutRow,
+  planExportWorkouts,
+  summarizedActivityFiles,
+  type ExportActivity,
+} from '../../lib/fitness-import/garmin-export.ts';
+import { addDeviceSteps, daySteps } from '../../lib/fitness-import/device-steps.ts';
 import { FakeFitnessDb } from './fake-fitness-db.ts';
 
 const USER = '11111111-1111-4111-8111-111111111111';
@@ -630,6 +639,100 @@ test('workouts: logs past the row cap are still read', async () => {
   db.seed('workout_logs', [{ user_id: OTHER_USER, name: 'W0', date: '2026-01-01' }]);
   const logs = await loadLoggedWorkouts(client, USER, '2026-01-01', '2026-01-01');
   assert.equal(logs.length, 7);
+});
+
+// ─── Garmin account export -> workout logs (scripts/import-garmin-workouts.mjs) ──
+
+test('export files: every *_summarizedActivities.json, whatever the numbers in the names', () => {
+  const older = ['x_0_summarizedActivities.json', 'x_2002_summarizedActivities.json', 'x_1001_summarizedActivities.json'];
+  const newer = ['x_301_summarizedActivities.json', 'x_1_summarizedActivities.json', 'x_3601_summarizedActivities.json', 'x_userBioMetrics.json'];
+  assert.deepEqual(summarizedActivityFiles(older), ['x_0_summarizedActivities.json', 'x_1001_summarizedActivities.json', 'x_2002_summarizedActivities.json']);
+  // The old fixed list (0, 1001, 2002, 3003) matched none of these.
+  assert.deepEqual(summarizedActivityFiles(newer), ['x_1_summarizedActivities.json', 'x_301_summarizedActivities.json', 'x_3601_summarizedActivities.json']);
+});
+
+test('export JSON: activities come out of summarizedActivitiesExport; junk is ignored', () => {
+  const raw = [{ summarizedActivitiesExport: [{ activityId: 1 }, null, { activityId: 2 }] }, { activityId: 3 }, 'junk', null];
+  assert.deepEqual(activitiesFromExport(raw).map((a) => a.activityId), [1, 2, 3]);
+  assert.deepEqual(activitiesFromExport({ not: 'a list' }), []);
+});
+
+// A synthetic activity: starts 2026-01-01 23:30:00 local at UTC-5 (04:30 UTC the next day).
+const exportActivity = (over: Partial<ExportActivity> = {}): ExportActivity => ({
+  activityId: 111,
+  name: 'Evening Walk',
+  activityType: 'walking',
+  startTimeLocal: Date.UTC(2026, 0, 1, 23, 30, 0),
+  beginTimestamp: Date.UTC(2026, 0, 2, 4, 30, 0),
+  duration: 1_263_264, // milliseconds (21 min)
+  distance: 267_812, // centimetres (1.66 mi)
+  elevationGain: 1_000, // centimetres (33 ft)
+  ...over,
+});
+
+test('export row: local day, milliseconds and centimetres, start-time key', () => {
+  const row = exportWorkoutRow(USER, exportActivity());
+  assert.ok(row);
+  assert.equal(row.date, '2026-01-01'); // the local day, not the UTC one
+  assert.equal(row.external_id, 'garmin:start:2026-01-01 23:30:00');
+  assert.equal(row.duration_min, 21);
+  assert.equal(row.started_at, '2026-01-02T04:30:00.000Z');
+  assert.equal(row.finished_at, new Date(Date.UTC(2026, 0, 2, 4, 30, 0) + 1_263_264).toISOString());
+  assert.match(row.notes ?? '', /Distance: 1\.66 mi/);
+  assert.match(row.notes ?? '', /Elevation: \+33 ft/);
+  assert.match(row.notes ?? '', /Garmin activity 111/);
+  // The same activity seen through the trips CSV gives the same key.
+  assert.equal(row.external_id, garminStartKey('2026-01-01 23:30:00'));
+});
+
+test('export row: no name or no start time -> unreadable', () => {
+  assert.equal(exportWorkoutRow(USER, exportActivity({ name: '' })), null);
+  assert.equal(exportWorkoutRow(USER, exportActivity({ startTimeLocal: undefined })), null);
+  assert.equal(exportWorkoutRow(USER, exportActivity({ beginTimestamp: undefined })), null);
+});
+
+test('export plan: a recording listed twice counts once; a second run adds nothing', () => {
+  // Two activity ids, one start second (seen in a real export).
+  const rows = [exportActivity(), exportActivity({ activityId: 222 }), exportActivity({ name: 'Run', startTimeLocal: Date.UTC(2026, 0, 3, 7, 0, 0), beginTimestamp: Date.UTC(2026, 0, 3, 12, 0, 0) })]
+    .map((a) => exportWorkoutRow(USER, a)!);
+  const first = planExportWorkouts(rows, [], false);
+  assert.deepEqual(first.counts, { new: 2, already: 0, possible: 0, repeated_in_export: 1 });
+  const second = planExportWorkouts(rows, first.toInsert, false);
+  assert.deepEqual(second.counts, { new: 0, already: 2, possible: 0, repeated_in_export: 1 });
+  assert.equal(second.toInsert.length, 0);
+});
+
+test('export plan: rows from the old script (no external_id, UTC date) match on started_at', () => {
+  const row = exportWorkoutRow(USER, exportActivity())!;
+  const oldScriptRow = { name: 'Evening Walk', date: '2026-01-02', started_at: '2026-01-02T04:30:00+00:00', external_id: null };
+  const plan = planExportWorkouts([row], [oldScriptRow], false);
+  assert.deepEqual(plan.counts, { new: 0, already: 1, possible: 0, repeated_in_export: 0 });
+});
+
+test('export plan: a hand-logged workout with the same name that day is a possible match, skipped unless asked', () => {
+  const row = exportWorkoutRow(USER, exportActivity())!;
+  const handLogged = { name: 'evening walk', date: '2026-01-01', started_at: null, external_id: null };
+  const skip = planExportWorkouts([row], [handLogged], false);
+  assert.deepEqual(skip.counts, { new: 0, already: 0, possible: 1, repeated_in_export: 0 });
+  assert.equal(skip.toInsert.length, 0);
+  const anyway = planExportWorkouts([row], [handLogged], true);
+  assert.equal(anyway.toInsert.length, 1);
+});
+
+// ─── Apple Health steps (scripts/import-apple-health.mjs) ───────────────────
+
+test('Apple steps: added per device, and the day takes the largest device, never the sum', () => {
+  const bySource = new Map<string, number>();
+  addDeviceSteps(bySource, 'iPhone', 4000);
+  addDeviceSteps(bySource, 'Apple Watch', 5000);
+  addDeviceSteps(bySource, 'iPhone', 2500);
+  addDeviceSteps(bySource, 'Garmin Connect', 6000);
+  addDeviceSteps(bySource, null, 100);
+  addDeviceSteps(bySource, 'iPhone', Number.NaN);
+  assert.equal(bySource.get('iPhone'), 6500);
+  assert.equal(bySource.get('unknown'), 100);
+  assert.equal(daySteps(bySource), 6500); // the old code reported 17,600
+  assert.equal(daySteps(new Map()), 0);
 });
 
 // ─── Wearable syncs: day keys and windows ────────────────────────────────────
