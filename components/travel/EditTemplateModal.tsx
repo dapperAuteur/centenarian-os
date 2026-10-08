@@ -4,6 +4,13 @@ import { useState } from 'react';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
+import {
+  TRIP_PURPOSES,
+  formatTemplateTotals,
+  normalizeTripPurpose,
+  templateStopsToLegs,
+  templateSummary,
+} from '@/lib/travel/template-stops';
 
 interface Vehicle {
   id: string;
@@ -78,7 +85,8 @@ export default function EditTemplateModal({ template, vehicles, brands, onClose,
   const [distanceMiles, setDistanceMiles] = useState(template.distance_miles != null ? String(template.distance_miles) : '');
   const [durationMin, setDurationMin] = useState(template.duration_min != null ? String(template.duration_min) : '');
   const [cost, setCost] = useState(template.cost != null ? String(template.cost) : '');
-  const [purpose, setPurpose] = useState(template.purpose || '');
+  // Only values trips.purpose accepts; an old 'fitness' or 'business' shows as Exercise or Work.
+  const [purpose, setPurpose] = useState<string>(normalizeTripPurpose(template.purpose) ?? '');
   const [tripCategory, setTripCategory] = useState(template.trip_category || 'travel');
   const [taxCategory, setTaxCategory] = useState(template.tax_category || 'personal');
   const [notes, setNotes] = useState(template.notes || '');
@@ -331,6 +339,21 @@ export default function EditTemplateModal({ template, vehicles, brands, onClose,
                 </div>
               );
             })}
+            {(() => {
+              // What Quick log will record from these stops, as they stand in the form.
+              const formStops = stops.map((s, i) => ({ stop_order: i, ...s }));
+              const totals = formatTemplateTotals(
+                templateSummary({ is_multi_stop: true, is_round_trip: isRoundTrip, mode, stops: formStops }),
+              );
+              const addsReturn = templateStopsToLegs(formStops, { mode, is_round_trip: isRoundTrip }).some((l) => l.is_return);
+              if (!totals && !addsReturn) return null;
+              return (
+                <p className="text-xs text-gray-600 pl-1" aria-live="polite">
+                  {totals ? `Quick log records ${totals}` : 'Quick log records no distance or time yet'}
+                  {addsReturn ? `, including a return leg to ${stops[0]?.location_name || 'the start'}` : ''}.
+                </p>
+              );
+            })()}
           </div>
         )}
 
@@ -350,11 +373,9 @@ export default function EditTemplateModal({ template, vehicles, brands, onClose,
             <label htmlFor="tmpl-purpose" className={labelCls}>Purpose</label>
             <select id="tmpl-purpose" className={inputCls} value={purpose} onChange={(e) => setPurpose(e.target.value)}>
               <option value="">None</option>
-              <option value="commute">Commute</option>
-              <option value="errand">Errand</option>
-              <option value="leisure">Leisure</option>
-              <option value="fitness">Fitness</option>
-              <option value="business">Business</option>
+              {TRIP_PURPOSES.map((p) => (
+                <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
+              ))}
             </select>
           </div>
         </div>

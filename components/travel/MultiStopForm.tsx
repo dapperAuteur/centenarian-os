@@ -5,6 +5,7 @@ import { Plus, Trash2, ArrowDown, ChevronDown } from 'lucide-react';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { todayLocal } from '@/lib/dates/local';
+import { formatTemplateTotals, normalizeTripPurpose, templateSummary } from '@/lib/travel/template-stops';
 
 interface Vehicle {
   id: string;
@@ -276,18 +277,21 @@ export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved,
     setBrandId(tmpl.brand_id || '');
 
     if (tmpl.is_multi_stop && tmpl.stops?.length) {
+      // Template stops use the same convention as these form stops (stop k
+      // holds the leg that ends there; lib/travel/template-stops.ts), so they
+      // map one to one.
       const newStops: Stop[] = tmpl.stops
         .slice()
         .sort((a, b) => a.stop_order - b.stop_order)
-        .map((s) => ({
+        .map((s, i) => ({
           ...BLANK_STOP,
           location: s.location_name,
-          mode: s.mode || '',
+          mode: s.mode || (i === 0 ? '' : tmpl.mode || 'car'),
           vehicle_id: s.vehicle_id || '',
           distance_miles: s.distance_miles != null ? String(s.distance_miles) : '',
           duration_min: s.duration_min != null ? String(s.duration_min) : '',
           cost: s.cost != null ? String(s.cost) : '',
-          purpose: s.purpose || '',
+          purpose: normalizeTripPurpose(s.purpose) ?? (i === 0 ? '' : normalizeTripPurpose(tmpl.purpose) ?? 'commute'),
           trip_category: tmpl.trip_category || 'travel',
           tax_category: tmpl.tax_category || 'personal',
           date: '',
@@ -304,7 +308,7 @@ export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved,
           distance_miles: tmpl.distance_miles != null ? String(tmpl.distance_miles) : '',
           duration_min: tmpl.duration_min != null ? String(tmpl.duration_min) : '',
           cost: tmpl.cost != null ? String(tmpl.cost) : '',
-          purpose: tmpl.purpose || 'commute',
+          purpose: normalizeTripPurpose(tmpl.purpose) ?? 'commute',
           trip_category: tmpl.trip_category || 'travel',
           tax_category: tmpl.tax_category || 'personal',
           date: '',
@@ -455,11 +459,14 @@ export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved,
               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
             >
               <option value="">— choose a template —</option>
-              {templates.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}{t.distance_miles ? ` (${t.distance_miles} mi)` : ''}{t.use_count > 0 ? ` · ${t.use_count}x` : ''}
-                </option>
-              ))}
+              {templates.map((t) => {
+                const totals = formatTemplateTotals(templateSummary(t));
+                return (
+                  <option key={t.id} value={t.id}>
+                    {t.name}{totals ? ` (${totals})` : ''}{t.use_count > 0 ? ` · ${t.use_count}x` : ''}
+                  </option>
+                );
+              })}
             </select>
           </div>
         )}
@@ -818,7 +825,8 @@ export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved,
               />
               <span className="text-xs font-medium text-gray-600">Round trip (return to start)</span>
             </label>
-            {isRoundTrip && stops.length >= 2 && (() => {
+            {/* Same condition as handleSubmit: no return leg when the last stop is already the start. */}
+            {isRoundTrip && stops.length >= 2 && stops[stops.length - 1].location !== stops[0].location && (() => {
               let d = 0, t = 0, c = 0;
               for (let i = 1; i < stops.length; i++) {
                 if (stops[i].distance_miles) d += parseFloat(stops[i].distance_miles);

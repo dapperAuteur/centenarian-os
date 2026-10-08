@@ -10,10 +10,11 @@ import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import MultiStopForm from '@/components/travel/MultiStopForm';
 import GoogleMapsImportModal from '@/components/travel/GoogleMapsImportModal';
 import RouteCard from '@/components/travel/RouteCard';
-import { offlineFetch } from '@/lib/offline/offline-fetch';
+import { isQueuedResponse, offlineFetch } from '@/lib/offline/offline-fetch';
 import Modal from '@/components/ui/Modal';
 import EditTemplateModal from '@/components/travel/EditTemplateModal';
 import { todayLocal } from '@/lib/dates/local';
+import { formatTemplateTotals, templateSummary } from '@/lib/travel/template-stops';
 
 interface Trip {
   id: string;
@@ -211,6 +212,7 @@ function TripsPageInner() {
   const [templates, setTemplates] = useState<TripTemplate[]>([]);
   const [showTemplates, setShowTemplates] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<TripTemplate | null>(null);
+  const [templateLogMessage, setTemplateLogMessage] = useState<{ kind: 'success' | 'info' | 'error'; text: string } | null>(null);
   const [fifoEstimate, setFifoEstimate] = useState<{ estimatedCost: number; mpgUsed: number; isPartial: boolean } | null>(null);
   const limit = 50;
 
@@ -449,6 +451,7 @@ function TripsPageInner() {
   };
 
   const handleTemplateLog = async (tmpl: TripTemplate) => {
+    setTemplateLogMessage(null);
     const res = await offlineFetch('/api/travel/templates', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -458,7 +461,16 @@ function TripsPageInner() {
         trip_date: todayLocal(),
       }),
     });
-    if (res.ok) load();
+    if (res.ok) {
+      const totals = formatTemplateTotals(templateSummary(tmpl));
+      setTemplateLogMessage(isQueuedResponse(res)
+        ? { kind: 'info', text: `Saved offline: ${tmpl.name} will be logged when you reconnect.` }
+        : { kind: 'success', text: `Logged ${tmpl.name}${totals ? `: ${totals}` : ''}.` });
+      load();
+    } else {
+      const d = await res.json().catch(() => null);
+      setTemplateLogMessage({ kind: 'error', text: `Could not log ${tmpl.name}${d?.error ? `: ${d.error}` : ''}. Nothing was saved.` });
+    }
   };
 
   const handleTemplateDelete = async (id: string) => {
@@ -655,29 +667,31 @@ function TripsPageInner() {
           </button>
           {showTemplates && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {templates.map((tmpl) => (
+              {templates.map((tmpl) => {
+                // Totals are what Quick log records: every leg, return leg included.
+                const summary = templateSummary(tmpl);
+                const totals = formatTemplateTotals(summary);
+                const where = summary.kind === 'multi'
+                  ? `${summary.stopCount} stops`
+                  : summary.from && summary.to
+                    ? `${summary.from} ${summary.kind === 'round_trip' ? '↔' : '→'} ${summary.to}`
+                    : tmpl.mode;
+                return (
                 <div key={tmpl.id} className="border border-gray-200 rounded-xl bg-white p-3 flex items-center gap-3">
-                  <span className="text-lg shrink-0">{MODE_ICONS[tmpl.mode] ?? '🚐'}</span>
+                  <span className="text-lg shrink-0" aria-hidden="true">{MODE_ICONS[tmpl.mode] ?? '🚐'}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-medium text-gray-900 truncate">{tmpl.name}</span>
-                      {tmpl.is_round_trip && (
-                        <span className="text-xs bg-sky-50 text-sky-600 px-1 py-0.5 rounded font-medium shrink-0">RT</span>
+                      {(summary.kind === 'round_trip' || tmpl.is_round_trip) && (
+                        <span className="text-xs bg-sky-50 text-sky-700 px-1 py-0.5 rounded font-medium shrink-0">Round trip</span>
                       )}
-                      {tmpl.is_multi_stop && (
-                        <span className="text-xs bg-fuchsia-50 text-fuchsia-600 px-1 py-0.5 rounded font-medium shrink-0">Multi</span>
+                      {summary.kind === 'multi' && (
+                        <span className="text-xs bg-fuchsia-50 text-fuchsia-700 px-1 py-0.5 rounded font-medium shrink-0">Multi-stop</span>
                       )}
                     </div>
                     <div className="text-xs text-gray-500 truncate">
-                      {tmpl.is_multi_stop
-                        ? `${tmpl.stops?.length ?? 0} stops`
-                        : tmpl.origin && tmpl.destination
-                          ? `${tmpl.origin} → ${tmpl.destination}`
-                          : tmpl.mode
-                      }
-                      {tmpl.distance_miles != null && !tmpl.is_multi_stop && (
-                        <> · {tmpl.is_round_trip ? (tmpl.distance_miles * 2).toFixed(1) : tmpl.distance_miles.toFixed(1)} mi</>
-                      )}
+                      {where}
+                      {totals && <> · {totals}</>}
                       {tmpl.use_count > 0 && <> · used {tmpl.use_count}×</>}
                     </div>
                   </div>
@@ -711,8 +725,20 @@ function TripsPageInner() {
                     </button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
+          )}
+          {templateLogMessage?.kind === 'error' && (
+            <p role="alert" className="text-sm text-red-700 bg-red-50 rounded-lg px-3 py-2">{templateLogMessage.text}</p>
+          )}
+          {templateLogMessage && templateLogMessage.kind !== 'error' && (
+            <p
+              role="status"
+              className={`text-sm rounded-lg px-3 py-2 ${templateLogMessage.kind === 'success' ? 'text-green-700 bg-green-50' : 'text-sky-800 bg-sky-50'}`}
+            >
+              {templateLogMessage.text}
+            </p>
           )}
         </div>
       )}
