@@ -801,6 +801,11 @@ test('loadWalletInput: works before the statement, count, goal and policy migrat
 
 // ── Businesses ───────────────────────────────────────────────────────────────
 
+// Business ids are UUIDs, as in the database (loadBrandPage turns anything else away).
+const B1 = '00000000-0000-4000-8000-0000000000b1';
+const B2 = '00000000-0000-4000-8000-0000000000b2';
+const BX = '00000000-0000-4000-8000-0000000000bf';
+
 test('periods: months, quarters and years, newest first, across a year boundary', () => {
   assert.deepEqual(periodOf('2026-02-14', 'month'), { key: '2026-02', label: 'Feb 2026', from: '2026-02-01', to: '2026-02-28' });
   assert.deepEqual(periodOf('2026-11-30', 'quarter'), { key: '2026-Q4', label: 'Q4 2026', from: '2026-10-01', to: '2026-12-31' });
@@ -814,7 +819,7 @@ test('periods: months, quarters and years, newest first, across a year boundary'
 });
 
 const brandRow = (over: Partial<BrandTxnRow> & Pick<BrandTxnRow, 'type' | 'amount' | 'transaction_date'>): BrandTxnRow => ({
-  brand_id: 'b1',
+  brand_id: B1,
   ...over,
 });
 
@@ -854,9 +859,9 @@ test('cash flow: money in, out and net per period; transfers and unrated foreign
 });
 
 test("brandOfRow: a transaction's own tag wins, then its account's tag", () => {
-  const accountBrands = new Map([['acct-biz', 'b2']]);
-  assert.equal(brandOfRow({ brand_id: 'b1', account_id: 'acct-biz' }, accountBrands), 'b1');
-  assert.equal(brandOfRow({ brand_id: null, account_id: 'acct-biz' }, accountBrands), 'b2');
+  const accountBrands = new Map([['acct-biz', B2]]);
+  assert.equal(brandOfRow({ brand_id: B1, account_id: 'acct-biz' }, accountBrands), B1);
+  assert.equal(brandOfRow({ brand_id: null, account_id: 'acct-biz' }, accountBrands), B2);
   assert.equal(brandOfRow({ brand_id: null, account_id: 'acct-home' }, accountBrands), null);
   assert.equal(brandOfRow({ brand_id: null, account_id: 'acct-biz' }), null);
 });
@@ -877,9 +882,9 @@ test('openInvoices: sent or overdue, total minus paid, receivables and payables 
 
 function seedBrands(db: WalletFakeDb) {
   db.seed('user_brands', [
-    { id: 'b1', user_id: USER, name: 'Studio', dba_name: null, ein: null, color: '#123456', is_active: true },
-    { id: 'b2', user_id: USER, name: 'Apparel', dba_name: 'AP', ein: null, color: '#654321', is_active: true },
-    { id: 'bx', user_id: OTHER, name: 'Not mine', color: '#000000', is_active: true },
+    { id: B1, user_id: USER, name: 'Studio', dba_name: null, ein: null, color: '#123456', is_active: true },
+    { id: B2, user_id: USER, name: 'Apparel', dba_name: 'AP', ein: null, color: '#654321', is_active: true },
+    { id: BX, user_id: OTHER, name: 'Not mine', color: '#000000', is_active: true },
   ]);
 }
 
@@ -890,21 +895,21 @@ test('loadBrandTransactions: reads every page, so a P&L past 1000 rows is not cu
     Array.from({ length: 1500 }, (_, i) => ({
       id: `r${String(i).padStart(5, '0')}`,
       user_id: USER,
-      brand_id: 'b1',
+      brand_id: B1,
       type: i % 3 === 0 ? 'income' : 'expense',
       amount: 2,
       transaction_date: `2026-0${(i % 9) + 1}-15`,
     })),
   );
-  db.seed('financial_transactions', [{ id: 'x', user_id: OTHER, brand_id: 'b1', type: 'income', amount: 1, transaction_date: '2026-05-01' }]);
-  const { rows, error } = await loadBrandTransactions(asClient(db), USER, { brandId: 'b1' });
+  db.seed('financial_transactions', [{ id: 'x', user_id: OTHER, brand_id: B1, type: 'income', amount: 1, transaction_date: '2026-05-01' }]);
+  const { rows, error } = await loadBrandTransactions(asClient(db), USER, { brandId: B1 });
   assert.equal(error, null);
   assert.equal(rows.length, 1500);
   assert.ok(db.calls.filter((c) => c.table === 'financial_transactions').length >= 2);
   const pl = moneyInOut(rows, 'USD');
   assert.deepEqual([pl.money_in, pl.money_out], [1000, 2000]);
   // Window bounds are inclusive.
-  const june = await loadBrandTransactions(asClient(db), USER, { brandId: 'b1', from: '2026-06-15', to: '2026-06-15' });
+  const june = await loadBrandTransactions(asClient(db), USER, { brandId: B1, from: '2026-06-15', to: '2026-06-15' });
   assert.equal(june.rows.length, 167); // i % 9 === 5 for i < 1500
 });
 
@@ -912,30 +917,30 @@ test('loadBrandSummaries: one row per business with this year, open invoices and
   const db = new WalletFakeDb();
   seedBrands(db);
   db.seed('financial_transactions', [
-    { id: 'i1', user_id: USER, brand_id: 'b1', type: 'income', amount: 5000, transaction_date: '2026-03-01' },
-    { id: 'o1', user_id: USER, brand_id: 'b1', type: 'expense', amount: 1200, transaction_date: '2026-04-01' },
-    { id: 'old', user_id: USER, brand_id: 'b1', type: 'income', amount: 777, transaction_date: '2025-12-31' }, // last year
-    { id: 'i2', user_id: USER, brand_id: 'b2', type: 'income', amount: 300, transaction_date: '2026-09-01' },
+    { id: 'i1', user_id: USER, brand_id: B1, type: 'income', amount: 5000, transaction_date: '2026-03-01' },
+    { id: 'o1', user_id: USER, brand_id: B1, type: 'expense', amount: 1200, transaction_date: '2026-04-01' },
+    { id: 'old', user_id: USER, brand_id: B1, type: 'income', amount: 777, transaction_date: '2025-12-31' }, // last year
+    { id: 'i2', user_id: USER, brand_id: B2, type: 'income', amount: 300, transaction_date: '2026-09-01' },
     { id: 'p', user_id: USER, brand_id: null, type: 'income', amount: 100000, transaction_date: '2026-09-01' }, // personal
   ]);
   db.seed('invoices', [
-    { user_id: USER, brand_id: 'b1', direction: 'receivable', status: 'sent', total: 900, amount_paid: 400 },
-    { user_id: USER, brand_id: 'b2', direction: 'payable', status: 'overdue', total: 60, amount_paid: 0 },
+    { user_id: USER, brand_id: B1, direction: 'receivable', status: 'sent', total: 900, amount_paid: 400 },
+    { user_id: USER, brand_id: B2, direction: 'payable', status: 'overdue', total: 60, amount_paid: 0 },
   ]);
   db.seed('income_events', [
-    { user_id: USER, source_type: 'invoice', source_id: 'x', expected_date: '2026-11-01', expected_amount: 2500, brand_id: 'b1', is_active: true },
-    { user_id: USER, source_type: 'invoice', source_id: 'y', expected_date: '2027-03-01', expected_amount: 9999, brand_id: 'b1', is_active: true }, // beyond 90 days
+    { user_id: USER, source_type: 'invoice', source_id: 'x', expected_date: '2026-11-01', expected_amount: 2500, brand_id: B1, is_active: true },
+    { user_id: USER, source_type: 'invoice', source_id: 'y', expected_date: '2027-03-01', expected_amount: 9999, brand_id: B1, is_active: true }, // beyond 90 days
   ]);
   const { summaries, error } = await loadBrandSummaries(asClient(db), USER, TODAY, 'USD');
   assert.equal(error, null);
   assert.ok(summaries);
   assert.deepEqual(summaries.brands.map((b) => b.name), ['Apparel', 'Studio']);
-  const studio = summaries.brands.find((b) => b.id === 'b1')!;
+  const studio = summaries.brands.find((b) => b.id === B1)!;
   assert.deepEqual([studio.this_year.money_in, studio.this_year.money_out, studio.this_year.net], [5000, 1200, 3800]);
   assert.equal(studio.invoices.owed_to_you, 500);
   assert.equal(studio.expected_income, 2500);
   assert.equal(studio.expected_income_count, 1);
-  const apparel = summaries.brands.find((b) => b.id === 'b2')!;
+  const apparel = summaries.brands.find((b) => b.id === B2)!;
   assert.equal(apparel.invoices.you_owe, 60);
   assert.deepEqual(summaries.totals, { money_in: 5300, money_out: 1200, net: 4100, unconverted: 0 });
 });
@@ -944,14 +949,14 @@ test("loadBrandPage: cash flow tables, tag counts, and nothing for someone else'
   const db = new WalletFakeDb();
   seedBrands(db);
   db.seed('financial_transactions', [
-    { id: 'i1', user_id: USER, brand_id: 'b1', type: 'income', amount: 5000, transaction_date: '2026-03-01' },
-    { id: 'i0', user_id: USER, brand_id: 'b1', type: 'income', amount: 700, transaction_date: '2023-06-01' },
-    { id: 'o1', user_id: USER, brand_id: 'b1', type: 'expense', amount: 1200, transaction_date: '2026-09-01' },
+    { id: 'i1', user_id: USER, brand_id: B1, type: 'income', amount: 5000, transaction_date: '2026-03-01' },
+    { id: 'i0', user_id: USER, brand_id: B1, type: 'income', amount: 700, transaction_date: '2023-06-01' },
+    { id: 'o1', user_id: USER, brand_id: B1, type: 'expense', amount: 1200, transaction_date: '2026-09-01' },
     // An MXN expense from 2023 with no rate: it is left out of the 2023 year, not of this year.
-    { id: 'mx', user_id: USER, brand_id: 'b1', type: 'expense', amount: 300, currency: 'MXN', transaction_date: '2023-02-01' },
+    { id: 'mx', user_id: USER, brand_id: B1, type: 'expense', amount: 300, currency: 'MXN', transaction_date: '2023-02-01' },
   ]);
-  db.seed('trips', [{ id: 'tr', user_id: USER, brand_id: 'b1' }]);
-  const { page, error } = await loadBrandPage(asClient(db), USER, 'b1', TODAY, 'USD');
+  db.seed('trips', [{ id: 'tr', user_id: USER, brand_id: B1 }]);
+  const { page, error } = await loadBrandPage(asClient(db), USER, B1, TODAY, 'USD');
   assert.equal(error, null);
   assert.ok(page);
   assert.deepEqual([page.this_year.money_in, page.this_year.money_out], [5000, 1200]);
@@ -961,7 +966,18 @@ test("loadBrandPage: cash flow tables, tag counts, and nothing for someone else'
   assert.equal(page.cash_flow.quarter.rows.length, 8);
   assert.deepEqual(page.cash_flow.year.rows.map((r) => [r.key, r.net]), [['2026', 3800], ['2025', 0], ['2024', 0], ['2023', 700], ['2022', 0]]);
   assert.deepEqual(page.tagged, { transactions: 4, invoices: 0, trips: 1 });
-  const theirs = await loadBrandPage(asClient(db), USER, 'bx', TODAY, 'USD');
+  const theirs = await loadBrandPage(asClient(db), USER, BX, TODAY, 'USD');
   assert.equal(theirs.page, null);
   assert.equal(theirs.error, null);
+});
+
+test('loadBrandPage: an id that is not a UUID is not found, and never reaches the database', async () => {
+  const db = new WalletFakeDb();
+  seedBrands(db);
+  for (const id of ['abc', '', `${B1}x`, 'brand-1']) {
+    const { page, error } = await loadBrandPage(asClient(db), USER, id, TODAY, 'USD');
+    assert.equal(page, null);
+    assert.equal(error, null);
+  }
+  assert.equal(db.calls.length, 0);
 });

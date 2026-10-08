@@ -13,6 +13,7 @@
 // run it against the in-memory fake (tests/unit/wallet.test.ts).
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { isUuid } from '../../auth/ownership.ts';
 import { withOptionalFx } from '../fx/totals.ts';
 import { getExpectedIncome } from '../income-source.ts';
 import {
@@ -200,7 +201,11 @@ async function countTagged(db: SupabaseClient, userId: string, table: string, br
   return typeof res.count === 'number' ? res.count : null;
 }
 
-/** The business page's figures, or { brand: null } when the business isn't the caller's. */
+/**
+ * The business page's figures, or { page: null } when the business isn't the caller's. An id that
+ * isn't a UUID (a mistyped or cut-off link) is not found either, rather than reaching the database
+ * and failing there.
+ */
 export async function loadBrandPage(
   db: SupabaseClient,
   userId: string,
@@ -208,6 +213,7 @@ export async function loadBrandPage(
   today: string,
   home: string,
 ): Promise<{ page: BrandPage | null; error: DbErr | null }> {
+  if (!isUuid(brandId)) return { page: null, error: null };
   const brandRes = await db.from('user_brands').select('*').eq('id', brandId).eq('user_id', userId).maybeSingle();
   if (brandRes.error) return { page: null, error: brandRes.error };
   const brand = brandRes.data as BrandRecord | null;

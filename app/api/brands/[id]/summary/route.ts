@@ -10,7 +10,8 @@
 //      expected_income: { total, count, until },
 //      tagged: { transactions, invoices, trips }
 //    }
-// -> 404 when the business isn't the caller's.
+// -> 404 when the business isn't the caller's, or the id isn't a UUID.
+// -> 500 with a plain message; the database error is logged, never sent.
 // Home currency; transfers left out; every page of rows read. Rules: lib/finance/brands/logic.ts.
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -33,7 +34,10 @@ export async function GET(request: NextRequest, { params }: Params) {
   try {
     const home = await loadHomeCurrency(db, user.id);
     const { page, error } = await loadBrandPage(db, user.id, id, today, home);
-    if (error) return NextResponse.json({ error: error.message ?? 'Could not load the business.' }, { status: 500 });
+    if (error) {
+      console.error('[api/brands/summary]', error.code ?? '', error.message ?? 'Unknown error');
+      return NextResponse.json({ error: 'Could not load the business. Nothing was changed.' }, { status: 500 });
+    }
     if (!page) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(page);
   } catch (err) {
