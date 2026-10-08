@@ -184,6 +184,22 @@ Every figure on these pages is an estimate from your own numbers, not financial 
 
 ---
 
+### The Wallet: Everything on One Page
+
+The **Wallet** (`/dashboard/finance/wallet`, the Wallet button at the top of the Finance dashboard or Wallet in the Life menu) puts what you have and what you owe on one page, in your home currency. An account in another currency is converted at today's rate; one with no rate yet is listed in amber and left out of the totals, never added at face value.
+
+- **Net worth (estimate):** cash + checking and savings + retirement + life policy cash value + assets − what you owe on cards, lines of credit and loans, with each part listed.
+- **Cash:** physical cash only, each pocket with how long ago you counted it. Over 30 days (or never) shows an amber **Count cash** link.
+- **Checking and savings:** its own card. Money your savings goals hold is shown but not subtracted, because it is still in the account.
+- **Credit cards and lines of credit:** owed out of your total limit, with a bar and a % for each card. The limit comes from the account, else your latest imported statement. A card you overpaid counts as zero; a card with no limit is listed outside the %. 30% or more turns amber: a common rule of thumb, not a rule. A loan account with a limit is a line of credit and shows here, so leave Credit Limit empty on a car, student or home loan.
+- **Loans:** each loan's starting balance and date next to what you owe now, the payoff date at its monthly payment (the minimum on your latest imported statement, else your last payment recorded as a transfer to the loan; with neither it says "Not known yet"), and **Try a monthly payment** to see a new payoff date and the interest you would save.
+- **Assets and insurance:** equipment you own and your own vehicles, with the resale value you entered (Add Valuation under Value History on the item) next to the book value after depreciation, and the coverage of your policies in force. An item you never revalued counts at its book value, else its purchase price.
+- **Retirement:** what your retirement accounts hold and the years left (65 marked "assumed" if you haven't set an age), green **On track** or an amber "Short by" line.
+
+**Business pages:** the Wallet's **Businesses** card lists each business (brand) with this year's money in, out and net. Open one for its cash flow by **month** (last 12), **quarter** (last 8) or **year** (last 5), a profit and loss for any dates with a PDF, open invoices, and income expected in the next 90 days. Money counts toward a business when a transaction, invoice or trip is tagged to it; transfers between your own accounts never count.
+
+---
+
 ## Screen Recording Notes
 
 > [SCREEN: Navigate to /dashboard/finance/accounts — show the accounts page]
@@ -202,6 +218,10 @@ Every figure on these pages is an estimate from your own numbers, not financial 
 
 > [SCREEN: Accounts page — click Reconcile on the checking account, enter the statement's closing date and ending balance, Compare, tick Cleared, Finish]
 
+> [SCREEN: Finance dashboard → Wallet — scroll from net worth to Credit cards (a card at 30%+ in amber) to Loans; type a bigger monthly payment and show the new payoff date and interest saved]
+
+> [SCREEN: Wallet → Businesses → open a business → switch Monthly / Quarterly / Yearly cash flow]
+
 ---
 
 ## Key Takeaways
@@ -212,6 +232,7 @@ Every figure on these pages is an estimate from your own numbers, not financial 
 - Use Transfer to move money between accounts, including card and loan payments: both balances change, and nothing counts as spending or income
 - Cash accounts: **Count** keeps the balance honest (one "Unrecorded cash spending" or "Cash found" entry), **Paid cash** records cash spending in one tap (offline too), and imported ATM withdrawals go into a cash account instead of counting as spending
 - Accounts appear as a row at the top of the finance dashboard
+- The **Wallet** shows net worth, physical cash, checking and savings, credit used vs limit, loans (with a payoff calculator), assets and retirement on one page, and each business gets a cash flow page
 - Delete with transactions → soft deactivate (data preserved); delete without → hard delete
 - Assign transactions to accounts to maintain accurate per-account balances
 - **Import statement** on an account opens the bank statement import with that account chosen (Lesson 06)

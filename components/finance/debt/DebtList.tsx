@@ -1,12 +1,19 @@
 'use client';
 
 // components/finance/debt/DebtList.tsx
-// Every card and loan: balance, APR, minimum, next due date, promo deadlines (amber when close),
-// interest paid this year.
+// Every card and loan: balance, APR, minimum, next due date, credit limit and % used (the account's
+// limit, else the latest statement's, in the account's currency), promo deadlines (amber when
+// close), interest paid this year.
 
 import { AlertTriangle, CheckCircle2, CreditCard, Landmark } from 'lucide-react';
 import { money, shortDate } from '@/lib/finance/debt/due';
+import { formatMoney } from '@/lib/finance/fx/math';
 import type { DebtRow } from './types';
+
+/** An amount in the account's currency; the code is added outside USD, since "$" alone also means MXN or CAD. */
+function accountMoney(amount: number, currency: string): string {
+  return currency === 'USD' ? money(amount) : `${formatMoney(amount, currency)} ${currency}`;
+}
 
 export default function DebtList({ debts, today }: { debts: DebtRow[]; today: string }) {
   if (!debts.length) {
@@ -81,6 +88,14 @@ export default function DebtList({ debts, today }: { debts: DebtRow[]; today: st
                 <dd className="font-medium text-gray-900">{money(d.interestYtd)}</dd>
               </div>
             </dl>
+
+            {d.creditLimit !== null && (
+              <p className="text-xs text-gray-600">
+                Credit limit {accountMoney(d.creditLimit, d.currency)}
+                {d.creditLimit > 0 && <> · {Math.round((Math.max(0, d.balance) / d.creditLimit) * 100)}% used</>}
+                {d.creditLimitSource === 'statement' && <> · from the latest statement (add it to the account to keep it)</>}
+              </p>
+            )}
 
             {d.latestStatement && (
               <p className="text-xs text-gray-500">

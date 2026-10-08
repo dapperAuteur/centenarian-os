@@ -3,7 +3,7 @@
 //
 // -> 200 {
 //      today, statementsReady,
-//      debts: [{ id, name, type, institution, lastFour, balance, creditLimit, apr, aprSource,
+//      debts: [{ id, name, type, institution, lastFour, currency, balance, creditLimit, creditLimitSource, apr, aprSource,
 //                aprs, minimumPayment, minimumEstimated, dueDay, latestStatement, promos,
 //                interestYtd, nextDue }],
 //      totals: { balance, minimums, interestYtd },
@@ -11,7 +11,9 @@
 //      interest: { year, total, accounts, byMonth },
 //      reminders: { setting, ready }     // ready = migration 211 applied
 //    }
-// Every active credit_card and loan account. Rules: lib/finance/debt/overview.ts.
+// Every active credit_card and loan account. Rules: lib/finance/debt/overview.ts. creditLimit is the
+// account's limit, else the latest statement's (creditLimitSource 'account' | 'statement' | null), in
+// the account's `currency` (USD before migration 210).
 
 import { NextRequest, NextResponse } from 'next/server';
 import { buildOverview, loadDebtData, requestToday } from '@/lib/finance/debt/server';

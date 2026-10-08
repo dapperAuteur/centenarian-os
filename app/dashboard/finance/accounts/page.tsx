@@ -2,8 +2,9 @@
 
 // app/dashboard/finance/accounts/page.tsx
 // Financial accounts management: add, edit, deactivate bank/card/loan/cash accounts.
-// Each account has a currency (migration 210). Balances show in the account's currency; accounts
-// in another currency also show the home-currency value with the rate's date and source.
+// Each account has a currency (migration 210). Balances, credit limits and fees show in the
+// account's currency; accounts in another currency also show the home-currency value with the
+// rate's date and source.
 // Starting balance: an amount and, optionally, the day it is as of (migration 221); the balance
 // then counts only transactions after that day. Each non-cash account links to its Reconcile page
 // and says how recently it was reconciled.
@@ -421,9 +422,15 @@ export default function AccountsPage() {
                         className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" />
                     </div>
                     <div>
-                      <label className="text-xs text-gray-500">Credit Limit ($)</label>
-                      <input type="number" step="0.01" value={editForm.credit_limit ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, credit_limit: e.target.value }))}
+                      <label htmlFor={`edit-credit-limit-${acct.id}`} className="text-xs text-gray-500">Credit Limit ($)</label>
+                      <input id={`edit-credit-limit-${acct.id}`} type="number" step="0.01" value={editForm.credit_limit ?? ''} onChange={(e) => setEditForm((f) => ({ ...f, credit_limit: e.target.value }))}
+                        aria-describedby={editForm.account_type === 'loan' ? `edit-credit-limit-hint-${acct.id}` : undefined}
                         className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+                      {editForm.account_type === 'loan' && (
+                        <p id={`edit-credit-limit-hint-${acct.id}`} className="mt-1 text-xs text-gray-500">
+                          On a loan, enter a limit only for a revolving line of credit (a HELOC or personal line). Leave it empty for a car, student or home loan: a loan with a limit shows as a line of credit on the Wallet, without a payoff date.
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -572,7 +579,7 @@ export default function AccountsPage() {
                       {acct.credit_limit != null && (
                         <div>
                           <span className="text-gray-400 text-xs">Credit Limit</span>
-                          <p className="text-gray-700">${Number(acct.credit_limit).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                          <p className="text-gray-700">{formatMoney(Number(acct.credit_limit), acct.currency ?? 'USD')}</p>
                         </div>
                       )}
                       {acct.interest_rate != null && (
@@ -584,7 +591,7 @@ export default function AccountsPage() {
                       {acct.monthly_fee != null && (
                         <div>
                           <span className="text-gray-400 text-xs">Monthly Fee</span>
-                          <p className="text-gray-700">${Number(acct.monthly_fee).toFixed(2)}</p>
+                          <p className="text-gray-700">{formatMoney(Number(acct.monthly_fee), acct.currency ?? 'USD')}</p>
                         </div>
                       )}
                       {acct.due_date != null && (
@@ -816,7 +823,13 @@ export default function AccountsPage() {
               <div>
                 <label htmlFor="acct-credit-limit" className="text-xs font-medium text-gray-600">Credit Limit ($)</label>
                 <input id="acct-credit-limit" type="number" step="0.01" min="0" value={form.credit_limit} onChange={(e) => setForm((f) => ({ ...f, credit_limit: e.target.value }))}
-                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="Credit cards / loans" />
+                  aria-describedby={form.account_type === 'loan' ? 'acct-credit-limit-hint' : undefined}
+                  className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" placeholder="Cards and lines of credit" />
+                {form.account_type === 'loan' && (
+                  <p id="acct-credit-limit-hint" className="mt-1 text-xs text-gray-500">
+                    On a loan, enter a limit only for a revolving line of credit (a HELOC or personal line). Leave it empty for a car, student or home loan: a loan with a limit shows as a line of credit on the Wallet, without a payoff date.
+                  </p>
+                )}
               </div>
               <div>
                 <label htmlFor="acct-monthly-fee" className="text-xs font-medium text-gray-600">Monthly Fee ($)</label>
