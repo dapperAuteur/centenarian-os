@@ -121,6 +121,19 @@ export function legsToTemplateStops(legs: readonly TemplateLegInput[], templateI
   ];
 }
 
+/**
+ * The is_round_trip flag for a template saved from a route of `legs`. The Add
+ * Trip form adds the return leg itself, so a multi-leg template keeps the flag
+ * as given. A single leg that already ends where it starts (a loop) is the
+ * whole trip: flagging it would make Quick log count its distance twice.
+ */
+export function templateRoundTripFlag(isRoundTrip: unknown, legs: readonly TemplateLegInput[]): boolean {
+  if (isRoundTrip !== true) return false;
+  if (legs.length !== 1) return true;
+  const leg = legs[0];
+  return !(textOrNull(leg.origin) !== null && sameLocation(leg.origin, leg.destination));
+}
+
 /** A trip_template_stops row as read back. */
 export interface TemplateStop {
   stop_order?: number | null;

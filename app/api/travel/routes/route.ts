@@ -9,7 +9,7 @@ import { createLinkedTransaction } from '@/lib/finance/linked-transaction';
 import { CO2_PER_MILE, HUMAN_POWERED } from '@/lib/travel/constants';
 import { checkReferences, invalidReferenceMessage } from '@/lib/auth/ownership';
 import { travelReferences, routeLegReferences } from '@/lib/travel/references';
-import { legsToTemplateStops, toNumberOrNull } from '@/lib/travel/template-stops';
+import { legsToTemplateStops, templateRoundTripFlag, toNumberOrNull } from '@/lib/travel/template-stops';
 import { getRoute } from '@/lib/geo/route';
 
 function getDb() {
@@ -311,7 +311,7 @@ export async function POST(request: NextRequest) {
         trip_category: first.trip_category || firstLeg.trip_category || null,
         tax_category: first.tax_category || firstLeg.tax_category || null,
         notes: notes?.trim() || null,
-        is_round_trip: is_round_trip ?? false,
+        is_round_trip: templateRoundTripFlag(is_round_trip, createdTrips),
         is_multi_stop: isMultiLeg,
         brand_id: brand_id || null,
       })

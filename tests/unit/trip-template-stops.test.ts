@@ -12,6 +12,7 @@ import {
   formatTemplateTotals,
   legsToTemplateStops,
   normalizeTripPurpose,
+  templateRoundTripFlag,
   templateStopsToLegs,
   templateSummary,
   type TemplateLegInput,
@@ -177,6 +178,18 @@ test('templateStopsToLegs: no return leg when the stops already close the loop (
 test('templateStopsToLegs: fewer than two stops log nothing', () => {
   assert.deepEqual(templateStopsToLegs([], { mode: 'car', is_round_trip: true }), []);
   assert.deepEqual(templateStopsToLegs([{ stop_order: 0, location_name: 'A' }], { mode: 'car', is_round_trip: true }), []);
+});
+
+test('templateRoundTripFlag: a one-leg loop is not flagged, so Quick log does not count it twice', () => {
+  // Round trip ticked on Home -> Home (a bike loop): the form adds no return leg.
+  assert.equal(templateRoundTripFlag(true, [{ origin: 'Home', destination: 'home ', distance_miles: 10 }]), false);
+  // One-way leg flagged as a round trip (API callers): kept, Quick log doubles it like a round-trip trip.
+  assert.equal(templateRoundTripFlag(true, [{ origin: 'Home', destination: 'Office' }]), true);
+  // The form added the return leg: kept.
+  assert.equal(templateRoundTripFlag(true, ROUND_TRIP), true);
+  assert.equal(templateRoundTripFlag(false, ROUND_TRIP), false);
+  assert.equal(templateRoundTripFlag(undefined, ONE_LEG), false);
+  assert.equal(templateRoundTripFlag(true, [{ origin: null, destination: null }]), true);
 });
 
 // ─── Purpose ─────────────────────────────────────────────────────────────────
