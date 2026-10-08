@@ -14,6 +14,13 @@ interface ColumnDef {
   required?: boolean;
 }
 
+/** A yes/no choice sent to the import endpoint as `{ [key]: true | false }`. */
+export interface ImportOption {
+  key: string;
+  label: string;
+  description?: string;
+}
+
 interface GenericImportPageProps {
   moduleName: string;
   backHref: string;
@@ -23,6 +30,20 @@ interface GenericImportPageProps {
   instructions: string;
   previewColumns?: string[];
   maxRows?: number;
+  /**
+   * The endpoint accepts `dryRun: true` and answers what it would do (a
+   * `message`) without writing. The page then asks for that check before
+   * Import is enabled, so duplicates show up before anything is saved.
+   */
+  dryRun?: boolean;
+  options?: ImportOption[];
+}
+
+interface ImportResult {
+  imported?: number;
+  skipped?: number;
+  errors?: string[];
+  message?: string;
 }
 
 export default function GenericImportPage({
@@ -34,12 +55,52 @@ export default function GenericImportPage({
   instructions,
   previewColumns,
   maxRows = 1000,
+  dryRun = false,
+  options = [],
 }: GenericImportPageProps) {
   const [rows, setRows] = useState<Record<string, string>[]>([]);
   const [importing, setImporting] = useState(false);
-  const [result, setResult] = useState<{ imported?: number; skipped?: number; errors?: string[]; message?: string } | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [result, setResult] = useState<ImportResult | null>(null);
+  const [choices, setChoices] = useState<Record<string, boolean>>({});
+  const [preview, setPreview] = useState<{ key: string; result: ImportResult } | null>(null);
 
   const displayCols = previewColumns || columns.slice(0, 6).map((c) => c.key);
+
+  const body = () => ({
+    rows: rows.slice(0, maxRows),
+    ...Object.fromEntries(options.map((option) => [option.key, choices[option.key] === true])),
+  });
+  const requestKey = dryRun && rows.length > 0 ? JSON.stringify(body()) : null;
+  const previewIsCurrent = !dryRun || (preview !== null && preview.key === requestKey);
+
+  function handleRows(next: Record<string, string>[]) {
+    setRows(next);
+    setPreview(null);
+    setResult(null);
+  }
+
+  async function handleCheck() {
+    if (rows.length === 0) return;
+    setChecking(true);
+    setResult(null);
+    const payload = body();
+    try {
+      const r = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, dryRun: true }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not check the rows');
+      setPreview({ key: JSON.stringify(payload), result: d });
+    } catch (e) {
+      setPreview(null);
+      setResult({ errors: [e instanceof Error ? e.message : 'Could not check the rows'] });
+    } finally {
+      setChecking(false);
+    }
+  }
 
   async function handleImport() {
     if (rows.length === 0) return;
@@ -49,11 +110,12 @@ export default function GenericImportPage({
       const r = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rows: rows.slice(0, maxRows) }),
+        body: JSON.stringify(body()),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'Import failed');
       setResult(d);
+      setPreview(null);
       if (d.imported > 0) setRows([]);
     } catch (e) {
       setResult({ errors: [e instanceof Error ? e.message : 'Import failed'] });
@@ -95,7 +157,7 @@ export default function GenericImportPage({
         <DataImporter
           label={`Upload ${moduleName} CSV`}
           columns={columns}
-          onImport={setRows}
+          onImport={handleRows}
           templateCsvUrl={templateUrl}
         />
       </div>
@@ -103,19 +165,65 @@ export default function GenericImportPage({
       {/* Preview table */}
       {rows.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-6">
-          <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+          <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <p className="text-sm font-medium text-gray-700">
               Preview: {rows.length} row{rows.length !== 1 ? 's' : ''}{rows.length > maxRows ? ` (first ${maxRows} will be imported)` : ''}
             </p>
-            <button
-              onClick={handleImport}
-              disabled={importing}
-              className="flex items-center gap-1.5 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-semibold hover:bg-fuchsia-700 transition disabled:opacity-50"
-            >
-              {importing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-              {importing ? 'Importing...' : `Import ${Math.min(rows.length, maxRows)} Rows`}
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              {dryRun && (
+                <button
+                  type="button"
+                  onClick={handleCheck}
+                  disabled={checking || importing}
+                  className={`flex items-center justify-center gap-1.5 px-4 py-2 min-h-11 rounded-lg text-sm font-semibold transition disabled:opacity-50 ${
+                    previewIsCurrent ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-sky-600 text-white hover:bg-sky-700'
+                  }`}
+                >
+                  {checking && <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />}
+                  {checking ? 'Checking...' : previewIsCurrent ? 'Check again' : 'Check rows'}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleImport}
+                disabled={importing || checking || !previewIsCurrent}
+                className="flex items-center justify-center gap-1.5 px-4 py-2 min-h-11 bg-sky-600 text-white rounded-lg text-sm font-semibold hover:bg-sky-700 transition disabled:opacity-50"
+              >
+                {importing ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" /> : <Upload className="w-3.5 h-3.5" aria-hidden="true" />}
+                {importing ? 'Importing...' : `Import ${Math.min(rows.length, maxRows)} Rows`}
+              </button>
+            </div>
           </div>
+          {options.length > 0 && (
+            <div className="px-4 py-3 border-b border-gray-200 space-y-2">
+              {options.map((option) => (
+                <div key={option.key} className="flex items-start gap-3">
+                  <input
+                    id={`import-option-${option.key}`}
+                    type="checkbox"
+                    checked={choices[option.key] === true}
+                    onChange={(e) => setChoices((prev) => ({ ...prev, [option.key]: e.target.checked }))}
+                    className="mt-0.5 h-5 w-5 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                  />
+                  <label htmlFor={`import-option-${option.key}`} className="text-sm text-gray-700">
+                    <span className="font-medium">{option.label}</span>
+                    {option.description && <span className="block text-xs text-gray-500">{option.description}</span>}
+                  </label>
+                </div>
+              ))}
+            </div>
+          )}
+          {dryRun && preview && previewIsCurrent && (
+            <div role="status" className="px-4 py-3 border-b border-gray-200 bg-sky-50 text-sm text-gray-800">
+              <p className="font-medium text-gray-900">Before you import</p>
+              <p>{preview.result.message}</p>
+            </div>
+          )}
+          {dryRun && !previewIsCurrent && (
+            <p className="px-4 py-2 border-b border-gray-200 text-xs text-gray-500">
+              Check the rows first: Import turns on once you have seen what is new and what is already there.
+            </p>
+          )}
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -148,7 +256,10 @@ export default function GenericImportPage({
 
       {/* Result */}
       {result && (
-        <div className={`rounded-xl p-4 mb-6 ${result.errors && result.errors.length > 0 && !result.imported ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+        <div
+          role={result.errors && result.errors.length > 0 && !result.imported ? 'alert' : 'status'}
+          className={`rounded-xl p-4 mb-6 ${result.errors && result.errors.length > 0 && !result.imported ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}
+        >
           <div className="flex items-start gap-3">
             {result.imported ? (
               <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
