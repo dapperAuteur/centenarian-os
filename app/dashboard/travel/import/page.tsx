@@ -5,10 +5,30 @@ import Link from 'next/link';
 import { ChevronLeft, Upload, Camera, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 
+interface GarminActivityRow {
+  line: number;
+  start: string;
+  type: string;
+  title: string;
+  distance_miles: number | null;
+  duration_min: number | null;
+  status: 'new' | 'already_imported' | 'duplicate_in_file' | 'possible_match';
+  match_trip_id: string | null;
+}
+
 interface GarminResult {
+  dryRun: boolean;
   inserted: number;
-  skipped: number;
+  already_imported: number;
+  duplicates_in_file: number;
+  possible_matches: number;
+  possible_matches_imported: number;
+  invalid: number;
   unsupported: number;
+  needs_migration?: boolean;
+  message: string;
+  activities?: GarminActivityRow[];
+  invalid_rows?: { line: number; reason: string }[];
   errors?: string[];
 }
 
@@ -16,8 +36,11 @@ export default function TravelImportPage() {
   // Garmin CSV import
   const [garminFile, setGarminFile] = useState<File | null>(null);
   const [garminLoading, setGarminLoading] = useState(false);
+  const [garminChecking, setGarminChecking] = useState(false);
+  const [garminPreview, setGarminPreview] = useState<GarminResult | null>(null);
   const [garminResult, setGarminResult] = useState<GarminResult | null>(null);
   const [garminError, setGarminError] = useState('');
+  const [includeMatches, setIncludeMatches] = useState(false);
   const garminRef = useRef<HTMLInputElement>(null);
 
   // Fuel OCR batch
@@ -27,24 +50,55 @@ export default function TravelImportPage() {
   const [fuelError, setFuelError] = useState('');
   const fuelRef = useRef<HTMLInputElement>(null);
 
+  const sendGarmin = async (dryRun: boolean): Promise<GarminResult | null> => {
+    if (!garminFile) return null;
+    const fd = new FormData();
+    fd.append('file', garminFile);
+    if (dryRun) fd.append('dryRun', '1');
+    if (includeMatches) fd.append('includePossibleMatches', '1');
+    const res = await fetch('/api/travel/import/garmin', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) {
+      setGarminError(data.error ?? (dryRun ? 'Could not check the file' : 'Import failed'));
+      return null;
+    }
+    return data as GarminResult;
+  };
+
+  // Dry run: what is new, already imported, listed twice, or looks like a trip you logged.
+  const handleGarminCheck = async () => {
+    setGarminChecking(true);
+    setGarminResult(null);
+    setGarminError('');
+    try {
+      setGarminPreview(await sendGarmin(true));
+    } catch {
+      setGarminError('Network error');
+    } finally {
+      setGarminChecking(false);
+    }
+  };
+
   const handleGarminImport = async () => {
-    if (!garminFile) return;
     setGarminLoading(true);
     setGarminResult(null);
     setGarminError('');
     try {
-      const fd = new FormData();
-      fd.append('file', garminFile);
-      const res = await fetch('/api/travel/import/garmin', { method: 'POST', body: fd });
-      const data = await res.json();
-      if (!res.ok) { setGarminError(data.error ?? 'Import failed'); return; }
-      setGarminResult(data);
+      const data = await sendGarmin(false);
+      if (data) {
+        setGarminResult(data);
+        setGarminPreview(null);
+      }
     } catch {
       setGarminError('Network error');
     } finally {
       setGarminLoading(false);
     }
   };
+
+  const toImport = garminPreview
+    ? garminPreview.inserted + (includeMatches ? garminPreview.possible_matches : 0)
+    : 0;
 
   const handleFuelOcr = async () => {
     if (!fuelFiles.length) return;
@@ -96,7 +150,9 @@ export default function TravelImportPage() {
             <p className="text-sm text-gray-500 mt-0.5">
               Import your Garmin activity history. Cycling, walking, running, and hiking will be
               added to your trip log. Pure fitness activities (strength, yoga, HIIT, etc.) are skipped.
-              Duplicates are automatically detected.
+              Check the file first: an activity is matched by its start time, so one you already
+              imported (even if you renamed it in Garmin Connect) is skipped, and one that looks like a
+              trip you logged yourself is flagged so you can decide.
             </p>
           </div>
         </div>
@@ -111,64 +167,138 @@ export default function TravelImportPage() {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-2">Select CSV file</label>
-          <div
-            className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition"
+          <p id="garmin-file-label" className="block text-xs font-medium text-gray-600 mb-2">Select CSV file</p>
+          <button
+            type="button"
+            aria-labelledby="garmin-file-label garmin-file-name"
+            className="w-full min-h-11 border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-sky-400 hover:bg-sky-50 transition"
             onClick={() => garminRef.current?.click()}
           >
             {garminFile ? (
-              <p className="text-sm font-medium text-blue-700">{garminFile.name}</p>
+              <p id="garmin-file-name" className="text-sm font-medium text-sky-700">{garminFile.name}</p>
             ) : (
               <>
-                <Upload className="w-6 h-6 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-400">Click to select Activities.csv</p>
+                <Upload className="w-6 h-6 text-gray-400 mx-auto mb-2" aria-hidden="true" />
+                <p id="garmin-file-name" className="text-sm text-gray-500">Click to select Activities.csv</p>
               </>
             )}
-            <input
-              ref={garminRef}
-              type="file"
-              accept=".csv"
-              className="hidden"
-              onChange={(e) => {
-                setGarminFile(e.target.files?.[0] ?? null);
-                setGarminResult(null);
-                setGarminError('');
-              }}
-            />
-          </div>
+          </button>
+          <input
+            ref={garminRef}
+            type="file"
+            accept=".csv"
+            className="hidden"
+            tabIndex={-1}
+            aria-hidden="true"
+            onChange={(e) => {
+              setGarminFile(e.target.files?.[0] ?? null);
+              setGarminResult(null);
+              setGarminPreview(null);
+              setGarminError('');
+            }}
+          />
         </div>
 
         {garminError && (
-          <div className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+          <div role="alert" className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm">
+            <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
             {garminError}
           </div>
         )}
 
+        {garminPreview && (
+          <div role="status" className="border border-sky-200 bg-sky-50 rounded-xl px-4 py-3 text-sm text-gray-800 space-y-3">
+            <p className="font-medium text-gray-900">Before you import</p>
+            <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2" role="list">
+              <li className="rounded-lg bg-white px-3 py-2"><span className="block text-lg font-bold text-gray-900">{garminPreview.inserted}</span>new</li>
+              <li className="rounded-lg bg-white px-3 py-2"><span className="block text-lg font-bold text-gray-900">{garminPreview.already_imported}</span>already imported</li>
+              <li className="rounded-lg bg-white px-3 py-2"><span className="block text-lg font-bold text-gray-900">{garminPreview.duplicates_in_file}</span>listed twice in the file</li>
+              <li className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-amber-900"><span className="block text-lg font-bold">{garminPreview.possible_matches}</span>look like trips you logged</li>
+              <li className="rounded-lg bg-white px-3 py-2"><span className="block text-lg font-bold text-gray-900">{garminPreview.invalid}</span>unreadable rows</li>
+              <li className="rounded-lg bg-white px-3 py-2"><span className="block text-lg font-bold text-gray-900">{garminPreview.unsupported}</span>not travel activities</li>
+            </ul>
+            {garminPreview.possible_matches > 0 && (
+              <>
+                <details>
+                  <summary className="cursor-pointer min-h-11 flex items-center font-medium text-amber-800">
+                    Possible matches ({garminPreview.possible_matches})
+                  </summary>
+                  <p className="text-xs text-gray-600 mb-1">
+                    Same date and type as a trip you logged, with a distance within 5% (at least 0.1 mi) or a time within 5 minutes.
+                  </p>
+                  <ul className="space-y-0.5 pl-4 list-disc text-xs">
+                    {(garminPreview.activities ?? []).filter((a) => a.status === 'possible_match').slice(0, 30).map((a) => (
+                      <li key={a.line}>
+                        {a.start} · {a.type}{a.title ? ` · ${a.title}` : ''}{a.distance_miles != null ? ` · ${a.distance_miles} mi` : ''}{a.duration_min != null ? ` · ${a.duration_min} min` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+                <div className="flex items-start gap-3">
+                  <input
+                    id="garmin-include-matches"
+                    type="checkbox"
+                    checked={includeMatches}
+                    onChange={(e) => setIncludeMatches(e.target.checked)}
+                    className="mt-0.5 h-5 w-5 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                  />
+                  <label htmlFor="garmin-include-matches" className="text-sm text-gray-700">
+                    Import possible matches too (they are different outings)
+                  </label>
+                </div>
+              </>
+            )}
+            {garminPreview.needs_migration && (
+              <p className="text-xs text-amber-800">
+                Duplicate protection is running in compatibility mode until database migration 224 is applied. Re-imports are still checked.
+              </p>
+            )}
+          </div>
+        )}
+
         {garminResult && (
-          <div className="flex items-start gap-2 text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm">
-            <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          <div role="status" className="flex items-start gap-2 text-green-800 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm">
+            <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
             <div>
-              <p className="font-medium">Import complete!</p>
-              <p>{garminResult.inserted} trips added · {garminResult.skipped} skipped (duplicates or invalid) · {garminResult.unsupported} unsupported activity types</p>
+              <p className="font-medium">Import complete</p>
+              <p>{garminResult.message}</p>
               {garminResult.errors && garminResult.errors.length > 0 && (
-                <p className="text-amber-700 mt-1">Partial errors: {garminResult.errors[0]}</p>
+                <ul className="text-amber-800 mt-1 list-disc pl-4">
+                  {garminResult.errors.map((err) => <li key={err}>{err}</li>)}
+                </ul>
               )}
             </div>
           </div>
         )}
 
-        <button
-          onClick={handleGarminImport}
-          disabled={!garminFile || garminLoading}
-          className="w-full bg-blue-600 text-white rounded-xl py-2.5 text-sm font-medium hover:bg-blue-700 transition disabled:opacity-40 flex items-center justify-center gap-2"
-        >
-          {garminLoading ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Importing…</>
-          ) : (
-            <><Upload className="w-4 h-4" /> Import Activities</>
-          )}
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            type="button"
+            onClick={handleGarminCheck}
+            disabled={!garminFile || garminChecking || garminLoading}
+            className={`flex-1 rounded-xl py-2.5 min-h-11 text-sm font-medium transition disabled:opacity-40 flex items-center justify-center gap-2 ${
+              garminPreview ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-sky-600 text-white hover:bg-sky-700'
+            }`}
+          >
+            {garminChecking ? (
+              <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Checking…</>
+            ) : (
+              <>{garminPreview ? 'Check again' : 'Check file'}</>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={handleGarminImport}
+            disabled={!garminPreview || toImport === 0 || garminLoading || garminChecking}
+            className="flex-1 bg-sky-600 text-white rounded-xl py-2.5 min-h-11 text-sm font-medium hover:bg-sky-700 transition disabled:opacity-40 flex items-center justify-center gap-2"
+          >
+            {garminLoading ? (
+              <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Importing…</>
+            ) : (
+              <><Upload className="w-4 h-4" aria-hidden="true" /> {garminPreview ? `Import ${toImport} ${toImport === 1 ? 'activity' : 'activities'}` : 'Import activities'}</>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* ── Fuel Photo OCR ────────────────────────────────────────── */}
