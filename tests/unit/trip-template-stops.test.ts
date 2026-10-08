@@ -14,6 +14,7 @@ import {
   legsToTemplateStops,
   normalizeTripPurpose,
   singleLegRoundTrip,
+  templateFromRoute,
   templateRoundTripFlag,
   templateStopsToLegs,
   templateSummary,
@@ -127,6 +128,79 @@ test('save then Quick log: a round trip keeps both legs (10 mi / 24 min, not 5 /
 
 test('save then Quick log: a three-leg route keeps every leg (leg 0 included)', () => {
   assert.deepEqual(roundTrip(THREE_LEGS, false), legValues(THREE_LEGS));
+});
+
+// ─── Save as reusable template (POST /api/travel/routes) ─────────────────────
+
+/** The trips rows the route stored for `legs`, as the request sent them except where noted. */
+function storedRows(legs: readonly TemplateLegInput[], overrides: Record<number, Partial<TemplateLegInput>> = {}) {
+  return legs.map((leg, i) => ({ ...leg, trip_category: 'travel', tax_category: 'personal', ...overrides[i] }));
+}
+
+/** What Quick log records from a template built by templateFromRoute. */
+function quickLog(built: NonNullable<ReturnType<typeof templateFromRoute>>) {
+  const legs = templateStopsToLegs(built.stops(TMPL), built.row);
+  return {
+    legs: legs.length,
+    miles: legs.reduce((s, l) => s + (l.distance_miles ?? 0), 0),
+    minutes: legs.reduce((s, l) => s + (l.duration_min ?? 0), 0),
+  };
+}
+
+test('templateFromRoute: a round trip is a multi-stop template that logs both legs (10 mi / 24 min)', () => {
+  const built = templateFromRoute(storedRows(ROUND_TRIP), ROUND_TRIP, { name: ' Gym run ', is_round_trip: true, notes: ' ', brand_id: '' });
+  assert.ok(built);
+  assert.deepEqual(built.row, {
+    name: 'Gym run', mode: 'car', vehicle_id: CAR, origin: 'Home', destination: null,
+    distance_miles: null, duration_min: null, cost: null, purpose: 'exercise',
+    trip_category: 'travel', tax_category: 'personal', notes: null,
+    is_round_trip: true, is_multi_stop: true, brand_id: null,
+  });
+  assert.equal(built.stops(TMPL).length, 3);
+  assert.deepEqual(quickLog(built), { legs: 2, miles: 10, minutes: 24 });
+});
+
+test('templateFromRoute: stops come from the stored rows, so a distance worked out from coordinates is kept', () => {
+  // Add Trip sent coordinates and no distance; the route stored the OSRM result.
+  const requested = THREE_LEGS.map((leg, i) => (i === 1 ? { ...leg, distance_miles: null, duration_min: null } : leg));
+  const built = templateFromRoute(storedRows(requested, { 1: { distance_miles: 4.2, duration_min: 11 } }), requested, { name: 'Errands' });
+  assert.ok(built);
+  const stops = built.stops(TMPL);
+  assert.equal(stops.length, 4);
+  assert.deepEqual(stops.map((st) => st.distance_miles), [null, 3, 4.2, 0.6]);
+  assert.deepEqual(stops.map((st) => st.duration_min), [null, 8, 11, 9]);
+  assert.equal(built.row.is_round_trip, false);
+  assert.deepEqual(quickLog(built), { legs: 3, miles: 7.8, minutes: 28 });
+});
+
+test('templateFromRoute: one leg is a single-leg template with its values on the row', () => {
+  const requested = [{ ...ONE_LEG[0], distance_miles: null }];
+  const built = templateFromRoute(storedRows(requested, { 0: { distance_miles: 12.5 } }), requested, { name: 'Commute', notes: ' Train ' });
+  assert.ok(built);
+  assert.equal(built.row.is_multi_stop, false);
+  assert.equal(built.row.destination, 'Office');
+  assert.equal(built.row.distance_miles, 12.5);
+  assert.equal(built.row.duration_min, 40);
+  assert.equal(built.row.cost, 6.75);
+  assert.equal(built.row.notes, 'Train');
+  assert.deepEqual(built.stops(TMPL), []);
+});
+
+test('templateFromRoute: a one-leg loop with Round trip ticked is not flagged, so it logs once', () => {
+  const loop: TemplateLegInput[] = [{ origin: 'Home', destination: 'Home', mode: 'bike', vehicle_id: BIKE, distance_miles: 10, duration_min: 40 }];
+  const built = templateFromRoute(storedRows(loop), loop, { name: 'Saturday bike loop', is_round_trip: true });
+  assert.ok(built);
+  assert.equal(built.row.is_round_trip, false);
+  assert.equal(templateSummary(built.row).distance_miles, 10);
+});
+
+test('templateFromRoute: categories fall back to the request; no name or no legs saves nothing', () => {
+  const stored = [{ ...ONE_LEG[0], trip_category: null, tax_category: null }];
+  const built = templateFromRoute(stored, [{ ...ONE_LEG[0], trip_category: 'fitness', tax_category: 'business' }], { name: 'X' });
+  assert.equal(built?.row.trip_category, 'fitness');
+  assert.equal(built?.row.tax_category, 'business');
+  assert.equal(templateFromRoute(storedRows(ONE_LEG), ONE_LEG, { name: '  ' }), null);
+  assert.equal(templateFromRoute([], [], { name: 'Empty' }), null);
 });
 
 test('templateStopsToLegs: sorts by stop_order and falls back to the template mode and purpose', () => {

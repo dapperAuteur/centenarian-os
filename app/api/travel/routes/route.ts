@@ -9,7 +9,7 @@ import { createLinkedTransaction } from '@/lib/finance/linked-transaction';
 import { CO2_PER_MILE, HUMAN_POWERED } from '@/lib/travel/constants';
 import { checkReferences, invalidReferenceMessage } from '@/lib/auth/ownership';
 import { travelReferences, routeLegReferences } from '@/lib/travel/references';
-import { legsToTemplateStops, templateRoundTripFlag, toNumberOrNull } from '@/lib/travel/template-stops';
+import { templateFromRoute } from '@/lib/travel/template-stops';
 import { getRoute } from '@/lib/geo/route';
 
 function getDb() {
@@ -286,48 +286,33 @@ export async function POST(request: NextRequest) {
   route.total_cost = parseFloat(totalCost.toFixed(2));
   route.total_co2_kg = parseFloat(totalCo2.toFixed(3));
 
-  // 4. Optionally save as a template. Built from the trips as stored, so a
-  // distance or duration the server worked out (OSRM) is saved too. A round
-  // trip arrives here with its return leg already added, so it is multi-leg.
+  // 4. Optionally save as a template, built from the trips as stored so a
+  // distance or duration the server worked out (OSRM) is saved too
+  // (templateFromRoute in lib/travel/template-stops.ts, unit-tested).
   let templateId = null;
-  if (save_as_template && name?.trim()) {
-    const isMultiLeg = createdTrips.length > 1;
-    const first = createdTrips[0];
-    const firstLeg: LegInput = legs[0];
+  const template = save_as_template
+    ? templateFromRoute(createdTrips, legs, { name, notes, is_round_trip, brand_id })
+    : null;
+  if (template) {
     const { data: tmpl } = await db
       .from('trip_templates')
-      .insert({
-        user_id: user.id,
-        name: name.trim(),
-        mode: first.mode,
-        vehicle_id: first.vehicle_id || null,
-        origin: first.origin || null,
-        destination: !isMultiLeg ? (first.destination || null) : null,
-        // Multi-stop templates keep distance, duration and cost per stop (below).
-        distance_miles: !isMultiLeg ? toNumberOrNull(first.distance_miles) : null,
-        duration_min: !isMultiLeg ? toNumberOrNull(first.duration_min) : null,
-        cost: !isMultiLeg ? toNumberOrNull(first.cost) : null,
-        purpose: first.purpose || null,
-        trip_category: first.trip_category || firstLeg.trip_category || null,
-        tax_category: first.tax_category || firstLeg.tax_category || null,
-        notes: notes?.trim() || null,
-        is_round_trip: templateRoundTripFlag(is_round_trip, createdTrips),
-        is_multi_stop: isMultiLeg,
-        brand_id: brand_id || null,
-      })
+      .insert({ user_id: user.id, ...template.row })
       .select('id')
       .single();
 
     if (tmpl) {
-      templateId = tmpl.id;
-
-      if (isMultiLeg) {
-        // Stop 0 is the start; stop k holds the leg that ends there.
-        await db.from('trip_template_stops').insert(legsToTemplateStops(createdTrips, tmpl.id));
+      const stops = template.stops(tmpl.id);
+      const { error: stopsErr } = stops.length > 0
+        ? await db.from('trip_template_stops').insert(stops)
+        : { error: null };
+      if (stopsErr) {
+        // A multi-stop template without its stops cannot be logged; don't keep one.
+        await db.from('trip_templates').delete().eq('id', tmpl.id).eq('user_id', user.id);
+      } else {
+        templateId = tmpl.id;
+        // Link route to template
+        await db.from('trip_routes').update({ template_id: tmpl.id }).eq('id', route.id);
       }
-
-      // Link route to template
-      await db.from('trip_routes').update({ template_id: tmpl.id }).eq('id', route.id);
     }
   }
 

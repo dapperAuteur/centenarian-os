@@ -6,7 +6,7 @@
 // that leg's mode, vehicle, distance, duration, cost and purpose ("distance from
 // the previous stop"). So a route of N legs is a template of N + 1 stops.
 //
-//   writer: "Save as reusable template" in POST /api/travel/routes -> legsToTemplateStops()
+//   writer: "Save as reusable template" in POST /api/travel/routes -> templateFromRoute()
 //   readers: Quick log (POST /api/travel/templates) -> templateStopsToLegs();
 //            Add Trip's "Load from template" and Edit Template map stops 1:1 onto
 //            their own stop rows, which use the same convention.
@@ -144,6 +144,89 @@ export function templateRoundTripFlag(isRoundTrip: unknown, legs: readonly Templ
   if (isRoundTrip !== true) return false;
   if (legs.length !== 1) return true;
   return singleLegRoundTrip({ is_round_trip: true, origin: legs[0].origin, destination: legs[0].destination });
+}
+
+/** A leg of a route as "Save as reusable template" reads it (a created trips row, or a request leg). */
+export interface RouteLegForTemplate extends TemplateLegInput {
+  trip_category?: string | null;
+  tax_category?: string | null;
+}
+
+/** The route-level values the template takes from the Add Trip request. */
+export interface RouteTemplateInput {
+  name: string;
+  notes?: string | null;
+  is_round_trip?: unknown;
+  brand_id?: string | null;
+}
+
+/** A trip_templates row to insert (the caller adds user_id). */
+export interface RouteTemplateRow {
+  name: string;
+  mode: string;
+  vehicle_id: string | null;
+  origin: string | null;
+  destination: string | null;
+  distance_miles: number | null;
+  duration_min: number | null;
+  cost: number | null;
+  purpose: string | null;
+  trip_category: string | null;
+  tax_category: string | null;
+  notes: string | null;
+  is_round_trip: boolean;
+  is_multi_stop: boolean;
+  brand_id: string | null;
+}
+
+export interface RouteTemplate {
+  row: RouteTemplateRow;
+  /** The stops to insert once the template has an id ([] for a single-leg template). */
+  stops: (templateId: string) => TemplateStopRow[];
+}
+
+/**
+ * The template "Save as reusable template" (POST /api/travel/routes) stores for
+ * a route, or null without a name or legs. Built from `stored`, the legs as
+ * saved (the created trips rows), so a distance or duration the server worked
+ * out (OSRM, from coordinates) is kept; `requested` (the request legs) only
+ * fills a trip or tax category the first stored row lacks. A round trip
+ * arrives with its return leg already added, so it is multi-leg: N legs are a
+ * multi-stop template of N + 1 stops. One leg is a single-leg template with
+ * the leg's values on the template row.
+ */
+export function templateFromRoute(
+  stored: readonly RouteLegForTemplate[],
+  requested: readonly RouteLegForTemplate[],
+  input: RouteTemplateInput,
+): RouteTemplate | null {
+  const name = typeof input.name === 'string' ? input.name.trim() : '';
+  if (!name || stored.length === 0) return null;
+  const isMultiLeg = stored.length > 1;
+  const first = stored[0];
+  const firstRequested: RouteLegForTemplate = requested[0] ?? {};
+  return {
+    row: {
+      name,
+      mode: textOrNull(first.mode) ?? 'car',
+      vehicle_id: textOrNull(first.vehicle_id),
+      origin: textOrNull(first.origin),
+      destination: isMultiLeg ? null : textOrNull(first.destination),
+      // A multi-stop template keeps distance, duration and cost per stop.
+      distance_miles: isMultiLeg ? null : toNumberOrNull(first.distance_miles),
+      duration_min: isMultiLeg ? null : toMinutesOrNull(first.duration_min),
+      cost: isMultiLeg ? null : toNumberOrNull(first.cost),
+      purpose: textOrNull(first.purpose),
+      trip_category: textOrNull(first.trip_category) ?? textOrNull(firstRequested.trip_category),
+      tax_category: textOrNull(first.tax_category) ?? textOrNull(firstRequested.tax_category),
+      notes: typeof input.notes === 'string' ? input.notes.trim() || null : null,
+      is_round_trip: templateRoundTripFlag(input.is_round_trip, stored),
+      is_multi_stop: isMultiLeg,
+      brand_id: textOrNull(input.brand_id),
+    },
+    // Stop 0 is the start; stop k holds the leg that ends there.
+    stops: (templateId) => (isMultiLeg ? legsToTemplateStops(stored, templateId) : []),
+  };
 }
 
 /** A trip_template_stops row as read back. */
