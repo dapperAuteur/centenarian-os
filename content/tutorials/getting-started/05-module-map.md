@@ -32,7 +32,7 @@ This lesson is a reference. It lists every module in CentenarianOS, what it does
 |--------|------|-------------|-------|
 | **Fuel** | `/dashboard/fuel` | Ingredient library with NCV (Nutrient Cost Value) framework. Meal logging, cost tracking, USDA and Open Food Facts API integration. Auto inventory management. | Yes |
 | **Metrics** | `/dashboard/metrics` | Daily health log — resting heart rate, steps, sleep hours, activity minutes. 3-tier system: Core, Enrichment (per-metric unlock), Body Composition (locked, requires disclaimer). | Yes |
-| **Wearables** | `/dashboard/settings/wearables` | OAuth connections: Oura, WHOOP, Garmin (auto-sync daily). CSV imports: Apple Health, Google Health, InBody, Hume Health. | Yes |
+| **Wearables** | `/dashboard/settings/wearables` | Garmin (direct sync coming soon; CSV import today). CSV imports: Apple Health, Google Health, InBody, Hume Health; Oura and WHOOP from the import page. Re-imports never duplicate a day. | Yes |
 | **Workouts** | `/dashboard/workouts` | Exercise tracking and logging. | Yes |
 | **Correlations** | `/dashboard/correlations` | Cross-metric analysis — find relationships between nutrition, sleep, focus, and other tracked data. | Yes |
 | **Analytics** | `/dashboard/analytics` | Trends and insights across all health and performance data. | Yes |
@@ -158,7 +158,7 @@ If this lesson is rendered with the MapViewer, use this `map_content` JSON to sh
     { "lat": 47.6262, "lng": -122.3421, "title": "Operate: Roadmap", "description": "Goal hierarchy: Roadmap → Goal → Milestone → Task" },
     { "lat": 37.7749, "lng": -122.4194, "title": "Health: Fuel", "description": "Nutrition tracking with NCV framework" },
     { "lat": 37.7649, "lng": -122.4094, "title": "Health: Metrics", "description": "RHR, steps, sleep, activity minutes" },
-    { "lat": 37.7849, "lng": -122.4294, "title": "Health: Wearables", "description": "Oura, WHOOP, Garmin sync" },
+    { "lat": 37.7849, "lng": -122.4294, "title": "Health: Wearables", "description": "Garmin, Apple Health, InBody and more by CSV" },
     { "lat": 33.4484, "lng": -112.0740, "title": "Life: Finance", "description": "Accounts, transactions, budgets, brands" },
     { "lat": 33.4384, "lng": -112.0640, "title": "Life: Travel", "description": "Vehicles, fuel, trips, maintenance" },
     { "lat": 33.4584, "lng": -112.0840, "title": "Life: Equipment", "description": "Gear catalog, valuations, activity links" },

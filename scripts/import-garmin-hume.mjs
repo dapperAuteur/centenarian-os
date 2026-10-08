@@ -2,6 +2,11 @@
 // scripts/import-garmin-hume.mjs
 // One-time script to import Garmin export data + Hume Health CSV into user_health_metrics
 // Usage: node --env-file=.env.local scripts/import-garmin-hume.mjs
+//
+// Safe to re-run: one row per (user, day, source) via the 080 unique key, and rows are upserted in
+// groups that carry the same columns, so a day missing a metric in this export never has a stored
+// value erased (supabase-js sends NULL for a column a row leaves out of a mixed batch). Garmin rows
+// use source 'garmin', the same row the in-app Garmin CSV import and the Garmin sync write.
 
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync, readdirSync } from 'fs';
@@ -282,21 +287,33 @@ async function main() {
     console.log(`  ${JSON.stringify(rest)}`);
   }
 
-  // Upsert in batches of 200 (conflict on user_id + logged_date + source)
+  // Upsert in batches of 200 (conflict on user_id + logged_date + source). Each batch holds rows
+  // with the same columns, so a metric missing from one day is never sent as NULL.
+  const groups = new Map();
+  for (const row of payloads) {
+    const signature = Object.keys(row).sort().join(',');
+    if (!groups.has(signature)) groups.set(signature, []);
+    groups.get(signature).push(row);
+  }
   const BATCH = 200;
   let total = 0;
-  for (let i = 0; i < payloads.length; i += BATCH) {
-    const batch = payloads.slice(i, i + BATCH);
-    const { data, error } = await db
-      .from('user_health_metrics')
-      .upsert(batch, { onConflict: 'user_id,logged_date,source' })
-      .select('logged_date');
+  let batchNo = 0;
+  for (const group of groups.values()) {
+    for (let i = 0; i < group.length; i += BATCH) {
+      batchNo++;
+      const batch = group.slice(i, i + BATCH);
+      const { data, error } = await db
+        .from('user_health_metrics')
+        .upsert(batch, { onConflict: 'user_id,logged_date,source' })
+        .select('logged_date');
 
-    if (error) {
-      console.error(`Batch ${Math.floor(i / BATCH) + 1} failed:`, error.message);
-    } else {
-      total += data.length;
-      console.log(`  Batch ${Math.floor(i / BATCH) + 1}: ${data.length} rows upserted`);
+      if (error) {
+        console.error(`Batch ${batchNo} failed:`, error.message);
+        process.exitCode = 1;
+      } else {
+        total += data.length;
+        console.log(`  Batch ${batchNo}: ${data.length} rows upserted`);
+      }
     }
   }
 

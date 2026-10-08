@@ -81,6 +81,23 @@ const SOURCE_TEMPLATES: Partial<Record<Source, string>> = {
   inbody: '/templates/inbody-import-template.csv',
 };
 
+// The column names the downloadable templates use (logged_date, resting_hr, ...).
+const SNAKE_CASE_HEADERS: Record<string, string> = {
+  'logged_date': 'logged_date',
+  'resting_hr': 'resting_hr',
+  'steps': 'steps',
+  'sleep_hours': 'sleep_hours',
+  'activity_min': 'activity_min',
+  'sleep_score': 'sleep_score',
+  'hrv_ms': 'hrv_ms',
+  'spo2_pct': 'spo2_pct',
+  'active_calories': 'active_calories',
+  'stress_score': 'stress_score',
+  'recovery_score': 'recovery_score',
+  'weight_lbs': 'weight_lbs',
+  'notes': 'notes',
+};
+
 // CSV column name mappings per source
 const CSV_MAPPINGS: Record<string, Record<string, string>> = {
   garmin: {
@@ -92,6 +109,8 @@ const CSV_MAPPINGS: Record<string, Record<string, string>> = {
     'Calories': 'active_calories',
     'Average Stress': 'stress_score',
     'Body Battery': 'recovery_score',
+    // The headers of /templates/garmin-import-template.csv
+    ...SNAKE_CASE_HEADERS,
   },
   apple_health: {
     'Date': 'logged_date',
@@ -103,6 +122,8 @@ const CSV_MAPPINGS: Record<string, Record<string, string>> = {
     'HRV': 'hrv_ms',
     'SpO2': 'spo2_pct',
     'Weight': 'weight_lbs',
+    // The headers of /templates/apple-health-import-template.csv
+    ...SNAKE_CASE_HEADERS,
   },
   oura: {
     'date': 'logged_date',
@@ -205,6 +226,22 @@ function parseInBodyCSV(text: string): Record<string, string>[] {
   });
 }
 
+interface ImportResult {
+  imported: number;
+  skipped: number;
+  inserted?: number;
+  filled?: number;
+  unchanged?: number;
+  conflicts?: number;
+  replaced?: number;
+  repeated_in_file?: number;
+  message?: string;
+  days?: { logged_date: string; status: string; conflicts: string[]; replaced: string[] }[];
+  errors?: string[];
+}
+
+const fieldLabel = (field: string) => METRIC_LABELS[field] ?? (field === 'notes' ? 'Notes' : field);
+
 export default function MetricsImportPage() {
   const searchParams = useSearchParams();
   const initialSource = (searchParams.get('source') as Source) || 'manual';
@@ -213,7 +250,12 @@ export default function MetricsImportPage() {
   const [rawInBodyRows, setRawInBodyRows] = useState<Record<string, string>[]>([]);
   const [csvText, setCsvText] = useState('');
   const [importing, setImporting] = useState(false);
-  const [result, setResult] = useState<{ imported: number; skipped: number; errors?: string[] } | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [result, setResult] = useState<ImportResult | null>(null);
+  // The dry run of exactly what Import would send, and the request it was made for.
+  const [preview, setPreview] = useState<ImportResult | null>(null);
+  const [previewKey, setPreviewKey] = useState<string | null>(null);
+  const [replace, setReplace] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showEnrichment, setShowEnrichment] = useState(false);
 
@@ -304,7 +346,36 @@ export default function MetricsImportPage() {
       return;
     }
 
-    // Clean rows: remove empty ones, convert to import format
+    const payload = buildPayload();
+    if (!payload) {
+      setError('No rows with dates to import');
+      setImporting(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/health-metrics/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Import failed');
+      } else {
+        setResult(data);
+        setPreview(null);
+        setPreviewKey(null);
+      }
+    } catch {
+      setError('Network error');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // Clean rows: remove empty ones, convert to import format
+  function buildPayload() {
     const importRows = rows
       .filter((r) => r.logged_date)
       .map((r) => {
@@ -315,29 +386,42 @@ export default function MetricsImportPage() {
         if (r.notes) clean.notes = r.notes;
         return clean;
       });
+    if (importRows.length === 0) return null;
+    return { source, rows: importRows, replace };
+  }
 
-    if (importRows.length === 0) {
+  const currentKey = source === 'inbody' ? null : JSON.stringify(buildPayload());
+  const previewIsCurrent = preview !== null && previewKey !== null && previewKey === currentKey;
+
+  // Dry run: what the import would add, skip, fill or leave alone. Nothing is written.
+  const handlePreview = async () => {
+    const payload = buildPayload();
+    setError(null);
+    setResult(null);
+    if (!payload) {
       setError('No rows with dates to import');
-      setImporting(false);
       return;
     }
-
+    setChecking(true);
     try {
       const res = await fetch('/api/health-metrics/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source, rows: importRows }),
+        body: JSON.stringify({ ...payload, dryRun: true }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Import failed');
+        setError(data.error || 'Could not check the rows');
+        setPreview(null);
+        setPreviewKey(null);
       } else {
-        setResult(data);
+        setPreview(data);
+        setPreviewKey(JSON.stringify(payload));
       }
     } catch {
       setError('Network error');
     } finally {
-      setImporting(false);
+      setChecking(false);
     }
   };
 
@@ -503,10 +587,12 @@ export default function MetricsImportPage() {
                   <td className="px-2 py-1.5">
                     {rows.length > 1 && (
                       <button
+                        type="button"
                         onClick={() => removeRow(i)}
-                        className="p-1 text-gray-400 hover:text-red-500 transition"
+                        aria-label={`Remove row ${i + 1}${row.logged_date ? ` (${row.logged_date})` : ''}`}
+                        className="min-h-11 min-w-11 flex items-center justify-center text-gray-400 hover:text-red-500 transition"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" aria-hidden="true" />
                       </button>
                     )}
                   </td>
@@ -517,22 +603,91 @@ export default function MetricsImportPage() {
         </div>
       </div>
 
+      {/* Re-import rules */}
+      {source !== 'inbody' && (
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 space-y-3">
+          <h2 className="text-base font-bold text-gray-900">Days you already have</h2>
+          <p className="text-sm text-gray-600">
+            Each source keeps one row per day. Importing a day again only adds what is new: blank fields get the
+            file&apos;s values and values you already have are kept. Check the rows first to see what will happen.
+          </p>
+          <div className="flex items-start gap-3">
+            <input
+              id="replace-existing"
+              type="checkbox"
+              checked={replace}
+              onChange={(e) => setReplace(e.target.checked)}
+              className="mt-1 h-5 w-5 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+            />
+            <label htmlFor="replace-existing" className="text-sm text-gray-700">
+              <span className="font-medium">Replace existing values</span>
+              <span className="block text-gray-500">
+                Use the file&apos;s value where it differs from what is stored for {SOURCE_LABELS[source]}. Fields the
+                file leaves blank are never erased.
+              </span>
+            </label>
+          </div>
+        </div>
+      )}
+
+      {/* Preview (dry run) */}
+      {preview && previewIsCurrent && (
+        <div role="status" className="bg-white border border-sky-200 rounded-xl p-4 sm:p-6 space-y-3">
+          <h2 className="text-base font-bold text-gray-900">Before you import</h2>
+          <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm" role="list">
+            <li className="rounded-lg bg-gray-50 px-3 py-2"><span className="block text-xl font-bold text-gray-900">{preview.inserted ?? 0}</span>new days</li>
+            <li className="rounded-lg bg-gray-50 px-3 py-2"><span className="block text-xl font-bold text-gray-900">{preview.unchanged ?? 0}</span>already imported (skipped)</li>
+            <li className="rounded-lg bg-gray-50 px-3 py-2"><span className="block text-xl font-bold text-gray-900">{preview.filled ?? 0}</span>days gain blank fields</li>
+            {replace ? (
+              <li className="rounded-lg bg-amber-50 px-3 py-2 text-amber-900"><span className="block text-xl font-bold">{preview.replaced ?? 0}</span>days get the file&apos;s values</li>
+            ) : (
+              <li className="rounded-lg bg-amber-50 px-3 py-2 text-amber-900"><span className="block text-xl font-bold">{preview.conflicts ?? 0}</span>different values (existing kept)</li>
+            )}
+            {(preview.repeated_in_file ?? 0) > 0 && (
+              <li className="rounded-lg bg-gray-50 px-3 py-2"><span className="block text-xl font-bold text-gray-900">{preview.repeated_in_file}</span>dates listed twice (merged)</li>
+            )}
+            {preview.skipped > 0 && (
+              <li className="rounded-lg bg-gray-50 px-3 py-2"><span className="block text-xl font-bold text-gray-900">{preview.skipped}</span>invalid rows</li>
+            )}
+          </ul>
+          {(() => {
+            const differing = (preview.days ?? []).filter((d) => d.status === 'conflict' || d.status === 'replaced');
+            if (differing.length === 0) return null;
+            return (
+              <details className="text-sm text-gray-700">
+                <summary className="cursor-pointer min-h-11 flex items-center font-medium text-amber-800">
+                  Days with different values ({differing.length})
+                </summary>
+                <ul className="mt-1 space-y-0.5 pl-4 list-disc">
+                  {differing.slice(0, 30).map((d) => (
+                    <li key={d.logged_date}>
+                      {d.logged_date}: {(d.status === 'replaced' ? d.replaced : d.conflicts).map(fieldLabel).join(', ')}
+                    </li>
+                  ))}
+                  {differing.length > 30 && <li>…and {differing.length - 30} more</li>}
+                </ul>
+              </details>
+            );
+          })()}
+        </div>
+      )}
+
       {/* Error */}
       {error && (
-        <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-4">
-          <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+        <div role="alert" className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-4">
+          <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" aria-hidden="true" />
           <p className="text-sm text-red-800">{error}</p>
         </div>
       )}
 
       {/* Result */}
       {result && (
-        <div className="flex items-start gap-2 bg-lime-50 border border-lime-200 rounded-xl p-4">
-          <CheckCircle2 className="w-5 h-5 text-lime-600 shrink-0 mt-0.5" />
-          <div className="text-sm text-lime-800">
-            <p>Imported {result.imported} days of data{result.skipped > 0 && `, skipped ${result.skipped}`}</p>
+        <div role="status" className="flex items-start gap-2 bg-green-50 border border-green-200 rounded-xl p-4">
+          <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" aria-hidden="true" />
+          <div className="text-sm text-green-800">
+            <p>{result.message ?? `Imported ${result.imported} days of data${result.skipped > 0 ? `, skipped ${result.skipped}` : ''}`}</p>
             {result.errors && result.errors.length > 0 && (
-              <ul className="mt-1 text-xs text-lime-700 list-disc pl-4">
+              <ul className="mt-1 text-xs text-green-800 list-disc pl-4">
                 {result.errors.map((e, i) => <li key={i}>{e}</li>)}
               </ul>
             )}
@@ -540,18 +695,40 @@ export default function MetricsImportPage() {
         </div>
       )}
 
-      {/* Import Button */}
-      <button
-        onClick={handleImport}
-        disabled={importing || rows.length === 0}
-        className="flex items-center gap-2 px-6 py-3 bg-fuchsia-600 text-white rounded-xl font-semibold hover:bg-fuchsia-700 transition disabled:opacity-50 min-h-12"
-      >
-        {importing ? (
-          <><Loader2 className="w-5 h-5 animate-spin" /> Importing...</>
-        ) : (
-          <><Upload className="w-5 h-5" /> Import {rows.filter((r) => r.logged_date).length} Rows</>
+      {/* Check, then import */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        {source !== 'inbody' && (
+          <button
+            type="button"
+            onClick={handlePreview}
+            disabled={checking || importing || rows.length === 0}
+            className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition disabled:opacity-50 min-h-12 ${
+              previewIsCurrent ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-sky-600 text-white hover:bg-sky-700'
+            }`}
+          >
+            {checking ? (
+              <><Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" /> Checking...</>
+            ) : (
+              <>{previewIsCurrent ? 'Check again' : 'Check rows'}</>
+            )}
+          </button>
         )}
-      </button>
+        <button
+          type="button"
+          onClick={handleImport}
+          disabled={importing || checking || rows.length === 0 || (source !== 'inbody' && !previewIsCurrent)}
+          className="flex items-center justify-center gap-2 px-6 py-3 bg-sky-600 text-white rounded-xl font-semibold hover:bg-sky-700 transition disabled:opacity-50 min-h-12"
+        >
+          {importing ? (
+            <><Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" /> Importing...</>
+          ) : (
+            <><Upload className="w-5 h-5" aria-hidden="true" /> Import {rows.filter((r) => r.logged_date).length} Rows</>
+          )}
+        </button>
+      </div>
+      {source !== 'inbody' && !previewIsCurrent && rows.length > 0 && (
+        <p className="text-xs text-gray-500 -mt-3">Check the rows first: Import turns on once you have seen what it will do.</p>
+      )}
     </div>
   );
 }

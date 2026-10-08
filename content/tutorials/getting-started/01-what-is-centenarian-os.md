@@ -38,7 +38,7 @@ Your dashboard sidebar organizes every module into five groups:
 **Health** — your body and performance data.
 - Fuel — ingredient library, meal logging, NCV (Nutrient Cost Value) framework
 - Metrics — resting heart rate, steps, sleep, activity minutes, body composition
-- Wearables — Oura, WHOOP, Garmin OAuth sync + CSV imports (Apple Health, Google Health, InBody, Hume)
+- Wearables — CSV imports (Garmin, Apple Health, Oura, WHOOP, Google Health, InBody, Hume) that never duplicate a day; Garmin sync coming soon
 - Workouts — exercise tracking
 - Correlations — cross-metric analysis
 - Analytics — trends and insights

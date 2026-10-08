@@ -11,62 +11,78 @@
 
 ## Narrator Script
 
-If you take the same trip regularly — a daily commute, a weekly grocery run, a recurring bike route — trip templates let you save the details once and log it again with one click. Templates support both single-leg and multi-stop trips.
+If you take the same trip regularly — a daily commute, a weekly grocery run, a recurring bike route — trip templates let you save it once and log it again with one tap. A template keeps the distance and time of every leg, so a round trip or a multi-stop route logs the same miles and minutes each time.
 
 ---
 
-### What Is a Trip Template?
+### What a Template Saves
 
-A trip template is a saved trip configuration. It stores:
-- Origin and destination
-- Mode of transport
-- Distance
-- Vehicle (if applicable)
-- Trip category (travel/fitness)
-- Tax category (personal/business/medical/charitable)
+A template is saved from a trip you log. It keeps:
+- The template name (the trip's name)
+- Every stop, and for each leg: mode, vehicle, distance, duration, cost, and purpose
 - Whether it's a round trip
-- Notes
+- Trip category (travel/fitness), tax category (personal/business/medical/charitable), brand, and notes
 
-For multi-stop templates, it also stores all intermediate stops.
-
----
-
-### Creating a Template
-
-Navigate to `/dashboard/travel` and find the **Templates** section. Click **+ New Template**.
-
-Fill in the template form with the trip details you want to reuse. The form is identical to the regular trip form, with one addition: a **Template Name** field at the top.
-
-Give it a descriptive name like "Weekday Commute" or "Saturday Bike Loop."
+A trip with one leg is saved as a single-leg template (origin, destination, and that leg's details). A trip with more than one leg, including every round trip, is saved as a multi-stop template.
 
 ---
 
-### Multi-Stop Templates
+### Saving a Template
 
-Toggle **Multi-Stop** on the template form to define intermediate stops. Each stop has:
-- Location name
-- Distance from previous stop
-- Mode of transport
+1. Go to Dashboard → Travel (or Trip History) and click **Add Trip**.
+2. Enter your stops with each leg's mode, miles, minutes, and cost. Tick **Round trip (return to start)** if you come back to where you started.
+3. Give the trip a **Trip Name**, such as "Gym run" or "Saturday Errands". A template needs a name.
+4. Tick **Save as reusable template** and save.
 
-The `is_multi_stop` flag on the template tells the system to create a route (with multiple legs) instead of a single trip when you use the template.
+The trip is logged, and the template is saved from it with the distance and time of every leg. For a round trip, that includes the return leg the form adds for you.
+
+---
+
+### How Stops Are Stored
+
+The first stop is where you start. Every later stop holds the leg that arrives there: its mode, vehicle, miles, minutes, cost, and purpose.
+
+A round trip from Home to the Gym is three stops: Home → Gym → Home. The Gym stop holds the way there and the last Home stop holds the way back, so the template totals 10 miles and 24 minutes for a 5-mile, 12-minute trip each way.
 
 ---
 
 ### Using a Template
 
-From the trip creation form, you'll see a **From Template** dropdown. Select a template, and all fields auto-fill with the saved values. Adjust the date (and optionally the cost, if fuel prices have changed), then save.
+There are three ways to use a template:
 
-For multi-stop templates, the system creates:
-1. A new route with the template name + today's date
-2. Individual trip legs for each stop in the template
+1. **Quick log.** In Trip History, open **My Templates** and press the play button on a template. It logs the trip for today with every leg's distance and time. A message confirms what was logged, for example "Logged Gym run: 10.0 mi · 24 min". If a leg can't be saved, nothing is saved and the message says why.
+2. **Quick Re-log.** On the Travel dashboard, the Quick Re-log card lists your templates with their total miles and time. Tap one to log it for today.
+3. **Load from template.** In Add Trip, pick a template from **Load from template**. Every stop and leg fills in, and you can change anything (the date, a detour, the cost) before you save.
+
+A multi-stop template logs a route with one trip per leg, and the route shows the totals. A single-leg template logs one trip. If a template is marked as a round trip but its stops don't end where they started, Quick log adds a return leg using the outbound distance, time, and cost added together, the same rule Add Trip uses.
+
+A single-leg template that ends where it starts (a loop, such as a bike ride from home and back) is the whole trip, so Quick log records its miles and minutes once even if Round trip is ticked.
+
+Quick log uses each leg's saved vehicle while it is still one of yours or a public transport vehicle. A leg saved with no vehicle, such as a rental car, logs with no vehicle, so its miles never count toward one of your vehicles. It doesn't create a finance transaction for a leg's cost, but Add Trip does. To record the expense too, use **Load from template** and save through Add Trip.
+
+---
+
+### Reading a Template Card
+
+Each card in My Templates shows:
+- Where it goes: "Home ↔ Gym" for a round trip, "Home → Office" for one way, or the number of stops for a longer route
+- The total miles and time Quick log will record, for example "10.0 mi · 24 min"
+- A **Round trip** or **Multi-stop** label
+- How many times you've used it
+
+The Add Trip template list shows the same totals next to each name.
 
 ---
 
 ### Editing and Deleting Templates
 
-Templates are managed from the Templates section:
-- **Edit** — update any field. Changes only affect future uses, not past trips created from the template.
-- **Delete** — removes the template. Past trips created from it are unaffected.
+In Trip History, open My Templates:
+- **Edit** (pencil): rename the template and change its stops (each leg's location, mode, vehicle, miles, minutes, and cost), round trip, purpose (commute, leisure, work, errand, exercise, or other), category, tax category, brand, and notes. Under the stops, a line shows what Quick log will record, and when a return leg will be added. Changes only affect future uses, not trips you already logged.
+- **Delete** (trash can): removes the template. Trips you already logged from it are not affected.
+
+Round-trip and multi-stop templates saved before October 2026 stored each leg's details one stop too early, so they logged too few miles and minutes. If a template's totals look wrong, open Edit Template and correct each leg's mode, vehicle, miles, and minutes. A leg you corrected there before it had a vehicle choice has none, so pick the vehicle you drove if its miles should count toward it.
+
+Templates you save in Work.WitUS's Add Trip also show here, and for now Work.WitUS still saves them the old way. Check their totals the same way and correct the legs in Edit Template.
 
 ---
 
@@ -78,26 +94,40 @@ Templates are managed from the Templates section:
   "name": "Weekday Commute",
   "origin": "Home",
   "destination": "Office",
-  "mode": "car",
+  "mode": "train",
   "distance_miles": 12.5,
-  "is_round_trip": true,
+  "duration_min": 40,
+  "is_round_trip": false,
   "trip_category": "travel",
   "tax_category": "business",
-  "vehicle_id": "vehicle-crv-2020",
   "is_multi_stop": false
 }
 ```
 
-**Multi-stop template:**
+**Round-trip template** (logs 10.0 mi · 24 min):
+```json
+{
+  "name": "Gym run",
+  "is_multi_stop": true,
+  "is_round_trip": true,
+  "stops": [
+    { "stop_order": 0, "location_name": "Home" },
+    { "stop_order": 1, "location_name": "Gym", "mode": "car", "distance_miles": 5, "duration_min": 12 },
+    { "stop_order": 2, "location_name": "Home", "mode": "car", "distance_miles": 5, "duration_min": 12 }
+  ]
+}
+```
+
+**Multi-stop template** (logs 9.5 mi · 31 min):
 ```json
 {
   "name": "Saturday Errands",
   "is_multi_stop": true,
   "stops": [
-    { "location": "Home", "distance_from_previous": 0 },
-    { "location": "Grocery Store", "distance_from_previous": 3.2 },
-    { "location": "Hardware Store", "distance_from_previous": 1.8 },
-    { "location": "Home", "distance_from_previous": 4.5 }
+    { "stop_order": 0, "location_name": "Home" },
+    { "stop_order": 1, "location_name": "Grocery Store", "mode": "car", "distance_miles": 3.2, "duration_min": 10 },
+    { "stop_order": 2, "location_name": "Hardware Store", "mode": "car", "distance_miles": 1.8, "duration_min": 7 },
+    { "stop_order": 3, "location_name": "Home", "mode": "car", "distance_miles": 4.5, "duration_min": 14 }
   ]
 }
 ```
@@ -106,26 +136,28 @@ Templates are managed from the Templates section:
 
 ## Screen Recording Notes
 
-> [SCREEN: Navigate to /dashboard/travel — show the Templates section]
+> [SCREEN: Navigate to /dashboard/travel — click Add Trip]
 
-> [SCREEN: Click "+ New Template" — fill in: name "Weekday Commute", origin "Home", destination "Office", mode car, distance 12.5, round trip ON]
+> [SCREEN: Enter Home → Gym, car, 5 miles, 12 minutes — tick Round trip — show "Return leg auto-added: 5.0 mi · 12 min"]
 
-> [SCREEN: Save the template — show it appear in the templates list]
+> [SCREEN: Name the trip "Gym run" — tick "Save as reusable template" — save]
 
-> [SCREEN: Navigate to trip creation — click "From Template" dropdown — select "Weekday Commute"]
+> [SCREEN: Go to Trip History — open My Templates — show the "Gym run" card with "Home ↔ Gym · 10.0 mi · 24 min" and the Round trip label]
 
-> [SCREENSHOT: Trip form with auto-filled fields from template — callout: "All fields populated from template"]
+> [SCREEN: Press the play button — show "Logged Gym run: 10.0 mi · 24 min" and the new route with two legs]
 
-> [SCREEN: Adjust the date — save the trip]
+> [SCREEN: Back on the Travel dashboard — tap "Gym run" in Quick Re-log]
 
-> [SCREEN: Create a multi-stop template with 3 stops — save]
+> [SCREEN: Open Add Trip — choose "Gym run" in Load from template — show every stop and leg filled in]
+
+> [SCREEN: Press the pencil on the template — show Edit Template with each leg's miles and minutes and the Quick log total]
 
 ---
 
 ## Key Takeaways
 
-- Templates save trip configurations for repeated journeys
-- Single-leg and multi-stop templates are supported
-- Use "From Template" on the trip form to auto-fill all fields
-- Multi-stop templates create routes with per-leg trip records
-- Edit/delete templates without affecting past trips
+- Save a template by ticking "Save as reusable template" when you log a trip with a name
+- Templates keep every leg's distance and time, including a round trip's return leg
+- Log a template with Quick log (My Templates), Quick Re-log (Travel dashboard), or Load from template (Add Trip)
+- Template cards show the total miles and time Quick log will record
+- Edit or delete templates without affecting trips you already logged

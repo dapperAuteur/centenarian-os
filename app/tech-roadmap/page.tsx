@@ -220,9 +220,10 @@ const PHASES: Phase[] = [
     items: [
       { done: true, text: 'Health metrics daily log: resting HR, steps, sleep hours, activity minutes' },
       { done: true, text: 'Body weight tracking: locked by default, unlock via disclaimer acknowledgment' },
-      { done: true, text: 'Wearable integration: Oura Ring OAuth (sleep, HRV, readiness)' },
-      { done: true, text: 'Wearable integration: WHOOP OAuth (strain, recovery, sleep)' },
-      { done: true, text: 'Wearable integration: Garmin OAuth (daily auto-sync)' },
+      { done: false, text: 'Wearable integration: Oura Ring OAuth (sleep, HRV, readiness) — sync route written, not offered in Settings yet' },
+      { done: false, text: 'Wearable integration: WHOOP OAuth (strain, recovery, sleep) — sync route written, not offered in Settings yet' },
+      { done: false, text: 'Wearable integration: Garmin OAuth (daily auto-sync) — Coming Soon: needs Garmin developer access and a daily sync job' },
+      { done: true, text: 'Fitness imports never duplicate: one row per day per source, re-imports add only new data, Garmin activities keyed on their start time, Check rows preview before saving' },
       { done: true, text: 'CSV import: Apple Health, Google Health, InBody, Hume Health' },
       { done: true, text: 'Admin metrics configuration page' },
       { done: true, text: '3-tier metrics: Core (RHR/steps/sleep/activity), Enrichment (per-metric unlock), Body Composition' },

@@ -81,7 +81,7 @@ Let's move on.
 - Garmin activity imports are supported for Cycling, Walking, Running, and Hiking
 - The module tracks bike savings vs. car costs automatically
 ",markdown,,,,,,
-Getting Started,1,2,Setting Up Your Vehicle,text,420,true,,"# Lesson 02: Setting Up Your Vehicle
+Getting Started,1,2,Setting Up Your Vehicle,text,480,true,,"# Lesson 02: Setting Up Your Vehicle
 
 **Course:** Mastering Travel Tracking
 **Module:** Getting Started
@@ -137,6 +137,19 @@ Each vehicle card shows you a summary: the make, model, year, and current mileag
 ### Adding Multiple Vehicles
 
 You can have as many vehicles as you need. Click **Add Vehicle** again to add a second one. If you have a car and a bike, add both. Each one has its own fuel logs, trips, and maintenance records — completely separate.
+
+---
+
+### Public Transport Library
+
+You don't need to create entries for planes, trains, buses, ferries, or rideshare services. CentenarianOS includes a **public transport library** — pre-loaded system vehicles available to all users.
+
+When you open the vehicle selector in the trip form, you'll see two groups:
+
+- **Your Vehicles** — personal vehicles you've added (cars, bikes, etc.)
+- **Public Transport** — system-provided options: Commercial Flight, Passenger Train, City Bus, Intercity Bus, Ferry, Rideshare (Uber/Lyft), Subway/Metro, Light Rail, and Long-Distance Train
+
+Select any public transport vehicle to log a flight, train ride, or bus trip without creating a vehicle profile first. These system vehicles can't be edited or deleted — they're shared across all users.
 
 ---
 
@@ -676,31 +689,29 @@ The key fields are mode of transport, distance, and date. Everything else is opt
 
 ### Navigating to Trips
 
-Go to `/dashboard/travel/trips`. You'll see your trip history — or an empty state if this is your first trip.
+Go to `/dashboard/travel` or `/dashboard/travel/trips`. You'll see your trip history — or an empty state if this is your first trip.
 
-Click **Log Trip** to open the trip entry form.
+Click **Add Trip** to open the unified trip form.
 
 ---
 
-### The Trip Entry Form
+### The Unified Trip Form
 
-Let me walk through the fields:
+CentenarianOS uses one form for all trips — whether it's a simple A→B drive or a multi-stop journey. A 2-stop trip is a simple trip; add more stops for a multi-stop route. Here are the fields for each leg:
 
-**Vehicle** — Select which vehicle (or mode of transport) you used. If you were on a bike, select your bike entry from the vehicle list. If it's a vehicle that doesn't take fuel, that's fine — trips work for any vehicle.
+**Vehicle** — Select from two groups: **Your Vehicles** (personal cars, bikes) and **Public Transport** (pre-loaded planes, trains, buses, ferries, rideshare). The vehicle selection auto-sets the travel mode.
+
+**Origin** — Starting point for this leg. Supports saved contact locations for quick selection.
+
+**Destination** — Endpoint for this leg. Same contact location support.
 
 **Date** — The date of the trip. Defaults to today.
 
-**Mode** — A dropdown: Car, Bike, Walk, Run, Hike. This determines how the trip is categorized in your analytics. Bike trips contribute to your bike savings calculation. Car trips contribute to your vehicle cost totals.
+**Distance** — In miles. Enter the distance for this leg.
 
-**Distance** — In miles (or kilometers, depending on your settings). Enter the total distance of the trip.
+**Cost** (optional) — Fuel cost, ticket price, or fare. Legs with cost > $0 can create linked finance transactions.
 
-**Start location** (optional) — A text field for the starting point. For example: ""Home"", ""Office"", ""Denver, CO"". This is free text — it's not a map integration.
-
-**End location** (optional) — Same format as start.
-
-**Route name** (optional) — A short label for the trip. For example: ""Morning commute"", ""I-70 mountain drive"", ""Sunday trail ride"".
-
-**Notes** (optional) — Anything else you want to remember about this trip. Road conditions, highlights, stops made.
+**Notes** (optional) — Anything you want to remember about this leg.
 
 **Duration** (optional) — How long the trip took in hours and minutes. Used to calculate average speed when you're curious about that.
 
@@ -842,14 +853,14 @@ This lesson walks you through the full process: exporting from Garmin, uploading
 
 ### What Gets Imported
 
-CentenarianOS imports four activity types from Garmin:
+CentenarianOS imports these Garmin activity types as trips:
 
-- **Cycling** — becomes a Bike trip
+- **Cycling** and **Indoor Cycling** — become Bike trips
 - **Walking** — becomes a Walk trip
-- **Running** — becomes a Run trip
-- **Hiking** — becomes a Hike trip
+- **Running** and **Treadmill Running** — become Run trips
+- **Hiking** — becomes a Walk trip (purpose: leisure)
 
-Everything else is intentionally skipped: Strength Training, HIIT, Yoga, Indoor Cycling, Swimming, and other gym-based activities. These don't involve travel or distance in a meaningful way, so they don't belong in the Travel module.
+Everything else is intentionally skipped: Strength Training, HIIT, Yoga, Swimming, and other gym-based activities. They are counted as ""not travel activities"" in the check, so you can see they were read and left out.
 
 This is a deliberate design choice — the Travel module is about movement through the world, not exercise sessions.
 
@@ -857,21 +868,16 @@ This is a deliberate design choice — the Travel module is about movement throu
 
 ### Step 1: Export Your Activities from Garmin Connect
 
-Open Garmin Connect — either the mobile app or the website at connect.garmin.com.
+Open Garmin Connect on the website at connect.garmin.com.
 
-**On the website:**
-1. Go to **Activities** in the left sidebar
-2. Find the activity you want to export, or use the bulk export option
-3. For a single activity: click the activity → click the gear icon → **Export to GPX** or **Export Original**
-4. For a bulk export: go to **Account Settings** → **Data Export** → **Export Your Data**
+1. Go to **Activities** → **All Activities**
+2. Scroll down far enough to load the activities you want (the list loads more as you scroll)
+3. Click **Export CSV** at the top of the list
 
-The bulk export option generates a ZIP file containing all your activity files. This can take a few minutes to generate and will arrive by email or be downloadable from the account settings page.
-
-**What format to use:**
-CentenarianOS accepts the standard Garmin export format. The bulk export ZIP works best for importing multiple activities at once.
+You get a file named `Activities.csv`. That is the file this import reads. It does not read GPX, FIT or the full account-export ZIP.
 
 **On the mobile app:**
-The mobile app has a more limited export interface. For importing multiple activities, the website export is recommended.
+The mobile app has no CSV export, so use the website.
 
 ---
 
@@ -879,33 +885,32 @@ The mobile app has a more limited export interface. For importing multiple activ
 
 In CentenarianOS, go to `/dashboard/travel/import`.
 
-You'll see the Garmin import interface: a file upload area and some information about supported formats.
+The **Garmin Activities CSV** card has a file picker, a **Check file** button and an **Import** button.
 
 ---
 
-### Step 3: Upload Your File
+### Step 3: Choose Your File and Check It
 
-Click or drag your exported file into the upload zone. You can upload either:
-- A single activity file
-- The full Garmin export ZIP (recommended for bulk imports)
+Click the file area and choose `Activities.csv`. Then click **Check file**. Nothing is saved yet. The ""Before you import"" panel counts every row of the file:
 
-Click **Import Activities**. The system processes the file, identifies all supported activity types, and converts them to trips.
+- **New** — activities that will become trips
+- **Already imported** — activities you imported before. An activity is recognised by its start time, so it is skipped even if you renamed it in Garmin Connect or changed the trip's date since
+- **Listed twice in the file** — Garmin can upload one recording twice; only one copy counts
+- **Look like trips you logged** — a trip you entered yourself (by hand, from a template or another CSV) with the same type, and a distance within 5% (at least 0.1 mile) or a time within 5 minutes. A round trip is compared both ways (it is stored one way and counted twice), and a multi-stop trip's legs are added up. A trip you logged that day with no distance or time counts too, and so does a close one dated a day before or after: a template logged late in the evening could carry the next day's date. Open **Possible matches** to see each one and why it matched. They are skipped unless you tick **Import possible matches too** (for example, two separate walks that day)
+- **Unreadable rows** — rows without a readable date
+- **Not travel activities** — the skipped types above
 
 ---
 
-### Step 4: Review the Import Results
+### Step 4: Import
 
-After processing, you'll see a summary of what was imported:
-
-- **Activities imported** — the count of trips successfully created
-- **Activities skipped** — the count of activities that were ignored (Strength, HIIT, etc.)
-- **New trips** — a list of the individual trips just created
+Click **Import** (it shows how many activities will be added). The green result repeats the counts for what was saved. If a single row could not be saved, it is listed by its line number and the rest are still imported.
 
 Each imported activity becomes a trip in your trip history with:
-- Date from the activity timestamp
+- Date from the activity's start time
 - Mode based on activity type (Cycling → Bike, Running → Run, etc.)
-- Distance from the GPS track data
-- Duration from the activity's elapsed time
+- Distance, duration and calories from the CSV
+- The activity's title, average heart rate (and steps for walks) in the notes
 
 ---
 
@@ -913,15 +918,15 @@ Each imported activity becomes a trip in your trip history with:
 
 Navigate to `/dashboard/travel/trips` to see the newly imported trips in your history. They'll show up mixed in with any manually logged trips, sorted by date.
 
-You can edit any imported trip to add notes, a route name, or start/end locations that the GPS data didn't capture.
+You can edit any imported trip to add notes, a route name, or start/end locations that the CSV didn't include.
 
 ---
 
 ### Dealing with Duplicates
 
-If you import the same Garmin export file twice, CentenarianOS checks for duplicate activities before inserting. Activities with the same date, type, distance, and duration won't be imported a second time.
+Importing the same file again — or a newer export that overlaps an older one — adds nothing twice: **Check file** shows those activities as already imported. You don't need to trim the export to ""only the new ones"".
 
-If you're not sure whether an activity was already imported, check your trip history for that date before re-importing.
+Duplicates made before this check existed are not deleted automatically. They can be listed with a read-only report and cleaned up after review.
 
 ---
 
@@ -935,42 +940,35 @@ You could also do a one-time bulk import for the entire year's Garmin history wh
 
 ## Screen Recording Notes
 
-> [SCREEN: Open a browser tab and navigate to connect.garmin.com — show the Activities page]
+> [SCREEN: Open a browser tab and navigate to connect.garmin.com — show Activities → All Activities]
 
-> [SCREENSHOT: Garmin Connect Activities page with the Export button/gear icon highlighted on a single activity]
-
-> [SCREEN: Show the Account Settings → Data Export option on the Garmin website]
-
-> [SCREENSHOT: Data Export page with ""Export Your Data"" button labeled — add callout: ""This generates a ZIP of all activities""]
+> [SCREENSHOT: All Activities list with the Export CSV link highlighted]
 
 > [SCREEN: Switch back to CentenarianOS — navigate to /dashboard/travel/import]
 
-> [SCREENSHOT: Import page with the upload zone highlighted and ""Supported: Garmin export ZIP"" labeled]
+> [SCREEN: Choose Activities.csv — click Check file]
 
-> [SCREEN: Drag a sample Garmin export ZIP into the upload zone — show it populating]
+> [SCREENSHOT: Before you import — callouts: New, Already imported, Listed twice in the file, Look like trips you logged, Not travel activities]
 
-> [SCREEN: Click ""Import Activities"" — show processing spinner]
+> [SCREEN: Open Possible matches — show one walk that matches a walk logged by hand]
 
-> [SCREEN: Import results summary appears — highlight ""Activities imported: 12"", ""Activities skipped: 4 (Strength, HIIT)""]
+> [SCREEN: Click Import — the green result repeats the counts]
 
-> [SCREENSHOT: Results screen with callouts: ""Imported"" (green) vs. ""Skipped"" (gray) categories listed]
+> [SCREEN: Click Check file again on the same file — everything shows as already imported]
 
-> [SCREEN: Click ""View Trips"" or navigate to /dashboard/travel/trips — show the newly imported trips in the list]
+> [SCREEN: Navigate to /dashboard/travel/trips — show the newly imported trips in the list]
 
 > [SCREENSHOT: Trip list with several imported trips, mode icons (bike, run, walk) visible — label ""Imported from Garmin""]
-
-> [SCREEN: Click on one imported trip — show the detail view, point out that GPS distance and duration were auto-populated]
-
-> [SCREEN: Click Edit on that trip — show adding a route name and notes — save]
 
 ---
 
 ## Key Takeaways
 
-- Garmin exports Cycling, Walking, Running, and Hiking activities — all become trips in CentenarianOS
-- Strength Training, HIIT, Yoga, and indoor activities are intentionally skipped
-- Use the bulk ZIP export from connect.garmin.com for importing multiple activities at once
-- Duplicate detection prevents the same activity from being imported twice
+- Export `Activities.csv` from Garmin Connect (Activities → All Activities → Export CSV) on the website
+- Cycling, Indoor Cycling, Walking, Running, Treadmill Running and Hiking become trips; gym activities are skipped
+- Check file before Import: new, already imported, listed twice, possible matches with trips you logged
+- An activity is recognised by its start time, so renamed or re-exported activities are never imported twice
+- Possible matches with trips you logged are skipped unless you include them
 - A weekly import cadence (every Sunday) keeps trip history current with minimal effort
 ",markdown,,,,,,
 Trips & Activities,3,8,Trip History and Bike Savings,text,420,true,,"# Lesson 08: Trip History and Bike Savings
@@ -1448,29 +1446,30 @@ Single-leg trips (A to B with no stops) don't need routes — just log them as r
 
 ### Creating a Multi-Stop Route
 
-Navigate to `/dashboard/travel` and look for the **Routes** section. Click **+ New Route**.
+Navigate to `/dashboard/travel` and click **Add Trip**. The unified trip form opens with 2 stops by default (a simple A→B trip).
 
-A route has:
-- **Name** — a descriptive label (e.g., ""SF to Vegas Road Trip"")
+To create a multi-stop route, click **+ Add Stop**. Once you have 3 or more stops, the form title changes to ""Multi-Stop Route"" and route-level fields appear:
+
+- **Route Name** — a descriptive label (e.g., ""SF to Vegas Road Trip"")
 - **Date** — the date of the journey
-- **Notes** — optional context
-
-After creating the route, you add legs.
+- **Budget** (optional) — set a spending target for the whole route
+- **Brand** (optional) — tag the route with a business brand for P&L tracking
+- **Visibility** — private, shared, or public
 
 ---
 
 ### Adding Legs
 
-Each leg is a trip that belongs to the route. For each leg, you fill in the standard trip form:
+Each pair of consecutive stops creates a leg. For each leg, fill in:
 
-- **Origin** — starting point for this leg (can use saved contact locations)
-- **Destination** — endpoint for this leg
-- **Mode** — car, bike, walk, bus, train, etc.
+- **Vehicle** — select from Your Vehicles or Public Transport (plane, train, bus, ferry, rideshare)
+- **Origin / Destination** — auto-populated from stop order; supports saved contact locations
 - **Distance** — miles for this leg
-- **Cost** — fuel/ticket/fare cost for this leg (optional)
-- **Vehicle** — which vehicle was used (if applicable)
+- **Cost** — fuel/ticket/fare cost (optional; legs with cost > $0 create linked finance transactions)
 
-Legs are ordered by `leg_order` within the route. The first leg starts from the route origin, and each subsequent leg starts where the previous one ended.
+Each leg also has collapsible **Purpose & Details** and **Booking Details** sections for tax tagging, calories, confirmation numbers, seat assignments, and more.
+
+Legs are ordered by `leg_order` within the route. The first leg starts from stop 1, and each subsequent leg starts where the previous one ended.
 
 ---
 
@@ -1568,7 +1567,7 @@ A route can include map data to visualize the journey:
 - Route detail page shows total distance/cost and an ordered leg list
 - Use for road trips, multi-modal commutes, and any journey with waypoints
 ",markdown,,,,,,
-Advanced Trips,5,12,Trip Templates & Quick Logging,text,180,true,,"# Lesson 12: Trip Templates & Quick Logging
+Advanced Trips,5,12,Trip Templates & Quick Logging,text,420,true,,"# Lesson 12: Trip Templates & Quick Logging
 
 **Course:** Mastering Travel Tracking
 **Module:** Advanced Trips
@@ -1581,62 +1580,78 @@ Advanced Trips,5,12,Trip Templates & Quick Logging,text,180,true,,"# Lesson 12: 
 
 ## Narrator Script
 
-If you take the same trip regularly — a daily commute, a weekly grocery run, a recurring bike route — trip templates let you save the details once and log it again with one click. Templates support both single-leg and multi-stop trips.
+If you take the same trip regularly — a daily commute, a weekly grocery run, a recurring bike route — trip templates let you save it once and log it again with one tap. A template keeps the distance and time of every leg, so a round trip or a multi-stop route logs the same miles and minutes each time.
 
 ---
 
-### What Is a Trip Template?
+### What a Template Saves
 
-A trip template is a saved trip configuration. It stores:
-- Origin and destination
-- Mode of transport
-- Distance
-- Vehicle (if applicable)
-- Trip category (travel/fitness)
-- Tax category (personal/business/medical/charitable)
+A template is saved from a trip you log. It keeps:
+- The template name (the trip's name)
+- Every stop, and for each leg: mode, vehicle, distance, duration, cost, and purpose
 - Whether it's a round trip
-- Notes
+- Trip category (travel/fitness), tax category (personal/business/medical/charitable), brand, and notes
 
-For multi-stop templates, it also stores all intermediate stops.
-
----
-
-### Creating a Template
-
-Navigate to `/dashboard/travel` and find the **Templates** section. Click **+ New Template**.
-
-Fill in the template form with the trip details you want to reuse. The form is identical to the regular trip form, with one addition: a **Template Name** field at the top.
-
-Give it a descriptive name like ""Weekday Commute"" or ""Saturday Bike Loop.""
+A trip with one leg is saved as a single-leg template (origin, destination, and that leg's details). A trip with more than one leg, including every round trip, is saved as a multi-stop template.
 
 ---
 
-### Multi-Stop Templates
+### Saving a Template
 
-Toggle **Multi-Stop** on the template form to define intermediate stops. Each stop has:
-- Location name
-- Distance from previous stop
-- Mode of transport
+1. Go to Dashboard → Travel (or Trip History) and click **Add Trip**.
+2. Enter your stops with each leg's mode, miles, minutes, and cost. Tick **Round trip (return to start)** if you come back to where you started.
+3. Give the trip a **Trip Name**, such as ""Gym run"" or ""Saturday Errands"". A template needs a name.
+4. Tick **Save as reusable template** and save.
 
-The `is_multi_stop` flag on the template tells the system to create a route (with multiple legs) instead of a single trip when you use the template.
+The trip is logged, and the template is saved from it with the distance and time of every leg. For a round trip, that includes the return leg the form adds for you.
+
+---
+
+### How Stops Are Stored
+
+The first stop is where you start. Every later stop holds the leg that arrives there: its mode, vehicle, miles, minutes, cost, and purpose.
+
+A round trip from Home to the Gym is three stops: Home → Gym → Home. The Gym stop holds the way there and the last Home stop holds the way back, so the template totals 10 miles and 24 minutes for a 5-mile, 12-minute trip each way.
 
 ---
 
 ### Using a Template
 
-From the trip creation form, you'll see a **From Template** dropdown. Select a template, and all fields auto-fill with the saved values. Adjust the date (and optionally the cost, if fuel prices have changed), then save.
+There are three ways to use a template:
 
-For multi-stop templates, the system creates:
-1. A new route with the template name + today's date
-2. Individual trip legs for each stop in the template
+1. **Quick log.** In Trip History, open **My Templates** and press the play button on a template. It logs the trip for today with every leg's distance and time. A message confirms what was logged, for example ""Logged Gym run: 10.0 mi · 24 min"". If a leg can't be saved, nothing is saved and the message says why.
+2. **Quick Re-log.** On the Travel dashboard, the Quick Re-log card lists your templates with their total miles and time. Tap one to log it for today.
+3. **Load from template.** In Add Trip, pick a template from **Load from template**. Every stop and leg fills in, and you can change anything (the date, a detour, the cost) before you save.
+
+A multi-stop template logs a route with one trip per leg, and the route shows the totals. A single-leg template logs one trip. If a template is marked as a round trip but its stops don't end where they started, Quick log adds a return leg using the outbound distance, time, and cost added together, the same rule Add Trip uses.
+
+A single-leg template that ends where it starts (a loop, such as a bike ride from home and back) is the whole trip, so Quick log records its miles and minutes once even if Round trip is ticked.
+
+Quick log uses each leg's saved vehicle while it is still one of yours or a public transport vehicle. A leg saved with no vehicle, such as a rental car, logs with no vehicle, so its miles never count toward one of your vehicles. It doesn't create a finance transaction for a leg's cost, but Add Trip does. To record the expense too, use **Load from template** and save through Add Trip.
+
+---
+
+### Reading a Template Card
+
+Each card in My Templates shows:
+- Where it goes: ""Home ↔ Gym"" for a round trip, ""Home → Office"" for one way, or the number of stops for a longer route
+- The total miles and time Quick log will record, for example ""10.0 mi · 24 min""
+- A **Round trip** or **Multi-stop** label
+- How many times you've used it
+
+The Add Trip template list shows the same totals next to each name.
 
 ---
 
 ### Editing and Deleting Templates
 
-Templates are managed from the Templates section:
-- **Edit** — update any field. Changes only affect future uses, not past trips created from the template.
-- **Delete** — removes the template. Past trips created from it are unaffected.
+In Trip History, open My Templates:
+- **Edit** (pencil): rename the template and change its stops (each leg's location, mode, vehicle, miles, minutes, and cost), round trip, purpose (commute, leisure, work, errand, exercise, or other), category, tax category, brand, and notes. Under the stops, a line shows what Quick log will record, and when a return leg will be added. Changes only affect future uses, not trips you already logged.
+- **Delete** (trash can): removes the template. Trips you already logged from it are not affected.
+
+Round-trip and multi-stop templates saved before October 2026 stored each leg's details one stop too early, so they logged too few miles and minutes. If a template's totals look wrong, open Edit Template and correct each leg's mode, vehicle, miles, and minutes. A leg you corrected there before it had a vehicle choice has none, so pick the vehicle you drove if its miles should count toward it.
+
+Templates you save in Work.WitUS's Add Trip also show here, and for now Work.WitUS still saves them the old way. Check their totals the same way and correct the legs in Edit Template.
 
 ---
 
@@ -1648,26 +1663,40 @@ Templates are managed from the Templates section:
   ""name"": ""Weekday Commute"",
   ""origin"": ""Home"",
   ""destination"": ""Office"",
-  ""mode"": ""car"",
+  ""mode"": ""train"",
   ""distance_miles"": 12.5,
-  ""is_round_trip"": true,
+  ""duration_min"": 40,
+  ""is_round_trip"": false,
   ""trip_category"": ""travel"",
   ""tax_category"": ""business"",
-  ""vehicle_id"": ""vehicle-crv-2020"",
   ""is_multi_stop"": false
 }
 ```
 
-**Multi-stop template:**
+**Round-trip template** (logs 10.0 mi · 24 min):
+```json
+{
+  ""name"": ""Gym run"",
+  ""is_multi_stop"": true,
+  ""is_round_trip"": true,
+  ""stops"": [
+    { ""stop_order"": 0, ""location_name"": ""Home"" },
+    { ""stop_order"": 1, ""location_name"": ""Gym"", ""mode"": ""car"", ""distance_miles"": 5, ""duration_min"": 12 },
+    { ""stop_order"": 2, ""location_name"": ""Home"", ""mode"": ""car"", ""distance_miles"": 5, ""duration_min"": 12 }
+  ]
+}
+```
+
+**Multi-stop template** (logs 9.5 mi · 31 min):
 ```json
 {
   ""name"": ""Saturday Errands"",
   ""is_multi_stop"": true,
   ""stops"": [
-    { ""location"": ""Home"", ""distance_from_previous"": 0 },
-    { ""location"": ""Grocery Store"", ""distance_from_previous"": 3.2 },
-    { ""location"": ""Hardware Store"", ""distance_from_previous"": 1.8 },
-    { ""location"": ""Home"", ""distance_from_previous"": 4.5 }
+    { ""stop_order"": 0, ""location_name"": ""Home"" },
+    { ""stop_order"": 1, ""location_name"": ""Grocery Store"", ""mode"": ""car"", ""distance_miles"": 3.2, ""duration_min"": 10 },
+    { ""stop_order"": 2, ""location_name"": ""Hardware Store"", ""mode"": ""car"", ""distance_miles"": 1.8, ""duration_min"": 7 },
+    { ""stop_order"": 3, ""location_name"": ""Home"", ""mode"": ""car"", ""distance_miles"": 4.5, ""duration_min"": 14 }
   ]
 }
 ```
@@ -1676,31 +1705,33 @@ Templates are managed from the Templates section:
 
 ## Screen Recording Notes
 
-> [SCREEN: Navigate to /dashboard/travel — show the Templates section]
+> [SCREEN: Navigate to /dashboard/travel — click Add Trip]
 
-> [SCREEN: Click ""+ New Template"" — fill in: name ""Weekday Commute"", origin ""Home"", destination ""Office"", mode car, distance 12.5, round trip ON]
+> [SCREEN: Enter Home → Gym, car, 5 miles, 12 minutes — tick Round trip — show ""Return leg auto-added: 5.0 mi · 12 min""]
 
-> [SCREEN: Save the template — show it appear in the templates list]
+> [SCREEN: Name the trip ""Gym run"" — tick ""Save as reusable template"" — save]
 
-> [SCREEN: Navigate to trip creation — click ""From Template"" dropdown — select ""Weekday Commute""]
+> [SCREEN: Go to Trip History — open My Templates — show the ""Gym run"" card with ""Home ↔ Gym · 10.0 mi · 24 min"" and the Round trip label]
 
-> [SCREENSHOT: Trip form with auto-filled fields from template — callout: ""All fields populated from template""]
+> [SCREEN: Press the play button — show ""Logged Gym run: 10.0 mi · 24 min"" and the new route with two legs]
 
-> [SCREEN: Adjust the date — save the trip]
+> [SCREEN: Back on the Travel dashboard — tap ""Gym run"" in Quick Re-log]
 
-> [SCREEN: Create a multi-stop template with 3 stops — save]
+> [SCREEN: Open Add Trip — choose ""Gym run"" in Load from template — show every stop and leg filled in]
+
+> [SCREEN: Press the pencil on the template — show Edit Template with each leg's miles and minutes and the Quick log total]
 
 ---
 
 ## Key Takeaways
 
-- Templates save trip configurations for repeated journeys
-- Single-leg and multi-stop templates are supported
-- Use ""From Template"" on the trip form to auto-fill all fields
-- Multi-stop templates create routes with per-leg trip records
-- Edit/delete templates without affecting past trips
+- Save a template by ticking ""Save as reusable template"" when you log a trip with a name
+- Templates keep every leg's distance and time, including a round trip's return leg
+- Log a template with Quick log (My Templates), Quick Re-log (Travel dashboard), or Load from template (Add Trip)
+- Template cards show the total miles and time Quick log will record
+- Edit or delete templates without affecting trips you already logged
 ",markdown,,,,,,
-Advanced Trips,5,13,Round Trips & Contact Locations,text,240,true,,"# Lesson 13: Round Trips & Contact Locations
+Advanced Trips,5,13,Round Trips & Contact Locations,text,300,true,,"# Lesson 13: Round Trips & Contact Locations
 
 **Course:** Mastering Travel Tracking
 **Module:** Advanced Trips
@@ -1713,21 +1744,23 @@ Advanced Trips,5,13,Round Trips & Contact Locations,text,240,true,,"# Lesson 13:
 
 ## Narrator Script
 
-Two features that simplify trip logging: round trips (so you don't have to log the same route twice) and contact locations (so your saved vendors and customers provide trip endpoints automatically).
+Two features that simplify trip logging: round trips (so you don't have to enter the way back) and contact locations (so your saved vendors and customers provide trip endpoints automatically).
 
 ---
 
 ### Round Trips
 
-Toggle **Round Trip** on the trip form. When enabled:
-- You enter the one-way distance only
-- The system stores `distance_miles` as the one-way value
-- CO2 calculations and summary stats automatically multiply by 2
-- The trip displays as ""12.5 mi (round trip)"" instead of ""12.5 mi""
+Tick **Round trip (return to start)** in the Add Trip form. When your last stop is not your starting point:
+- You enter the way there only
+- When you save, the form adds a return leg back to your start, using the outbound distance, time, and cost added together
+- The line under the checkbox shows what will be added, for example ""Return leg auto-added: 12.5 mi · 25 min""
+- The trip is saved as a route with a leg each way, so distance, time, cost, and CO2 count both directions
 
-This is useful for commutes, errands, and any trip where you return to the starting point.
+If you came back a different way, edit the route afterwards and change the return leg. If your last stop already is your starting point (a loop, such as a bike ride from home and back), nothing is added.
 
-The `is_round_trip` flag is stored on the trip record. You can toggle it on or off when editing an existing trip.
+This is useful for commutes, errands, and any trip where you return to the starting point. Save it as a template (Lesson 12) and the return leg's miles and minutes are saved with it.
+
+Some trips have one leg with a round trip flag instead: trips logged from a single-leg round-trip template, and older trips logged before Add Trip added return legs. The trip list shows their distance and time doubled, and Edit Trip shows ""Round trip (distance counted both ways)"". A template that ends where it starts (a loop) never logs a flagged trip, so its miles are not doubled.
 
 ---
 
@@ -1775,9 +1808,9 @@ This means you never have to retype ""456 Market St"" — just pick ""Office →
 
 The most efficient workflow:
 1. Save your frequently visited places as contact locations
-2. Create trip templates using those contacts
-3. Toggle round trip on the template
-4. Log daily trips in seconds: From Template → adjust date → save
+2. Log the trip once in Add Trip using those contacts, with Round trip ticked
+3. Tick ""Save as reusable template"" before you save
+4. Log it again in seconds with Quick log or Quick Re-log, or use Load from template, adjust the date, and save
 
 ---
 
@@ -1815,11 +1848,11 @@ The most efficient workflow:
 
 ## Screen Recording Notes
 
-> [SCREEN: Open the trip form — toggle Round Trip ON]
+> [SCREEN: Open Add Trip — enter Home → Office, 12.5 miles, 25 minutes — tick Round trip]
 
-> [SCREENSHOT: Trip form with Round Trip toggle — callout: ""Enter one-way distance; CO2 and totals auto-double""]
+> [SCREENSHOT: Add Trip with Round trip ticked — callout: ""Return leg auto-added: 12.5 mi · 25 min""]
 
-> [SCREEN: Enter a distance of 12.5 miles — save — show trip displayed as ""12.5 mi (round trip)""]
+> [SCREEN: Save — show the route with two legs and a 25.0 mi total]
 
 > [SCREEN: Open a new trip form — click the destination field]
 
@@ -1835,7 +1868,7 @@ The most efficient workflow:
 
 ## Key Takeaways
 
-- Round Trip toggle: enter one-way distance, CO2 and totals auto-multiply by 2
+- Round trip in Add Trip: enter the way there; a return leg is added when you save, so totals count both ways
 - Contact Locations: select saved contacts with addresses as trip origins/destinations
 - Contacts can have multiple locations — the sub-select lets you pick the right one
 - Combine templates + round trips + contact locations for fastest logging

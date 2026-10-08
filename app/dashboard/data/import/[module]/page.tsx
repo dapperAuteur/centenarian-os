@@ -4,7 +4,7 @@
 // Dynamic import page — renders GenericImportPage for any module slug.
 
 import { useParams, redirect } from 'next/navigation';
-import GenericImportPage from '@/components/data/GenericImportPage';
+import GenericImportPage, { type ImportOption } from '@/components/data/GenericImportPage';
 
 interface ModuleConfig {
   moduleName: string;
@@ -14,6 +14,9 @@ interface ModuleConfig {
   columns: { key: string; label: string; required?: boolean }[];
   previewColumns: string[];
   maxRows?: number;
+  /** The endpoint takes dryRun: the page checks the rows (new vs already there) before Import. */
+  dryRun?: boolean;
+  options?: ImportOption[];
 }
 
 const MODULE_CONFIGS: Record<string, ModuleConfig> = {
@@ -22,7 +25,16 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
     apiEndpoint: '/api/health-metrics/import',
     templateUrl: '/templates/health-metrics-import-template.csv',
     instructions:
-      'Upload your daily health metrics. Required: logged_date. All other fields are optional — include only the metrics you track.',
+      'Upload your daily health metrics. Required: logged_date. All other fields are optional — include only the metrics you track. These rows are your own (manual) daily log. A date you already have only gains the fields that are blank; values you already have are kept unless you tick Replace existing values. Check the rows first to see what is new.',
+    maxRows: 365,
+    dryRun: true,
+    options: [
+      {
+        key: 'replace',
+        label: 'Replace existing values',
+        description: 'Use the file\'s value where it differs from a day you already logged. Blank cells never erase anything.',
+      },
+    ],
     columns: [
       { key: 'logged_date', label: 'Date (YYYY-MM-DD)', required: true },
       { key: 'resting_hr', label: 'Resting HR (bpm)' },
@@ -193,7 +205,15 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
     apiEndpoint: '/api/workouts/logs/import',
     templateUrl: '/templates/workouts-import-template.csv',
     instructions:
-      'Upload workout logs. Required: name (workout name), date. Rows with the same name + date are grouped into one workout with multiple exercises. Each row becomes one exercise. Optional columns: purpose (semicolon-separated), overall_feeling (1-5), RPE (1-10), tempo (e.g. 3-1-2-0), boolean flags (true/false).',
+      'Upload workout logs. Required: name (workout name), date. Rows with the same name + date are grouped into one workout with multiple exercises. Each row becomes one exercise. A workout you already logged under the same name that day is skipped, so importing a file twice adds nothing. Optional columns: purpose (semicolon-separated), overall_feeling (1-5), RPE (1-10), tempo (e.g. 3-1-2-0), boolean flags (true/false).',
+    dryRun: true,
+    options: [
+      {
+        key: 'allowRepeats',
+        label: 'Import anyway when a workout with the same name is already logged that day',
+        description: 'For a real second session, like a morning and an evening walk.',
+      },
+    ],
     columns: [
       { key: 'date', label: 'Date (YYYY-MM-DD)', required: true },
       { key: 'name', label: 'Workout Name', required: true },
@@ -291,6 +311,8 @@ export default function DynamicImportPage() {
       instructions={config.instructions}
       previewColumns={config.previewColumns}
       maxRows={config.maxRows}
+      dryRun={config.dryRun}
+      options={config.options}
     />
   );
 }

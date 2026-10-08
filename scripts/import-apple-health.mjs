@@ -1,18 +1,28 @@
 #!/usr/bin/env node
 // scripts/import-apple-health.mjs
-// Import Apple Health XML export into user_health_metrics
-// Usage: node --env-file=.env.local scripts/import-apple-health.mjs
+// Import Apple Health XML export into user_health_metrics (source 'apple_health').
+// Usage: node --experimental-strip-types --env-file=.env.local scripts/import-apple-health.mjs
+//
+// Safe to re-run: one row per (user, day, source) via the 080 unique key, and rows are upserted in
+// groups that carry the same columns, so a day missing a metric in this export never has a stored
+// value erased (supabase-js sends NULL for a column a row leaves out of a mixed batch).
+//
+// Steps: Apple Health keeps a StepCount record from every device that writes into it (iPhone,
+// Watch, Garmin Connect, other apps), and they overlap. Steps are added up per device
+// (sourceName) per day and the day takes the largest device total, never the sum of devices
+// (lib/fitness-import/device-steps.ts, tested in tests/unit/fitness-dedupe.test.ts).
 
 import { createClient } from '@supabase/supabase-js';
 import { createReadStream } from 'fs';
 import { createInterface } from 'readline';
+import { addDeviceSteps, daySteps } from '../lib/fitness-import/device-steps.ts';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'bam@awews.com';
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-  console.error('Missing SUPABASE env vars. Run with: node --env-file=.env.local scripts/import-apple-health.mjs');
+  console.error('Missing SUPABASE env vars. Run with: node --experimental-strip-types --env-file=.env.local scripts/import-apple-health.mjs');
   process.exit(1);
 }
 
@@ -47,6 +57,7 @@ async function parseAppleHealth() {
     if (!dayMap.has(date)) {
       dayMap.set(date, {
         steps: 0,
+        stepsBySource: new Map(),
         active_calories: null,
         activity_min: null,
         resting_hr: null,
@@ -99,7 +110,9 @@ async function parseAppleHealth() {
       case 'HKQuantityTypeIdentifierStepCount': {
         if (value) {
           const day = getDay(date);
-          day.steps += parseInt(value, 10);
+          addDeviceSteps(day.stepsBySource, extractAttr(trimmed, 'sourceName'), parseInt(value, 10));
+          // The device with the most steps that day stands for the day.
+          day.steps = daySteps(day.stepsBySource);
         }
         break;
       }
@@ -158,6 +171,43 @@ async function parseAppleHealth() {
   return dayMap;
 }
 
+// --- Writes ---
+
+/** Rows that carry the same columns, together. */
+function groupByColumns(rows) {
+  const groups = new Map();
+  for (const row of rows) {
+    const signature = Object.keys(row).sort().join(',');
+    if (!groups.has(signature)) groups.set(signature, []);
+    groups.get(signature).push(row);
+  }
+  return [...groups.values()];
+}
+
+async function upsertByColumns(rows) {
+  const BATCH = 200;
+  let total = 0;
+  let batchNo = 0;
+  for (const group of groupByColumns(rows)) {
+    for (let i = 0; i < group.length; i += BATCH) {
+      batchNo++;
+      const batch = group.slice(i, i + BATCH);
+      const { data, error } = await db
+        .from('user_health_metrics')
+        .upsert(batch, { onConflict: 'user_id,logged_date,source' })
+        .select('logged_date');
+      if (error) {
+        console.error(`Batch ${batchNo} failed:`, error.message);
+        process.exitCode = 1;
+      } else {
+        total += data.length;
+        console.log(`  Batch ${batchNo}: ${data.length} rows upserted`);
+      }
+    }
+  }
+  return total;
+}
+
 // --- Main ---
 
 async function main() {
@@ -201,24 +251,8 @@ async function main() {
     console.log(`  ${JSON.stringify(rest)}`);
   }
 
-  // Upsert in batches of 200
-  const BATCH = 200;
-  let total = 0;
-  for (let i = 0; i < payloads.length; i += BATCH) {
-    const batch = payloads.slice(i, i + BATCH);
-    const { data, error } = await db
-      .from('user_health_metrics')
-      .upsert(batch, { onConflict: 'user_id,logged_date,source' })
-      .select('logged_date');
-
-    if (error) {
-      console.error(`Batch ${Math.floor(i / BATCH) + 1} failed:`, error.message);
-    } else {
-      total += data.length;
-      console.log(`  Batch ${Math.floor(i / BATCH) + 1}: ${data.length} rows upserted`);
-    }
-  }
-
+  // Upsert in batches of 200, each batch holding rows with the same columns (no NULL fill).
+  const total = await upsertByColumns(payloads);
   console.log(`\nDone! ${total} total rows upserted into user_health_metrics.`);
 }
 
