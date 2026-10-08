@@ -40,6 +40,7 @@ import {
   Library,
   Hammer,
   ClipboardCheck,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -97,6 +98,8 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Scan', href: '/dashboard/scan', icon: ScanLine, paid: true },
       { label: 'Finance', href: '/dashboard/finance', icon: DollarSign, paid: true },
+      // Net worth, cash, credit vs limit, loans, assets, retirement and businesses on one page (plans/66 W1).
+      { label: 'Wallet', href: '/dashboard/finance/wallet', icon: Wallet, paid: true },
       // Everything in Finance waiting for a decision (plans/63 A): transfers, payments, matches, uncategorized, unfinished imports.
       { label: 'Finance Review', href: '/dashboard/finance/review', icon: ClipboardCheck, paid: true },
       { label: 'Budgets', href: '/dashboard/finance/budgets', icon: PiggyBank, paid: true },

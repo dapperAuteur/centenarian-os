@@ -202,7 +202,10 @@ export default function RetirementPage() {
                 <span className="text-gray-500">
                   = accounts {moneyIn(cashTotal, cur, true)} (cards and loans subtracted) + retirement {moneyIn(investTotal, cur, true)}
                   {data.policy_cash_value > 0 ? ` + policy cash value ${moneyIn(data.policy_cash_value, cur, true)}` : ''}.
-                </span>
+                </span>{' '}
+                <Link href="/dashboard/finance/wallet" className="inline-flex min-h-11 items-center text-sky-700 underline underline-offset-2">
+                  Full net worth, with equipment and vehicles, in the Wallet
+                </Link>
               </p>
             )}
             {data.unconverted > 0 && (

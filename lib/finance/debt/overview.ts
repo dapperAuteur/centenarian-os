@@ -12,8 +12,12 @@
 //   Minimum       = the latest statement's minimum_payment, else an estimate
 //                   (amortize.ts estimatedMinimumPayment), marked as one.
 //   Promos        = the latest statement's promos with a balance and an expiry date.
+//   Credit limit  = the account's credit_limit, else the latest statement's that prints one
+//                   (credit-limit.ts creditLimitFor, shared with the Wallet).
+//   Currency      = the account's currency (migration 210), else USD. The limit is in it.
 //   Linked payment = an income row on the card or loan that transfer tracking linked
 //                   (transfer_kind 'card_payment' / 'loan_payment', or any transfer_group_id).
+//                   latestLinkedPayment() = the latest day's linked payments, added up.
 
 import {
   backInterestAtRisk,
@@ -22,6 +26,9 @@ import {
 } from './amortize.ts';
 import { daysBetween, isIsoDate } from './dates.ts';
 import { amountOwed } from '../balance/logic.ts';
+import { isCurrencyCode } from '../fx/math.ts';
+import { creditLimitFor } from './credit-limit.ts';
+import type { CreditLimitSource } from './credit-limit.ts';
 import type { PlanDebt } from './plan.ts';
 
 export const DEBT_ACCOUNT_TYPES = ['credit_card', 'loan'] as const;
@@ -41,6 +48,8 @@ export interface DebtAccountRow {
   opening_balance?: number | string | null;
   /** Migration 221: the day the opening balance is as of. */
   opening_balance_date?: string | null;
+  /** Migration 210: the account's currency. */
+  currency?: string | null;
   is_active?: boolean | null;
 }
 
@@ -72,6 +81,8 @@ export interface StatementRow {
   interest_charged: number | string | null;
   aprs: StatementApr[] | null;
   promos: StatementPromo[] | null;
+  /** Migration 209: the limit the statement prints; optional so older callers still type-check. */
+  credit_limit?: number | string | null;
 }
 
 export interface TxnRow {
@@ -107,8 +118,12 @@ export interface DebtSummary {
   type: 'credit_card' | 'loan';
   institution: string | null;
   lastFour: string | null;
+  /** The account's currency (USD before migration 210); the balance and limit are in it. */
+  currency: string;
   balance: number;
   creditLimit: number | null;
+  /** Where creditLimit came from: the account, or its latest statement (null when unknown). */
+  creditLimitSource: CreditLimitSource | null;
   apr: number | null;
   aprSource: 'statement' | 'account' | null;
   aprs: { balanceType: string; apr: number; balance: number | null }[];
@@ -152,6 +167,35 @@ export function isLinkedPayment(t: TxnRow): boolean {
   if (t.type !== 'income') return false;
   if (t.transfer_kind === 'card_payment' || t.transfer_kind === 'loan_payment') return true;
   return !!t.transfer_group_id;
+}
+
+/**
+ * The latest linked payment into one card or loan, dated on or before `today`: the sum of the
+ * linked payments on the latest such day (a payment split in two on one day is one payment).
+ * Null when nothing was ever linked. The Wallet uses it as a loan's monthly payment when no
+ * statement gives one.
+ */
+export function latestLinkedPayment(
+  accountId: string,
+  txns: readonly TxnRow[],
+  today: string,
+): { amount: number; date: string } | null {
+  let date: string | null = null;
+  let cents = 0;
+  for (const t of txns) {
+    if (t.account_id !== accountId || !isLinkedPayment(t) || !t.transaction_date) continue;
+    const day = t.transaction_date.slice(0, 10);
+    if (day > today) continue;
+    const amount = Math.round(Math.abs(Number(t.amount)) * 100);
+    if (!Number.isFinite(amount)) continue;
+    if (date === null || day > date) {
+      date = day;
+      cents = amount;
+    } else if (day === date) {
+      cents += amount;
+    }
+  }
+  return date === null || cents <= 0 ? null : { amount: cents / 100, date };
 }
 
 /** Stable identity of a promo within an account: expiry + description, lower-cased. */
@@ -229,6 +273,7 @@ export function buildDebtSummary(
   const minimumEstimated = !(statementMin !== null && statementMin > 0);
   const accountDay = num(account.due_date);
   const statementDay = latest?.due_date && isIsoDate(latest.due_date) ? Number(latest.due_date.slice(8, 10)) : null;
+  const limit = creditLimitFor(account, own);
 
   return {
     id: account.id,
@@ -236,8 +281,10 @@ export function buildDebtSummary(
     type: account.account_type === 'loan' ? 'loan' : 'credit_card',
     institution: account.institution_name ?? null,
     lastFour: account.last_four ?? null,
+    currency: isCurrencyCode(account.currency) ? account.currency : 'USD',
     balance,
-    creditLimit: num(account.credit_limit),
+    creditLimit: limit.limit,
+    creditLimitSource: limit.source,
     apr,
     aprSource: source,
     aprs: (latest?.aprs ?? [])

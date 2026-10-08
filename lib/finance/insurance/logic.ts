@@ -25,8 +25,13 @@
 //     - Ended: term end date before today. Ending soon (amber): within TERM_WARNING_DAYS (365).
 //
 //   Totals
-//     - Coverage = sum of active policies' coverage. Cash value = active permanent policies
-//       (whole / universal life). Yearly premiums = premium x payments per year, active policies.
+//     - Coverage is summed per group and never across groups: a death benefit, the limit on a
+//       house and a liability limit are different things. Groups: life (term, whole, universal),
+//       property (auto, homeowners, renters, personal and business property), liability (general
+//       liability, umbrella) and other. The property and liability kinds are listed here ahead of
+//       the migration that adds them (plans/66 W2); until then only life and other occur.
+//     - Cash value = active permanent policies (whole / universal life). Yearly premiums =
+//       premium x payments per year, active policies, every group.
 //
 // Imports nothing at runtime (tests/unit/retirement.test.ts covers it too).
 
@@ -39,6 +44,34 @@ export const POLICY_KIND_LABEL: Record<PolicyKind, string> = {
   other: 'Other',
 };
 export const PERMANENT_KINDS: readonly PolicyKind[] = ['whole_life', 'universal_life'];
+
+/** What a policy's coverage protects. Coverage is only ever added up within one group. */
+export const POLICY_GROUPS = ['life', 'property', 'liability', 'other'] as const;
+export type PolicyGroup = (typeof POLICY_GROUPS)[number];
+export const POLICY_GROUP_LABEL: Record<PolicyGroup, string> = {
+  life: 'Life',
+  property: 'Property',
+  liability: 'Liability',
+  other: 'Other',
+};
+const GROUP_OF_KIND: Record<string, PolicyGroup> = {
+  term_life: 'life',
+  whole_life: 'life',
+  universal_life: 'life',
+  // Property and liability kinds arrive with plans/66 W2; mapped now so totals never mix them.
+  auto: 'property',
+  homeowners: 'property',
+  renters: 'property',
+  personal_property: 'property',
+  business_property: 'property',
+  general_liability: 'liability',
+  umbrella: 'liability',
+};
+
+/** The group a policy kind belongs to; unknown kinds and 'other' are 'other'. */
+export function policyGroup(kind: string): PolicyGroup {
+  return GROUP_OF_KIND[kind] ?? 'other';
+}
 
 export const PREMIUM_MONTHS = { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 } as const;
 export type PremiumFrequency = keyof typeof PREMIUM_MONTHS;
@@ -217,7 +250,10 @@ export function termStatus(policy: Pick<PolicyRow, 'term_end_date'>, today: stri
 }
 
 export interface PolicyTotals {
-  coverage: number;
+  /** Coverage of active policies per group (never added across groups). */
+  coverage: Record<PolicyGroup, number>;
+  /** Active policies per group. */
+  counts: Record<PolicyGroup, number>;
   cash_value: number;
   yearly_premiums: number;
   active: number;
@@ -225,8 +261,16 @@ export interface PolicyTotals {
 
 export function policyTotals(policies: readonly PolicyRow[]): PolicyTotals {
   const active = policies.filter((p) => p.is_active);
+  const coverage: Record<PolicyGroup, number> = { life: 0, property: 0, liability: 0, other: 0 };
+  const counts: Record<PolicyGroup, number> = { life: 0, property: 0, liability: 0, other: 0 };
+  for (const p of active) {
+    const group = policyGroup(p.kind);
+    coverage[group] = round2(coverage[group] + (n(p.coverage_amount) ?? 0));
+    counts[group] += 1;
+  }
   return {
-    coverage: round2(active.reduce((s, p) => s + (n(p.coverage_amount) ?? 0), 0)),
+    coverage,
+    counts,
     cash_value: round2(active.filter((p) => isPermanent(p.kind)).reduce((s, p) => s + (n(p.cash_value) ?? 0), 0)),
     yearly_premiums: round2(active.reduce((s, p) => s + (n(p.premium_amount) ?? 0) * paymentsPerYear(p.premium_frequency), 0)),
     active: active.length,
