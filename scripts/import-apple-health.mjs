@@ -1,7 +1,15 @@
 #!/usr/bin/env node
 // scripts/import-apple-health.mjs
-// Import Apple Health XML export into user_health_metrics
+// Import Apple Health XML export into user_health_metrics (source 'apple_health').
 // Usage: node --env-file=.env.local scripts/import-apple-health.mjs
+//
+// Safe to re-run: one row per (user, day, source) via the 080 unique key, and rows are upserted in
+// groups that carry the same columns, so a day missing a metric in this export never has a stored
+// value erased (supabase-js sends NULL for a column a row leaves out of a mixed batch).
+//
+// Steps: Apple Health keeps a StepCount record from every device that writes into it (iPhone,
+// Watch, Garmin Connect, other apps), and they overlap. Steps are added up per device
+// (sourceName) per day and the day takes the largest device total, never the sum of devices.
 
 import { createClient } from '@supabase/supabase-js';
 import { createReadStream } from 'fs';
@@ -47,6 +55,7 @@ async function parseAppleHealth() {
     if (!dayMap.has(date)) {
       dayMap.set(date, {
         steps: 0,
+        stepsBySource: new Map(),
         active_calories: null,
         activity_min: null,
         resting_hr: null,
@@ -99,7 +108,11 @@ async function parseAppleHealth() {
       case 'HKQuantityTypeIdentifierStepCount': {
         if (value) {
           const day = getDay(date);
-          day.steps += parseInt(value, 10);
+          const device = extractAttr(trimmed, 'sourceName') ?? 'unknown';
+          const total = (day.stepsBySource.get(device) ?? 0) + parseInt(value, 10);
+          day.stepsBySource.set(device, total);
+          // The device with the most steps that day stands for the day.
+          if (total > day.steps) day.steps = total;
         }
         break;
       }
@@ -158,6 +171,43 @@ async function parseAppleHealth() {
   return dayMap;
 }
 
+// --- Writes ---
+
+/** Rows that carry the same columns, together. */
+function groupByColumns(rows) {
+  const groups = new Map();
+  for (const row of rows) {
+    const signature = Object.keys(row).sort().join(',');
+    if (!groups.has(signature)) groups.set(signature, []);
+    groups.get(signature).push(row);
+  }
+  return [...groups.values()];
+}
+
+async function upsertByColumns(rows) {
+  const BATCH = 200;
+  let total = 0;
+  let batchNo = 0;
+  for (const group of groupByColumns(rows)) {
+    for (let i = 0; i < group.length; i += BATCH) {
+      batchNo++;
+      const batch = group.slice(i, i + BATCH);
+      const { data, error } = await db
+        .from('user_health_metrics')
+        .upsert(batch, { onConflict: 'user_id,logged_date,source' })
+        .select('logged_date');
+      if (error) {
+        console.error(`Batch ${batchNo} failed:`, error.message);
+        process.exitCode = 1;
+      } else {
+        total += data.length;
+        console.log(`  Batch ${batchNo}: ${data.length} rows upserted`);
+      }
+    }
+  }
+  return total;
+}
+
 // --- Main ---
 
 async function main() {
@@ -201,24 +251,8 @@ async function main() {
     console.log(`  ${JSON.stringify(rest)}`);
   }
 
-  // Upsert in batches of 200
-  const BATCH = 200;
-  let total = 0;
-  for (let i = 0; i < payloads.length; i += BATCH) {
-    const batch = payloads.slice(i, i + BATCH);
-    const { data, error } = await db
-      .from('user_health_metrics')
-      .upsert(batch, { onConflict: 'user_id,logged_date,source' })
-      .select('logged_date');
-
-    if (error) {
-      console.error(`Batch ${Math.floor(i / BATCH) + 1} failed:`, error.message);
-    } else {
-      total += data.length;
-      console.log(`  Batch ${Math.floor(i / BATCH) + 1}: ${data.length} rows upserted`);
-    }
-  }
-
+  // Upsert in batches of 200, each batch holding rows with the same columns (no NULL fill).
+  const total = await upsertByColumns(payloads);
   console.log(`\nDone! ${total} total rows upserted into user_health_metrics.`);
 }
 

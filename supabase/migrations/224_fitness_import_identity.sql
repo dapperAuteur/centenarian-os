@@ -36,7 +36,7 @@
 --   NOTIFY pgrst, 'reload schema';
 --
 -- To list duplicates that already exist (read-only, deletes nothing):
---   supabase/reports/fitness-duplicates.sql, or scripts/report-fitness-duplicates.mjs
+--   supabase/sql-snippets/find-fitness-duplicates.sql, or scripts/report-fitness-duplicates.mjs
 
 BEGIN;
 

@@ -57,6 +57,14 @@ import {
   syncWindowStart,
   whoopDays,
 } from '../../lib/fitness-import/wearable-days.ts';
+import {
+  garminVsOtherTrips,
+  implausibleWorkoutDurations,
+  manualCopiesOfDevice,
+  sameNameSameDayWorkouts,
+  sameStartTrips,
+  type ReportTrip,
+} from '../../lib/fitness-import/duplicate-report.ts';
 import { FakeFitnessDb } from './fake-fitness-db.ts';
 
 const USER = '11111111-1111-4111-8111-111111111111';
@@ -671,4 +679,60 @@ test('sync window: last sync minus 2 days, never more than 30 days back', () => 
   assert.equal(syncWindowStart('2026-12-01T00:00:00Z', now).toISOString(), now.toISOString());
   assert.deepEqual(splitRange(0, 250, 100), [[0, 100], [100, 200], [200, 250]]);
   assert.deepEqual(splitRange(10, 10, 100), []);
+});
+
+// ─── Read-only duplicate report ──────────────────────────────────────────────
+
+test('report: Garmin trips with one start time, including renamed ones, oldest first', () => {
+  const trip = (id: string, created_at: string, garmin_activity_id: string | null, extra: Partial<ReportTrip> = {}): ReportTrip => ({
+    id, user_id: USER, date: '2025-06-08', mode: 'bike', distance_miles: 12.5, duration_min: 45,
+    source: garmin_activity_id ? 'garmin_import' : 'manual', garmin_activity_id, created_at, ...extra,
+  });
+  const groups = sameStartTrips([
+    trip('b', '2025-07-02', '2025-06-08 17:20:53|Renamed'),
+    trip('a', '2025-07-01', '2025-06-08 17:20:53|Morning Ride'),
+    trip('c', '2025-07-03', null, { external_id: 'garmin:start:2025-06-08 17:20:53', source: 'garmin_import' }),
+    trip('d', '2025-07-01', '2025-06-09 07:00:00|Commute'),
+    trip('e', '2025-07-01', '2025-06-08 17:20:53|Morning Ride', { user_id: OTHER_USER }),
+  ]);
+  assert.equal(groups.length, 1);
+  assert.deepEqual(groups[0].trip_ids, ['a', 'b', 'c']);
+  assert.equal(groups[0].renamed, true);
+});
+
+test('report: Garmin trips paired with trips logged another way', () => {
+  const pairs = garminVsOtherTrips([
+    { id: 'g', user_id: USER, date: '2025-06-10', mode: 'walk', distance_miles: 1, duration_min: 20, source: 'garmin_import', garmin_activity_id: '2025-06-10 12:00:00|Walk' },
+    { id: 'm', user_id: USER, date: '2025-06-10', mode: 'walk', distance_miles: 1.03, duration_min: null, source: 'manual', garmin_activity_id: null },
+    { id: 'x', user_id: OTHER_USER, date: '2025-06-10', mode: 'walk', distance_miles: 1, duration_min: 20, source: 'manual', garmin_activity_id: null },
+    { id: 'far', user_id: USER, date: '2025-06-10', mode: 'walk', distance_miles: 3, duration_min: 60, source: 'csv_import', garmin_activity_id: null },
+  ]);
+  assert.deepEqual(pairs.map((p) => [p.garmin_trip_id, p.other_trip_id]), [['g', 'm']]);
+});
+
+test('report: workouts with one name on one day; same start = certain', () => {
+  const groups = sameNameSameDayWorkouts([
+    { id: '1', user_id: USER, name: 'Leg Day', date: '2026-01-01', started_at: '2026-01-01T12:00:00Z', duration_min: 60, created_at: '1' },
+    { id: '2', user_id: USER, name: 'leg day ', date: '2026-01-01', started_at: '2026-01-01T12:00:00+00:00', duration_min: 60, created_at: '2' },
+    { id: '3', user_id: USER, name: 'Walk', date: '2026-01-01', started_at: '2026-01-01T07:00:00Z', duration_min: 20, created_at: '1' },
+    { id: '4', user_id: USER, name: 'Walk', date: '2026-01-01', started_at: '2026-01-01T19:00:00Z', duration_min: 20, created_at: '2' },
+    { id: '5', user_id: USER, name: 'Run', date: '2026-01-01', started_at: null, duration_min: 20000, created_at: '1' },
+  ]);
+  assert.deepEqual(groups.map((g) => [g.name, g.log_ids, g.same_start]), [['leg day', ['1', '2'], true], ['walk', ['3', '4'], false]]);
+  assert.deepEqual(implausibleWorkoutDurations([
+    { id: '5', user_id: USER, name: 'Run', date: '2026-01-01', started_at: null, duration_min: 20000 },
+    { id: '6', user_id: USER, name: 'Run', date: '2026-01-01', started_at: null, duration_min: 90 },
+  ]).map((w) => w.id), ['5']);
+});
+
+test('report: manual days that copy a device row', () => {
+  const copies = manualCopiesOfDevice([
+    { id: 'm1', user_id: USER, logged_date: '2026-01-01', source: 'manual', steps: 9000, resting_hr: 58 },
+    { id: 'g1', user_id: USER, logged_date: '2026-01-01', source: 'garmin', steps: 9000, resting_hr: 58 },
+    { id: 'm2', user_id: USER, logged_date: '2026-01-02', source: 'manual', steps: 9000 },
+    { id: 'g2', user_id: USER, logged_date: '2026-01-02', source: 'garmin', steps: 9000 },
+    { id: 'm3', user_id: USER, logged_date: '2026-01-03', source: 'manual', steps: 9000, resting_hr: 58 },
+    { id: 'g3', user_id: USER, logged_date: '2026-01-03', source: 'garmin', steps: 9001, resting_hr: 58 },
+  ]);
+  assert.deepEqual(copies.map((c) => [c.manual_row_id, c.device_row_id]), [['m1', 'g1']]);
 });
