@@ -23,6 +23,7 @@ import {
 import {
   expectedStops,
   findOriginalRoute,
+  legsWithoutVehicle,
   matchPartlyRepaired,
   matchStopPattern,
   planStopRepair,
@@ -567,6 +568,23 @@ test('matchPartlyRepaired: a stop holding neither its old nor its right value is
   // A stop missing or added: not a partial run.
   assert.equal(matchPartlyRepaired(shifted.slice(0, 2), legs), null);
   assert.equal(matchPartlyRepaired(shifted, []), null);
+});
+
+test('legsWithoutVehicle: lists hand-edited legs with the template mode and no vehicle', () => {
+  const stops = [
+    { stop_order: 0, location_name: 'Home' },
+    { stop_order: 1, location_name: 'Gym', mode: 'car', vehicle_id: CAR },
+    // Fixed by hand before Edit Template had a vehicle per leg.
+    { stop_order: 2, location_name: 'Office', mode: 'car', vehicle_id: null },
+    // Another mode, or no mode (it takes the template's vehicle): not listed.
+    { stop_order: 3, location_name: 'Cafe', mode: 'walk', vehicle_id: null },
+    { stop_order: 4, location_name: 'Home', mode: null, vehicle_id: null },
+  ];
+  assert.deepEqual(legsWithoutVehicle(stops, { mode: 'car', vehicle_id: CAR }), [2]);
+  // No template mode: car.
+  assert.deepEqual(legsWithoutVehicle(stops, { mode: null, vehicle_id: CAR }), [2]);
+  // No template vehicle: nothing to pick from.
+  assert.deepEqual(legsWithoutVehicle(stops, { mode: 'car', vehicle_id: null }), []);
 });
 
 test('findOriginalRoute: the route saved just before the template, not ones logged from it later', () => {

@@ -7,7 +7,9 @@
 // stops with what each old writer produced from that route's legs
 // (lib/travel/template-stop-repair.ts). Only stops that still match a broken
 // writer exactly are rewritten, in place, from the route's legs. Everything
-// else is listed for a manual fix in Edit Template. Nothing is deleted.
+// else is listed for a manual fix in Edit Template, with any leg that goes by
+// the template's mode but has no vehicle (Quick log logs it with none; a leg
+// fixed by hand before Edit Template had a vehicle per leg). Nothing is deleted.
 //
 // Dry run by default (reads only):
 //   node --env-file=.env.local --experimental-strip-types scripts/repair-trip-template-stops.ts
@@ -26,7 +28,7 @@
 // still broken or already right) and finishes it.
 
 import { createClient } from '@supabase/supabase-js';
-import { findOriginalRoute, planStopRepair, type StopRepairPlan } from '../lib/travel/template-stop-repair.ts';
+import { findOriginalRoute, legsWithoutVehicle, planStopRepair, type StopRepairPlan } from '../lib/travel/template-stop-repair.ts';
 import { templateStopsToLegs, type TemplateLegInput, type TemplateStop } from '../lib/travel/template-stops.ts';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -49,6 +51,7 @@ interface TemplateRow {
   user_id: string;
   name: string;
   mode: string | null;
+  vehicle_id: string | null;
   purpose: string | null;
   is_round_trip: boolean | null;
   created_at: string;
@@ -80,7 +83,7 @@ async function loadTemplates(): Promise<TemplateRow[]> {
   for (let from = 0; ; from += PAGE) {
     let q = db
       .from('trip_templates')
-      .select('id, user_id, name, mode, purpose, is_round_trip, created_at')
+      .select('id, user_id, name, mode, vehicle_id, purpose, is_round_trip, created_at')
       .eq('is_multi_stop', true)
       .order('created_at', { ascending: true })
       .range(from, from + PAGE - 1);
@@ -147,7 +150,12 @@ for (const tmpl of templates) {
 
   if (plan.action === 'manual') {
     counts.manual++;
-    manual.push(`${label}: ${plan.reason}. Quick log now records ${legsLine(stops, tmpl)}.`);
+    // Edited by hand: legs with the template's mode and no vehicle log with none.
+    const noVehicle = legsWithoutVehicle(stops, tmpl);
+    const vehicleNote = noVehicle.length > 0
+      ? ` Leg${noVehicle.length > 1 ? 's' : ''} ${noVehicle.join(', ')} go${noVehicle.length > 1 ? '' : 'es'} by ${tmpl.mode ?? 'car'} with no vehicle; pick one in Edit Template if one of theirs was driven.`
+      : '';
+    manual.push(`${label}: ${plan.reason}. Quick log now records ${legsLine(stops, tmpl)}.${vehicleNote}`);
     continue;
   }
 

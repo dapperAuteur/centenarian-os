@@ -233,6 +233,29 @@ export function planStopRepair(
   };
 }
 
+/**
+ * Legs (numbered from 1) of a template edited by hand that log with no vehicle
+ * although they go by the template's mode and the template has a vehicle: a
+ * leg corrected or added in Edit Template before it had a vehicle per leg kept
+ * none. Quick log logs those with no vehicle (legVehicleId()), so the repair
+ * run lists them for the owner to pick a vehicle in Edit Template if one of
+ * theirs was driven. A leg with no mode takes the template's vehicle already.
+ */
+export function legsWithoutVehicle(
+  stops: readonly TemplateStop[],
+  tmpl: { mode?: string | null; vehicle_id?: string | null },
+): number[] {
+  if (text(tmpl.vehicle_id) === null) return [];
+  const mode = text(tmpl.mode) ?? 'car';
+  const ordered = sortedStops(stops);
+  const legs: number[] = [];
+  for (let i = 1; i < ordered.length; i++) {
+    const stop = ordered[i];
+    if (text(stop.vehicle_id) === null && text(stop.mode) === mode) legs.push(i);
+  }
+  return legs;
+}
+
 export interface RouteRef {
   id: string;
   created_at: string;
