@@ -173,6 +173,27 @@ test('templateFromRoute: stops come from the stored rows, so a distance worked o
   assert.deepEqual(quickLog(built), { legs: 3, miles: 7.8, minutes: 28 });
 });
 
+test('templateFromRoute then Quick log: a later car leg saved with no vehicle stays without one', () => {
+  // Home -> Airport in their own car, a flight, then a rental car with no
+  // vehicle picked. The template row takes the first leg's vehicle (CAR), and
+  // the rental leg must not log with it: its miles would add to CAR's work
+  // miles, IRS mileage and fuel cost on every Quick log.
+  const route: TemplateLegInput[] = [
+    { origin: 'Home', destination: 'Airport', mode: 'car', vehicle_id: CAR, distance_miles: 20, duration_min: 30, purpose: 'work' },
+    { origin: 'Airport', destination: 'DEN', mode: 'plane', vehicle_id: null, distance_miles: 900, duration_min: 150, purpose: 'work' },
+    { origin: 'DEN', destination: 'Hotel', mode: 'car', vehicle_id: null, distance_miles: 25, duration_min: 35, purpose: 'work' },
+  ];
+  const built = templateFromRoute(storedRows(route), route, { name: 'Denver work trip' });
+  assert.ok(built);
+  assert.equal(built.row.mode, 'car');
+  assert.equal(built.row.vehicle_id, CAR);
+  const legs = templateStopsToLegs(built.stops(TMPL), built.row);
+  assert.deepEqual(
+    legs.map((l) => ({ origin: l.origin, destination: l.destination, mode: l.mode, vehicle_id: l.vehicle_id, distance_miles: l.distance_miles })),
+    route.map((l) => ({ origin: l.origin, destination: l.destination, mode: l.mode, vehicle_id: l.vehicle_id, distance_miles: l.distance_miles })),
+  );
+});
+
 test('templateFromRoute: one leg is a single-leg template with its values on the row', () => {
   const requested = [{ ...ONE_LEG[0], distance_miles: null }];
   const built = templateFromRoute(storedRows(requested, { 0: { distance_miles: 12.5 } }), requested, { name: 'Commute', notes: ' Train ' });
@@ -251,26 +272,31 @@ test('templateStopsToLegs: no return leg when the stops already close the loop (
   assert.ok(legs.every((l) => !l.is_return));
 });
 
-test('templateStopsToLegs: a leg with the template mode and no vehicle logs with the template vehicle', () => {
-  // An old round trip fixed by hand in Edit Template, which had no vehicle per
-  // leg: the way back was set to car, 5 mi, 12 min with no vehicle.
+test('templateStopsToLegs: a leg with a mode and no vehicle logs with no vehicle, even with a template vehicle', () => {
+  // A leg saved with no vehicle (a rental, a colleague's car) must not log
+  // with the template's vehicle: its miles would count as that vehicle's.
   const legs = templateStopsToLegs(
     [
       { stop_order: 0, location_name: 'Home' },
       { stop_order: 1, location_name: 'Gym', mode: 'car', vehicle_id: CAR, distance_miles: 5, duration_min: 12 },
-      { stop_order: 2, location_name: 'Home', mode: 'car', vehicle_id: null, distance_miles: 5, duration_min: 12 },
+      { stop_order: 2, location_name: 'Office', mode: 'car', vehicle_id: null, distance_miles: 6, duration_min: 15 },
     ],
     { mode: 'car', vehicle_id: CAR, is_round_trip: true },
   );
-  assert.deepEqual(legs.map((l) => [l.mode, l.vehicle_id]), [['car', CAR], ['car', CAR]]);
+  assert.deepEqual(legs.map((l) => [l.mode, l.vehicle_id, l.is_return]), [
+    ['car', CAR, false],
+    ['car', null, false],
+    // The return leg takes the last leg's mode and vehicle.
+    ['car', null, true],
+  ]);
 });
 
-test('templateStopsToLegs: the template vehicle fills only legs that go by the template mode', () => {
-  const tmpl = { mode: 'car', vehicle_id: CAR, is_round_trip: true };
+test('templateStopsToLegs: only a stop with no mode and no vehicle takes the template mode and vehicle', () => {
+  const tmpl = { mode: 'car', vehicle_id: CAR, is_round_trip: false };
   const legs = templateStopsToLegs(
     [
       { stop_order: 0, location_name: 'A' },
-      // Added in Edit Template with no mode or vehicle: the template's mode and vehicle.
+      // No mode or vehicle (an old blank stop): the template's mode and vehicle together.
       { stop_order: 1, location_name: 'B', mode: '', vehicle_id: '' },
       // Its own vehicle wins.
       { stop_order: 2, location_name: 'C', mode: 'bike', vehicle_id: BIKE },
@@ -279,18 +305,17 @@ test('templateStopsToLegs: the template vehicle fills only legs that go by the t
     ],
     tmpl,
   );
-  assert.deepEqual(legs.map((l) => [l.mode, l.vehicle_id, l.is_return]), [
-    ['car', CAR, false],
-    ['bike', BIKE, false],
-    ['walk', null, false],
-    // The return leg takes the last leg's mode and vehicle.
-    ['walk', null, true],
+  assert.deepEqual(legs.map((l) => [l.mode, l.vehicle_id]), [
+    ['car', CAR],
+    ['bike', BIKE],
+    ['walk', null],
   ]);
   // No template vehicle: nothing to fall back to.
-  assert.equal(legVehicleId({ mode: 'car', vehicle_id: null }, { mode: 'car', vehicle_id: null }), null);
-  // No template mode: car is the default for both.
-  assert.equal(legVehicleId({ mode: 'car', vehicle_id: null }, { mode: null, vehicle_id: CAR }), CAR);
-  assert.equal(legVehicleId({ mode: 'bus', vehicle_id: null }, { mode: null, vehicle_id: CAR }), null);
+  assert.equal(legVehicleId({ mode: null, vehicle_id: null }, { vehicle_id: null }), null);
+  // A mode of its own, even the template's: the leg's own (no) vehicle.
+  assert.equal(legVehicleId({ mode: 'car', vehicle_id: null }, { vehicle_id: CAR }), null);
+  assert.equal(legVehicleId({ mode: ' ', vehicle_id: null }, { vehicle_id: CAR }), CAR);
+  assert.equal(legVehicleId({ mode: null, vehicle_id: BIKE }, { vehicle_id: CAR }), BIKE);
 });
 
 test('templateStopsToLegs: fewer than two stops log nothing', () => {

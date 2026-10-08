@@ -280,8 +280,9 @@ export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved,
     if (tmpl.is_multi_stop && tmpl.stops?.length) {
       // Template stops use the same convention as these form stops (stop k
       // holds the leg that ends there; lib/travel/template-stops.ts), so they
-      // map one to one. A leg with no vehicle of its own gets the template's
-      // when it goes by the template's mode, as Quick log does.
+      // map one to one. A leg with no mode and no vehicle of its own takes the
+      // template's mode and vehicle, as Quick log does (legVehicleId()); a leg
+      // with a mode and no vehicle stays without one.
       const newStops: Stop[] = tmpl.stops
         .slice()
         .sort((a, b) => a.stop_order - b.stop_order)

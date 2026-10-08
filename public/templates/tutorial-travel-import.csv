@@ -1640,7 +1640,7 @@ A multi-stop template logs a route with one trip per leg, and the route shows th
 
 A single-leg template that ends where it starts (a loop, such as a bike ride from home and back) is the whole trip, so Quick log records its miles and minutes once even if Round trip is ticked.
 
-Quick log uses each leg's saved vehicle while it is still one of yours or a public transport vehicle. A leg with no vehicle of its own that goes by the template's mode (for example car) uses the template's vehicle, so its miles still count toward that vehicle. It doesn't create a finance transaction for a leg's cost, but Add Trip does. To record the expense too, use **Load from template** and save through Add Trip.
+Quick log uses each leg's saved vehicle while it is still one of yours or a public transport vehicle. A leg saved with no vehicle, such as a rental car, logs with no vehicle, so its miles never count toward one of your vehicles. It doesn't create a finance transaction for a leg's cost, but Add Trip does. To record the expense too, use **Load from template** and save through Add Trip.
 
 ---
 
@@ -1662,7 +1662,7 @@ In Trip History, open My Templates:
 - **Edit** (pencil): rename the template and change its stops (each leg's location, mode, vehicle, miles, minutes, and cost), round trip, purpose (commute, leisure, work, errand, exercise, or other), category, tax category, brand, and notes. Under the stops, a line shows what Quick log will record, and when a return leg will be added. Changes only affect future uses, not trips you already logged.
 - **Delete** (trash can): removes the template. Trips you already logged from it are not affected.
 
-Round-trip and multi-stop templates saved before October 2026 stored each leg's details one stop too early, so they logged too few miles and minutes. If a template's totals look wrong, open Edit Template and correct each leg's mode, vehicle, miles, and minutes.
+Round-trip and multi-stop templates saved before October 2026 stored each leg's details one stop too early, so they logged too few miles and minutes. If a template's totals look wrong, open Edit Template and correct each leg's mode, vehicle, miles, and minutes. A leg you corrected there before it had a vehicle choice has none, so pick the vehicle you drove if its miles should count toward it.
 
 ---
 

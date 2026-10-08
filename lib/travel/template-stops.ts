@@ -245,7 +245,10 @@ export interface TemplateStop {
 /** The template-level values a leg falls back to. */
 export interface TemplateDefaults {
   mode?: string | null;
-  /** The template's vehicle (the first leg's, for a template saved from a route). */
+  /**
+   * The template's vehicle (the first leg's, for a template saved from a
+   * route). A stop uses it only when it has no mode and no vehicle of its own.
+   */
   vehicle_id?: string | null;
   purpose?: string | null;
   is_round_trip?: boolean | null;
@@ -295,27 +298,28 @@ export function legMode(stop: Pick<TemplateStop, 'mode'>, tmpl: Pick<TemplateDef
 }
 
 /**
- * The vehicle a leg logs with: the stop's own, or, when it has none and the leg
- * goes by the template's mode, the template's vehicle. A leg corrected or added
- * in Edit Template before it had a vehicle per leg kept none, so its miles were
- * missing from the vehicle's totals (work miles, IRS mileage, fuel cost).
- * The flip side: a leg with the template's mode cannot log with no vehicle
- * while the template has one; Edit Template labels the empty choice so.
+ * The vehicle a leg logs with: the stop's own. A stop with a mode but no
+ * vehicle logs with no vehicle: that is how the writer saves a leg that had
+ * none (a rental, a colleague's car), so its miles must not land on the
+ * template's vehicle (the first leg's). Only a stop with no mode and no vehicle
+ * of its own, which says nothing about how the leg is travelled, takes the
+ * template's mode (legMode()) and vehicle together. Every leg the writer saves
+ * has a mode (trips.mode is NOT NULL), so this never fills a saved leg.
  */
 export function legVehicleId(
   stop: Pick<TemplateStop, 'mode' | 'vehicle_id'>,
-  tmpl: Pick<TemplateDefaults, 'mode' | 'vehicle_id'>,
+  tmpl: Pick<TemplateDefaults, 'vehicle_id'>,
 ): string | null {
   const own = textOrNull(stop.vehicle_id);
   if (own !== null) return own;
-  return legMode(stop, tmpl) === legMode({ mode: null }, tmpl) ? textOrNull(tmpl.vehicle_id) : null;
+  return textOrNull(stop.mode) === null ? textOrNull(tmpl.vehicle_id) : null;
 }
 
 /**
  * The legs a multi-stop template logs: leg i runs from stop i to stop i + 1 and
- * takes its details from stop i + 1 (mode falls back to the template's mode,
- * vehicle to the template's vehicle when the mode is the template's, purpose to
- * the template's purpose). A round-trip template whose last stop is not its
+ * takes its details from stop i + 1 (a stop with no mode takes the template's
+ * mode, and its vehicle too when it has none: legVehicleId(); purpose falls
+ * back to the template's purpose). A round-trip template whose last stop is not its
  * first gets a return leg with the outbound distance, duration and cost summed,
  * the same rule the Add Trip form uses.
  */

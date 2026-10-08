@@ -7,7 +7,6 @@ import { offlineFetch } from '@/lib/offline/offline-fetch';
 import {
   TRIP_PURPOSES,
   formatTemplateTotals,
-  legMode,
   normalizeTripPurpose,
   singleLegRoundTrip,
   templateStopsToLegs,
@@ -129,16 +128,15 @@ export default function EditTemplateModal({ template, vehicles, brands, onClose,
     setStops((prev) => prev.map((s, i) => (i === idx ? { ...s, vehicle_id: vid, ...(tripMode ? { mode: tripMode } : {}) } : s)));
   };
 
-  // A leg with no vehicle of its own logs with the template's vehicle when it
-  // goes by the template's mode (legVehicleId() in lib/travel/template-stops.ts),
-  // so the empty choice says which vehicle that is.
+  // A leg with a mode and no vehicle logs with no vehicle. Only a leg with no
+  // mode and no vehicle takes the template's mode and vehicle together
+  // (legVehicleId() in lib/travel/template-stops.ts), so the empty choice says
+  // which vehicle that is.
   const templateVehicleName = template.vehicle_id
     ? vehicles.find((v) => v.id === template.vehicle_id)?.nickname ?? 'saved vehicle'
     : null;
   const emptyVehicleLabel = (stop: StopForm) =>
-    templateVehicleName && legMode(stop, template) === legMode({ mode: null }, template)
-      ? `Template vehicle (${templateVehicleName})`
-      : 'No vehicle';
+    templateVehicleName && !stop.mode ? `Template vehicle (${templateVehicleName})` : 'No vehicle';
 
   const removeStop = (idx: number) => {
     if (stops.length <= 2) return;
@@ -147,14 +145,16 @@ export default function EditTemplateModal({ template, vehicles, brands, onClose,
 
   const addStop = () => {
     setStops((prev) => {
-      // The new leg copies the mode and vehicle of the leg before it.
-      const before = prev[prev.length - 2];
+      // The new leg copies the mode and vehicle of the leg before it, as they
+      // are: blank ones keep taking the template's mode and vehicle. After the
+      // start (which holds no leg) both stay blank for the same reason.
+      const before = prev.length > 2 ? prev[prev.length - 2] : null;
       return [
         ...prev.slice(0, -1),
         {
           location_name: '',
-          mode: before?.mode || mode,
-          vehicle_id: before?.mode ? before.vehicle_id : '',
+          mode: before?.mode ?? '',
+          vehicle_id: before?.vehicle_id ?? '',
           distance_miles: '', duration_min: '', cost: '', purpose: '',
         },
         prev[prev.length - 1],
