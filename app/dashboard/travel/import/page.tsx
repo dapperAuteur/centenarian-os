@@ -130,8 +130,12 @@ export default function TravelImportPage() {
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href="/dashboard/travel" className="text-gray-400 hover:text-gray-600 transition">
-          <ChevronLeft className="w-5 h-5" />
+        <Link
+          href="/dashboard/travel"
+          aria-label="Back to Travel"
+          className="min-h-11 min-w-11 flex items-center justify-center text-gray-500 hover:text-gray-700 transition"
+        >
+          <ChevronLeft className="w-5 h-5" aria-hidden="true" />
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Import Data</h1>

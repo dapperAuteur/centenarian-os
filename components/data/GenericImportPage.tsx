@@ -255,16 +255,20 @@ export default function GenericImportPage({
       )}
 
       {/* Result */}
-      {result && (
+      {result && (() => {
+        // Failed = errors and nothing saved. Nothing saved without errors (every row was
+        // already there) is still a successful run.
+        const failed = Boolean(result.errors && result.errors.length > 0 && !result.imported);
+        return (
         <div
-          role={result.errors && result.errors.length > 0 && !result.imported ? 'alert' : 'status'}
-          className={`rounded-xl p-4 mb-6 ${result.errors && result.errors.length > 0 && !result.imported ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}
+          role={failed ? 'alert' : 'status'}
+          className={`rounded-xl p-4 mb-6 ${failed ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}
         >
           <div className="flex items-start gap-3">
-            {result.imported ? (
-              <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
+            {failed ? (
+              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" aria-hidden="true" />
             ) : (
-              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
+              <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 shrink-0" aria-hidden="true" />
             )}
             <div>
               {result.message && <p className="text-sm font-medium text-gray-900 mb-1">{result.message}</p>}
@@ -276,13 +280,14 @@ export default function GenericImportPage({
                   {result.errors.slice(0, 10).map((err, i) => (
                     <li key={i} className="text-xs text-red-600">{err}</li>
                   ))}
-                  {result.errors.length > 10 && <li className="text-xs text-red-400">...and {result.errors.length - 10} more</li>}
+                  {result.errors.length > 10 && <li className="text-xs text-red-600">...and {result.errors.length - 10} more</li>}
                 </ul>
               )}
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
