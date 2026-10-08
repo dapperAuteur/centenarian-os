@@ -883,7 +883,7 @@ The **Garmin Activities CSV** card has a file picker, a **Check file** button an
 Click the file area and choose `Activities.csv`. Then click **Check file**. Nothing is saved yet. The ""Before you import"" panel counts every row of the file:
 
 - **New** — activities that will become trips
-- **Already imported** — activities you imported before. An activity is recognised by its start time, so it is skipped even if you renamed it in Garmin Connect since
+- **Already imported** — activities you imported before. An activity is recognised by its start time, so it is skipped even if you renamed it in Garmin Connect or changed the trip's date since
 - **Listed twice in the file** — Garmin can upload one recording twice; only one copy counts
 - **Look like trips you logged** — a trip you entered yourself (by hand, from a template or another CSV) with the same type, and a distance within 5% (at least 0.1 mile) or a time within 5 minutes. A round trip is compared both ways (it is stored one way and counted twice), and a multi-stop trip's legs are added up. A trip you logged that day with no distance or time counts too, and so does a close one dated a day before or after: a template logged late in the evening could carry the next day's date. Open **Possible matches** to see each one and why it matched. They are skipped unless you tick **Import possible matches too** (for example, two separate walks that day)
 - **Unreadable rows** — rows without a readable date

@@ -5,7 +5,9 @@
 //   already_imported   a trip with the same Garmin start-time key exists: its
 //                      external_id (migration 224), or the start time inside
 //                      an older garmin_activity_id ("<Date>|<Title>"), so a
-//                      renamed activity is not imported again.
+//                      renamed activity is not imported again. Looked up by
+//                      key over every date, so a trip whose date was edited
+//                      since is still found.
 //   duplicate_in_file  the file lists the same start time twice (Garmin can
 //                      upload one recording twice); only the first counts.
 //   possible_match     a trip that did not come from Garmin (manual, template,
@@ -21,8 +23,12 @@
 // Rows that can't be read are `invalid`; activity types that aren't travel
 // (strength, yoga, ...) are `unsupported`. Each is counted on its own.
 //
-// Writing: every existing trip in the file's date range is read with paging
-// (the old single read stopped at PostgREST's row cap). With migration 224 the
+// Reading, with paging (the old single read stopped at PostgREST's row cap):
+// the keys of every Garmin trip already stored, whatever its date is now
+// (rows imported before migration 224 have no external_id, so the unique
+// index cannot catch them, and their date can be edited out of the file's
+// range); and every trip from a day before the file's first date to a day
+// after its last, for the possible-match check. With migration 224 the
 // rows carry external_id and go in with ON CONFLICT (user_id, external_id) DO
 // NOTHING, so two imports racing still can't add one activity twice. Before
 // 224 is applied the import still works: it leaves external_id out and relies
@@ -230,6 +236,11 @@ export interface PlannedActivity extends GarminActivity {
 }
 
 export interface PlanContext {
+  /**
+   * Start keys of every Garmin trip already stored, on any date. `existing`
+   * covers only the file's dates, and a trip's date can be edited since.
+   */
+  importedKeys?: Iterable<string>;
   /** Ids of the routes saved as round trips (trip_routes.is_round_trip). */
   roundTripRouteIds?: ReadonlySet<string>;
 }
@@ -240,7 +251,7 @@ export function planGarminActivities(
   existing: readonly ExistingTrip[],
   context: PlanContext = {},
 ): PlannedActivity[] {
-  const imported = new Set<string>();
+  const imported = new Set<string>(context.importedKeys ?? []);
   const others: ExistingTrip[] = [];
   for (const trip of existing) {
     const key = storedStartKey(trip);
@@ -325,29 +336,63 @@ const TRIP_COLUMNS = 'id, date, mode, distance_miles, duration_min, source, garm
 /** Ids per `in` filter when reading routes. */
 const ROUTE_ID_CHUNK = 100;
 
-async function loadTripsInRange(
+type ImportedTripRow = { id: string; garmin_activity_id: string | null; external_id?: string | null };
+
+/**
+ * The start keys of every Garmin trip the person already has, on any date:
+ * rows with a garmin_activity_id (every Garmin import, Work.WitUS's too) or an
+ * external_id. Small rows, read page by page. hasExternalId is false until
+ * migration 224 is applied.
+ */
+async function loadImportedKeys(db: SupabaseClient, userId: string): Promise<{ keys: Set<string>; hasExternalId: boolean }> {
+  const doing = 'read your imported Garmin trips';
+  const keysOf = (rows: ImportedTripRow[]) =>
+    new Set(rows.map((row) => storedStartKey(row)).filter((key): key is string => key !== null));
+  try {
+    const rows = await readAllRows<ImportedTripRow>(doing, (start, end) =>
+      db
+        .from('trips')
+        .select('id, garmin_activity_id, external_id')
+        .eq('user_id', userId)
+        .or('garmin_activity_id.not.is.null,external_id.not.is.null')
+        .order('id', { ascending: true })
+        .range(start, end) as unknown as PageResult<ImportedTripRow>,
+    );
+    return { keys: keysOf(rows), hasExternalId: true };
+  } catch (error) {
+    if (!isMissingColumn(dbErrorOf(error), 'external_id')) throw error;
+    const rows = await readAllRows<ImportedTripRow>(doing, (start, end) =>
+      db
+        .from('trips')
+        .select('id, garmin_activity_id')
+        .eq('user_id', userId)
+        .not('garmin_activity_id', 'is', null)
+        .order('id', { ascending: true })
+        .range(start, end) as unknown as PageResult<ImportedTripRow>,
+    );
+    return { keys: keysOf(rows), hasExternalId: false };
+  }
+}
+
+/** Every trip dated from..to, for the possible-match check. */
+function loadTripsInRange(
   db: SupabaseClient,
   userId: string,
   from: string,
   to: string,
-): Promise<{ trips: ExistingTrip[]; hasExternalId: boolean }> {
-  const read = (columns: string) =>
-    readAllRows<ExistingTrip>('read your trips in this date range', (start, end) =>
-      db
-        .from('trips')
-        .select(columns)
-        .eq('user_id', userId)
-        .gte('date', from)
-        .lte('date', to)
-        .order('id', { ascending: true })
-        .range(start, end) as unknown as PageResult<ExistingTrip>,
-    );
-  try {
-    return { trips: await read(`${TRIP_COLUMNS}, external_id`), hasExternalId: true };
-  } catch (error) {
-    if (!isMissingColumn(dbErrorOf(error), 'external_id')) throw error;
-    return { trips: await read(TRIP_COLUMNS), hasExternalId: false };
-  }
+  hasExternalId: boolean,
+): Promise<ExistingTrip[]> {
+  const columns = hasExternalId ? `${TRIP_COLUMNS}, external_id` : TRIP_COLUMNS;
+  return readAllRows<ExistingTrip>('read your trips in this date range', (start, end) =>
+    db
+      .from('trips')
+      .select(columns)
+      .eq('user_id', userId)
+      .gte('date', from)
+      .lte('date', to)
+      .order('id', { ascending: true })
+      .range(start, end) as unknown as PageResult<ExistingTrip>,
+  );
 }
 
 /**
@@ -411,13 +456,14 @@ export async function importGarminActivities(db: SupabaseClient, options: Garmin
 
   // A day either side: a template trip logged with the UTC date can sit one
   // day off the activity's local date.
+  const { keys: importedKeys, hasExternalId } = await loadImportedKeys(db, options.userId);
   const dates = parsed.activities.map((a) => a.date).sort();
-  const { trips, hasExternalId } = await loadTripsInRange(db, options.userId, shiftDate(dates[0], -1), shiftDate(dates[dates.length - 1], 1));
+  const trips = await loadTripsInRange(db, options.userId, shiftDate(dates[0], -1), shiftDate(dates[dates.length - 1], 1), hasExternalId);
   const routeIds = trips
     .filter((trip) => trip.route_id && trip.source !== 'garmin_import' && !storedStartKey(trip))
     .map((trip) => trip.route_id as string);
   const roundTripRouteIds = routeIds.length > 0 ? await loadRoundTripRoutes(db, options.userId, routeIds) : new Set<string>();
-  const planned = planGarminActivities(parsed.activities, trips, { roundTripRouteIds });
+  const planned = planGarminActivities(parsed.activities, trips, { importedKeys, roundTripRouteIds });
 
   const toWrite: PlannedActivity[] = [];
   for (const activity of planned) {

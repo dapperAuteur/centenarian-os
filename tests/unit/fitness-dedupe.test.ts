@@ -623,6 +623,45 @@ test('import: existing trips past the row cap are still found', async () => {
   assert.equal(db.rows('trips').length, 12);
 });
 
+test('import: an imported trip whose date was edited since is still recognised (no date window)', async () => {
+  const { db, client } = fake();
+  db.seed('trips', [
+    // Imported before migration 224 (external_id NULL), then moved back by hand.
+    { user_id: USER, date: '2026-09-25', mode: 'walk', distance_miles: 1.5, duration_min: 30, source: 'garmin_import', garmin_activity_id: '2026-09-30 23:10:00|Night walk', external_id: null },
+    // Imported after 224, then moved a week back.
+    { user_id: USER, date: '2026-09-24', mode: 'bike', distance_miles: 8, duration_min: 40, source: 'garmin_import', garmin_activity_id: '2026-10-01 07:00:00|Ride', external_id: 'garmin:start:2026-10-01 07:00:00' },
+    // Another person's trip with the same start time is not this person's.
+    { user_id: OTHER_USER, date: '2026-10-02', mode: 'run', distance_miles: 3, duration_min: 30, source: 'garmin_import', garmin_activity_id: '2026-10-02 06:00:00|Run', external_id: 'garmin:start:2026-10-02 06:00:00' },
+  ]);
+  const text = csv(
+    'Walking,2026-09-30 23:10:00,false,Night walk,1.5,90,00:30:00,95,3000',
+    'Cycling,2026-10-01 07:00:00,false,Ride,8.0,300,00:40:00,120,--',
+    'Running,2026-10-02 06:00:00,false,Run,3.0,300,00:30:00,150,--',
+    'Cycling,2026-10-07 07:00:00,false,Ride,8.0,300,00:40:00,120,--',
+  );
+  // Check file and Import agree.
+  const preview = await importGarminActivities(client, { userId: USER, text, dryRun: true });
+  assert.deepEqual(preview.activities.map((a) => a.status), ['already_imported', 'already_imported', 'new', 'new']);
+  const result = await importGarminActivities(client, { userId: USER, text });
+  assert.equal(result.counts.already_imported, 2);
+  assert.equal(result.counts.inserted, 2);
+  assert.equal(db.rows('trips').filter((r) => r.user_id === USER).length, 4);
+});
+
+test('import: before migration 224, an edited legacy trip is still recognised by its old key', async () => {
+  const { db, client } = fake();
+  db.missingColumns = { trips: ['external_id'] };
+  db.seed('trips', [{ user_id: USER, date: '2026-09-25', mode: 'walk', source: 'garmin_import', garmin_activity_id: '2026-09-30 23:10:00|Night walk' }]);
+  const result = await importGarminActivities(client, {
+    userId: USER,
+    text: csv('Walking,2026-09-30 23:10:00,false,Renamed walk,1.5,90,00:30:00,95,3000'),
+  });
+  assert.equal(result.needsMigration, true);
+  assert.equal(result.counts.already_imported, 1);
+  assert.equal(result.counts.inserted, 0);
+  assert.equal(db.rows('trips').length, 1);
+});
+
 test('import: possible matches are skipped unless asked for', async () => {
   const { db, client } = fake();
   db.seed('trips', [{ user_id: USER, date: '2025-06-10', mode: 'walk', distance_miles: 1.02, duration_min: null, source: 'manual', garmin_activity_id: null }]);
