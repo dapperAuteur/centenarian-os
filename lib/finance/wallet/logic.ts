@@ -559,6 +559,23 @@ export function comparePayoff(balance: number, apr: number | null, minimum: numb
 }
 
 /**
+ * The custom payment against the loan's monthly payment, in a sentence: the interest saved (or
+ * the extra it costs) whenever it differs, even when both finish in the same month, plus how many
+ * months sooner or later only when that differs. Null when there is nothing to compare or no
+ * difference. `fmt` formats money in the loan's currency.
+ */
+export function payoffDifferenceText(c: Pick<PayoffComparison, 'interest_saved' | 'months_saved'>, fmt: (amount: number) => string): string | null {
+  const interest = c.interest_saved ?? 0;
+  const monthsSaved = c.months_saved ?? 0;
+  if (c.interest_saved === null || (interest === 0 && monthsSaved === 0)) return null;
+  const n = Math.abs(monthsSaved);
+  const monthsText = monthsSaved === 0 ? null : `finishes ${n} ${n === 1 ? 'month' : 'months'} ${monthsSaved > 0 ? 'sooner' : 'later'}`;
+  const interestText = interest > 0 ? `saves about ${fmt(interest)} in interest` : interest < 0 ? `costs about ${fmt(-interest)} more in interest` : null;
+  const parts = [interestText, monthsText].filter((p): p is string => p !== null);
+  return `Compared with the monthly payment, that ${parts.join(' and ')}.`;
+}
+
+/**
  * A loan's monthly payment: the statement's minimum, else the latest linked payment, else none.
  * The card formula's estimate (minimum_estimated) is never used for a loan.
  */

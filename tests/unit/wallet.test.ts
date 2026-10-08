@@ -16,6 +16,7 @@ import {
   buildWallet,
   comparePayoff,
   loanPayment,
+  payoffDifferenceText,
   loanStart,
   retirementFromOverview,
   toHome,
@@ -354,6 +355,24 @@ test('comparePayoff: a custom payment shows the new payoff date and the interest
   assert.equal(alone.minimum, null);
   assert.equal(alone.custom.months, 33);
   assert.equal(alone.interest_saved, null);
+});
+
+test('payoffDifferenceText: the interest saved shows even when both finish in the same month', () => {
+  const fmt = (n: number) => `$${n.toFixed(2)}`;
+  // $305 instead of $300 on $9,000 at 6%: 33 months either way, but $13.90 less interest.
+  const small = comparePayoff(9000, 6, 300, 305, TODAY);
+  assert.equal(small.months_saved, 0);
+  assert.equal(small.interest_saved, 13.9);
+  assert.equal(payoffDifferenceText(small, fmt), 'Compared with the monthly payment, that saves about $13.90 in interest.');
+  const big = comparePayoff(9000, 6, 300, 500, TODAY);
+  assert.match(payoffDifferenceText(big, fmt) ?? '', /^Compared with the monthly payment, that saves about \$\d+\.\d{2} in interest and finishes 14 months sooner\.$/);
+  const less = comparePayoff(9000, 6, 300, 250, TODAY);
+  assert.match(payoffDifferenceText(less, fmt) ?? '', /costs about \$\d+\.\d{2} more in interest and finishes \d+ months later\.$/);
+  // No APR: no interest either way, but it finishes sooner.
+  assert.equal(payoffDifferenceText({ interest_saved: 0, months_saved: 1 }, fmt), 'Compared with the monthly payment, that finishes 1 month sooner.');
+  // Nothing to compare, or no difference.
+  assert.equal(payoffDifferenceText({ interest_saved: null, months_saved: null }, fmt), null);
+  assert.equal(payoffDifferenceText({ interest_saved: 0, months_saved: 0 }, fmt), null);
 });
 
 test("payoff: 'doesn't cover the interest' is told apart from 'takes more than 50 years'", () => {

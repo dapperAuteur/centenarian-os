@@ -9,7 +9,7 @@
 
 import { useId, useMemo, useState } from 'react';
 import { Landmark } from 'lucide-react';
-import { PAYOFF_MAX_YEARS, comparePayoff } from '@/lib/finance/wallet/logic';
+import { PAYOFF_MAX_YEARS, comparePayoff, payoffDifferenceText } from '@/lib/finance/wallet/logic';
 import type { LoanView, LoansSection as LoansData, PayoffSummary } from '@/lib/finance/wallet/logic';
 import { formatDate } from '@/components/finance/retirement/format';
 import { ActionLink, Attention, MoneyWithHome, WalletCard, money } from './parts';
@@ -77,6 +77,7 @@ function LoanRow({ loan, home, today }: { loan: LoanView; home: string; today: s
     [valid, loan.owed, loan.apr, loan.minimum, amount, today],
   );
   const c = loan.currency;
+  const difference = result ? payoffDifferenceText(result, (n) => money(n, c)) : null;
   const startLabel = loan.starting_date_source === 'added' ? 'added' : 'as of';
 
   return (
@@ -184,13 +185,7 @@ function LoanRow({ loan, home, today }: { loan: LoanView; home: string; today: s
               <>
                 At {money(amount, c)} a month: paid off <strong>{formatDate(result.custom.payoff_date)}</strong> ({months(result.custom.months)}), about{' '}
                 {money(result.custom.total_interest, c)} interest.
-                {result.interest_saved !== null && result.months_saved !== null && result.months_saved !== 0 && (
-                  <span className="block">
-                    {result.interest_saved >= 0
-                      ? `That saves about ${money(result.interest_saved, c)} in interest and finishes ${months(result.months_saved)} sooner than the monthly payment.`
-                      : `That costs about ${money(-result.interest_saved, c)} more in interest and finishes ${months(-result.months_saved)} later than the monthly payment.`}
-                  </span>
-                )}
+                {difference && <span className="block">{difference}</span>}
                 {result.minimum?.never_pays_off && <span className="block">The monthly payment alone would never pay it off.</span>}
                 {result.minimum?.over_max && (
                   <span className="block">The monthly payment alone would take more than {PAYOFF_MAX_YEARS} years.</span>
