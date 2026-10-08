@@ -1664,6 +1664,8 @@ In Trip History, open My Templates:
 
 Round-trip and multi-stop templates saved before October 2026 stored each leg's details one stop too early, so they logged too few miles and minutes. If a template's totals look wrong, open Edit Template and correct each leg's mode, vehicle, miles, and minutes. A leg you corrected there before it had a vehicle choice has none, so pick the vehicle you drove if its miles should count toward it.
 
+Templates you save in Work.WitUS's Add Trip also show here, and for now Work.WitUS still saves them the old way. Check their totals the same way and correct the legs in Edit Template.
+
 ---
 
 ### Example Template Data
