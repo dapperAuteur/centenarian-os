@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useEffect, useRef, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Plus, ChevronDown, Search, Trash2, Play, Repeat, MapPin, Pencil } from 'lucide-react';
@@ -213,6 +213,10 @@ function TripsPageInner() {
   const [showTemplates, setShowTemplates] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<TripTemplate | null>(null);
   const [templateLogMessage, setTemplateLogMessage] = useState<{ kind: 'success' | 'info' | 'error'; text: string } | null>(null);
+  // The template being Quick logged. The ref blocks a second tap before the
+  // disabled button re-renders, so one tap logs one trip.
+  const [loggingTemplateId, setLoggingTemplateId] = useState<string | null>(null);
+  const loggingTemplateRef = useRef<string | null>(null);
   const [fifoEstimate, setFifoEstimate] = useState<{ estimatedCost: number; mpgUsed: number; isPartial: boolean } | null>(null);
   const limit = 50;
 
@@ -451,25 +455,33 @@ function TripsPageInner() {
   };
 
   const handleTemplateLog = async (tmpl: TripTemplate) => {
+    if (loggingTemplateRef.current) return;
+    loggingTemplateRef.current = tmpl.id;
+    setLoggingTemplateId(tmpl.id);
     setTemplateLogMessage(null);
-    const res = await offlineFetch('/api/travel/templates', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        create_trip: true,
-        template_id: tmpl.id,
-        trip_date: todayLocal(),
-      }),
-    });
-    if (res.ok) {
-      const totals = formatTemplateTotals(templateSummary(tmpl));
-      setTemplateLogMessage(isQueuedResponse(res)
-        ? { kind: 'info', text: `Saved offline: ${tmpl.name} will be logged when you reconnect.` }
-        : { kind: 'success', text: `Logged ${tmpl.name}${totals ? `: ${totals}` : ''}.` });
-      load();
-    } else {
-      const d = await res.json().catch(() => null);
-      setTemplateLogMessage({ kind: 'error', text: `Could not log ${tmpl.name}${d?.error ? `: ${d.error}` : ''}. Nothing was saved.` });
+    try {
+      const res = await offlineFetch('/api/travel/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          create_trip: true,
+          template_id: tmpl.id,
+          trip_date: todayLocal(),
+        }),
+      });
+      if (res.ok) {
+        const totals = formatTemplateTotals(templateSummary(tmpl));
+        setTemplateLogMessage(isQueuedResponse(res)
+          ? { kind: 'info', text: `Saved offline: ${tmpl.name} will be logged when you reconnect.` }
+          : { kind: 'success', text: `Logged ${tmpl.name}${totals ? `: ${totals}` : ''}.` });
+        load();
+      } else {
+        const d = await res.json().catch(() => null);
+        setTemplateLogMessage({ kind: 'error', text: `Could not log ${tmpl.name}${d?.error ? `: ${d.error}` : ''}. Nothing was saved.` });
+      }
+    } finally {
+      loggingTemplateRef.current = null;
+      setLoggingTemplateId(null);
     }
   };
 
@@ -699,11 +711,13 @@ function TripsPageInner() {
                     <button
                       type="button"
                       onClick={() => handleTemplateLog(tmpl)}
-                      className="min-h-11 min-w-11 flex items-center justify-center text-sky-500 hover:text-sky-700 hover:bg-sky-50 rounded-lg transition"
-                      aria-label={`Log trip from ${tmpl.name}`}
+                      disabled={loggingTemplateId !== null}
+                      aria-busy={loggingTemplateId === tmpl.id}
+                      className="min-h-11 min-w-11 flex items-center justify-center text-sky-500 hover:text-sky-700 hover:bg-sky-50 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label={loggingTemplateId === tmpl.id ? `Logging trip from ${tmpl.name}` : `Log trip from ${tmpl.name}`}
                       title="Quick log"
                     >
-                      <Play className="w-4 h-4" />
+                      <Play className="w-4 h-4" aria-hidden="true" />
                     </button>
                     <button
                       type="button"
