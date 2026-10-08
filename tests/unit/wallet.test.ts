@@ -846,6 +846,11 @@ test('cash flow: money in, out and net per period; transfers and unrated foreign
   assert.equal(yearly.rows[0].net, 759.5);
   const ytd = moneyInOut(rows, 'USD', '2026-01-01', TODAY);
   assert.deepEqual(ytd, { money_in: 1110, money_out: 350.5, net: 759.5, unconverted: 1, transfers: 1 });
+  // Each table counts the unrated rows in its own periods; transfers are never counted.
+  assert.equal(monthly.unconverted, 1);
+  const older = [...rows, brandRow({ type: 'expense', amount: 80, currency: 'MXN', transaction_date: '2023-05-05' })];
+  assert.equal(cashFlowTable(older, 'USD', TODAY, 'month').unconverted, 1);
+  assert.equal(cashFlowTable(older, 'USD', TODAY, 'year').unconverted, 2);
 });
 
 test("brandOfRow: a transaction's own tag wins, then its account's tag", () => {
@@ -942,16 +947,20 @@ test("loadBrandPage: cash flow tables, tag counts, and nothing for someone else'
     { id: 'i1', user_id: USER, brand_id: 'b1', type: 'income', amount: 5000, transaction_date: '2026-03-01' },
     { id: 'i0', user_id: USER, brand_id: 'b1', type: 'income', amount: 700, transaction_date: '2023-06-01' },
     { id: 'o1', user_id: USER, brand_id: 'b1', type: 'expense', amount: 1200, transaction_date: '2026-09-01' },
+    // An MXN expense from 2023 with no rate: it is left out of the 2023 year, not of this year.
+    { id: 'mx', user_id: USER, brand_id: 'b1', type: 'expense', amount: 300, currency: 'MXN', transaction_date: '2023-02-01' },
   ]);
   db.seed('trips', [{ id: 'tr', user_id: USER, brand_id: 'b1' }]);
   const { page, error } = await loadBrandPage(asClient(db), USER, 'b1', TODAY, 'USD');
   assert.equal(error, null);
   assert.ok(page);
   assert.deepEqual([page.this_year.money_in, page.this_year.money_out], [5000, 1200]);
+  assert.equal(page.this_year.unconverted, 0);
+  assert.deepEqual([page.cash_flow.month.unconverted, page.cash_flow.quarter.unconverted, page.cash_flow.year.unconverted], [0, 0, 1]);
   assert.equal(page.cash_flow.month.rows.length, 12);
   assert.equal(page.cash_flow.quarter.rows.length, 8);
   assert.deepEqual(page.cash_flow.year.rows.map((r) => [r.key, r.net]), [['2026', 3800], ['2025', 0], ['2024', 0], ['2023', 700], ['2022', 0]]);
-  assert.deepEqual(page.tagged, { transactions: 3, invoices: 0, trips: 1 });
+  assert.deepEqual(page.tagged, { transactions: 4, invoices: 0, trips: 1 });
   const theirs = await loadBrandPage(asClient(db), USER, 'bx', TODAY, 'USD');
   assert.equal(theirs.page, null);
   assert.equal(theirs.error, null);

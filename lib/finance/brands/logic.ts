@@ -140,6 +140,8 @@ export interface CashFlowTable {
   granularity: CashFlowGranularity;
   rows: CashFlowRow[];
   totals: { money_in: number; money_out: number; net: number };
+  /** Rows in these periods left out because they are foreign with no rate yet. */
+  unconverted: number;
 }
 
 /** A row's amount in the home currency, or null (a transfer, a foreign amount with no rate, a bad row). */
@@ -195,13 +197,18 @@ export function cashFlowTable(
 ): CashFlowTable {
   const periods = periodsBack(today, granularity);
   const sums = new Map(periods.map((p) => [p.key, { inCents: 0, outCents: 0 }]));
+  let unconverted = 0;
   for (const row of rows) {
-    const amount = homeAmount(row, home);
-    if (amount === null) continue;
     const day = row.transaction_date.slice(0, 10);
     if (day > today) continue;
     const sum = sums.get(periodOf(day, granularity).key);
     if (!sum) continue;
+    const amount = homeAmount(row, home);
+    if (amount === null) {
+      // Only a foreign income or expense with no rate is "left out"; transfers never count.
+      if (countsTowardTotals(row) && (row.type === 'income' || row.type === 'expense')) unconverted += 1;
+      continue;
+    }
     if (row.type === 'income') sum.inCents += Math.round(amount * 100);
     else sum.outCents += Math.round(amount * 100);
   }
@@ -213,7 +220,7 @@ export function cashFlowTable(
     (t, r) => ({ money_in: round2(t.money_in + r.money_in), money_out: round2(t.money_out + r.money_out), net: round2(t.net + r.net) }),
     { money_in: 0, money_out: 0, net: 0 },
   );
-  return { granularity, rows: out, totals };
+  return { granularity, rows: out, totals, unconverted };
 }
 
 export interface InvoiceRow {

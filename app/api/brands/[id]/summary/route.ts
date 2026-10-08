@@ -5,8 +5,7 @@
 //      brand, home_currency, today,
 //      this_year: { money_in, money_out, net, unconverted, transfers },
 //      cash_flow: { month | quarter | year: { granularity, rows: [{ key, label, from, to,
-//                   money_in, money_out, net }], totals } },     // newest period first
-//      unconverted,
+//                   money_in, money_out, net }], totals, unconverted } },     // newest period first
 //      invoices: { owed_to_you, owed_to_you_count, you_owe, you_owe_count },
 //      expected_income: { total, count, until },
 //      tagged: { transactions, invoices, trips }

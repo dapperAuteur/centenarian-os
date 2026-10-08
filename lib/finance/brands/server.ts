@@ -184,10 +184,10 @@ export interface BrandPage {
   brand: BrandRecord;
   home_currency: string;
   today: string;
+  /** Jan 1 through today; its `unconverted` counts this year's rows only. */
   this_year: MoneyInOut;
+  /** Each table counts the rows left out of its own periods (`unconverted`). */
   cash_flow: Record<CashFlowGranularity, CashFlowTable>;
-  /** Rows in the cash flow window left out because they are foreign with no rate yet. */
-  unconverted: number;
   invoices: OpenInvoices;
   expected_income: { total: number; count: number; until: string };
   /** What is tagged to this business today (all time). */
@@ -236,7 +236,6 @@ export async function loadBrandPage(
       today,
       this_year: moneyInOut(rowsRes.rows, home, yearStart(today), today),
       cash_flow: cashFlow,
-      unconverted: moneyInOut(rowsRes.rows, home).unconverted,
       invoices: openInvoices(invoiceRes.rows),
       expected_income: { total: expectedIncomeTotal(expectedOwn), count: expectedOwn.length, until },
       tagged: { transactions, invoices, trips },

@@ -110,8 +110,8 @@ export default function BusinessPage() {
             </dl>
             <p className="text-xs text-gray-600">
               Transfers between your own accounts are not money in or out.
-              {data.unconverted > 0 &&
-                ` ${data.unconverted} transaction${data.unconverted === 1 ? '' : 's'} in another currency with no exchange rate yet ${data.unconverted === 1 ? 'is' : 'are'} left out.`}
+              {data.this_year.unconverted > 0 &&
+                ` ${data.this_year.unconverted} transaction${data.this_year.unconverted === 1 ? '' : 's'} this year in another currency with no exchange rate yet ${data.this_year.unconverted === 1 ? 'is' : 'are'} left out.`}
             </p>
           </section>
 
@@ -170,6 +170,8 @@ export default function BusinessPage() {
             <p className="text-xs text-gray-600">
               {granularity === 'month' ? 'The last 12 months' : granularity === 'quarter' ? 'The last 8 quarters (Q1 is Jan to Mar)' : 'The last 5 years'}, this one
               included.
+              {table.unconverted > 0 &&
+                ` ${table.unconverted} transaction${table.unconverted === 1 ? '' : 's'} in these periods ${table.unconverted === 1 ? 'is' : 'are'} in another currency with no exchange rate yet, so left out.`}
             </p>
           </section>
 
