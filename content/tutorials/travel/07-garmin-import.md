@@ -21,14 +21,14 @@ This lesson walks you through the full process: exporting from Garmin, uploading
 
 ### What Gets Imported
 
-CentenarianOS imports four activity types from Garmin:
+CentenarianOS imports these Garmin activity types as trips:
 
-- **Cycling** — becomes a Bike trip
+- **Cycling** and **Indoor Cycling** — become Bike trips
 - **Walking** — becomes a Walk trip
-- **Running** — becomes a Run trip
-- **Hiking** — becomes a Hike trip
+- **Running** and **Treadmill Running** — become Run trips
+- **Hiking** — becomes a Walk trip (purpose: leisure)
 
-Everything else is intentionally skipped: Strength Training, HIIT, Yoga, Indoor Cycling, Swimming, and other gym-based activities. These don't involve travel or distance in a meaningful way, so they don't belong in the Travel module.
+Everything else is intentionally skipped: Strength Training, HIIT, Yoga, Swimming, and other gym-based activities. They are counted as "not travel activities" in the check, so you can see they were read and left out.
 
 This is a deliberate design choice — the Travel module is about movement through the world, not exercise sessions.
 
@@ -36,21 +36,16 @@ This is a deliberate design choice — the Travel module is about movement throu
 
 ### Step 1: Export Your Activities from Garmin Connect
 
-Open Garmin Connect — either the mobile app or the website at connect.garmin.com.
+Open Garmin Connect on the website at connect.garmin.com.
 
-**On the website:**
-1. Go to **Activities** in the left sidebar
-2. Find the activity you want to export, or use the bulk export option
-3. For a single activity: click the activity → click the gear icon → **Export to GPX** or **Export Original**
-4. For a bulk export: go to **Account Settings** → **Data Export** → **Export Your Data**
+1. Go to **Activities** → **All Activities**
+2. Scroll down far enough to load the activities you want (the list loads more as you scroll)
+3. Click **Export CSV** at the top of the list
 
-The bulk export option generates a ZIP file containing all your activity files. This can take a few minutes to generate and will arrive by email or be downloadable from the account settings page.
-
-**What format to use:**
-CentenarianOS accepts the standard Garmin export format. The bulk export ZIP works best for importing multiple activities at once.
+You get a file named `Activities.csv`. That is the file this import reads. It does not read GPX, FIT or the full account-export ZIP.
 
 **On the mobile app:**
-The mobile app has a more limited export interface. For importing multiple activities, the website export is recommended.
+The mobile app has no CSV export, so use the website.
 
 ---
 
@@ -58,33 +53,32 @@ The mobile app has a more limited export interface. For importing multiple activ
 
 In CentenarianOS, go to `/dashboard/travel/import`.
 
-You'll see the Garmin import interface: a file upload area and some information about supported formats.
+The **Garmin Activities CSV** card has a file picker, a **Check file** button and an **Import** button.
 
 ---
 
-### Step 3: Upload Your File
+### Step 3: Choose Your File and Check It
 
-Click or drag your exported file into the upload zone. You can upload either:
-- A single activity file
-- The full Garmin export ZIP (recommended for bulk imports)
+Click the file area and choose `Activities.csv`. Then click **Check file**. Nothing is saved yet. The "Before you import" panel counts every row of the file:
 
-Click **Import Activities**. The system processes the file, identifies all supported activity types, and converts them to trips.
+- **New** — activities that will become trips
+- **Already imported** — activities you imported before. An activity is recognised by its start time, so it is skipped even if you renamed it in Garmin Connect since
+- **Listed twice in the file** — Garmin can upload one recording twice; only one copy counts
+- **Look like trips you logged** — a trip you entered yourself (by hand, from a template or another CSV) on the same date with the same type, and a distance within 5% (at least 0.1 mile) or a time within 5 minutes. Open **Possible matches** to see them. They are skipped unless you tick **Import possible matches too** (for example, two separate walks that day)
+- **Unreadable rows** — rows without a readable date
+- **Not travel activities** — the skipped types above
 
 ---
 
-### Step 4: Review the Import Results
+### Step 4: Import
 
-After processing, you'll see a summary of what was imported:
-
-- **Activities imported** — the count of trips successfully created
-- **Activities skipped** — the count of activities that were ignored (Strength, HIIT, etc.)
-- **New trips** — a list of the individual trips just created
+Click **Import** (it shows how many activities will be added). The green result repeats the counts for what was saved. If a single row could not be saved, it is listed by its line number and the rest are still imported.
 
 Each imported activity becomes a trip in your trip history with:
-- Date from the activity timestamp
+- Date from the activity's start time
 - Mode based on activity type (Cycling → Bike, Running → Run, etc.)
-- Distance from the GPS track data
-- Duration from the activity's elapsed time
+- Distance, duration and calories from the CSV
+- The activity's title, average heart rate (and steps for walks) in the notes
 
 ---
 
@@ -92,15 +86,15 @@ Each imported activity becomes a trip in your trip history with:
 
 Navigate to `/dashboard/travel/trips` to see the newly imported trips in your history. They'll show up mixed in with any manually logged trips, sorted by date.
 
-You can edit any imported trip to add notes, a route name, or start/end locations that the GPS data didn't capture.
+You can edit any imported trip to add notes, a route name, or start/end locations that the CSV didn't include.
 
 ---
 
 ### Dealing with Duplicates
 
-If you import the same Garmin export file twice, CentenarianOS checks for duplicate activities before inserting. Activities with the same date, type, distance, and duration won't be imported a second time.
+Importing the same file again — or a newer export that overlaps an older one — adds nothing twice: **Check file** shows those activities as already imported. You don't need to trim the export to "only the new ones".
 
-If you're not sure whether an activity was already imported, check your trip history for that date before re-importing.
+Duplicates made before this check existed are not deleted automatically. They can be listed with a read-only report and cleaned up after review.
 
 ---
 
@@ -114,40 +108,33 @@ You could also do a one-time bulk import for the entire year's Garmin history wh
 
 ## Screen Recording Notes
 
-> [SCREEN: Open a browser tab and navigate to connect.garmin.com — show the Activities page]
+> [SCREEN: Open a browser tab and navigate to connect.garmin.com — show Activities → All Activities]
 
-> [SCREENSHOT: Garmin Connect Activities page with the Export button/gear icon highlighted on a single activity]
-
-> [SCREEN: Show the Account Settings → Data Export option on the Garmin website]
-
-> [SCREENSHOT: Data Export page with "Export Your Data" button labeled — add callout: "This generates a ZIP of all activities"]
+> [SCREENSHOT: All Activities list with the Export CSV link highlighted]
 
 > [SCREEN: Switch back to CentenarianOS — navigate to /dashboard/travel/import]
 
-> [SCREENSHOT: Import page with the upload zone highlighted and "Supported: Garmin export ZIP" labeled]
+> [SCREEN: Choose Activities.csv — click Check file]
 
-> [SCREEN: Drag a sample Garmin export ZIP into the upload zone — show it populating]
+> [SCREENSHOT: Before you import — callouts: New, Already imported, Listed twice in the file, Look like trips you logged, Not travel activities]
 
-> [SCREEN: Click "Import Activities" — show processing spinner]
+> [SCREEN: Open Possible matches — show one walk that matches a walk logged by hand]
 
-> [SCREEN: Import results summary appears — highlight "Activities imported: 12", "Activities skipped: 4 (Strength, HIIT)"]
+> [SCREEN: Click Import — the green result repeats the counts]
 
-> [SCREENSHOT: Results screen with callouts: "Imported" (green) vs. "Skipped" (gray) categories listed]
+> [SCREEN: Click Check file again on the same file — everything shows as already imported]
 
-> [SCREEN: Click "View Trips" or navigate to /dashboard/travel/trips — show the newly imported trips in the list]
+> [SCREEN: Navigate to /dashboard/travel/trips — show the newly imported trips in the list]
 
 > [SCREENSHOT: Trip list with several imported trips, mode icons (bike, run, walk) visible — label "Imported from Garmin"]
-
-> [SCREEN: Click on one imported trip — show the detail view, point out that GPS distance and duration were auto-populated]
-
-> [SCREEN: Click Edit on that trip — show adding a route name and notes — save]
 
 ---
 
 ## Key Takeaways
 
-- Garmin exports Cycling, Walking, Running, and Hiking activities — all become trips in CentenarianOS
-- Strength Training, HIIT, Yoga, and indoor activities are intentionally skipped
-- Use the bulk ZIP export from connect.garmin.com for importing multiple activities at once
-- Duplicate detection prevents the same activity from being imported twice
+- Export `Activities.csv` from Garmin Connect (Activities → All Activities → Export CSV) on the website
+- Cycling, Indoor Cycling, Walking, Running, Treadmill Running and Hiking become trips; gym activities are skipped
+- Check file before Import: new, already imported, listed twice, possible matches with trips you logged
+- An activity is recognised by its start time, so renamed or re-exported activities are never imported twice
+- Possible matches with trips you logged are skipped unless you include them
 - A weekly import cadence (every Sunday) keeps trip history current with minimal effort

@@ -20,7 +20,7 @@ This short course covers your account-level settings on CentenarianOS — your s
 | # | Lesson | What You'll Learn |
 |---|--------|-------------------|
 | 01 | Your Subscription | The billing page — current plan, renewal date, managing via Stripe portal |
-| 02 | Wearable Connections | Connecting OAuth devices, manual CSV imports, and disconnecting providers |
+| 02 | Wearable Connections | Provider cards, Garmin sync (coming soon), CSV imports that never duplicate a day |
 | 03 | Upgrading and Canceling | Upgrading to Lifetime, canceling a monthly subscription, and what happens after |
 | 04 | Module Tours | Re-taking interactive walkthroughs, viewing tour progress, and restarting tours |
 
@@ -36,5 +36,5 @@ This short course covers your account-level settings on CentenarianOS — your s
 ## Key Takeaways
 
 - Billing is at /dashboard/billing — shows your current plan, renewal date, and Stripe portal access
-- Wearables are at /dashboard/settings/wearables — supports 3 OAuth devices and 4 CSV providers
+- Wearables are at /dashboard/settings/wearables — Garmin (sync coming soon, CSV import today) and 4 CSV providers
 - Cancellations are handled through the Stripe Customer Portal — you keep access until the period end date

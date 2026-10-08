@@ -37,7 +37,9 @@ At the top of the import page, select your data source. Eight options are availa
 **Manual Entry:**
 - Opens an editable table without any file upload — useful for entering a few days of backlogged data without a CSV
 
-Each source has pre-configured column mapping that matches the typical export format from that provider. When you select a source and upload its CSV, the fields map automatically without manual column configuration.
+Each source has pre-configured column mapping that matches the typical export format from that provider. When you select a source and upload its CSV, the fields map automatically without manual column configuration. The Garmin and Apple Health **Download Template** files (column names like `logged_date`, `resting_hr`, `steps`) are read too.
+
+Each source keeps its own row per day. A Garmin day, an Apple Health day and a day you typed in yourself are stored side by side and never added together.
 
 ---
 
@@ -77,23 +79,32 @@ Before import, the system validates each row:
 
 ---
 
-### Importing
+### Check Rows, Then Import
 
-When the table looks correct, click **Import**. The system processes all rows and returns a summary:
+When the table looks correct, click **Check rows**. Nothing is saved yet. A "Before you import" panel counts what the import would do for this source:
 
-- **Imported:** X rows successfully inserted or updated
-- **Skipped:** Y rows that had no valid metric data
-- **Errors:** Up to 10 specific error messages for rows that couldn't be processed
+- **New days** — dates you have no row for yet. They are added.
+- **Already imported (skipped)** — days whose values are all already stored. Nothing changes.
+- **Days gain blank fields** — days you have, where the file fills in fields that are empty today (for example, sleep score on a day that only had steps).
+- **Different values (existing kept)** — days where the file disagrees with what is stored. Your stored values stay. Open **Days with different values** to see which dates and fields.
+- **Dates listed twice (merged)** — a file that names the same date twice is merged into one day; the later row wins where both have a value.
+- **Invalid rows** — rows with no readable date or no metric.
 
-Imported rows follow the same upsert logic as manual logging: if a row already exists for that date, it's updated. If not, it's created. This means you can re-import without creating duplicates — the new import simply overwrites the existing data for those dates.
+The **Import** button turns on after the check. If you edit the table, switch source, or change the toggle below, check again.
+
+**Replace existing values** (off by default): tick it when the file should win where it disagrees with what is stored, for example after correcting a value in your export. A blank cell never erases a stored value, with or without the toggle.
+
+After you click **Import**, a green message repeats the counts for what was saved. Importing the same file a second time adds nothing: every day shows as already imported.
 
 **Maximum import size:** 365 rows per import. For larger historical datasets, run multiple imports.
+
+InBody works a little differently: its scans are matched by their measurement time, so importing the same InBody export again adds only new scans, and the latest scan of each day becomes that day's InBody body-composition row.
 
 ---
 
 ### After Import
 
-Navigate back to `/dashboard/metrics` after importing. Your 7-day summary strip will now reflect any imported dates within the last 7 days. The analytics page and weekly review will also incorporate the imported data the next time they're loaded.
+Navigate back to `/dashboard/metrics` after importing. Rows imported as **Manual Entry** are your own daily log: the 7-day summary strip, stats, personal records and the main trend charts read them. Rows imported from a device source (Garmin, Apple Health, Oura and the others) keep that source; open the Trends page and turn on **Compare Sources** to see them next to your own entries.
 
 ---
 
@@ -115,9 +126,13 @@ Navigate back to `/dashboard/metrics` after importing. Your 7-day summary strip 
 
 > [SCREEN: Delete one row — show it disappear]
 
-> [SCREEN: Click Import — import result summary appears]
+> [SCREEN: Click Check rows — the "Before you import" panel appears]
 
-> [SCREENSHOT: Import result — callouts: Imported count, Skipped count, Errors list (if any)]
+> [SCREENSHOT: Before you import — callouts: New days, Already imported (skipped), Days gain blank fields, Different values (existing kept), Replace existing values toggle]
+
+> [SCREEN: Click Import — the green result message repeats the counts]
+
+> [SCREEN: Click Check rows again on the same file — every day now shows as already imported]
 
 > [SCREEN: Navigate back to /dashboard/metrics — show updated 7-day summary with imported data]
 
@@ -134,5 +149,6 @@ Navigate back to `/dashboard/metrics` after importing. Your 7-day summary strip 
 - Edit any cell before importing — correct dates, values, or remove rows
 - Auto column mapping for all supported providers — no manual field configuration needed
 - Maximum 365 rows per import; run multiple imports for larger datasets
-- Import uses upsert — re-importing won't create duplicates, it updates existing dates
-- Imported data immediately appears in analytics, weekly review, and the 7-day summary strip
+- Check rows before Import: new days are added, days you have only gain blank fields, stored values are kept unless you tick Replace existing values
+- Re-importing the same file adds nothing, and a date listed twice in one file is merged
+- Each source keeps its own row per day; Manual Entry feeds the summary and main charts, device sources show in Compare Sources

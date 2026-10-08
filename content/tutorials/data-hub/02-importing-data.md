@@ -50,7 +50,16 @@ Follow these guidelines:
 
 ---
 
-### Step 4: Import
+### Step 4: Check for Rows You Already Have (Health Metrics and Workouts)
+
+Health Metrics and Workouts add a **Check rows** button next to Import. Click it first: nothing is saved yet, and a "Before you import" line says what the import would do, for example "12 new days to add · 30 already imported (skipped) · 2 days with different values (existing values kept)". Import turns on once you have checked the rows you are about to send; change the file or a choice below and you check again.
+
+- **Health Metrics** — one row per day. A day you already have only gains values in its blank fields, and values you already have are kept. Tick **Replace existing values** when the file should win; a blank cell never erases anything. A date listed twice in the file is merged into one day.
+- **Workouts** — a workout you already logged under the same name on the same day is skipped, so importing one file twice adds nothing. Tick **Import anyway when a workout with the same name is already logged that day** for a real second session, like a morning and an evening walk.
+
+---
+
+### Step 5: Import
 
 1. Click the **Import** button (shows row count, e.g., "Import 47 Rows")
 2. Wait for the progress indicator
@@ -72,7 +81,8 @@ Follow these guidelines:
 | **Equipment** | Category names are auto-created if they don't exist. `current_value` defaults to `purchase_price`. |
 | **Contacts** | Upserts by name + type — existing contacts are updated, not duplicated. Location fields create sub-locations. |
 | **Tasks** | Rows without roadmap/goal/milestone columns go to an "Imported Tasks" milestone in your oldest roadmap, created if needed. If you have no roadmap of your own yet, they go to your Inbox. A new roadmap named without dates starts today and runs 10 years. Default tag: personal, priority: 2. |
-| **Workouts** | Rows with the same name + date are grouped into one workout. Each row becomes one exercise. |
+| **Health Metrics** | Up to 365 rows. These rows are your own daily log (source: manual). Check rows first: days you already have only gain blank fields unless you tick Replace existing values. |
+| **Workouts** | Rows with the same name + date are grouped into one workout. Each row becomes one exercise. A workout already logged under that name that day is skipped unless you tick Import anyway. |
 
 ---
 
@@ -107,6 +117,8 @@ This lets you maintain a living spreadsheet and re-import anytime.
 
 > [SCREEN: Demonstrate Google Sheets flow — publish, paste URL, import]
 
+> [SCREEN: On the Workouts import page — upload the same CSV twice — click Check rows — show "0 workouts to add · 5 already logged that day (skipped)"]
+
 ---
 
 ## Key Takeaways
@@ -114,5 +126,6 @@ This lets you maintain a living spreadsheet and re-import anytime.
 - Download the CSV template first — it shows the exact format expected
 - Dates must be YYYY-MM-DD, numbers plain (no $ or commas)
 - Preview your data before importing to catch issues
+- Health Metrics and Workouts: Check rows first; importing the same file again adds nothing
 - Each module has specific behaviors (auto-calc CO2, category creation, upserts)
 - Google Sheets publishing lets you maintain a living spreadsheet for re-imports

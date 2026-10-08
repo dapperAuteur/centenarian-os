@@ -23,8 +23,8 @@ The Health Metrics module is where you track the physical data that underpins ev
 | 02 | Logging Your Daily Metrics | Core metrics form, 7-day summary strip, saving your daily log |
 | 03 | Enrichment Metrics | HRV, SpO2, sleep score, stress, recovery — what they are and how to unlock |
 | 04 | Body Composition Tracking | Weight, body fat %, muscle mass, BMI — the acknowledgment flow |
-| 05 | Importing Health Data | CSV import for 8 sources, column mapping, bulk upload up to 365 rows |
-| 06 | Connecting Wearables | OAuth integrations (Oura, WHOOP, Garmin) and CSV providers |
+| 05 | Importing Health Data | CSV import for 8 sources, column mapping, Check rows before importing, re-imports that never duplicate a day, up to 365 rows |
+| 06 | Connecting Wearables | Device sources in Settings, Garmin sync (coming soon), one row per day per source |
 | 07 | Understanding Your Metrics | What each metric means, optimal ranges, and how they feed the weekly review |
 
 ---
@@ -37,7 +37,7 @@ This course uses **Choose Your Own Adventure** navigation. Start with Lessons 01
 
 ## Who This Course Is For
 
-Anyone who wants to track their physical health data in CentenarianOS. You don't need a wearable — all metrics can be entered manually. Wearable users (Oura, WHOOP, Garmin) can automate most of the data entry.
+Anyone who wants to track their physical health data in CentenarianOS. You don't need a wearable — all metrics can be entered manually. Wearable users (Oura, WHOOP, Garmin, Apple Watch) can bring their history in with each device's CSV export.
 
 ---
 
@@ -48,7 +48,7 @@ Before recording:
 - [ ] At least 14 days of health metrics logged (so the 7-day summary shows data)
 - [ ] At least one enrichment metric unlocked and logged
 - [ ] Body composition tracking acknowledged and at least one log entry
-- [ ] One wearable connected (or import CSV from Garmin, Apple Health, etc. as demo)
+- [ ] A sample CSV export from Garmin, Apple Health, etc. for the import demo
 - [ ] Import page demo prepared with a sample CSV file
 
 ---
@@ -58,4 +58,4 @@ Before recording:
 - Health Metrics tracks up to 14 data points per day across three tiers
 - CYOA navigation — Lessons 01–02 are the core path; others are modular
 - Data feeds into the AI weekly review (energy/recovery section)
-- Wearables automate logging; CSV import handles historical data
+- Device CSV exports bring in your history; re-importing never duplicates a day

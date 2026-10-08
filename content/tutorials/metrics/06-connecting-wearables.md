@@ -11,97 +11,56 @@
 
 ## Narrator Script
 
-Manual logging works, but wearable integrations make it automatic. If you have an Oura Ring, WHOOP, or Garmin device, you can connect it to CentenarianOS and have your daily metrics sync without entering them by hand. This lesson covers how to connect your device and what happens when the sync runs.
+Manual logging works, but your watch, ring or scale already has months of data. Today you bring that data in with each device's CSV export; direct Garmin sync is on the way. This lesson shows where your devices live in Settings, how their data is kept apart, and why importing the same export twice never doubles anything.
 
 ---
 
 ### Where to Manage Integrations
 
-Navigate to `/dashboard/settings/wearables`. This page shows all supported providers with their connection status.
+Navigate to `/dashboard/settings/wearables`. This page lists the supported sources, each with what it can bring in.
 
-Alternatively, navigate to the Health Metrics import page — the wearable connections section is accessible from there too.
-
----
-
-### Two Types of Providers
-
-**OAuth providers (automatic sync):**
-These connect via OAuth and can pull data automatically. Three providers:
-- **Oura Ring** — Syncs sleep score, HRV, recovery/readiness score, SpO2, resting HR, activity
-- **WHOOP** — Syncs recovery score, HRV, sleep data, strain (active calories)
-- **Garmin** — Syncs steps, resting HR, HRV, sleep, activity minutes, stress score
-
-**CSV import providers (manual file upload):**
-These don't have OAuth — you export a CSV from their app and use the import tool. Covered in Lesson 05. Four providers:
-- Apple Health
-- Google Health
-- InBody
-- Hume Health
+You can also go straight to the Health Metrics import page (`/dashboard/metrics/import`) and pick the source there.
 
 ---
 
-### Connecting an OAuth Provider
+### What Each Card Offers
 
-From the Wearables settings page, find the provider card for your device (Oura, WHOOP, or Garmin).
+**Garmin — Coming Soon:**
+Direct Garmin sync needs Garmin's developer approval and is not switched on yet, so the card shows **Coming Soon**. Next to it:
+- **Import CSV** opens the import page with Garmin selected
+- **Template** downloads the Garmin CSV template
 
-Click **Connect**. You'll be redirected to that provider's OAuth authorization page. Sign in with your account credentials and grant permission for CentenarianOS to read your health data.
+**CSV sources:**
+Apple Health, Google Health, InBody and Hume Health each have an **Import CSV** button (the import page with that source selected) and a **Template**. Export a CSV from the provider's app and import it (Lesson 05).
 
-After authorization, you're redirected back to the Wearables settings page. The provider card now shows:
-- **"Connected"** badge
-- Last sync timestamp (will show "Never synced yet" on first connect)
-- A **Sync** button
-- A **Disconnect** button
-
----
-
-### Running a Sync
-
-After connecting, click **Sync** to pull your data. The provider card shows a loading state while syncing. When complete, the last sync timestamp updates.
-
-What gets synced:
-- The most recent data from your device (typically the last 7–30 days, depending on the provider's API limits)
-- Only metrics you've unlocked in CentenarianOS will be written — if you haven't unlocked HRV, Oura HRV data won't be saved even if the sync fetches it
-
-**Automatic sync:** Syncs run automatically once per day in the background when you're logged in. You don't need to manually click Sync for daily updates — it happens automatically. The manual Sync button is for when you want an on-demand update (e.g., after a morning workout before the auto-sync runs).
+**Oura and WHOOP:**
+There is no Oura or WHOOP card yet. Choose **Oura** or **WHOOP** on the import page and import the CSV the Oura or WHOOP app exports.
 
 ---
 
-### Sync Status
+### How Your Device Data Is Kept
 
-The provider card shows one of three sync statuses:
+Every source keeps its own row for each day:
 
-- **Idle** — Connected and up to date. No action needed.
-- **Syncing** — A sync is in progress.
-- **Error** — The last sync failed. The error message is shown on the card. Common errors: expired token (reconnect by clicking Connect again), provider API outage, or a permissions scope issue.
+- A Garmin day, an Apple Health day and a day you typed in yourself are stored side by side. They are never added together, so two devices counting the same steps can't double your total.
+- Importing the same export again adds nothing. A day that is already stored only gains values in fields that are blank today; the values you have are kept unless you tick **Replace existing values** on the import page.
+- Click **Check rows** before importing to see how many days are new, already imported, gaining fields, or different.
 
-If you see an error, the first step is always to click **Connect** again and re-authorize. Most sync errors are resolved by re-authorization.
-
----
-
-### Disconnecting a Provider
-
-Click **Disconnect** on any connected provider. A confirmation prompt appears. After disconnecting:
-- The OAuth token is revoked and deleted from CentenarianOS
-- **Your existing health data is not deleted** — synced data already in your metrics history remains intact
-- Future automatic syncs stop for that provider
-
-You can reconnect at any time by clicking Connect again.
+When Garmin sync is switched on, it will write to the same Garmin rows your Garmin CSV imports create, keyed on Garmin's own calendar day, so a day is never stored twice and a value Garmin doesn't send is never erased.
 
 ---
 
-### Multiple Providers
+### Where Device Data Shows Up
 
-You can connect multiple OAuth providers simultaneously. If you have both Oura and Garmin connected, and both provide resting HR data, the sync will write both readings. The last provider to sync wins for any given date — there's no automatic merge or priority system.
+Your own daily log (Manual Entry) drives the 7-day summary strip, stats, personal records and the main trend charts. Device rows keep their source: on the Trends page, turn on **Compare Sources** to chart Garmin, Apple Health or InBody next to your own entries.
 
-Most users with multiple devices use them for different metrics: Oura for sleep and HRV, Garmin for steps and activity. Configure your metric unlocks to reflect which device you trust most for each metric.
+Most people with several devices use each for what it measures best: a ring for sleep and HRV, a watch for steps and activity, a scale for body composition.
 
 ---
 
-### CSV Providers
+### Activities Are Different
 
-For Apple Health, Google Health, InBody, and Hume Health — there's no direct connection. Instead, export a CSV from the provider's app and use the Import tool (Lesson 05) to upload the data. These providers don't have public OAuth APIs that allow third-party data access.
-
-Each CSV provider card shows an **Import CSV** button that links directly to the import page with that provider pre-selected.
+Rides, runs, walks and hikes from Garmin are activities, not daily totals. Import them from **Travel → Import → Garmin Activities CSV**, where they become trips (Mastering Travel Tracking, Lesson 07). Each activity is recognised by its start time, so importing the same activities again adds nothing.
 
 ---
 
@@ -109,27 +68,15 @@ Each CSV provider card shows an **Import CSV** button that links directly to the
 
 > [SCREEN: Navigate to /dashboard/settings/wearables — show the full page with all provider cards]
 
-> [SCREENSHOT: Wearables settings page — callouts: OAuth provider cards (Oura, WHOOP, Garmin) with Connect buttons, CSV provider cards (Apple Health, Google Health, InBody, Hume Health) with Import CSV buttons]
+> [SCREENSHOT: Wearables settings page — callouts: Garmin card with Coming Soon, Import CSV and Template; CSV cards (Apple Health, Google Health, InBody, Hume Health) with Import CSV buttons]
 
-> [SCREEN: Click "Connect" on Oura Ring card — OAuth redirect page]
+> [SCREEN: Click "Import CSV" on the Garmin card — the import page opens with Garmin selected]
 
-> [SCREENSHOT: Oura OAuth page — callout: "Authorize CentenarianOS to read your health data"]
+> [SCREEN: Upload a Garmin CSV — click Check rows — show the "Before you import" counts]
 
-> [SCREEN: Return to wearables settings — Oura card now shows "Connected" badge]
+> [SCREEN: Click Import — then Check rows again on the same file — every day shows as already imported]
 
-> [SCREENSHOT: Connected Oura card — callouts: Connected badge, Last sync timestamp, Sync button, Disconnect button]
-
-> [SCREEN: Click "Sync" — card shows syncing state — complete — timestamp updates]
-
-> [SCREENSHOT: After sync — updated last sync timestamp — callout: "Auto-sync runs daily — manual sync for on-demand updates"]
-
-> [SCREEN: Show the sync error state on a different card (if possible to demo) — show error message text]
-
-> [SCREEN: Click "Disconnect" on the Oura card — confirmation prompt — cancel (don't disconnect for demo)]
-
-> [SCREEN: Show Garmin card — click "Connect" to start Garmin OAuth (or just show what it looks like)]
-
-> [SCREEN: Click "Import CSV" on Apple Health card — show redirect to import page with Apple Health pre-selected]
+> [SCREEN: Open Health Metrics → Trends — turn on Compare Sources — show Garmin next to Manual]
 
 > [SCREEN: End on wearables settings page — end lesson]
 
@@ -137,11 +84,10 @@ Each CSV provider card shows an **Import CSV** button that links directly to the
 
 ## Key Takeaways
 
-- Three OAuth providers (auto-sync): Oura Ring, WHOOP, Garmin
-- Four CSV providers (manual import): Apple Health, Google Health, InBody, Hume Health
-- Connect from /dashboard/settings/wearables — OAuth redirects to provider's authorization page
-- Auto-sync runs daily in background; manual Sync button for on-demand updates
-- Only unlocked metrics are written during sync — unlock metrics in Health Metrics before expecting data
-- Sync error → first step is reconnect (re-authorize) — resolves most token expiry issues
-- Disconnecting does not delete your existing synced data
-- Multiple providers can run simultaneously; last sync wins per date/metric
+- Garmin direct sync is Coming Soon; import Garmin's CSV export today from the Garmin card's Import CSV button
+- Apple Health, Google Health, InBody and Hume Health import by CSV; Oura and WHOOP too, from the import page
+- Each source keeps its own row per day; devices are never added together
+- Re-importing an export adds nothing new; stored values are kept unless you tick Replace existing values
+- Check rows before Import to see what is new, already imported, or different
+- Your own entries drive the summary and main charts; device rows show in Compare Sources
+- Garmin activities (rides, runs, walks, hikes) import as trips from Travel → Import
