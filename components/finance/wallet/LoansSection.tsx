@@ -2,8 +2,9 @@
 
 // components/finance/wallet/LoansSection.tsx
 // The Wallet's Loans section, apart from credit cards and lines of credit. Each loan compares its
-// starting amount and date with what is owed now, shows the payoff date at the minimum payment,
-// and takes a custom monthly payment that shows the new payoff date and the interest saved.
+// starting amount and date with what is owed now, shows the payoff date at its monthly payment (the
+// statement's minimum, else the last linked payment; unknown otherwise, with no date), and takes a
+// custom monthly payment that shows the new payoff date and the interest saved.
 // Math: lib/finance/wallet/logic.ts comparePayoff (lib/finance/debt/amortize.ts). Estimates only.
 
 import { useId, useMemo, useState } from 'react';
@@ -36,8 +37,13 @@ export default function LoansSection({ loans, home, today }: { loans: LoansData;
               <dd className="text-2xl font-bold text-gray-900">{money(loans.owed, home)}</dd>
             </div>
             <div>
-              <dt className="text-xs text-gray-600">Minimums a month</dt>
+              <dt className="text-xs text-gray-600">Payments a month</dt>
               <dd className="text-2xl font-bold text-gray-900">{money(loans.minimums, home)}</dd>
+              {loans.no_payment_count > 0 && (
+                <dd className="text-xs text-gray-600">
+                  {loans.no_payment_count === 1 ? '1 loan has' : `${loans.no_payment_count} loans have`} no monthly payment yet
+                </dd>
+              )}
             </div>
           </dl>
           <ul role="list" className="space-y-3">
@@ -56,7 +62,7 @@ export default function LoansSection({ loans, home, today }: { loans: LoansData;
 
 function LoanRow({ loan, home, today }: { loan: LoanView; home: string; today: string }) {
   const id = useId();
-  const [custom, setCustom] = useState(loan.minimum > 0 ? String(loan.minimum) : '');
+  const [custom, setCustom] = useState(loan.minimum !== null && loan.minimum > 0 ? String(loan.minimum) : '');
   const amount = Number(custom);
   const valid = custom.trim() !== '' && Number.isFinite(amount) && amount > 0;
   const result = useMemo(
@@ -105,16 +111,34 @@ function LoanRow({ loan, home, today }: { loan: LoanView; home: string; today: s
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-gray-600">At the minimum</dt>
+          <dt className="text-xs text-gray-600">Monthly payment</dt>
           <dd className="text-gray-900">
-            {money(loan.minimum, c)} a month{loan.minimum_estimated ? ' (estimate)' : ''}
-            <span className="block text-xs text-gray-600">
-              {loan.owed <= 0
-                ? 'Paid off'
-                : loan.at_minimum.never_pays_off
-                  ? 'Never pays off at this amount'
-                  : `Paid off ${formatDate(loan.at_minimum.payoff_date)} (${months(loan.at_minimum.months)}), about ${money(loan.at_minimum.total_interest, c)} interest`}
-            </span>
+            {loan.minimum === null || loan.at_minimum === null ? (
+              <>
+                {loan.owed <= 0 ? 'Paid off' : 'Not known yet'}
+                {loan.owed > 0 && (
+                  <span className="block text-xs text-gray-600">
+                    Import a statement, or record a payment as a transfer to this loan, to see its payoff date. Or try an amount below.
+                  </span>
+                )}
+              </>
+            ) : (
+              <>
+                {money(loan.minimum, c)} a month
+                <span className="block text-xs text-gray-600">
+                  {loan.minimum_source === 'statement'
+                    ? 'Minimum from the latest statement'
+                    : `Your last payment${loan.minimum_date ? ` (${formatDate(loan.minimum_date)})` : ''}`}
+                </span>
+                <span className="block text-xs text-gray-600">
+                  {loan.owed <= 0
+                    ? 'Paid off'
+                    : loan.at_minimum.never_pays_off
+                      ? 'Never pays off at this amount'
+                      : `Paid off ${formatDate(loan.at_minimum.payoff_date)} (${months(loan.at_minimum.months)}), about ${money(loan.at_minimum.total_interest, c)} interest`}
+                </span>
+              </>
+            )}
           </dd>
         </div>
       </dl>
@@ -153,11 +177,11 @@ function LoanRow({ loan, home, today }: { loan: LoanView; home: string; today: s
                 {result.interest_saved !== null && result.months_saved !== null && result.months_saved !== 0 && (
                   <span className="block">
                     {result.interest_saved >= 0
-                      ? `That saves about ${money(result.interest_saved, c)} in interest and finishes ${months(result.months_saved)} sooner than the minimum.`
-                      : `That costs about ${money(-result.interest_saved, c)} more in interest and finishes ${months(-result.months_saved)} later than the minimum.`}
+                      ? `That saves about ${money(result.interest_saved, c)} in interest and finishes ${months(result.months_saved)} sooner than the monthly payment.`
+                      : `That costs about ${money(-result.interest_saved, c)} more in interest and finishes ${months(-result.months_saved)} later than the monthly payment.`}
                   </span>
                 )}
-                {result.minimum.never_pays_off && <span className="block">The minimum alone would never pay it off.</span>}
+                {result.minimum?.never_pays_off && <span className="block">The monthly payment alone would never pay it off.</span>}
               </>
             ) : null}
           </div>

@@ -1,8 +1,9 @@
 // lib/finance/wallet/server.ts
 // Database reads for the Wallet (GET /api/finance/wallet). Loads everything once: active accounts
-// with every page of their transactions (the one balance rule), card and loan statements (limit,
-// APR, minimum), the latest cash count of each cash pocket, what savings goals hold, today's rate
-// for each currency, equipment, vehicles and insurance policies. The formulas are in ./logic.ts;
+// with every page of their transactions (the one balance rule, plus the transfer columns that mark
+// a loan's linked payments), card and loan statements (limit, APR, minimum), the latest cash count
+// of each cash pocket, what savings goals hold, today's rate for each currency, equipment, vehicles
+// and insurance policies. The formulas are in ./logic.ts;
 // retirement (lib/finance/retirement/server.ts) and book values (lib/equipment/book-values.ts) are
 // loaded by the route and passed in.
 //
@@ -15,12 +16,14 @@
 // in-memory fake (tests/unit/wallet.test.ts).
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { loadBalanceRows, signedBalancesCents } from '../balance/server.ts';
+import { BALANCE_TX_SELECT, loadBalanceRows, signedBalancesCents } from '../balance/server.ts';
+import type { BalanceTxRow } from '../balance/server.ts';
 import { isDebtAccount } from '../balance/logic.ts';
-import { buildDebtSummary } from '../debt/overview.ts';
+import { buildDebtSummary, latestLinkedPayment } from '../debt/overview.ts';
 import type { DebtAccountRow, StatementRow, TxnRow } from '../debt/overview.ts';
 import { STATEMENT_SELECT, isMissingTable } from '../debt/server.ts';
 import { isCurrencyCode } from '../fx/math.ts';
+import { isMissingColumn } from '../transfers/schema.ts';
 import { getRate } from '../fx/rates.ts';
 import type { FxDeps } from '../fx/rates.ts';
 import type { EquipmentIn, PolicyIn, VehicleIn, WalletAccountIn, WalletInput } from './logic.ts';
@@ -49,6 +52,27 @@ const numOrNull = (v: unknown): number | null => {
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 };
+
+type WalletTxRow = BalanceTxRow & { transfer_group_id?: string | null; transfer_kind?: string | null };
+
+/**
+ * Every transaction on the accounts (all pages), with the transfer columns that mark a linked loan
+ * payment. Before migration 203 there is no transfer_kind and before 202 no transfer_group_id: the
+ * read drops what is missing, so balances still load (with no linked payments).
+ */
+async function loadAccountRows(db: SupabaseClient, userId: string, ids: readonly string[]) {
+  const selects = [
+    `${BALANCE_TX_SELECT}, transfer_group_id, transfer_kind`,
+    `${BALANCE_TX_SELECT}, transfer_group_id`,
+    BALANCE_TX_SELECT,
+  ];
+  let res = await loadBalanceRows<WalletTxRow>(db, userId, ids, selects[0]);
+  for (const select of selects.slice(1)) {
+    if (!isMissingColumn(res.error, 'transfer_kind') && !isMissingColumn(res.error, 'transfer_group_id')) break;
+    res = await loadBalanceRows<WalletTxRow>(db, userId, ids, select);
+  }
+  return res;
+}
 
 /** Latest count date of each cash account; ready = false before migration 213. */
 async function loadLastCounts(db: SupabaseClient, userId: string, ids: readonly string[]) {
@@ -152,7 +176,7 @@ export async function loadWalletInput(
   const cashIds = accounts.filter((a) => a.account_type === 'cash').map((a) => a.id);
 
   const [balanceRes, statementRes, countRes, goalRes, policyRes, equipmentRes, vehicleRes] = await Promise.all([
-    loadBalanceRows(db, userId, ids),
+    loadAccountRows(db, userId, ids),
     loadStatements(db, userId, debtIds),
     loadLastCounts(db, userId, cashIds),
     loadGoalsHeld(db, userId),
@@ -218,7 +242,10 @@ export async function loadWalletInput(
       last_activity: lastActivity.get(a.id) ?? null,
     };
     if (!isDebtAccount(a.account_type)) return base;
-    const debt = buildDebtSummary(a as unknown as DebtAccountRow, statementRes.rows, balanceRes.rows as unknown as TxnRow[], today);
+    const txns = balanceRes.rows as unknown as TxnRow[];
+    const debt = buildDebtSummary(a as unknown as DebtAccountRow, statementRes.rows, txns, today);
+    // A loan with no statement minimum pays what it last paid, not the card formula (logic.ts loanPayment).
+    const lastPayment = a.account_type === 'loan' ? latestLinkedPayment(a.id, txns, today) : null;
     return {
       ...base,
       credit_limit: debt.creditLimit,
@@ -227,6 +254,8 @@ export async function loadWalletInput(
       apr_source: debt.aprSource,
       minimum_payment: debt.minimumPayment,
       minimum_estimated: debt.minimumEstimated,
+      last_payment: lastPayment?.amount ?? null,
+      last_payment_date: lastPayment?.date ?? null,
     };
   });
 

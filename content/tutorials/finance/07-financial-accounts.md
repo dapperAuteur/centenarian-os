@@ -192,7 +192,7 @@ The **Wallet** (`/dashboard/finance/wallet`, the Wallet button at the top of the
 - **Cash:** physical cash only, each pocket with how long ago you counted it. Over 30 days (or never) shows an amber **Count cash** link.
 - **Checking and savings:** its own card. Money your savings goals hold is shown but not subtracted, because it is still in the account.
 - **Credit cards and lines of credit:** owed out of your total limit, with a bar and a % for each card. The limit comes from the account, else your latest imported statement. A card you overpaid counts as zero; a card with no limit is listed outside the %. 30% or more turns amber: a common rule of thumb, not a rule. A loan account with a limit is a line of credit and shows here.
-- **Loans:** each loan's starting balance and date next to what you owe now, the payoff date at the minimum payment, and **Try a monthly payment** to see a new payoff date and the interest you would save.
+- **Loans:** each loan's starting balance and date next to what you owe now, the payoff date at its monthly payment (the minimum on your latest imported statement, else your last payment recorded as a transfer to the loan; with neither it says "Not known yet"), and **Try a monthly payment** to see a new payoff date and the interest you would save.
 - **Assets and insurance:** equipment you own and your own vehicles, with your value (resale, which you keep up with valuations) next to the book value after depreciation, and the coverage of your policies in force.
 - **Retirement:** what your retirement accounts hold and the years left (65 marked "assumed" if you haven't set an age), green **On track** or an amber "Short by" line.
 

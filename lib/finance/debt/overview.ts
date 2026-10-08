@@ -16,6 +16,7 @@
 //                   (credit-limit.ts creditLimitFor, shared with the Wallet).
 //   Linked payment = an income row on the card or loan that transfer tracking linked
 //                   (transfer_kind 'card_payment' / 'loan_payment', or any transfer_group_id).
+//                   latestLinkedPayment() = the latest day's linked payments, added up.
 
 import {
   backInterestAtRisk,
@@ -160,6 +161,35 @@ export function isLinkedPayment(t: TxnRow): boolean {
   if (t.type !== 'income') return false;
   if (t.transfer_kind === 'card_payment' || t.transfer_kind === 'loan_payment') return true;
   return !!t.transfer_group_id;
+}
+
+/**
+ * The latest linked payment into one card or loan, dated on or before `today`: the sum of the
+ * linked payments on the latest such day (a payment split in two on one day is one payment).
+ * Null when nothing was ever linked. The Wallet uses it as a loan's monthly payment when no
+ * statement gives one.
+ */
+export function latestLinkedPayment(
+  accountId: string,
+  txns: readonly TxnRow[],
+  today: string,
+): { amount: number; date: string } | null {
+  let date: string | null = null;
+  let cents = 0;
+  for (const t of txns) {
+    if (t.account_id !== accountId || !isLinkedPayment(t) || !t.transaction_date) continue;
+    const day = t.transaction_date.slice(0, 10);
+    if (day > today) continue;
+    const amount = Math.round(Math.abs(Number(t.amount)) * 100);
+    if (!Number.isFinite(amount)) continue;
+    if (date === null || day > date) {
+      date = day;
+      cents = amount;
+    } else if (day === date) {
+      cents += amount;
+    }
+  }
+  return date === null || cents <= 0 ? null : { amount: cents / 100, date };
 }
 
 /** Stable identity of a promo within an account: expiry + description, lower-cased. */

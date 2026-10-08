@@ -9,12 +9,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { creditLimitFor, latestStatementLimit } from '../../lib/finance/debt/credit-limit.ts';
-import { buildDebtSummary } from '../../lib/finance/debt/overview.ts';
-import type { DebtAccountRow, StatementRow } from '../../lib/finance/debt/overview.ts';
+import { buildDebtSummary, latestLinkedPayment } from '../../lib/finance/debt/overview.ts';
+import type { DebtAccountRow, StatementRow, TxnRow } from '../../lib/finance/debt/overview.ts';
 import {
   CREDIT_WARN_PERCENT,
   buildWallet,
   comparePayoff,
+  loanPayment,
   loanStart,
   retirementFromOverview,
   toHome,
@@ -276,11 +277,54 @@ test('loans: starting amount and date vs owed now, and the payoff at the minimum
   assert.equal(loan.as_of, '2026-10-01');
   assert.equal(loan.paid_down, 3000);
   assert.equal(loan.paid_percent, 25);
+  assert.equal(loan.minimum_source, 'statement');
+  assert.ok(loan.at_minimum);
   assert.equal(loan.at_minimum.never_pays_off, false);
   assert.equal(loan.at_minimum.months, 33);
   assert.equal(loan.at_minimum.payoff_date, '2029-07-08');
   assert.ok(loan.at_minimum.total_interest > 700 && loan.at_minimum.total_interest < 800);
   assert.equal(w.loans.minimums, 300);
+  assert.equal(w.loans.no_payment_count, 0);
+});
+
+test("loans: no statement means the last linked payment, never the card formula; neither means no payoff date", () => {
+  // The card formula's estimate for $9,000 at 6% is $135 (1% + a month's interest): far too low for a car loan.
+  const w = buildWallet(
+    input({
+      accounts: [
+        acct({ id: 'car', account_type: 'loan', balance: -9000, apr: 6, minimum_payment: 135, minimum_estimated: true, last_payment: 300, last_payment_date: '2026-09-30' }),
+        acct({ id: 'student', account_type: 'loan', balance: -4000, apr: 5, minimum_payment: 56.67, minimum_estimated: true }),
+      ],
+    }),
+  );
+  const [car, student] = w.loans.loans;
+  assert.equal(car.minimum, 300);
+  assert.equal(car.minimum_source, 'last_payment');
+  assert.equal(car.minimum_date, '2026-09-30');
+  assert.equal(car.at_minimum?.months, 33); // at $135 it would be 82
+  assert.equal(student.minimum, null);
+  assert.equal(student.minimum_source, null);
+  assert.equal(student.at_minimum, null);
+  assert.equal(w.loans.minimums, 300);
+  assert.equal(w.loans.no_payment_count, 1);
+  // A statement's minimum wins over the last payment.
+  assert.deepEqual(loanPayment({ minimum_payment: 320, minimum_estimated: false, last_payment: 300 }), { amount: 320, source: 'statement', date: null });
+  assert.deepEqual(loanPayment({ minimum_payment: 0, last_payment: 0 }), { amount: null, source: null, date: null });
+});
+
+test('latestLinkedPayment: the latest day of linked payments, added up; unlinked, future and other accounts never count', () => {
+  const t = (over: Partial<TxnRow> & Pick<TxnRow, 'id' | 'amount' | 'transaction_date'>): TxnRow => ({ account_id: 'loan', type: 'income', ...over });
+  const txns = [
+    t({ id: '1', amount: 300, transaction_date: '2026-08-30', transfer_kind: 'loan_payment' }),
+    t({ id: '2', amount: 250, transaction_date: '2026-09-30', transfer_group_id: 'g2' }),
+    t({ id: '3', amount: 50, transaction_date: '2026-09-30', transfer_kind: 'loan_payment' }),
+    t({ id: '4', amount: 999, transaction_date: '2026-10-05' }), // not linked
+    t({ id: '5', amount: 300, transaction_date: '2026-10-30', transfer_kind: 'loan_payment' }), // after today
+    t({ id: '6', amount: 300, transaction_date: '2026-10-01', transfer_kind: 'loan_payment', account_id: 'other' }),
+    t({ id: '7', amount: 40, transaction_date: '2026-10-02', type: 'expense', transfer_kind: 'loan_payment' }), // not money in
+  ];
+  assert.deepEqual(latestLinkedPayment('loan', txns, TODAY), { amount: 300, date: '2026-09-30' });
+  assert.equal(latestLinkedPayment('none', txns, TODAY), null);
 });
 
 test('loanStart: the starting-balance date, else the day the account was added', () => {
@@ -305,6 +349,11 @@ test('comparePayoff: a custom payment shows the new payoff date and the interest
   assert.equal(never.custom.never_pays_off, true);
   assert.equal(never.interest_saved, null);
   assert.equal(never.months_saved, null);
+  // No monthly payment known: the custom amount alone.
+  const alone = comparePayoff(9000, 6, null, 300, TODAY);
+  assert.equal(alone.minimum, null);
+  assert.equal(alone.custom.months, 33);
+  assert.equal(alone.interest_saved, null);
 });
 
 test('assets: owned equipment and your own vehicles, your value then book value then price', () => {
@@ -524,6 +573,41 @@ test('loadWalletInput: balances over every page, the statement limit, counts, go
   assert.equal(w.loans.loans[0].owed, 4500);
   // Nothing written by a read.
   assert.equal(db.writes().length, 0);
+});
+
+test('loadWalletInput: a loan with no statement pays its last linked payment (33 months, not 82)', async () => {
+  const db = new WalletFakeDb();
+  db.seed('financial_accounts', [
+    { id: 'car', user_id: USER, name: 'Car loan', account_type: 'loan', opening_balance: 9350, interest_rate: 6, is_active: true, currency: 'USD' },
+  ]);
+  db.seed('financial_transactions', [
+    { id: 'p1', user_id: USER, account_id: 'car', type: 'income', amount: 300, transaction_date: '2026-09-30', transfer_group_id: 'g1', transfer_kind: 'loan_payment' },
+    { id: 'p2', user_id: USER, account_id: 'car', type: 'income', amount: 50, transaction_date: '2026-10-01', transfer_group_id: null, transfer_kind: null },
+  ]);
+  const { input: loaded, error } = await loadWalletInput(asClient(db), USER, TODAY, 'USD', { rateFor: async () => null });
+  assert.equal(error, null);
+  assert.ok(loaded);
+  const car = loaded.accounts[0];
+  assert.equal(car.minimum_estimated, true);
+  assert.equal(car.last_payment, 300);
+  assert.equal(car.last_payment_date, '2026-09-30');
+  const loan = buildWallet({ ...loaded, retirement: null, bookValues: null }).loans.loans[0];
+  assert.equal(loan.owed, 9000);
+  assert.equal(loan.minimum, 300);
+  assert.equal(loan.at_minimum?.months, 33);
+
+  // Before migration 203 (no transfer_kind) the transfer group still links the payment.
+  db.missingColumns = { financial_transactions: ['transfer_kind'] };
+  const older = await loadWalletInput(asClient(db), USER, TODAY, 'USD', { rateFor: async () => null });
+  assert.equal(older.error, null);
+  assert.equal(older.input?.accounts[0].balance, -9000);
+  assert.equal(older.input?.accounts[0].last_payment, 300);
+  // Before migration 202 (no transfer columns at all) balances still load, with no linked payment.
+  db.missingColumns = { financial_transactions: ['transfer_kind', 'transfer_group_id'] };
+  const oldest = await loadWalletInput(asClient(db), USER, TODAY, 'USD', { rateFor: async () => null });
+  assert.equal(oldest.error, null);
+  assert.equal(oldest.input?.accounts[0].balance, -9000);
+  assert.equal(oldest.input?.accounts[0].last_payment, null);
 });
 
 test('loadWalletInput: works before the statement, count, goal and policy migrations', async () => {

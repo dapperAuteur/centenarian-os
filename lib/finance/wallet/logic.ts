@@ -37,9 +37,14 @@
 //   Loans (a loan with no limit)
 //     - Starting amount and date: the opening balance and its "as of" date (migration 221), else the
 //       day the account was added. Owed now: amountOwed() as of the latest transaction.
-//     - Payoff at the minimum: the latest statement's minimum, else the estimate the Debt page uses;
-//       month by month at APR / 12 (lib/finance/debt/amortize.ts payoffSchedule), first payment a
-//       month from today. A payment that never covers the interest "never pays off".
+//     - Monthly payment: the latest statement's minimum, else the latest payment transfer tracking
+//       linked into the loan (debt/overview.ts latestLinkedPayment), else unknown: no payoff date
+//       until there is one. Never the credit-card minimum formula the Debt page estimates with
+//       (max($25, 1% + a month's interest)): an installment loan has a fixed payment, and that
+//       formula would put most loans' payoff years too late.
+//     - Payoff at that payment: month by month at APR / 12 (lib/finance/debt/amortize.ts
+//       payoffSchedule), first payment a month from today. A payment that never covers the
+//       interest "never pays off".
 //     - A custom payment: the same schedule at that amount, the new payoff date, and the interest
 //       saved against the minimum (comparePayoff).
 //
@@ -126,7 +131,11 @@ export interface WalletAccountIn {
   apr?: number | null;
   apr_source?: 'statement' | 'account' | null;
   minimum_payment?: number | null;
+  /** True when minimum_payment is the card formula's estimate, not a statement's minimum. */
   minimum_estimated?: boolean;
+  /** Loans: the latest linked payment into the account (debt/overview.ts latestLinkedPayment). */
+  last_payment?: number | null;
+  last_payment_date?: string | null;
 }
 
 export interface EquipmentIn {
@@ -288,14 +297,21 @@ export interface LoanView {
   paid_percent: number | null;
   apr: number | null;
   apr_source: 'statement' | 'account' | null;
-  minimum: number;
-  minimum_estimated: boolean;
-  at_minimum: PayoffSummary;
+  /** The monthly payment the payoff date uses; null when neither a statement nor a payment gives one. */
+  minimum: number | null;
+  minimum_source: 'statement' | 'last_payment' | null;
+  /** The day of the last payment when minimum_source is 'last_payment'. */
+  minimum_date: string | null;
+  /** Payoff at `minimum`; null when it is unknown. */
+  at_minimum: PayoffSummary | null;
 }
 
 export interface LoansSection {
   owed: number;
+  /** Sum of the known monthly payments on loans still owed. */
   minimums: number;
+  /** Loans still owed with no known monthly payment. */
+  no_payment_count: number;
   loans: LoanView[];
 }
 
@@ -500,25 +516,40 @@ export function payoffSummary(balance: number, apr: number | null, payment: numb
 }
 
 export interface PayoffComparison {
-  minimum: PayoffSummary;
+  /** Null when the loan has no known monthly payment to compare with. */
+  minimum: PayoffSummary | null;
   custom: PayoffSummary;
-  /** Interest at the minimum - interest at the custom amount; null when either never pays off. */
+  /** Interest at the minimum - interest at the custom amount; null when either never pays off or there is no minimum. */
   interest_saved: number | null;
   /** Months sooner (negative = later); null when either never pays off. */
   months_saved: number | null;
 }
 
-/** The minimum payment against a custom one, for one loan. Estimates. */
-export function comparePayoff(balance: number, apr: number | null, minimum: number, custom: number, today: string): PayoffComparison {
-  const atMinimum = payoffSummary(balance, apr, minimum, today);
+/** The loan's monthly payment against a custom one (or the custom one alone when there is none). Estimates. */
+export function comparePayoff(balance: number, apr: number | null, minimum: number | null, custom: number, today: string): PayoffComparison {
+  const atMinimum = minimum !== null && minimum > 0 ? payoffSummary(balance, apr, minimum, today) : null;
   const atCustom = payoffSummary(balance, apr, custom, today);
-  const comparable = !atMinimum.never_pays_off && !atCustom.never_pays_off;
+  const comparable = atMinimum !== null && !atMinimum.never_pays_off && !atCustom.never_pays_off;
   return {
     minimum: atMinimum,
     custom: atCustom,
     interest_saved: comparable ? round2(atMinimum.total_interest - atCustom.total_interest) : null,
     months_saved: comparable && atMinimum.months !== null && atCustom.months !== null ? atMinimum.months - atCustom.months : null,
   };
+}
+
+/**
+ * A loan's monthly payment: the statement's minimum, else the latest linked payment, else none.
+ * The card formula's estimate (minimum_estimated) is never used for a loan.
+ */
+export function loanPayment(
+  a: Pick<WalletAccountIn, 'minimum_payment' | 'minimum_estimated' | 'last_payment' | 'last_payment_date'>,
+): { amount: number | null; source: 'statement' | 'last_payment' | null; date: string | null } {
+  const statement = a.minimum_estimated !== true && (a.minimum_payment ?? 0) > 0 ? round2(a.minimum_payment!) : null;
+  if (statement !== null) return { amount: statement, source: 'statement', date: null };
+  const last = (a.last_payment ?? 0) > 0 ? round2(a.last_payment!) : null;
+  if (last !== null) return { amount: last, source: 'last_payment', date: a.last_payment_date ?? null };
+  return { amount: null, source: null, date: null };
 }
 
 /** The day a loan's starting balance is as of: its starting-balance date, else the day it was added. */
@@ -543,7 +574,7 @@ export function loansSection(input: WalletInput, unconverted: UnconvertedItem[])
       const starting = round2(Number(a.opening_balance ?? 0) || 0);
       const start = loanStart(a);
       const paidDown = round2(starting - owed);
-      const minimum = round2(a.minimum_payment ?? 0);
+      const payment = loanPayment(a);
       return {
         id: a.id,
         name: a.name,
@@ -560,14 +591,18 @@ export function loansSection(input: WalletInput, unconverted: UnconvertedItem[])
         paid_percent: starting > 0 ? Math.round((paidDown / starting) * 1000) / 10 : null,
         apr: a.apr ?? null,
         apr_source: a.apr_source ?? null,
-        minimum,
-        minimum_estimated: a.minimum_estimated === true,
-        at_minimum: payoffSummary(owed, a.apr ?? null, minimum, input.today),
+        minimum: payment.amount,
+        minimum_source: payment.source,
+        minimum_date: payment.date,
+        at_minimum: payment.amount === null ? null : payoffSummary(owed, a.apr ?? null, payment.amount, input.today),
       };
     });
   return {
     owed: sumHome(loans.map((l) => (l.owed_home === null ? null : Math.max(0, l.owed_home)))),
-    minimums: sumHome(loans.map((l) => (l.owed > 0 ? toHome(l.minimum, l.currency, input.home, input.rates) : 0))),
+    minimums: sumHome(
+      loans.map((l) => (l.owed > 0 && l.minimum !== null ? toHome(l.minimum, l.currency, input.home, input.rates) : 0)),
+    ),
+    no_payment_count: loans.filter((l) => l.owed > 0 && l.minimum === null).length,
     loans,
   };
 }
