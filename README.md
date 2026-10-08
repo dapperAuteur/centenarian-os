@@ -539,7 +539,7 @@ And trip templates (`tests/unit/trip-template-stops.test.ts`): saving a route as
 it back keeps every leg's distance, duration, mode and vehicle (one-leg, round-trip and three-leg routes),
 the summed return leg, a leg saved with no vehicle logging with none (only a stop with no mode takes the
 template's vehicle), one-leg loops never doubled, purposes trips accept, card totals, and the stop repair
-planning.
+planning (a template a failed repair run left partly rewritten is finished on the rerun).
 
 ## Project Structure
 

@@ -6,7 +6,8 @@
 // A template is rebuilt only from the route it was saved from (the route with
 // its template_id, created just before the template), and only when its stops
 // still match, field for field, what one of the old writers produced from that
-// route's legs. Anything else was edited since and is listed for a manual fix.
+// route's legs, each stop allowing its right value too (a repair run that
+// stopped part way). Anything else was edited since and is listed for a manual fix.
 //
 // The old writers, all N legs -> N + 1 stops with an empty last stop:
 //   'shifted'  CentOS 2026-03-23 to this fix (79e426c): stop i at leg i's origin
@@ -112,21 +113,25 @@ function stopValues(stop: TemplateStop): StopValues {
   };
 }
 
+function sameStop(stop: TemplateStop, e: StopValues): boolean {
+  const a = stopValues(stop);
+  return a.location_name === e.location_name
+    && a.mode === e.mode
+    && a.vehicle_id === e.vehicle_id
+    && sameNumber(a.distance_miles, e.distance_miles)
+    && sameNumber(a.duration_min, e.duration_min)
+    && sameNumber(a.cost, e.cost)
+    && a.purpose === e.purpose
+    && a.notes === e.notes;
+}
+
 function sameStops(actual: readonly TemplateStop[], expected: readonly StopValues[]): boolean {
   if (actual.length !== expected.length) return false;
-  return actual.every((stop, i) => {
-    const a = stopValues(stop);
-    const e = expected[i];
-    return a.location_name === e.location_name
-      && a.mode === e.mode
-      && a.vehicle_id === e.vehicle_id
-      && sameNumber(a.distance_miles, e.distance_miles)
-      && sameNumber(a.duration_min, e.duration_min)
-      && sameNumber(a.cost, e.cost)
-      && a.purpose === e.purpose
-      && a.notes === e.notes;
-  });
+  return actual.every((stop, i) => sameStop(stop, expected[i]));
 }
+
+const BROKEN_PATTERNS = ['shifted', 'early', 'original'] as const;
+type BrokenPattern = (typeof BROKEN_PATTERNS)[number];
 
 /**
  * Which writer produced `stops` from `legs` (the template's original route, in
@@ -139,6 +144,27 @@ export function matchStopPattern(stops: readonly TemplateStop[], legs: readonly 
   const ordered = sortedStops(stops);
   for (const pattern of ['correct', 'shifted', 'early', 'original'] as const) {
     if (sameStops(ordered, expectedStops(pattern, legs))) return pattern;
+  }
+  return null;
+}
+
+/**
+ * The broken writer behind a template that a repair run only partly rewrote
+ * (the script updates one stop per request, so a run can stop between two):
+ * every stop still holds either what that writer stored or its right value,
+ * and at least one still holds the broken value. Null when the stops match no
+ * writer that way, or match the right values throughout.
+ */
+export function matchPartlyRepaired(stops: readonly TemplateStop[], legs: readonly TemplateLegInput[]): BrokenPattern | null {
+  if (legs.length === 0) return null;
+  const ordered = sortedStops(stops);
+  const correct = expectedStops('correct', legs);
+  if (ordered.length !== correct.length) return null;
+  for (const pattern of BROKEN_PATTERNS) {
+    const broken = expectedStops(pattern, legs);
+    const eachIsEither = ordered.every((stop, i) => sameStop(stop, broken[i]) || sameStop(stop, correct[i]));
+    const someStillBroken = ordered.some((stop, i) => !sameStop(stop, correct[i]));
+    if (eachIsEither && someStillBroken) return pattern;
   }
   return null;
 }
@@ -172,10 +198,13 @@ export function planStopRepair(
   if (legs.length === 0) {
     return { pattern: null, action: 'manual', reason: 'the route it was saved from was not found', updates: [] };
   }
-  const pattern = matchStopPattern(stops, legs);
-  if (pattern === 'correct') {
-    return { pattern, action: 'none', reason: 'stops already match the route', updates: [] };
+  const exact = matchStopPattern(stops, legs);
+  if (exact === 'correct') {
+    return { pattern: exact, action: 'none', reason: 'stops already match the route', updates: [] };
   }
+  // A run that failed or stopped part way left some stops repaired: finish it.
+  const partly = exact === null ? matchPartlyRepaired(stops, legs) : null;
+  const pattern = exact ?? partly;
   if (pattern === null) {
     return {
       pattern,
@@ -197,7 +226,9 @@ export function planStopRepair(
   return {
     pattern,
     action: 'repair',
-    reason: `stops match the '${pattern}' writer; rebuilt from the route's legs`,
+    reason: partly
+      ? `stops match the '${pattern}' writer, partly repaired by an earlier run; rebuilt from the route's legs`
+      : `stops match the '${pattern}' writer; rebuilt from the route's legs`,
     updates: ordered.map((stop, i) => ({ id: stop.id, stop_order: stop.stop_order ?? i, values: correct[i] })),
   };
 }

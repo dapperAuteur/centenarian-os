@@ -21,6 +21,9 @@
 //
 // Routes already logged from a broken template are listed, never changed.
 // Safe to re-run: a repaired template matches the right pattern and is skipped.
+// Stops are updated one request each, so a run that fails or stops part way
+// can leave a template partly repaired; the next run recognises it (each stop
+// still broken or already right) and finishes it.
 
 import { createClient } from '@supabase/supabase-js';
 import { findOriginalRoute, planStopRepair, type StopRepairPlan } from '../lib/travel/template-stop-repair.ts';
@@ -168,7 +171,10 @@ for (const tmpl of templates) {
     }
   }
   if (ok) counts.repaired++;
-  else counts.failed++;
+  else {
+    counts.failed++;
+    console.error('  Partly repaired: rerun with --apply to finish it.');
+  }
 }
 
 console.log('');

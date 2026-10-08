@@ -23,6 +23,7 @@ import {
 import {
   expectedStops,
   findOriginalRoute,
+  matchPartlyRepaired,
   matchStopPattern,
   planStopRepair,
 } from '../../lib/travel/template-stop-repair.ts';
@@ -514,6 +515,58 @@ test('planStopRepair: the pre-2026-03-17 (and Work.WitUS) pattern is repaired on
   const repaired = planStopRepair(stops, THREE_LEGS, { includeOriginal: true });
   assert.equal(repaired.action, 'repair');
   assert.equal(repaired.updates.length, 4);
+});
+
+/** Home -> Gym -> Home back by a longer road, so each way has its own values. */
+const ROUND_TRIP_LONG_WAY_BACK: TemplateLegInput[] = [
+  ROUND_TRIP[0],
+  { ...ROUND_TRIP[1], distance_miles: 6, duration_min: 15 },
+];
+
+test('planStopRepair: a template a failed run left partly repaired is finished on the rerun', () => {
+  // Shifted. The run updated stop 1 (Gym now holds the way there) and failed
+  // on stop 2, so the stops match no writer exactly.
+  const legs = ROUND_TRIP_LONG_WAY_BACK;
+  const shifted = asRows(expectedStops('shifted', legs));
+  const correct = expectedStops('correct', legs);
+  const mixed = shifted.map((s, i) => (i === 1 ? { ...s, ...correct[1] } : s));
+  assert.equal(matchStopPattern(mixed, legs), null);
+  assert.equal(matchPartlyRepaired(mixed, legs), 'shifted');
+
+  const plan = planStopRepair(mixed, legs);
+  assert.equal(plan.action, 'repair');
+  assert.equal(plan.pattern, 'shifted');
+  assert.match(plan.reason, /partly repaired/);
+  const repaired = plan.updates.map((u) => ({ stop_order: u.stop_order, ...u.values }));
+  assert.deepEqual(roundTripFromStops(repaired), legValues(legs));
+  // Once finished it is left alone.
+  assert.equal(planStopRepair(repaired.map((s, i) => ({ ...s, id: `stop-${i}` })), legs).action, 'none');
+
+  // Same for a three-leg route whose first two stops were rewritten.
+  const three = asRows(expectedStops('early', THREE_LEGS));
+  const threeCorrect = expectedStops('correct', THREE_LEGS);
+  const threeMixed = three.map((s, i) => (i < 2 ? { ...s, ...threeCorrect[i] } : s));
+  assert.equal(planStopRepair(threeMixed, THREE_LEGS).action, 'repair');
+  // A partly repaired 'original' template still waits for --include-original.
+  const original = asRows(expectedStops('original', THREE_LEGS));
+  const originalMixed = original.map((s, i) => (i === 1 ? { ...s, ...threeCorrect[1] } : s));
+  assert.equal(planStopRepair(originalMixed, THREE_LEGS).action, 'manual');
+  assert.equal(planStopRepair(originalMixed, THREE_LEGS, { includeOriginal: true }).action, 'repair');
+});
+
+test('matchPartlyRepaired: a stop holding neither its old nor its right value is still a manual fix', () => {
+  const legs = ROUND_TRIP_LONG_WAY_BACK;
+  const shifted = asRows(expectedStops('shifted', legs));
+  const correct = expectedStops('correct', legs);
+  const mixed = shifted.map((s, i) => (i === 1 ? { ...s, ...correct[1] } : s));
+  mixed[2] = { ...mixed[2], distance_miles: 7 };
+  assert.equal(matchPartlyRepaired(mixed, legs), null);
+  assert.equal(planStopRepair(mixed, legs).action, 'manual');
+  // All right already: not "partly repaired".
+  assert.equal(matchPartlyRepaired(asRows(correct), legs), null);
+  // A stop missing or added: not a partial run.
+  assert.equal(matchPartlyRepaired(shifted.slice(0, 2), legs), null);
+  assert.equal(matchPartlyRepaired(shifted, []), null);
 });
 
 test('findOriginalRoute: the route saved just before the template, not ones logged from it later', () => {
