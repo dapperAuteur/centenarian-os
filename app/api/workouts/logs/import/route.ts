@@ -1,11 +1,19 @@
 // app/api/workouts/logs/import/route.ts
 // POST: bulk import workout logs from parsed CSV rows
 // Groups rows by (name + date) → one workout_log per group, with exercises as child rows.
+//
+// Duplicates (lib/fitness-import/workouts.ts): a workout already logged under
+// the same name (any case) on the same day is skipped and reported as
+// "already logged", so importing one file twice adds nothing. allowRepeats:
+// true imports it anyway (a real second session). dryRun: true (or ?dryRun=1)
+// only counts. Existing logs are read page by page, past the row cap.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { MAX_IMPORT_ROWS, validateDate } from '@/lib/csv/helpers';
+import { FitnessImportError } from '@/lib/fitness-import/db';
+import { describeWorkoutCounts, loadLoggedWorkouts, splitLoggedWorkouts } from '@/lib/fitness-import/workouts';
 
 function getDb() {
   return createServiceClient(
@@ -58,6 +66,9 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const rows = body.rows;
+  const dryRunParam = request.nextUrl.searchParams.get('dryRun');
+  const dryRun = body.dryRun === true || dryRunParam === '1' || dryRunParam === 'true';
+  const allowRepeats = body.allowRepeats === true;
 
   if (!Array.isArray(rows) || rows.length === 0) {
     return NextResponse.json({ error: 'No rows provided' }, { status: 400 });
@@ -180,6 +191,37 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Workouts already logged under the same name that day are skipped (unless allowRepeats).
+  const dates = [...groups.values()].map((g) => g.date).sort();
+  let existingLogs: Awaited<ReturnType<typeof loadLoggedWorkouts>>;
+  try {
+    existingLogs = await loadLoggedWorkouts(db, user.id, dates[0], dates[dates.length - 1]);
+  } catch (error) {
+    if (error instanceof FitnessImportError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+    }
+    throw error;
+  }
+  const { toInsert, alreadyLogged } = splitLoggedWorkouts([...groups.values()], existingLogs, allowRepeats);
+  const repeats = new Set(alreadyLogged);
+  const counts = { inserted: 0, already_logged: alreadyLogged.length, imported_anyway: 0, invalid: skipped };
+
+  if (dryRun) {
+    for (const group of toInsert) {
+      if (repeats.has(group)) counts.imported_anyway += 1;
+      else counts.inserted += 1;
+    }
+    return NextResponse.json({
+      dryRun: true,
+      ...counts,
+      imported: 0,
+      skipped,
+      message: `${describeWorkoutCounts(counts, true)}.`,
+      already_logged_workouts: alreadyLogged.slice(0, 50).map((g) => ({ name: g.name, date: g.date })),
+      errors: errors.length > 0 ? errors.slice(0, 10) : undefined,
+    });
+  }
+
   // Build exercise name → id/video_url map for linking and enrichment
   const { data: userExercises } = await db
     .from('exercises')
@@ -195,7 +237,7 @@ export async function POST(request: NextRequest) {
   );
 
   // Enrich exercises: fill in missing video_url on library entries
-  for (const group of groups.values()) {
+  for (const group of toInsert) {
     for (const ex of group.exercises) {
       if (!ex.video_url) continue;
       const match = exerciseMap.get(ex.name.toLowerCase());
@@ -209,7 +251,7 @@ export async function POST(request: NextRequest) {
   // Insert workout_logs and their exercises
   let imported = 0;
 
-  for (const group of groups.values()) {
+  for (const group of toInsert) {
     const { data: log, error: logErr } = await db
       .from('workout_logs')
       .insert({
@@ -270,12 +312,16 @@ export async function POST(request: NextRequest) {
     }
 
     imported++;
+    if (repeats.has(group)) counts.imported_anyway += 1;
+    else counts.inserted += 1;
   }
 
   return NextResponse.json({
+    dryRun: false,
+    ...counts,
     imported,
     skipped,
     errors: errors.length > 0 ? errors.slice(0, 10) : undefined,
-    message: `Imported ${imported} workout logs from ${parsed.length} rows. ${skipped > 0 ? `${skipped} skipped.` : ''}`,
+    message: `${describeWorkoutCounts(counts, false)}.`,
   });
 }
