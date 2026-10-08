@@ -11,21 +11,23 @@
 
 ## Narrator Script
 
-Two features that simplify trip logging: round trips (so you don't have to log the same route twice) and contact locations (so your saved vendors and customers provide trip endpoints automatically).
+Two features that simplify trip logging: round trips (so you don't have to enter the way back) and contact locations (so your saved vendors and customers provide trip endpoints automatically).
 
 ---
 
 ### Round Trips
 
-Toggle **Round Trip** on the trip form. When enabled:
-- You enter the one-way distance only
-- The system stores `distance_miles` as the one-way value
-- CO2 calculations and summary stats automatically multiply by 2
-- The trip displays as "12.5 mi (round trip)" instead of "12.5 mi"
+Tick **Round trip (return to start)** in the Add Trip form. When your last stop is not your starting point:
+- You enter the way there only
+- When you save, the form adds a return leg back to your start, using the outbound distance, time, and cost added together
+- The line under the checkbox shows what will be added, for example "Return leg auto-added: 12.5 mi · 25 min"
+- The trip is saved as a route with a leg each way, so distance, time, cost, and CO2 count both directions
 
-This is useful for commutes, errands, and any trip where you return to the starting point.
+If you came back a different way, edit the route afterwards and change the return leg. If your last stop already is your starting point (a loop, such as a bike ride from home and back), nothing is added.
 
-The `is_round_trip` flag is stored on the trip record. You can toggle it on or off when editing an existing trip.
+This is useful for commutes, errands, and any trip where you return to the starting point. Save it as a template (Lesson 12) and the return leg's miles and minutes are saved with it.
+
+Some trips have one leg with a round trip flag instead: trips logged from a single-leg round-trip template, and older trips logged before Add Trip added return legs. The trip list shows their distance and time doubled, and Edit Trip shows "Round trip (distance counted both ways)". A template that ends where it starts (a loop) never logs a flagged trip, so its miles are not doubled.
 
 ---
 
@@ -73,9 +75,9 @@ This means you never have to retype "456 Market St" — just pick "Office → Do
 
 The most efficient workflow:
 1. Save your frequently visited places as contact locations
-2. Create trip templates using those contacts
-3. Toggle round trip on the template
-4. Log daily trips in seconds: From Template → adjust date → save
+2. Log the trip once in Add Trip using those contacts, with Round trip ticked
+3. Tick "Save as reusable template" before you save
+4. Log it again in seconds with Quick log or Quick Re-log, or use Load from template, adjust the date, and save
 
 ---
 
@@ -113,11 +115,11 @@ The most efficient workflow:
 
 ## Screen Recording Notes
 
-> [SCREEN: Open the trip form — toggle Round Trip ON]
+> [SCREEN: Open Add Trip — enter Home → Office, 12.5 miles, 25 minutes — tick Round trip]
 
-> [SCREENSHOT: Trip form with Round Trip toggle — callout: "Enter one-way distance; CO2 and totals auto-double"]
+> [SCREENSHOT: Add Trip with Round trip ticked — callout: "Return leg auto-added: 12.5 mi · 25 min"]
 
-> [SCREEN: Enter a distance of 12.5 miles — save — show trip displayed as "12.5 mi (round trip)"]
+> [SCREEN: Save — show the route with two legs and a 25.0 mi total]
 
 > [SCREEN: Open a new trip form — click the destination field]
 
@@ -133,7 +135,7 @@ The most efficient workflow:
 
 ## Key Takeaways
 
-- Round Trip toggle: enter one-way distance, CO2 and totals auto-multiply by 2
+- Round trip in Add Trip: enter the way there; a return leg is added when you save, so totals count both ways
 - Contact Locations: select saved contacts with addresses as trip origins/destinations
 - Contacts can have multiple locations — the sub-select lets you pick the right one
 - Combine templates + round trips + contact locations for fastest logging

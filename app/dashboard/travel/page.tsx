@@ -11,12 +11,13 @@ import {
   Plus, ChevronRight, AlertCircle, Upload, Zap,
   Repeat, Wrench, Play, Download, MapPin,
 } from 'lucide-react';
-import { offlineFetch } from '@/lib/offline/offline-fetch';
+import { isQueuedResponse, offlineFetch } from '@/lib/offline/offline-fetch';
 import Modal from '@/components/ui/Modal';
 import MultiStopForm from '@/components/travel/MultiStopForm';
 import GoogleMapsImportModal from '@/components/travel/GoogleMapsImportModal';
 import { useTrackPageView } from '@/lib/hooks/useTrackPageView';
 import { todayLocal, toLocalDateString } from '@/lib/dates/local';
+import { formatTemplateTotals, templateSummary } from '@/lib/travel/template-stops';
 
 interface Summary {
   currentMonth: {
@@ -161,6 +162,7 @@ export default function TravelPage() {
   const [showRetired, setShowRetired] = useState(false);
   const [templates, setTemplates] = useState<TripTemplate[]>([]);
   const [loggingTemplate, setLoggingTemplate] = useState<string | null>(null);
+  const [templateLogMessage, setTemplateLogMessage] = useState<{ kind: 'success' | 'info' | 'error'; text: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -323,6 +325,7 @@ export default function TravelPage() {
 
   const logFromTemplate = async (tmpl: TripTemplate) => {
     setLoggingTemplate(tmpl.id);
+    setTemplateLogMessage(null);
     try {
       const res = await offlineFetch('/api/travel/templates', {
         method: 'POST',
@@ -330,11 +333,20 @@ export default function TravelPage() {
         body: JSON.stringify({
           create_trip: true,
           template_id: tmpl.id,
-          name: tmpl.name,
-          mode: tmpl.mode,
+          // Today where the person is, not the server's (UTC) date.
+          trip_date: todayLocal(),
         }),
       });
-      if (res.ok) load();
+      if (res.ok) {
+        const totals = formatTemplateTotals(templateSummary(tmpl));
+        setTemplateLogMessage(isQueuedResponse(res)
+          ? { kind: 'info', text: `Saved offline: ${tmpl.name} will be logged when you reconnect.` }
+          : { kind: 'success', text: `Logged ${tmpl.name}${totals ? `: ${totals}` : ''}.` });
+        load();
+      } else {
+        const d = await res.json().catch(() => null);
+        setTemplateLogMessage({ kind: 'error', text: `Could not log ${tmpl.name}${d?.error ? `: ${d.error}` : ''}. Nothing was saved.` });
+      }
     } finally {
       setLoggingTemplate(null);
     }
@@ -764,29 +776,49 @@ export default function TravelPage() {
           </div>
           <div className={templates.length > 6 ? 'max-h-80 overflow-y-auto pr-1' : ''}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {templates.map((t) => (
+            {templates.map((t) => {
+              // What Quick log records: every leg, return leg included.
+              const summary = templateSummary(t);
+              const totals = formatTemplateTotals(summary);
+              const shape = summary.kind === 'round_trip' ? 'Round trip' : summary.kind === 'multi' ? `${summary.stopCount} stops` : null;
+              return (
               <button
+                type="button"
                 key={t.id}
                 onClick={() => logFromTemplate(t)}
                 disabled={loggingTemplate === t.id}
-                className="flex items-center gap-3 border border-gray-100 rounded-xl p-3 text-left hover:bg-gray-50 transition disabled:opacity-50"
+                aria-label={`Log trip from ${t.name}${totals ? `, ${totals}` : ''}`}
+                className="flex items-center gap-3 border border-gray-100 rounded-xl p-3 min-h-11 text-left hover:bg-gray-50 transition disabled:opacity-50"
               >
                 <div className="w-8 h-8 bg-sky-50 rounded-lg flex items-center justify-center shrink-0">
-                  <Play className="w-4 h-4 text-sky-600" />
+                  <Play className="w-4 h-4 text-sky-600" aria-hidden="true" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{t.name}</p>
                   <p className="text-xs text-gray-500">
-                    {MODE_ICONS[t.mode] ?? '🚐'} {t.mode}
-                    {t.distance_miles ? ` · ${fmt(t.distance_miles)} mi` : ''}
+                    <span aria-hidden="true">{MODE_ICONS[t.mode] ?? '🚐'}</span> {t.mode}
+                    {shape ? ` · ${shape}` : ''}
+                    {totals ? ` · ${totals}` : ''}
                     {t.use_count > 0 ? ` · ${t.use_count}x` : ''}
                   </p>
                 </div>
-                <Repeat className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                <Repeat className="w-3.5 h-3.5 text-gray-400 shrink-0" aria-hidden="true" />
               </button>
-            ))}
+              );
+            })}
           </div>
           </div>
+          {templateLogMessage?.kind === 'error' && (
+            <p role="alert" className="mt-3 text-sm text-red-700 bg-red-50 rounded-lg px-3 py-2">{templateLogMessage.text}</p>
+          )}
+          {templateLogMessage && templateLogMessage.kind !== 'error' && (
+            <p
+              role="status"
+              className={`mt-3 text-sm rounded-lg px-3 py-2 ${templateLogMessage.kind === 'success' ? 'text-green-700 bg-green-50' : 'text-sky-800 bg-sky-50'}`}
+            >
+              {templateLogMessage.text}
+            </p>
+          )}
         </div>
       )}
 

@@ -9,6 +9,7 @@ import { createLinkedTransaction } from '@/lib/finance/linked-transaction';
 import { CO2_PER_MILE, HUMAN_POWERED } from '@/lib/travel/constants';
 import { checkReferences, invalidReferenceMessage } from '@/lib/auth/ownership';
 import { travelReferences, routeLegReferences } from '@/lib/travel/references';
+import { templateFromRoute } from '@/lib/travel/template-stops';
 import { getRoute } from '@/lib/geo/route';
 
 function getDb() {
@@ -285,69 +286,33 @@ export async function POST(request: NextRequest) {
   route.total_cost = parseFloat(totalCost.toFixed(2));
   route.total_co2_kg = parseFloat(totalCo2.toFixed(3));
 
-  // 4. Optionally save as a template
+  // 4. Optionally save as a template, built from the trips as stored so a
+  // distance or duration the server worked out (OSRM) is saved too
+  // (templateFromRoute in lib/travel/template-stops.ts, unit-tested).
   let templateId = null;
-  if (save_as_template && name?.trim()) {
-    const isMultiLeg = legs.length > 1;
-    const firstLeg = legs[0];
+  const template = save_as_template
+    ? templateFromRoute(createdTrips, legs, { name, notes, is_round_trip, brand_id })
+    : null;
+  if (template) {
     const { data: tmpl } = await db
       .from('trip_templates')
-      .insert({
-        user_id: user.id,
-        name: name.trim(),
-        mode: firstLeg.mode,
-        vehicle_id: firstLeg.vehicle_id || null,
-        origin: firstLeg.origin || null,
-        destination: !isMultiLeg ? (firstLeg.destination || null) : null,
-        distance_miles: !isMultiLeg ? (firstLeg.distance_miles ? Number(firstLeg.distance_miles) : null) : null,
-        duration_min: !isMultiLeg ? (firstLeg.duration_min ? Number(firstLeg.duration_min) : null) : null,
-        cost: !isMultiLeg ? (firstLeg.cost ? Number(firstLeg.cost) : null) : null,
-        purpose: firstLeg.purpose || null,
-        trip_category: firstLeg.trip_category || null,
-        tax_category: firstLeg.tax_category || null,
-        notes: notes?.trim() || null,
-        is_round_trip: is_round_trip ?? false,
-        is_multi_stop: isMultiLeg,
-        brand_id: brand_id || null,
-      })
+      .insert({ user_id: user.id, ...template.row })
       .select('id')
       .single();
 
     if (tmpl) {
-      templateId = tmpl.id;
-
-      if (isMultiLeg) {
-        const stops = legs.map((leg: LegInput, i: number) => ({
-          template_id: tmpl.id,
-          stop_order: i,
-          location_name: leg.origin || null,
-          mode: i === 0 ? null : leg.mode,
-          vehicle_id: i === 0 ? null : (leg.vehicle_id || null),
-          distance_miles: i === 0 ? null : (leg.distance_miles ? Number(leg.distance_miles) : null),
-          duration_min: i === 0 ? null : (leg.duration_min ? Number(leg.duration_min) : null),
-          cost: i === 0 ? null : (leg.cost ? Number(leg.cost) : null),
-          purpose: i === 0 ? null : (leg.purpose || null),
-          notes: leg.notes || null,
-        }));
-        // Add final destination as last stop
-        const lastLeg = legs[legs.length - 1];
-        stops.push({
-          template_id: tmpl.id,
-          stop_order: legs.length,
-          location_name: lastLeg.destination || null,
-          mode: null,
-          vehicle_id: null,
-          distance_miles: null,
-          duration_min: null,
-          cost: null,
-          purpose: null,
-          notes: null,
-        });
-        await db.from('trip_template_stops').insert(stops);
+      const stops = template.stops(tmpl.id);
+      const { error: stopsErr } = stops.length > 0
+        ? await db.from('trip_template_stops').insert(stops)
+        : { error: null };
+      if (stopsErr) {
+        // A multi-stop template without its stops cannot be logged; don't keep one.
+        await db.from('trip_templates').delete().eq('id', tmpl.id).eq('user_id', user.id);
+      } else {
+        templateId = tmpl.id;
+        // Link route to template
+        await db.from('trip_routes').update({ template_id: tmpl.id }).eq('id', route.id);
       }
-
-      // Link route to template
-      await db.from('trip_routes').update({ template_id: tmpl.id }).eq('id', route.id);
     }
   }
 
