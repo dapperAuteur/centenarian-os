@@ -54,6 +54,8 @@ export async function POST(request: NextRequest) {
           duration_min: a.duration_min,
           status: a.status,
           match_trip_id: a.matchTripId,
+          match_reason: a.matchReason,
+          match_date: a.matchDate,
         })),
       invalid_rows: result.invalid.slice(0, 20),
       errors: result.errors.length > 0 ? result.errors.slice(0, 10) : undefined,

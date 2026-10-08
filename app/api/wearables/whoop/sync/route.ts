@@ -7,12 +7,28 @@
 // wins, a field it leaves out is never erased, no day is added twice), a
 // failed write marks the connection 'error', and each sync reaches back to the
 // last sync minus 2 days (30 days at most).
+//
+// Steps and active calories are added up from the day's workouts and written
+// in replace mode, so every day written must be complete: the fetch starts a
+// whole day early (wholeDaySyncWindow), every page is read (readAllWhoopPages,
+// WHOOP sends at most 25 records a page), and only days the fetch covers
+// completely are written (daysFrom). The paging parameters (limit up to 25,
+// nextToken in, next_token out, newest first) are from WHOOP's API reference
+// at developer.whoop.com/api, checked 2026-10-08; it documents the v2 paths,
+// and this route still calls v1. Check both before switching WHOOP on.
 
 import { NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { importDailyMetrics } from '@/lib/fitness-import/daily-metrics';
-import { whoopDays, syncWindowStart } from '@/lib/fitness-import/wearable-days';
+import {
+  WHOOP_PAGE_LIMIT,
+  daysFrom,
+  readAllWhoopPages,
+  syncWindowStart,
+  wholeDaySyncWindow,
+  whoopDays,
+} from '@/lib/fitness-import/wearable-days';
 
 function getDb() {
   return createServiceClient(
@@ -57,18 +73,21 @@ export async function POST() {
 
   try {
     const now = new Date();
-    const params = { start: syncWindowStart(conn.last_synced_at, now).toISOString(), end: now.toISOString() };
+    const { fetchFrom, firstDay } = wholeDaySyncWindow(syncWindowStart(conn.last_synced_at, now));
+    const params = { start: fetchFrom.toISOString(), end: now.toISOString(), limit: String(WHOOP_PAGE_LIMIT) };
+    const readAll = (endpoint: string) =>
+      readAllWhoopPages((nextToken) => whoopFetch(conn.access_token, endpoint, nextToken ? { ...params, nextToken } : params));
 
     const [recoveryData, sleepData, workoutData] = await Promise.all([
-      whoopFetch(conn.access_token, 'recovery', params),
-      whoopFetch(conn.access_token, 'activity/sleep', params),
-      whoopFetch(conn.access_token, 'activity/workout', params),
+      readAll('recovery'),
+      readAll('activity/sleep'),
+      readAll('activity/workout'),
     ]);
 
     const result = await importDailyMetrics(db, {
       userId: user.id,
       source: 'whoop',
-      rows: whoopDays(recoveryData, sleepData, workoutData),
+      rows: daysFrom(whoopDays(recoveryData, sleepData, workoutData), firstDay),
       mode: 'replace',
     });
 

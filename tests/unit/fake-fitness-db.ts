@@ -16,6 +16,7 @@
 //     are the union of every row's keys and a row missing one sends NULL
 //     (postgrest-js defaultToNull), which overwrites the stored value; with
 //     ignoreDuplicates a clash is skipped and only inserted rows come back.
+//   - or() terms `column.not.is.null` as well as is.null, eq and neq.
 //
 // Not a test file itself (the test glob is *.test.ts).
 
@@ -29,6 +30,22 @@ export const UNIQUE_KEYS: Record<string, string[][]> = {
 };
 
 export class FakeFitnessQuery extends FakeQuery {
+  /** PostgREST or(): any term may match. Supports not.is.null, is.null, eq and neq. */
+  override or(filters: string): this {
+    const terms = filters.split(',').map((term) => {
+      const [column, ...rest] = term.split('.');
+      const condition = rest.join('.');
+      this.usedColumns.push(column);
+      if (condition === 'not.is.null') return (row: Row) => row[column] != null;
+      if (condition === 'is.null') return (row: Row) => row[column] == null;
+      if (condition.startsWith('eq.')) return (row: Row) => row[column] != null && String(row[column]) === condition.slice(3);
+      if (condition.startsWith('neq.')) return (row: Row) => row[column] != null && String(row[column]) !== condition.slice(4);
+      throw new Error(`fake: or(${term}) is not supported`);
+    });
+    this.filters.push((row) => terms.some((test) => test(row)));
+    return this;
+  }
+
   keys(): string[][] {
     const missing = this.db.missingColumns[this.table] ?? [];
     return (UNIQUE_KEYS[this.table] ?? []).filter((key) => !key.some((column) => missing.includes(column)));

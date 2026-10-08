@@ -14,6 +14,20 @@ interface GarminActivityRow {
   duration_min: number | null;
   status: 'new' | 'already_imported' | 'duplicate_in_file' | 'possible_match';
   match_trip_id: string | null;
+  match_reason?: 'as_logged' | 'round_trip' | 'route_total' | 'no_values' | null;
+  match_date?: string | null;
+}
+
+/** Why a Garmin activity looks like a trip you logged (lib/fitness-import/activity-keys.ts). */
+function matchReasonText(row: GarminActivityRow): string {
+  const when = row.match_date && row.match_date !== row.start.slice(0, 10) ? ` logged on ${row.match_date}` : '';
+  switch (row.match_reason) {
+    case 'round_trip': return `like your round trip${when}, counted both ways`;
+    case 'route_total': return `like your multi-stop trip${when}, legs added up`;
+    case 'no_values': return 'a trip you logged that day with no distance or time';
+    case 'as_logged': return `like a trip you logged${when}`;
+    default: return '';
+  }
 }
 
 interface GarminResult {
@@ -228,12 +242,13 @@ export default function TravelImportPage() {
                     Possible matches ({garminPreview.possible_matches})
                   </summary>
                   <p className="text-xs text-gray-600 mb-1">
-                    Same date and type as a trip you logged, with a distance within 5% (at least 0.1 mi) or a time within 5 minutes.
+                    Same type as a trip you logged, with a distance within 5% (at least 0.1 mi) or a time within 5 minutes. A round trip counts both ways and a multi-stop trip&apos;s legs are added up. A trip you logged that day with no distance or time also counts, and so does a close one dated a day before or after (a template logged late in the evening can carry the next day&apos;s date).
                   </p>
                   <ul className="space-y-0.5 pl-4 list-disc text-xs">
                     {(garminPreview.activities ?? []).filter((a) => a.status === 'possible_match').slice(0, 30).map((a) => (
                       <li key={a.line}>
                         {a.start} · {a.type}{a.title ? ` · ${a.title}` : ''}{a.distance_miles != null ? ` · ${a.distance_miles} mi` : ''}{a.duration_min != null ? ` · ${a.duration_min} min` : ''}
+                        {matchReasonText(a) && <span className="text-gray-600">: {matchReasonText(a)}</span>}
                       </li>
                     ))}
                   </ul>

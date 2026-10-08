@@ -14,8 +14,10 @@
 //      query to see the unique key itself; PostgREST cannot read pg_constraint).
 //   2. Garmin trips with the same start time: imported twice, or renamed in Garmin Connect
 //      between imports.
-//   3. Garmin trips that look like a trip logged another way (same date and mode, distance
-//      within max(0.1 mi, 5%) or duration within 5 min).
+//   3. Garmin trips that look like a trip logged another way, by the import's rule: same mode,
+//      distance within max(0.1 mi, 5%) or duration within 5 min (a round trip compared both
+//      ways, a multi-stop route's legs added up), a same-day trip with no distance or time, or
+//      a close one a day either side (a template logged with the UTC date).
 //   4. Workout logs with the same name on the same day (same started_at = certain duplicate).
 //   5. Workout logs over 24 hours long (the old Garmin workout script's unit bug).
 //   6. Manual daily metrics identical to a device row that day (informational).
@@ -87,8 +89,11 @@ async function main() {
 
   const trips = await readTable(
     'trips',
-    `id, user_id, date, mode, distance_miles, duration_min, source, garmin_activity_id, created_at${has224Trips ? ', external_id' : ''}`,
+    `id, user_id, date, mode, distance_miles, duration_min, source, garmin_activity_id, is_round_trip, route_id, leg_order, created_at${has224Trips ? ', external_id' : ''}`,
     userId,
+  );
+  const roundTripRouteIds = new Set(
+    (await readTable('trip_routes', 'id, is_round_trip', userId)).filter((route) => route.is_round_trip === true).map((route) => route.id),
   );
   const logs = await readTable(
     'workout_logs',
@@ -104,7 +109,7 @@ async function main() {
     migrations: { '080_health_metrics_source': has080, '224_fitness_import_identity': has224Trips && has224Logs },
     rows_read: { trips: trips.length, workout_logs: logs.length, user_health_metrics: health.length },
     garmin_trips_same_start: sameStartTrips(trips),
-    garmin_trips_like_other_trips: garminVsOtherTrips(trips),
+    garmin_trips_like_other_trips: garminVsOtherTrips(trips, roundTripRouteIds),
     workouts_same_name_same_day: sameNameSameDayWorkouts(logs),
     workouts_over_24_hours: implausibleWorkoutDurations(logs).map((log) => ({ id: log.id, user_id: log.user_id, date: log.date, duration_min: log.duration_min })),
     manual_days_copying_a_device: manualCopiesOfDevice(health),
@@ -129,7 +134,8 @@ async function main() {
   }
   console.log(`\n2. Garmin trips that look like a trip logged another way: ${report.garmin_trips_like_other_trips.length} pairs`);
   for (const p of report.garmin_trips_like_other_trips.slice(0, 50)) {
-    console.log(`   ${p.date} ${p.mode}  garmin ${p.garmin_trip_id}  ~  ${p.other_source ?? 'unknown'} ${p.other_trip_id}`);
+    const how = { as_logged: '', round_trip: '  (round trip, both ways)', route_total: '  (route legs added up)', no_values: '  (no distance or time)' }[p.basis] ?? '';
+    console.log(`   ${p.date} ${p.mode}  garmin ${p.garmin_trip_id}  ~  ${p.other_source ?? 'unknown'} ${p.other_trip_id}${p.other_date !== p.date ? ` on ${p.other_date}` : ''}${how}`);
   }
   console.log(`\n3. Workouts with the same name on the same day: ${workouts.length} groups, ${workouts.reduce((n, g) => n + extra(g.log_ids), 0)} extra logs (${workouts.filter((g) => g.same_start).length} with the same start time = certain)`);
   for (const g of workouts.slice(0, 50)) {

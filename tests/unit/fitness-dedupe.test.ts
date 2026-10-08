@@ -28,9 +28,11 @@ import {
   type DayInput,
 } from '../../lib/fitness-import/daily-metrics.ts';
 import {
+  findLoggedTripMatch,
   garminStartKey,
   isPossibleSameTrip,
   legacyGarminId,
+  loggedTripCandidates,
   localStartFromEpoch,
   localStartFromWallClockMs,
   normalizeLocalStart,
@@ -50,12 +52,16 @@ import { describeWorkoutCounts, loadLoggedWorkouts, splitLoggedWorkouts, workout
 import { dedupeScans, importInBodyScans, latestScanDays, type ScanRow } from '../../lib/fitness-import/inbody.ts';
 import { FitnessImportError, groupByKeySet, isMissingColumn, readAllRows } from '../../lib/fitness-import/db.ts';
 import {
+  WHOOP_MAX_PAGES,
+  daysFrom,
   garminDayOf,
   garminDays,
   localDateFromIso,
   ouraDays,
+  readAllWhoopPages,
   splitRange,
   syncWindowStart,
+  wholeDaySyncWindow,
   whoopDays,
 } from '../../lib/fitness-import/wearable-days.ts';
 import {
@@ -433,8 +439,85 @@ test('possible match: same date and mode, distance within max(0.1 mi, 5%) or dur
   assert.equal(isPossibleSameTrip(base, { ...base, distance_miles: 20, duration_min: 46 }), false);
   assert.equal(isPossibleSameTrip(base, { ...base, mode: 'walk' }), false);
   assert.equal(isPossibleSameTrip(base, { ...base, date: '2026-01-02' }), false);
-  // With nothing to compare (a template trip with no distance or time), no match.
+  // Row against row, nothing to compare is no match; the import's rule
+  // (findLoggedTripMatch) flags such a trip on its own, see below.
   assert.equal(isPossibleSameTrip(base, { ...base, distance_miles: null, duration_min: null }), false);
+});
+
+// Trips logged from templates: round trips are stored one way, multi-stop
+// templates are one row per leg, a template can carry no distance or time, and
+// the Travel dashboard's Quick log used the server's UTC date.
+const logged = (id: string, extra: Partial<ExistingTrip>): ExistingTrip => ({
+  id, date: '2026-10-01', mode: 'bike', distance_miles: null, duration_min: null, source: 'manual', garmin_activity_id: null, ...extra,
+});
+
+test('possible match: a round-trip template trip is compared both ways', () => {
+  const { activities } = parseGarminActivitiesCsv(csv('Cycling,2026-10-01 07:00:00,false,Commute loop,10.0,400,01:00:00,120,--'));
+  // Before: |10 - 5| > 0.5 mi and |60 - 30| > 5 min, so this was "new".
+  const plan = planGarminActivities(activities, [logged('rt', { distance_miles: 5, duration_min: 30, is_round_trip: true })]);
+  assert.equal(plan[0].status, 'possible_match');
+  assert.equal(plan[0].matchTripId, 'rt');
+  assert.equal(plan[0].matchReason, 'round_trip');
+  // The same values without the round-trip flag are a different, shorter outing.
+  assert.equal(planGarminActivities(activities, [logged('one', { distance_miles: 5, duration_min: 30 })])[0].status, 'new');
+});
+
+test('possible match: a multi-stop trip\'s legs are added up, and doubled for a round-trip route', () => {
+  const { activities } = parseGarminActivitiesCsv(csv(
+    'Walking,2026-10-02 07:00:00,false,Errands,3.0,200,00:50:00,110,4000',
+    'Walking,2026-10-03 07:00:00,false,Out and back,4.0,250,01:10:00,110,5000',
+  ));
+  const existing = [
+    logged('l1', { date: '2026-10-02', mode: 'walk', distance_miles: 1.2, duration_min: 20, route_id: 'r1', leg_order: 0 }),
+    logged('l2', { date: '2026-10-02', mode: 'walk', distance_miles: '1.8', duration_min: 30, route_id: 'r1', leg_order: 1 }),
+    // A round-trip route from a template, legs one way only: 2.0 mi, 35 min.
+    logged('r2b', { date: '2026-10-03', mode: 'walk', distance_miles: 0.8, duration_min: 15, route_id: 'r2', leg_order: 1 }),
+    logged('r2a', { date: '2026-10-03', mode: 'walk', distance_miles: 1.2, duration_min: 20, route_id: 'r2', leg_order: 0 }),
+  ];
+  const plan = planGarminActivities(activities, existing, { roundTripRouteIds: new Set(['r2']) });
+  assert.deepEqual(plan.map((a) => [a.status, a.matchTripId, a.matchReason]), [
+    ['possible_match', 'l1', 'route_total'],
+    ['possible_match', 'r2a', 'route_total'],
+  ]);
+  // Without the route's round-trip flag the 4.0 mi walk is not 2.0 mi of legs.
+  assert.equal(planGarminActivities(activities, existing)[1].status, 'new');
+});
+
+test('possible match: a same-day trip with no distance or time is flagged, not ignored', () => {
+  const { activities } = parseGarminActivitiesCsv(csv(
+    'Running,2026-10-03 07:00:00,false,Run,4.0,300,00:40:00,150,--',
+    'Running,2026-10-05 07:00:00,false,Run,4.0,300,00:40:00,150,--',
+  ));
+  const plan = planGarminActivities(activities, [
+    logged('blank', { date: '2026-10-03', mode: 'run' }),
+    // Nothing to compare a day away is too loose to flag.
+    logged('blank-next-day', { date: '2026-10-06', mode: 'run' }),
+    logged('bike', { date: '2026-10-05', mode: 'bike' }),
+  ]);
+  assert.deepEqual(plan.map((a) => [a.status, a.matchTripId, a.matchReason]), [
+    ['possible_match', 'blank', 'no_values'],
+    ['new', null, null],
+  ]);
+});
+
+test('possible match: a template trip dated a day off (UTC date) is flagged; the same day wins', () => {
+  const { activities } = parseGarminActivitiesCsv(csv(
+    'Cycling,2026-10-04 20:00:00,false,Evening ride,5.0,300,00:30:00,150,--',
+    'Cycling,2026-10-10 20:00:00,false,Evening ride,5.0,300,00:30:00,150,--',
+  ));
+  const plan = planGarminActivities(activities, [
+    logged('utc', { date: '2026-10-05', distance_miles: 5, duration_min: 30 }),
+    logged('next', { date: '2026-10-11', distance_miles: 5, duration_min: 30 }),
+    logged('same', { date: '2026-10-10', distance_miles: 5.1, duration_min: null }),
+  ]);
+  assert.deepEqual(plan.map((a) => [a.status, a.matchTripId, a.matchDate]), [
+    ['possible_match', 'utc', '2026-10-05'],
+    ['possible_match', 'same', '2026-10-10'],
+  ]);
+  assert.equal(findLoggedTripMatch(
+    { date: '2026-10-04', mode: 'bike', distance_miles: 5, duration_min: 30 },
+    loggedTripCandidates([logged('far', { date: '2026-10-06', distance_miles: 5, duration_min: 30 })]),
+  ), null, 'two days away is not a match');
 });
 
 // ─── Garmin Activities CSV -> trips ──────────────────────────────────────────
@@ -544,6 +627,45 @@ test('import: existing trips past the row cap are still found', async () => {
   assert.equal(db.rows('trips').length, 12);
 });
 
+test('import: an imported trip whose date was edited since is still recognised (no date window)', async () => {
+  const { db, client } = fake();
+  db.seed('trips', [
+    // Imported before migration 224 (external_id NULL), then moved back by hand.
+    { user_id: USER, date: '2026-09-25', mode: 'walk', distance_miles: 1.5, duration_min: 30, source: 'garmin_import', garmin_activity_id: '2026-09-30 23:10:00|Night walk', external_id: null },
+    // Imported after 224, then moved a week back.
+    { user_id: USER, date: '2026-09-24', mode: 'bike', distance_miles: 8, duration_min: 40, source: 'garmin_import', garmin_activity_id: '2026-10-01 07:00:00|Ride', external_id: 'garmin:start:2026-10-01 07:00:00' },
+    // Another person's trip with the same start time is not this person's.
+    { user_id: OTHER_USER, date: '2026-10-02', mode: 'run', distance_miles: 3, duration_min: 30, source: 'garmin_import', garmin_activity_id: '2026-10-02 06:00:00|Run', external_id: 'garmin:start:2026-10-02 06:00:00' },
+  ]);
+  const text = csv(
+    'Walking,2026-09-30 23:10:00,false,Night walk,1.5,90,00:30:00,95,3000',
+    'Cycling,2026-10-01 07:00:00,false,Ride,8.0,300,00:40:00,120,--',
+    'Running,2026-10-02 06:00:00,false,Run,3.0,300,00:30:00,150,--',
+    'Cycling,2026-10-07 07:00:00,false,Ride,8.0,300,00:40:00,120,--',
+  );
+  // Check file and Import agree.
+  const preview = await importGarminActivities(client, { userId: USER, text, dryRun: true });
+  assert.deepEqual(preview.activities.map((a) => a.status), ['already_imported', 'already_imported', 'new', 'new']);
+  const result = await importGarminActivities(client, { userId: USER, text });
+  assert.equal(result.counts.already_imported, 2);
+  assert.equal(result.counts.inserted, 2);
+  assert.equal(db.rows('trips').filter((r) => r.user_id === USER).length, 4);
+});
+
+test('import: before migration 224, an edited legacy trip is still recognised by its old key', async () => {
+  const { db, client } = fake();
+  db.missingColumns = { trips: ['external_id'] };
+  db.seed('trips', [{ user_id: USER, date: '2026-09-25', mode: 'walk', source: 'garmin_import', garmin_activity_id: '2026-09-30 23:10:00|Night walk' }]);
+  const result = await importGarminActivities(client, {
+    userId: USER,
+    text: csv('Walking,2026-09-30 23:10:00,false,Renamed walk,1.5,90,00:30:00,95,3000'),
+  });
+  assert.equal(result.needsMigration, true);
+  assert.equal(result.counts.already_imported, 1);
+  assert.equal(result.counts.inserted, 0);
+  assert.equal(db.rows('trips').length, 1);
+});
+
 test('import: possible matches are skipped unless asked for', async () => {
   const { db, client } = fake();
   db.seed('trips', [{ user_id: USER, date: '2025-06-10', mode: 'walk', distance_miles: 1.02, duration_min: null, source: 'manual', garmin_activity_id: null }]);
@@ -555,6 +677,24 @@ test('import: possible matches are skipped unless asked for', async () => {
   const anyway = await importGarminActivities(client, { userId: USER, text, includePossibleMatches: true });
   assert.equal(anyway.counts.possible_matches_imported, 1);
   assert.equal(db.rows('trips').length, 2);
+});
+
+test('import: a round-trip route logged from a template is checked against its legs both ways', async () => {
+  const { db, client } = fake();
+  const [route] = db.seed('trip_routes', [{ user_id: USER, date: '2026-10-07', is_round_trip: true }]);
+  db.seed('trip_routes', [{ user_id: OTHER_USER, date: '2026-10-07', is_round_trip: true }]);
+  db.seed('trips', [
+    // Logged the evening of 10-06 local, stored with the next (UTC) day.
+    { user_id: USER, date: '2026-10-07', mode: 'walk', distance_miles: 1.2, duration_min: 20, source: 'manual', garmin_activity_id: null, route_id: route.id, leg_order: 0 },
+    { user_id: USER, date: '2026-10-07', mode: 'walk', distance_miles: 0.8, duration_min: 15, source: 'manual', garmin_activity_id: null, route_id: route.id, leg_order: 1 },
+  ]);
+  const text = csv('Walking,2026-10-06 19:30:00,false,Evening loop,4.0,250,01:10:00,110,5000');
+  const result = await importGarminActivities(client, { userId: USER, text, dryRun: true });
+  assert.equal(result.counts.possible_matches, 1);
+  assert.equal(result.counts.inserted, 0);
+  assert.equal(result.activities[0].matchReason, 'route_total');
+  assert.equal(result.activities[0].matchDate, '2026-10-07');
+  assert.equal(db.writes().length, 0);
 });
 
 test('import: a dry run reads but never writes', async () => {
@@ -784,6 +924,84 @@ test('sync window: last sync minus 2 days, never more than 30 days back', () => 
   assert.deepEqual(splitRange(10, 10, 100), []);
 });
 
+// WHOOP adds a day's steps and calories up from its workouts and syncs in
+// replace mode, so a day fetched in part would overwrite the full value.
+const whoopWorkout = (start: string, distance_meter: number, kilojoule: number) => ({
+  start, timezone_offset: '-05:00', score: { distance_meter, kilojoule },
+});
+/** What WHOOP returns for a fetch from `from`: workouts that started at or after it. */
+const whoopSince = (records: ReturnType<typeof whoopWorkout>[], from: Date) => ({
+  records: records.filter((r) => Date.parse(r.start) >= from.getTime()),
+});
+
+test('WHOOP: every workout of a day adds to its steps and active calories', () => {
+  const days = whoopDays({ records: [] }, { records: [] }, {
+    records: [whoopWorkout('2026-10-05T12:00:00.000Z', 5000, 1000), whoopWorkout('2026-10-05T23:00:00.000Z', 1000, 500)],
+  });
+  // 1000 kJ = 239 kcal, 500 kJ = 120 kcal: before, the day kept one workout's 120.
+  assert.deepEqual(days, [{ logged_date: '2026-10-05', values: { active_calories: 359, steps: 7874 } }]);
+});
+
+test('WHOOP sync: the first day of the window is fetched whole, so a later sync never shrinks it', async () => {
+  const { db, client } = fake();
+  const workouts = [whoopWorkout('2026-10-05T12:00:00.000Z', 5000, 1000), whoopWorkout('2026-10-05T23:00:00.000Z', 1000, 500)];
+  const sync = async (lastSyncedAt: string | null, now: string) => {
+    const { fetchFrom, firstDay } = wholeDaySyncWindow(syncWindowStart(lastSyncedAt, new Date(now)));
+    const rows = daysFrom(whoopDays({ records: [] }, { records: [] }, whoopSince(workouts, fetchFrom)), firstDay);
+    return importDailyMetrics(client, { userId: USER, source: 'whoop', rows, mode: 'replace' });
+  };
+  await sync(null, '2026-10-06T12:00:00Z');
+  assert.equal(db.rows('user_health_metrics')[0].steps, 7874);
+
+  // The window starts 2026-10-05T18:00Z, after the morning workout. The old
+  // fetch began there and replaced 7874 steps with the evening's 1312.
+  const exact = syncWindowStart('2026-10-07T18:00:00Z', new Date('2026-10-08T12:00:00Z'));
+  assert.equal(exact.toISOString(), '2026-10-05T18:00:00.000Z');
+  const partial = whoopDays({ records: [] }, { records: [] }, whoopSince(workouts, exact));
+  assert.equal(partial[0].values.steps, 1312, 'what the old window fetched');
+
+  const second = await sync('2026-10-07T18:00:00Z', '2026-10-08T12:00:00Z');
+  assert.equal(second.counts.replaced, 0);
+  const stored = db.rows('user_health_metrics');
+  assert.equal(stored.length, 1);
+  assert.deepEqual([stored[0].steps, stored[0].active_calories], [7874, 359]);
+});
+
+test('WHOOP sync window: a day early from midnight UTC; days before the window\'s UTC day are left out', () => {
+  const { fetchFrom, firstDay } = wholeDaySyncWindow(new Date('2026-10-05T18:00:00Z'));
+  assert.equal(fetchFrom.toISOString(), '2026-10-04T00:00:00.000Z');
+  assert.equal(firstDay, '2026-10-05');
+  // East of UTC (+09:00) local 2026-10-04 began 2026-10-03T15:00Z, before the
+  // fetch: written, it would be a part-day sum.
+  const days = whoopDays({ records: [] }, { records: [] }, {
+    records: [
+      { start: '2026-10-04T01:00:00.000Z', timezone_offset: '+09:00', score: { distance_meter: 762 } },
+      { start: '2026-10-04T16:00:00.000Z', timezone_offset: '+09:00', score: { distance_meter: 762 } },
+    ],
+  });
+  assert.deepEqual(days.map((d) => d.logged_date), ['2026-10-04', '2026-10-05']);
+  assert.deepEqual(daysFrom(days, firstDay).map((d) => d.logged_date), ['2026-10-05']);
+  // At +14:00, local 2026-10-05 begins 2026-10-04T10:00Z: inside the fetch.
+  assert.ok(Date.parse('2026-10-04T10:00:00Z') >= fetchFrom.getTime());
+});
+
+test('WHOOP pages: every page is read; one past the limit throws instead of writing part of a day', async () => {
+  const tokens: Array<string | null> = [];
+  const pages: Record<string, { records: unknown[]; next_token?: string }> = {
+    first: { records: [{ id: 1 }, { id: 2 }], next_token: 'b' },
+    b: { records: [{ id: 3 }], next_token: '' },
+  };
+  const all = await readAllWhoopPages(async (token) => {
+    tokens.push(token);
+    return pages[token ?? 'first'];
+  });
+  assert.deepEqual(all.records.map((r) => r.id), [1, 2, 3]);
+  assert.deepEqual(tokens, [null, 'b']);
+  let calls = 0;
+  await assert.rejects(readAllWhoopPages(async () => ({ records: [{ id: calls++ }], next_token: 'more' })), /more than 40 pages/);
+  assert.equal(calls, WHOOP_MAX_PAGES);
+});
+
 // ─── Read-only duplicate report ──────────────────────────────────────────────
 
 test('report: Garmin trips with one start time, including renamed ones, oldest first', () => {
@@ -811,6 +1029,32 @@ test('report: Garmin trips paired with trips logged another way', () => {
     { id: 'far', user_id: USER, date: '2025-06-10', mode: 'walk', distance_miles: 3, duration_min: 60, source: 'csv_import', garmin_activity_id: null },
   ]);
   assert.deepEqual(pairs.map((p) => [p.garmin_trip_id, p.other_trip_id]), [['g', 'm']]);
+});
+
+test('report: round trips, route legs and trips with no values pair up like the import', () => {
+  const garmin = (id: string, date: string, mode: string, distance_miles: number, duration_min: number): ReportTrip => ({
+    id, user_id: USER, date, mode, distance_miles, duration_min, source: 'garmin_import', garmin_activity_id: `${date} 07:00:00|${id}`,
+  });
+  const other = (id: string, extra: Partial<ReportTrip>): ReportTrip => ({
+    id, user_id: USER, date: '2026-10-01', mode: 'bike', distance_miles: null, duration_min: null, source: 'manual', garmin_activity_id: null, ...extra,
+  });
+  const pairs = garminVsOtherTrips([
+    garmin('g1', '2026-10-01', 'bike', 10, 60),
+    other('rt', { distance_miles: 5, duration_min: 30, is_round_trip: true }),
+    garmin('g2', '2026-10-02', 'walk', 3, 50),
+    other('leg1', { date: '2026-10-02', mode: 'walk', distance_miles: 1.2, duration_min: 20, route_id: 'r', leg_order: 0 }),
+    other('leg2', { date: '2026-10-02', mode: 'walk', distance_miles: 1.8, duration_min: 30, route_id: 'r', leg_order: 1 }),
+    garmin('g3', '2026-10-03', 'run', 4, 40),
+    other('blank', { date: '2026-10-03', mode: 'run' }),
+    garmin('g4', '2026-10-04', 'bike', 5, 30),
+    other('utc', { date: '2026-10-05', distance_miles: 5, duration_min: 30 }),
+  ]);
+  assert.deepEqual(pairs.map((p) => [p.garmin_trip_id, p.other_trip_id, p.basis, p.other_date]), [
+    ['g1', 'rt', 'round_trip', '2026-10-01'],
+    ['g2', 'leg1', 'route_total', '2026-10-02'],
+    ['g3', 'blank', 'no_values', '2026-10-03'],
+    ['g4', 'utc', 'as_logged', '2026-10-05'],
+  ]);
 });
 
 test('report: workouts with one name on one day; same start = certain', () => {
