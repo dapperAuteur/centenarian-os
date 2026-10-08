@@ -271,8 +271,10 @@ duplicate check); `scripts/import-garmin-workouts.mjs` needs it. Code: `lib/fitn
 To list duplicates already stored (read-only, deletes nothing):
 `node --experimental-strip-types --env-file=.env.local scripts/report-fitness-duplicates.mjs [--email <account>] [--json]`,
 or the queries in `supabase/sql-snippets/find-fitness-duplicates.sql` in the SQL editor. Re-running the
-import scripts is safe: `scripts/import-garmin-workouts.mjs` (now run with `--experimental-strip-types`, has
-`--dry-run`), `scripts/import-garmin-hume.mjs` and `scripts/import-apple-health.mjs` (Apple steps: the largest
+import scripts is safe: `scripts/import-garmin-workouts.mjs` (run with `--experimental-strip-types`; has
+`--dry-run` and `--dir <DI_CONNECT/DI-Connect-Fitness folder>`, and reads every `*_summarizedActivities.json`
+in it, since the file numbers change between Garmin exports), `scripts/import-garmin-hume.mjs` and
+`scripts/import-apple-health.mjs` (also run with `--experimental-strip-types`; Apple steps: the largest
 device total per day, not every device added together).
 
 ### Optional: Google Calendar (one-way sync)
