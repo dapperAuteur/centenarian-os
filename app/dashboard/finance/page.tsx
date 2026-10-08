@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   DollarSign, TrendingUp, TrendingDown, Plus, ArrowRight,
   Upload, Download, Settings, Loader2, CreditCard, Wallet, FileText, AlertTriangle,
-  ArrowRightLeft, RefreshCw, Building2, ScanLine, X, PiggyBank, Target,
+  ArrowRightLeft, RefreshCw, Building2, ScanLine, X, PiggyBank, Target, Briefcase,
 } from 'lucide-react';
 import { Landmark, Umbrella } from 'lucide-react';
 import Link from 'next/link';
@@ -357,6 +357,13 @@ export default function FinanceDashboardPage() {
           </Link>
           <ReviewBadgeLink />
           <Link
+            href="/dashboard/finance/wallet"
+            className="flex items-center gap-1.5 px-3 py-2 bg-sky-50 text-sky-700 rounded-lg text-sm font-medium hover:bg-sky-100 transition"
+          >
+            <Wallet className="w-4 h-4" aria-hidden="true" />
+            Wallet
+          </Link>
+          <Link
             href="/dashboard/finance/accounts"
             className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
           >
@@ -423,7 +430,7 @@ export default function FinanceDashboardPage() {
             href="/dashboard/finance/brands"
             className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
           >
-            <Wallet className="w-4 h-4" />
+            <Briefcase className="w-4 h-4" aria-hidden="true" />
             Brands
           </Link>
           <Link
