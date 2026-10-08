@@ -35,8 +35,13 @@
 //       not a rule. Over the limit is amber too. (Per-account thresholds come with plans/66 W2.)
 //
 //   Loans (a loan with no limit)
-//     - Starting amount and date: the opening balance and its "as of" date (migration 221), else the
-//       day the account was added. Owed now: amountOwed() as of the latest transaction.
+//     - Starting balance and date: the opening balance and its "as of" date (migration 221), else
+//       the day the account was added. When the opening balance is 0, the first charge on the loan
+//       (the expenses on the earliest day that counts toward the balance: usually the amount paid
+//       out) and its date. Labelled "Starting balance", not "original amount": the app's guidance
+//       sets it from the first imported statement, so it is where the records start, not always
+//       what was first borrowed. An original amount and date per loan need their own columns
+//       (a later migration). Owed now: amountOwed() as of the latest transaction.
 //     - Monthly payment: the latest statement's minimum, else the latest payment transfer tracking
 //       linked into the loan (debt/overview.ts latestLinkedPayment), else unknown: no payoff date
 //       until there is one. Never the credit-card minimum formula the Debt page estimates with
@@ -74,6 +79,7 @@
 
 import { convert } from '../fx/math.ts';
 import { countFreshness } from '../cash/logic.ts';
+import { countsInBalance } from '../balance/logic.ts';
 import type { CountFreshness } from '../cash/logic.ts';
 import { MAX_MONTHS, monthlyInterestCents, payoffSchedule, toCents } from '../debt/amortize.ts';
 import type { CreditLimitSource } from '../debt/credit-limit.ts';
@@ -138,6 +144,9 @@ export interface WalletAccountIn {
   /** Loans: the latest linked payment into the account (debt/overview.ts latestLinkedPayment). */
   last_payment?: number | null;
   last_payment_date?: string | null;
+  /** Loans: the first charge on the account (firstCharge), the start when the opening balance is 0. */
+  first_charge?: number | null;
+  first_charge_date?: string | null;
 }
 
 export interface EquipmentIn {
@@ -294,9 +303,10 @@ export interface LoanView {
   institution: string | null;
   last_four: string | null;
   currency: string;
+  /** The starting balance: the opening balance, else (when that is 0) the first charge. */
   starting_amount: number;
   starting_date: string | null;
-  starting_date_source: 'starting_balance_date' | 'added' | null;
+  starting_date_source: 'starting_balance_date' | 'added' | 'first_charge' | null;
   owed: number;
   owed_home: number | null;
   as_of: string;
@@ -601,6 +611,46 @@ export function loanStart(a: Pick<WalletAccountIn, 'opening_balance_date' | 'cre
   return { date: null, source: null };
 }
 
+/**
+ * The first charge on a loan: the expenses on the earliest day that counts toward its balance (after
+ * its starting-balance date when one is set), added up, on or before `today`. Usually the amount
+ * paid out when it was recorded as a charge. Null when there is none.
+ */
+export function firstCharge(
+  account: { id: string; opening_balance_date?: string | null },
+  rows: readonly { account_id: string | null; type: string; amount: number | string; transaction_date: string }[],
+  today: string,
+): { amount: number; date: string } | null {
+  let date: string | null = null;
+  let total = 0;
+  for (const row of rows) {
+    if (row.account_id !== account.id || row.type !== 'expense' || !row.transaction_date) continue;
+    const day = row.transaction_date.slice(0, 10);
+    if (day > today || !countsInBalance(account, day)) continue;
+    const amount = cents(Math.abs(Number(row.amount)));
+    if (!Number.isFinite(amount)) continue;
+    if (date === null || day < date) {
+      date = day;
+      total = amount;
+    } else if (day === date) {
+      total += amount;
+    }
+  }
+  return date === null || total <= 0 ? null : { amount: total / 100, date };
+}
+
+/** A loan's starting balance and date (see the rule above). */
+export function loanStarting(
+  a: Pick<WalletAccountIn, 'opening_balance' | 'opening_balance_date' | 'created_at' | 'first_charge' | 'first_charge_date'>,
+): { amount: number; date: string | null; source: LoanView['starting_date_source'] } {
+  const opening = round2(Number(a.opening_balance ?? 0) || 0);
+  if (opening <= 0 && (a.first_charge ?? 0) > 0 && a.first_charge_date) {
+    return { amount: round2(a.first_charge!), date: a.first_charge_date, source: 'first_charge' };
+  }
+  const start = loanStart(a);
+  return { amount: opening, date: start.date, source: start.source };
+}
+
 export function loansSection(input: WalletInput, unconverted: UnconvertedItem[]): LoansSection {
   const loans = input.accounts
     .filter((a) => a.account_type === 'loan' && !isLineOfCredit(a))
@@ -608,8 +658,8 @@ export function loansSection(input: WalletInput, unconverted: UnconvertedItem[])
       const owed = owedOf(a);
       const owedHome = toHome(owed, a.currency, input.home, input.rates);
       if (owedHome === null) unconverted.push({ section: 'loans', id: a.id, name: a.name, currency: a.currency, amount: owed });
-      const starting = round2(Number(a.opening_balance ?? 0) || 0);
-      const start = loanStart(a);
+      const start = loanStarting(a);
+      const starting = start.amount;
       const paidDown = round2(starting - owed);
       const payment = loanPayment(a);
       return {

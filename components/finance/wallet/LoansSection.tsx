@@ -78,7 +78,8 @@ function LoanRow({ loan, home, today }: { loan: LoanView; home: string; today: s
   );
   const c = loan.currency;
   const difference = result ? payoffDifferenceText(result, (n) => money(n, c)) : null;
-  const startLabel = loan.starting_date_source === 'added' ? 'added' : 'as of';
+  const startLabel =
+    loan.starting_date_source === 'added' ? 'added' : loan.starting_date_source === 'first_charge' ? 'first charge' : 'as of';
 
   return (
     <li className="rounded-xl border border-gray-200 p-4 space-y-3">
@@ -100,10 +101,15 @@ function LoanRow({ loan, home, today }: { loan: LoanView; home: string; today: s
 
       <dl className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
         <div>
-          <dt className="text-xs text-gray-600">Started at</dt>
+          <dt className="text-xs text-gray-600">Starting balance</dt>
           <dd className="text-gray-900">
-            {money(loan.starting_amount, c)}
-            {loan.starting_date && <span className="block text-xs text-gray-600">{startLabel} {formatDate(loan.starting_date)}</span>}
+            {loan.starting_amount > 0 ? money(loan.starting_amount, c) : 'Not set'}
+            {loan.starting_amount > 0 && loan.starting_date && (
+              <span className="block text-xs text-gray-600">
+                {startLabel} {formatDate(loan.starting_date)}
+              </span>
+            )}
+            {loan.starting_amount <= 0 && <span className="block text-xs text-gray-600">Set it under Accounts → Edit</span>}
           </dd>
         </div>
         <div>

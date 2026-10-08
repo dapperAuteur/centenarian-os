@@ -15,6 +15,7 @@ import {
   CREDIT_WARN_PERCENT,
   buildWallet,
   comparePayoff,
+  firstCharge,
   loanPayment,
   payoffDifferenceText,
   loanStart,
@@ -326,6 +327,43 @@ test('latestLinkedPayment: the latest day of linked payments, added up; unlinked
   ];
   assert.deepEqual(latestLinkedPayment('loan', txns, TODAY), { amount: 300, date: '2026-09-30' });
   assert.equal(latestLinkedPayment('none', txns, TODAY), null);
+});
+
+test('loan starting balance: the opening balance, else (when it is 0) the first charge and its date', () => {
+  const w = buildWallet(
+    input({
+      accounts: [
+        // Opening 0, the $25,000 paid out recorded as a charge: it starts there, dated that day.
+        acct({ id: 'disbursed', account_type: 'loan', balance: -24000, opening_balance: 0, created_at: '2026-02-01T00:00:00Z', first_charge: 25000, first_charge_date: '2026-01-15' }),
+        // A starting balance wins over the first charge.
+        acct({ id: 'set', account_type: 'loan', balance: -9000, opening_balance: 12000, opening_balance_date: '2025-01-31', first_charge: 30, first_charge_date: '2025-02-28' }),
+        // Neither: 0, from the day it was added.
+        acct({ id: 'blank', account_type: 'loan', balance: 0, opening_balance: 0, created_at: '2026-03-01T00:00:00Z' }),
+      ],
+    }),
+  );
+  const byId = Object.fromEntries(w.loans.loans.map((l) => [l.id, l]));
+  assert.deepEqual([byId.disbursed.starting_amount, byId.disbursed.starting_date, byId.disbursed.starting_date_source], [25000, '2026-01-15', 'first_charge']);
+  assert.equal(byId.disbursed.paid_down, 1000);
+  assert.equal(byId.disbursed.paid_percent, 4);
+  assert.deepEqual([byId.set.starting_amount, byId.set.starting_date_source], [12000, 'starting_balance_date']);
+  assert.deepEqual([byId.blank.starting_amount, byId.blank.starting_date, byId.blank.starting_date_source], [0, '2026-03-01', 'added']);
+  assert.equal(byId.blank.paid_percent, null);
+});
+
+test('firstCharge: the earliest day of charges that count toward the balance, added up', () => {
+  const rows = [
+    { account_id: 'loan', type: 'expense', amount: 25000, transaction_date: '2026-01-15' },
+    { account_id: 'loan', type: 'expense', amount: 250, transaction_date: '2026-01-15' }, // a fee the same day
+    { account_id: 'loan', type: 'expense', amount: 90, transaction_date: '2026-02-15' }, // interest later
+    { account_id: 'loan', type: 'income', amount: 500, transaction_date: '2026-01-10' }, // a payment is not a charge
+    { account_id: 'other', type: 'expense', amount: 1, transaction_date: '2025-01-01' },
+    { account_id: 'loan', type: 'expense', amount: 7, transaction_date: '2026-12-01' }, // after today
+  ];
+  assert.deepEqual(firstCharge({ id: 'loan' }, rows, TODAY), { amount: 25250, date: '2026-01-15' });
+  // With a starting-balance date only later charges count, as in the balance.
+  assert.deepEqual(firstCharge({ id: 'loan', opening_balance_date: '2026-01-15' }, rows, TODAY), { amount: 90, date: '2026-02-15' });
+  assert.equal(firstCharge({ id: 'none' }, rows, TODAY), null);
 });
 
 test('loanStart: the starting-balance date, else the day the account was added', () => {
@@ -649,6 +687,25 @@ test('loadWalletInput: a loan with no statement pays its last linked payment (33
   assert.equal(oldest.error, null);
   assert.equal(oldest.input?.accounts[0].balance, -9000);
   assert.equal(oldest.input?.accounts[0].last_payment, null);
+});
+
+test('loadWalletInput: a loan entered at 0 with its payout as a charge starts at that charge', async () => {
+  const db = new WalletFakeDb();
+  db.seed('financial_accounts', [
+    { id: 'disb', user_id: USER, name: 'Personal loan', account_type: 'loan', opening_balance: 0, interest_rate: 9, is_active: true, currency: 'USD', created_at: '2026-02-01T00:00:00Z' },
+  ]);
+  db.seed('financial_transactions', [
+    { id: 'x1', user_id: USER, account_id: 'disb', type: 'expense', amount: 25000, transaction_date: '2026-01-15' },
+    { id: 'x2', user_id: USER, account_id: 'disb', type: 'income', amount: 600, transaction_date: '2026-09-15', transfer_kind: 'loan_payment' },
+  ]);
+  const { input: loaded, error } = await loadWalletInput(asClient(db), USER, TODAY, 'USD', { rateFor: async () => null });
+  assert.equal(error, null);
+  assert.ok(loaded);
+  assert.equal(loaded.accounts[0].first_charge, 25000);
+  const loan = buildWallet({ ...loaded, retirement: null, bookValues: null }).loans.loans[0];
+  assert.deepEqual([loan.starting_amount, loan.starting_date, loan.starting_date_source], [25000, '2026-01-15', 'first_charge']);
+  assert.equal(loan.owed, 24400);
+  assert.equal(loan.paid_down, 600);
 });
 
 test('loadWalletInput: works before the statement, count, goal and policy migrations', async () => {

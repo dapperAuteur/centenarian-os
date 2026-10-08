@@ -26,6 +26,7 @@ import { isCurrencyCode } from '../fx/math.ts';
 import { isMissingColumn } from '../transfers/schema.ts';
 import { getRate } from '../fx/rates.ts';
 import type { FxDeps } from '../fx/rates.ts';
+import { firstCharge } from './logic.ts';
 import type { EquipmentIn, PolicyIn, VehicleIn, WalletAccountIn, WalletInput } from './logic.ts';
 
 const PAGE_SIZE = 1000;
@@ -246,6 +247,8 @@ export async function loadWalletInput(
     const debt = buildDebtSummary(a as unknown as DebtAccountRow, statementRes.rows, txns, today);
     // A loan with no statement minimum pays what it last paid, not the card formula (logic.ts loanPayment).
     const lastPayment = a.account_type === 'loan' ? latestLinkedPayment(a.id, txns, today) : null;
+    // A loan whose starting balance is 0 starts at its first charge (logic.ts loanStarting).
+    const first = a.account_type === 'loan' ? firstCharge({ id: a.id, opening_balance_date: str(a.opening_balance_date) }, balanceRes.rows, today) : null;
     return {
       ...base,
       credit_limit: debt.creditLimit,
@@ -256,6 +259,8 @@ export async function loadWalletInput(
       minimum_estimated: debt.minimumEstimated,
       last_payment: lastPayment?.amount ?? null,
       last_payment_date: lastPayment?.date ?? null,
+      first_charge: first?.amount ?? null,
+      first_charge_date: first?.date ?? null,
     };
   });
 
