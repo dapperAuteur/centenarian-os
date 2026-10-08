@@ -26,6 +26,10 @@
 //
 //   Credit cards and lines of credit
 //     - Credit cards, plus loans that have a limit (a line of credit). Owed = amountOwed().
+//       A loan whose limit was typed on the account (not printed on a statement) may really be an
+//       installment loan with its original amount in the field: the Loans section names those
+//       and links to the account, so a car, student or home loan can get its payoff date back.
+//       (An explicit line-of-credit flag needs a column: plans/66 W2.)
 //     - Limit = creditLimitFor(): the account's limit, else the latest statement's.
 //     - used = sum of max(0, owed) over the ones with a known limit (an overpaid card never offsets
 //       another card's balance); limit_total = sum of those limits; % used = used / limit_total;
@@ -338,6 +342,8 @@ export interface LoansSection {
   /** Loans still owed with no known monthly payment. */
   no_payment_count: number;
   loans: LoanView[];
+  /** Loan accounts shown as lines of credit because a limit was typed on the account. */
+  limit_on_account: { id: string; name: string }[];
 }
 
 export interface AssetItemView {
@@ -697,6 +703,9 @@ export function loansSection(input: WalletInput, unconverted: UnconvertedItem[])
     ),
     no_payment_count: loans.filter((l) => l.owed > 0 && l.minimum === null).length,
     loans,
+    limit_on_account: input.accounts
+      .filter((a) => isLineOfCredit(a) && (a.credit_limit_source ?? 'account') === 'account')
+      .map((a) => ({ id: a.id, name: a.name })),
   };
 }
 

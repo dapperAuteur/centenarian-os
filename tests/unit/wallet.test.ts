@@ -225,6 +225,26 @@ test('a loan with a limit is a line of credit: it counts in credit, not in loans
   assert.equal(w.credit.percent, 20);
   assert.equal(w.loans.owed, 9800);
   assert.equal(w.net_worth.debts, 11800);
+  // A statement-printed limit is a real line: not flagged.
+  assert.deepEqual(w.loans.limit_on_account, []);
+});
+
+test('a loan with a limit typed on the account is named in Loans, so an installment loan can be fixed', () => {
+  // The add-account form used to suggest the field for loans; a car loan with its original amount there.
+  const w = buildWallet(
+    input({
+      accounts: [
+        acct({ id: 'car', name: 'Car loan', account_type: 'loan', balance: -9800, credit_limit: 25000, credit_limit_source: 'account' }),
+        acct({ id: 'heloc', name: 'HELOC', account_type: 'loan', balance: -2000, credit_limit: 10000, credit_limit_source: 'statement' }),
+      ],
+    }),
+  );
+  assert.deepEqual(w.credit.lines.map((l) => l.id), ['car', 'heloc']);
+  assert.deepEqual(w.loans.limit_on_account, [{ id: 'car', name: 'Car loan' }]);
+  // Without the limit it is a loan again, with its payoff.
+  const fixed = buildWallet(input({ accounts: [acct({ id: 'car', account_type: 'loan', balance: -9800, credit_limit: null, last_payment: 300 })] }));
+  assert.deepEqual(fixed.loans.loans.map((l) => l.id), ['car']);
+  assert.deepEqual(fixed.loans.limit_on_account, []);
 });
 
 test('a foreign card: owed and limit convert at the same rate, so the % is exact; no rate = listed, left out', () => {

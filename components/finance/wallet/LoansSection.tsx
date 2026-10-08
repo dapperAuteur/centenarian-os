@@ -34,6 +34,14 @@ export default function LoansSection({ loans, home, today }: { loans: LoansData;
       icon={<Landmark className="w-5 h-5 text-sky-700" aria-hidden="true" />}
       action={<ActionLink href="/dashboard/finance/debt">Debt payoff</ActionLink>}
     >
+      {loans.limit_on_account.length > 0 && (
+        <p className="text-xs text-gray-600">
+          {loans.limit_on_account.map((l) => l.name).join(', ')} {loans.limit_on_account.length === 1 ? 'has' : 'have'} a credit limit on the
+          account, so {loans.limit_on_account.length === 1 ? 'it shows' : 'they show'} under lines of credit. If one is a car, student or home
+          loan, clear its Credit Limit to see its payoff date here.{' '}
+          <ActionLink href="/dashboard/finance/accounts">Edit accounts</ActionLink>
+        </p>
+      )}
       {loans.loans.length === 0 ? (
         <p className="text-sm text-gray-600">No loans. A loan account with a credit limit is shown as a line of credit instead.</p>
       ) : (
