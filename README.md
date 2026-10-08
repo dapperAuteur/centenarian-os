@@ -6,7 +6,7 @@
 > [`/dashboard/weekly-review`](./app/dashboard/weekly-review)) can surface cross-domain patterns no
 > single-vertical tracker can see. That co-location is the product, not an accident of scope.
 
-> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online); a split is planned, not done), offline-first via service-worker + IndexedDB queue, **225 migrations** to date.
+> **Solo-built personal OS.** 14 modules in one Next.js 15 monolith, **Supabase Postgres shared with a sibling product** ([Work.WitUS](https://work.witus.online); a split is planned, not done), offline-first via service-worker + IndexedDB queue, **226 migrations** to date.
 
 **Actively decomposing.** Modules that a sibling WitUS app already owns are being removed under
 the ecosystem's "one app, one job" rule (see [CLAUDE.md](./CLAUDE.md)) — Media → Stream.WitUS,
@@ -31,7 +31,7 @@ flowchart LR
 
   CentOS[centenarian-os<br/>Next.js 15 · Vercel<br/>14 modules]
   Contractor[contractor-os<br/>Work.WitUS]
-  DB[(Supabase Postgres<br/>225 migrations)]:::shared
+  DB[(Supabase Postgres<br/>226 migrations)]:::shared
 
   CentOS -->|service-role + publishable| DB
   Contractor -->|service-role + publishable| DB
@@ -41,7 +41,7 @@ flowchart LR
 For dev-audience readers:
 
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** — full module map, the shared-DB boundary, how cross-app data is moving to signed events ahead of a planned split, offline-sync layer, repo layout, and stack table.
-- **[MIGRATIONS.md](./MIGRATIONS.md)** — 225 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
+- **[MIGRATIONS.md](./MIGRATIONS.md)** — 226 migrations grouped by module, the additive-only discipline that makes shared-DB sane, notable patterns (polymorphic `activity_links`, hot-fix pairs, intentional number collisions), and how to reproduce the count.
 - **[CLAUDE.md](./CLAUDE.md)** — AI-collaborator instructions doubling as the project conventions doc (style, a11y, the shared-database rule, branch workflow).
 - **[STYLE_GUIDE.md](./STYLE_GUIDE.md)** — git workflow, branch naming, Conventional Commits, PR rules. Every change starts on a new branch off `main`; `main` is never pushed to directly.
 - **[docs/CentenarianAcademy/](./docs/CentenarianAcademy/)** — course-authoring standards: `CourseAuthoringGuide.md` (craft), `CourseProductionPlaybook.md` (process), `CitationIntegrityGuide.md` (verify every source, never ship a fake citation), and `CourseCreationWithAI.md` (hand to your AI). Per-course recipes: `CourseAuthoringGuide NASM CPT/CES/CNC.md` and `CourseAuthoringGuide BVC.md` (Better Vice Club: audio-first, four-lens episodes; episode-per-module; rotating quizzes + FlashLearn recall loop + season-wide glossary). Courses cite only verified, peer-reviewed sources and ship a teacher evidence ledger.
@@ -113,7 +113,7 @@ No free plan. All users must subscribe to access paid modules.
 | **Health Metrics** | RHR, steps, sleep, body composition; CSV import from Garmin, Apple Health, Oura, WHOOP, Google Health, InBody and Hume Health with a Check rows step (new days, days already imported, days that gain blank fields, days with different values) before anything is saved: a re-import only adds new days and fills blank fields, never changes a stored value unless Replace existing values is ticked, and a date listed twice in one file is merged; one row per day per source; Garmin sync is coming soon (Settings shows it as Coming Soon; Oura and WHOOP have no settings card) | Paid |
 | **Workouts & Exercises** | Exercise library with categories; workout templates; Nomad Longevity OS | Paid |
 | **Financial Dashboard** | Accounts, transactions, budgets, invoices, bank statement import from CSV or PDF (PDFs read in-process, never sent to a third party; Best Buy / Citibank statements parsed with summary, APRs, promotional balances and a reconciliation check; Capital One, Discover and PayPal Credit website activity printouts; other issuers by a generic fallback; CSV layouts verified against Citi, PayPal, Arizona Federal CU, Navy Federal and Best Buy downloads; also from the Statements box on Settings; card and loan statements in card terms, with payments linked as transfers to the account they were paid from and refunds counted as negative spending; one status color scale with icons) with duplicate detection, matching and undo; a review saved as you go so an import can be finished later (Resume import, only the server-read rows and choices kept, never the file, for 30 days); Import history to open a past import and change its rows (category, type, vendor, transfer links, delete) or re-run transfer matching; a Review page listing everything waiting for a decision (possible transfers, card and loan payments with no other side, imported rows that match an entry you made, uncategorized transactions, unfinished imports) with bulk actions and a count badge on the dashboard; CSV export, learned vendor categories ("Always categorize this vendor as...?"), Find similar (from a transaction, its page or a search: other transactions with the same vendor as the app compares vendors, the same words, the same amount within a tolerance, account, category, type or dates, counted live on the server across all your history) and bulk edit of the selection (category, vendor rename, type, brand, life category, tags, transfer unlink as a pair; the type never changes on one side of a transfer; batches of 200 with progress; "Remember for future imports" saves a learned rule; Undo last bulk edit puts back only rows unchanged since, migration 220), transfers between your own accounts (card and loan payments included) tracked as transfers instead of spending and income, a Budgets page with budgets by month, rollover, and suggested budgets from your own history (average or median of the last 3, 6 or 12 months), multi-currency accounts (cash in any currency for travel, a home currency for totals, Exchange money as a transfer with the fee as its own expense, daily rates from Frankfurter/ECB with ExchangeRate-API as fallback, your own rates always win), a Debt payoff page (interest paid per card/loan by month and year, payoff calculator, debt-free plan with avalanche (default, deferred-interest promo deadlines protected) / snowball / promo-first / custom order, card and loan due dates as planner tasks under Inbox › Bills, a Due soon banner and optional email reminders), savings goals as envelopes inside a real account (allocate, move, and split deposits across goals; monthly amount needed; whether each goal fits your monthly surplus; "Save for this" from a planned trip or equipment item), cash on hand (a dashboard card per cash account with balance and last count, "Count my cash" by total or bills and coins that records the difference as one adjustment with history and undo, one-tap "Paid cash" that works offline, Withdraw into cash, and ATM or branch withdrawals on imported bank statements recorded into a cash account instead of as spending), dated starting balances and monthly reconciliation (a starting balance "as of" a day, so an account can start mid-history and only later transactions count, taken from the first imported statement in one tap; a Reconcile page per account comparing a statement's closing balance with your records on that date, Cleared ticks on the period's transactions, and a difference resolved by a labelled adjustment, a starting-balance change or left open; card and loan balances in amounts owed; a Reconciled badge and a warning before editing a transaction in a reconciled period; unreconcile; a dashboard card listing accounts not reconciled in 30 days; "Reconcile to this statement's balance" after a PDF import), a Retirement page (401(k), 403(b), 457(b), IRAs, HSA, brokerage, pension, annuity accounts with hand-entered balance snapshots, contribution and employer-match rules; a planner projecting to retirement age in today's dollars with conservative / middle / optimistic presets as editable assumptions, a target from yearly spending × years or a withdrawal-rate rule of thumb, a hand-entered Social Security offset, the gap and the monthly amount needed; a net worth estimate; all labeled estimates, not advice), and an Insurance page (term / whole / universal life policies, coverage and cash value totals, premium payments matched from transactions with paid to date and next due, optional premium due-date tasks under Inbox › Bills, term-end warnings) | Paid |
-| **Travel & Vehicles** | Fuel logs with OCR, trip tracking, multi-stop routes, maintenance, IRS mileage; Garmin Activities CSV import with a Check file step (an activity is its start time, so one already imported is skipped even after it was renamed in Garmin Connect; repeats in the file count once; activities that look like a trip you logged are flagged and skipped unless you include them) | Paid |
+| **Travel & Vehicles** | Fuel logs with OCR, trip tracking, multi-stop routes, round trips with an automatic return leg, trip templates (Quick log and Quick Re-log keep every leg's distance and time; cards show the totals), maintenance, IRS mileage; Garmin Activities CSV import with a Check file step (an activity is its start time, so one already imported is skipped even after it was renamed in Garmin Connect; repeats in the file count once; activities that look like a trip you logged are flagged and skipped unless you include them) | Paid |
 | **Equipment & Assets** | Asset tracking, valuation history, media gallery, cross-module links, depreciation for every item and vehicle (straight line, declining balance or units of use; expected life in years and/or uses or miles; salvage value; book value, yearly schedule and chart; estimates, not tax advice), work use (link items to planner tasks and synced calendar events with "Used equipment"; vehicles count work miles from trips; uses, work share, cost per use, and work-share depreciation for the year), a total book value summary, and "Save for replacement" into a savings goal | Paid |
 | **Correlations & Analytics** | Cross-module data correlations, trend charts, daily/weekly aggregates | Paid |
 | **Data Hub** | CSV import/export for 11+ modules with Google Sheets templates; Health Metrics and Workouts imports check the rows first and skip what is already there (a workout logged under the same name that day is skipped unless Import anyway is ticked) | Paid |
@@ -310,6 +310,18 @@ notes column, since CentenarianOS has no column for either. Not converted (no co
 max, fitness age, training status and load, respiration, floors, BMI, GPS tracks; HRV is not in the
 export. Keep the export and the output out of git (`docs/` and `files/` are ignored). Tests:
 `tests/unit/garmin-export-converter.test.ts`.
+
+### Trip templates: optional stop repair (no migration)
+
+Multi-stop and round-trip trip templates store one row per stop in `trip_template_stops`. Stop 0 is the
+start with no leg details; stop k holds the leg that ends there, so N legs are N + 1 stops
+(`lib/travel/template-stops.ts`, shared by "Save as reusable template" in `POST /api/travel/routes` and
+Quick log in `POST /api/travel/templates`). Templates saved before this fix hold each leg one stop early,
+so they log too few miles and minutes. To repair them from the route each was saved from (dry run first;
+`--apply` writes, `--user=<id>` limits to one person; nothing is deleted; edited templates are only listed):
+`node --env-file=.env.local --experimental-strip-types scripts/repair-trip-template-stops.ts`.
+The database is shared with Work.WitUS, whose writer still stores the oldest pattern, so that pattern is
+repaired only with `--include-original`.
 
 ### Optional: Google Calendar (one-way sync)
 
@@ -576,6 +588,12 @@ Runs the pure-function tests with Node's built-in test runner (`node --test --ex
 It also covers the one category tree (`tests/unit/category-tree.test.ts`): the tree and picker search,
 suggestions by name, ownership of a budget category's life area, the automatic life area of a
 transaction (never removing a tag a person added), budgets unchanged, the analytics roll-up and merging.
+
+And trip templates (`tests/unit/trip-template-stops.test.ts`): saving a route as stops and Quick-logging
+it back keeps every leg's distance, duration, mode and vehicle (one-leg, round-trip and three-leg routes),
+the summed return leg, a leg saved with no vehicle logging with none (only a stop with no mode takes the
+template's vehicle), one-leg loops never doubled, purposes trips accept, card totals, and the stop repair
+planning (a template a failed repair run left partly rewritten is finished on the rerun).
 
 ## Project Structure
 
