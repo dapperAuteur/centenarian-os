@@ -11,7 +11,7 @@ CentenarianOS is a comprehensive longevity-focused life-management platform. It 
 ### Tech Stack
 - **Framework**: Next.js 15 App Router (TypeScript, app/ directory structure)
 - **Styling**: Tailwind CSS v4 (utility-first, dark theme with fuchsia accents)
-- **Database**: Supabase (PostgreSQL + Row-Level Security), 225 migrations. One Supabase project is shared with Work.WitUS (contractor-os), data and auth both, so Supabase Auth settings (email templates, SMTP sender, MFA) apply to both apps; a split (Work.WitUS to its own database, plan 55 Phase 3) is planned, not done
+- **Database**: Supabase (PostgreSQL + Row-Level Security), 226 migrations. One Supabase project is shared with Work.WitUS (contractor-os), data and auth both, so Supabase Auth settings (email templates, SMTP sender, MFA) apply to both apps; a split (Work.WitUS to its own database, plan 55 Phase 3) is planned, not done
 - **Auth**: Supabase Auth (email/password, magic link)
 - **Payments**: Stripe (checkout sessions, webhooks, subscription management, Stripe Connect for teacher payouts)
 - **AI**: Google Gemini 2.5 Flash (chat, coaching, embeddings, vision/OCR)
