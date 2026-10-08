@@ -552,6 +552,24 @@ test('CSV: unsupported types and unreadable rows are counted apart', () => {
   assert.throws(() => parseGarminActivitiesCsv(''), FitnessImportError);
 });
 
+test('CSV: Garmin Connect\'s "Time" column is read when there is no "Total Time"', () => {
+  // The header of a real Garmin Connect export (All Activities, Export CSV), shortened.
+  const connect = [
+    'Activity Type,Date,Favorite,Title,Distance,Calories,Time,Avg HR,Max HR,Total Ascent,Steps,Moving Time,Elapsed Time',
+    'Cycling,2026-03-01 08:00:00,false,Ride,4.20,180,00:25:10.6,110,140,50,--,00:24:00,00:30:00',
+  ].join('\n');
+  const { activities } = parseGarminActivitiesCsv(connect);
+  assert.equal(activities.length, 1);
+  assert.equal(activities[0].duration_min, 25, 'Time, not Moving Time or Elapsed Time');
+  assert.equal(activities[0].distance_miles, 4.2);
+  // When both are there, Total Time wins.
+  const both = parseGarminActivitiesCsv([
+    'Activity Type,Date,Title,Time,Total Time',
+    'Walking,2026-03-02 08:00:00,Walk,00:10:00,00:40:00',
+  ].join('\n'));
+  assert.equal(both.activities[0].duration_min, 40);
+});
+
 test('plan: renamed activity, a repeat in the file, and a hand-logged trip', () => {
   const { activities } = parseGarminActivitiesCsv(csv(
     'Cycling,2025-06-08 17:20:53,false,Renamed Ride,12.5,400,00:45:00,120,--',
