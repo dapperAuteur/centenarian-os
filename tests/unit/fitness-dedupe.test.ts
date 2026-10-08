@@ -52,12 +52,16 @@ import { describeWorkoutCounts, loadLoggedWorkouts, splitLoggedWorkouts, workout
 import { dedupeScans, importInBodyScans, latestScanDays, type ScanRow } from '../../lib/fitness-import/inbody.ts';
 import { FitnessImportError, groupByKeySet, isMissingColumn, readAllRows } from '../../lib/fitness-import/db.ts';
 import {
+  WHOOP_MAX_PAGES,
+  daysFrom,
   garminDayOf,
   garminDays,
   localDateFromIso,
   ouraDays,
+  readAllWhoopPages,
   splitRange,
   syncWindowStart,
+  wholeDaySyncWindow,
   whoopDays,
 } from '../../lib/fitness-import/wearable-days.ts';
 import {
@@ -918,6 +922,84 @@ test('sync window: last sync minus 2 days, never more than 30 days back', () => 
   assert.equal(syncWindowStart('2026-12-01T00:00:00Z', now).toISOString(), now.toISOString());
   assert.deepEqual(splitRange(0, 250, 100), [[0, 100], [100, 200], [200, 250]]);
   assert.deepEqual(splitRange(10, 10, 100), []);
+});
+
+// WHOOP adds a day's steps and calories up from its workouts and syncs in
+// replace mode, so a day fetched in part would overwrite the full value.
+const whoopWorkout = (start: string, distance_meter: number, kilojoule: number) => ({
+  start, timezone_offset: '-05:00', score: { distance_meter, kilojoule },
+});
+/** What WHOOP returns for a fetch from `from`: workouts that started at or after it. */
+const whoopSince = (records: ReturnType<typeof whoopWorkout>[], from: Date) => ({
+  records: records.filter((r) => Date.parse(r.start) >= from.getTime()),
+});
+
+test('WHOOP: every workout of a day adds to its steps and active calories', () => {
+  const days = whoopDays({ records: [] }, { records: [] }, {
+    records: [whoopWorkout('2026-10-05T12:00:00.000Z', 5000, 1000), whoopWorkout('2026-10-05T23:00:00.000Z', 1000, 500)],
+  });
+  // 1000 kJ = 239 kcal, 500 kJ = 120 kcal: before, the day kept one workout's 120.
+  assert.deepEqual(days, [{ logged_date: '2026-10-05', values: { active_calories: 359, steps: 7874 } }]);
+});
+
+test('WHOOP sync: the first day of the window is fetched whole, so a later sync never shrinks it', async () => {
+  const { db, client } = fake();
+  const workouts = [whoopWorkout('2026-10-05T12:00:00.000Z', 5000, 1000), whoopWorkout('2026-10-05T23:00:00.000Z', 1000, 500)];
+  const sync = async (lastSyncedAt: string | null, now: string) => {
+    const { fetchFrom, firstDay } = wholeDaySyncWindow(syncWindowStart(lastSyncedAt, new Date(now)));
+    const rows = daysFrom(whoopDays({ records: [] }, { records: [] }, whoopSince(workouts, fetchFrom)), firstDay);
+    return importDailyMetrics(client, { userId: USER, source: 'whoop', rows, mode: 'replace' });
+  };
+  await sync(null, '2026-10-06T12:00:00Z');
+  assert.equal(db.rows('user_health_metrics')[0].steps, 7874);
+
+  // The window starts 2026-10-05T18:00Z, after the morning workout. The old
+  // fetch began there and replaced 7874 steps with the evening's 1312.
+  const exact = syncWindowStart('2026-10-07T18:00:00Z', new Date('2026-10-08T12:00:00Z'));
+  assert.equal(exact.toISOString(), '2026-10-05T18:00:00.000Z');
+  const partial = whoopDays({ records: [] }, { records: [] }, whoopSince(workouts, exact));
+  assert.equal(partial[0].values.steps, 1312, 'what the old window fetched');
+
+  const second = await sync('2026-10-07T18:00:00Z', '2026-10-08T12:00:00Z');
+  assert.equal(second.counts.replaced, 0);
+  const stored = db.rows('user_health_metrics');
+  assert.equal(stored.length, 1);
+  assert.deepEqual([stored[0].steps, stored[0].active_calories], [7874, 359]);
+});
+
+test('WHOOP sync window: a day early from midnight UTC; days before the window\'s UTC day are left out', () => {
+  const { fetchFrom, firstDay } = wholeDaySyncWindow(new Date('2026-10-05T18:00:00Z'));
+  assert.equal(fetchFrom.toISOString(), '2026-10-04T00:00:00.000Z');
+  assert.equal(firstDay, '2026-10-05');
+  // East of UTC (+09:00) local 2026-10-04 began 2026-10-03T15:00Z, before the
+  // fetch: written, it would be a part-day sum.
+  const days = whoopDays({ records: [] }, { records: [] }, {
+    records: [
+      { start: '2026-10-04T01:00:00.000Z', timezone_offset: '+09:00', score: { distance_meter: 762 } },
+      { start: '2026-10-04T16:00:00.000Z', timezone_offset: '+09:00', score: { distance_meter: 762 } },
+    ],
+  });
+  assert.deepEqual(days.map((d) => d.logged_date), ['2026-10-04', '2026-10-05']);
+  assert.deepEqual(daysFrom(days, firstDay).map((d) => d.logged_date), ['2026-10-05']);
+  // At +14:00, local 2026-10-05 begins 2026-10-04T10:00Z: inside the fetch.
+  assert.ok(Date.parse('2026-10-04T10:00:00Z') >= fetchFrom.getTime());
+});
+
+test('WHOOP pages: every page is read; one past the limit throws instead of writing part of a day', async () => {
+  const tokens: Array<string | null> = [];
+  const pages: Record<string, { records: unknown[]; next_token?: string }> = {
+    first: { records: [{ id: 1 }, { id: 2 }], next_token: 'b' },
+    b: { records: [{ id: 3 }], next_token: '' },
+  };
+  const all = await readAllWhoopPages(async (token) => {
+    tokens.push(token);
+    return pages[token ?? 'first'];
+  });
+  assert.deepEqual(all.records.map((r) => r.id), [1, 2, 3]);
+  assert.deepEqual(tokens, [null, 'b']);
+  let calls = 0;
+  await assert.rejects(readAllWhoopPages(async () => ({ records: [{ id: calls++ }], next_token: 'more' })), /more than 40 pages/);
+  assert.equal(calls, WHOOP_MAX_PAGES);
 });
 
 // ─── Read-only duplicate report ──────────────────────────────────────────────

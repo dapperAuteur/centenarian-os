@@ -12,6 +12,12 @@
 //   WHOOP   sleeps and workouts: `start` shifted by `timezone_offset`.
 //           Recovery records carry no offset, so `created_at`'s date is used.
 //
+// WHOOP's steps and active calories are added up from the day's workouts, so
+// a day is only right when every workout of it was fetched: the sync reads
+// every page (readAllWhoopPages) from a whole-day start (wholeDaySyncWindow)
+// and writes only the days that window covers completely (daysFrom). The
+// write replaces stored values, so a part-day sum would overwrite a full one.
+//
 // Only values present in the response are set. A field the provider left out
 // is absent from the row, so the write (daily-metrics.ts) never erases it.
 //
@@ -173,8 +179,9 @@ export function whoopDays(recovery: unknown, sleep: unknown, workout: unknown): 
     if (!date) continue;
     const score = (w.score as Json | undefined) ?? {};
     const d = map.get(date);
+    // Every workout of the day adds to its totals.
     const kilojoule = num(score.kilojoule);
-    if (kilojoule !== null) d.active_calories = Math.round(kilojoule * 0.239006); // kJ to kcal
+    if (kilojoule !== null) d.active_calories = (typeof d.active_calories === 'number' ? d.active_calories : 0) + Math.round(kilojoule * 0.239006); // kJ to kcal
     const meters = num(score.distance_meter);
     if (meters !== null) d.steps = (typeof d.steps === 'number' ? d.steps : 0) + Math.round(meters / 0.762); // rough step estimate
   }
@@ -195,6 +202,46 @@ export function syncWindowStart(lastSyncedAt: string | null | undefined, now: Da
   if (Number.isNaN(last)) return new Date(earliest);
   const start = Math.max(earliest, last - SYNC_OVERLAP_DAYS * DAY_MS);
   return new Date(Math.min(start, now.getTime()));
+}
+
+/**
+ * A window that writes only whole days, for values added up from records
+ * (WHOOP workouts). Fetch from midnight UTC one day before the window's UTC
+ * day, and keep the days from the window's UTC day on: at any offset from
+ * UTC-12 to UTC+14 each kept local day then lies entirely inside the fetch,
+ * so no day is written from part of its workouts.
+ */
+export function wholeDaySyncWindow(windowStart: Date): { fetchFrom: Date; firstDay: string } {
+  const firstDay = windowStart.toISOString().slice(0, 10);
+  return { fetchFrom: new Date(Date.parse(`${firstDay}T00:00:00.000Z`) - DAY_MS), firstDay };
+}
+
+/** The days on or after firstDay (YYYY-MM-DD). */
+export function daysFrom(rows: readonly DayInput[], firstDay: string): DayInput[] {
+  return rows.filter((row) => row.logged_date >= firstDay);
+}
+
+/** WHOOP collections: at most 25 records a page, newest first, `next_token` for the next page. */
+export const WHOOP_PAGE_LIMIT = 25;
+/** A stop for a paging loop that never ends: 1,000 records is far more than 31 days hold. */
+export const WHOOP_MAX_PAGES = 40;
+
+/**
+ * Every record of one WHOOP collection, following `next_token`. A missing
+ * page would leave a day with part of its workouts, so a collection longer
+ * than WHOOP_MAX_PAGES throws (the sync then writes nothing).
+ */
+export async function readAllWhoopPages(fetchPage: (nextToken: string | null) => Promise<unknown>): Promise<{ records: Json[] }> {
+  const records: Json[] = [];
+  let token: string | null = null;
+  for (let page = 0; page < WHOOP_MAX_PAGES; page++) {
+    const body = (await fetchPage(token)) as Json | null;
+    records.push(...asList(body?.records));
+    const next = body?.next_token;
+    if (typeof next !== 'string' || next === '') return { records };
+    token = next;
+  }
+  throw new Error(`WHOOP returned more than ${WHOOP_MAX_PAGES} pages; nothing was written`);
 }
 
 /** Splits [start, end) epoch seconds into ranges no longer than maxSeconds. */
