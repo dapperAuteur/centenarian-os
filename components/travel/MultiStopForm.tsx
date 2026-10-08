@@ -5,7 +5,7 @@ import { Plus, Trash2, ArrowDown, ChevronDown } from 'lucide-react';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import { offlineFetch } from '@/lib/offline/offline-fetch';
 import { todayLocal } from '@/lib/dates/local';
-import { formatTemplateTotals, normalizeTripPurpose, singleLegRoundTrip, templateSummary } from '@/lib/travel/template-stops';
+import { formatTemplateTotals, legVehicleId, normalizeTripPurpose, singleLegRoundTrip, templateSummary } from '@/lib/travel/template-stops';
 
 interface Vehicle {
   id: string;
@@ -280,7 +280,8 @@ export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved,
     if (tmpl.is_multi_stop && tmpl.stops?.length) {
       // Template stops use the same convention as these form stops (stop k
       // holds the leg that ends there; lib/travel/template-stops.ts), so they
-      // map one to one.
+      // map one to one. A leg with no vehicle of its own gets the template's
+      // when it goes by the template's mode, as Quick log does.
       const newStops: Stop[] = tmpl.stops
         .slice()
         .sort((a, b) => a.stop_order - b.stop_order)
@@ -288,7 +289,7 @@ export default function MultiStopForm({ vehicles, brands = [], onClose, onSaved,
           ...BLANK_STOP,
           location: s.location_name,
           mode: s.mode || (i === 0 ? '' : tmpl.mode || 'car'),
-          vehicle_id: s.vehicle_id || '',
+          vehicle_id: i === 0 ? (s.vehicle_id || '') : (legVehicleId(s, tmpl) ?? ''),
           distance_miles: s.distance_miles != null ? String(s.distance_miles) : '',
           duration_min: s.duration_min != null ? String(s.duration_min) : '',
           cost: s.cost != null ? String(s.cost) : '',

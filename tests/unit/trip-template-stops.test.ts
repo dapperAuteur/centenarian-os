@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import {
   formatMinutes,
   formatTemplateTotals,
+  legVehicleId,
   legsToTemplateStops,
   normalizeTripPurpose,
   singleLegRoundTrip,
@@ -174,6 +175,48 @@ test('templateStopsToLegs: no return leg when the stops already close the loop (
   );
   assert.equal(legs.length, 2);
   assert.ok(legs.every((l) => !l.is_return));
+});
+
+test('templateStopsToLegs: a leg with the template mode and no vehicle logs with the template vehicle', () => {
+  // An old round trip fixed by hand in Edit Template, which had no vehicle per
+  // leg: the way back was set to car, 5 mi, 12 min with no vehicle.
+  const legs = templateStopsToLegs(
+    [
+      { stop_order: 0, location_name: 'Home' },
+      { stop_order: 1, location_name: 'Gym', mode: 'car', vehicle_id: CAR, distance_miles: 5, duration_min: 12 },
+      { stop_order: 2, location_name: 'Home', mode: 'car', vehicle_id: null, distance_miles: 5, duration_min: 12 },
+    ],
+    { mode: 'car', vehicle_id: CAR, is_round_trip: true },
+  );
+  assert.deepEqual(legs.map((l) => [l.mode, l.vehicle_id]), [['car', CAR], ['car', CAR]]);
+});
+
+test('templateStopsToLegs: the template vehicle fills only legs that go by the template mode', () => {
+  const tmpl = { mode: 'car', vehicle_id: CAR, is_round_trip: true };
+  const legs = templateStopsToLegs(
+    [
+      { stop_order: 0, location_name: 'A' },
+      // Added in Edit Template with no mode or vehicle: the template's mode and vehicle.
+      { stop_order: 1, location_name: 'B', mode: '', vehicle_id: '' },
+      // Its own vehicle wins.
+      { stop_order: 2, location_name: 'C', mode: 'bike', vehicle_id: BIKE },
+      // Another mode with no vehicle: none (a walk is not driven in the car).
+      { stop_order: 3, location_name: 'D', mode: 'walk', vehicle_id: null },
+    ],
+    tmpl,
+  );
+  assert.deepEqual(legs.map((l) => [l.mode, l.vehicle_id, l.is_return]), [
+    ['car', CAR, false],
+    ['bike', BIKE, false],
+    ['walk', null, false],
+    // The return leg takes the last leg's mode and vehicle.
+    ['walk', null, true],
+  ]);
+  // No template vehicle: nothing to fall back to.
+  assert.equal(legVehicleId({ mode: 'car', vehicle_id: null }, { mode: 'car', vehicle_id: null }), null);
+  // No template mode: car is the default for both.
+  assert.equal(legVehicleId({ mode: 'car', vehicle_id: null }, { mode: null, vehicle_id: CAR }), CAR);
+  assert.equal(legVehicleId({ mode: 'bus', vehicle_id: null }, { mode: null, vehicle_id: CAR }), null);
 });
 
 test('templateStopsToLegs: fewer than two stops log nothing', () => {

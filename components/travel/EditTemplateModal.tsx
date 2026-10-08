@@ -7,6 +7,7 @@ import { offlineFetch } from '@/lib/offline/offline-fetch';
 import {
   TRIP_PURPOSES,
   formatTemplateTotals,
+  legMode,
   normalizeTripPurpose,
   singleLegRoundTrip,
   templateStopsToLegs,
@@ -122,17 +123,43 @@ export default function EditTemplateModal({ template, vehicles, brands, onClose,
     setStops((prev) => prev.map((s, i) => (i === idx ? { ...s, [field]: value } : s)));
   };
 
+  // Picking a vehicle sets the leg's mode to the vehicle's, as Add Trip does.
+  const updateStopVehicle = (idx: number, vid: string) => {
+    const tripMode = vehicles.find((v) => v.id === vid)?.trip_mode;
+    setStops((prev) => prev.map((s, i) => (i === idx ? { ...s, vehicle_id: vid, ...(tripMode ? { mode: tripMode } : {}) } : s)));
+  };
+
+  // A leg with no vehicle of its own logs with the template's vehicle when it
+  // goes by the template's mode (legVehicleId() in lib/travel/template-stops.ts),
+  // so the empty choice says which vehicle that is.
+  const templateVehicleName = template.vehicle_id
+    ? vehicles.find((v) => v.id === template.vehicle_id)?.nickname ?? 'saved vehicle'
+    : null;
+  const emptyVehicleLabel = (stop: StopForm) =>
+    templateVehicleName && legMode(stop, template) === legMode({ mode: null }, template)
+      ? `Template vehicle (${templateVehicleName})`
+      : 'No vehicle';
+
   const removeStop = (idx: number) => {
     if (stops.length <= 2) return;
     setStops((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const addStop = () => {
-    setStops((prev) => [
-      ...prev.slice(0, -1),
-      { location_name: '', mode: prev[prev.length - 2]?.mode || mode, vehicle_id: '', distance_miles: '', duration_min: '', cost: '', purpose: '' },
-      prev[prev.length - 1],
-    ]);
+    setStops((prev) => {
+      // The new leg copies the mode and vehicle of the leg before it.
+      const before = prev[prev.length - 2];
+      return [
+        ...prev.slice(0, -1),
+        {
+          location_name: '',
+          mode: before?.mode || mode,
+          vehicle_id: before?.mode ? before.vehicle_id : '',
+          distance_miles: '', duration_min: '', cost: '', purpose: '',
+        },
+        prev[prev.length - 1],
+      ];
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -300,44 +327,62 @@ export default function EditTemplateModal({ template, vehicles, brands, onClose,
                   </div>
                   {/* Leg details (shown for all stops except the first) */}
                   {!isFirst && (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pl-9">
-                      <select
-                        className={inputCls}
-                        value={stop.mode}
-                        onChange={(e) => updateStop(idx, 'mode', e.target.value)}
-                        aria-label={`Leg ${idx} mode`}
-                      >
-                        <option value="">Mode</option>
-                        {MODE_OPTIONS.map((m) => (
-                          <option key={m} value={m}>{MODE_ICONS[m]} {m.charAt(0).toUpperCase() + m.slice(1)}</option>
-                        ))}
-                      </select>
-                      <input
-                        type="number"
-                        step="0.01"
-                        className={inputCls}
-                        placeholder="Miles"
-                        value={stop.distance_miles}
-                        onChange={(e) => updateStop(idx, 'distance_miles', e.target.value)}
-                        aria-label={`Leg ${idx} distance`}
-                      />
-                      <input
-                        type="number"
-                        className={inputCls}
-                        placeholder="Min"
-                        value={stop.duration_min}
-                        onChange={(e) => updateStop(idx, 'duration_min', e.target.value)}
-                        aria-label={`Leg ${idx} duration`}
-                      />
-                      <input
-                        type="number"
-                        step="0.01"
-                        className={inputCls}
-                        placeholder="Cost"
-                        value={stop.cost}
-                        onChange={(e) => updateStop(idx, 'cost', e.target.value)}
-                        aria-label={`Leg ${idx} cost`}
-                      />
+                    <div className="space-y-2 pl-9">
+                      <div className="grid grid-cols-2 gap-2">
+                        <select
+                          className={inputCls}
+                          value={stop.mode}
+                          onChange={(e) => updateStop(idx, 'mode', e.target.value)}
+                          aria-label={`Leg ${idx} mode`}
+                        >
+                          <option value="">Mode</option>
+                          {MODE_OPTIONS.map((m) => (
+                            <option key={m} value={m}>{MODE_ICONS[m]} {m.charAt(0).toUpperCase() + m.slice(1)}</option>
+                          ))}
+                        </select>
+                        <select
+                          className={inputCls}
+                          value={stop.vehicle_id}
+                          onChange={(e) => updateStopVehicle(idx, e.target.value)}
+                          aria-label={`Leg ${idx} vehicle`}
+                        >
+                          <option value="">{emptyVehicleLabel(stop)}</option>
+                          {stop.vehicle_id && !vehicles.some((v) => v.id === stop.vehicle_id) && (
+                            <option value={stop.vehicle_id}>Saved vehicle (not active)</option>
+                          )}
+                          {vehicles.map((v) => (
+                            <option key={v.id} value={v.id}>{v.nickname}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <input
+                          type="number"
+                          step="0.01"
+                          className={inputCls}
+                          placeholder="Miles"
+                          value={stop.distance_miles}
+                          onChange={(e) => updateStop(idx, 'distance_miles', e.target.value)}
+                          aria-label={`Leg ${idx} distance`}
+                        />
+                        <input
+                          type="number"
+                          className={inputCls}
+                          placeholder="Min"
+                          value={stop.duration_min}
+                          onChange={(e) => updateStop(idx, 'duration_min', e.target.value)}
+                          aria-label={`Leg ${idx} duration`}
+                        />
+                        <input
+                          type="number"
+                          step="0.01"
+                          className={inputCls}
+                          placeholder="Cost"
+                          value={stop.cost}
+                          onChange={(e) => updateStop(idx, 'cost', e.target.value)}
+                          aria-label={`Leg ${idx} cost`}
+                        />
+                      </div>
                     </div>
                   )}
                 </div>

@@ -537,7 +537,8 @@ transaction (never removing a tag a person added), budgets unchanged, the analyt
 
 And trip templates (`tests/unit/trip-template-stops.test.ts`): saving a route as stops and Quick-logging
 it back keeps every leg's distance, duration, mode and vehicle (one-leg, round-trip and three-leg routes),
-the summed return leg, purposes trips accept, card totals, and the stop repair planning.
+the summed return leg, the template vehicle for a leg without one, one-leg loops never doubled, purposes
+trips accept, card totals, and the stop repair planning.
 
 ## Project Structure
 
