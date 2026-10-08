@@ -2,8 +2,8 @@
 // Database reads for the Wallet (GET /api/finance/wallet). Loads everything once: active accounts
 // with every page of their transactions (the one balance rule, plus the transfer columns that mark
 // a loan's linked payments), card and loan statements (limit, APR, minimum), the latest cash count
-// of each cash pocket, what savings goals hold, today's rate for each currency, equipment, vehicles
-// and insurance policies. The formulas are in ./logic.ts;
+// of each cash pocket, what savings goals hold, today's rate for each currency, equipment (and
+// which items have a valuation, for the resale value), vehicles and insurance policies. The formulas are in ./logic.ts;
 // retirement (lib/finance/retirement/server.ts) and book values (lib/equipment/book-values.ts) are
 // loaded by the route and passed in.
 //
@@ -144,6 +144,24 @@ async function loadStatements(db: SupabaseClient, userId: string, ids: readonly 
   return { rows: (res.data ?? []) as unknown as StatementRow[], error: null };
 }
 
+/** Ids of the equipment items that have at least one valuation (every page). */
+async function loadRevalued(db: SupabaseClient, userId: string): Promise<{ ids: Set<string>; error: DbErr | null }> {
+  const ids = new Set<string>();
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    const res = await db
+      .from('equipment_valuations')
+      .select('id, equipment_id')
+      .eq('user_id', userId)
+      .order('id', { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1);
+    if (isMissingTable(res.error, 'equipment_valuations')) return { ids: new Set(), error: null };
+    if (res.error) return { ids, error: res.error };
+    const page = (res.data ?? []) as { equipment_id: string | null }[];
+    for (const row of page) if (row.equipment_id) ids.add(row.equipment_id);
+    if (page.length < PAGE_SIZE) return { ids, error: null };
+  }
+}
+
 /** Active policies; null before migration 215. */
 async function loadPolicies(db: SupabaseClient, userId: string): Promise<{ policies: PolicyIn[] | null; error: DbErr | null }> {
   const res = await db
@@ -176,7 +194,7 @@ export async function loadWalletInput(
   const debtIds = accounts.filter((a) => isDebtAccount(a.account_type)).map((a) => a.id);
   const cashIds = accounts.filter((a) => a.account_type === 'cash').map((a) => a.id);
 
-  const [balanceRes, statementRes, countRes, goalRes, policyRes, equipmentRes, vehicleRes] = await Promise.all([
+  const [balanceRes, statementRes, countRes, goalRes, policyRes, equipmentRes, vehicleRes, revaluedRes] = await Promise.all([
     loadAccountRows(db, userId, ids),
     loadStatements(db, userId, debtIds),
     loadLastCounts(db, userId, cashIds),
@@ -192,9 +210,17 @@ export async function loadWalletInput(
       .select('id, nickname, active, ownership_type, is_system')
       .eq('user_id', userId)
       .eq('active', true),
+    loadRevalued(db, userId),
   ]);
   const error =
-    balanceRes.error ?? statementRes.error ?? countRes.error ?? goalRes.error ?? policyRes.error ?? equipmentRes.error ?? vehicleRes.error;
+    balanceRes.error ??
+    statementRes.error ??
+    countRes.error ??
+    goalRes.error ??
+    policyRes.error ??
+    equipmentRes.error ??
+    vehicleRes.error ??
+    revaluedRes.error;
   if (error) return { input: null, error };
 
   const balances = signedBalancesCents(
@@ -279,6 +305,7 @@ export async function loadWalletInput(
         name: String(e.name ?? ''),
         purchase_price: numOrNull(e.purchase_price),
         current_value: numOrNull(e.current_value),
+        revalued: revaluedRes.ids.has(String(e.id)),
         ownership_type: str(e.ownership_type),
         is_active: e.is_active !== false,
       })),

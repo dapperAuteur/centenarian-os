@@ -18,6 +18,7 @@ import {
   firstCharge,
   loanPayment,
   payoffDifferenceText,
+  resaleValue,
   loanStart,
   retirementFromOverview,
   toHome,
@@ -474,6 +475,33 @@ test('assets: owned equipment and your own vehicles, your value then book value 
   assert.equal(noBooks.assets.depreciation_ready, false);
 });
 
+test('assets: a current value still equal to the purchase price, never revalued, is not a resale value', () => {
+  const w = buildWallet(
+    input({
+      equipment: [
+        // Bought for $2,000 in 2021; adding it copied the price into current_value; depreciation says $400.
+        { id: 'cam', name: 'Camera', purchase_price: 2000, current_value: 2000, ownership_type: 'own' },
+        // The same, but revalued at $2,000 (a valuation exists): that is a resale value.
+        { id: 'lens', name: 'Lens', purchase_price: 2000, current_value: 2000, revalued: true, ownership_type: 'own' },
+        // Changed by hand without a valuation: also a resale value.
+        { id: 'mic', name: 'Mic', purchase_price: 300, current_value: 120, ownership_type: 'own' },
+        // Never revalued and no book value: the purchase price.
+        { id: 'tripod', name: 'Tripod', purchase_price: 150, current_value: 150, ownership_type: 'own' },
+      ],
+      bookValues: { equipment: new Map([['cam', 400], ['lens', 400]]), vehicles: new Map() },
+    }),
+  );
+  const byId = Object.fromEntries(w.assets.top.map((i) => [i.id, i]));
+  assert.deepEqual([byId.cam.your_value, byId.cam.value, byId.cam.value_source], [null, 400, 'book_value']);
+  assert.deepEqual([byId.lens.your_value, byId.lens.value, byId.lens.value_source], [2000, 2000, 'your_value']);
+  assert.deepEqual([byId.mic.your_value, byId.mic.value_source], [120, 'your_value']);
+  assert.deepEqual([byId.tripod.your_value, byId.tripod.value, byId.tripod.value_source], [null, 150, 'purchase_price']);
+  assert.equal(w.assets.total, 400 + 2000 + 120 + 150);
+  assert.equal(w.assets.your_value_total, 2120);
+  assert.equal(resaleValue({ current_value: 99, purchase_price: null }), 99);
+  assert.equal(resaleValue({ current_value: null, purchase_price: 50, revalued: true }), null);
+});
+
 test('retirement: the planner figures, age 65 marked assumed, on track or short', () => {
   const overview = {
     ready: true,
@@ -614,6 +642,12 @@ test('loadWalletInput: balances over every page, the statement limit, counts, go
   db.seed('equipment', [
     { id: 'e1', user_id: USER, name: 'Camera', purchase_price: 900, current_value: 700, is_active: true, ownership_type: 'own' },
     { id: 'e2', user_id: OTHER, name: 'Theirs', purchase_price: 1, current_value: 1, is_active: true, ownership_type: 'own' },
+    { id: 'e3', user_id: USER, name: 'Lens', purchase_price: 500, current_value: 500, is_active: true, ownership_type: 'own' },
+    { id: 'e4', user_id: USER, name: 'Tripod', purchase_price: 80, current_value: 80, is_active: true, ownership_type: 'own' },
+  ]);
+  db.seed('equipment_valuations', [
+    { id: 'ev1', user_id: USER, equipment_id: 'e3', valued_at: '2026-06-01', value: 500 },
+    { id: 'ev2', user_id: OTHER, equipment_id: 'e4', valued_at: '2026-06-01', value: 80 }, // someone else's never counts
   ]);
   db.seed('vehicles', [{ id: 'v1', user_id: USER, nickname: 'Car', active: true, ownership_type: 'owned', is_system: false }]);
   db.seed('insurance_policies', [{ user_id: USER, kind: 'term_life', coverage_amount: 250000, currency: 'USD', is_active: true }]);
@@ -641,7 +675,7 @@ test('loadWalletInput: balances over every page, the statement limit, counts, go
   assert.equal(loaded.lastCounts.get('cash1'), '2026-10-05');
   assert.equal(loaded.countsReady, true);
   assert.equal(loaded.goalsHeld.get('chk1'), 150);
-  assert.deepEqual(loaded.equipment.map((e) => e.id), ['e1']);
+  assert.deepEqual(loaded.equipment.map((e) => [e.id, e.revalued]), [['e1', false], ['e3', true], ['e4', false]]);
   assert.equal(loaded.policies?.length, 1);
 
   const w = buildWallet({ ...loaded, retirement: null, bookValues: null });

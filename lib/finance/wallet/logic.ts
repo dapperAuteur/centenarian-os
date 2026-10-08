@@ -58,11 +58,15 @@
 //   Assets (equipment you own and your vehicles)
 //     - Equipment: active, ownership 'own'. Vehicles: active, yours (not a system vehicle),
 //       ownership 'owned'.
-//     - Two values side by side: your value (equipment.current_value, entered by hand; it starts at
-//       the purchase price and changes with each valuation) and the depreciated book value
-//       (asset_depreciation, migration 214). The total uses your value, else book value, else the
-//       purchase price; a vehicle has only book value until vehicle values arrive (plans/66 W2).
+//     - Two values side by side: your resale value and the depreciated book value
+//       (asset_depreciation, migration 214). The total uses the resale value, else book value, else
+//       the purchase price; a vehicle has only book value until vehicle values arrive (plans/66 W2).
 //       Items with no value are counted and listed.
+//     - Resale value = equipment.current_value, but only once you have set it: the item has a
+//       valuation (equipment_valuations), or its current value differs from the purchase price.
+//       Adding an item copies the purchase price into current_value (app/api/equipment/route.ts),
+//       so an item never revalued has no resale value and counts at its book value. Entered by
+//       hand for now; a reseller lookup (eBay and similar) is a later item (plans/66 W5).
 //
 //   Retirement
 //     - Funds = the retirement planner's current total (every investment account, home currency).
@@ -154,6 +158,8 @@ export interface EquipmentIn {
   name: string;
   purchase_price?: number | string | null;
   current_value?: number | string | null;
+  /** True when the item has at least one valuation (equipment_valuations). */
+  revalued?: boolean;
   ownership_type?: string | null;
   is_active?: boolean | null;
 }
@@ -700,6 +706,19 @@ const num = (v: unknown): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
+/**
+ * An item's resale value: its current value once you have set it (a valuation, or a value that
+ * differs from the purchase price), else null. A current value still equal to the purchase price
+ * with no valuation is the copy made when the item was added, not a resale value.
+ */
+export function resaleValue(e: Pick<EquipmentIn, 'current_value' | 'purchase_price' | 'revalued'>): number | null {
+  const current = num(e.current_value);
+  if (current === null) return null;
+  const price = num(e.purchase_price);
+  if (e.revalued === true || price === null || cents(current) !== cents(price)) return current;
+  return null;
+}
+
 /** Equipment you own and vehicles that are yours (see the rule above). */
 export function countedAssets(input: Pick<WalletInput, 'equipment' | 'vehicles'>): { equipment: EquipmentIn[]; vehicles: VehicleIn[] } {
   return {
@@ -713,7 +732,7 @@ export function assetsSection(input: WalletInput): AssetsSection {
   const books = input.bookValues;
   const items: AssetItemView[] = [
     ...equipment.map((e): AssetItemView => {
-      const yours = num(e.current_value);
+      const yours = resaleValue(e);
       const book = books?.equipment.get(e.id) ?? null;
       const price = num(e.purchase_price);
       const value = yours ?? book ?? price;

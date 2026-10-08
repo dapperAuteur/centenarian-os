@@ -9,7 +9,7 @@ import { POLICY_GROUP_LABEL, POLICY_GROUPS } from '@/lib/finance/insurance/logic
 import type { AssetsSection, InsuranceLine, RetirementSection } from '@/lib/finance/wallet/logic';
 import { ActionLink, Attention, WalletCard, money } from './parts';
 
-const SOURCE_LABEL = { your_value: 'your value', book_value: 'book value', purchase_price: 'purchase price' } as const;
+const SOURCE_LABEL = { your_value: 'resale value', book_value: 'book value', purchase_price: 'purchase price' } as const;
 
 export function AssetsCard({ assets, insurance, home }: { assets: AssetsSection; insurance: InsuranceLine; home: string }) {
   const groups = POLICY_GROUPS.filter((g) => insurance.counts[g] > 0);
@@ -26,7 +26,7 @@ export function AssetsCard({ assets, insurance, home }: { assets: AssetsSection;
       </p>
       <dl className="grid grid-cols-2 gap-2 text-sm">
         <div>
-          <dt className="text-xs text-gray-600">Your value (resale)</dt>
+          <dt className="text-xs text-gray-600">Resale value (yours)</dt>
           <dd className="font-medium text-gray-900">{money(assets.your_value_total, home)}</dd>
         </div>
         <div>
@@ -72,8 +72,8 @@ export function AssetsCard({ assets, insurance, home }: { assets: AssetsSection;
         </Attention>
       )}
       <p className="text-xs text-gray-600">
-        Equipment and vehicles have no currency of their own, so they count in {home}. The total uses your value, else book value, else the
-        purchase price.
+        Equipment and vehicles have no currency of their own, so they count in {home}. The total uses the resale value you entered (a valuation
+        on the item), else the book value, else the purchase price. An item you never revalued has no resale value yet.
       </p>
       <div className="border-t border-gray-100 pt-3 space-y-1 text-sm">
         <p className="text-xs font-medium text-gray-700">Insurance in force</p>
