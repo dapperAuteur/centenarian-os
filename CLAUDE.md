@@ -71,7 +71,7 @@ When a change adds, alters, or removes an app feature, update the affected docs 
 
 ---
 
-<!-- BEGIN:witus-shared-rules v4 -->
+<!-- BEGIN:witus-shared-rules v5 -->
 <!-- MANAGED BLOCK — do not edit by hand. Source: gemini/witus/docs/shared-rules.md.
      Update the source, then run `node scripts/sync-claude-rules.mjs` in the witus repo. -->
 
@@ -169,6 +169,15 @@ white papers, grant/sponsor/partner writing) uses APA 7 in-line citations with a
 section. Code docs, internal notes, and `plans/user-tasks/*` are out of scope. Full rule:
 `gemini/witus/CLAUDE.md` §"Citation rule".
 
+## Spelling rule — American English, always
+
+Everything written in this ecosystem uses **American English spelling**: product copy, course and lesson
+text, quiz items, docs, plans, commit messages, and agent output ("fiber" not "fibre", "color", "gray",
+"center", "catalog", "organize", "program", "license" as the noun). Never change spelling inside a
+quotation or the title of a cited work: a source is quoted as printed. When converting existing text,
+skip quotations, blockquotes, bibliography entries and code, and prove the quoted passages are unchanged.
+BAM's decision of 2026-10-08.
+
 ## Blog ledger rule — every blog post goes in the ledger the session it is written
 
 BAM's blog (brandanthonymcdonald.com/blog, repo `claude/bam-landing-page`) has one ledger of every
@@ -197,4 +206,4 @@ default Neon+Drizzle+pnpm+Vitest stack) are consolidated in `gemini/witus/docs/s
 Read it before writing UI or API code. Two repos are grandfathered on Supabase+Jest and documented
 there as exceptions.
 
-<!-- END:witus-shared-rules v4 -->
+<!-- END:witus-shared-rules v5 -->
