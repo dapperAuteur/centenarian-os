@@ -71,7 +71,7 @@ When a change adds, alters, or removes an app feature, update the affected docs 
 
 ---
 
-<!-- BEGIN:witus-shared-rules v3 -->
+<!-- BEGIN:witus-shared-rules v4 -->
 <!-- MANAGED BLOCK — do not edit by hand. Source: gemini/witus/docs/shared-rules.md.
      Update the source, then run `node scripts/sync-claude-rules.mjs` in the witus repo. -->
 
@@ -169,6 +169,18 @@ white papers, grant/sponsor/partner writing) uses APA 7 in-line citations with a
 section. Code docs, internal notes, and `plans/user-tasks/*` are out of scope. Full rule:
 `gemini/witus/CLAUDE.md` §"Citation rule".
 
+## Blog ledger rule — every blog post goes in the ledger the session it is written
+
+BAM's blog (brandanthonymcdonald.com/blog, repo `claude/bam-landing-page`) has one ledger of every
+post, live and waiting, numbered in publishing order: `gemini/witus/plans/playbook/*-blog-ledger.md`
+(gitignored; synced to `witus.online/admin/library`). Read it before writing a post, so a topic is
+not written twice. When a session in **any** repo drafts a blog post, add it to the ledger's Part 2
+in the same session (slug, title, app, branch, publish task, gate, check result), placed after any
+post it links to; then rename the file to today's date, update its row in `00-library-index.md`, and
+re-render its PDF (`npm run library:pdf -- <file>` in witus). "Published" means listed in
+`https://www.brandanthonymcdonald.com/feed.json`, not merged. Publishing order is BAM's call. Full
+rule: `gemini/witus/CLAUDE.md` §"Blog ledger rule".
+
 ## Authoritative-values rule — never assert guessed external values
 
 When a value is owned by an external system (DNS/registrar, a host like Vercel, a third-party API,
@@ -185,4 +197,4 @@ default Neon+Drizzle+pnpm+Vitest stack) are consolidated in `gemini/witus/docs/s
 Read it before writing UI or API code. Two repos are grandfathered on Supabase+Jest and documented
 there as exceptions.
 
-<!-- END:witus-shared-rules v3 -->
+<!-- END:witus-shared-rules v4 -->
