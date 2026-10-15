@@ -1,0 +1,33 @@
+# Canonical copy. Synced into every Neon repo by gemini/witus/scripts/sync-preview-cleanup-workflow.mjs.
+# Do not edit the synced copy in a target repo; edit this file and re-sync.
+#
+# Why: the Vercel-managed Neon integration creates a Neon branch `preview/<git-branch>` per preview
+# deployment and deletes it only when the Vercel DEPLOYMENT is deleted (six-month retention by
+# default; small projects may never delete any). Stale branches bill as extra usage. This deletes the
+# branch the moment the pull request closes. Needs the repo variable NEON_PROJECT_ID and the repo
+# secret NEON_API_KEY (witus task 105). Source: https://neon.com/docs/guides/vercel-branch-cleanup
+name: Cleanup Neon preview branch
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  delete-branch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require NEON_PROJECT_ID and NEON_API_KEY
+        env:
+          PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+          API_KEY: ${{ secrets.NEON_API_KEY }}
+        run: |
+          if [ -z "$PROJECT_ID" ] || [ -z "$API_KEY" ]; then
+            echo "::error::Set the repository variable NEON_PROJECT_ID and the secret NEON_API_KEY (see gemini/witus plans/user-tasks/105)."
+            exit 1
+          fi
+      - uses: neondatabase/delete-branch-action@v3
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch: preview/${{ github.head_ref }}
+          api_key: ${{ secrets.NEON_API_KEY }}
