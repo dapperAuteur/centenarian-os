@@ -71,7 +71,7 @@ When a change adds, alters, or removes an app feature, update the affected docs 
 
 ---
 
-<!-- BEGIN:witus-shared-rules v5 -->
+<!-- BEGIN:witus-shared-rules v6 -->
 <!-- MANAGED BLOCK — do not edit by hand. Source: gemini/witus/docs/shared-rules.md.
      Update the source, then run `node scripts/sync-claude-rules.mjs` in the witus repo. -->
 
@@ -198,6 +198,20 @@ hardcode a guessed default and present it as correct. If you must ship a fallbac
 fallback in both UI copy and a code comment. Verify by behavior (does the flow work?), not by
 exact-match against a guess. When unsure, flag or ask — never assert. Full rule:
 `gemini/witus/CLAUDE.md` §"Authoritative-values rule".
+
+## Preview-branch cleanup rule — no preview deployment may leave a paid resource behind
+
+Every repo deployed on Vercel with a Neon database through the Vercel-managed integration gets a Neon branch named `preview/<git-branch>` per preview deployment. Neon deletes that branch only when the Vercel **deployment** is deleted, and Vercel keeps preview deployments for six months by default (a project with fewer than about 20 preview deployments may never delete any). Stale branches count toward the plan's branch limit and are billed as extra usage. BAM was charged over $100 in each of two months this way (2026-10-15).
+
+**Required in every Neon repo:**
+1. The workflow `.github/workflows/neon-preview-cleanup.yml` (canonical copy in `gemini/witus/.github/templates/`, synced by `node scripts/sync-preview-cleanup-workflow.mjs --write`): on `pull_request` `closed`, run `neondatabase/delete-branch-action@v3` against `preview/${{ github.head_ref }}` with `vars.NEON_PROJECT_ID` and `secrets.NEON_API_KEY`. Do not edit the synced copy; edit the template and re-sync.
+2. The GitHub repository variable `NEON_PROJECT_ID` and secret `NEON_API_KEY` set (operator task; the workflow fails loudly without them).
+3. The Vercel project's **Deployment Retention Policy → Pre-Production Deployments** set to the shortest duration (dashboard, per project).
+4. A branch created by hand for a preview or an experiment carries `expires_at` (Neon branch expiration, 30 days maximum); never create one without it.
+
+**Supabase repos** (CentenarianOS, Work.WitUS, Tour Manager OS, one shared project): no persistent branches; preview branches only through the GitHub integration, which deletes them when the PR closes. **MongoDB Atlas repos** (FlashLearnAI, bam-landing-page): the integration creates no per-preview resources; cost is the cluster tier, nothing to clean.
+
+**Claude's part:** when a session adds a Neon database to a repo, it adds the workflow in the same change and files the variable/secret step as an operator task. When a session sees preview branches older than the PR that made them (`npx neonctl branches list --project-id <id>`), it lists them for BAM instead of assuming the integration cleaned up. Source for the Neon behavior: https://neon.com/docs/guides/vercel-branch-cleanup (read 2026-10-15).
 
 ## Coding conventions
 
