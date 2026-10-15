@@ -120,7 +120,8 @@ export default function TransactionsPage() {
   const [filterBrandIds, setFilterBrandIds] = useState<Set<string>>(new Set());
   const [filterFrom, setFilterFrom] = useState<string>(() => searchParams.get('from') || '');
   const [filterTo, setFilterTo] = useState<string>(() => searchParams.get('to') || '');
-  const [filterSearch, setFilterSearch] = useState<string>('');
+  // `?q=` lets other pages (vendor bills, WitUS) open this list pre-filtered by vendor name.
+  const [filterSearch, setFilterSearch] = useState<string>(() => searchParams.get('q') || '');
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeFilterCount = filterAccountIds.size + filterCategoryIds.size + filterBrandIds.size
