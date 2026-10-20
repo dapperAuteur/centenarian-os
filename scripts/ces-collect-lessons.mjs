@@ -23,14 +23,14 @@ const files = fs.readdirSync(LESSONS_DIR).filter((f) => /^m\d+-\d+-[a-z-]+\.md$/
 const byModule = new Map();
 for (const f of files) {
   const m = f.match(/^m(\d+)-(\d+)-([a-z-]+)\.md$/);
-  const module = parseInt(m[1], 10), n = parseInt(m[2], 10), type = m[3];
+  const moduleNum = parseInt(m[1], 10), n = parseInt(m[2], 10), type = m[3];
   const md = fs.readFileSync(path.join(LESSONS_DIR, f), 'utf8').trim();
-  const title = (md.match(/^#\s+(.+)$/m) || [, `Module ${module} Lesson ${n}`])[1].trim();
+  const title = (md.match(/^#\s+(.+)$/m) || [, `Module ${moduleNum} Lesson ${n}`])[1].trim();
   const words = md.split(/\s+/).filter(Boolean).length;
   const runTimeSec = Math.max(180, Math.min(600, Math.round((words / 150) * 60)));
-  const info = modInfo.get(module) || { title: `Module ${module}`, free: false };
-  if (!byModule.has(module)) byModule.set(module, { module, moduleTitle: info.title, free: info.free, lessons: [] });
-  byModule.get(module).lessons.push({ n, title, type, lessonMarkdown: md, glossary: [], runTimeSec, words });
+  const info = modInfo.get(moduleNum) || { title: `Module ${moduleNum}`, free: false };
+  if (!byModule.has(moduleNum)) byModule.set(moduleNum, { module: moduleNum, moduleTitle: info.title, free: info.free, lessons: [] });
+  byModule.get(moduleNum).lessons.push({ n, title, type, lessonMarkdown: md, glossary: [], runTimeSec, words });
 }
 
 const summary = [];
