@@ -65,7 +65,7 @@ export default function VendorBillsPage() {
       </div>
       <p className="text-sm text-gray-600 mb-4">
         Pushed from witus.online once a day (or on demand there). Latest period per service: {money(total)} across {rows.length} service(s).
-        "See transactions" opens your transactions filtered by the vendor name, where the payment account is shown.
+        &ldquo;See transactions&rdquo; opens your transactions filtered by the vendor name, where the payment account is shown.
       </p>
       {error ? <p className="text-red-700 text-sm">{error}</p> : null}
       {bills === null && !error ? (
