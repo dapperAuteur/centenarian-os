@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # Stub env vars so `next build` can finish. This repo has no Zod env
+    # schema; instead, API routes create a Supabase client at module load,
+    # and it throws when the URL or key is missing. These values only satisfy
+    # that check: nothing in CI talks to Supabase, and the build output is
+    # never deployed. Production / Preview deploys get the real values from
+    # Vercel's env.
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://stub.invalid # CI stub
+      SUPABASE_SERVICE_ROLE_KEY: ci-stub-service-role-key # CI stub
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      # This repo has no `test` script, so there is no test step.
+      # Possible follow-up: run `npm run test:unit` (node --test) and
+      # `npm run test:a11y` (Playwright; already covered by a11y.yml).
+      # - name: Test
+      #   run: npm test
+
+      - name: Build
+        run: npm run build
