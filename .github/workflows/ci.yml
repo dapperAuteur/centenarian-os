@@ -15,6 +15,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
+    # Stub env vars so `next build` can finish. This repo has no Zod env
+    # schema; instead, API routes create a Supabase client at module load,
+    # and it throws when the URL or key is missing. These values only satisfy
+    # that check: nothing in CI talks to Supabase, and the build output is
+    # never deployed. Production / Preview deploys get the real values from
+    # Vercel's env.
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://stub.invalid # CI stub
+      SUPABASE_SERVICE_ROLE_KEY: ci-stub-service-role-key # CI stub
+
     steps:
       - uses: actions/checkout@v4
 
