@@ -23,12 +23,12 @@ const files = fs.readdirSync(LESSONS_DIR).filter((f) => /^m\d+-\d+-content\.md$/
 const byModule = new Map();
 for (const f of files) {
   const mm = f.match(/^m(\d+)-(\d+)-content\.md$/);
-  const module = parseInt(mm[1], 10), n = parseInt(mm[2], 10);
+  const moduleNum = parseInt(mm[1], 10), n = parseInt(mm[2], 10);
   const md = fs.readFileSync(path.join(LESSONS_DIR, f), 'utf8');
   const title = (md.match(/^#\s+(.+)$/m) || [, ''])[1].trim();
   const tks = takeaways(md);
-  if (!byModule.has(module)) byModule.set(module, []);
-  byModule.get(module).push({ n, title, tks });
+  if (!byModule.has(moduleNum)) byModule.set(moduleNum, []);
+  byModule.get(moduleNum).push({ n, title, tks });
 }
 
 const out = ['# CES Complete Cheat Sheet', '',
