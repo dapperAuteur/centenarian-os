@@ -3,19 +3,39 @@
 #
 # Why: the Vercel-managed Neon integration creates a Neon branch `preview/<git-branch>` per preview
 # deployment and deletes it only when the Vercel DEPLOYMENT is deleted (six-month retention by
-# default; small projects may never delete any). Stale branches bill as extra usage. This deletes the
-# branch the moment the pull request closes. Needs the repo variable NEON_PROJECT_ID and the repo
-# secret NEON_API_KEY (witus task 105). Source: https://neon.com/docs/guides/vercel-branch-cleanup
-name: Cleanup Neon preview branch
+# default; small projects may never delete any). Stale branches bill as extra usage.
+# Source: https://neon.com/docs/guides/vercel-branch-cleanup
+#
+# v1 ran only when a pull request closed. Most branches here are merged from the command line
+# (`git merge --ff-only && git push`), which closes no pull request, so v1 never ran for them and
+# 14 preview branches piled up (found 2026-10-26). v2 sweeps instead: on every push to the default
+# branch, on branch deletion, on pull-request close, daily, and on demand, it deletes each
+# `preview/<branch>` Neon branch whose git branch is merged into the default branch or no longer
+# exists. A branch with unmerged commits keeps its database. Neon's default and protected branches
+# are never touched. Needs the repo variable NEON_PROJECT_ID and the secret NEON_API_KEY (witus task 105).
+name: Cleanup Neon preview branches
 
 on:
+  push:
+    branches: [main, master]
+  delete:
   pull_request:
     types: [closed]
+  schedule:
+    - cron: "17 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: neon-preview-cleanup
+  cancel-in-progress: false
 
 jobs:
-  delete-branch:
+  sweep:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Require NEON_PROJECT_ID and NEON_API_KEY
         env:
@@ -26,8 +46,43 @@ jobs:
             echo "::error::Set the repository variable NEON_PROJECT_ID and the secret NEON_API_KEY (see gemini/witus plans/user-tasks/105)."
             exit 1
           fi
-      - uses: neondatabase/delete-branch-action@v3
+
+      # Full history and every branch, so "merged into the default branch" can be tested locally.
+      - uses: actions/checkout@v4
         with:
-          project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch: preview/${{ github.head_ref }}
-          api_key: ${{ secrets.NEON_API_KEY }}
+          fetch-depth: 0
+
+      - name: Delete preview branches whose git branch is merged or gone
+        env:
+          PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+          API_KEY: ${{ secrets.NEON_API_KEY }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          base="${DEFAULT_BRANCH:-main}"
+          git rev-parse --verify --quiet "refs/remotes/origin/$base" >/dev/null || base=master
+          api="https://console.neon.tech/api/v2/projects/$PROJECT_ID/branches"
+          list=$(curl -fsS -H "Authorization: Bearer $API_KEY" -H "Accept: application/json" "$api")
+          deleted=0; kept=0
+          while IFS=$'\t' read -r id name; do
+            [ -n "$id" ] || continue
+            ref="${name#preview/}"
+            if git rev-parse --verify --quiet "refs/remotes/origin/$ref" >/dev/null; then
+              if git merge-base --is-ancestor "origin/$ref" "origin/$base"; then
+                reason="merged into $base"
+              else
+                echo "keep   $name (has commits not in $base)"; kept=$((kept + 1)); continue
+              fi
+            else
+              reason="git branch no longer exists"
+            fi
+            if curl -fsS -X DELETE -H "Authorization: Bearer $API_KEY" "$api/$id" >/dev/null; then
+              echo "delete $name ($reason)"; deleted=$((deleted + 1))
+            else
+              echo "::warning::Could not delete $name ($id); it may have child branches or an operation running."
+            fi
+          done < <(echo "$list" | jq -r '.branches[]
+            | select(.name | startswith("preview/"))
+            | select((.default // false) == false and (.protected // false) == false and (.primary // false) == false)
+            | [.id, .name] | @tsv')
+          echo "Done: $deleted deleted, $kept kept."
