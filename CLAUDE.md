@@ -71,7 +71,7 @@ When a change adds, alters, or removes an app feature, update the affected docs 
 
 ---
 
-<!-- BEGIN:witus-shared-rules v7 -->
+<!-- BEGIN:witus-shared-rules v9 -->
 <!-- MANAGED BLOCK — do not edit by hand. Source: gemini/witus/docs/shared-rules.md.
      Update the source, then run `node scripts/sync-claude-rules.mjs` in the witus repo. -->
 
@@ -213,6 +213,42 @@ Every repo deployed on Vercel with a Neon database through the Vercel-managed in
 
 **Claude's part:** when a session adds a Neon database to a repo, it adds the workflow in the same change and files the variable/secret step as an operator task. When a session sees preview branches older than the PR that made them (`npx neonctl branches list --project-id <id>`), it lists them for BAM instead of assuming the integration cleaned up. Source for the Neon behavior: https://neon.com/docs/guides/vercel-branch-cleanup (read 2026-10-15).
 
+## Email rule — Mailgun is the ecosystem mailer, never Resend
+
+Every app that sends email uses **Mailgun** (env `MAILGUN_API_KEY`, `MAILGUN_DOMAIN`; witus-inbox is the
+reference). Never add Resend as a dependency, and never name it in a PRD, brief, README, CLAUDE.md or cloud
+prompt. When a doc in front of you says Resend, fix it in the same change. Two apps still send through Resend
+(flashlearn-ai and centenarian-os, 2026-10-23): move them to Mailgun the next time a session touches their email
+code. **Why:** Create.WitUS's PRD, CLAUDE.md and README kept specifying Resend after Mailgun was chosen, so the
+wrong mailer resurfaced in later sessions (BAM, 2026-10-23: "ensure we don't have this error again").
+
+## Post-deploy automation rule: no step after a deploy is run by hand
+
+Any step that must run after a deploy (database migrations, seeds of reference data, search or cache
+rebuilds, content syncs) is automated:
+
+1. **A workflow runs it.** It triggers on the push to `main` that changes its inputs (a `paths:`
+   filter, such as the migrations folder) and also has `workflow_dispatch`, so it can be run on
+   demand. Use a `concurrency` group so two runs never overlap, and fail closed when a secret is
+   missing. Write a summary of what ran to `$GITHUB_STEP_SUMMARY`.
+2. **Secrets live in the CI secret store**, set by piping a CLI into `gh secret set`, so no value is
+   pasted or shown: `neon connection-string --project-id <id> | gh secret set NEON_DIRECT_URL --repo dapperAuteur/<repo>`.
+3. **A manual fallback is written down.** The repo's tracked operations runbook (`docs/`, such as
+   `docs/05-operations.md`) has the exact commands to run the same step from a laptop, for the day the
+   workflow is broken.
+4. **It can be run from the witus.online admin.** The admin's post-deploy page lists every app's steps
+   with a Run button that dispatches the workflow through GitHub's `workflow_dispatch` API and shows the
+   last run's status. Until that page exists, the Actions tab's **Run workflow** button is the manual
+   trigger. Register each new workflow there when you add it.
+
+Reference implementation: invest-witus `.github/workflows/migrate-production.yml` and its
+`docs/05-operations.md`. When a session adds a migration or another post-deploy step to a repo that
+has no such workflow yet, it adds the workflow in the same change and files the secret step as an
+operator task. **Why:** on 2026-10-28 invest-witus migrations needed a connection string pasted into
+a terminal four times in one evening; every project variable was Sensitive, so `vercel env pull`
+and `vercel env run` could not help, and a missed migration left pages answering 500. Full rule:
+`gemini/witus/CLAUDE.md` §"Post-deploy automation rule".
+
 ## Coding conventions
 
 UI/UX/DX conventions (a11y, component patterns, TypeScript, microcopy, git-commit vocabulary, the
@@ -220,4 +256,4 @@ default Neon+Drizzle+pnpm+Vitest stack) are consolidated in `gemini/witus/docs/s
 Read it before writing UI or API code. Two repos are grandfathered on Supabase+Jest and documented
 there as exceptions.
 
-<!-- END:witus-shared-rules v5 -->
+<!-- END:witus-shared-rules v9 -->
