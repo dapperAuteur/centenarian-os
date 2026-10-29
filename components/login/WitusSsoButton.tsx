@@ -1,90 +1,61 @@
 'use client';
 
 // File: components/login/WitusSsoButton.tsx
-// "Sign in with WitUS", plus the silent "Continue as <name>" check on top of it.
+// "Sign in with WitUS", plus the login page's one silent sign-in attempt.
 //
-// WHAT THE VISITOR SEES. The login form is already on screen; nothing here delays it. The button
-// says "Sign in with WitUS" from the first paint — exactly the affordance that shipped before this
-// component existed. If the probe comes back with a live WitUS session it becomes "Continue as
-// <name>". If the probe fails, times out, is blocked by the browser's third-party-cookie rules, or
-// the IdP does not answer, NOTHING changes and NOTHING is said. A failed silent check must be
-// completely invisible: no error, no spinner, no layout shift.
+// SILENT SIGN-IN (2026-10-29). Once per browser session, a signed-out visitor on /login is sent
+// through /api/auth/witus/authorize?prompt=none: a TOP-LEVEL navigation, so the browser carries
+// the IdP's SameSite=Lax session cookie even though centenarianos.com and accounts.witus.online
+// are different sites. With a live WitUS session the visitor comes back signed in; without one
+// the callback returns them here with no message and the normal options below. The decision and
+// the loop guard live in lib/auth/witus-sso.ts (silentSsoDecision).
+//
+// This replaced the "Continue as <name>" background probe, which fetched the IdP's
+// /api/ecosystem/session with credentials. A cross-site fetch never carries a SameSite=Lax cookie,
+// so that probe could only ever answer "nobody". No CentOS host is same-site with witus.online, so
+// nothing was kept.
 //
 // THE GATE. `enabled` is resolved on the SERVER from WITUS_OIDC_CLIENT_ID (lib/auth/
 // witus-sso-server.ts) and handed down through WitusSsoProvider. Unconfigured means this renders
-// null — the divider included — instead of offering a button whose click lands on
-// /login?error=witus_not_configured.
+// null — the divider included — and never redirects.
 //
-// Clicking runs the app's real bespoke OIDC code flow at /api/auth/witus/authorize. The name on the
-// button grants nothing.
+// Rendered on /login only. Never add it to another page: the silent attempt navigates away.
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useWitusSso } from '@/lib/auth/witus-sso-client';
 import {
-  SILENT_SSO_TIMEOUT_MS,
-  SSO_ATTEMPT_STORAGE_KEY,
-  continueAsLabel,
-  parseSilentSsoIdentity,
+  hasSilentSsoFlag,
+  silentSignInPath,
   silentSsoDecision,
-  type SsoIdentity,
+  silentSsoFlagCookie,
 } from '@/lib/auth/witus-sso';
 
 export default function WitusSsoButton({
-  /** True when the visitor already has a CentOS session — the probe is pointless, so skip it. */
+  /** True when the visitor already has a CentOS session (?mfa=pending), so never redirect. */
   signedIn = false,
 }: {
   signedIn?: boolean;
 } = {}) {
-  const { enabled, silentCheckUrl } = useWitusSso();
-  const [identity, setIdentity] = useState<SsoIdentity | null>(null);
+  const { enabled } = useWitusSso();
 
   useEffect(() => {
     const decision = silentSsoDecision({
-      endpoint: silentCheckUrl,
+      enabled,
       search: window.location.search,
       attempted: readAttempted(),
       signedIn,
     });
-    // `!silentCheckUrl` is already implied by decision.attempt; repeating it makes the narrowing
-    // the compiler's rather than a cast that could quietly outlive the invariant.
-    if (!decision.attempt || !silentCheckUrl) return;
+    if (!decision.attempt) return;
 
-    // Abort rather than hang. A probe still in flight when the visitor has moved on is a leak of
-    // attention, not just of a socket.
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), SILENT_SSO_TIMEOUT_MS);
-    let live = true;
-
-    // `credentials: 'include'` is the entire mechanism: the answer depends on the IdP's OWN cookie,
-    // which is third-party from centenarianos.com. Browsers that partition or block third-party
-    // cookies (Safari ITP, Firefox Total Cookie Protection) answer "nobody", and that is a
-    // supported outcome, not a bug to work around — the visitor keeps the ordinary button.
-    fetch(silentCheckUrl, {
-      credentials: 'include',
-      mode: 'cors',
-      cache: 'no-store',
-      headers: { accept: 'application/json' },
-      signal: controller.signal,
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((payload) => {
-        if (!live) return;
-        const found = parseSilentSsoIdentity(payload);
-        // NEVER a credential. This name is display copy for a button whose click runs the real
-        // OIDC code flow; it grants nothing on its own and must never be treated as identity.
-        if (found) setIdentity(found);
-      })
-      .catch(() => {
-        // Invisible on purpose: network error, CORS refusal, abort, non-JSON body — all the same.
-      })
-      .finally(() => clearTimeout(timer));
-
-    return () => {
-      live = false;
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [silentCheckUrl, signedIn]);
+    // THE LOOP GUARD, written BEFORE leaving, never after the return: a flag written on return is
+    // a flag that never exists when the return is the thing that failed. The callback's
+    // `?sso=tried` marker covers a browser that refuses the cookie.
+    writeAttempted();
+    const from = new URLSearchParams(window.location.search).get('from');
+    // replace(), not assign(): Back from the dashboard should not land on a page that
+    // immediately redirects again.
+    window.location.replace(silentSignInPath(from));
+  }, [enabled, signedIn]);
 
   if (!enabled) return null;
 
@@ -93,38 +64,22 @@ export default function WitusSsoButton({
       <div className="my-2 text-center text-xs uppercase tracking-wide text-gray-400">or</div>
       <a
         href="/api/auth/witus/authorize"
-        // THE LOOP GUARD, written BEFORE the redirect, never after the return. Without it a visitor
-        // whose IdP session has gone stale gets: probe says "Continue as X" -> click -> the IdP
-        // cannot finish -> back to /login -> probe says "Continue as X" -> forever. With it, one
-        // attempt per tab: the next render of this page offers the plain button and the email form,
-        // which always work. Kept as a plain <a> (not a button + router push) so the marker is
-        // written by the click handler and the browser then does the ordinary navigation.
+        // Also records the attempt, so a visitor who comes back from the IdP's login page (or
+        // presses Back) is not then sent on a silent round trip as well. Kept as a plain <a> so the
+        // flag is written by the click handler and the browser then does the ordinary navigation.
         onClick={writeAttempted}
         className="flex min-h-11 w-full items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800"
       >
-        {continueAsLabel(identity)}
+        Sign in with WitUS
       </a>
-      {/* Always in the DOM so the label change is announced when it happens, and silent (and
-          invisible) when the probe found nothing. */}
-      <p
-        role="status"
-        aria-live="polite"
-        className={identity ? 'mt-2 text-center text-xs text-gray-500' : 'sr-only'}
-      >
-        {identity ? 'Not you? Sign in with your email above.' : ''}
-      </p>
     </div>
   );
 }
 
-/**
- * sessionStorage throws outright in some privacy modes, so both halves are wrapped. A browser that
- * cannot remember the attempt still gets the other half of the guard: the `?sso=tried` marker that
- * app/api/auth/witus/{authorize,callback} puts on every bounce back to /login.
- */
+/** Cookie access can throw in sandboxed frames; a failure reads as "not attempted". */
 function readAttempted(): boolean {
   try {
-    return window.sessionStorage.getItem(SSO_ATTEMPT_STORAGE_KEY) === '1';
+    return hasSilentSsoFlag(document.cookie);
   } catch {
     return false;
   }
@@ -132,8 +87,8 @@ function readAttempted(): boolean {
 
 function writeAttempted(): void {
   try {
-    window.sessionStorage.setItem(SSO_ATTEMPT_STORAGE_KEY, '1');
+    document.cookie = silentSsoFlagCookie(window.location.protocol === 'https:');
   } catch {
-    // No storage, no marker. The query-param half still applies.
+    // No cookie, no flag. The `?sso=tried` marker on every bounce back still applies.
   }
 }

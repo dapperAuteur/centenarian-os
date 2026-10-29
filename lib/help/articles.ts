@@ -340,6 +340,11 @@ export const HELP_ARTICLES: HelpArticle[] = [
     title: 'How to explore features before signing up',
     content: `CentenarianOS has a public features page where you can explore each module before creating an account. Visit /features to see all CentenarianOS modules — Planner, Finance, Travel, Health Metrics, Workouts, Academy, and more. The features page shows detailed descriptions, screenshots, and highlights of what each module offers. These pages are accessible without signing up.`,
   },
+  {
+    role: 'all',
+    title: 'How to sign in with WitUS',
+    content: `CentenarianOS is part of the WitUS family of apps, so you can sign in with your WitUS account instead of a password: on the login page, choose "Sign in with WitUS". If you are already signed in to WitUS in this browser (for example in another WitUS app), opening the CentenarianOS login page signs you in automatically and takes you on to the page you were going to. This check happens once per browser session; if you are not signed in to WitUS, you simply see the normal login options with no message. Signing out of CentenarianOS also signs you out of WitUS in that browser, so the login page will not sign you straight back in.`,
+  },
 
   // ─── BLOG IMPORT ──────────────────────────────────────────────────────────
 

@@ -352,14 +352,14 @@ function LoginContent() {
           )}
 
           {/* ── Sign in with WitUS (ecosystem SSO) ──────────────────────
-              Renders the same button as before, and in parallel asks the IdP whether this
-              browser already has a WitUS session — if so the label becomes "Continue as
-              <name>". A blocked or timed-out check changes nothing. Renders null entirely
-              when this app is not a configured OIDC client.
+              Renders the button and, once per browser session, sends a signed-out visitor
+              through the IdP with prompt=none: with a live WitUS session they come back signed
+              in; without one they come back here with no message. `?no_sso=1` skips it.
+              Renders null entirely when this app is not a configured OIDC client.
 
               `signedIn`: middleware bounces an authenticated visitor off /login to the
               dashboard, so the only way to be here WITH a local session is ?mfa=pending
-              (middleware's one exemption). Skip the probe in that case — the visitor is
+              (middleware's one exemption). Never redirect in that case — the visitor is
               already signed in locally and just owes a second factor. */}
           <WitusSsoButton signedIn={searchParams.get('mfa') === 'pending'} />
 

@@ -106,7 +106,7 @@ export default async function RootLayout({
         <LocaleProvider value={bundle}>
           <ToastProvider>
             <MarketingBanner />
-            {/* Ecosystem SSO ("Continue as ...", global sign-out). Resolved HERE, in the Server
+            {/* Ecosystem SSO (silent sign-in on /login, global sign-out). Resolved HERE, in the Server
                 Component, and passed down — the login button and the nav logout rows are all client
                 components and must not touch process.env.WITUS_OIDC_*. Fully dark (every field
                 null) when WITUS_OIDC_CLIENT_ID is unset. See lib/auth/witus-sso.ts. */}

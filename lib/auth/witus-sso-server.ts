@@ -11,17 +11,17 @@ import {
   WITUS_OIDC_AUTHORIZE_FALLBACK,
   WITUS_SSO_DISABLED,
   endSessionEndpointFromAuthorizeUrl,
-  silentSsoEndpointFromAuthorizeUrl,
   type WitusSsoConfig,
 } from './witus-sso';
 
 /**
- * Resolve both ecosystem SSO endpoints from this app's existing OIDC configuration.
+ * Resolve the ecosystem SSO config from this app's existing OIDC configuration.
  *
  * Returns the fully dark config unless `WITUS_OIDC_CLIENT_ID` is set — the same env the bespoke
  * authorize route already requires. If this app is not a configured ecosystem client there is no
- * shared session to probe and none to end, so the "Sign in with WitUS" button disappears and
- * sign-out stays purely local. An affordance the visitor cannot complete is worse than none.
+ * shared session to join and none to end, so the "Sign in with WitUS" button and the login page's
+ * silent sign-in disappear and sign-out stays purely local. An affordance the visitor cannot
+ * complete is worse than none.
  *
  * CentenarianOS is single-brand (centenarianos.com); it serves no tenant- or customer-branded
  * hosts, so there is no white-label host gate to apply on top of this. If that ever changes, this
@@ -37,9 +37,6 @@ export function resolveWitusSsoConfig(): WitusSsoConfig {
 
   return {
     enabled: true,
-    // An explicit override wins, because that path is owned by the IdP app, not by this one.
-    silentCheckUrl:
-      process.env.WITUS_SSO_SESSION_URL ?? silentSsoEndpointFromAuthorizeUrl(authorizeUrl),
     // client_id IS REQUIRED, not optional. better-auth's endSession endpoint rejects a
     // post_logout_redirect_uri with invalid_request ("client_id is required when using
     // post_logout_redirect_uri without a valid id_token_hint") unless the request carries either a
