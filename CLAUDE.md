@@ -71,7 +71,7 @@ When a change adds, alters, or removes an app feature, update the affected docs 
 
 ---
 
-<!-- BEGIN:witus-shared-rules v9 -->
+<!-- BEGIN:witus-shared-rules v10 -->
 <!-- MANAGED BLOCK — do not edit by hand. Source: gemini/witus/docs/shared-rules.md.
      Update the source, then run `node scripts/sync-claude-rules.mjs` in the witus repo. -->
 
@@ -128,7 +128,7 @@ once per clone: `git config core.hooksPath .githooks`. Full rule: `gemini/witus/
 
 When a change adds, alters, or removes a user-visible feature/route/scope, update the affected docs
 **in the same branch**: README (feature list, env examples, scripts), in-app help/tutorial content,
-`ROADMAP.md` **and** any public roadmap page, API/OpenAPI docs, and STYLE_GUIDE/CONTRIBUTING when a
+`docs/roadmap.md` (see the Roadmap rule) **and** any public roadmap page, API/OpenAPI docs, and STYLE_GUIDE/CONTRIBUTING when a
 convention changed. State which docs you touched in the handoff. Never leave an aspirational ✅ on a
 roadmap — downgrade it with a one-line reason. If a doc update is genuinely out of scope, file it as
 a `./plans/` task rather than skipping silently. A Stop hook in `.claude/settings.json` gates on
@@ -249,6 +249,45 @@ a terminal four times in one evening; every project variable was Sensitive, so `
 and `vercel env run` could not help, and a missed migration left pages answering 500. Full rule:
 `gemini/witus/CLAUDE.md` §"Post-deploy automation rule".
 
+## Roadmap rule: every repo keeps `docs/roadmap.md` current
+
+Every ecosystem repo keeps a tracked `docs/roadmap.md` in this format. The witus.online admin page
+`/admin/roadmap` reads it from `main` of every repo, so it is how BAM sees where each app stands.
+
+```
+---
+app: <slug>
+name: <display name>
+stage: idea | vetted | building | alpha | beta | live | paused | retired
+url: <optional>
+updated: YYYY-MM-DD
+---
+
+## Live now
+- ...
+## In progress
+- ...
+## Next
+- ...
+## Backlog
+- ...
+## Blocked on
+- ...
+```
+
+1. **Update it in the same change** that ships a feature (move the item to Live now), starts a branch
+   of planned work (In progress), adds a backlog item, or hits or clears a blocker (Blocked on). Set
+   `updated` to today's date and change `stage` when the app moves on.
+2. **A new app gets one on day one**, as part of onboarding. An app with no repo of its own keeps
+   `docs/roadmaps/<slug>.md` in the witus repo instead, and gets an entry in witus
+   `lib/roadmap/registry.ts`.
+3. **One line per item**, plain words, with a plan or task number when there is one. Nested bullets
+   are detail under an item. Leave a section out rather than writing "None".
+
+The page flags a roadmap as possibly stale when `main` has commits more than 14 days newer than the
+file's last change. Onboarding step: `gemini/witus/CLAUDE.md` §"Ecosystem onboarding rule"; app
+list: `gemini/witus/lib/roadmap/registry.ts`.
+
 ## Coding conventions
 
 UI/UX/DX conventions (a11y, component patterns, TypeScript, microcopy, git-commit vocabulary, the
@@ -256,4 +295,4 @@ default Neon+Drizzle+pnpm+Vitest stack) are consolidated in `gemini/witus/docs/s
 Read it before writing UI or API code. Two repos are grandfathered on Supabase+Jest and documented
 there as exceptions.
 
-<!-- END:witus-shared-rules v9 -->
+<!-- END:witus-shared-rules v10 -->
