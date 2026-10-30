@@ -194,10 +194,12 @@ An OIDC code flow against the shared WitUS identity provider
 -> IdP -> `.../witus/callback`, which finds-or-creates the user by email and mints an ordinary
 CentOS session. The same client id also powers two ecosystem behaviours:
 
-- **"Continue as \<name\>"** — the login page asks the IdP, in parallel with rendering the form,
-  whether this browser already has a WitUS session, and relabels the button if it does. The answer
-  depends on a third-party cookie, so Safari and Firefox return nothing; a failed or blocked check
-  is invisible and the ordinary button remains.
+- **Silent sign-in** — once per browser session, the login page sends a signed-out visitor through
+  the IdP with `prompt=none`. Someone already signed in to WitUS (in Inbox, Outbox or any other
+  WitUS app) comes back signed in, to the page they were going to; anyone else comes back to the
+  login page with no message and the normal options. It is a top-level redirect, so it works from
+  centenarianos.com even though the IdP is on another site (the old "Continue as" background check
+  could not, and was removed). `/login?no_sso=1` skips it for testing.
 - **Global sign-out** — Logout ends the shared IdP session too, so signing out here signs you out of
   every WitUS app in that browser. The local session is always destroyed first.
 

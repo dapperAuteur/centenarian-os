@@ -1,40 +1,46 @@
 // File: lib/auth/witus-sso.ts
-// Ecosystem SSO helpers — "Continue as <name>" + global sign-out.
+// Ecosystem SSO helpers: silent sign-in ("already signed in to WitUS") + global sign-out.
 //
 // BAM's complaint (2026-08-30): signing in on a WitUS app sends you to a login form even when
 // another tab already has you signed in to a sibling app; and signing out of one app leaves the
 // shared session alive everywhere else. Two features answer that, both built on top of the bespoke
 // OIDC code flow this app already runs (app/api/auth/witus/*):
 //
-//   1. On /login, render the form immediately as it renders today and ask the IdP IN PARALLEL who
-//      this browser is. If an answer arrives, the existing "Sign in with WitUS" button relabels to
-//      "Continue as <name>". Not automatic — clicking still runs the real code flow.
-//   2. Signing out here also ends the shared session at the IdP, so it signs you out of every
-//      WitUS app in this browser.
+//   1. Silent sign-in. On /login, once per browser session, a signed-out visitor is sent through
+//      the IdP's authorize endpoint with `prompt=none`. With a live WitUS session the IdP answers
+//      with a code and the callback finishes an ordinary WitUS sign-in. Without one it answers
+//      `error=login_required`, and the callback returns to /login with no message, so the visitor
+//      sees the normal sign-in options.
+//   2. Global sign-out. Signing out here also ends the shared session at the IdP, so it signs you
+//      out of every WitUS app in this browser.
 //
-// WHY A CROSS-ORIGIN PROBE AND NOT OIDC `prompt=none`. `prompt=none` is a NAVIGATION: you leave the
-// login page to ask. The only way to ask without leaving is a hidden iframe, which Safari's ITP
-// blocks. So we ask a dedicated IdP endpoint over CORS instead, in parallel with a form that has
-// already rendered.
+// WHY A TOP-LEVEL REDIRECT AND NOT A BACKGROUND REQUEST (2026-10-29). Until this date the login page
+// asked the IdP's `/api/ecosystem/session` endpoint with a CORS fetch and relabelled the button
+// "Continue as <name>". That could never answer "signed in": centenarianos.com and
+// accounts.witus.online are different SITES, and the IdP's session cookie is SameSite=Lax, which a
+// browser sends on a cross-site top-level GET navigation but never on a cross-site fetch. The probe
+// was removed (see witus plans/bugs/sso-existing-session-not-recognized-2026-10-29.md and this
+// repo's plans/future/witus-continue-as-cross-site-2026-10-29.md). There is no same-site case to
+// keep it for: no CentOS host is under witus.online. A top-level navigation carries the cookie, so
+// the domain stays centenarianos.com.
 //
-// WHAT THE PROBE BUYS AND WHAT IT DOES NOT. It carries the IdP's cookie as a THIRD-PARTY cookie, so
-// it answers on Chrome/Edge and returns nothing under Safari ITP or Firefox Total Cookie
-// Protection. That is the design, not a bug: a probe that answers nothing renders nothing and the
-// visitor keeps the exact login page they already had.
+// THE LOOP GUARD. Three layers, any one of which stops a second attempt:
+//   - a browser-session cookie (`witus_sso_silent`), written by the login page IMMEDIATELY BEFORE
+//     it leaves for the IdP, never after the return;
+//   - the `?sso=tried` marker that every bounce back to /login carries;
+//   - `?error=` on /login (a failed flow never retries on its own).
+// `?no_sso=1` skips the attempt outright, for testing.
 //
-// THE IDENTITY THIS RETURNS IS DISPLAY COPY, NEVER A CREDENTIAL. It crosses an origin boundary, so
-// it is client-supplied by definition. It must never gate access, populate a session, or be sent
-// anywhere. Nothing in this file may ever be used to grant access.
-//
-// Pure helpers only: no `process.env`, no next/headers, no window access at module scope, so the
-// server resolver (./witus-sso-server.ts) and the client provider (./witus-sso-client.tsx) can both
-// import it.
+// Pure helpers only: no `process.env`, no next/headers, no window access at module scope, and no
+// '@/' imports, so the server resolver (./witus-sso-server.ts), the client component, the API
+// routes and node --test (tests/unit/witus-silent-sso.test.ts) can all import it.
 
 /**
  * Default IdP authorize endpoint. Single source for the ecosystem host in this app —
  * app/api/auth/witus/authorize/route.ts imports this rather than repeating the literal, and every
  * other IdP URL below is DERIVED from whatever `WITUS_OIDC_AUTHORIZE_URL` actually is. Nothing new
- * about accounts.witus.online is asserted anywhere else (authoritative-values rule).
+ * about accounts.witus.online is asserted anywhere else (authoritative-values rule). Matches the
+ * live discovery document (`/api/idp/.well-known/openid-configuration`, read 2026-10-29).
  */
 export const WITUS_OIDC_AUTHORIZE_FALLBACK =
   'https://accounts.witus.online/api/idp/oauth2/authorize';
@@ -43,26 +49,29 @@ export const WITUS_OIDC_AUTHORIZE_FALLBACK =
 export const SSO_ATTEMPT_PARAM = 'sso';
 export const SSO_ATTEMPT_VALUE = 'tried';
 
+/** `/login?no_sso=1` never starts the silent attempt. A testing escape hatch. */
+export const NO_SSO_PARAM = 'no_sso';
+
 /**
- * sessionStorage key for the same marker. Written IMMEDIATELY BEFORE we send the browser to the
- * IdP, never after we come back: a marker written on return is a marker that never exists when the
- * return is the thing that failed.
+ * Browser-session cookie (no Max-Age, so it ends when the browser does) recording that this
+ * browser already made its one silent attempt. A cookie rather than sessionStorage so a second tab
+ * does not repeat the round trip, and so it is still set after a global sign-out returns here.
  */
-export const SSO_ATTEMPT_STORAGE_KEY = 'witus.sso.attempted';
+export const SILENT_SSO_COOKIE = 'witus_sso_silent';
 
-/** How long to wait for the probe before giving up. A silent check that hangs is a broken page. */
-export const SILENT_SSO_TIMEOUT_MS = 4000;
+/** Transient httpOnly cookie carrying the validated `from` path across the IdP round trip. */
+export const NEXT_PATH_COOKIE = 'witus_oauth_next';
 
-/** Longest display name we will render. Caps a hostile or absurd value from blowing up the card. */
-const MAX_LABEL_LENGTH = 48;
-
-const CONTROL_CHARS = /[\u0000-\u001F\u007F]/g;
-
-/** Identity shown on the button. Display only, never a credential. */
-export interface SsoIdentity {
-  /** What "Continue as ___" says. Already trimmed, de-controlled, and length-capped. */
-  label: string;
-}
+/**
+ * IdP errors that mean "nobody is signed in to WitUS here" or "the IdP would have to show a page".
+ * For a silent attempt that is the expected answer, not a failure: return to /login quietly.
+ */
+const QUIET_SILENT_ERRORS = new Set([
+  'login_required',
+  'consent_required',
+  'interaction_required',
+  'account_selection_required',
+]);
 
 /**
  * Server-resolved ecosystem SSO configuration, handed to client components through
@@ -70,10 +79,8 @@ export interface SsoIdentity {
  * stay COMPLETELY DARK, because an affordance the visitor cannot complete is worse than none.
  */
 export interface WitusSsoConfig {
-  /** Is this app a configured ecosystem OIDC client? The gate for everything below. */
+  /** Is this app a configured ecosystem OIDC client? The gate for the button and silent sign-in. */
   enabled: boolean;
-  /** IdP endpoint the login page's silent probe asks, or null when the feature is dark. */
-  silentCheckUrl: string | null;
   /** RP-initiated logout endpoint WITH `client_id` already baked in, or null for local-only. */
   endSessionUrl: string | null;
 }
@@ -81,39 +88,119 @@ export interface WitusSsoConfig {
 /** The dark state — no ecosystem client configured, so neither feature exists. */
 export const WITUS_SSO_DISABLED: WitusSsoConfig = {
   enabled: false,
-  silentCheckUrl: null,
   endSessionUrl: null,
 };
 
-export type SilentSsoSkip = 'not-configured' | 'already-attempted' | 'already-signed-in';
+export type SilentSsoSkip =
+  | 'not-configured'
+  | 'escape-hatch'
+  | 'already-attempted'
+  | 'already-signed-in'
+  | 'error-shown';
 
 export type SilentSsoDecision = { attempt: true } | { attempt: false; skip: SilentSsoSkip };
 
 /**
- * Should this browser ask the IdP who it is?
+ * Should the login page send this browser to the IdP with `prompt=none`?
  *
- * `endpoint` is the SERVER-RESOLVED gate handed down from the root layout. Never re-derive it on
- * the client, and never accept it from client-supplied data.
+ * `enabled` is the SERVER-RESOLVED gate handed down from the root layout. Never re-derive it on the
+ * client, and never accept it from client-supplied data. `attempted` is the browser-session cookie
+ * flag. `signedIn` is true when the visitor already has a local session (?mfa=pending).
  */
 export function silentSsoDecision(input: {
-  endpoint: string | null | undefined;
+  enabled: boolean;
   search?: string | null;
   attempted?: boolean;
   signedIn?: boolean;
 }): SilentSsoDecision {
-  if (!input.endpoint) return { attempt: false, skip: 'not-configured' };
-  if (input.signedIn) return { attempt: false, skip: 'already-signed-in' };
-  if (input.attempted || hasAttemptMarker(input.search)) {
+  if (!input.enabled) return { attempt: false, skip: 'not-configured' };
+  const params = toParams(input.search);
+  if (params.get(NO_SSO_PARAM) === '1') return { attempt: false, skip: 'escape-hatch' };
+  if (input.signedIn || params.get('mfa') === 'pending') {
+    return { attempt: false, skip: 'already-signed-in' };
+  }
+  if (input.attempted || params.get(SSO_ATTEMPT_PARAM) === SSO_ATTEMPT_VALUE) {
     return { attempt: false, skip: 'already-attempted' };
   }
+  if (params.has('error')) return { attempt: false, skip: 'error-shown' };
   return { attempt: true };
+}
+
+/** Does a `document.cookie` / Cookie header string carry the silent-attempt flag? */
+export function hasSilentSsoFlag(cookieString: string | null | undefined): boolean {
+  if (!cookieString) return false;
+  return cookieString
+    .split(';')
+    .some((part) => part.trim() === `${SILENT_SSO_COOKIE}=1`);
+}
+
+/** The `document.cookie` assignment that records the attempt for the rest of the browser session. */
+export function silentSsoFlagCookie(secure: boolean): string {
+  return `${SILENT_SSO_COOKIE}=1; Path=/; SameSite=Lax${secure ? '; Secure' : ''}`;
+}
+
+/** Is this IdP error the ordinary "not signed in to WitUS" answer to a silent attempt? */
+export function isQuietSilentSsoError(error: string | null | undefined): boolean {
+  return typeof error === 'string' && QUIET_SILENT_ERRORS.has(error);
+}
+
+/**
+ * A same-origin path we are willing to redirect to, or null. Rejects absolute URLs,
+ * protocol-relative `//host`, backslash tricks (`/\host`), control characters and absurd lengths,
+ * so `from` can never become an open redirect.
+ */
+export function safeNextPath(value: string | null | undefined): string | null {
+  if (typeof value !== 'string' || value.length === 0 || value.length > 512) return null;
+  if (!value.startsWith('/') || value.startsWith('//')) return null;
+  if (value.includes('\\') || /[\u0000-\u001F\u007F]/.test(value)) return null;
+  return value;
+}
+
+/** Where the login page sends the browser for the silent attempt (a same-origin API route). */
+export function silentSignInPath(from: string | null | undefined): string {
+  const params = new URLSearchParams({ prompt: 'none' });
+  const next = safeNextPath(from);
+  if (next) params.set('from', next);
+  return `/api/auth/witus/authorize?${params.toString()}`;
+}
+
+/**
+ * The quiet return to /login after the IdP said "nobody here": no error, the loop-guard marker,
+ * and the original `from` so a password sign-in still lands where the visitor was going.
+ */
+export function quietLoginPath(from: string | null | undefined): string {
+  const next = safeNextPath(from);
+  return withAttemptMarker(next ? `/login?from=${encodeURIComponent(next)}` : '/login');
+}
+
+/**
+ * The IdP authorize URL. One builder for both the interactive button and the silent attempt, so
+ * client id, callback, state and PKCE are always built the same way; `silent` only adds
+ * `prompt=none`.
+ */
+export function buildWitusAuthorizeUrl(input: {
+  authorizeUrl: string;
+  clientId: string;
+  redirectUri: string;
+  state: string;
+  codeChallenge: string;
+  silent?: boolean;
+}): string {
+  const authUrl = new URL(input.authorizeUrl);
+  authUrl.searchParams.set('response_type', 'code');
+  authUrl.searchParams.set('client_id', input.clientId);
+  authUrl.searchParams.set('redirect_uri', input.redirectUri);
+  authUrl.searchParams.set('scope', 'openid email profile');
+  authUrl.searchParams.set('state', input.state);
+  authUrl.searchParams.set('code_challenge', input.codeChallenge);
+  authUrl.searchParams.set('code_challenge_method', 'S256');
+  if (input.silent) authUrl.searchParams.set('prompt', 'none');
+  return authUrl.toString();
 }
 
 /** Does this query string carry the one-shot marker? Accepts "?a=b" or "a=b". */
 export function hasAttemptMarker(search: string | null | undefined): boolean {
-  if (typeof search !== 'string' || search === '') return false;
-  const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
-  return params.get(SSO_ATTEMPT_PARAM) === SSO_ATTEMPT_VALUE;
+  return toParams(search).get(SSO_ATTEMPT_PARAM) === SSO_ATTEMPT_VALUE;
 }
 
 /**
@@ -127,6 +214,11 @@ export function withAttemptMarker(path: string): string {
   const params = new URLSearchParams(queryRest.join('?'));
   params.set(SSO_ATTEMPT_PARAM, SSO_ATTEMPT_VALUE);
   return `${pathname}?${params.toString()}${hash}`;
+}
+
+function toParams(search: string | null | undefined): URLSearchParams {
+  if (typeof search !== 'string' || search === '') return new URLSearchParams();
+  return new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
 }
 
 /**
@@ -164,51 +256,6 @@ export function endSessionEndpointFromAuthorizeUrl(
   const parts = splitAuthorizeUrl(authorizeUrl);
   if (!parts) return null;
   return `${parts.origin}${parts.basePath}/oauth2/endsession`;
-}
-
-/**
- * The ecosystem session probe: `<idp-origin>/api/ecosystem/session`.
- *
- * NOT better-auth's `<basePath>/get-session`, which could never work here: better-auth's core emits
- * no CORS headers, and even with them `/get-session` returns the full `{ session, user }` whose
- * `session` carries the SESSION TOKEN — a credentialed allow-origin on it would let any ecosystem
- * origin (or an XSS on one) lift a live IdP session. `/api/ecosystem/session` is the purpose-built
- * replacement in gemini/witus: same cookie, but it answers with a display label and nothing else.
- * Response shape: `{ signedIn: true, user: { name } }` or `{ signedIn: false }`.
- */
-export function silentSsoEndpointFromAuthorizeUrl(
-  authorizeUrl: string | null | undefined,
-): string | null {
-  const parts = splitAuthorizeUrl(authorizeUrl);
-  if (!parts) return null;
-  return `${parts.origin}/api/ecosystem/session`;
-}
-
-/**
- * Read a display name out of the probe response. Handles `{ signedIn, user: { name } }`, a bare
- * user object, and the signed-out answer. Anything else yields null, which renders nothing.
- */
-export function parseSilentSsoIdentity(payload: unknown): SsoIdentity | null {
-  if (!payload || typeof payload !== 'object') return null;
-  const root = payload as Record<string, unknown>;
-  const candidate =
-    root.user && typeof root.user === 'object' ? (root.user as Record<string, unknown>) : root;
-  const label = cleanLabel(candidate.name) ?? cleanLabel(candidate.email);
-  return label ? { label } : null;
-}
-
-function cleanLabel(value: unknown): string | null {
-  if (typeof value !== 'string') return null;
-  const cleaned = value.replace(CONTROL_CHARS, '').trim();
-  if (!cleaned) return null;
-  return cleaned.length > MAX_LABEL_LENGTH
-    ? `${cleaned.slice(0, MAX_LABEL_LENGTH - 1).trimEnd()}…`
-    : cleaned;
-}
-
-/** Sign-in button copy. Kept here so there is one place the exact strings live. */
-export function continueAsLabel(identity: SsoIdentity | null): string {
-  return identity ? `Continue as ${identity.label}` : 'Sign in with WitUS';
 }
 
 /**

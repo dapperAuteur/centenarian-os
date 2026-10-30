@@ -1,9 +1,15 @@
-// Completes the "Sign in with WitUS" OIDC flow:
+// Completes the "Sign in with WitUS" OIDC flow, both the button's interactive one and the login
+// page's silent `prompt=none` attempt:
+//   0. a silent attempt that found no WitUS session (`?error=login_required` and friends) returns
+//      to /login quietly, with no message;
 //   1. verify state, exchange the code (+ PKCE verifier) for tokens,
 //   2. read the user's claims from the IdP userinfo endpoint (server-to-server,
 //      so no client-side JWT to verify — avoids a jose dependency),
 //   3. find-or-create the Supabase user by email (service role),
-//   4. mint a Supabase session for them, and link witus_sub -> user_id.
+//   4. mint a Supabase session for them, and link witus_sub -> user_id,
+//   5. land on the `from` path the authorize route stashed, else /dashboard.
+// Steps 0-3 and 5 are decided in lib/auth/witus-callback.ts (unit-tested); this file wires
+// Next.js cookies and Supabase into it.
 //
 // NOTE (verify live): step 4 mints a session via admin.generateLink('magiclink')
 // + verifyOtp({ token_hash }). This is the one part that can't be unit-tested and
@@ -14,7 +20,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
-import { withAttemptMarker } from '@/lib/auth/witus-sso';
+import { handleWitusCallback, type WitusCallbackFailure } from '@/lib/auth/witus-callback';
+import { NEXT_PATH_COOKIE } from '@/lib/auth/witus-sso';
 
 const TOKEN_URL =
   process.env.WITUS_OIDC_TOKEN_URL ?? 'https://accounts.witus.online/api/idp/oauth2/token';
@@ -23,64 +30,43 @@ const USERINFO_URL =
 
 export async function GET(request: NextRequest) {
   const url = request.nextUrl;
-  const code = url.searchParams.get('code');
-  const state = url.searchParams.get('state');
-
   const cookieStore = await cookies();
-  const expectedState = cookieStore.get('witus_oauth_state')?.value;
-  const verifier = cookieStore.get('witus_oauth_verifier')?.value;
-
-  const clearTransient = () => {
-    cookieStore.set({ name: 'witus_oauth_state', value: '', maxAge: 0, path: '/' });
-    cookieStore.set({ name: 'witus_oauth_verifier', value: '', maxAge: 0, path: '/' });
-  };
-  const fail = (reason: string) => {
-    clearTransient();
-    // `?sso=tried` is the half of the "Continue as ..." loop guard that survives a browser with no
-    // usable sessionStorage (and a return into a different tab). Without it, a stale IdP session
-    // gives: probe says "Continue as X" -> click -> the IdP cannot finish -> back here -> /login ->
-    // probe -> forever. See lib/auth/witus-sso.ts.
-    return NextResponse.redirect(
-      new URL(withAttemptMarker(`/login?error=${reason}`), request.url),
-    );
-  };
-
-  if (!code || !state || !expectedState || state !== expectedState || !verifier) {
-    return fail('witus_state');
-  }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? url.origin;
   const redirectUri = `${siteUrl.replace(/\/$/, '')}/api/auth/witus/callback`;
 
-  // 1. Exchange the authorization code for tokens.
-  const tokenRes = await fetch(TOKEN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: redirectUri,
-      client_id: process.env.WITUS_OIDC_CLIENT_ID ?? '',
-      client_secret: process.env.WITUS_OIDC_CLIENT_SECRET ?? '',
-      code_verifier: verifier,
-    }),
-    cache: 'no-store',
-  });
-  if (!tokenRes.ok) return fail('witus_token');
-  const tokens = (await tokenRes.json()) as { access_token?: string };
-  if (!tokens.access_token) return fail('witus_token');
+  const outcome = await handleWitusCallback(
+    {
+      search: url.searchParams,
+      expectedState: cookieStore.get('witus_oauth_state')?.value,
+      verifier: cookieStore.get('witus_oauth_verifier')?.value,
+      nextPath: cookieStore.get(NEXT_PATH_COOKIE)?.value,
+      redirectUri,
+      clientId: process.env.WITUS_OIDC_CLIENT_ID ?? '',
+      clientSecret: process.env.WITUS_OIDC_CLIENT_SECRET ?? '',
+      tokenUrl: TOKEN_URL,
+      userinfoUrl: USERINFO_URL,
+    },
+    {
+      fetch,
+      establishSession: (claims) => establishSupabaseSession(claims, cookieStore),
+    },
+  );
 
-  // 2. Read claims from userinfo.
-  const userinfoRes = await fetch(USERINFO_URL, {
-    headers: { Authorization: `Bearer ${tokens.access_token}` },
-    cache: 'no-store',
-  });
-  if (!userinfoRes.ok) return fail('witus_userinfo');
-  const claims = (await userinfoRes.json()) as { sub?: string; email?: string };
-  const sub = claims.sub;
-  const email = claims.email;
-  if (!sub || !email) return fail('witus_claims');
+  // Every outcome is the end of this round trip: the transient cookies are single-use.
+  for (const name of ['witus_oauth_state', 'witus_oauth_verifier', NEXT_PATH_COOKIE]) {
+    cookieStore.set({ name, value: '', maxAge: 0, path: '/' });
+  }
+  return NextResponse.redirect(new URL(outcome.redirectTo, request.url));
+}
 
+type CookieStore = Awaited<ReturnType<typeof cookies>>;
+
+/** Steps 3-4: find-or-create the Supabase user, mint its session cookies, link the WitUS sub. */
+async function establishSupabaseSession(
+  { sub, email }: { sub: string; email: string },
+  cookieStore: CookieStore,
+): Promise<WitusCallbackFailure | null> {
   // 3. Find-or-create the Supabase user by email (service role bypasses RLS).
   const admin = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -97,7 +83,7 @@ export async function GET(request: NextRequest) {
     email,
   });
   const tokenHash = linkData?.properties?.hashed_token;
-  if (linkErr || !tokenHash) return fail('witus_session');
+  if (linkErr || !tokenHash) return 'witus_session';
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -120,13 +106,12 @@ export async function GET(request: NextRequest) {
     type: 'magiclink',
     token_hash: tokenHash,
   });
-  if (verifyErr || !verified.user) return fail('witus_verify');
+  if (verifyErr || !verified.user) return 'witus_verify';
 
   // Link WitUS sub -> Supabase user id for subsequent logins.
   await admin
     .from('witus_identities')
     .upsert({ user_id: verified.user.id, witus_sub: sub }, { onConflict: 'witus_sub' });
 
-  clearTransient();
-  return NextResponse.redirect(new URL('/dashboard', request.url));
+  return null;
 }
