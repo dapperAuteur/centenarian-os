@@ -480,6 +480,12 @@ sends). A **GET signs its path and query string** exactly as sent (for example
 `/api/v1/ride/vendors?witus_sub=abc&q=shell`), so the subject cannot be edited in flight. Each
 secret is shared with RideWitUS under the same name, and each can be rotated alone.
 
+The full contract (every endpoint and event in both directions, error codes, env names per app) is
+tracked at `docs/integrations/ridewitus-contract.md`. The shared signing test vectors are
+`tests/fixtures/witus-signing-vectors.json` (`tests/unit/witus-signing-vectors.test.ts`): this repo
+holds the source of truth and RideWitUS keeps a byte-identical copy, so a signing drift between the
+two apps fails a test instead of a production request.
+
 The user is identified by `witus_sub`, the WitUS sign-in subject, resolved through
 `witus_identities` (`lib/witus/identity.ts`). A subject with no row (the person never signed in to
 CentenarianOS with WitUS) gets `404 unknown_subject`; RideWitUS keeps its request queued until they do.
