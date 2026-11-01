@@ -3,7 +3,7 @@ app: centenarianos
 name: CentenarianOS
 stage: live
 url: https://www.centenarianos.com
-updated: 2026-10-29
+updated: 2026-10-31
 ---
 
 ## Live now
@@ -13,10 +13,11 @@ updated: 2026-10-29
 - One-way Google Calendar sync
 - Income and work-schedule events received from Work.WitUS
 - Sign in with WitUS beside email sign-in, including silent sign-in on the login page
-- Media tracking retired to Stream.WitUS, with a CSV export for the move
+- Media tracking retired to Stream.WitUS: read-only list, no writes (410), CSV export that Stream.WitUS imports
 
 ## In progress
-- Decomposition into one job per app (plan 49): Media to Stream.WitUS is underway; Work.WitUS separation is partly done (plan 55)
+- Decomposition into one job per app (plan 49): Work.WitUS separation is partly done (plan 55)
+- Media to Stream.WitUS (plan 49, Stage 1): export in 500-row parts for Stream's import limit, no likes or shares on media, export link on the Data Hub (branch feat/media-retire-to-stream); then a production export and import hand check (witus task 146)
 
 ## Next
 - Confirm the Work.WitUS database separation and update the database section of this repo's docs

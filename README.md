@@ -17,10 +17,14 @@ stays integrated on purpose. The staged plan and the ecosystem registry live in 
 - **Stage 1, Media → [Stream.WitUS](https://stream.witus.online): in progress.** Media is out of
   the nav, Data Hub, Discover, and the features pages; `/features/media` 308-redirects to
   Stream.WitUS (`next.config.mjs`). `/dashboard/media` stays reachable by URL, read-only with no
-  add/edit/delete controls, and its banner's primary action is the CSV export
-  (`/api/media/export`), the file users import on Stream.WitUS's media page. Every media write route returns `410 Gone`
-  ([`lib/media/retired.ts`](./lib/media/retired.ts)). Pages and routes are removed after a grace
-  period; the tables stay until a later stage.
+  add/edit/delete, like, or share controls (the Data Hub ends with a link to it), and its banner's
+  primary action is the CSV export (`/api/media/export`), the file users import on Stream.WitUS's
+  media page. Stream.WitUS takes at most 500 rows per file, so the export takes `?part=N` and the
+  banner offers one download per 500-item part when the list is bigger
+  ([`lib/media/export-csv.ts`](./lib/media/export-csv.ts)). Every media write route, plus likes
+  and shares on media items, returns `410 Gone` ([`lib/media/retired.ts`](./lib/media/retired.ts));
+  `tests/unit/media-retirement.test.ts` guards the CSV format, the write block, and the nav.
+  Pages and routes are removed after a grace period; the tables stay until a later stage.
 
 Module lists below describe the pre-decomposition surface, minus Media.
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { mediaRetiredResponse } from '@/lib/media/retired';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { checkOwned } from '@/lib/auth/ownership';
 
@@ -43,6 +44,10 @@ export async function POST(request: NextRequest) {
   if (!isValidEntityType(entity_type)) {
     return NextResponse.json({ error: `Invalid entity_type. Must be one of: ${VALID_ENTITY_TYPES.join(', ')}` }, { status: 400 });
   }
+
+  // Media moved to Stream.WitUS: a like or share would write like_count / share_count
+  // on media_items, so those answer 410 like every other media write.
+  if (entity_type === 'media_item') return mediaRetiredResponse();
 
   const table = ENTITY_TABLE_MAP[entity_type];
   const serviceDb = getServiceDb();
