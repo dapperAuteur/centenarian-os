@@ -1,0 +1,493 @@
+{
+  "_about": [
+    "Shared signing test vectors for server-to-server calls between CentenarianOS and RideWitUS (and later Work.WitUS).",
+    "SOURCE OF TRUTH: centenarian-os tests/fixtures/witus-signing-vectors.json. RideWitUS keeps a byte-identical copy;",
+    "change this file in CentenarianOS first, then copy it over unchanged, so both repos test against the same bytes.",
+    "Every secret, subject and id here is a made-up test value. None is used by any deployed app.",
+    "Contract: centenarian-os docs/integrations/ridewitus-contract.md; wire format: claude/witus-inbox docs/webhook-contract.md."
+  ],
+  "version": 1,
+  "algorithm": {
+    "signature": "sha256=<hex(HMAC-SHA256(secret, \"<timestamp>.<signed>\"))>, UTF-8",
+    "signed_post": "the raw request body exactly as sent",
+    "signed_get": "the path plus query string exactly as sent (no scheme or host), e.g. /api/v1/ride/vendors?witus_sub=...",
+    "max_skew_seconds": 300,
+    "skew_rule": "reject when |now - timestamp| > 300 (past and future)",
+    "reasons": [
+      "no_secret",
+      "missing_headers",
+      "bad_timestamp",
+      "stale_timestamp",
+      "bad_signature_format",
+      "signature_mismatch",
+      "wrong_source"
+    ],
+    "status": "no_secret -> 503 not_configured; every other reason -> 401 unauthorized with one flat message"
+  },
+  "vectors": [
+    {
+      "name": "get-vendors-list",
+      "note": "GET signs path plus query exactly as sent (E1).",
+      "request": {
+        "method": "GET",
+        "path_and_query": "/api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "body": null,
+        "signed_string": "1793400000./api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "headers": {
+          "X-Witus-Source": "ride-witus",
+          "X-Witus-Timestamp": "1793400000",
+          "X-Witus-Signature": "sha256=3c650635d3404c0c89f4d25e0dafd17946148948eaff226f57c098e0fbc7c386"
+        }
+      },
+      "receiver": {
+        "secret": "test-only-vendor-secret-not-real-0123456789abcdef",
+        "expected_source": "ride-witus",
+        "now": 1793400010
+      },
+      "expect": {
+        "ok": true
+      }
+    },
+    {
+      "name": "get-vendor-prices",
+      "note": "GET with a path parameter and several query keys (E3).",
+      "request": {
+        "method": "GET",
+        "path_and_query": "/api/v1/ride/vendors/00000000-0000-4000-8000-000000000001/prices?witus_sub=SUB_EXAMPLE&since=2026-10-01&limit=20",
+        "body": null,
+        "signed_string": "1793400000./api/v1/ride/vendors/00000000-0000-4000-8000-000000000001/prices?witus_sub=SUB_EXAMPLE&since=2026-10-01&limit=20",
+        "headers": {
+          "X-Witus-Source": "ride-witus",
+          "X-Witus-Timestamp": "1793400000",
+          "X-Witus-Signature": "sha256=383c737210011bff958e9ec7e208afe8507c2238902397a91246233e014b96aa"
+        }
+      },
+      "receiver": {
+        "secret": "test-only-vendor-secret-not-real-0123456789abcdef",
+        "expected_source": "ride-witus",
+        "now": 1793400000
+      },
+      "expect": {
+        "ok": true
+      }
+    },
+    {
+      "name": "post-resync",
+      "note": "POST signs the raw body bytes (E4).",
+      "request": {
+        "method": "POST",
+        "path_and_query": "/api/v1/ride/resync",
+        "body": "{\"witus_sub\":\"SUB_EXAMPLE\",\"scopes\":[\"calendar\",\"envelopes\"],\"since\":\"2026-10-01\"}",
+        "signed_string": "1793400000.{\"witus_sub\":\"SUB_EXAMPLE\",\"scopes\":[\"calendar\",\"envelopes\"],\"since\":\"2026-10-01\"}",
+        "headers": {
+          "X-Witus-Source": "ride-witus",
+          "X-Witus-Timestamp": "1793400000",
+          "X-Witus-Signature": "sha256=e215daf6ae121a10469d46b86d1d79a9aaac469c9fe506255ea2de80022e901b"
+        }
+      },
+      "receiver": {
+        "secret": "test-only-resync-secret-not-real-0123456789abcdef",
+        "expected_source": "ride-witus",
+        "now": 1793400120
+      },
+      "expect": {
+        "ok": true
+      }
+    },
+    {
+      "name": "post-calendar-activity",
+      "note": "CentOS to RideWitUS event batch with a non-ASCII title (E6). UTF-8 bytes are hashed.",
+      "request": {
+        "method": "POST",
+        "path_and_query": "/api/events/calendar-activity",
+        "body": "{\"events\":[{\"event_id\":\"cal:0000000000000000000000000000000000000000000000000000000000000000\",\"event_type\":\"calendar.activity\",\"schema_version\":1,\"witus_sub\":\"SUB_EXAMPLE\",\"occurred_at\":\"2026-10-31T14:00:00.000Z\",\"starts_at\":\"2026-11-02T09:00:00-05:00\",\"ends_at\":\"2026-11-02T10:00:00-05:00\",\"all_day\":false,\"time_zone\":\"America/Indiana/Indianapolis\",\"title\":\"Café meeting\",\"location\":\"100 Main St\",\"calendar_label\":\"Work\",\"status\":\"confirmed\",\"trip_token\":null,\"is_active\":true}]}",
+        "signed_string": "1793400000.{\"events\":[{\"event_id\":\"cal:0000000000000000000000000000000000000000000000000000000000000000\",\"event_type\":\"calendar.activity\",\"schema_version\":1,\"witus_sub\":\"SUB_EXAMPLE\",\"occurred_at\":\"2026-10-31T14:00:00.000Z\",\"starts_at\":\"2026-11-02T09:00:00-05:00\",\"ends_at\":\"2026-11-02T10:00:00-05:00\",\"all_day\":false,\"time_zone\":\"America/Indiana/Indianapolis\",\"title\":\"Café meeting\",\"location\":\"100 Main St\",\"calendar_label\":\"Work\",\"status\":\"confirmed\",\"trip_token\":null,\"is_active\":true}]}",
+        "headers": {
+          "X-Witus-Source": "centenarianos",
+          "X-Witus-Timestamp": "1793400000",
+          "X-Witus-Signature": "sha256=a0cd42fc64610258f551b1c1d3c490a27ef7a55d315f11199618de0979d03526"
+        }
+      },
+      "receiver": {
+        "secret": "test-only-calendar-secret-not-real-0123456789abcd",
+        "expected_source": "centenarianos",
+        "now": 1793400000
+      },
+      "expect": {
+        "ok": true
+      }
+    },
+    {
+      "name": "skew-exactly-300-past",
+      "note": "Exactly 300 seconds old is still inside the window (absolute skew <= 300).",
+      "request": {
+        "method": "GET",
+        "path_and_query": "/api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "body": null,
+        "signed_string": "1793400000./api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "headers": {
+          "X-Witus-Source": "ride-witus",
+          "X-Witus-Timestamp": "1793400000",
+          "X-Witus-Signature": "sha256=3c650635d3404c0c89f4d25e0dafd17946148948eaff226f57c098e0fbc7c386"
+        }
+      },
+      "receiver": {
+        "secret": "test-only-vendor-secret-not-real-0123456789abcdef",
+        "expected_source": "ride-witus",
+        "now": 1793400300
+      },
+      "expect": {
+        "ok": true
+      }
+    },
+    {
+      "name": "skew-exactly-300-future",
+      "note": "Exactly 300 seconds ahead is still inside the window.",
+      "request": {
+        "method": "GET",
+        "path_and_query": "/api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "body": null,
+        "signed_string": "1793400000./api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "headers": {
+          "X-Witus-Source": "ride-witus",
+          "X-Witus-Timestamp": "1793400000",
+          "X-Witus-Signature": "sha256=3c650635d3404c0c89f4d25e0dafd17946148948eaff226f57c098e0fbc7c386"
+        }
+      },
+      "receiver": {
+        "secret": "test-only-vendor-secret-not-real-0123456789abcdef",
+        "expected_source": "ride-witus",
+        "now": 1793399700
+      },
+      "expect": {
+        "ok": true
+      }
+    }
+  ],
+  "must_reject": [
+    {
+      "name": "stale-timestamp",
+      "note": "301 seconds old: outside the 300-second window.",
+      "request": {
+        "method": "GET",
+        "path_and_query": "/api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "body": null,
+        "signed_string": "1793400000./api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "headers": {
+          "X-Witus-Source": "ride-witus",
+          "X-Witus-Timestamp": "1793400000",
+          "X-Witus-Signature": "sha256=3c650635d3404c0c89f4d25e0dafd17946148948eaff226f57c098e0fbc7c386"
+        }
+      },
+      "receiver": {
+        "secret": "test-only-vendor-secret-not-real-0123456789abcdef",
+        "expected_source": "ride-witus",
+        "now": 1793400301
+      },
+      "expect": {
+        "ok": false,
+        "reason": "stale_timestamp",
+        "status": 401
+      }
+    },
+    {
+      "name": "future-timestamp",
+      "note": "301 seconds in the future: rejected too (absolute skew).",
+      "request": {
+        "method": "GET",
+        "path_and_query": "/api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "body": null,
+        "signed_string": "1793400000./api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "headers": {
+          "X-Witus-Source": "ride-witus",
+          "X-Witus-Timestamp": "1793400000",
+          "X-Witus-Signature": "sha256=3c650635d3404c0c89f4d25e0dafd17946148948eaff226f57c098e0fbc7c386"
+        }
+      },
+      "receiver": {
+        "secret": "test-only-vendor-secret-not-real-0123456789abcdef",
+        "expected_source": "ride-witus",
+        "now": 1793399699
+      },
+      "expect": {
+        "ok": false,
+        "reason": "stale_timestamp",
+        "status": 401
+      }
+    },
+    {
+      "name": "edited-query",
+      "note": "witus_sub changed in flight; headers unchanged.",
+      "request": {
+        "method": "GET",
+        "path_and_query": "/api/v1/ride/vendors?witus_sub=SOMEONE_ELSE&q=shell&limit=50",
+        "body": null,
+        "signed_string": null,
+        "headers": {
+          "X-Witus-Source": "ride-witus",
+          "X-Witus-Timestamp": "1793400000",
+          "X-Witus-Signature": "sha256=3c650635d3404c0c89f4d25e0dafd17946148948eaff226f57c098e0fbc7c386"
+        }
+      },
+      "receiver": {
+        "secret": "test-only-vendor-secret-not-real-0123456789abcdef",
+        "expected_source": "ride-witus",
+        "now": 1793400000
+      },
+      "expect": {
+        "ok": false,
+        "reason": "signature_mismatch",
+        "status": 401
+      }
+    },
+    {
+      "name": "reordered-query",
+      "note": "Same parameters in another order: the signed string is the query exactly as sent, so this fails. Never rebuild the query on the receiver.",
+      "request": {
+        "method": "GET",
+        "path_and_query": "/api/v1/ride/vendors?q=shell&witus_sub=SUB_EXAMPLE&limit=50",
+        "body": null,
+        "signed_string": null,
+        "headers": {
+          "X-Witus-Source": "ride-witus",
+          "X-Witus-Timestamp": "1793400000",
+          "X-Witus-Signature": "sha256=3c650635d3404c0c89f4d25e0dafd17946148948eaff226f57c098e0fbc7c386"
+        }
+      },
+      "receiver": {
+        "secret": "test-only-vendor-secret-not-real-0123456789abcdef",
+        "expected_source": "ride-witus",
+        "now": 1793400000
+      },
+      "expect": {
+        "ok": false,
+        "reason": "signature_mismatch",
+        "status": 401
+      }
+    },
+    {
+      "name": "edited-body",
+      "note": "One scope changed in the POST body.",
+      "request": {
+        "method": "POST",
+        "path_and_query": "/api/v1/ride/resync",
+        "body": "{\"witus_sub\":\"SUB_EXAMPLE\",\"scopes\":[\"calendar\",\"matches\"],\"since\":\"2026-10-01\"}",
+        "signed_string": null,
+        "headers": {
+          "X-Witus-Source": "ride-witus",
+          "X-Witus-Timestamp": "1793400000",
+          "X-Witus-Signature": "sha256=e215daf6ae121a10469d46b86d1d79a9aaac469c9fe506255ea2de80022e901b"
+        }
+      },
+      "receiver": {
+        "secret": "test-only-resync-secret-not-real-0123456789abcdef",
+        "expected_source": "ride-witus",
+        "now": 1793400000
+      },
+      "expect": {
+        "ok": false,
+        "reason": "signature_mismatch",
+        "status": 401
+      }
+    },
+    {
+      "name": "reserialized-body",
+      "note": "Same JSON, different whitespace: the receiver must hash the raw bytes, not re-serialized JSON.",
+      "request": {
+        "method": "POST",
+        "path_and_query": "/api/v1/ride/resync",
+        "body": "{\n  \"witus_sub\": \"SUB_EXAMPLE\",\n  \"scopes\": [\n    \"calendar\",\n    \"envelopes\"\n  ],\n  \"since\": \"2026-10-01\"\n}",
+        "signed_string": null,
+        "headers": {
+          "X-Witus-Source": "ride-witus",
+          "X-Witus-Timestamp": "1793400000",
+          "X-Witus-Signature": "sha256=e215daf6ae121a10469d46b86d1d79a9aaac469c9fe506255ea2de80022e901b"
+        }
+      },
+      "receiver": {
+        "secret": "test-only-resync-secret-not-real-0123456789abcdef",
+        "expected_source": "ride-witus",
+        "now": 1793400000
+      },
+      "expect": {
+        "ok": false,
+        "reason": "signature_mismatch",
+        "status": 401
+      }
+    },
+    {
+      "name": "wrong-secret",
+      "note": "Signed with the vendor secret, checked with the resync secret (one secret per endpoint).",
+      "request": {
+        "method": "GET",
+        "path_and_query": "/api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "body": null,
+        "signed_string": "1793400000./api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "headers": {
+          "X-Witus-Source": "ride-witus",
+          "X-Witus-Timestamp": "1793400000",
+          "X-Witus-Signature": "sha256=3c650635d3404c0c89f4d25e0dafd17946148948eaff226f57c098e0fbc7c386"
+        }
+      },
+      "receiver": {
+        "secret": "test-only-resync-secret-not-real-0123456789abcdef",
+        "expected_source": "ride-witus",
+        "now": 1793400000
+      },
+      "expect": {
+        "ok": false,
+        "reason": "signature_mismatch",
+        "status": 401
+      }
+    },
+    {
+      "name": "wrong-slug",
+      "note": "Valid signature, but the source slug is not the one this endpoint expects.",
+      "request": {
+        "method": "GET",
+        "path_and_query": "/api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "body": null,
+        "signed_string": "1793400000./api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "headers": {
+          "X-Witus-Source": "work-witus",
+          "X-Witus-Timestamp": "1793400000",
+          "X-Witus-Signature": "sha256=3c650635d3404c0c89f4d25e0dafd17946148948eaff226f57c098e0fbc7c386"
+        }
+      },
+      "receiver": {
+        "secret": "test-only-vendor-secret-not-real-0123456789abcdef",
+        "expected_source": "ride-witus",
+        "now": 1793400000
+      },
+      "expect": {
+        "ok": false,
+        "reason": "wrong_source",
+        "status": 401
+      }
+    },
+    {
+      "name": "inbox-style-slug",
+      "note": "'centenarian-os' is the Inbox/Outbox slug; signed events use 'centenarianos' (witus lib/products.ts).",
+      "request": {
+        "method": "POST",
+        "path_and_query": "/api/events/calendar-activity",
+        "body": "{\"events\":[{\"event_id\":\"cal:0000000000000000000000000000000000000000000000000000000000000000\",\"event_type\":\"calendar.activity\",\"schema_version\":1,\"witus_sub\":\"SUB_EXAMPLE\",\"occurred_at\":\"2026-10-31T14:00:00.000Z\",\"starts_at\":\"2026-11-02T09:00:00-05:00\",\"ends_at\":\"2026-11-02T10:00:00-05:00\",\"all_day\":false,\"time_zone\":\"America/Indiana/Indianapolis\",\"title\":\"Café meeting\",\"location\":\"100 Main St\",\"calendar_label\":\"Work\",\"status\":\"confirmed\",\"trip_token\":null,\"is_active\":true}]}",
+        "signed_string": "1793400000.{\"events\":[{\"event_id\":\"cal:0000000000000000000000000000000000000000000000000000000000000000\",\"event_type\":\"calendar.activity\",\"schema_version\":1,\"witus_sub\":\"SUB_EXAMPLE\",\"occurred_at\":\"2026-10-31T14:00:00.000Z\",\"starts_at\":\"2026-11-02T09:00:00-05:00\",\"ends_at\":\"2026-11-02T10:00:00-05:00\",\"all_day\":false,\"time_zone\":\"America/Indiana/Indianapolis\",\"title\":\"Café meeting\",\"location\":\"100 Main St\",\"calendar_label\":\"Work\",\"status\":\"confirmed\",\"trip_token\":null,\"is_active\":true}]}",
+        "headers": {
+          "X-Witus-Source": "centenarian-os",
+          "X-Witus-Timestamp": "1793400000",
+          "X-Witus-Signature": "sha256=a0cd42fc64610258f551b1c1d3c490a27ef7a55d315f11199618de0979d03526"
+        }
+      },
+      "receiver": {
+        "secret": "test-only-calendar-secret-not-real-0123456789abcd",
+        "expected_source": "centenarianos",
+        "now": 1793400000
+      },
+      "expect": {
+        "ok": false,
+        "reason": "wrong_source",
+        "status": 401
+      }
+    },
+    {
+      "name": "bare-hex-signature",
+      "note": "The sha256= prefix is required between ecosystem apps (the Inbox also accepts bare hex; these receivers do not).",
+      "request": {
+        "method": "GET",
+        "path_and_query": "/api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "body": null,
+        "signed_string": "1793400000./api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "headers": {
+          "X-Witus-Source": "ride-witus",
+          "X-Witus-Timestamp": "1793400000",
+          "X-Witus-Signature": "3c650635d3404c0c89f4d25e0dafd17946148948eaff226f57c098e0fbc7c386"
+        }
+      },
+      "receiver": {
+        "secret": "test-only-vendor-secret-not-real-0123456789abcdef",
+        "expected_source": "ride-witus",
+        "now": 1793400000
+      },
+      "expect": {
+        "ok": false,
+        "reason": "bad_signature_format",
+        "status": 401
+      }
+    },
+    {
+      "name": "bad-timestamp",
+      "note": "Timestamp header is not an integer.",
+      "request": {
+        "method": "GET",
+        "path_and_query": "/api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "body": null,
+        "signed_string": "1793400000./api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "headers": {
+          "X-Witus-Source": "ride-witus",
+          "X-Witus-Timestamp": "not-a-number",
+          "X-Witus-Signature": "sha256=3c650635d3404c0c89f4d25e0dafd17946148948eaff226f57c098e0fbc7c386"
+        }
+      },
+      "receiver": {
+        "secret": "test-only-vendor-secret-not-real-0123456789abcdef",
+        "expected_source": "ride-witus",
+        "now": 1793400000
+      },
+      "expect": {
+        "ok": false,
+        "reason": "bad_timestamp",
+        "status": 401
+      }
+    },
+    {
+      "name": "missing-signature",
+      "note": "A required header is missing.",
+      "request": {
+        "method": "GET",
+        "path_and_query": "/api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "body": null,
+        "signed_string": "1793400000./api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "headers": {
+          "X-Witus-Source": "ride-witus",
+          "X-Witus-Timestamp": "1793400000"
+        }
+      },
+      "receiver": {
+        "secret": "test-only-vendor-secret-not-real-0123456789abcdef",
+        "expected_source": "ride-witus",
+        "now": 1793400000
+      },
+      "expect": {
+        "ok": false,
+        "reason": "missing_headers",
+        "status": 401
+      }
+    },
+    {
+      "name": "no-secret",
+      "note": "Secret unset on the receiver: a configuration error, answered 503 not_configured, not 401.",
+      "request": {
+        "method": "GET",
+        "path_and_query": "/api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "body": null,
+        "signed_string": "1793400000./api/v1/ride/vendors?witus_sub=SUB_EXAMPLE&q=shell&limit=50",
+        "headers": {
+          "X-Witus-Source": "ride-witus",
+          "X-Witus-Timestamp": "1793400000",
+          "X-Witus-Signature": "sha256=3c650635d3404c0c89f4d25e0dafd17946148948eaff226f57c098e0fbc7c386"
+        }
+      },
+      "receiver": {
+        "secret": null,
+        "expected_source": "ride-witus",
+        "now": 1793400000
+      },
+      "expect": {
+        "ok": false,
+        "reason": "no_secret",
+        "status": 503
+      }
+    }
+  ]
+}
