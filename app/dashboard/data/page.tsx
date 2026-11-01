@@ -132,7 +132,8 @@ const MODULES: ModuleCard[] = [
     description: 'Exercise library — instructions, cues, muscles, defaults',
   },
   // Media moved to Stream.WitUS (decomposition Stage 1): its import now returns 410,
-  // so the card is gone. Users export from the banner on /dashboard/media.
+  // so the card is gone. The note under the grid links to the read-only Media page,
+  // whose banner holds the export.
 ];
 
 export default function DataHubPage() {
@@ -240,6 +241,17 @@ export default function DataHubPage() {
           </div>
         ))}
       </div>
+
+      {/* Media left the nav when it moved to Stream.WitUS; this keeps the export findable. */}
+      <p className="text-sm text-gray-600">
+        Looking for Media? It moved to Stream.WitUS.{' '}
+        <Link
+          href="/dashboard/media"
+          className="inline-flex min-h-11 items-center font-semibold text-sky-700 underline underline-offset-2 hover:text-sky-800"
+        >
+          Download your media list
+        </Link>
+      </p>
     </div>
   );
 }
