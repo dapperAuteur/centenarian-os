@@ -71,7 +71,7 @@ When a change adds, alters, or removes an app feature, update the affected docs 
 
 ---
 
-<!-- BEGIN:witus-shared-rules v10 -->
+<!-- BEGIN:witus-shared-rules v11 -->
 <!-- MANAGED BLOCK — do not edit by hand. Source: gemini/witus/docs/shared-rules.md.
      Update the source, then run `node scripts/sync-claude-rules.mjs` in the witus repo. -->
 
@@ -97,6 +97,14 @@ Status` — the `Blocks` column is the one BAM scans. Ecosystem-wide tasks (Keap
 cross-product decisions) live in the canonical witus queue at `gemini/witus/plans/user-tasks/`;
 repo-local tasks live here. Read the witus queue at session start before dependent work. Full rule:
 `gemini/witus/CLAUDE.md` §"Operator-task rule".
+
+**Sync and check at session start and end (v11).** At the start and the end of every session, Claude
+runs `node /Users/bam/Code_NOiCloud/ai-builds/gemini/witus/scripts/sync-user-tasks.mjs --check`
+(read-only), moves every task listed as "Marked done on the site" to `completed/` and updates its index
+Status, then runs the sync without `--check` so https://www.witus.online/admin/tasks matches the queues.
+**"Merged" is not done until the production deploy is green:** a task whose last step is a merge stays
+open until /admin/tasks/deploys (or the repo's GitHub deployments) shows that app's newest Production
+deploy succeeded on `main`'s head; a failed or behind deploy reopens it with the failure in its Status.
 
 ## Branch hygiene — BAM merges, between sessions by default
 
@@ -209,7 +217,7 @@ Every repo deployed on Vercel with a Neon database through the Vercel-managed in
 3. The Vercel project's **Deployment Retention Policy → Pre-Production Deployments** set to the shortest duration (dashboard, per project).
 4. A branch created by hand for a preview or an experiment carries `expires_at` (Neon branch expiration, 30 days maximum); never create one without it.
 
-**Supabase repos** (CentenarianOS, Work.WitUS, Tour Manager OS, one shared project): no persistent branches; preview branches only through the GitHub integration, which deletes them when the PR closes. **MongoDB Atlas repos** (FlashLearnAI, bam-landing-page): the integration creates no per-preview resources; cost is the cluster tier, nothing to clean.
+**Supabase repos** (CentenarianOS and Work.WitUS share one project; Tour Manager OS has its own): no persistent branches; preview branches only through the GitHub integration, which deletes them when the PR closes. **MongoDB Atlas repos** (FlashLearnAI, bam-landing-page): the integration creates no per-preview resources; cost is the cluster tier, nothing to clean.
 
 **Claude's part:** when a session adds a Neon database to a repo, it adds the workflow in the same change and files the variable/secret step as an operator task. When a session sees preview branches older than the PR that made them (`npx neonctl branches list --project-id <id>`), it lists them for BAM instead of assuming the integration cleaned up. Source for the Neon behavior: https://neon.com/docs/guides/vercel-branch-cleanup (read 2026-10-15).
 
@@ -295,4 +303,4 @@ default Neon+Drizzle+pnpm+Vitest stack) are consolidated in `gemini/witus/docs/s
 Read it before writing UI or API code. Two repos are grandfathered on Supabase+Jest and documented
 there as exceptions.
 
-<!-- END:witus-shared-rules v10 -->
+<!-- END:witus-shared-rules v11 -->
