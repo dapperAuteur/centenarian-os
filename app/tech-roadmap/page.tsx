@@ -329,7 +329,7 @@ const PHASES: Phase[] = [
       { done: true, text: 'Life Retrospective: AI narrative synthesis across all modules' },
       { done: true, text: 'Google Calendar .ics import with pure-TS parser (no external deps)' },
       { done: true, text: 'Google Calendar one-way sync: several Google accounts, incremental sync tokens, daily cron + Sync now, events become planner tasks' },
-      { done: false, text: 'Calendar activity feed to RideWitUS: per-calendar opt-in, signed calendar.activity events for trip suggestions (built; live once migration 216, the env vars and the RideWitUS receiver are in place)' },
+      { done: false, text: 'Calendar activity feed to RideWitUS: per-calendar opt-in, signed calendar.activity events for trip suggestions, queued in the integration outbox so a RideWitUS outage does not lose changes, and re-sent by RideWitUS Sync now (built; live once migrations 216 and 217, the env vars and the RideWitUS receiver are in place)' },
       { done: true, text: 'In-app AI help assistant with RAG (retrieval-augmented generation)' },
       { done: true, text: 'Cross-module analytics dashboard with daily/weekly aggregate views' },
     ],

@@ -9,15 +9,16 @@
 //
 // Body: { witus_sub, scopes?: ('calendar' | 'matches' | 'envelopes')[], since? }
 //   No scopes = all. `since` is passed to scopes that can narrow by it
-//   (envelopes are current state and ignore it).
+//   (calendar re-sends events starting on or after it; envelopes are current
+//   state and ignore it).
 //
 // 202 { ok: true, data: { request_id, scopes: { <scope>: { status, queued, detail?, note? } },
 //       delivery: [{ receiver, sent, retrying, failed, skipped, note }] } }
 //     status: queued | nothing_to_send | error
 //       | skipped (note: not_configured when the receiver's URL/secret is unset,
 //         no_identity, savings_not_migrated, missing_table)
-//       | not_available (calendar until the calendar feed branch registers its handler;
-//         matches until cost.matched exists)
+//       | not_available (matches, until cost.matched exists)
+//       calendar also reports skipped with note migration_missing (216) or missing_table (217)
 // 400 invalid_body / invalid_subject / invalid_scope / invalid_since · 401 unauthorized
 // 404 unknown_subject · 429 rate_limited (one per user per 5 minutes; Retry-After header)
 // 503 not_configured (RIDE_RESYNC_SECRET unset)

@@ -664,11 +664,13 @@ export async function syncConnection(
     pushError(summary.errors, 'The sync ran, but its result could not be saved.');
   }
 
-  // The RideWitUS calendar feed: the rows this run wrote, for calendars the user shares. Never
+  // The RideWitUS calendar feed: the rows this run wrote, for calendars the user shares. Queued in
+  // integration_outbox and sent at once; anything not accepted is retried by the outbox. Never
   // throws; a delivery problem is logged by the emitter and does not change the sync result.
   if (touched.length > 0) {
     const feed = await emitChangedItems(db, conn.user_id, touched);
     if (feed.failed > 0) console.error(`${LABEL} ${feed.failed} calendar activity event(s) did not reach RideWitUS.`);
+    if (feed.retrying) console.warn(`${LABEL} ${feed.retrying} calendar activity event(s) queued in the outbox for a retry.`);
   }
   return summary;
 }

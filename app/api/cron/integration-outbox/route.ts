@@ -4,7 +4,8 @@
 //      for every user with a savings goal linked to a trip or equipment item,
 //      queue the current state (plus retirements). Skipped when the receiver's
 //      URL or secret is unset.
-//   2. Drain every due pending row in integration_outbox (retries included).
+//   2. Drain every due pending row in integration_outbox (retries included), for every
+//      receiver: envelope.balance and calendar.activity (lib/ridewitus/delivery.ts).
 //
 // Guard: Authorization: Bearer {CRON_SECRET}, the header Vercel Cron sends when
 // CRON_SECRET is set, same check as the other crons. Middleware does not cover

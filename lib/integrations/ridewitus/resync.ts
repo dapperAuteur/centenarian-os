@@ -8,9 +8,10 @@
 //   envelopes  every linked savings goal's envelope.balance, plus retirements
 //              (lib/integrations/ridewitus/envelope.ts). Current state, so
 //              `since` does not narrow it.
-//   calendar   the calendar activity feed (PRD §6.5a). Built on another
-//              branch: it registers its handler with registerResyncHandler('calendar', ...).
-//              Until then the scope answers not_available.
+//   calendar   the calendar activity feed (PRD §6.5a): every shared calendar's
+//              window (past 14 days, next 30), narrowed to events starting on or
+//              after `since` when it is given (lib/ridewitus/emit-calendar-activity.ts
+//              enqueueCalendarResync, receiver ridewitus.calendar_activity).
 //   matches    cost.matched (PRD §6.5). Not built yet: not_available.
 //
 // RATE LIMIT: one request per WitUS subject per 5 minutes (PRD §6.10). The
@@ -24,6 +25,7 @@
 
 import { isWitusSub } from '../../witus/identity.ts';
 import { ENVELOPE_RECEIVER, enqueueEnvelopeBalances } from './envelope.ts';
+import { CALENDAR_ACTIVITY_RECEIVER, enqueueCalendarResync } from '../../ridewitus/emit-calendar-activity.ts';
 import type { OutboxDb } from '../outbox.ts';
 
 export const RESYNC_SCOPES = ['calendar', 'matches', 'envelopes'] as const;
@@ -139,13 +141,31 @@ const envelopesHandler: ScopeHandler = async (ctx) => {
   };
 };
 
+const calendarHandler: ScopeHandler = async (ctx) => {
+  if (ctx.receiverReady && !ctx.receiverReady(CALENDAR_ACTIVITY_RECEIVER)) {
+    return { status: 'skipped', queued: 0, note: 'not_configured' };
+  }
+  const result = await enqueueCalendarResync(ctx.db, ctx.userId, ctx.witusSub, {
+    since: ctx.since,
+    now: ctx.now.getTime(),
+  });
+  if (result.skipped) {
+    return { status: result.skipped === 'error' ? 'error' : 'skipped', queued: 0, note: result.skipped };
+  }
+  return {
+    status: result.queued ? 'queued' : 'nothing_to_send',
+    queued: result.queued,
+    detail: { calendars: result.calendars },
+  };
+};
+
 const handlers: Partial<Record<ResyncScope, ScopeHandler>> = {
   envelopes: envelopesHandler,
-  // calendar: registered by the calendar activity feed (PRD §6.5a) via registerResyncHandler.
+  calendar: calendarHandler,
   // matches:  cost.matched (PRD §6.5) is not built yet.
 };
 
-/** For other modules (the calendar activity feed) to plug their re-send into "Sync now". */
+/** For other modules to plug their re-send into "Sync now" (and tests to stub one). */
 export function registerResyncHandler(scope: ResyncScope, handler: ScopeHandler): void {
   handlers[scope] = handler;
 }
