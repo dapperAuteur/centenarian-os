@@ -92,11 +92,10 @@ export default function MediaDetailPage() {
   const [loading, setLoading] = useState(true);
 
   // Social state
-  const [liked, setLiked] = useState(false);
+  // Counts are display-only: liking or sharing a media item was a media write.
   const [likeCount, setLikeCount] = useState(0);
   const [shareCount, setShareCount] = useState(0);
   const [visibility, setVisibility] = useState('private');
-  const [copiedLink, setCopiedLink] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -118,7 +117,6 @@ export default function MediaDetailPage() {
       }
       if (likeRes.ok) {
         const d = await likeRes.json();
-        setLiked(!!d.liked);
         setLikeCount(d.like_count ?? 0);
       }
     } catch { /* handled */ }
@@ -126,34 +124,6 @@ export default function MediaDetailPage() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
-
-  const handleLike = async () => {
-    const res = await offlineFetch('/api/social/likes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entity_type: 'media_item', entity_id: id }),
-    });
-    if (res.ok) {
-      const d = await res.json();
-      setLiked(d.liked);
-      setLikeCount(d.like_count);
-    }
-  };
-
-  const handleShare = async () => {
-    const url = `${window.location.origin}/dashboard/discover/media/${id}`;
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch { /* fallback ignored */ }
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
-    await offlineFetch('/api/social/shares', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entity_type: 'media_item', entity_id: id, platform: 'link' }),
-    });
-    setShareCount((c) => c + 1);
-  };
 
   if (loading) {
     return (
@@ -308,20 +278,14 @@ export default function MediaDetailPage() {
               : <Lock className="w-3.5 h-3.5" aria-hidden="true" />}
             {visibility === 'public' ? 'Public' : 'Private'}
           </span>
-          <button onClick={handleLike}
-            aria-label={liked ? 'Unlike' : 'Like'}
-            className={`flex items-center gap-1.5 px-3 min-h-11 rounded-lg text-sm font-medium transition ${
-              liked ? 'bg-red-50 text-red-500' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-            }`}>
-            <Heart className={`w-3.5 h-3.5 ${liked ? 'fill-current' : ''}`} />
-            {likeCount}
-          </button>
-          <button onClick={handleShare}
-            aria-label="Share"
-            className="flex items-center gap-1.5 px-3 min-h-11 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium transition">
-            <Share2 className="w-3.5 h-3.5" />
-            {copiedLink ? 'Copied!' : shareCount}
-          </button>
+          <span className="flex items-center gap-1.5 px-3 min-h-11 bg-gray-50 text-gray-600 rounded-lg text-sm font-medium">
+            <Heart className="w-3.5 h-3.5" aria-hidden="true" />
+            {likeCount} {likeCount === 1 ? 'like' : 'likes'}
+          </span>
+          <span className="flex items-center gap-1.5 px-3 min-h-11 bg-gray-50 text-gray-600 rounded-lg text-sm font-medium">
+            <Share2 className="w-3.5 h-3.5" aria-hidden="true" />
+            {shareCount} {shareCount === 1 ? 'share' : 'shares'}
+          </span>
         </div>
       </div>
 
