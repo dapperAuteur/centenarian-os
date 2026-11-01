@@ -278,14 +278,14 @@ test('ResyncRateLimiter: one per key per window', () => {
   assert.deepEqual(limiter.check('sub-me', 300_000), { ok: true });
 });
 
-test('runResync: envelopes re-queued, calendar and matches not available yet', async () => {
+test('runResync: envelopes re-queued, calendar has nothing shared, matches not available yet', async () => {
   const db = seed();
   const report = await runResync(
     { db, userId: ME, witusSub: 'sub-me', since: null, origin: ORIGIN, now: NOW, receiverReady: () => true },
     ['envelopes', 'calendar', 'matches'],
   );
   assert.deepEqual(report.envelopes, { status: 'queued', queued: 2, detail: { active: 2, retired: 0 } });
-  assert.equal(report.calendar.status, 'not_available');
+  assert.deepEqual(report.calendar, { status: 'nothing_to_send', queued: 0, detail: { calendars: 0 } });
   assert.equal(report.matches.status, 'not_available');
   assert.equal(db.rows('integration_outbox').length, 2);
 });

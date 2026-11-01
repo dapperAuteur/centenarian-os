@@ -296,7 +296,7 @@ test('missing env: not configured, nothing sent', async () => {
   const none = httpActivityDelivery({ url: '', secret: 'x', fetchImpl });
   assert.equal(none.configured, false);
   assert.deepEqual(await none.deliver(sample(1)), { ok: true, sent: 0, failed: 0, skipped: 'not_configured' });
-  assert.equal(defaultActivityDelivery({}).configured, false);
+  assert.equal(defaultActivityDelivery(null, {}).configured, false);
   assert.equal(calls, 0);
 });
 

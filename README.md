@@ -409,9 +409,14 @@ switched-on calendar has two switches on the settings page, both off by default:
 events too), start within the past 14 / next 30 days, `event_id` = `cal:` + SHA-256 of the sync row
 id, and never the description, attendees, meeting links or Google ids. Switching sharing on (or
 changing Hide titles) sends the calendar's window; switching it off sends `is_active: false` for
-the calendar's events; an event whose location is removed is retracted the same way. Delivery is a
-signed POST (`X-Witus-*`, source `centenarianos`, batches of 500, 3 attempts) behind the
-`ActivityDelivery` interface in `lib/ridewitus/delivery.ts`; the identity is the user's
+the calendar's events; an event whose location is removed is retracted the same way. Delivery goes
+through the `integration_outbox` table (migration 217, receiver `ridewitus.calendar_activity`): each
+event is queued (one row per event, the newest payload wins), then sent at once as a signed POST
+(`X-Witus-*`, source `centenarianos`, batches of 500, two quick retries). Anything RideWitUS does not
+accept stays pending and is retried on the outbox backoff by the next write or the daily cron
+`/api/cron/integration-outbox`, so an outage during a sync loses nothing. Without migration 217 it
+falls back to the direct signed POST (`lib/ridewitus/delivery.ts`). RideWitUS "Sync now" with scope
+`calendar` re-queues every shared calendar's window, narrowed by `since`. The identity is the user's
 `witus_identities.witus_sub` (users who never signed in with WitUS send nothing). Without the two
 env vars below nothing is sent and nothing else changes.
 
@@ -480,6 +485,12 @@ sends). A **GET signs its path and query string** exactly as sent (for example
 `/api/v1/ride/vendors?witus_sub=abc&q=shell`), so the subject cannot be edited in flight. Each
 secret is shared with RideWitUS under the same name, and each can be rotated alone.
 
+The full contract (every endpoint and event in both directions, error codes, env names per app) is
+tracked at `docs/integrations/ridewitus-contract.md`. The shared signing test vectors are
+`tests/fixtures/witus-signing-vectors.json` (`tests/unit/witus-signing-vectors.test.ts`): this repo
+holds the source of truth and RideWitUS keeps a byte-identical copy, so a signing drift between the
+two apps fails a test instead of a production request.
+
 The user is identified by `witus_sub`, the WitUS sign-in subject, resolved through
 `witus_identities` (`lib/witus/identity.ts`). A subject with no row (the person never signed in to
 CentenarianOS with WitUS) gets `404 unknown_subject`; RideWitUS keeps its request queued until they do.
@@ -489,7 +500,7 @@ CentenarianOS with WitUS) gets `404 unknown_subject`; RideWitUS keeps its reques
 | `GET /api/v1/ride/vendors?witus_sub=&q=&limit=&offset=&since=` | The user's vendors (`user_contacts`, type vendor): id, name, company, category, phone, website, city, locations (no coordinates), and with `since` up to 10 recent `item_prices` each. Paginated with `next_offset`; returns `create_vendor_url`, a link to `/dashboard/contacts/new?type=vendor&name=…`. Read-only: RideWitUS never creates vendors (PRD Q14) |
 | `GET /api/v1/ride/vendors/[id]?witus_sub=&since=` | One vendor; `404 not_found` when it is not this user's |
 | `GET /api/v1/ride/vendors/[id]/prices?witus_sub=&since=&limit=` | Recent prices at that vendor (`currency: null`: prices store no currency yet) |
-| `POST /api/v1/ride/resync` `{ witus_sub, scopes?, since? }` | Re-sends this user's facts through the outbox. `envelopes` works today; `calendar` is a hook for the calendar feed; `matches` is not built. One per user per 5 minutes (429 + `Retry-After`). Answers `202` with a `request_id` and per-scope counts |
+| `POST /api/v1/ride/resync` `{ witus_sub, scopes?, since? }` | Re-sends this user's facts through the outbox. `envelopes` (current goals) and `calendar` (every shared calendar's window, events starting on or after `since`) work; `matches` is not built. One per user per 5 minutes (429 + `Retry-After`). Answers `202` with a `request_id` and per-scope counts |
 
 Responses use `{ ok: true, data } | { ok: false, error, code }`. Missing secret: `503 not_configured`.
 

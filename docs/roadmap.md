@@ -3,7 +3,7 @@ app: centenarianos
 name: CentenarianOS
 stage: live
 url: https://www.centenarianos.com
-updated: 2026-10-31
+updated: 2026-11-01
 ---
 
 ## Live now
@@ -18,11 +18,11 @@ updated: 2026-10-31
 ## In progress
 - Decomposition into one job per app (plan 49): Work.WitUS separation is partly done (plan 55)
 - Media to Stream.WitUS (plan 49, Stage 1): export in 500-row parts for Stream's import limit, no likes or shares on media, export link on the Data Hub (branch feat/media-retire-to-stream); then a production export and import hand check (witus task 146)
+- RideWitUS endpoints and events (plan 70, wave 1): tracked contract at docs/integrations/ridewitus-contract.md with shared signing test vectors; the calendar activity feed now goes through the outbox (retried when RideWitUS is down) and RideWitUS Sync now can re-send calendar events
 
 ## Next
 - Confirm the Work.WitUS database separation and update the database section of this repo's docs
 - Refreshed Phase 3 plan for the Work.WitUS table move (plan 55)
-- Endpoints and events RideWitUS needs before the travel module moves (RideWitUS plan 02)
 
 ## Backlog
 - Academy courses move to Learn.WitUS (plan 49, Stage 3)
