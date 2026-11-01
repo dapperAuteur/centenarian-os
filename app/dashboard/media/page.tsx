@@ -77,8 +77,15 @@ export default function MediaHubPage() {
         setTotal(d.total || 0);
       }
       if (summaryRes.ok) {
+        // /api/media/summary answers { total, by_status, favorites_count, average_rating }.
         const d = await summaryRes.json();
-        setSummary(d);
+        setSummary({
+          totalItems: d.total ?? 0,
+          inProgress: d.by_status?.in_progress ?? 0,
+          completed: d.by_status?.completed ?? 0,
+          favorites: d.favorites_count ?? 0,
+          avgRating: d.average_rating ?? null,
+        });
       }
     } catch { /* handled */ }
     finally { setLoading(false); }
@@ -116,7 +123,7 @@ export default function MediaHubPage() {
         </div>
       </div>
 
-      <MovedToStreamBanner />
+      <MovedToStreamBanner totalItems={summary?.totalItems} />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">

@@ -6,9 +6,11 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data: items, error } = await supabase
+  // `count: 'exact'` gives the true total even past Supabase's 1,000-row response cap.
+  // The media page uses it to split the Stream.WitUS export into 500-row parts.
+  const { data: items, count, error } = await supabase
     .from('media_items')
-    .select('media_type, status, rating, is_favorite')
+    .select('media_type, status, rating, is_favorite', { count: 'exact' })
     .eq('user_id', user.id)
     .eq('is_active', true);
 
@@ -39,7 +41,7 @@ export async function GET() {
   const favoritesCount = all.filter((i) => i.is_favorite).length;
 
   return NextResponse.json({
-    total: all.length,
+    total: count ?? all.length,
     by_type: byType,
     by_status: byStatus,
     average_rating: averageRating,
