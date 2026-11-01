@@ -9,13 +9,21 @@
 //   emitStopSharing    sharing switched off: is_active false for every row of that calendar that
 //                      has a location
 //
+//   enqueueCalendarResync  RideWitUS "Sync now" with scope `calendar` (lib/integrations/ridewitus/
+//                      resync.ts): every shared calendar's window, narrowed by `since`, queued only
+//                      (the resync route drains after all scopes)
+//
+// Delivery goes through integration_outbox (lib/ridewitus/delivery.ts, outboxActivityDelivery), so
+// a RideWitUS outage during a sync leaves rows pending for a retry instead of losing them.
+//
 // Every function is a no-op (and reads nothing) when the delivery is not configured, returns a
 // summary instead of throwing, and skips quietly when migration 216 is not applied or the user
 // has never signed in with WitUS (no witus_sub to send).
 //
 // `db` must be a SERVICE-ROLE client; every query is scoped by user_id.
+//
+// Relative ".ts" imports and no '@/' so node --test loads it (tests/unit/calendar-outbox.test.ts).
 
-import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   activityWindow,
   buildStopSharing,
@@ -23,9 +31,17 @@ import {
   eventsForChangedItems,
   type ActivityCalendar,
   type ActivityItem,
-} from '@/lib/ridewitus/calendar-activity';
-import { defaultActivityDelivery, type ActivityDelivery } from '@/lib/ridewitus/delivery';
-import { witusSubForUser } from '@/lib/ridewitus/witus-sub';
+  type CalendarActivityEvent,
+} from './calendar-activity.ts';
+import { CALENDAR_ACTIVITY_RECEIVER, defaultActivityDelivery, outboxRows, type ActivityDelivery } from './delivery.ts';
+import { witusSubForUser } from './witus-sub.ts';
+import { enqueue } from '../integrations/outbox.ts';
+
+/** The Supabase client calls this file makes (a SupabaseClient fits; tests pass an in-memory fake). */
+export interface CalendarDb {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  from(table: string): any;
+}
 
 const LABEL = '[lib/ridewitus/emit-calendar-activity]';
 const ITEM_COLUMNS =
@@ -41,6 +57,8 @@ export type EmitSkip = 'not_configured' | 'migration_missing' | 'no_witus_sub' |
 export interface EmitSummary {
   sent: number;
   failed: number;
+  /** Queued in the outbox but not accepted yet; the outbox retries them. */
+  retrying?: number;
   skipped?: EmitSkip;
 }
 
@@ -62,11 +80,11 @@ function isMissingColumn(error: DbError | null | undefined): boolean {
 const calendarKey = (connectionId: string | null | undefined, calendarId: string) => `${connectionId ?? ''}|${calendarId}`;
 
 async function prepare(
-  db: SupabaseClient,
+  db: CalendarDb,
   userId: string,
   options: EmitOptions,
 ): Promise<{ delivery: ActivityDelivery; witusSub: string; now: number } | EmitSummary> {
-  const delivery = options.delivery ?? defaultActivityDelivery();
+  const delivery = options.delivery ?? defaultActivityDelivery({ db, userId });
   if (!delivery.configured) return { sent: 0, failed: 0, skipped: 'not_configured' };
   const witusSub = await witusSubForUser(db, userId);
   if (!witusSub) return { sent: 0, failed: 0, skipped: 'no_witus_sub' };
@@ -76,12 +94,17 @@ async function prepare(
 async function deliver(delivery: ActivityDelivery, events: Parameters<ActivityDelivery['deliver']>[0]): Promise<EmitSummary> {
   if (events.length === 0) return { sent: 0, failed: 0, skipped: 'nothing_to_send' };
   const result = await delivery.deliver(events);
-  return { sent: result.sent, failed: result.failed, ...(result.skipped ? { skipped: result.skipped } : {}) };
+  return {
+    sent: result.sent,
+    failed: result.failed,
+    ...(result.retrying ? { retrying: result.retrying } : {}),
+    ...(result.skipped ? { skipped: result.skipped } : {}),
+  };
 }
 
 /** Events for rows the sync just wrote. Called by syncConnection after it has saved its results. */
 export async function emitChangedItems(
-  db: SupabaseClient,
+  db: CalendarDb,
   userId: string,
   itemIds: string[],
   options: EmitOptions = {},
@@ -130,7 +153,7 @@ export async function emitChangedItems(
 }
 
 async function readCalendar(
-  db: SupabaseClient,
+  db: CalendarDb,
   userId: string,
   connectionId: string,
   calendarId: string,
@@ -147,9 +170,43 @@ async function readCalendar(
   return (data as ActivityCalendar | null) ?? null;
 }
 
+/**
+ * The calendar's rows with a location that start in [fromMs, toMs]. 'missing' when migration 216's
+ * columns are not there. Rows left behind by a disconnected account are not this calendar's.
+ */
+async function readWindowItems(
+  db: CalendarDb,
+  userId: string,
+  connectionId: string | null | undefined,
+  calendarId: string,
+  fromMs: number,
+  toMs: number,
+): Promise<ActivityItem[] | 'missing'> {
+  const items: ActivityItem[] = [];
+  if (fromMs > toMs) return items;
+  for (let offset = 0; offset < MAX_ROWS; offset += PAGE) {
+    const { data, error } = await db
+      .from('calendar_sync_items')
+      .select(ITEM_COLUMNS)
+      .eq('user_id', userId)
+      .eq('calendar_id', calendarId)
+      .not('location', 'is', null)
+      .gte('starts_at', new Date(fromMs).toISOString())
+      .lte('starts_at', new Date(toMs).toISOString())
+      .order('starts_at', { ascending: true })
+      .range(offset, offset + PAGE - 1);
+    if (isMissingColumn(error)) return 'missing';
+    if (error) throw new Error(error.message);
+    const rows = (data as ActivityItem[] | null) ?? [];
+    items.push(...rows.filter((row) => row.connection_id === connectionId));
+    if (rows.length < PAGE) break;
+  }
+  return items;
+}
+
 /** Sharing switched on, or "Hide titles" changed: send the calendar's qualifying rows in the window. */
 export async function emitCalendarWindow(
-  db: SupabaseClient,
+  db: CalendarDb,
   userId: string,
   connectionId: string,
   calendarId: string,
@@ -163,25 +220,8 @@ export async function emitCalendarWindow(
     if (!calendar?.share_with_ridewitus) return { sent: 0, failed: 0, skipped: 'nothing_to_send' };
 
     const { from, to } = activityWindow(ready.now);
-    const items: ActivityItem[] = [];
-    for (let offset = 0; offset < MAX_ROWS; offset += PAGE) {
-      const { data, error } = await db
-        .from('calendar_sync_items')
-        .select(ITEM_COLUMNS)
-        .eq('user_id', userId)
-        .eq('calendar_id', calendarId)
-        .not('location', 'is', null)
-        .gte('starts_at', new Date(from).toISOString())
-        .lte('starts_at', new Date(to).toISOString())
-        .order('starts_at', { ascending: true })
-        .range(offset, offset + PAGE - 1);
-      if (isMissingColumn(error)) return { sent: 0, failed: 0, skipped: 'migration_missing' };
-      if (error) throw new Error(error.message);
-      const rows = (data as ActivityItem[] | null) ?? [];
-      // Rows left behind by a disconnected account (connection_id null) are not this calendar's any more.
-      items.push(...rows.filter((row) => row.connection_id === connectionId));
-      if (rows.length < PAGE) break;
-    }
+    const items = await readWindowItems(db, userId, connectionId, calendarId, from, to);
+    if (items === 'missing') return { sent: 0, failed: 0, skipped: 'migration_missing' };
 
     return await deliver(ready.delivery, eventsForCalendarWindow(items, calendar, ready.witusSub, ready.now));
   } catch (err) {
@@ -196,7 +236,7 @@ export async function emitCalendarWindow(
  * deletes the unconfirmed suggestions built from them; confirmed trips stay.
  */
 export async function emitStopSharing(
-  db: SupabaseClient,
+  db: CalendarDb,
   userId: string,
   connectionId: string,
   calendarId: string,
@@ -229,3 +269,68 @@ export async function emitStopSharing(
     return { sent: 0, failed: 0, skipped: 'error' };
   }
 }
+
+export type ResyncSkip = 'migration_missing' | 'missing_table' | 'error';
+
+export interface CalendarResyncResult {
+  /** Events written to integration_outbox. */
+  queued: number;
+  /** Shared calendars read. */
+  calendars: number;
+  skipped?: ResyncSkip;
+  error?: string;
+}
+
+/** `since` ('YYYY-MM-DD' or ISO) as a start-time floor in ms, or null when absent or unreadable. */
+export function sinceFloor(since: string | null | undefined): number | null {
+  if (!since) return null;
+  const ms = Date.parse(since);
+  return Number.isNaN(ms) ? null : ms;
+}
+
+/**
+ * RideWitUS "Sync now", scope `calendar`: re-queue every shared calendar's qualifying rows in the
+ * window (past 14 days, next 30), only those starting on or after `since` when it is given. Queues
+ * only: the resync route drains after all scopes. Same event_ids as live sends, so RideWitUS upserts
+ * the same rows. The caller already resolved witusSub and checked the receiver is configured.
+ */
+export async function enqueueCalendarResync(
+  db: CalendarDb,
+  userId: string,
+  witusSub: string,
+  options: { since?: string | null; now?: number } = {},
+): Promise<CalendarResyncResult> {
+  const now = options.now ?? Date.now();
+  try {
+    const { data: calRows, error: calError } = await db
+      .from('calendar_sync_calendars')
+      .select(CALENDAR_COLUMNS)
+      .eq('user_id', userId)
+      .eq('share_with_ridewitus', true);
+    if (isMissingColumn(calError)) return { queued: 0, calendars: 0, skipped: 'migration_missing' };
+    if (calError) throw new Error(calError.message);
+    const calendars = (calRows as ActivityCalendar[] | null) ?? [];
+
+    const window = activityWindow(now);
+    const floor = sinceFloor(options.since);
+    const from = floor === null ? window.from : Math.max(window.from, floor);
+
+    const events: CalendarActivityEvent[] = [];
+    for (const calendar of calendars) {
+      const items = await readWindowItems(db, userId, calendar.connection_id, calendar.calendar_id, from, window.to);
+      if (items === 'missing') return { queued: 0, calendars: 0, skipped: 'migration_missing' };
+      events.push(...eventsForCalendarWindow(items, calendar, witusSub, now));
+    }
+    if (events.length === 0) return { queued: 0, calendars: calendars.length };
+
+    const result = await enqueue(db, outboxRows(userId, events), new Date(now));
+    if (result.missingTable) return { queued: 0, calendars: calendars.length, skipped: 'missing_table' };
+    if (result.error) return { queued: 0, calendars: calendars.length, skipped: 'error', error: result.error };
+    return { queued: result.queued, calendars: calendars.length };
+  } catch (err) {
+    console.error(`${LABEL} enqueueCalendarResync failed:`, err instanceof Error ? err.message : err);
+    return { queued: 0, calendars: 0, skipped: 'error', error: 'read failed' };
+  }
+}
+
+export { CALENDAR_ACTIVITY_RECEIVER };

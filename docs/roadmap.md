@@ -18,7 +18,7 @@ updated: 2026-11-01
 ## In progress
 - Decomposition into one job per app (plan 49): Work.WitUS separation is partly done (plan 55)
 - Media to Stream.WitUS (plan 49, Stage 1): export in 500-row parts for Stream's import limit, no likes or shares on media, export link on the Data Hub (branch feat/media-retire-to-stream); then a production export and import hand check (witus task 146)
-- RideWitUS endpoints and events (plan 70, wave 1): tracked contract at docs/integrations/ridewitus-contract.md with shared signing test vectors
+- RideWitUS endpoints and events (plan 70, wave 1): tracked contract at docs/integrations/ridewitus-contract.md with shared signing test vectors; the calendar activity feed now goes through the outbox (retried when RideWitUS is down) and RideWitUS Sync now can re-send calendar events
 
 ## Next
 - Confirm the Work.WitUS database separation and update the database section of this repo's docs

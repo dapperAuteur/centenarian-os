@@ -80,9 +80,9 @@ Status key: **Built** = on CentOS `main`. **Gap** = built but missing a piece. *
 | E1 | Vendors list | RideWitUS → CentOS (pull) | `GET /api/v1/ride/vendors?witus_sub=&q=&limit=&offset=&since=` | `RIDE_VENDOR_API_SECRET` | None on CentOS; RideWitUS debounces typing (300 ms) and times out at 4 s | Built | 1f |
 | E2 | One vendor | RideWitUS → CentOS | `GET /api/v1/ride/vendors/:id?witus_sub=&since=` | same | same | Built | 1f |
 | E3 | Vendor prices | RideWitUS → CentOS | `GET /api/v1/ride/vendors/:id/prices?witus_sub=&since=&limit=` | same | same | Built | 1f |
-| E4 | Sync now | RideWitUS → CentOS | `POST /api/v1/ride/resync` | `RIDE_RESYNC_SECRET` | 1 per user per 5 min, both sides | Gap: `calendar` scope not registered; `matches` not built | 2d |
+| E4 | Sync now | RideWitUS → CentOS | `POST /api/v1/ride/resync` | `RIDE_RESYNC_SECRET` | 1 per user per 5 min, both sides | Gap: `envelopes` and `calendar` built; `matches` not built | 2d |
 | E5 | `envelope.balance` | CentOS → RideWitUS (push) | `POST <ENVELOPE_BALANCE_EVENTS_URL>` = RideWitUS `/api/events/envelope-balance` | `ENVELOPE_BALANCE_EVENTS_SECRET` | Outbox: 500 per request | Built (sender); receiver New | 2b |
-| E6 | `calendar.activity` | CentOS → RideWitUS | `POST <RIDEWITUS_CALENDAR_ACTIVITY_URL>` = RideWitUS `/api/events/calendar-activity` | `CALENDAR_ACTIVITY_EVENTS_SECRET` | 500 per request | Gap: direct POST, not the outbox; receiver New | 2b, 2c |
+| E6 | `calendar.activity` | CentOS → RideWitUS | `POST <RIDEWITUS_CALENDAR_ACTIVITY_URL>` = RideWitUS `/api/events/calendar-activity` | `CALENDAR_ACTIVITY_EVENTS_SECRET` | 500 per request | Built (sender, on the outbox); receiver New | 2b, 2c |
 | E7 | `cost.matched` | CentOS → RideWitUS | `POST <FINANCE_MATCH_EVENTS_URL>` = RideWitUS `/api/events/finance-match` | `FINANCE_MATCH_EVENTS_SECRET` | 500 per request | New (both sides) | 2b |
 | E8 | `trip.summary` | RideWitUS → CentOS | `POST /api/events/mobility-activity` | `MOBILITY_ACTIVITY_EVENTS_SECRET` | 500 per request | New (both sides) | 2a exit, Stage 4 |
 | E9 | `trip.plan`, `forecast.item`, `vehicle.snapshot`, `cost.recorded` | RideWitUS → CentOS | `POST /api/events/mobility-cost` | `MOBILITY_COST_EVENTS_SECRET` | 500 per request | New (both sides) | 2a exit, Stage 4 |
@@ -182,10 +182,13 @@ shared calendars only (off by default), a location required, past 14 and next 30
 `travel_hint` field (CentOS plan 66) may be added at `schema_version` 1, so the receiver must ignore
 unknown fields.
 
-Delivery today: a direct signed POST after each sync with two in-request retries
-(`lib/ridewitus/delivery.ts`). If RideWitUS is down during a sync, those changes wait for the next sync
-that touches the row. Moving it onto `integration_outbox` (receiver key `ridewitus.calendar_activity`, env
-names unchanged) is the next CentOS branch.
+Delivery: through `integration_outbox` (receiver key `ridewitus.calendar_activity`, migration 217, env
+names unchanged; `lib/ridewitus/delivery.ts` `outboxActivityDelivery`). After each sync, sharing change
+or retraction, the events are queued (one row per `event_id`, the newest payload wins) and that user's
+due rows are sent at once. Rows RideWitUS does not accept stay pending on the outbox backoff (1 min,
+5 min, 30 min, 2 h, 12 h, then `failed`; `unknown_subject` never fails) and go out with the next write or
+the daily cron. Without migration 217 the sender falls back to a direct signed POST. "Sync now" with
+scope `calendar` re-queues the shared calendars' window, narrowed by `since`.
 
 ### E7. `cost.matched`
 

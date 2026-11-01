@@ -48,13 +48,19 @@ export interface ReceiverSpec {
 
 /**
  * Every receiver CentenarianOS sends to. Names follow RideWitUS PRD §6.5: one
- * secret per receiver so either can be rotated alone.
- * The calendar activity feed (PRD §6.5a) adds 'ridewitus.calendar_activity' here.
+ * secret per receiver so either can be rotated alone. Contract:
+ * docs/integrations/ridewitus-contract.md.
  */
 export const RECEIVERS: Readonly<Record<string, ReceiverSpec>> = {
   'ridewitus.envelope_balance': {
     urlEnv: 'ENVELOPE_BALANCE_EVENTS_URL',
     secretEnv: 'ENVELOPE_BALANCE_EVENTS_SECRET',
+  },
+  // The calendar activity feed (PRD §6.5a, lib/ridewitus/). Env names kept from the direct-POST
+  // delivery it replaced, so nothing changes on either deployment.
+  'ridewitus.calendar_activity': {
+    urlEnv: 'RIDEWITUS_CALENDAR_ACTIVITY_URL',
+    secretEnv: 'CALENDAR_ACTIVITY_EVENTS_SECRET',
   },
 };
 
