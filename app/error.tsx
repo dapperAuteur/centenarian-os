@@ -16,19 +16,21 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { logError } from '@/lib/error-logging';
+import SiteHeader from '@/components/SiteHeader';
+import SiteFooter from '@/components/ui/SiteFooter';
 
 interface ErrorProps {
   error: Error & { digest?: string };
   reset: () => void;
 }
 
-export default function RootError({ error, reset }: ErrorProps) {
+function ErrorContent({ error, reset }: ErrorProps) {
   useEffect(() => {
     logError(error, { module: 'app-root-boundary', digest: error.digest });
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-[60vh] bg-gray-50 flex flex-col items-center justify-center px-4 py-12">
       <div className="text-center max-w-md">
         <div className="mx-auto w-16 h-16 rounded-full bg-fuchsia-100 flex items-center justify-center mb-6">
           <AlertTriangle className="w-8 h-8 text-fuchsia-600" aria-hidden="true" />
@@ -61,6 +63,20 @@ export default function RootError({ error, reset }: ErrorProps) {
           </Link>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Error pages keep the app shell (witus docs/shared-ui-ux-dx.md): the root layout renders no
+// header, so the error boundary renders the public header (with its sign-in link) and the footer.
+export default function RouteError(props: { error: Error & { digest?: string }; reset: () => void }) {
+  return (
+    <div className="min-h-screen flex flex-col">
+      <SiteHeader />
+      <main id="main-content" className="flex-1">
+        <ErrorContent {...props} />
+      </main>
+      <SiteFooter />
     </div>
   );
 }

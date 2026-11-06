@@ -82,6 +82,17 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
             >
               Reload
             </button>
+            {/* The root layout and its header failed, so this shell carries home and sign-in links. */}
+            <p style={{ marginTop: '1.5rem', fontSize: '0.875rem' }}>
+              {/* A full reload is the point: the crashed layout must be fetched again. */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+              <a href="/" style={{ color: '#0369a1', marginRight: '1rem' }}>
+                Go home
+              </a>
+              <a href="/login" style={{ color: '#0369a1' }}>
+                Sign in
+              </a>
+            </p>
           </div>
         </div>
       </body>
