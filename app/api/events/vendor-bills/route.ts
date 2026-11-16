@@ -35,6 +35,7 @@ interface VendorBillPayload {
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() !== '' ? v.trim() : null);
 
 export async function POST(request: NextRequest) {
@@ -52,6 +53,12 @@ export async function POST(request: NextRequest) {
   }
   const owner = str(process.env.VENDOR_BILLS_OWNER_USER_ID);
   if (!owner) return NextResponse.json({ error: 'VENDOR_BILLS_OWNER_USER_ID is not set' }, { status: 503 });
+  // vendor_bills.user_id references auth.users(id). A value that is not a UUID (a username, a profile
+  // handle, a pasted command) would fail inside Postgres as "Upsert failed" with no hint; say so here.
+  if (!UUID_RE.test(owner)) {
+    logWarn({ source: 'api', module: 'events/vendor-bills', message: 'VENDOR_BILLS_OWNER_USER_ID is not a UUID' });
+    return NextResponse.json({ error: 'VENDOR_BILLS_OWNER_USER_ID is not a UUID (it must be the owner\'s auth.users id)' }, { status: 503 });
+  }
 
   let body: { events?: VendorBillPayload[] } | VendorBillPayload;
   try {
@@ -105,8 +112,11 @@ export async function POST(request: NextRequest) {
 
   const { error } = await serviceClient().from('vendor_bills').upsert(rows, { onConflict: 'user_id,event_id' });
   if (error) {
-    logWarn({ source: 'api', module: 'events/vendor-bills', message: 'vendor bill upsert failed', metadata: { error: error.message } });
-    return NextResponse.json({ error: 'Upsert failed' }, { status: 500 });
+    logWarn({ source: 'api', module: 'events/vendor-bills', message: 'vendor bill upsert failed', metadata: { error: error.message, code: error.code } });
+    // The caller is witus.online's admin page (HMAC-verified above), so the database's own message is the
+    // right thing to show it: a foreign-key miss on user_id, a missing column, or a schema cache that has
+    // not reloaded each read differently. Same shape as events/income.
+    return NextResponse.json({ error: `Upsert failed: ${error.message}`, code: error.code ?? null }, { status: 500 });
   }
   return NextResponse.json({ ok: true, upserted: rows.length, rejected });
 }
