@@ -52,7 +52,7 @@
     "leaflet": "^1.9.4",
     "lucide-react": "^0.545.0",
     "marked": "^17.0.3",
-    "next": "15.5.28",
+    "next": "15.5.29",
     "next-cloudinary": "^6.17.5",
     "papaparse": "^5.5.3",
     "pdfjs-dist": "^6.4.299",
